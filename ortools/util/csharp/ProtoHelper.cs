@@ -11,18 +11,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Google.OrTools {
+namespace Google.OrTools
+{
 
-  using System;
-  using Google.Protobuf;
+    using System;
+    using Google.Protobuf;
 
-  public static class ProtoHelper {
-    public static byte[] ProtoToByteArray(IMessage message) {
-      int size = message.CalculateSize();
-      byte[] buffer = new byte[size];
-      CodedOutputStream output = new CodedOutputStream(buffer);
-      message.WriteTo(output);
-      return buffer;
+    public static class ProtoHelper
+    {
+        public static byte[] ProtoToByteArray(IMessage message)
+        {
+            int size = message.CalculateSize();
+            byte[] buffer = new byte[size];
+            CodedOutputStream output = new CodedOutputStream(buffer);
+            message.WriteTo(output);
+            return buffer;
+        }
     }
-  }
-}  // namespace Google.OrTools
+} // namespace Google.OrTools

@@ -20,77 +20,82 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-public class SetCovering {
-  /**
-   *
-   * Solves a set covering problem.
-   * See  See http://www.hakank.org/or-tools/set_covering.py
-   *
-   */
-  private static void Solve() {
-    Solver solver = new Solver("SetCovering");
+public class SetCovering
+{
+    /**
+     *
+     * Solves a set covering problem.
+     * See  See http://www.hakank.org/or-tools/set_covering.py
+     *
+     */
+    private static void Solve()
+    {
+        Solver solver = new Solver("SetCovering");
 
-    //
-    // data
-    //
+        //
+        // data
+        //
 
-    // Placing of firestations, from Winston 'Operations Research',
-    // page 486.
-    int min_distance = 15;
-    int num_cities = 6;
+        // Placing of firestations, from Winston 'Operations Research',
+        // page 486.
+        int min_distance = 15;
+        int num_cities = 6;
 
-    int[,] distance = { { 0, 10, 20, 30, 30, 20 }, { 10, 0, 25, 35, 20, 10 },
-                        { 20, 25, 0, 15, 30, 20 }, { 30, 35, 15, 0, 15, 25 },
-                        { 30, 20, 30, 15, 0, 14 }, { 20, 10, 20, 25, 14, 0 } };
+        int[,] distance = { { 0, 10, 20, 30, 30, 20 }, { 10, 0, 25, 35, 20, 10 }, { 20, 25, 0, 15, 30, 20 },
+                            { 30, 35, 15, 0, 15, 25 }, { 30, 20, 30, 15, 0, 14 }, { 20, 10, 20, 25, 14, 0 } };
 
-    //
-    // Decision variables
-    //
-    IntVar[] x = solver.MakeIntVarArray(num_cities, 0, 1, "x");
-    IntVar z = x.Sum().Var();
+        //
+        // Decision variables
+        //
+        IntVar[] x = solver.MakeIntVarArray(num_cities, 0, 1, "x");
+        IntVar z = x.Sum().Var();
 
-    //
-    // Constraints
-    //
+        //
+        // Constraints
+        //
 
-    // ensure that all cities are covered
-    for (int i = 0; i < num_cities; i++) {
+        // ensure that all cities are covered
+        for (int i = 0; i < num_cities; i++)
+        {
       IntVar[] b = (from j in Enumerable.Range(0, num_cities)
                         where distance[i, j] <= min_distance select x[j])
                        .ToArray();
       solver.Add(b.Sum() >= 1);
+        }
+
+        //
+        // objective
+        //
+        OptimizeVar objective = z.Minimize(1);
+
+        //
+        // Search
+        //
+        DecisionBuilder db = solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+
+        solver.NewSearch(db, objective);
+
+        while (solver.NextSolution())
+        {
+            Console.WriteLine("z: {0}", z.Value());
+            Console.Write("x: ");
+            for (int i = 0; i < num_cities; i++)
+            {
+                Console.Write(x[i].Value() + " ");
+            }
+            Console.WriteLine();
+        }
+
+        Console.WriteLine("\nSolutions: {0}", solver.Solutions());
+        Console.WriteLine("WallTime: {0}ms", solver.WallTime());
+        Console.WriteLine("Failures: {0}", solver.Failures());
+        Console.WriteLine("Branches: {0} ", solver.Branches());
+
+        solver.EndSearch();
     }
 
-    //
-    // objective
-    //
-    OptimizeVar objective = z.Minimize(1);
-
-    //
-    // Search
-    //
-    DecisionBuilder db = solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
-
-    solver.NewSearch(db, objective);
-
-    while (solver.NextSolution()) {
-      Console.WriteLine("z: {0}", z.Value());
-      Console.Write("x: ");
-      for (int i = 0; i < num_cities; i++) {
-        Console.Write(x[i].Value() + " ");
-      }
-      Console.WriteLine();
+    public static void Main(String[] args)
+    {
+        Solve();
     }
-
-    Console.WriteLine("\nSolutions: {0}", solver.Solutions());
-    Console.WriteLine("WallTime: {0}ms", solver.WallTime());
-    Console.WriteLine("Failures: {0}", solver.Failures());
-    Console.WriteLine("Branches: {0} ", solver.Branches());
-
-    solver.EndSearch();
-  }
-
-  public static void Main(String[] args) {
-    Solve();
-  }
 }

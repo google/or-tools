@@ -14,23 +14,25 @@
 using System;
 using Google.OrTools.Sat;
 
-public class ReifiedSampleSat {
-  static void Main() {
-    CpModel model = new CpModel();
+public class ReifiedSampleSat
+{
+    static void Main()
+    {
+        CpModel model = new CpModel();
 
-    IntVar x = model.NewBoolVar("x");
-    IntVar y = model.NewBoolVar("y");
-    IntVar b = model.NewBoolVar("b");
+        IntVar x = model.NewBoolVar("x");
+        IntVar y = model.NewBoolVar("y");
+        IntVar b = model.NewBoolVar("b");
 
-    //  First version using a half-reified bool and.
-    model.AddBoolAnd(new ILiteral[] { x, y.Not() }).OnlyEnforceIf(b);
+        //  First version using a half-reified bool and.
+        model.AddBoolAnd(new ILiteral[] { x, y.Not() }).OnlyEnforceIf(b);
 
-    // Second version using implications.
-    model.AddImplication(b, x);
-    model.AddImplication(b, y.Not());
+        // Second version using implications.
+        model.AddImplication(b, x);
+        model.AddImplication(b, y.Not());
 
-    // Third version using bool or.
-    model.AddBoolOr(new ILiteral[] { b.Not(), x });
-    model.AddBoolOr(new ILiteral[] { b.Not(), y.Not() });
-  }
+        // Third version using bool or.
+        model.AddBoolOr(new ILiteral[] { b.Not(), x });
+        model.AddBoolOr(new ILiteral[] { b.Not(), y.Not() });
+    }
 }

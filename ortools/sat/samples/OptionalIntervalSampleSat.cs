@@ -14,16 +14,17 @@
 using System;
 using Google.OrTools.Sat;
 
-public class OptionalIntervalSampleSat {
-  static void Main() {
-    CpModel model = new CpModel();
-    int horizon = 100;
-    IntVar start_var = model.NewIntVar(0, horizon, "start");
-    // C# code supports IntVar or integer constants in intervals.
-    int duration = 10;
-    IntVar end_var = model.NewIntVar(0, horizon, "end");
-    IntVar presence_var = model.NewBoolVar("presence");
-    IntervalVar interval =
-        model.NewOptionalIntervalVar(start_var, duration, end_var, presence_var, "interval");
-  }
+public class OptionalIntervalSampleSat
+{
+    static void Main()
+    {
+        CpModel model = new CpModel();
+        int horizon = 100;
+        IntVar start_var = model.NewIntVar(0, horizon, "start");
+        // C# code supports IntVar or integer constants in intervals.
+        int duration = 10;
+        IntVar end_var = model.NewIntVar(0, horizon, "end");
+        IntVar presence_var = model.NewBoolVar("presence");
+        IntervalVar interval = model.NewOptionalIntervalVar(start_var, duration, end_var, presence_var, "interval");
+    }
 }

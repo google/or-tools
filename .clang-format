@@ -9,5 +9,5 @@ Language:        Java
 BasedOnStyle:  Google
 ---
 Language:      CSharp
-BasedOnStyle:  Google
+BasedOnStyle:  Microsoft
 ...

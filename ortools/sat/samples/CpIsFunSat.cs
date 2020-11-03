@@ -16,75 +16,82 @@ using System;
 using Google.OrTools.Sat;
 
 // [START solution_printing]
-public class VarArraySolutionPrinter : CpSolverSolutionCallback {
-  public VarArraySolutionPrinter(IntVar[] variables) {
-    variables_ = variables;
-  }
-
-  public override void OnSolutionCallback() {
+public class VarArraySolutionPrinter : CpSolverSolutionCallback
+{
+    public VarArraySolutionPrinter(IntVar[] variables)
     {
-      foreach (IntVar v in variables_) {
-        Console.Write(String.Format("  {0}={1}", v.ShortString(), Value(v)));
-      }
-      Console.WriteLine();
-      solution_count_++;
+        variables_ = variables;
     }
-  }
 
-  public int SolutionCount() {
-    return solution_count_;
-  }
+    public override void OnSolutionCallback()
+    {
+        {
+            foreach (IntVar v in variables_)
+            {
+                Console.Write(String.Format("  {0}={1}", v.ShortString(), Value(v)));
+            }
+            Console.WriteLine();
+            solution_count_++;
+        }
+    }
 
-  private int solution_count_;
-  private IntVar[] variables_;
+    public int SolutionCount()
+    {
+        return solution_count_;
+    }
+
+    private int solution_count_;
+    private IntVar[] variables_;
 }
 // [END solution_printing]
 
-public class CpIsFunSat {
-  // Solve the CP+IS+FUN==TRUE cryptarithm.
-  static void Main() {
-    // Constraint programming engine
-    CpModel model = new CpModel();
+public class CpIsFunSat
+{
+    // Solve the CP+IS+FUN==TRUE cryptarithm.
+    static void Main()
+    {
+        // Constraint programming engine
+        CpModel model = new CpModel();
 
-    // [START variables]
-    int kBase = 10;
+        // [START variables]
+        int kBase = 10;
 
-    IntVar c = model.NewIntVar(1, kBase - 1, "C");
-    IntVar p = model.NewIntVar(0, kBase - 1, "P");
-    IntVar i = model.NewIntVar(1, kBase - 1, "I");
-    IntVar s = model.NewIntVar(0, kBase - 1, "S");
-    IntVar f = model.NewIntVar(1, kBase - 1, "F");
-    IntVar u = model.NewIntVar(0, kBase - 1, "U");
-    IntVar n = model.NewIntVar(0, kBase - 1, "N");
-    IntVar t = model.NewIntVar(1, kBase - 1, "T");
-    IntVar r = model.NewIntVar(0, kBase - 1, "R");
-    IntVar e = model.NewIntVar(0, kBase - 1, "E");
+        IntVar c = model.NewIntVar(1, kBase - 1, "C");
+        IntVar p = model.NewIntVar(0, kBase - 1, "P");
+        IntVar i = model.NewIntVar(1, kBase - 1, "I");
+        IntVar s = model.NewIntVar(0, kBase - 1, "S");
+        IntVar f = model.NewIntVar(1, kBase - 1, "F");
+        IntVar u = model.NewIntVar(0, kBase - 1, "U");
+        IntVar n = model.NewIntVar(0, kBase - 1, "N");
+        IntVar t = model.NewIntVar(1, kBase - 1, "T");
+        IntVar r = model.NewIntVar(0, kBase - 1, "R");
+        IntVar e = model.NewIntVar(0, kBase - 1, "E");
 
-    // We need to group variables in a list to use the constraint AllDifferent.
-    IntVar[] letters = new IntVar[] { c, p, i, s, f, u, n, t, r, e };
-    // [END variables]
+        // We need to group variables in a list to use the constraint AllDifferent.
+        IntVar[] letters = new IntVar[] { c, p, i, s, f, u, n, t, r, e };
+        // [END variables]
 
-    // [START constraints]
-    // Define constraints.
-    model.AddAllDifferent(letters);
+        // [START constraints]
+        // Define constraints.
+        model.AddAllDifferent(letters);
 
-    // CP + IS + FUN = TRUE
-    model.Add(c * kBase + p + i * kBase + s + f * kBase * kBase + u * kBase + n ==
-              t * kBase * kBase * kBase + r * kBase * kBase + u * kBase + e);
-    // [END constraints]
+        // CP + IS + FUN = TRUE
+        model.Add(c * kBase + p + i * kBase + s + f * kBase * kBase + u * kBase + n ==
+                  t * kBase * kBase * kBase + r * kBase * kBase + u * kBase + e);
+        // [END constraints]
 
-    // [START solve]
-    // Creates a solver and solves the model.
-    CpSolver solver = new CpSolver();
-    VarArraySolutionPrinter cb = new VarArraySolutionPrinter(letters);
-    solver.SearchAllSolutions(model, cb);
-    // [END solve]
+        // [START solve]
+        // Creates a solver and solves the model.
+        CpSolver solver = new CpSolver();
+        VarArraySolutionPrinter cb = new VarArraySolutionPrinter(letters);
+        solver.SearchAllSolutions(model, cb);
+        // [END solve]
 
-    Console.WriteLine("Statistics");
-    Console.WriteLine($"  - conflicts : {solver.NumConflicts()}");
-    Console.WriteLine($"  - branches  : {solver.NumBranches()}");
-    Console.WriteLine($"  - wall time : {solver.WallTime()} s");
-    Console.WriteLine($"  - number of solutions found: {cb.SolutionCount()}");
-  }
+        Console.WriteLine("Statistics");
+        Console.WriteLine($"  - conflicts : {solver.NumConflicts()}");
+        Console.WriteLine($"  - branches  : {solver.NumBranches()}");
+        Console.WriteLine($"  - wall time : {solver.WallTime()} s");
+        Console.WriteLine($"  - number of solutions found: {cb.SolutionCount()}");
+    }
 }
 // [END program]

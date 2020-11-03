@@ -11,38 +11,52 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Google.OrTools.Sat {
-  using System;
-  using System.Collections.Generic;
+namespace Google.OrTools.Sat
+{
+    using System;
+    using System.Collections.Generic;
 
-  public class Constraint {
-    public Constraint(CpModelProto model) {
-      index_ = model.Constraints.Count;
-      constraint_ = new ConstraintProto();
-      model.Constraints.Add(constraint_);
+    public class Constraint
+    {
+        public Constraint(CpModelProto model)
+        {
+            index_ = model.Constraints.Count;
+            constraint_ = new ConstraintProto();
+            model.Constraints.Add(constraint_);
+        }
+
+        public void OnlyEnforceIf(ILiteral lit)
+        {
+            constraint_.EnforcementLiteral.Add(lit.GetIndex());
+        }
+
+        public void OnlyEnforceIf(ILiteral[] lits)
+        {
+            foreach (ILiteral lit in lits)
+            {
+                constraint_.EnforcementLiteral.Add(lit.GetIndex());
+            }
+        }
+
+        public int Index
+        {
+            get {
+                return index_;
+            }
+        }
+
+        public ConstraintProto Proto
+        {
+            get {
+                return constraint_;
+            }
+            set {
+                constraint_ = value;
+            }
+        }
+
+        private int index_;
+        private ConstraintProto constraint_;
     }
 
-    public void OnlyEnforceIf(ILiteral lit) {
-      constraint_.EnforcementLiteral.Add(lit.GetIndex());
-    }
-
-    public void OnlyEnforceIf(ILiteral[] lits) {
-      foreach (ILiteral lit in lits) {
-        constraint_.EnforcementLiteral.Add(lit.GetIndex());
-      }
-    }
-
-    public int Index {
-      get { return index_; }
-    }
-
-    public ConstraintProto Proto {
-      get { return constraint_; }
-      set { constraint_ = value; }
-    }
-
-    private int index_;
-    private ConstraintProto constraint_;
-  }
-
-}  // namespace Google.OrTools.Sat
+} // namespace Google.OrTools.Sat

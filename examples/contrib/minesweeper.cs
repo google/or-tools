@@ -20,192 +20,220 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-public class Minesweeper {
-  static int X = -1;
-
-  //
-  // Default problem.
-  // It has 4 solutions.
-  //
-  static int default_r = 8;
-  static int default_c = 8;
-  static int[,] default_game = { { 2, 3, X, 2, 2, X, 2, 1 }, { X, X, 4, X, X, 4, X, 2 },
-                                 { X, X, X, X, X, X, 4, X }, { X, 5, X, 6, X, X, X, 2 },
-                                 { 2, X, X, X, 5, 5, X, 2 }, { 1, 3, 4, X, X, X, 4, X },
-                                 { 0, 1, X, 4, X, X, X, 3 }, { 0, 1, 2, X, 2, 3, X, 2 } };
-
-  // for the actual problem
-  static int r;
-  static int c;
-  static int[,] game;
-
-  /**
-   *
-   * Solves the Minesweeper problems.
-   *
-   * See http://www.hakank.org/google_or_tools/minesweeper.py
-   *
-   */
-  private static void Solve() {
-    Solver solver = new Solver("Minesweeper");
+public class Minesweeper
+{
+    static int X = -1;
 
     //
-    // data
+    // Default problem.
+    // It has 4 solutions.
     //
-    int[] S = { -1, 0, 1 };
+    static int default_r = 8;
+    static int default_c = 8;
+    static int[,] default_game = { { 2, 3, X, 2, 2, X, 2, 1 }, { X, X, 4, X, X, 4, X, 2 }, { X, X, X, X, X, X, 4, X },
+                                   { X, 5, X, 6, X, X, X, 2 }, { 2, X, X, X, 5, 5, X, 2 }, { 1, 3, 4, X, X, X, 4, X },
+                                   { 0, 1, X, 4, X, X, X, 3 }, { 0, 1, 2, X, 2, 3, X, 2 } };
 
-    Console.WriteLine("Problem:");
-    for (int i = 0; i < r; i++) {
-      for (int j = 0; j < c; j++) {
-        if (game[i, j] > X) {
-          Console.Write(game[i, j] + " ");
-        } else {
-          Console.Write("X ");
-        }
-      }
-      Console.WriteLine();
-    }
-    Console.WriteLine();
+    // for the actual problem
+    static int r;
+    static int c;
+    static int[,] game;
 
-    //
-    // Decision variables
-    //
-    IntVar[,] mines = solver.MakeIntVarMatrix(r, c, 0, 1, "mines");
-    // for branching
-    IntVar[] mines_flat = mines.Flatten();
+    /**
+     *
+     * Solves the Minesweeper problems.
+     *
+     * See http://www.hakank.org/google_or_tools/minesweeper.py
+     *
+     */
+    private static void Solve()
+    {
+        Solver solver = new Solver("Minesweeper");
 
-    //
-    // Constraints
-    //
-    for (int i = 0; i < r; i++) {
-      for (int j = 0; j < c; j++) {
-        if (game[i, j] >= 0) {
-          solver.Add(mines[i, j] == 0);
+        //
+        // data
+        //
+        int[] S = { -1, 0, 1 };
 
-          // this cell is the sum of all its neighbours
-          var tmp = from a in S from b in S
-                            where i +
-  a >= 0 && j + b >= 0 &&
-                    i + a<r && j + b<c select(mines[i + a, j + b]);
-
-          solver.Add(tmp.ToArray().Sum() == game[i, j]);
-        }
-
-        if (game[i, j] > X) {
-          // This cell cannot be a mine since it
-          // has some value assigned to it
-          solver.Add(mines[i, j] == 0);
-        }
-      }
-    }
-
-    //
-    // Search
-    //
-    DecisionBuilder db = solver.MakePhase(mines_flat, Solver.CHOOSE_PATH, Solver.ASSIGN_MIN_VALUE);
-
-    solver.NewSearch(db);
-
-    int sol = 0;
-    while (solver.NextSolution()) {
-      sol++;
-      Console.WriteLine("Solution #{0} ", sol + " ");
-      for (int i = 0; i < r; i++) {
-        for (int j = 0; j < c; j++) {
-          Console.Write("{0} ", mines[i, j].Value());
+        Console.WriteLine("Problem:");
+        for (int i = 0; i < r; i++)
+        {
+            for (int j = 0; j < c; j++)
+            {
+                if (game[i, j] > X)
+                {
+                    Console.Write(game[i, j] + " ");
+                }
+                else
+                {
+                    Console.Write("X ");
+                }
+            }
+            Console.WriteLine();
         }
         Console.WriteLine();
-      }
 
-      Console.WriteLine();
-    }
+        //
+        // Decision variables
+        //
+        IntVar[,] mines = solver.MakeIntVarMatrix(r, c, 0, 1, "mines");
+        // for branching
+        IntVar[] mines_flat = mines.Flatten();
 
-    Console.WriteLine("\nSolutions: {0}", solver.Solutions());
-    Console.WriteLine("WallTime: {0}ms", solver.WallTime());
-    Console.WriteLine("Failures: {0}", solver.Failures());
-    Console.WriteLine("Branches: {0} ", solver.Branches());
+        //
+        // Constraints
+        //
+        for (int i = 0; i < r; i++)
+        {
+            for (int j = 0; j < c; j++)
+            {
+                if (game[i, j] >= 0)
+                {
+                    solver.Add(mines[i, j] == 0);
 
-    solver.EndSearch();
-  }
+                    // this cell is the sum of all its neighbours
+                    var tmp = from a in S from b in S
+                                      where i +
+  a >= 0 && j + b >= 0 && i + a<r && j + b<c select(mines[i + a, j + b]);
 
-  /**
-   *
-   * Reads a minesweeper file.
-   * File format:
-   *  # a comment which is ignored
-   *  % a comment which also is ignored
-   *  number of rows
-   *  number of columns
-   *  <
-   *    row number of neighbours lines...
-   *  >
-   *
-   * 0..8 means number of neighbours, "." mean unknown (may be a mine)
-   *
-   * Example (from minesweeper0.txt)
-   * # Problem from Gecode/examples/minesweeper.cc  problem 0
-   * 6
-   * 6
-   * ..2.3.
-   * 2.....
-   * ..24.3
-   * 1.34..
-   * .....3
-   * .3.3..
-   *
-   */
-  private static void readFile(String file) {
-    Console.WriteLine("readFile(" + file + ")");
-    int lineCount = 0;
+                    solver.Add(tmp.ToArray().Sum() == game[i, j]);
+                }
 
-    TextReader inr = new StreamReader(file);
-    String str;
-    while ((str = inr.ReadLine()) != null && str.Length > 0) {
-      str = str.Trim();
-
-      // ignore comments
-      if (str.StartsWith("#") || str.StartsWith("%")) {
-        continue;
-      }
-
-      Console.WriteLine(str);
-      if (lineCount == 0) {
-        r = Convert.ToInt32(str);  // number of rows
-      } else if (lineCount == 1) {
-        c = Convert.ToInt32(str);  // number of columns
-        game = new int[r, c];
-      } else {
-        // the problem matrix
-        String[] row = Regex.Split(str, "");
-        for (int j = 1; j <= c; j++) {
-          String s = row[j];
-          if (s.Equals(".")) {
-            game[lineCount - 2, j - 1] = -1;
-          } else {
-            game[lineCount - 2, j - 1] = Convert.ToInt32(s);
-          }
+                if (game[i, j] > X)
+                {
+                    // This cell cannot be a mine since it
+                    // has some value assigned to it
+                    solver.Add(mines[i, j] == 0);
+                }
+            }
         }
-      }
 
-      lineCount++;
+        //
+        // Search
+        //
+        DecisionBuilder db = solver.MakePhase(mines_flat, Solver.CHOOSE_PATH, Solver.ASSIGN_MIN_VALUE);
 
-    }  // end while
+        solver.NewSearch(db);
 
-    inr.Close();
+        int sol = 0;
+        while (solver.NextSolution())
+        {
+            sol++;
+            Console.WriteLine("Solution #{0} ", sol + " ");
+            for (int i = 0; i < r; i++)
+            {
+                for (int j = 0; j < c; j++)
+                {
+                    Console.Write("{0} ", mines[i, j].Value());
+                }
+                Console.WriteLine();
+            }
 
-  }  // end readFile
+            Console.WriteLine();
+        }
 
-  public static void Main(String[] args) {
-    String file = "";
-    if (args.Length > 0) {
-      file = args[0];
-      readFile(file);
-    } else {
-      game = default_game;
-      r = default_r;
-      c = default_c;
+        Console.WriteLine("\nSolutions: {0}", solver.Solutions());
+        Console.WriteLine("WallTime: {0}ms", solver.WallTime());
+        Console.WriteLine("Failures: {0}", solver.Failures());
+        Console.WriteLine("Branches: {0} ", solver.Branches());
+
+        solver.EndSearch();
     }
 
-    Solve();
-  }
+    /**
+     *
+     * Reads a minesweeper file.
+     * File format:
+     *  # a comment which is ignored
+     *  % a comment which also is ignored
+     *  number of rows
+     *  number of columns
+     *  <
+     *    row number of neighbours lines...
+     *  >
+     *
+     * 0..8 means number of neighbours, "." mean unknown (may be a mine)
+     *
+     * Example (from minesweeper0.txt)
+     * # Problem from Gecode/examples/minesweeper.cc  problem 0
+     * 6
+     * 6
+     * ..2.3.
+     * 2.....
+     * ..24.3
+     * 1.34..
+     * .....3
+     * .3.3..
+     *
+     */
+    private static void readFile(String file)
+    {
+        Console.WriteLine("readFile(" + file + ")");
+        int lineCount = 0;
+
+        TextReader inr = new StreamReader(file);
+        String str;
+        while ((str = inr.ReadLine()) != null && str.Length > 0)
+        {
+            str = str.Trim();
+
+            // ignore comments
+            if (str.StartsWith("#") || str.StartsWith("%"))
+            {
+                continue;
+            }
+
+            Console.WriteLine(str);
+            if (lineCount == 0)
+            {
+                r = Convert.ToInt32(str); // number of rows
+            }
+            else if (lineCount == 1)
+            {
+                c = Convert.ToInt32(str); // number of columns
+                game = new int[r, c];
+            }
+            else
+            {
+                // the problem matrix
+                String[] row = Regex.Split(str, "");
+                for (int j = 1; j <= c; j++)
+                {
+                    String s = row[j];
+                    if (s.Equals("."))
+                    {
+                        game[lineCount - 2, j - 1] = -1;
+                    }
+                    else
+                    {
+                        game[lineCount - 2, j - 1] = Convert.ToInt32(s);
+                    }
+                }
+            }
+
+            lineCount++;
+
+        } // end while
+
+        inr.Close();
+
+    } // end readFile
+
+    public static void Main(String[] args)
+    {
+        String file = "";
+        if (args.Length > 0)
+        {
+            file = args[0];
+            readFile(file);
+        }
+        else
+        {
+            game = default_game;
+            r = default_r;
+            c = default_c;
+        }
+
+        Solve();
+    }
 }

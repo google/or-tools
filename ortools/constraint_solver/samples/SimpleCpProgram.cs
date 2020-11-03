@@ -20,50 +20,53 @@ using Google.OrTools.ConstraintSolver;
 /// <summary>
 ///   This is a simple CP program.
 /// </summary>
-public class SimpleCpProgram {
-  public static void Main(String[] args) {
-    // Instantiate the solver.
-    // [START solver]
-    Solver solver = new Solver("CpSimple");
-    // [END solver]
+public class SimpleCpProgram
+{
+    public static void Main(String[] args)
+    {
+        // Instantiate the solver.
+        // [START solver]
+        Solver solver = new Solver("CpSimple");
+        // [END solver]
 
-    // Create the variables.
-    // [START variables]
-    const long numVals = 3;
-    IntVar x = solver.MakeIntVar(0, numVals - 1, "x");
-    IntVar y = solver.MakeIntVar(0, numVals - 1, "y");
-    IntVar z = solver.MakeIntVar(0, numVals - 1, "z");
-    // [END variables]
+        // Create the variables.
+        // [START variables]
+        const long numVals = 3;
+        IntVar x = solver.MakeIntVar(0, numVals - 1, "x");
+        IntVar y = solver.MakeIntVar(0, numVals - 1, "y");
+        IntVar z = solver.MakeIntVar(0, numVals - 1, "z");
+        // [END variables]
 
-    // Constraint 0: x != y..
-    // [START constraints]
-    solver.Add(solver.MakeAllDifferent(new IntVar[] { x, y }));
-    Console.WriteLine($"Number of constraints: {solver.Constraints()}");
-    // [END constraints]
+        // Constraint 0: x != y..
+        // [START constraints]
+        solver.Add(solver.MakeAllDifferent(new IntVar[] { x, y }));
+        Console.WriteLine($"Number of constraints: {solver.Constraints()}");
+        // [END constraints]
 
-    // Solve the problem.
-    // [START solve]
-    DecisionBuilder db = solver.MakePhase(new IntVar[] { x, y, z }, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
-    // [END solve]
+        // Solve the problem.
+        // [START solve]
+        DecisionBuilder db =
+            solver.MakePhase(new IntVar[] { x, y, z }, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
+        // [END solve]
 
-    // Print solution on console.
-    // [START print_solution]
-    int count = 0;
-    solver.NewSearch(db);
-    while (solver.NextSolution()) {
-      ++count;
-      Console.WriteLine($"Solution: {count}\n x={x.Value()} y={y.Value()} z={z.Value()}");
+        // Print solution on console.
+        // [START print_solution]
+        int count = 0;
+        solver.NewSearch(db);
+        while (solver.NextSolution())
+        {
+            ++count;
+            Console.WriteLine($"Solution: {count}\n x={x.Value()} y={y.Value()} z={z.Value()}");
+        }
+        solver.EndSearch();
+        Console.WriteLine($"Number of solutions found: {solver.Solutions()}");
+        // [END print_solution]
+
+        // [START advanced]
+        Console.WriteLine("Advanced usage:");
+        Console.WriteLine($"Problem solved in {solver.WallTime()}ms");
+        Console.WriteLine($"Memory usage: {Solver.MemoryUsage()}bytes");
+        // [END advanced]
     }
-    solver.EndSearch();
-    Console.WriteLine($"Number of solutions found: {solver.Solutions()}");
-    // [END print_solution]
-
-    // [START advanced]
-    Console.WriteLine("Advanced usage:");
-    Console.WriteLine($"Problem solved in {solver.WallTime()}ms");
-    Console.WriteLine($"Memory usage: {Solver.MemoryUsage()}bytes");
-    // [END advanced]
-  }
 }
 // [END program]

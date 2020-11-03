@@ -16,37 +16,41 @@ using Xunit;
 using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
 
-namespace Google.OrTools.Tests {
-  public class Issue18Test {
-    [Fact]
-    public void NewSearchTest() {
-      Solver solver = new Google.OrTools.ConstraintSolver.Solver("p");
+namespace Google.OrTools.Tests
+{
+    public class Issue18Test
+    {
+        [Fact]
+        public void NewSearchTest()
+        {
+            Solver solver = new Google.OrTools.ConstraintSolver.Solver("p");
 
-      // creating dummy variables
-      List<IntVar> vars = new List<IntVar>();
-      for (int i = 0; i < 100000; i++) {
-        vars.Add(solver.MakeIntVar(0, 1));
-      }
+            // creating dummy variables
+            List<IntVar> vars = new List<IntVar>();
+            for (int i = 0; i < 100000; i++)
+            {
+                vars.Add(solver.MakeIntVar(0, 1));
+            }
 
-      IntExpr globalSum = solver.MakeSum(vars.ToArray());
+            IntExpr globalSum = solver.MakeSum(vars.ToArray());
 
-      DecisionBuilder db =
-          solver.MakePhase(vars.ToArray(), Google.OrTools.ConstraintSolver.Solver.INT_VAR_SIMPLE,
-                           Google.OrTools.ConstraintSolver.Solver.INT_VALUE_SIMPLE);
+            DecisionBuilder db = solver.MakePhase(vars.ToArray(), Google.OrTools.ConstraintSolver.Solver.INT_VAR_SIMPLE,
+                                                  Google.OrTools.ConstraintSolver.Solver.INT_VALUE_SIMPLE);
 
-      solver.NewSearch(db, new OptimizeVar(solver, true, globalSum.Var(), 100));
+            solver.NewSearch(db, new OptimizeVar(solver, true, globalSum.Var(), 100));
 
-      // force Garbage Collector
-      GC.Collect();
-      GC.WaitForPendingFinalizers();
+            // force Garbage Collector
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
 
-      // Try to read all solutions
-      int count = 0;
-      while (solver.NextSolution()) {
-        count++;
-        // Console.WriteLine("solution " + globalSum.Var().Value());
-      }
-      Console.WriteLine("Solutions: " + count);
+            // Try to read all solutions
+            int count = 0;
+            while (solver.NextSolution())
+            {
+                count++;
+                // Console.WriteLine("solution " + globalSum.Var().Value());
+            }
+            Console.WriteLine("Solutions: " + count);
+        }
     }
-  }
-}  // namespace Google.OrTools.Tests
+} // namespace Google.OrTools.Tests

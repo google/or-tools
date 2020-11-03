@@ -14,24 +14,27 @@
 using System;
 using Google.OrTools.Sat;
 
-public class RabbitsAndPheasantsSat {
-  static void Main() {
-    // Creates the model.
-    CpModel model = new CpModel();
-    // Creates the variables.
-    IntVar r = model.NewIntVar(0, 100, "r");
-    IntVar p = model.NewIntVar(0, 100, "p");
-    // 20 heads.
-    model.Add(r + p == 20);
-    // 56 legs.
-    model.Add(4 * r + 2 * p == 56);
+public class RabbitsAndPheasantsSat
+{
+    static void Main()
+    {
+        // Creates the model.
+        CpModel model = new CpModel();
+        // Creates the variables.
+        IntVar r = model.NewIntVar(0, 100, "r");
+        IntVar p = model.NewIntVar(0, 100, "p");
+        // 20 heads.
+        model.Add(r + p == 20);
+        // 56 legs.
+        model.Add(4 * r + 2 * p == 56);
 
-    // Creates a solver and solves the model.
-    CpSolver solver = new CpSolver();
-    CpSolverStatus status = solver.Solve(model);
+        // Creates a solver and solves the model.
+        CpSolver solver = new CpSolver();
+        CpSolverStatus status = solver.Solve(model);
 
-    if (status == CpSolverStatus.Optimal) {
-      Console.WriteLine(solver.Value(r) + " rabbits, and " + solver.Value(p) + " pheasants");
+        if (status == CpSolverStatus.Optimal)
+        {
+            Console.WriteLine(solver.Value(r) + " rabbits, and " + solver.Value(p) + " pheasants");
+        }
     }
-  }
 }

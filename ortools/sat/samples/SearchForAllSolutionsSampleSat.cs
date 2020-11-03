@@ -16,60 +16,66 @@ using System;
 using Google.OrTools.Sat;
 
 // [START print_solution]
-public class VarArraySolutionPrinter : CpSolverSolutionCallback {
-  public VarArraySolutionPrinter(IntVar[] variables) {
-    variables_ = variables;
-  }
-
-  public override void OnSolutionCallback() {
+public class VarArraySolutionPrinter : CpSolverSolutionCallback
+{
+    public VarArraySolutionPrinter(IntVar[] variables)
     {
-      Console.WriteLine(
-          String.Format("Solution #{0}: time = {1:F2} s", solution_count_, WallTime()));
-      foreach (IntVar v in variables_) {
-        Console.WriteLine(String.Format("  {0} = {1}", v.ShortString(), Value(v)));
-      }
-      solution_count_++;
+        variables_ = variables;
     }
-  }
 
-  public int SolutionCount() {
-    return solution_count_;
-  }
+    public override void OnSolutionCallback()
+    {
+        {
+            Console.WriteLine(String.Format("Solution #{0}: time = {1:F2} s", solution_count_, WallTime()));
+            foreach (IntVar v in variables_)
+            {
+                Console.WriteLine(String.Format("  {0} = {1}", v.ShortString(), Value(v)));
+            }
+            solution_count_++;
+        }
+    }
 
-  private int solution_count_;
-  private IntVar[] variables_;
+    public int SolutionCount()
+    {
+        return solution_count_;
+    }
+
+    private int solution_count_;
+    private IntVar[] variables_;
 }
 // [END print_solution]
 
-public class SearchForAllSolutionsSampleSat {
-  static void Main() {
-    // Creates the model.
-    // [START model]
-    CpModel model = new CpModel();
-    // [END model]
+public class SearchForAllSolutionsSampleSat
+{
+    static void Main()
+    {
+        // Creates the model.
+        // [START model]
+        CpModel model = new CpModel();
+        // [END model]
 
-    // Creates the variables.
-    // [START variables]
-    int num_vals = 3;
+        // Creates the variables.
+        // [START variables]
+        int num_vals = 3;
 
-    IntVar x = model.NewIntVar(0, num_vals - 1, "x");
-    IntVar y = model.NewIntVar(0, num_vals - 1, "y");
-    IntVar z = model.NewIntVar(0, num_vals - 1, "z");
-    // [END variables]
+        IntVar x = model.NewIntVar(0, num_vals - 1, "x");
+        IntVar y = model.NewIntVar(0, num_vals - 1, "y");
+        IntVar z = model.NewIntVar(0, num_vals - 1, "z");
+        // [END variables]
 
-    // Adds a different constraint.
-    // [START constraints]
-    model.Add(x != y);
-    // [END constraints]
+        // Adds a different constraint.
+        // [START constraints]
+        model.Add(x != y);
+        // [END constraints]
 
-    // Creates a solver and solves the model.
-    // [START solve]
-    CpSolver solver = new CpSolver();
-    VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, y, z });
-    solver.SearchAllSolutions(model, cb);
-    // [END solve]
+        // Creates a solver and solves the model.
+        // [START solve]
+        CpSolver solver = new CpSolver();
+        VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, y, z });
+        solver.SearchAllSolutions(model, cb);
+        // [END solve]
 
-    Console.WriteLine(String.Format("Number of solutions found: {0}", cb.SolutionCount()));
-  }
+        Console.WriteLine(String.Format("Number of solutions found: {0}", cb.SolutionCount()));
+    }
 }
 // [END program]
