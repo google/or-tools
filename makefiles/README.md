@@ -14,9 +14,10 @@ OR-Tools comes with a GNU Make based build ([Makefile](../Makefile)) that can be
 used on a wide range of platforms.
 
 ## [Dependencies](#deps)
-OR-Tools depends on severals mandatory libraries. You can compile them all
-using the target `third_party` or you can compile few of them and give the
-installation directory to the others using the Make variable below. 
+
+OR-Tools depends on severals mandatory libraries. You can compile them all using
+the target `third_party` or you can compile few of them and give the
+installation directory to the others using the Make variable below.
 
 * ZLIB (`UNIX_ZLIB_DIR` or `WINDOWS_ZLIB_DIR`),
 * Google Abseil-cpp (`UNIX_ABSL_DIR` or `WINDOWS_ABSL_DIR`),
