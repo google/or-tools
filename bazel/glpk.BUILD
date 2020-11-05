@@ -1,11 +1,14 @@
 cc_library(
     name = "glpk",
-    srcs = glob([
-        "glpk-4.65/src/*.c",
-        "glpk-4.65/src/*/*.c",
-        "glpk-4.65/src/*.h",
-        "glpk-4.65/src/*/*.h",
-    ], exclude = ["glpk-4.65/src/proxy/main.c"]),
+    srcs = glob(
+        [
+            "glpk-4.65/src/*.c",
+            "glpk-4.65/src/*/*.c",
+            "glpk-4.65/src/*.h",
+            "glpk-4.65/src/*/*.h",
+        ],
+        exclude = ["glpk-4.65/src/proxy/main.c"],
+    ),
     hdrs = [
         "glpk-4.65/src/glpk.h",
     ],
@@ -24,6 +27,6 @@ cc_library(
         "-Iexternal/glpk/glpk-4.65/src/zlib",
         # "-DHAVE_ZLIB",
     ],
-    includes=["glpk-4.65/src"],
+    includes = ["glpk-4.65/src"],
     visibility = ["//visibility:public"],
 )
