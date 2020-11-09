@@ -22,10 +22,10 @@ please use the Makefile or CMake based build instead.**
 OR-Tools depends on severals mandatory libraries.
 
 * Google Abseil-cpp,
-* Google Gflags,
-* Google Glog,
 * Google Protobuf,
 * Google Gtest,
+* Bliss,
+* SCIP,
 * GLPK (GNU Linear Programming Kit)
 
 ## Compilation
