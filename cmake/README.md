@@ -161,7 +161,7 @@ instead. Note: The **ortools::ortools** target is in this case an ALIAS library
 target for the **ortools** library target.
 
 ```cmake
-cmake_minimum_required(VERSION 3.11.4)
+cmake_minimum_required(VERSION 3.14)
 project(myproj VERSION 1.0 LANGUAGES CXX)
 
 include(FetchContent)
