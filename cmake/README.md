@@ -70,24 +70,25 @@ compile few of them using the options below.
 
 * ZLIB (`BUILD_ZLIB`),
 * Google Abseil-cpp (`BUILD_absl`),
-* Google Gflags (`BUILD_gflags`),
-* Google Glog (`BUILD_glog`),
 * Google Protobuf (`BUILD_Protobuf`),
-* SCIP (`BUILD_SCIP`),
-* COIN-OR CoinUtils (`BUILD_CoinUtils`),
-* COIN-OR Osi (`BUILD_Osi`),
-* COIN-OR Clp (`BUILD_Clp`),
-* COIN-OR Cgl (`BUILD_Cgl`),
-* COIN-OR Cbc (`BUILD_Cbc`),
+* SCIP (`BUILD_SCIP`),<br>
+  note: You can disable the support of SCIP solvers
+  by using `-DUSE_SCIP=OFF` (`ON` by default).
 
-note: You can disable the support of COIN-OR solvers (i.e. Cbc and Clp solver)
-by using `-DUSE_COINOR=OFF`.
+* COIN-OR solvers,
+  * COIN-OR CoinUtils (`BUILD_CoinUtils`),
+  * COIN-OR Osi (`BUILD_Osi`),
+  * COIN-OR Clp (`BUILD_Clp`),
+  * COIN-OR Cgl (`BUILD_Cgl`),
+  * COIN-OR Cbc (`BUILD_Cbc`),<br>
+  note: You can disable the support of COIN-OR solvers (i.e. Cbc and Clp solver)
+  by using `-DUSE_COINOR=OFF` (`ON` by default).
 
 OR-Tools also have few (ed compile time) optional solvers support (disabled by
 default):
 
-*   CPLEX (`USE_CPLEX`),
-*   XPRESS (`USE_XPRESS`)
+* CPLEX (`USE_CPLEX`),
+* XPRESS (`USE_XPRESS`)
 
 **warning: Since these solvers require license and are proprietary, we can't
 test it on public CI and support can be broken.**
