@@ -75,10 +75,10 @@ namespace operations_research {
 	using std::unique_ptr;
 
 	// For a model that is extracted to an instance of this class there is a
-	// 1:1 corresponence between MPVariable instances and XPRESS columns: the
-	// index of an extracted variable is the column index in the XPRESS model.
+	// 1:1 corresponence between MPVariable instances and SIRIUS columns: the
+	// index of an extracted variable is the column index in the SIRIUS model.
 	// Similiar for instances of MPConstraint: the index of the constraint in
-	// the model is the row index in the XPRESS model.
+	// the model is the row index in the SIRIUS model.
 	class SiriusInterface : public MPSolverInterface {
 	public:
 		// NOTE: 'mip' specifies the type of the problem (either continuous or
@@ -191,7 +191,7 @@ namespace operations_research {
 			sync_status_ = MUST_RELOAD;
 		}
 
-		// Transform XPRESS basis status to MPSolver basis status.
+		// Transform SIRIUS basis status to MPSolver basis status.
 		static MPSolver::BasisStatus xformBasisStatus(char sirius_basis_status);
 
 	private:
@@ -225,7 +225,7 @@ namespace operations_research {
 			SlowSetVariableBounds = 0x0040,
 			SlowUpdatesAll = 0xffff
 		} const slowUpdates;
-		// XPRESS has no method to query the basis status of a single variable.
+		// SIRIUS has no method to query the basis status of a single variable.
 		// Hence we query the status only once and cache the array. This is
 		// much faster in case the basis status of more than one row/column
 		// is required.
@@ -381,14 +381,14 @@ namespace operations_research {
 			//   [ rhs[i], rhs[i]+rngval[i] ]
 			// see also the reference documentation for SRSnewrows()
 			if (ub < lb) {
-				// The bounds for the constraint are contradictory. XPRESS models
+				// The bounds for the constraint are contradictory. SIRIUS models
 				// a range constraint l <= ax <= u as
 				//    ax = l + v
 				// where v is an auxiliary variable the range of which is controlled
 				// by l and u: if l < u then v in [0, u-l]
 				//             else          v in [u-l, 0]
 				// (the range is specified as the rngval[] argument to SRSnewrows).
-				// Thus XPRESS cannot represent range constraints with contradictory
+				// Thus SIRIUS cannot represent range constraints with contradictory
 				// bounds and we must error out here.
 				CHECK_STATUS(-1);
 			}
@@ -417,7 +417,7 @@ namespace operations_research {
 			// Note that the case lb==ub was already handled above, so we just
 			// pick the bound with larger magnitude and create a constraint for it.
 			// Note that we replace the infinite bound by SRS_infinite since
-			// bounds with larger magnitude may cause other XPRESS functions to
+			// bounds with larger magnitude may cause other SIRIUS functions to
 			// fail (for example the export to LP files).
 			DCHECK_GT(std::abs(lb), SRS_infinite);
 			DCHECK_GT(std::abs(ub), SRS_infinite);
@@ -1142,7 +1142,7 @@ namespace operations_research {
 		}
 	}
 
-	// Sets the LP algorithm : primal, dual or barrier. Note that XPRESS offers other
+	// Sets the LP algorithm : primal, dual or barrier. Note that SIRIUS offers other
 	// LP algorithm (e.g. network) and automatic selection
 	void SiriusInterface::SetLpAlgorithm(int value) {
 		MPSolverParameters::LpAlgorithmValues const algorithm =
@@ -1383,7 +1383,7 @@ namespace operations_research {
 			}
 		}
 
-		// Map XPRESS status to more generic solution status in MPSolver
+		// Map SIRIUS status to more generic solution status in MPSolver
 		switch (problemStatus) {
 		case SRS_STATUS_OPTIMAL:
 			result_status_ = MPSolver::OPTIMAL;
