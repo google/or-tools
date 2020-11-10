@@ -240,8 +240,6 @@ namespace operations_research {
 
 		// vector to store TypeDeBorneDeLaVariable values
 		std::vector<int> varBoundsTypeValues;
-		// vector to store X values
-		std::vector<double> xValues;
 	};
 
 	// Creates a LP/MIP instance.
@@ -1075,14 +1073,6 @@ namespace operations_research {
 			}
 			return true;
 		}
-		else if (paramName == "X_VALUES") {
-			std::string paramValue;
-			xValues.clear();
-			while (std::getline(ss, paramValue, ' ')) {
-				xValues.push_back(std::stod(paramValue));
-			}
-			return true;
-		}
 		else {
 			// unknow paramName
 			return false;
@@ -1268,7 +1258,15 @@ namespace operations_research {
 		//exit(0);
 
 		SRScopyvarboundstype(mLp, varBoundsTypeValues.data());
-		SRScopyxvalues(mLp, xValues.data());
+
+		// set solution hints if any
+		if (!solver_->solution_hint_.empty()) {
+			// store X values
+			for (std::pair<const MPVariable*, double>& solution_hint_elt : solver_->solution_hint_) {
+				SRSsetxvalue(mLp, solution_hint_elt.first->index(), solution_hint_elt.second);
+			}
+
+		}
 
 		status = SRSoptimize(mLp);
 
