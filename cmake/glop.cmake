@@ -235,21 +235,6 @@ endif()
 # ALIAS
 add_library(${PROJECT_NAME}::glop ALIAS glop)
 
-if(APPLE)
-  set(CMAKE_INSTALL_RPATH
-    "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
-elseif(UNIX)
-  set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN")
-endif()
-
-add_executable(glopbin "")
-file(GENERATE
-  OUTPUT ${PROJECT_BINARY_DIR}/glop/main.cpp
-  CONTENT "int main(int, char**) {return 0;}")
-target_sources(glopbin PRIVATE ${PROJECT_BINARY_DIR}/glop/main.cpp)
-
-target_link_libraries(glopbin PRIVATE glop)
-
 # Install rules
 include(GNUInstallDirs)
 include(GenerateExportHeader)
@@ -365,3 +350,5 @@ install(
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/glop"
   COMPONENT Devel)
 
+# Build glop samples
+add_subdirectory(ortools/glop/samples)
