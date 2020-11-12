@@ -298,7 +298,7 @@ function(add_cxx_sample FILE_NAME)
   target_link_libraries(${SAMPLE_NAME} PRIVATE ortools::ortools)
 
   include(GNUInstallDirs)
-  install(TARGETS ${EXECUTABLE})
+  install(TARGETS ${SAMPLE_NAME})
 
   if(BUILD_TESTING)
     add_test(NAME cxx_${COMPONENT_NAME}_${SAMPLE_NAME} COMMAND ${SAMPLE_NAME})
