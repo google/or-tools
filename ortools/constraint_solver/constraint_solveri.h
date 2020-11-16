@@ -256,31 +256,23 @@ inline uint64 Hash1(void* const ptr) {
 
 template <class T>
 uint64 Hash1(const std::vector<T*>& ptrs) {
-  if (ptrs.empty()) {
-    return 0;
-  } else if (ptrs.size() == 1) {
-    return Hash1(ptrs[0]);
-  } else {
-    uint64 hash = Hash1(ptrs[0]);
-    for (int i = 1; i < ptrs.size(); ++i) {
-      hash = hash * i + Hash1(ptrs[i]);
-    }
-    return hash;
+  if (ptrs.empty()) return 0;
+  if (ptrs.size() == 1) return Hash1(ptrs[0]);
+  uint64 hash = Hash1(ptrs[0]);
+  for (int i = 1; i < ptrs.size(); ++i) {
+    hash = hash * i + Hash1(ptrs[i]);
   }
+  return hash;
 }
 
 inline uint64 Hash1(const std::vector<int64>& ptrs) {
-  if (ptrs.empty()) {
-    return 0;
-  } else if (ptrs.size() == 1) {
-    return Hash1(ptrs[0]);
-  } else {
-    uint64 hash = Hash1(ptrs[0]);
-    for (int i = 1; i < ptrs.size(); ++i) {
-      hash = hash * i + Hash1(ptrs[i]);
-    }
-    return hash;
+  if (ptrs.empty()) return 0;
+  if (ptrs.size() == 1) return Hash1(ptrs[0]);
+  uint64 hash = Hash1(ptrs[0]);
+  for (int i = 1; i < ptrs.size(); ++i) {
+    hash = hash * i + Hash1(ptrs[i]);
   }
+  return hash;
 }
 
 /// Reversible Immutable MultiMap class.
@@ -3000,20 +2992,12 @@ inline void FillValues(const std::vector<IntVar*>& vars,
 
 inline int64 PosIntDivUp(int64 e, int64 v) {
   DCHECK_GT(v, 0);
-  if (e >= 0) {
-    return e % v == 0 ? e / v : e / v + 1;
-  } else {
-    return e / v;
-  }
+  return (e < 0 || e % v == 0) ? e / v : e / v + 1;
 }
 
 inline int64 PosIntDivDown(int64 e, int64 v) {
   DCHECK_GT(v, 0);
-  if (e >= 0) {
-    return e / v;
-  } else {
-    return e % v == 0 ? e / v : e / v - 1;
-  }
+  return (e >= 0 || e % v == 0) ? e / v : e / v - 1;
 }
 
 std::vector<int64> ToInt64Vector(const std::vector<int>& input);
@@ -3172,6 +3156,13 @@ class PathState {
     int arc;
     bool operator<(const IndexArc& other) const { return index < other.index; }
   };
+
+  // From changed_paths_ and changed_arcs_, fill chains_ and paths_.
+  // Selection-based algorithm in O(n^2), to use for small change sets.
+  void MakeChainsFromChangedPathsAndArcsWithSelectionAlgorithm();
+  // From changed_paths_ and changed_arcs_, fill chains_ and paths_.
+  // Generic algorithm in O(std::sort(n)+n), to use for larger change sets.
+  void MakeChainsFromChangedPathsAndArcsWithGenericAlgorithm();
 
   // Copies nodes in chains of path at the end of nodes,
   // and sets those nodes' path member to value path.
