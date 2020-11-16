@@ -307,6 +307,9 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
                   "\npropagations: ", response.num_binary_propagations());
   absl::StrAppend(
       &result, "\ninteger_propagations: ", response.num_integer_propagations());
+
+  absl::StrAppend(&result, "\nrestarts: ", response.num_restarts());
+  absl::StrAppend(&result, "\nlp_iterations: ", response.num_lp_iterations());
   absl::StrAppend(&result, "\nwalltime: ", response.wall_time());
   absl::StrAppend(&result, "\nusertime: ", response.user_time());
   absl::StrAppend(&result,

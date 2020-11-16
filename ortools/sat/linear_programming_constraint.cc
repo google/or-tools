@@ -183,6 +183,11 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
 LinearProgrammingConstraint::~LinearProgrammingConstraint() {
   VLOG(1) << "Total number of simplex iterations: "
           << total_num_simplex_iterations_;
+  for (int i = 0; i < num_solves_by_status_.size(); ++i) {
+    if (num_solves_by_status_[i] == 0) continue;
+    VLOG(1) << "#" << glop::ProblemStatus(i) << " : "
+            << num_solves_by_status_[i];
+  }
 }
 
 void LinearProgrammingConstraint::AddLinearConstraint(
@@ -296,9 +301,28 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   for (int i = 0; i < integer_variables_.size(); ++i) {
     CHECK_EQ(glop::ColIndex(i), lp_data_.CreateNewVariable());
   }
+
+  // We remove fixed variables from the objective. This should help the LP
+  // scaling, but also our integer reason computation.
+  int new_size = 0;
+  objective_infinity_norm_ = 0;
   for (const auto entry : integer_objective_) {
+    const IntegerVariable var = integer_variables_[entry.first.value()];
+    if (integer_trail_->IsFixedAtLevelZero(var)) {
+      integer_objective_offset_ +=
+          entry.second * integer_trail_->LevelZeroLowerBound(var);
+      continue;
+    }
+    objective_infinity_norm_ =
+        std::max(objective_infinity_norm_, IntTypeAbs(entry.second));
+    integer_objective_[new_size++] = entry;
     lp_data_.SetObjectiveCoefficient(entry.first, ToDouble(entry.second));
   }
+  objective_infinity_norm_ =
+      std::max(objective_infinity_norm_, IntTypeAbs(integer_objective_offset_));
+  integer_objective_.resize(new_size);
+  lp_data_.SetObjectiveOffset(ToDouble(integer_objective_offset_));
+
   for (const LinearConstraintInternal& ct : integer_lp_) {
     const ConstraintIndex row = lp_data_.CreateNewConstraint();
     lp_data_.SetConstraintBounds(row, ToDouble(ct.lb), ToDouble(ct.ub));
@@ -322,13 +346,28 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
     lp_data_.SetVariableBounds(glop::ColIndex(i), lb, ub);
   }
 
-  // TODO(user): Better result if we remove fixed variables from the objective?
-  // Another option, because we have an idea of the actual optimal value as we
-  // do more and more solve, is that we can scale according to this value.
+  // TODO(user): As we have an idea of the LP optimal after the first solves,
+  // maybe we can adapt the scaling accordingly.
   glop::GlopParameters params;
   params.set_cost_scaling(glop::GlopParameters::MEAN_COST_SCALING);
   scaler_.Scale(params, &lp_data_);
   UpdateBoundsOfLpVariables();
+
+  // Set the information for the step to polish the LP basis. All our variables
+  // are integer, but for now, we just try to minimize the fractionality of the
+  // binary variables.
+  if (sat_parameters_.polish_lp_solution()) {
+    simplex_.ClearIntegralityScales();
+    for (int i = 0; i < num_vars; ++i) {
+      const IntegerVariable cp_var = integer_variables_[i];
+      const IntegerValue lb = integer_trail_->LevelZeroLowerBound(cp_var);
+      const IntegerValue ub = integer_trail_->LevelZeroUpperBound(cp_var);
+      if (lb != 0 || ub != 1) continue;
+      simplex_.SetIntegralityScale(
+          glop::ColIndex(i),
+          1.0 / scaler_.VariableScalingFactor(glop::ColIndex(i)));
+    }
+  }
 
   lp_data_.NotifyThatColumnsAreClean();
   lp_data_.AddSlackVariablesWhereNecessary(false);
@@ -623,6 +662,16 @@ bool LinearProgrammingConstraint::SolveLp() {
     VLOG(2) << "High average degeneracy: "
             << average_degeneracy_.CurrentAverage();
   }
+
+  const int status_as_int = static_cast<int>(simplex_.GetProblemStatus());
+  if (status_as_int >= num_solves_by_status_.size()) {
+    num_solves_by_status_.resize(status_as_int + 1);
+  }
+  num_solves_by_status_[status_as_int]++;
+  VLOG(2) << "lvl:" << trail_->CurrentDecisionLevel() << " "
+          << simplex_.GetProblemStatus()
+          << " iter:" << simplex_.GetNumberOfIterations()
+          << " obj:" << simplex_.GetObjectiveValue();
 
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
     lp_solution_is_set_ = true;
@@ -1996,6 +2045,7 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
   }
   CHECK(tmp_scattered_vector_.AddLinearExpressionMultiple(obj_scale,
                                                           integer_objective_));
+  CHECK(AddProductTo(-obj_scale, integer_objective_offset_, &rc_ub));
   AdjustNewLinearConstraint(&integer_multipliers, &tmp_scattered_vector_,
                             &rc_ub);
 

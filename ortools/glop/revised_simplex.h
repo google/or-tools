@@ -244,6 +244,12 @@ class RevisedSimplex {
   void ComputeBasicVariablesForState(const LinearProgram& linear_program,
                                      const BasisState& state);
 
+  // This is used in a MIP context to polish the final basis. We assume that the
+  // columns for which SetIntegralityScale() has been called correspond to
+  // integral variable once multiplied by the given factor.
+  void ClearIntegralityScales() { integrality_scale_.clear(); }
+  void SetIntegralityScale(ColIndex col, Fractional scale);
+
  private:
   // Propagates parameters_ to all the other classes that need it.
   //
@@ -550,6 +556,16 @@ class RevisedSimplex {
   // TODO(user): remove duplicate code between the two functions.
   ABSL_MUST_USE_RESULT Status DualMinimize(TimeLimit* time_limit);
 
+  // Experimental. This is useful in a MIP context. It performs a few degenerate
+  // pivot to try to mimize the fractionality of the optimal basis.
+  //
+  // We assume that the columns for which SetIntegralityScale() has been called
+  // correspond to integral variable once scaled by the given factor.
+  //
+  // I could only find slides for the reference of this "LP Solution Polishing
+  // to improve MIP Performance", Matthias Miltenberger, Zuse Institute Berlin.
+  ABSL_MUST_USE_RESULT Status Polish(TimeLimit* time_limit);
+
   // Utility functions to return the current ColIndex of the slack column with
   // given number. Note that currently, such columns are always present in the
   // internal representation of a linear program.
@@ -780,6 +796,9 @@ class RevisedSimplex {
 
   // A random number generator.
   random_engine_t random_;
+
+  // This is used by Polish().
+  DenseRow integrality_scale_;
 
   DISALLOW_COPY_AND_ASSIGN(RevisedSimplex);
 };

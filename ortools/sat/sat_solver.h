@@ -151,14 +151,14 @@ class SatSolver {
   void SetAssignmentPreference(Literal literal, double weight) {
     decision_policy_->SetAssignmentPreference(literal, weight);
   }
-  std::vector<std::pair<Literal, double> > AllPreferences() const {
+  std::vector<std::pair<Literal, double>> AllPreferences() const {
     return decision_policy_->AllPreferences();
   }
   void ResetDecisionHeuristic() {
     return decision_policy_->ResetDecisionHeuristic();
   }
   void ResetDecisionHeuristicAndSetAllPreferences(
-      const std::vector<std::pair<Literal, double> >& prefs) {
+      const std::vector<std::pair<Literal, double>>& prefs) {
     decision_policy_->ResetDecisionHeuristic();
     for (const std::pair<Literal, double> p : prefs) {
       decision_policy_->SetAssignmentPreference(p.first, p.second);
@@ -366,6 +366,11 @@ class SatSolver {
   int64 num_branches() const;
   int64 num_failures() const;
   int64 num_propagations() const;
+
+  // Note that we count the number of backtrack to level zero from a positive
+  // level. Those can corresponds to actual restarts, or conflicts that learn
+  // unit clauses or any other reason that trigger such backtrack.
+  int64 num_restarts() const;
 
   // A deterministic number that should be correlated with the time spent in
   // the Solve() function. The order of magnitude should be close to the time
@@ -687,7 +692,7 @@ class SatSolver {
   SatPropagator* last_propagator_ = nullptr;
 
   // For the old, non-model interface.
-  std::vector<std::unique_ptr<SatPropagator> > owned_propagators_;
+  std::vector<std::unique_ptr<SatPropagator>> owned_propagators_;
 
   // Keep track of all binary clauses so they can be exported.
   bool track_binary_clauses_;
@@ -730,6 +735,7 @@ class SatSolver {
   struct Counters {
     int64 num_branches = 0;
     int64 num_failures = 0;
+    int64 num_restarts = 0;
 
     // Minimization stats.
     int64 num_minimizations = 0;

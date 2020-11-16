@@ -214,6 +214,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
     return average_degeneracy_.CurrentAverage();
   }
 
+  int64 total_num_simplex_iterations() const {
+    return total_num_simplex_iterations_;
+  }
+
  private:
   // Helper methods for branching. Returns true if branching on the given
   // variable helps with more propagation or finds a conflict.
@@ -384,6 +388,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
     LinearExpression terms;
   };
   LinearExpression integer_objective_;
+  IntegerValue integer_objective_offset_ = IntegerValue(0);
   IntegerValue objective_infinity_norm_ = IntegerValue(0);
   gtl::ITIVector<glop::RowIndex, LinearConstraintInternal> integer_lp_;
   gtl::ITIVector<glop::RowIndex, IntegerValue> infinity_norms_;
@@ -505,6 +510,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Sum of all simplex iterations performed by this class. This is useful to
   // test the incrementality and compare to other solvers.
   int64 total_num_simplex_iterations_ = 0;
+
+  // Some stats on the LP statuses encountered.
+  std::vector<int64> num_solves_by_status_;
 };
 
 // A class that stores which LP propagator is associated to each variable.

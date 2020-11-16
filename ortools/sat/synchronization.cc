@@ -25,6 +25,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/time_limit.h"
@@ -520,12 +521,20 @@ void SharedResponseManager::SetStatsFromModelInternal(Model* model) {
   best_response_.set_num_branches(sat_solver->num_branches());
   best_response_.set_num_conflicts(sat_solver->num_failures());
   best_response_.set_num_binary_propagations(sat_solver->num_propagations());
+  best_response_.set_num_restarts(sat_solver->num_restarts());
   best_response_.set_num_integer_propagations(
       integer_trail == nullptr ? 0 : integer_trail->num_enqueues());
   auto* time_limit = model->Get<TimeLimit>();
   best_response_.set_wall_time(time_limit->GetElapsedTime());
   best_response_.set_deterministic_time(
       time_limit->GetElapsedDeterministicTime());
+
+  int64 num_lp_iters = 0;
+  for (const LinearProgrammingConstraint* lp :
+       *model->GetOrCreate<LinearProgrammingConstraintCollection>()) {
+    num_lp_iters += lp->total_num_simplex_iterations();
+  }
+  best_response_.set_num_lp_iterations(num_lp_iters);
 }
 
 bool SharedResponseManager::ProblemIsSolved() const {

@@ -94,6 +94,7 @@ cc_library(
         ":cp_model_loader",
         ":cp_model_utils",
         ":integer",
+        ":linear_programming_constraint",
         ":model",
         ":sat_base",
         "//ortools/base",

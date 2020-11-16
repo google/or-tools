@@ -87,6 +87,8 @@ int64 SatSolver::num_propagations() const {
   return trail_->NumberOfEnqueues() - counters_.num_branches;
 }
 
+int64 SatSolver::num_restarts() const { return counters_.num_restarts; }
+
 double SatSolver::deterministic_time() const {
   // Each of these counters mesure really basic operations. The weight are just
   // an estimate of the operation complexity. Note that these counters are never
@@ -897,6 +899,9 @@ void SatSolver::Backtrack(int target_level) {
   if (CurrentDecisionLevel() == target_level) return;
   DCHECK_GE(target_level, 0);
   DCHECK_LE(target_level, CurrentDecisionLevel());
+
+  // Any backtrack to the root from a positive one is counted as a restart.
+  if (target_level == 0) counters_.num_restarts++;
 
   // Per the SatPropagator interface, this is needed before calling Untrail.
   trail_->SetDecisionLevel(target_level);

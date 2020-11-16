@@ -321,6 +321,23 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     strategies["core"] = new_params;
   }
 
+  // It can be interesting to try core and lp.
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    new_params.set_optimize_with_core(true);
+    new_params.set_linearization_level(1);
+    strategies["core_default_lp"] = new_params;
+  }
+
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    new_params.set_optimize_with_core(true);
+    new_params.set_linearization_level(2);
+    strategies["core_max_lp"] = new_params;
+  }
+
   // Search variation.
   {
     SatParameters new_params = base_params;
@@ -333,6 +350,11 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     new_params.set_search_branching(
         SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
     strategies["quick_restart"] = new_params;
+
+    new_params.set_search_branching(
+        SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
+    new_params.set_linearization_level(0);
+    strategies["quick_restart_no_lp"] = new_params;
 
     // We force the max lp here too.
     new_params.set_linearization_level(2);
@@ -382,10 +404,14 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     names.push_back("no_lp");
     names.push_back("max_lp");
     if (cp_model.objective().vars_size() > 1) names.push_back("core");
+    // TODO(user): Experiment with core and LP.
 
     // Only add this strategy if we have enough worker left for LNS.
     if (num_workers > 8 || base_params.interleave_search()) {
       names.push_back("quick_restart");
+    }
+    if (num_workers > 10) {
+      names.push_back("quick_restart_no_lp");
     }
   } else {
     names.push_back("default_lp");
@@ -394,6 +420,9 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     names.push_back("no_lp");
     names.push_back("max_lp");
     names.push_back("quick_restart");
+    if (num_workers > 10) {
+      names.push_back("quick_restart_no_lp");
+    }
   }
 
   // Creates the diverse set of parameters with names and seed. We remove the

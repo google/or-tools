@@ -95,6 +95,9 @@ bool IntegerSumLE::Propagate() {
   // Save the current sum of fixed variables.
   if (is_registered_) {
     rev_integer_value_repository_->SaveState(&rev_lb_fixed_vars_);
+  } else {
+    rev_num_fixed_vars_ = 0;
+    rev_lb_fixed_vars_ = 0;
   }
 
   // Compute the new lower bound and update the reversible structures.

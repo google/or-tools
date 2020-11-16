@@ -562,7 +562,7 @@ enum CpSolverStatus {
 //
 // TODO(user): support returning multiple solutions. Look at the Stubby
 // streaming API as we probably wants to get them as they are found.
-// Next id: 24
+// Next id: 26
 message CpSolverResponse {
   // The status of the solve.
   CpSolverStatus status = 1;
@@ -638,6 +638,9 @@ message CpSolverResponse {
   int64 num_branches = 12;
   int64 num_binary_propagations = 13;
   int64 num_integer_propagations = 14;
+  int64 num_restarts = 24;
+  int64 num_lp_iterations = 25;
+
   double wall_time = 15;
   double user_time = 16;
   double deterministic_time = 17;

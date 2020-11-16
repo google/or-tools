@@ -282,6 +282,13 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
            problem_status_ == ProblemStatus::DUAL_FEASIBLE ||
            basis_factorization_.IsRefactorized());
 
+    // If SetIntegralityScale() was called, we preform a polish operation.
+    if (!integrality_scale_.empty() &&
+        problem_status_ == ProblemStatus::OPTIMAL) {
+      reduced_costs_.MaintainDualInfeasiblePositions(true);
+      GLOP_RETURN_IF_ERROR(Polish(time_limit));
+    }
+
     // Remove the bound and cost shifts (or perturbations).
     //
     // Note(user): Currently, we never do both at the same time, so we could
@@ -2332,6 +2339,137 @@ Status RevisedSimplex::RefactorizeBasisIfNeeded(bool* refactorize) {
     PermuteBasis();
   }
   *refactorize = false;
+  return Status::OK();
+}
+
+void RevisedSimplex::SetIntegralityScale(ColIndex col, Fractional scale) {
+  if (col >= integrality_scale_.size()) {
+    integrality_scale_.resize(col + 1, 0.0);
+  }
+  integrality_scale_[col] = scale;
+}
+
+Status RevisedSimplex::Polish(TimeLimit* time_limit) {
+  GLOP_RETURN_ERROR_IF_NULL(time_limit);
+  Cleanup update_deterministic_time_on_return(
+      [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
+
+  // Get all non-basic variables with a reduced costs close to zero.
+  // Note that because we only choose entering candidate with a cost of zero,
+  // this set will not change (modulo epsilons).
+  const DenseRow& rc = reduced_costs_.GetReducedCosts();
+  std::vector<ColIndex> candidates;
+  for (const ColIndex col : variables_info_.GetNotBasicBitRow()) {
+    if (!variables_info_.GetIsRelevantBitRow()[col]) continue;
+    if (std::abs(rc[col]) < 1e-9) candidates.push_back(col);
+  }
+
+  bool refactorize = false;
+  int num_pivots = 0;
+  Fractional total_gain = 0.0;
+  for (int i = 0; i < 10; ++i) {
+    AdvanceDeterministicTime(time_limit);
+    if (time_limit->LimitReached()) break;
+    if (num_pivots >= 5) break;
+    if (candidates.empty()) break;
+
+    // Pick a random one and remove it from the list.
+    const int index =
+        std::uniform_int_distribution<int>(0, candidates.size() - 1)(random_);
+    const ColIndex entering_col = candidates[index];
+    std::swap(candidates[index], candidates.back());
+    candidates.pop_back();
+
+    // We need the entering variable to move in the correct direction.
+    Fractional fake_rc = 1.0;
+    if (!variables_info_.GetCanDecreaseBitRow()[entering_col]) {
+      CHECK(variables_info_.GetCanIncreaseBitRow()[entering_col]);
+      fake_rc = -1.0;
+    }
+
+    // Compute the direction and by how much we can move along it.
+    GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
+    ComputeDirection(entering_col);
+    Fractional step_length;
+    RowIndex leaving_row;
+    Fractional target_bound;
+    bool local_refactorize = false;
+    GLOP_RETURN_IF_ERROR(
+        ChooseLeavingVariableRow(entering_col, fake_rc, &local_refactorize,
+                                 &leaving_row, &step_length, &target_bound));
+
+    if (local_refactorize) continue;
+    if (step_length == kInfinity || step_length == -kInfinity) continue;
+    if (std::abs(step_length) <= 1e-6) continue;
+    if (leaving_row != kInvalidRow && std::abs(direction_[leaving_row]) < 0.1) {
+      continue;
+    }
+    const Fractional step = (fake_rc > 0.0) ? -step_length : step_length;
+
+    // Evaluate if pivot reduce the fractionality of the basis.
+    //
+    // TODO(user): Count with more weight variable with a small domain, i.e.
+    // binary variable, compared to a variable in [0, 1k] ?
+    const auto get_diff = [this](ColIndex col, Fractional old_value,
+                                 Fractional new_value) {
+      if (col >= integrality_scale_.size() || integrality_scale_[col] == 0.0) {
+        return 0.0;
+      }
+      const Fractional s = integrality_scale_[col];
+      return (std::abs(new_value * s - std::round(new_value * s)) -
+              std::abs(old_value * s - std::round(old_value * s)));
+    };
+    Fractional diff = get_diff(entering_col, variable_values_.Get(entering_col),
+                               variable_values_.Get(entering_col) + step);
+    for (const auto e : direction_) {
+      const ColIndex col = basis_[e.row()];
+      const Fractional old_value = variable_values_.Get(col);
+      const Fractional new_value = old_value - e.coefficient() * step;
+      diff += get_diff(col, old_value, new_value);
+    }
+
+    // Ignore low decrease in integrality.
+    if (diff > -1e-2) continue;
+    total_gain -= diff;
+
+    // We perform the change.
+    num_pivots++;
+    variable_values_.UpdateOnPivoting(direction_, entering_col, step);
+
+    // This is a bound flip of the entering column.
+    if (leaving_row == kInvalidRow) {
+      if (step > 0.0) {
+        SetNonBasicVariableStatusAndDeriveValue(entering_col,
+                                                VariableStatus::AT_UPPER_BOUND);
+      } else if (step < 0.0) {
+        SetNonBasicVariableStatusAndDeriveValue(entering_col,
+                                                VariableStatus::AT_LOWER_BOUND);
+      }
+      reduced_costs_.SetAndDebugCheckThatColumnIsDualFeasible(entering_col);
+      continue;
+    }
+
+    // Perform the pivot.
+    const ColIndex leaving_col = basis_[leaving_row];
+    update_row_.ComputeUpdateRow(leaving_row);
+    primal_edge_norms_.UpdateBeforeBasisPivot(
+        entering_col, leaving_col, leaving_row, direction_, &update_row_);
+    reduced_costs_.UpdateBeforeBasisPivot(entering_col, leaving_row, direction_,
+                                          &update_row_);
+
+    const Fractional dir = -direction_[leaving_row] * step;
+    const bool is_degenerate =
+        (dir == 0.0) ||
+        (dir > 0.0 && variable_values_.Get(leaving_col) >= target_bound) ||
+        (dir < 0.0 && variable_values_.Get(leaving_col) <= target_bound);
+    if (!is_degenerate) {
+      variable_values_.Set(leaving_col, target_bound);
+    }
+    GLOP_RETURN_IF_ERROR(
+        UpdateAndPivot(entering_col, leaving_row, target_bound));
+  }
+
+  VLOG(1) << "Polish num_pivots: " << num_pivots << " gain:" << total_gain;
   return Status::OK();
 }
 
