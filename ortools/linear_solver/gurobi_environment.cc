@@ -305,6 +305,8 @@ bool MPSolver::GurobiIsCorrectlyInstalled() {
   GRBenv* env;
   if (GRBloadenv(&env, nullptr) != 0 || env == nullptr) return false;
 
+  GRBfreeenv(env);
+
   return true;
 }
 
