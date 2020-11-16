@@ -250,7 +250,7 @@ public class RabbitsAndPheasantsSat {
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.solve(model);
 
-    if (status == CpSolverStatus.FEASIBLE) {
+    if (status == CpSolverStatus.OPTIMAL) {
       System.out.println(solver.value(r) + " rabbits, and " + solver.value(p) + " pheasants");
     }
   }

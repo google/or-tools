@@ -154,6 +154,7 @@ if __name__ == '__main__':
 package com.google.ortools.constraintsolver.samples;
 import static java.lang.Math.abs;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.Assignment;
@@ -164,12 +165,11 @@ import java.util.logging.Logger;
 
 /** Minimal Routing example to showcase calling the solver.*/
 public class SimpleRoutingProgram {
-  static { System.loadLibrary("jniortools"); }
-
   private static final Logger logger =
       Logger.getLogger(SimpleRoutingProgram.class.getName());
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Instantiate the data problem.
     final int numLocation = 5;
     final int numVehicles = 1;

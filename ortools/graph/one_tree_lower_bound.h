@@ -259,13 +259,13 @@ class HeldWolfeCrowderEvaluator {
 // nearest neighbors as well as all the nodes for which i is a nearest
 // neighbor.
 template <typename CostFunction>
-std::set<std::pair<int, int> > NearestNeighbors(int number_of_nodes,
-                                                int number_of_neighbors,
-                                                const CostFunction& cost) {
+std::set<std::pair<int, int>> NearestNeighbors(int number_of_nodes,
+                                               int number_of_neighbors,
+                                               const CostFunction& cost) {
   using CostType = decltype(cost(0, 0));
-  std::set<std::pair<int, int> > nearest;
+  std::set<std::pair<int, int>> nearest;
   for (int i = 0; i < number_of_nodes; ++i) {
-    std::vector<std::pair<CostType, int> > neighbors;
+    std::vector<std::pair<CostType, int>> neighbors;
     neighbors.reserve(number_of_nodes - 1);
     for (int j = 0; j < number_of_nodes; ++j) {
       if (i != j) {
@@ -292,7 +292,7 @@ std::set<std::pair<int, int> > NearestNeighbors(int number_of_nodes,
 template <typename CostFunction>
 void AddArcsFromMinimumSpanningTree(int number_of_nodes,
                                     const CostFunction& cost,
-                                    std::set<std::pair<int, int> >* arcs) {
+                                    std::set<std::pair<int, int>>* arcs) {
   util::CompleteGraph<int, int> graph(number_of_nodes);
   const std::vector<int> mst =
       BuildPrimMinimumSpanningTree(graph, [&cost, &graph](int arc) {

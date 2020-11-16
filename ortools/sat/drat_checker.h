@@ -83,11 +83,11 @@ class DratChecker {
   // Returns a subproblem of the original problem that is already UNSAT. The
   // result is undefined if Check() was not previously called, or did not return
   // true.
-  std::vector<std::vector<Literal> > GetUnsatSubProblem() const;
+  std::vector<std::vector<Literal>> GetUnsatSubProblem() const;
 
   // Returns a DRAT proof that GetUnsatSubProblem() is UNSAT. The result is
   // undefined if Check() was not previously called, or did not return true.
-  std::vector<std::vector<Literal> > GetOptimizedProof() const;
+  std::vector<std::vector<Literal>> GetOptimizedProof() const;
 
  private:
   // A problem or infered clause. The literals are specified as a subrange of
@@ -213,7 +213,7 @@ class DratChecker {
   // Returns the clauses whose index is in [begin,end) which are needed for the
   // proof. The result is undefined if Check() was not previously called, or did
   // not return true.
-  std::vector<std::vector<Literal> > GetClausesNeededForProof(
+  std::vector<std::vector<Literal>> GetClausesNeededForProof(
       ClauseIndex begin, ClauseIndex end) const;
 
   void LogStatistics(int64 duration_nanos) const;
@@ -273,7 +273,7 @@ class DratChecker {
   // satisfied (in more details: if a clause c is contained in
   // 'watched_literals_[l]' for literal l, then either c is satisfied with
   // 'assignment_', or l is unassigned or assigned to true).
-  gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex> > watched_literals_;
+  gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex>> watched_literals_;
 
   // The list of clauses with only one literal. This is needed for boolean
   // constraint propagation, in addition to watched literals, because watched
@@ -331,7 +331,7 @@ enum SatFormat {
 // Prints the given clauses in the file at the given path, using the given file
 // format. Returns true iff the file was successfully written.
 bool PrintClauses(const std::string& file_path, SatFormat format,
-                  const std::vector<std::vector<Literal> >& clauses,
+                  const std::vector<std::vector<Literal>>& clauses,
                   int num_variables);
 
 }  // namespace sat

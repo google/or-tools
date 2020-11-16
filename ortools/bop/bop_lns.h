@@ -174,7 +174,7 @@ class RelationGraphBasedNeighborhood : public NeighborhoodGenerator {
 
   // TODO(user): reuse by_variable_matrix_ from the LS? Note however than we
   // don't need the coefficients here.
-  gtl::ITIVector<VariableIndex, std::vector<ConstraintIndex> > columns_;
+  gtl::ITIVector<VariableIndex, std::vector<ConstraintIndex>> columns_;
   MTRandom* random_;
 };
 

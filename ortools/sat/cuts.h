@@ -75,7 +75,7 @@ class ImpliedBoundsProcessor {
   // generation and substitute it back later.
   struct SlackInfo {
     // This slack is equal to sum of terms + offset.
-    std::vector<std::pair<IntegerVariable, IntegerValue> > terms;
+    std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
     IntegerValue offset;
 
     // The slack bounds and current lp_value.
@@ -137,7 +137,7 @@ class ImpliedBoundsProcessor {
   ImpliedBounds* implied_bounds_;
 
   // Temporary memory used by ProcessUpperBoundedConstraint().
-  mutable std::vector<std::pair<IntegerVariable, IntegerValue> > tmp_terms_;
+  mutable std::vector<std::pair<IntegerVariable, IntegerValue>> tmp_terms_;
 };
 
 // Visible for testing. Returns a function f on integers such that:
@@ -225,14 +225,14 @@ class IntegerRoundingCutHelper {
   std::vector<IntegerValue> relevant_coeffs_;
   std::vector<IntegerValue> relevant_bound_diffs_;
   std::vector<IntegerValue> divisors_;
-  std::vector<std::pair<int, IntegerValue> > adjusted_coeffs_;
+  std::vector<std::pair<int, IntegerValue>> adjusted_coeffs_;
   std::vector<IntegerValue> remainders_;
   std::vector<bool> change_sign_at_postprocessing_;
   std::vector<IntegerValue> rs_;
   std::vector<IntegerValue> best_rs_;
 
   int num_lifted_booleans_ = 0;
-  std::vector<std::pair<IntegerVariable, IntegerValue> > tmp_terms_;
+  std::vector<std::pair<IntegerVariable, IntegerValue>> tmp_terms_;
 };
 
 // Helper to find knapsack or flow cover cuts (not yet implemented).

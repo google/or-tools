@@ -110,7 +110,7 @@ inline uint64 Hash64NumWithSeed(uint64 num, uint64 c) {
 // Support a few hash<> operators, in the hash namespace.
 namespace std {
 template <class First, class Second>
-struct hash<std::pair<First, Second> > {
+struct hash<std::pair<First, Second>> {
   size_t operator()(const std::pair<First, Second>& p) const {
     size_t h1 = hash<First>()(p.first);
     size_t h2 = hash<Second>()(p.second);
@@ -123,7 +123,7 @@ struct hash<std::pair<First, Second> > {
 };
 
 template <class T, std::size_t N>
-struct hash<std::array<T, N> > {
+struct hash<std::array<T, N>> {
  public:
   size_t operator()(const std::array<T, N>& t) const {
     uint64 current = 71;

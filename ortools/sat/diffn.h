@@ -52,8 +52,8 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   SchedulingConstraintHelper& x_;
   SchedulingConstraintHelper& y_;
 
-  std::vector<absl::Span<int> > x_split_;
-  std::vector<absl::Span<int> > y_split_;
+  std::vector<absl::Span<int>> x_split_;
+  std::vector<absl::Span<int>> y_split_;
 
   std::vector<int> active_boxes_;
   std::vector<IntegerValue> cached_areas_;
@@ -122,11 +122,11 @@ class NonOverlappingRectanglesDisjunctivePropagator
 
   std::vector<int> active_boxes_;
   std::vector<IntegerValue> events_time_;
-  std::vector<std::vector<int> > events_overlapping_boxes_;
+  std::vector<std::vector<int>> events_overlapping_boxes_;
 
-  absl::flat_hash_set<absl::Span<int> > reduced_overlapping_boxes_;
-  std::vector<absl::Span<int> > boxes_to_propagate_;
-  std::vector<absl::Span<int> > disjoint_boxes_;
+  absl::flat_hash_set<absl::Span<int>> reduced_overlapping_boxes_;
+  std::vector<absl::Span<int>> boxes_to_propagate_;
+  std::vector<absl::Span<int>> disjoint_boxes_;
 
   DisjunctiveOverloadChecker overload_checker_;
   DisjunctiveDetectablePrecedences forward_detectable_precedences_;

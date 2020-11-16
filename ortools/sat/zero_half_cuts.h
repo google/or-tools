@@ -48,9 +48,9 @@ class ZeroHalfCutHelper {
                         const std::vector<IntegerValue>& upper_bounds);
   void AddOneConstraint(
       glop::RowIndex,
-      const std::vector<std::pair<glop::ColIndex, IntegerValue> >& terms,
+      const std::vector<std::pair<glop::ColIndex, IntegerValue>>& terms,
       IntegerValue lb, IntegerValue ub);
-  std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue> > >
+  std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue>>>
   InterestingCandidates(ModelRandomGenerator* random);
 
   // Visible for testing.
@@ -63,7 +63,7 @@ class ZeroHalfCutHelper {
   // coefficient modulo 2, so only the positions of the ones.
   struct CombinationOfRows {
     // How this row was formed from the initial problem constraints.
-    std::vector<std::pair<glop::RowIndex, IntegerValue> > multipliers;
+    std::vector<std::pair<glop::RowIndex, IntegerValue>> multipliers;
 
     // The index of the odd coefficient of this combination.
     std::vector<int> cols;
@@ -119,7 +119,7 @@ class ZeroHalfCutHelper {
   // Note that as we combine rows, we never move their indices. So after initial
   // creation rows_ will always have the same size.
   std::vector<CombinationOfRows> rows_;
-  std::vector<std::vector<int> > col_to_rows_;
+  std::vector<std::vector<int>> col_to_rows_;
   std::vector<int> singleton_cols_;
 
   // Temporary vector used by SymmetricDifference().

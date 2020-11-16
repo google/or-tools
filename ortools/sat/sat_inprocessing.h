@@ -43,7 +43,7 @@ struct PostsolveClauses {
   void AddClauseWithSpecialLiteral(Literal literal,
                                    absl::Span<const Literal> clause);
 
-  std::deque<std::vector<Literal> > clauses;
+  std::deque<std::vector<Literal>> clauses;
 };
 
 class StampingSimplifier;
@@ -284,7 +284,7 @@ class BlockedClauseSimplifier {
   // and we do not shrink it as we remove blocked clauses.
   DEFINE_INT_TYPE(ClauseIndex, int32);
   gtl::ITIVector<ClauseIndex, SatClause*> clauses_;
-  gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex> > literal_to_clauses_;
+  gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex>> literal_to_clauses_;
 };
 
 class BoundedVariableElimination {
@@ -366,7 +366,7 @@ class BoundedVariableElimination {
   // clauses.
   DEFINE_INT_TYPE(ClauseIndex, int32);
   gtl::ITIVector<ClauseIndex, SatClause*> clauses_;
-  gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex> > literal_to_clauses_;
+  gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex>> literal_to_clauses_;
   gtl::ITIVector<LiteralIndex, int> literal_to_num_clauses_;
 };
 

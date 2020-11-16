@@ -90,7 +90,7 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
     int head;
   };
   std::vector<Literal> watch_index_to_literal_;
-  std::vector<std::vector<Arc> > watch_index_to_arcs_;
+  std::vector<std::vector<Arc>> watch_index_to_arcs_;
 
   // Index in trail_ up to which we propagated all the assigned Literals.
   int propagation_trail_index_ = 0;
@@ -130,7 +130,7 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
 // so this can be used for facility location problems.
 class CircuitCoveringPropagator : PropagatorInterface, ReversibleInterface {
  public:
-  CircuitCoveringPropagator(std::vector<std::vector<Literal> > graph,
+  CircuitCoveringPropagator(std::vector<std::vector<Literal>> graph,
                             const std::vector<int>& distinguished_nodes,
                             Model* model);
 
@@ -146,14 +146,14 @@ class CircuitCoveringPropagator : PropagatorInterface, ReversibleInterface {
   void FillFixedPathInReason(int start, int end, std::vector<Literal>* reason);
 
   // Input data.
-  const std::vector<std::vector<Literal> > graph_;
+  const std::vector<std::vector<Literal>> graph_;
   const int num_nodes_;
   std::vector<bool> node_is_distinguished_;
 
   // SAT incremental state.
   Trail* trail_;
-  std::vector<std::pair<int, int> > watch_index_to_arc_;
-  std::vector<std::pair<int, int> > fixed_arcs_;
+  std::vector<std::pair<int, int>> watch_index_to_arc_;
+  std::vector<std::pair<int, int>> fixed_arcs_;
   std::vector<int> level_ends_;
 
   // Used in Propagate() to represent paths and circuits.
@@ -181,9 +181,9 @@ std::function<void(Model*)> SubcircuitConstraint(
 
 // TODO(user): Change to a sparse API like for the function above.
 std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
-    const std::vector<std::vector<Literal> >& graph);
+    const std::vector<std::vector<Literal>>& graph);
 std::function<void(Model*)> CircuitCovering(
-    const std::vector<std::vector<Literal> >& graph,
+    const std::vector<std::vector<Literal>>& graph,
     const std::vector<int>& distinguished_nodes);
 
 }  // namespace sat

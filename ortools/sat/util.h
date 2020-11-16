@@ -91,7 +91,7 @@ inline void RandomizeDecisionHeuristic(URBG* random,
       polarity_d->value(absl::Uniform(*random, 0, polarity_d->value_count()))
           ->number()));
 #endif  // __PORTABLE_PLATFORM__
-        // Other random parameters.
+  // Other random parameters.
   parameters->set_use_phase_saving(absl::Bernoulli(*random, 0.5));
   parameters->set_random_polarity_ratio(absl::Bernoulli(*random, 0.5) ? 0.01
                                                                       : 0.0);
@@ -179,7 +179,7 @@ class Percentile {
 //
 // This method is exposed for testing purposes.
 void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
-                    std::vector<std::vector<int64> >* tuples);
+                    std::vector<std::vector<int64>>* tuples);
 
 }  // namespace sat
 }  // namespace operations_research

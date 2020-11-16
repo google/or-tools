@@ -256,7 +256,7 @@ void RegisterConstraintHandler(ScipConstraintHandler<ConstraintData>* handler,
                                SCIP* scip) {
   internal::AddConstraintHandlerImpl(
       handler->description(),
-      absl::make_unique<internal::ScipCallbackRunnerImpl<ConstraintData> >(
+      absl::make_unique<internal::ScipCallbackRunnerImpl<ConstraintData>>(
           handler),
       scip);
 }

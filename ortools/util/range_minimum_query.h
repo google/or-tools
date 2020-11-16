@@ -42,7 +42,7 @@
 #include "ortools/util/bitset.h"
 
 namespace operations_research {
-template <typename T, typename Compare = std::less<T> >
+template <typename T, typename Compare = std::less<T>>
 class RangeMinimumQuery {
  public:
   explicit RangeMinimumQuery(std::vector<T> array);
@@ -56,7 +56,7 @@ class RangeMinimumQuery {
 
  private:
   // cache_[k][i] = min(arr, i, i+2^k).
-  std::vector<std::vector<T> > cache_;
+  std::vector<std::vector<T>> cache_;
   Compare cmp_;
 
   DISALLOW_COPY_AND_ASSIGN(RangeMinimumQuery);
@@ -64,7 +64,7 @@ class RangeMinimumQuery {
 
 // RangeMinimumIndexQuery is similar to RangeMinimumQuery, but
 // GetMinimumIndexFromRange returns the index for which the minimum is attained.
-template <typename T, typename Compare = std::less<T> >
+template <typename T, typename Compare = std::less<T>>
 class RangeMinimumIndexQuery {
  public:
   explicit RangeMinimumIndexQuery(std::vector<T> array);

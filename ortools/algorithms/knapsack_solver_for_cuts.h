@@ -368,7 +368,7 @@ class KnapsackSolverForCuts {
   int GetNextItemId() const { return propagator_.GetNextItemId(); }
 
   KnapsackPropagatorForCuts propagator_;
-  std::vector<std::unique_ptr<KnapsackSearchNodeForCuts> > search_nodes_;
+  std::vector<std::unique_ptr<KnapsackSearchNodeForCuts>> search_nodes_;
   KnapsackStateForCuts state_;
   double best_solution_profit_;
   std::vector<bool> best_solution_;

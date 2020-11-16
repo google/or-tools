@@ -30,7 +30,7 @@ namespace sat {
 // representation of the) problem variables.
 void FindCpModelSymmetries(
     const CpModelProto& problem,
-    std::vector<std::unique_ptr<SparsePermutation> >* generators,
+    std::vector<std::unique_ptr<SparsePermutation>>* generators,
     double time_limit_seconds = std::numeric_limits<double>::infinity());
 
 }  // namespace sat

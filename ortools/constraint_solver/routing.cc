@@ -2114,6 +2114,52 @@ class RoutingModelInspector : public ModelVisitor {
   std::vector<int64> ends_argument_;
 };
 
+void RoutingModel::DetectImplicitPickupAndDeliveries() {
+  std::vector<int> non_pickup_delivery_nodes;
+  for (int node = 0; node < Size(); ++node) {
+    if (!IsStart(node) && GetPickupIndexPairs(node).empty() &&
+        GetDeliveryIndexPairs(node).empty()) {
+      non_pickup_delivery_nodes.push_back(node);
+    }
+  }
+  // Needs to be sorted for stability.
+  std::set<std::pair<int64, int64>> implicit_pickup_deliveries;
+  for (const RoutingDimension* const dimension : dimensions_) {
+    if (dimension->class_evaluators_.size() != 1) {
+      continue;
+    }
+    const TransitCallback1& transit =
+        UnaryTransitCallbackOrNull(dimension->class_evaluators_[0]);
+    if (transit == nullptr) continue;
+    absl::flat_hash_map<int64, std::vector<int64>> nodes_by_positive_demand;
+    absl::flat_hash_map<int64, std::vector<int64>> nodes_by_negative_demand;
+    for (int node : non_pickup_delivery_nodes) {
+      const int64 demand = transit(node);
+      if (demand > 0) {
+        nodes_by_positive_demand[demand].push_back(node);
+      } else if (demand < 0) {
+        nodes_by_negative_demand[-demand].push_back(node);
+      }
+    }
+    for (const auto& [demand, positive_nodes] : nodes_by_positive_demand) {
+      const std::vector<int64>* const negative_nodes =
+          gtl::FindOrNull(nodes_by_negative_demand, demand);
+      if (negative_nodes != nullptr) {
+        for (int64 positive_node : positive_nodes) {
+          for (int64 negative_node : *negative_nodes) {
+            implicit_pickup_deliveries.insert({positive_node, negative_node});
+          }
+        }
+      }
+    }
+  }
+  implicit_pickup_delivery_pairs_without_alternatives_.clear();
+  for (auto [pickup, delivery] : implicit_pickup_deliveries) {
+    implicit_pickup_delivery_pairs_without_alternatives_.emplace_back(
+        std::vector<int64>({pickup}), std::vector<int64>({delivery}));
+  }
+}
+
 void RoutingModel::CloseModelWithParameters(
     const RoutingSearchParameters& parameters) {
   std::string error = FindErrorInRoutingSearchParameters(parameters);
@@ -2493,6 +2539,8 @@ void RoutingModel::CloseModelWithParameters(
           nodes_are_selected->Var(), cumul_difference_is_ge_offset));
     }
   }
+
+  DetectImplicitPickupAndDeliveries();
 
   // Store the local/global cumul optimizers, along with their offsets.
   StoreDimensionCumulOptimizers(parameters);
@@ -4459,6 +4507,15 @@ LocalSearchOperator* RoutingModel::CreateInsertionOperator() {
              solver_.get(), nexts_,
              CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
              vehicle_start_class_callback_, pickup_delivery_pairs_),
+         insertion_operator});
+  }
+  if (!implicit_pickup_delivery_pairs_without_alternatives_.empty()) {
+    insertion_operator = solver_->ConcatenateOperators(
+        {MakePairActive(
+             solver_.get(), nexts_,
+             CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
+             vehicle_start_class_callback_,
+             implicit_pickup_delivery_pairs_without_alternatives_),
          insertion_operator});
   }
   return insertion_operator;

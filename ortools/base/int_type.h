@@ -242,9 +242,9 @@ class IntType {
   constexpr const ThisType operator-() const { return ThisType(-value_); }
   constexpr const ThisType operator~() const { return ThisType(~value_); }
 
-// -- ASSIGNMENT OPERATORS ---------------------------------------------------
-// We support the following assignment operators: =, +=, -=, *=, /=, <<=, >>=
-// and %= for both ThisType and ValueType.
+  // -- ASSIGNMENT OPERATORS ---------------------------------------------------
+  // We support the following assignment operators: =, +=, -=, *=, /=, <<=, >>=
+  // and %= for both ThisType and ValueType.
 #define INT_TYPE_ASSIGNMENT_OP(op)                   \
   ThisType& operator op(const ThisType& arg_value) { \
     value_ op arg_value.value();                     \

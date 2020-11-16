@@ -93,13 +93,13 @@ class AllDifferentConstraint : PropagatorInterface {
   int64 num_all_values_;
   std::vector<int64> variable_min_value_;
   std::vector<int64> variable_max_value_;
-  std::vector<std::vector<LiteralIndex> > variable_literal_index_;
+  std::vector<std::vector<LiteralIndex>> variable_literal_index_;
 
   // Internal state of MakeAugmentingPath().
   // value_to_variable_ and variable_to_value_ represent the current assignment;
   // -1 means not assigned. Otherwise,
   // variable_to_value_[var] = value <=> value_to_variable_[value] = var.
-  std::vector<std::vector<int> > successor_;
+  std::vector<std::vector<int>> successor_;
   std::vector<bool> value_visited_;
   std::vector<bool> variable_visited_;
   std::vector<int> value_to_variable_;
@@ -124,7 +124,7 @@ class AllDifferentConstraint : PropagatorInterface {
   // part in the alternating cycle, and filter with only the SCC decomposition.
   // When num_variables_ == num_all_values_, the dummy node is useless,
   // we add it anyway to simplify the code.
-  std::vector<std::vector<int> > residual_graph_successors_;
+  std::vector<std::vector<int>> residual_graph_successors_;
   std::vector<int> component_number_;
 
   Trail* trail_;

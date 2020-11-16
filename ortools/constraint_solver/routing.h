@@ -737,6 +737,14 @@ class RoutingModel {
   GetPickupAndDeliveryDisjunctions() const {
     return pickup_delivery_disjunctions_;
   }
+  /// Returns implicit pickup and delivery pairs currently in the model.
+  /// Pairs are implicit if they are not linked by a pickup and delivery
+  /// constraint but that for a given unary dimension, the first element of the
+  /// pair has a positive demand d, and the second element has a demand of -d.
+  const IndexPairs& GetImplicitUniquePickupAndDeliveryPairs() const {
+    DCHECK(closed_);
+    return implicit_pickup_delivery_pairs_without_alternatives_;
+  }
 #endif  // SWIG
   /// Set the node visit types and incompatibilities/requirements between the
   /// types (see below).
@@ -1654,6 +1662,12 @@ class RoutingModel {
       const RoutingSearchParameters& search_parameters) const;
   GetTabuVarsCallback tabu_var_callback_;
 
+  // Detects implicit pickup delivery pairs. These pairs are
+  // non-pickup/delivery pairs for which there exists a unary dimension such
+  // that the demand d of the implicit pickup is positive and the demand of the
+  // implicit delivery is equal to -d.
+  void DetectImplicitPickupAndDeliveries();
+
   int GetVehicleStartClass(int64 start) const;
 
   void InitSameVehicleGroups(int number_of_groups) {
@@ -1744,6 +1758,7 @@ class RoutingModel {
 #endif  // SWIG
   /// Pickup and delivery
   IndexPairs pickup_delivery_pairs_;
+  IndexPairs implicit_pickup_delivery_pairs_without_alternatives_;
   std::vector<std::pair<DisjunctionIndex, DisjunctionIndex> >
       pickup_delivery_disjunctions_;
   // clang-format off
@@ -3040,6 +3055,11 @@ class RoutingFilteredHeuristic : public IntVarFilteredHeuristic {
   void MakeDisjunctionNodesUnperformed(int64 node);
   /// Make all unassigned nodes unperformed.
   void MakeUnassignedNodesUnperformed();
+  /// Make all partially performed pickup and delivery pairs unperformed. A
+  /// pair is partially unperformed if one element of the pair has one of its
+  /// alternatives performed in the solution and the other has no alternatives
+  /// in the solution or none performed.
+  void MakePartiallyPerformedPairsUnperformed();
 
  protected:
   bool StopSearch() override { return model_->CheckLimit(); }

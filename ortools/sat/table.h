@@ -30,14 +30,14 @@ namespace sat {
 // tuples. All the tuples must have the same size as var.size(), this is
 // Checked.
 void AddTableConstraint(absl::Span<const IntegerVariable> vars,
-                        std::vector<std::vector<int64> > tuples, Model* model);
+                        std::vector<std::vector<int64>> tuples, Model* model);
 
 // Enforces that none of the given tuple appear.
 //
 // TODO(user): we could propagate more than what we currently do which is simply
 // adding one clause per tuples.
 void AddNegatedTableConstraint(absl::Span<const IntegerVariable> vars,
-                               std::vector<std::vector<int64> > tuples,
+                               std::vector<std::vector<int64>> tuples,
                                Model* model);
 
 // Enforces that exactly one literal in line_literals is true, and that
@@ -45,7 +45,7 @@ void AddNegatedTableConstraint(absl::Span<const IntegerVariable> vars,
 // This constraint assumes that exactly one literal per column of the
 // literal_tuples matrix is true.
 std::function<void(Model*)> LiteralTableConstraint(
-    const std::vector<std::vector<Literal> >& literal_tuples,
+    const std::vector<std::vector<Literal>>& literal_tuples,
     const std::vector<Literal>& line_literals);
 
 // Given an automaton defined by a set of 3-tuples:
@@ -62,7 +62,7 @@ std::function<void(Model*)> LiteralTableConstraint(
 // See the test for some examples.
 std::function<void(Model*)> TransitionConstraint(
     const std::vector<IntegerVariable>& vars,
-    const std::vector<std::vector<int64> >& automaton, int64 initial_state,
+    const std::vector<std::vector<int64>>& automaton, int64 initial_state,
     const std::vector<int64>& final_states);
 
 }  // namespace sat

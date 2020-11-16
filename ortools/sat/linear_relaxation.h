@@ -27,7 +27,7 @@ namespace sat {
 
 struct LinearRelaxation {
   std::vector<LinearConstraint> linear_constraints;
-  std::vector<std::vector<Literal> > at_most_ones;
+  std::vector<std::vector<Literal>> at_most_ones;
   std::vector<CutGenerator> cut_generators;
 };
 

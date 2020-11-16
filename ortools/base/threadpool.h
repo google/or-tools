@@ -35,7 +35,7 @@ class ThreadPool {
 
  private:
   const int num_workers_;
-  std::list<std::function<void()> > tasks_;
+  std::list<std::function<void()>> tasks_;
   std::mutex mutex_;
   std::condition_variable condition_;
   std::condition_variable capacity_condition_;

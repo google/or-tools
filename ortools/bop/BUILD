@@ -168,7 +168,6 @@ cc_library(
         ":bop_solution",
         ":bop_types",
         ":bop_util",
-        "@com_google_absl//absl/status:statusor",
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:int_type",
@@ -177,6 +176,7 @@ cc_library(
         "//ortools/sat:boolean_problem",
         "//ortools/sat:boolean_problem_cc_proto",
         "//ortools/sat:sat_solver",
+        "@com_google_absl//absl/status:statusor",
     ],
 )
 
@@ -194,11 +194,11 @@ cc_library(
         ":bop_types",
         ":bop_util",
         ":complete_optimizer",
-        "@com_google_absl//absl/status:statusor",
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
+        "@com_google_absl//absl/status:statusor",
         "//ortools/base:stl_util",
         "//ortools/glop:lp_solver",
         #"//ortools/glop",

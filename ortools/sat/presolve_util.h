@@ -58,7 +58,7 @@ class DomainDeductions {
   // TODO(user): We could probably be even more efficient. We could also
   // compute exactly what clauses need to be "waked up" as new deductions are
   // added.
-  std::vector<std::pair<int, Domain> > ProcessClause(
+  std::vector<std::pair<int, Domain>> ProcessClause(
       absl::Span<const int> clause);
 
   // Optimization. Any following ProcessClause() will be fast if no more
@@ -79,7 +79,7 @@ class DomainDeductions {
   std::vector<int> tmp_num_occurrences_;
 
   SparseBitset<Index> something_changed_;
-  gtl::ITIVector<Index, std::vector<int> > enforcement_to_vars_;
+  gtl::ITIVector<Index, std::vector<int>> enforcement_to_vars_;
   absl::flat_hash_map<std::pair<Index, int>, Domain> deductions_;
 };
 
