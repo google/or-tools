@@ -191,6 +191,48 @@ bool IntegerSumLE::Propagate() {
   return true;
 }
 
+bool IntegerSumLE::PropagateAtLevelZero() {
+  // TODO(user): Deal with enforcements. It is just a bit of code to read the
+  // value of the literals at level zero.
+  if (!enforcement_literals_.empty()) return true;
+
+  // Compute the new lower bound and update the reversible structures.
+  IntegerValue min_activity = IntegerValue(0);
+  const int num_vars = vars_.size();
+  for (int i = 0; i < num_vars; ++i) {
+    const IntegerVariable var = vars_[i];
+    const IntegerValue coeff = coeffs_[i];
+    const IntegerValue lb = integer_trail_->LevelZeroLowerBound(var);
+    const IntegerValue ub = integer_trail_->LevelZeroUpperBound(var);
+    max_variations_[i] = (ub - lb) * coeff;
+    min_activity += lb * coeff;
+  }
+  time_limit_->AdvanceDeterministicTime(static_cast<double>(num_vars * 1e-9));
+
+  // Conflict?
+  const IntegerValue slack = upper_bound_ - min_activity;
+  if (slack < 0) {
+    return integer_trail_->ReportConflict({}, {});
+  }
+
+  // The lower bound of all the variables except one can be used to update the
+  // upper bound of the last one.
+  for (int i = 0; i < num_vars; ++i) {
+    if (max_variations_[i] <= slack) continue;
+
+    const IntegerVariable var = vars_[i];
+    const IntegerValue coeff = coeffs_[i];
+    const IntegerValue div = slack / coeff;
+    const IntegerValue new_ub = integer_trail_->LevelZeroLowerBound(var) + div;
+    if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(var, new_ub), {},
+                                 {})) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 void IntegerSumLE::RegisterWith(GenericLiteralWatcher* watcher) {
   is_registered_ = true;
   const int id = watcher->Register(this);

@@ -65,6 +65,11 @@ class IntegerSumLE : public PropagatorInterface {
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
+  // Same as Propagate() but only consider current root level bounds. This is
+  // mainly useful for the LP propagator since it can find relevant optimal
+  // really late in the search tree.
+  bool PropagateAtLevelZero();
+
  private:
   // Fills integer_reason_ with all the current lower_bounds. The real
   // explanation may require removing one of them, but as an optimization, we

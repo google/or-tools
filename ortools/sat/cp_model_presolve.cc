@@ -315,6 +315,28 @@ bool CpModelPresolver::PresolveBoolAnd(ConstraintProto* ct) {
     }
     context_->UpdateRuleStats("bool_and: fixed literals");
   }
+
+  // If a variable can move freely in one direction except for this constraint,
+  // we can make it an equality.
+  //
+  // TODO(user): also consider literal on the other side of the =>.
+  if (ct->enforcement_literal().size() == 1 &&
+      ct->bool_and().literals().size() == 1) {
+    const int enforcement = ct->enforcement_literal(0);
+    if (context_->VariableWithCostIsUniqueAndRemovable(enforcement)) {
+      int var = PositiveRef(enforcement);
+      int64 obj_coeff = gtl::FindOrDie(context_->ObjectiveMap(), var);
+      if (!RefIsPositive(enforcement)) obj_coeff = -obj_coeff;
+
+      // The other case where the constraint is redundant is treated elsewhere.
+      if (obj_coeff < 0) {
+        context_->UpdateRuleStats("bool_and: dual equality.");
+        context_->StoreBooleanEqualityRelation(enforcement,
+                                               ct->bool_and().literals(0));
+      }
+    }
+  }
+
   return changed;
 }
 
@@ -958,6 +980,39 @@ void CpModelPresolver::DivideLinearByGcd(ConstraintProto* ct) {
     FillDomainInProto(rhs.InverseMultiplicationBy(gcd), ct->mutable_linear());
     if (ct->linear().domain_size() == 0) {
       return (void)MarkConstraintAsFalse(ct);
+    }
+  }
+}
+
+void CpModelPresolver::PresolveLinearEqualityModuloTwo(ConstraintProto* ct) {
+  if (!ct->enforcement_literal().empty()) return;
+  if (ct->linear().domain().size() != 2) return;
+  if (ct->linear().domain(0) != ct->linear().domain(1)) return;
+  if (context_->ModelIsUnsat()) return;
+
+  // Any equality must be true modulo n.
+  // The case modulo 2 is interesting if the non-zero terms are Booleans.
+  std::vector<int> literals;
+  for (int i = 0; i < ct->linear().vars().size(); ++i) {
+    const int64 coeff = ct->linear().coeffs(i);
+    const int ref = ct->linear().vars(i);
+    if (coeff % 2 == 0) continue;
+    if (!context_->CanBeUsedAsLiteral(ref)) return;
+    literals.push_back(PositiveRef(ref));
+    if (literals.size() > 2) return;
+  }
+  if (literals.size() == 1) {
+    const int64 rhs = std::abs(ct->linear().domain(0));
+    context_->UpdateRuleStats("linear: only one odd Boolean in equality");
+    if (!context_->IntersectDomainWith(literals[0], Domain(rhs % 2))) return;
+  } else if (literals.size() == 2) {
+    const int64 rhs = std::abs(ct->linear().domain(0));
+    context_->UpdateRuleStats("linear: only two odd Booleans in equality");
+    if (rhs % 2) {
+      context_->StoreBooleanEqualityRelation(literals[0],
+                                             NegatedRef(literals[1]));
+    } else {
+      context_->StoreBooleanEqualityRelation(literals[0], literals[1]);
     }
   }
 }
@@ -4057,6 +4112,7 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
             PresolveSmallLinear(ct)) {
           context_->UpdateConstraintVariableUsage(c);
         }
+        PresolveLinearEqualityModuloTwo(ct);
       }
       return false;
     }

@@ -691,6 +691,13 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
       heuristics.policy_index = (heuristics.policy_index + 1) % num_policies;
     }
 
+    // If we pushed root level deductions, we restart to incorporate them.
+    if (integer_trail->HasPendingRootLevelDeduction()) {
+      if (!sat_solver->RestoreSolverToAssumptionLevel()) {
+        return sat_solver->UnsatStatus();
+      }
+    }
+
     if (sat_solver->CurrentDecisionLevel() == 0) {
       if (!implied_bounds->EnqueueNewDeductions()) {
         return SatSolver::INFEASIBLE;

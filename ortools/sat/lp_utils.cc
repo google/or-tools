@@ -179,6 +179,59 @@ double GetIntegralityMultiplier(const MPModelProto& mp_model,
 
 }  // namespace
 
+void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model) {
+  const int num_variables = mp_model->variable_size();
+
+  // Compute for each variable its current maximum magnitude. Note that we will
+  // only scale variable with a coefficient >= 1, so it is safe to use this
+  // bound.
+  std::vector<double> max_bounds(num_variables);
+  for (int i = 0; i < num_variables; ++i) {
+    double value = std::abs(mp_model->variable(i).lower_bound());
+    value = std::max(value, std::abs(mp_model->variable(i).upper_bound()));
+    value = std::min(value, params.mip_max_bound());
+    max_bounds[i] = value;
+  }
+
+  // We want the maximum absolute error while setting coefficients to zero to
+  // not exceed our mip wanted precision. So for a binary variable we might set
+  // to zero coefficient around 1e-7. But for large domain, we need lower coeff
+  // than that, around 1e-12 with the default params.mip_max_bound(). This also
+  // depends on the size of the constraint.
+  int64 num_removed = 0;
+  double largest_removed = 0.0;
+  const int num_constraints = mp_model->constraint_size();
+  for (int c = 0; c < num_constraints; ++c) {
+    MPConstraintProto* ct = mp_model->mutable_constraint(c);
+    int new_size = 0;
+    const int size = ct->var_index().size();
+    if (size == 0) continue;
+    const double threshold =
+        params.mip_wanted_precision() / static_cast<double>(size);
+    for (int i = 0; i < size; ++i) {
+      const int var = ct->var_index(i);
+      const double coeff = ct->coefficient(i);
+      if (std::abs(coeff) * max_bounds[var] < threshold) {
+        largest_removed = std::max(largest_removed, std::abs(coeff));
+        continue;
+      }
+      ct->set_var_index(new_size, var);
+      ct->set_coefficient(new_size, coeff);
+      ++new_size;
+    }
+    num_removed += size - new_size;
+    ct->mutable_var_index()->Truncate(new_size);
+    ct->mutable_coefficient()->Truncate(new_size);
+  }
+
+  const bool log_info = VLOG_IS_ON(1) || params.log_search_progress();
+  if (log_info && num_removed > 0) {
+    LOG(INFO) << "Removed " << num_removed
+              << " near zero terms with largest magnitude of "
+              << largest_removed << ".";
+  }
+}
+
 std::vector<double> DetectImpliedIntegers(bool log_info,
                                           MPModelProto* mp_model) {
   const int num_variables = mp_model->variable_size();
@@ -829,12 +882,12 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
 
     // Display the objective error/scaling.
     LOG_IF(INFO, log_info)
-        << "objective coefficient relative error: " << relative_coeff_error
+        << "Objective coefficient relative error: " << relative_coeff_error
         << (relative_coeff_error > params.mip_check_precision() ? " [IMPRECISE]"
                                                                 : "");
-    LOG_IF(INFO, log_info) << "objective worst-case absolute error: "
+    LOG_IF(INFO, log_info) << "Objective worst-case absolute error: "
                            << scaled_sum_error / scaling_factor;
-    LOG_IF(INFO, log_info) << "objective scaling factor: "
+    LOG_IF(INFO, log_info) << "Objective scaling factor: "
                            << scaling_factor / gcd;
 
     // Note that here we set the scaling factor for the inverse operation of

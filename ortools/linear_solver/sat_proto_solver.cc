@@ -110,6 +110,9 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
     return response;
   }
 
+  // We need to do that before the automatic detection of integers.
+  RemoveNearZeroTerms(params, mp_model);
+
   const int num_variables = mp_model->variable_size();
   std::vector<double> var_scaling(num_variables, 1.0);
   if (params.mip_automatically_scale_variables()) {

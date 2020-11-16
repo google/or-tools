@@ -523,6 +523,19 @@ bool IntegerTrail::Propagate(Trail* trail) {
       if (!Enqueue(i_lit, {}, {})) return false;
     }
     encoder_->ClearNewlyFixedIntegerLiterals();
+
+    for (const IntegerLiteral i_lit : integer_literal_to_fix_) {
+      if (IsCurrentlyIgnored(i_lit.var)) continue;
+      if (!Enqueue(i_lit, {}, {})) return false;
+    }
+    integer_literal_to_fix_.clear();
+
+    for (const Literal lit : literal_to_fix_) {
+      if (trail_->Assignment().LiteralIsFalse(lit)) return false;
+      if (trail_->Assignment().LiteralIsTrue(lit)) continue;
+      trail_->EnqueueWithUnitReason(lit);
+    }
+    literal_to_fix_.clear();
   }
 
   // Process all the "associated" literals and Enqueue() the corresponding
@@ -1073,6 +1086,12 @@ void IntegerTrail::EnqueueLiteralInternal(
     return;
   }
 
+  // If we are fixing something at a positive level, remember it.
+  if (!integer_search_levels_.empty() && integer_reason.empty() &&
+      literal_reason.empty() && lazy_reason == nullptr) {
+    literal_to_fix_.push_back(literal);
+  }
+
   const int trail_index = trail_->Index();
   if (trail_index >= boolean_trail_index_to_integer_one_.size()) {
     boolean_trail_index_to_integer_one_.resize(trail_index + 1);
@@ -1278,6 +1297,12 @@ bool IntegerTrail::EnqueueInternal(
   // Notify the watchers.
   for (SparseBitset<IntegerVariable>* bitset : watchers_) {
     bitset->Set(i_lit.var);
+  }
+
+  if (!integer_search_levels_.empty() && integer_reason.empty() &&
+      literal_reason.empty() && lazy_reason == nullptr &&
+      trail_index_with_same_reason >= integer_trail_.size()) {
+    integer_literal_to_fix_.push_back(i_lit);
   }
 
   // Enqueue the strongest associated Boolean literal implied by this one.

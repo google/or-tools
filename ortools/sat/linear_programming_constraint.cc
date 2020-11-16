@@ -778,8 +778,8 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
       tmp_var_ubs_.push_back(info.ub);
     } else {
       tmp_lp_values_.push_back(expanded_lp_solution_[var]);
-      tmp_var_lbs_.push_back(integer_trail_->LowerBound(var));
-      tmp_var_ubs_.push_back(integer_trail_->UpperBound(var));
+      tmp_var_lbs_.push_back(integer_trail_->LevelZeroLowerBound(var));
+      tmp_var_ubs_.push_back(integer_trail_->LevelZeroUpperBound(var));
     }
   }
 
@@ -956,7 +956,6 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
 }
 
 void LinearProgrammingConstraint::AddCGCuts() {
-  CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   const RowIndex num_rows = lp_data_.num_constraints();
   for (RowIndex row(0); row < num_rows; ++row) {
     ColIndex basis_col = simplex_.GetBasis(row);
@@ -1045,8 +1044,6 @@ IntegerValue GetCoeff(ColIndex col, const ListOfTerms& terms) {
 }  // namespace
 
 void LinearProgrammingConstraint::AddMirCuts() {
-  CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
-
   // Heuristic to generate MIR_n cuts by combining a small number of rows. This
   // works greedily and follow more or less the MIR cut description in the
   // literature. We have a current cut, and we add one more row to it while
@@ -1162,8 +1159,8 @@ void LinearProgrammingConstraint::AddMirCuts() {
 
         const IntegerVariable var = integer_variables_[col.value()];
         const double lp_value = expanded_lp_solution_[var];
-        const double lb = ToDouble(integer_trail_->LowerBound(var));
-        const double ub = ToDouble(integer_trail_->UpperBound(var));
+        const double lb = ToDouble(integer_trail_->LevelZeroLowerBound(var));
+        const double ub = ToDouble(integer_trail_->LevelZeroUpperBound(var));
         const double bound_distance = std::min(ub - lp_value, lp_value - lb);
         if (bound_distance > 1e-2) {
           weights.push_back(bound_distance);
@@ -1285,7 +1282,6 @@ void LinearProgrammingConstraint::AddMirCuts() {
 }
 
 void LinearProgrammingConstraint::AddZeroHalfCuts() {
-  CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (time_limit_->LimitReached()) return;
 
   tmp_lp_values_.clear();
@@ -1293,8 +1289,8 @@ void LinearProgrammingConstraint::AddZeroHalfCuts() {
   tmp_var_ubs_.clear();
   for (const IntegerVariable var : integer_variables_) {
     tmp_lp_values_.push_back(expanded_lp_solution_[var]);
-    tmp_var_lbs_.push_back(integer_trail_->LowerBound(var));
-    tmp_var_ubs_.push_back(integer_trail_->UpperBound(var));
+    tmp_var_lbs_.push_back(integer_trail_->LevelZeroLowerBound(var));
+    tmp_var_ubs_.push_back(integer_trail_->LevelZeroUpperBound(var));
   }
 
   // TODO(user): See if it make sense to try to use implied bounds there.
@@ -1642,8 +1638,9 @@ bool LinearProgrammingConstraint::PossibleOverflow(
     const IntegerVariable var = constraint.vars[i];
     const IntegerValue coeff = constraint.coeffs[i];
     CHECK_NE(coeff, 0);
-    const IntegerValue bound = coeff > 0 ? integer_trail_->LowerBound(var)
-                                         : integer_trail_->UpperBound(var);
+    const IntegerValue bound = coeff > 0
+                                   ? integer_trail_->LevelZeroLowerBound(var)
+                                   : integer_trail_->LevelZeroUpperBound(var);
     if (!AddProductTo(bound, coeff, &lower_bound)) {
       return true;
     }
@@ -1668,19 +1665,18 @@ absl::int128 FloorRatio128(absl::int128 x, IntegerValue positive_div) {
 
 void LinearProgrammingConstraint::PreventOverflow(LinearConstraint* constraint,
                                                   int max_pow) {
-  // Compute the min/max possible partial sum.
-  //
-  // Note that since we currently only use this cut locally, it is okay to
-  // use the current lb/ub here to decide if we have an overflow or not. Below
-  // however, we do have to use the level zero lower bound.
+  // Compute the min/max possible partial sum. Note that we need to use the
+  // level zero bounds here since we might use this cut after backtrack.
   double sum_min = std::min(0.0, ToDouble(-constraint->ub));
   double sum_max = std::max(0.0, ToDouble(-constraint->ub));
   const int size = constraint->vars.size();
   for (int i = 0; i < size; ++i) {
     const IntegerVariable var = constraint->vars[i];
     const double coeff = ToDouble(constraint->coeffs[i]);
-    const double prod1 = coeff * ToDouble(integer_trail_->LowerBound(var));
-    const double prod2 = coeff * ToDouble(integer_trail_->UpperBound(var));
+    const double prod1 =
+        coeff * ToDouble(integer_trail_->LevelZeroLowerBound(var));
+    const double prod2 =
+        coeff * ToDouble(integer_trail_->LevelZeroUpperBound(var));
     sum_min += std::min(0.0, std::min(prod1, prod2));
     sum_max += std::max(0.0, std::max(prod1, prod2));
   }
@@ -2071,6 +2067,7 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
   }
   optimal_constraints_.emplace_back(cp_constraint);
   rev_optimal_constraints_size_ = optimal_constraints_.size();
+  if (!cp_constraint->PropagateAtLevelZero()) return false;
   return cp_constraint->Propagate();
 }
 

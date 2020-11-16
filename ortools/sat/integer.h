@@ -828,6 +828,11 @@ class IntegerTrail : public SatPropagator {
   bool CurrentBranchHadAnIncompletePropagation();
   IntegerVariable FirstUnassignedVariable() const;
 
+  // Return true if we can fix new fact at level zero.
+  bool HasPendingRootLevelDeduction() const {
+    return !literal_to_fix_.empty() || !integer_literal_to_fix_.empty();
+  }
+
  private:
   // Used for DHECKs to validate the reason given to the public functions above.
   // Tests that all Literal are false. Tests that all IntegerLiteral are true.
@@ -970,6 +975,14 @@ class IntegerTrail : public SatPropagator {
   mutable std::vector<IntegerVariable> tmp_to_clear_;
   mutable gtl::ITIVector<IntegerVariable, int> tmp_var_to_trail_index_in_queue_;
   mutable SparseBitset<BooleanVariable> added_variables_;
+
+  // Sometimes we propagate fact with no reason at a positive level, those
+  // will automatically be fixed on the next restart.
+  //
+  // TODO(user): If we change the logic to not restart right away, we probably
+  // need to not store duplicates bounds for the same variable.
+  std::vector<Literal> literal_to_fix_;
+  std::vector<IntegerLiteral> integer_literal_to_fix_;
 
   // Temporary heap used by RelaxLinearReason();
   struct RelaxHeapEntry {
