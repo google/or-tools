@@ -1257,7 +1257,10 @@ namespace operations_research {
 		//
 		//exit(0);
 
-		SRScopyvarboundstype(mLp, varBoundsTypeValues.data());
+		// set variables's bound's type if any
+		if (!varBoundsTypeValues.empty()) {
+			SRScopyvarboundstype(mLp, varBoundsTypeValues.data());
+		}
 
 		// set solution hints if any
 		if (!solver_->solution_hint_.empty()) {
