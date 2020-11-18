@@ -64,9 +64,6 @@ C++, Java, and C\#.
 ```python
 """Code sample to demonstrates how to build an interval."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
@@ -181,9 +178,6 @@ understand these presence literals, and correctly ignore inactive intervals.
 ```python
 """Code sample to demonstrates how to build an optional interval."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
@@ -313,9 +307,6 @@ weekends, making the final day as early as possible.
 ```python
 """Code sample to demonstrate how to build a NoOverlap constraint."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
@@ -611,7 +602,6 @@ number of other intervals that precede it.
 ```python
 """Code sample to demonstrates how to rank intervals."""
 
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
@@ -1256,9 +1246,6 @@ The following code displays:
 ```python
 """Code sample to demonstrate how an interval can span across a break."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 

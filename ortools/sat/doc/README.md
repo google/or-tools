@@ -45,9 +45,6 @@ The Python interface to the CP-SAT solver is implemented using two classes.
 ```python
 """Simple solve."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 

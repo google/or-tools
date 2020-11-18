@@ -48,9 +48,6 @@ These are implemented using the `OnlyEnforceIf` method as shown below.
 ```python
 """Link integer constraints together."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
@@ -352,7 +349,6 @@ variables together:
 ```python
 """Solves a binpacking problem using the CP-SAT solver."""
 
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 

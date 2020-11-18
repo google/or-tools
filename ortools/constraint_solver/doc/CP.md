@@ -66,7 +66,6 @@ int main(int argc, char** argv) {
 ```python
 """Simple Constraint optimization example."""
 
-from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 

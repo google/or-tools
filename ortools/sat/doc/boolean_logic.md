@@ -49,9 +49,6 @@ negation of `x`.
 ```python
 """Code sample to demonstrate Boolean variable and literals."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
@@ -149,9 +146,6 @@ constraints. For instance, we can add a constraint Or(x, not(y)).
 ```python
 """Code sample to demonstrates a simple Boolean constraint."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
@@ -258,9 +252,6 @@ then is written as Or(not b, x) and Or(not b, not y).
 ```python
 """Simple model with a reified constraint."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
@@ -421,9 +412,6 @@ code samples output this truth table:
 ```python
 """Code sample that encodes the product of two Boolean variables."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 

@@ -149,9 +149,6 @@ rabbits and pheasants are there?
 ```python
 """Rabbits and Pheasants quizz."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
@@ -328,9 +325,6 @@ The following samples output:
 ```python
 """Encodes an convex piecewise linear function."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
@@ -689,9 +683,6 @@ The following samples output:
 ```python
 """Implements a step function."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
