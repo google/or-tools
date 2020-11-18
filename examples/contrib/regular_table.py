@@ -37,7 +37,6 @@
   http://www.hakank.org/google_or_tools/
 
 """
-from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
