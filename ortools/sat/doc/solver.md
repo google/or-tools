@@ -42,7 +42,6 @@ solver. The most useful one is the time limit.
 ```python
 """Solves a problem with a time limit."""
 
-
 from ortools.sat.python import cp_model
 
 
@@ -216,7 +215,6 @@ The exact implementation depends on the target language.
 
 ```python
 """Solves an optimization problem and displays all intermediate solutions."""
-
 
 from ortools.sat.python import cp_model
 
@@ -463,7 +461,6 @@ To search for all solutions, use the SearchForAllSolutions method.
 ```python
 """Code sample that solves a model and displays all solutions."""
 
-
 from ortools.sat.python import cp_model
 
 
@@ -699,7 +696,6 @@ CpSolverSolutionCallback.OnSolutionCallback().
 
 ```python
 """Code sample that solves a model and displays a small number of solutions."""
-
 
 from ortools.sat.python import cp_model
 

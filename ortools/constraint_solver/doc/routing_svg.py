@@ -19,6 +19,7 @@ from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
 # [END import]
 
+
 # [START data_model]
 class DataModel(object):  # pylint: disable=too-many-instance-attributes
     """Stores the data for the problem."""
@@ -571,7 +572,7 @@ class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
         # First print route
         previous_loc_idx = None
         for loc_idx in route:
-            if previous_loc_idx != None and previous_loc_idx != loc_idx:
+            if previous_loc_idx and previous_loc_idx != loc_idx:
                 self._svg.draw_polyline(self._data.locations[previous_loc_idx],
                                         self._data.locations[loc_idx],
                                         self._stroke_width, color, colorname)

@@ -12,7 +12,6 @@
 # limitations under the License.
 """Code sample to demonstrate how to build a NoOverlap constraint."""
 
-
 from ortools.sat.python import cp_model
 
 

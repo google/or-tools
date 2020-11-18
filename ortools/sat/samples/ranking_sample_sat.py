@@ -12,7 +12,6 @@
 # limitations under the License.
 """Code sample to demonstrates how to rank intervals."""
 
-
 from ortools.sat.python import cp_model
 
 

@@ -87,7 +87,6 @@ Some remarks:
 ```python
 """Code sample that solves a model using solution hinting."""
 
-
 from ortools.sat.python import cp_model
 
 

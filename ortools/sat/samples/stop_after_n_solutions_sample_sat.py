@@ -12,7 +12,6 @@
 # limitations under the License.
 """Code sample that solves a model and displays a small number of solutions."""
 
-
 from ortools.sat.python import cp_model
 
 

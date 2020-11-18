@@ -13,7 +13,6 @@
 """Simple solve."""
 
 # [START program]
-
 from ortools.sat.python import cp_model
 
 

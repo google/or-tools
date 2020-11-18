@@ -430,6 +430,12 @@ class SatSolver {
   // Simplifies the problem when new variables are assigned at level 0.
   void ProcessNewlyFixedVariables();
 
+  int64 NumFixedVariables() const {
+    if (!decisions_.empty()) return decisions_[0].trail_index;
+    CHECK_EQ(CurrentDecisionLevel(), 0);
+    return trail_->Index();
+  }
+
  private:
   // Calls Propagate() and returns true if no conflict occurred. Otherwise,
   // learns the conflict, backtracks, enqueues the consequence of the learned

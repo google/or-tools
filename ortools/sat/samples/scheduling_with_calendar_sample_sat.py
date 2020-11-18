@@ -12,7 +12,6 @@
 # limitations under the License.
 """Code sample to demonstrate how an interval can span across a break."""
 
-
 from ortools.sat.python import cp_model
 
 

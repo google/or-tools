@@ -12,7 +12,6 @@
 # limitations under the License.
 """Code sample to demonstrates how to build an interval."""
 
-
 from ortools.sat.python import cp_model
 
 

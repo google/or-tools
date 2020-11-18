@@ -252,7 +252,6 @@ then is written as Or(not b, x) and Or(not b, not y).
 ```python
 """Simple model with a reified constraint."""
 
-
 from ortools.sat.python import cp_model
 
 

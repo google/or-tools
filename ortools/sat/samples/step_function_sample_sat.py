@@ -12,7 +12,6 @@
 # limitations under the License.
 """Implements a step function."""
 
-
 from ortools.sat.python import cp_model
 
 

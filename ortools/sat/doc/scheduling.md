@@ -178,7 +178,6 @@ understand these presence literals, and correctly ignore inactive intervals.
 ```python
 """Code sample to demonstrates how to build an optional interval."""
 
-
 from ortools.sat.python import cp_model
 
 
@@ -306,7 +305,6 @@ weekends, making the final day as early as possible.
 
 ```python
 """Code sample to demonstrate how to build a NoOverlap constraint."""
-
 
 from ortools.sat.python import cp_model
 
@@ -601,7 +599,6 @@ number of other intervals that precede it.
 
 ```python
 """Code sample to demonstrates how to rank intervals."""
-
 
 from ortools.sat.python import cp_model
 
@@ -1245,7 +1242,6 @@ The following code displays:
 
 ```python
 """Code sample to demonstrate how an interval can span across a break."""
-
 
 from ortools.sat.python import cp_model
 

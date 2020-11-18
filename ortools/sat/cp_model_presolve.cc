@@ -1233,6 +1233,10 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
       // constraint by expanding its rhs.
       context_->UpdateRuleStats(
           "linear: singleton column in equality and in objective.");
+
+      // TODO(b/173280761): Prevent potential overflow here. Even if coeff
+      // divide objective_coeff, we might add big coefficients to the objective
+      // this way which will break our linear expression overflow precondition.
       context_->SubstituteVariableInObjective(var, coeff, *ct);
       rhs = new_rhs;
       index_to_erase.insert(i);
