@@ -190,6 +190,11 @@ class TimeLimit {
   bool LimitReached();
 
   /**
+   * Return true when the external pause signal is true.
+   */
+  bool Paused();
+
+  /**
    * Returns the time left on this limit, or 0 if the limit was reached (it
    * never returns a negative value). Note that it might return a positive
    * value even though \c LimitReached() would return true; because the latter
@@ -275,10 +280,30 @@ class TimeLimit {
   }
 
   /**
+   * Registers the external Boolean to check when Paused() is called.
+   * This is used to mark the computation as paused through an external Boolean,
+   * i.e. \c Paused() returns true when the value of
+   * external_boolean_as_pause is true.
+   *
+   * Note : The external_boolean_as_pause can be modified during solve.
+   */
+  void RegisterExternalBooleanAsPause(
+      std::atomic<bool>* external_boolean_as_pause) {
+    external_boolean_as_pause_ = external_boolean_as_pause;
+  }
+  
+  /**
    * Returns the current external Boolean limit.
    */
   std::atomic<bool>* ExternalBooleanAsLimit() const {
     return external_boolean_as_limit_;
+  }
+
+  /**
+   * Returns the current external Boolean pause.
+   */
+  std::atomic<bool>* ExternalBooleanAsPause() const {
+    return external_boolean_as_pause_;
   }
 
   /**
@@ -317,6 +342,7 @@ class TimeLimit {
   double elapsed_deterministic_time_;
 
   std::atomic<bool>* external_boolean_as_limit_;
+  std::atomic<bool>* external_boolean_as_pause_;
 
 #ifdef HAS_PERF_SUBSYSTEM
   // PMU counter to help count the instructions.
@@ -338,12 +364,18 @@ class TimeLimit {
 class SharedTimeLimit {
  public:
   explicit SharedTimeLimit(TimeLimit* time_limit)
-      : time_limit_(time_limit), stopped_boolean_(false) {
+      : time_limit_(time_limit), stopped_boolean_(false), paused_boolean_(false) {
     // We use the one already registered if present or ours otherwise.
     stopped_ = time_limit->ExternalBooleanAsLimit();
     if (stopped_ == nullptr) {
       stopped_ = &stopped_boolean_;
       time_limit->RegisterExternalBooleanAsLimit(stopped_);
+    }
+    // We use the one already registered if present or ours otherwise.
+    paused_ = time_limit->ExternalBooleanAsPause();
+    if (paused_ == nullptr) {
+      paused_ = &paused_boolean_;
+      time_limit->RegisterExternalBooleanAsPause(paused_);
     }
   }
 
@@ -351,6 +383,15 @@ class SharedTimeLimit {
     if (stopped_ == &stopped_boolean_) {
       time_limit_->RegisterExternalBooleanAsLimit(nullptr);
     }
+    
+    if (paused_ == &paused_boolean_) {
+      time_limit_->RegisterExternalBooleanAsPause(nullptr);
+    }
+  }
+
+  bool Paused() const {
+    absl::MutexLock lock(&mutex_);
+    return time_limit_->Paused();
   }
 
   bool LimitReached() const {
@@ -390,6 +431,8 @@ class SharedTimeLimit {
   TimeLimit* time_limit_ ABSL_GUARDED_BY(mutex_);
   std::atomic<bool> stopped_boolean_ ABSL_GUARDED_BY(mutex_);
   std::atomic<bool>* stopped_ ABSL_GUARDED_BY(mutex_);
+  std::atomic<bool> paused_boolean_ ABSL_GUARDED_BY(mutex_);
+  std::atomic<bool>* paused_ ABSL_GUARDED_BY(mutex_);
 };
 
 /**
@@ -472,7 +515,8 @@ inline TimeLimit::TimeLimit(double limit_in_seconds, double deterministic_limit,
                             double instruction_limit)
     : safety_buffer_ns_(static_cast<int64>(kSafetyBufferSeconds * 1e9)),
       running_max_(kHistorySize),
-      external_boolean_as_limit_(nullptr) {
+      external_boolean_as_limit_(nullptr),
+      external_boolean_as_pause_(nullptr) {
   ResetTimers(limit_in_seconds, deterministic_limit, instruction_limit);
 }
 
@@ -517,6 +561,9 @@ inline void TimeLimit::MergeWithGlobalTimeLimit(TimeLimit* other) {
   if (other->ExternalBooleanAsLimit() != nullptr) {
     RegisterExternalBooleanAsLimit(other->ExternalBooleanAsLimit());
   }
+  if (other->ExternalBooleanAsPause() != nullptr) {
+    RegisterExternalBooleanAsPause(other->ExternalBooleanAsPause());
+  }
 }
 
 inline double TimeLimit::ReadInstructionCounter() {
@@ -529,7 +576,38 @@ inline double TimeLimit::ReadInstructionCounter() {
   return 0;
 }
 
+inline bool TimeLimit::Paused() {
+  if (external_boolean_as_pause_ != nullptr &&
+      external_boolean_as_pause_->load()) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
 inline bool TimeLimit::LimitReached() {
+  // LimitReached method handles the Paused state of the time_limit. 
+  // The pause can be interrupted by either unpausing or stopping the time_limit
+  // setting its respective external booleans.
+  // Note, external_boolean_as_limit must be registered prior to pausing the time_limit.
+  if (external_boolean_as_limit_ != nullptr) {
+    if (Paused()) {
+      int64 paused_time = absl::GetCurrentTimeNanos();
+      while (Paused() && !external_boolean_as_limit_->load()) {
+        absl::SleepFor(absl::Seconds(1));
+      }
+      paused_time = absl::GetCurrentTimeNanos() - paused_time;
+      last_ns_ += paused_time;
+      if (absl::GetFlag(FLAGS_time_limit_use_usertime)) {
+        limit_in_seconds_ += paused_time/1e9;
+      }
+      if (limit_ns_ < kint64max - paused_time) {
+        limit_ns_ += paused_time;
+      }
+    }
+  }
+  
   if (external_boolean_as_limit_ != nullptr &&
       external_boolean_as_limit_->load()) {
     return true;

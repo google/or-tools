@@ -84,6 +84,8 @@ import com.google.ortools.util.Domain;
 %rename (solutionBooleanValue) operations_research::sat::SolutionCallback::SolutionBooleanValue;
 %rename (solutionIntegerValue) operations_research::sat::SolutionCallback::SolutionIntegerValue;
 %rename (stopSearch) operations_research::sat::SolutionCallback::StopSearch;
+%rename (pauseSearch) operations_research::sat::SolutionCallback::PauseSearch;
+%rename (resumeSearch) operations_research::sat::SolutionCallback::ResumeSearch;
 %rename (userTime) operations_research::sat::SolutionCallback::UserTime;
 %rename (wallTime) operations_research::sat::SolutionCallback::WallTime;
 

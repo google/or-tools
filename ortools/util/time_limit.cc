@@ -55,6 +55,10 @@ NestedTimeLimit::NestedTimeLimit(TimeLimit* base_time_limit,
     time_limit_.RegisterExternalBooleanAsLimit(
         base_time_limit_->external_boolean_as_limit_);
   }
+  if (base_time_limit_->external_boolean_as_pause_ != nullptr) {
+    time_limit_.RegisterExternalBooleanAsPause(
+        base_time_limit_->external_boolean_as_pause_);
+  }
 }
 
 NestedTimeLimit::~NestedTimeLimit() {
