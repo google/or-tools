@@ -47,7 +47,7 @@ setup(
     ],
     install_requires=[
         'protobuf >= 3.13.0',
-        'six >= 1.10',
+        'absl-py >= 0.11',
     ],
     package_data={
         'ortools.constraint_solver' : ['_pywrapcp.dll'],
