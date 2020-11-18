@@ -40,7 +40,7 @@ cc_library(
     ],
     copts = [
         "-DOR_TOOLS_MAJOR=8",
-        "-DOR_TOOLS_MINOR=0",
+        "-DOR_TOOLS_MINOR=1",
     ],
     defines =  select({
         "on_windows": ["OR_TOOLS_EXPORTS"],
