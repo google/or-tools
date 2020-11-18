@@ -161,7 +161,7 @@ add_dependencies(python_package ortools::ortools Py${PROJECT_NAME}_proto)
 # Test
 if(BUILD_TESTING)
   # Look for python module venv
-  search_python_module(six)
+  search_python_module(absl-py)
   search_python_module(venv)
   # Testing using a vitual environment
   set(VENV_EXECUTABLE ${Python_EXECUTABLE} -m venv)
