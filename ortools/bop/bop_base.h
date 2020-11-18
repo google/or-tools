@@ -170,7 +170,7 @@ class ProblemState {
   // Returns true when the variable var is fixed in the current problem state.
   // The value of the fixed variable is returned by GetVariableFixedValue(var).
   bool IsVariableFixed(VariableIndex var) const { return is_fixed_[var]; }
-  const gtl::ITIVector<VariableIndex, bool>& is_fixed() const {
+  const absl::StrongVector<VariableIndex, bool>& is_fixed() const {
     return is_fixed_;
   }
 
@@ -179,7 +179,7 @@ class ProblemState {
   bool GetVariableFixedValue(VariableIndex var) const {
     return fixed_values_[var];
   }
-  const gtl::ITIVector<VariableIndex, bool>& fixed_values() const {
+  const absl::StrongVector<VariableIndex, bool>& fixed_values() const {
     return fixed_values_;
   }
 
@@ -223,8 +223,8 @@ class ProblemState {
   const sat::LinearBooleanProblem& original_problem_;
   BopParameters parameters_;
   int64 update_stamp_;
-  gtl::ITIVector<VariableIndex, bool> is_fixed_;
-  gtl::ITIVector<VariableIndex, bool> fixed_values_;
+  absl::StrongVector<VariableIndex, bool> is_fixed_;
+  absl::StrongVector<VariableIndex, bool> fixed_values_;
   glop::DenseRow lp_values_;
   BopSolution solution_;
   std::vector<bool> assignment_preference_;

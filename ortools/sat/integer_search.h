@@ -214,6 +214,12 @@ std::vector<std::function<BooleanOrIntegerLiteral()>> CompleteHeuristics(
         incomplete_heuristics,
     const std::function<BooleanOrIntegerLiteral()>& completion_heuristic);
 
+// Specialized search that will continuously probe Boolean variables and bounds
+// of integer variables.
+SatSolver::Status ContinuousProbing(
+    const std::vector<BooleanVariable>& bool_vars,
+    const std::vector<IntegerVariable>& int_vars,
+    const std::function<void()>& feasible_solution_observer, Model* model);
 }  // namespace sat
 }  // namespace operations_research
 

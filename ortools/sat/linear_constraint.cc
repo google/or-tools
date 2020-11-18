@@ -118,8 +118,9 @@ LinearConstraint LinearConstraintBuilder::Build() {
   return result;
 }
 
-double ComputeActivity(const LinearConstraint& constraint,
-                       const gtl::ITIVector<IntegerVariable, double>& values) {
+double ComputeActivity(
+    const LinearConstraint& constraint,
+    const absl::StrongVector<IntegerVariable, double>& values) {
   double activity = 0;
   for (int i = 0; i < constraint.vars.size(); ++i) {
     const IntegerVariable var = constraint.vars[i];

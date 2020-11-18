@@ -741,7 +741,7 @@ void FindLinearBooleanProblemSymmetries(
 }
 
 void ApplyLiteralMappingToBooleanProblem(
-    const gtl::ITIVector<LiteralIndex, LiteralIndex>& mapping,
+    const absl::StrongVector<LiteralIndex, LiteralIndex>& mapping,
     LinearBooleanProblem* problem) {
   Coefficient bound_shift;
   Coefficient max_value;
@@ -831,7 +831,7 @@ void ProbeAndSimplifyProblem(SatPostsolver* postsolver,
       LOG(INFO) << "UNSAT when loading the problem.";
     }
 
-    gtl::ITIVector<LiteralIndex, LiteralIndex> equiv_map;
+    absl::StrongVector<LiteralIndex, LiteralIndex> equiv_map;
     ProbeAndFindEquivalentLiteral(&solver, postsolver, /*drat_writer=*/nullptr,
                                   &equiv_map);
 
@@ -857,7 +857,7 @@ void ProbeAndSimplifyProblem(SatPostsolver* postsolver,
     // Remap the variables into a dense set. All the variables for which the
     // equiv_map is not the identity are no longer needed.
     BooleanVariable new_var(0);
-    gtl::ITIVector<BooleanVariable, BooleanVariable> var_map;
+    absl::StrongVector<BooleanVariable, BooleanVariable> var_map;
     for (BooleanVariable var(0); var < solver.NumVariables(); ++var) {
       if (equiv_map[Literal(var, true).Index()] == Literal(var, true).Index()) {
         var_map.push_back(new_var);

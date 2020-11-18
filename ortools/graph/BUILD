@@ -57,7 +57,7 @@ cc_library(
 #    deps = [
 #        "//ortools/base",
 #        "//ortools/base:int_type",
-#        "//ortools/base:int_type_indexed_vector",
+#        "//ortools/base:strong_vector",
 #    ],
 #)
 
@@ -87,8 +87,8 @@ cc_library(
         "//ortools/base:file",
         "//ortools/base:hash",
         "//ortools/base:int_type",
-        #        "//ortools/base:int_type_indexed_bitmap",
-        "//ortools/base:int_type_indexed_vector",
+        #        "//ortools/base:strong_bitmap",
+        "//ortools/base:strong_vector",
         "//ortools/base:recordio",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
@@ -136,7 +136,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:int_type",
-        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:strong_vector",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/strings",
@@ -235,7 +235,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:adjustable_priority_queue",
         "//ortools/base:int_type",
-        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:strong_vector",
         "//ortools/util:saturated_arithmetic",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/strings",

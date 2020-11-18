@@ -167,15 +167,16 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/functional/bind_front.h"
 #include "absl/hash/hash.h"
 #include "absl/time/time.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
@@ -334,14 +335,14 @@ class RoutingModel {
     int end_equivalence_class;
     /// Bounds of cumul variables at start and end vehicle nodes.
     /// dimension_{start,end}_cumuls_{min,max}[d] is the bound for dimension d.
-    gtl::ITIVector<DimensionIndex, int64> dimension_start_cumuls_min;
-    gtl::ITIVector<DimensionIndex, int64> dimension_start_cumuls_max;
-    gtl::ITIVector<DimensionIndex, int64> dimension_end_cumuls_min;
-    gtl::ITIVector<DimensionIndex, int64> dimension_end_cumuls_max;
-    gtl::ITIVector<DimensionIndex, int64> dimension_capacities;
+    absl::StrongVector<DimensionIndex, int64> dimension_start_cumuls_min;
+    absl::StrongVector<DimensionIndex, int64> dimension_start_cumuls_max;
+    absl::StrongVector<DimensionIndex, int64> dimension_end_cumuls_min;
+    absl::StrongVector<DimensionIndex, int64> dimension_end_cumuls_max;
+    absl::StrongVector<DimensionIndex, int64> dimension_capacities;
     /// dimension_evaluators[d]->Run(from, to) is the transit value of arc
     /// from->to for a dimension d.
-    gtl::ITIVector<DimensionIndex, int64> dimension_evaluator_classes;
+    absl::StrongVector<DimensionIndex, int64> dimension_evaluator_classes;
     /// Fingerprint of unvisitable non-start/end nodes.
     uint64 unvisitable_nodes_fprint;
 
@@ -1622,6 +1623,30 @@ class RoutingModel {
   RegularLimit* GetOrCreateFirstSolutionLargeNeighborhoodSearchLimit();
   LocalSearchOperator* CreateInsertionOperator();
   LocalSearchOperator* CreateMakeInactiveOperator();
+  template <class T>
+  LocalSearchOperator* CreateCPOperator(const T& operator_factory) {
+    return operator_factory(solver_.get(), nexts_,
+                            CostsAreHomogeneousAcrossVehicles()
+                                ? std::vector<IntVar*>()
+                                : vehicle_vars_,
+                            vehicle_start_class_callback_);
+  }
+  template <class T>
+  LocalSearchOperator* CreateCPOperator() {
+    return CreateCPOperator(absl::bind_front(MakeLocalSearchOperator<T>));
+  }
+  template <class T, class Arg>
+  LocalSearchOperator* CreateOperator(const Arg& arg) {
+    return solver_->RevAlloc(new T(nexts_,
+                                   CostsAreHomogeneousAcrossVehicles()
+                                       ? std::vector<IntVar*>()
+                                       : vehicle_vars_,
+                                   vehicle_start_class_callback_, arg));
+  }
+  template <class T>
+  LocalSearchOperator* CreatePairOperator() {
+    return CreateOperator<T>(pickup_delivery_pairs_);
+  }
   void CreateNeighborhoodOperators(const RoutingSearchParameters& parameters);
   LocalSearchOperator* ConcatenateOperators(
       const RoutingSearchParameters& search_parameters,
@@ -1700,20 +1725,20 @@ class RoutingModel {
   mutable RevSwitch is_bound_to_end_ct_added_;
   /// Dimensions
   absl::flat_hash_map<std::string, DimensionIndex> dimension_name_to_index_;
-  gtl::ITIVector<DimensionIndex, RoutingDimension*> dimensions_;
+  absl::StrongVector<DimensionIndex, RoutingDimension*> dimensions_;
   // clang-format off
   /// TODO(user): Define a new Dimension[Global|Local]OptimizerIndex type
   /// and use it to define ITIVectors and for the dimension to optimizer index
   /// mappings below.
   std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer> >
       global_dimension_optimizers_;
-  gtl::ITIVector<DimensionIndex, int> global_optimizer_index_;
+  absl::StrongVector<DimensionIndex, int> global_optimizer_index_;
   std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >
       local_dimension_optimizers_;
   std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >
       local_dimension_mp_optimizers_;
   // clang-format off
-  gtl::ITIVector<DimensionIndex, int> local_optimizer_index_;
+  absl::StrongVector<DimensionIndex, int> local_optimizer_index_;
   std::string primary_constrained_dimension_;
   /// Costs
   IntVar* cost_ = nullptr;
@@ -1736,19 +1761,19 @@ class RoutingModel {
   /// i.e. by default empty routes will not contribute to the cost.
   std::vector<bool> consider_empty_route_costs_;
 #ifndef SWIG
-  gtl::ITIVector<CostClassIndex, CostClass> cost_classes_;
+  absl::StrongVector<CostClassIndex, CostClass> cost_classes_;
 #endif  // SWIG
   bool costs_are_homogeneous_across_vehicles_;
   bool cache_callbacks_;
   mutable std::vector<CostCacheElement> cost_cache_;  /// Index by source index.
   std::vector<VehicleClassIndex> vehicle_class_index_of_vehicle_;
 #ifndef SWIG
-  gtl::ITIVector<VehicleClassIndex, VehicleClass> vehicle_classes_;
+  absl::StrongVector<VehicleClassIndex, VehicleClass> vehicle_classes_;
 #endif  // SWIG
   VehicleTypeContainer vehicle_type_container_;
   std::function<int(int64)> vehicle_start_class_callback_;
   /// Disjunctions
-  gtl::ITIVector<DisjunctionIndex, Disjunction> disjunctions_;
+  absl::StrongVector<DisjunctionIndex, Disjunction> disjunctions_;
   std::vector<std::vector<DisjunctionIndex> > index_to_disjunctions_;
   /// Same vehicle costs
   std::vector<ValuedNodes<int64> > same_vehicle_costs_;

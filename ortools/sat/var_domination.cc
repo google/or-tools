@@ -198,8 +198,8 @@ void VarDomination::EndFirstPhase() {
   // constraints. Still we should in most situation be a lot lower than that.
   const int kMaxInitialSize = 50;
   std::vector<IntegerVariable> cropped_lists;
-  gtl::ITIVector<IntegerVariable, bool> is_cropped(num_vars_with_negation_,
-                                                   false);
+  absl::StrongVector<IntegerVariable, bool> is_cropped(num_vars_with_negation_,
+                                                       false);
 
   // Fill the initial domination candidates.
   for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
@@ -878,8 +878,8 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
   }
   if (!work_to_do) return true;
 
-  gtl::ITIVector<IntegerVariable, int64> var_lb_to_ub_diff(num_vars * 2, 0);
-  gtl::ITIVector<IntegerVariable, bool> in_constraints(num_vars * 2, false);
+  absl::StrongVector<IntegerVariable, int64> var_lb_to_ub_diff(num_vars * 2, 0);
+  absl::StrongVector<IntegerVariable, bool> in_constraints(num_vars * 2, false);
 
   const int num_constraints = cp_model.constraints_size();
   for (int c = 0; c < num_constraints; ++c) {
@@ -1089,8 +1089,8 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
   // TODO(user): generalize to non Booleans?
   // TODO(user): We always keep adding the same relations. Do that only once!
   int num_added = 0;
-  gtl::ITIVector<IntegerVariable, bool> increase_is_forbidden(2 * num_vars,
-                                                              false);
+  absl::StrongVector<IntegerVariable, bool> increase_is_forbidden(2 * num_vars,
+                                                                  false);
   for (int positive_ref = 0; positive_ref < num_vars; ++positive_ref) {
     if (context->IsFixed(positive_ref)) continue;
     if (!context->CanBeUsedAsLiteral(positive_ref)) continue;

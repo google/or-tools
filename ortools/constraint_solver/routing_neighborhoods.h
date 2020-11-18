@@ -285,6 +285,7 @@ class SwapIndexPairOperator : public IntVarLocalSearchOperator {
  public:
   SwapIndexPairOperator(const std::vector<IntVar*>& vars,
                         const std::vector<IntVar*>& path_vars,
+                        std::function<int(int64)> start_empty_path_class,
                         const RoutingIndexPairs& index_pairs);
   ~SwapIndexPairOperator() override {}
 

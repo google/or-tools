@@ -17,8 +17,8 @@
 #include <tuple>
 #include <vector>
 
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/routing_types.h"
 
 namespace operations_research {
@@ -98,7 +98,7 @@ class RoutingIndexManager {
   /// complete.
   int num_unique_depots() const { return num_unique_depots_; }
   std::vector<NodeIndex> GetIndexToNodeMap() const { return index_to_node_; }
-  gtl::ITIVector<NodeIndex, int64> GetNodeToIndexMap() const {
+  absl::StrongVector<NodeIndex, int64> GetNodeToIndexMap() const {
     return node_to_index_;
   }
 
@@ -108,7 +108,7 @@ class RoutingIndexManager {
       const std::vector<std::pair<NodeIndex, NodeIndex> >& starts_ends);
 
   std::vector<NodeIndex> index_to_node_;
-  gtl::ITIVector<NodeIndex, int64> node_to_index_;
+  absl::StrongVector<NodeIndex, int64> node_to_index_;
   std::vector<int64> vehicle_to_start_;
   std::vector<int64> vehicle_to_end_;
   int num_nodes_;

@@ -30,10 +30,10 @@
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_proof_handler.h"
@@ -429,6 +429,12 @@ class SatSolver {
 
   // Simplifies the problem when new variables are assigned at level 0.
   void ProcessNewlyFixedVariables();
+
+  int64 NumFixedVariables() const {
+    if (!decisions_.empty()) return decisions_[0].trail_index;
+    CHECK_EQ(CurrentDecisionLevel(), 0);
+    return trail_->Index();
+  }
 
  private:
   // Calls Propagate() and returns true if no conflict occurred. Otherwise,

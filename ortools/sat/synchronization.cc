@@ -429,8 +429,10 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
   if (log_updates_) {
     std::string solution_info = response.solution_info();
     if (model != nullptr) {
-      absl::StrAppend(&solution_info,
-                      " num_bool:", model->Get<Trail>()->NumVariables());
+      const int64 num_bool = model->Get<Trail>()->NumVariables();
+      const int64 num_fixed = model->Get<SatSolver>()->NumFixedVariables();
+      absl::StrAppend(&solution_info, " fixed_bools:", num_fixed, "/",
+                      num_bool);
     }
 
     if (model_proto_.has_objective()) {
@@ -567,6 +569,7 @@ void SharedBoundsManager::ReportPotentialNewBounds(
     const std::vector<int64>& new_upper_bounds) {
   CHECK_EQ(variables.size(), new_lower_bounds.size());
   CHECK_EQ(variables.size(), new_upper_bounds.size());
+  int num_improvements = 0;
 
   absl::MutexLock mutex_lock(&mutex_);
   for (int i = 0; i < variables.size(); ++i) {
@@ -588,7 +591,12 @@ void SharedBoundsManager::ReportPotentialNewBounds(
       upper_bounds_[var] = new_ub;
     }
     changed_variables_since_last_synchronize_.Set(var);
+    num_improvements++;
   }
+  // TODO(user): remove LOG_IF and display number of bound improvements
+  // propagated per workers.
+  VLOG_IF(2, num_improvements > 0)
+      << worker_name << " exports " << num_improvements << " modifications";
 }
 
 void SharedBoundsManager::Synchronize() {

@@ -20,7 +20,7 @@
 
 #include "absl/status/status.h"
 #include "ortools/algorithms/sparse_permutation.h"
-#include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/pb_constraint.h"
@@ -129,7 +129,7 @@ void FindLinearBooleanProblemSymmetries(
 // of the correct size. It can also map a literal index to kTrueLiteralIndex
 // or kFalseLiteralIndex in order to fix the variable.
 void ApplyLiteralMappingToBooleanProblem(
-    const gtl::ITIVector<LiteralIndex, LiteralIndex>& mapping,
+    const absl::StrongVector<LiteralIndex, LiteralIndex>& mapping,
     LinearBooleanProblem* problem);
 
 // A simple preprocessing step that does basic probing and removes the fixed and

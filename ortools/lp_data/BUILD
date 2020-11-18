@@ -17,7 +17,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:int_type",
-        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:strong_vector",
         "//ortools/util:bitset",
     ],
 )
@@ -41,7 +41,7 @@ cc_library(
         ":base",
         "//ortools/base",
         "//ortools/base:int_type",
-        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:strong_vector",
         "//ortools/util:bitset",
     ],
 )
@@ -101,7 +101,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:int_type",
-        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:strong_vector",
         "//ortools/base:random",
         "//ortools/util:fp_utils",
         "//ortools/util:return_macros",
@@ -120,7 +120,7 @@ cc_library(
         ":sparse",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:strong_vector",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/glop:revised_simplex",
         "//ortools/glop:status",
@@ -134,7 +134,7 @@ cc_library(
     deps = [
         ":base",
         "//ortools/base",
-        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:strong_vector",
     ],
 )
 
@@ -153,7 +153,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:int_type",
-        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:strong_vector",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/util:fp_utils",
         "@com_google_absl//absl/container:flat_hash_map",
@@ -268,7 +268,7 @@ cc_library(
         "//ortools/base:filelineiter",
         "//ortools/base:hash",
         "//ortools/base:int_type",
-        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:strong_vector",
         "//ortools/base:map_util",
         "//ortools/base:protobuf_util",
         "@com_google_absl//absl/status",

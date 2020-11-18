@@ -339,8 +339,8 @@ cc_library(
 )
 
 cc_library(
-    name = "int_type_indexed_vector",
-    hdrs = ["int_type_indexed_vector.h"],
+    name = "strong_vector",
+    hdrs = ["strong_vector.h"],
     deps = [
         ":base",
         ":int_type",

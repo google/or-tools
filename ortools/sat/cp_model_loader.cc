@@ -24,10 +24,10 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/circuit.h"
 #include "ortools/sat/cp_constraints.h"
@@ -745,8 +745,8 @@ class FullEncodingFixedPointComputer {
   std::vector<int> variables_to_propagate_;
   std::vector<std::vector<ConstraintIndex>> variable_watchers_;
 
-  gtl::ITIVector<ConstraintIndex, bool> constraint_is_finished_;
-  gtl::ITIVector<ConstraintIndex, bool> constraint_is_registered_;
+  absl::StrongVector<ConstraintIndex, bool> constraint_is_finished_;
+  absl::StrongVector<ConstraintIndex, bool> constraint_is_registered_;
 
   absl::flat_hash_map<int, absl::flat_hash_set<int>>
       variables_to_equal_or_diff_variables_;

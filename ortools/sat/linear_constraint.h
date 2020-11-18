@@ -125,8 +125,9 @@ class LinearConstraintBuilder {
 
 // Returns the activity of the given constraint. That is the current value of
 // the linear terms.
-double ComputeActivity(const LinearConstraint& constraint,
-                       const gtl::ITIVector<IntegerVariable, double>& values);
+double ComputeActivity(
+    const LinearConstraint& constraint,
+    const absl::StrongVector<IntegerVariable, double>& values);
 
 // Returns sqrt(sum square(coeff)).
 double ComputeL2Norm(const LinearConstraint& constraint);

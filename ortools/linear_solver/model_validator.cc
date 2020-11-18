@@ -39,19 +39,18 @@ ABSL_FLAG(
 namespace operations_research {
 namespace {
 
-bool IsFinite(double value) {
-  return std::isfinite(value) &&
-         value < absl::GetFlag(FLAGS_model_validator_infinity) &&
-         value > -absl::GetFlag(FLAGS_model_validator_infinity);
+bool IsNanOrAbsGreaterThanOrEqual(double value, double abs_value_threshold) {
+  return std::isnan(value) || std::abs(value) >= abs_value_threshold;
 }
 
 // Internal method to detect errors in bounds. The object passed as parameter
 // must have "lower_bound" and "upper_bound" fields.
 template <typename BoundedElement>
-std::string FindErrorInBounds(const BoundedElement& element) {
+std::string FindErrorInBounds(const BoundedElement& element,
+                              double abs_value_threshold) {
   if (std::isnan(element.lower_bound()) || std::isnan(element.upper_bound()) ||
-      element.lower_bound() >= absl::GetFlag(FLAGS_model_validator_infinity) ||
-      element.upper_bound() <= -absl::GetFlag(FLAGS_model_validator_infinity) ||
+      element.lower_bound() >= abs_value_threshold ||
+      element.upper_bound() <= -abs_value_threshold ||
       element.lower_bound() > element.upper_bound()) {
     return absl::StrFormat("Infeasible bounds: [%f, %f]", element.lower_bound(),
                            element.upper_bound());
@@ -60,8 +59,10 @@ std::string FindErrorInBounds(const BoundedElement& element) {
 }
 
 // Internal method to detect errors in a single variable.
-std::string FindErrorInMPVariable(const MPVariableProto& variable) {
-  const std::string bound_error = FindErrorInBounds(variable);
+std::string FindErrorInMPVariable(const MPVariableProto& variable,
+                                  double abs_value_threshold) {
+  const std::string bound_error =
+      FindErrorInBounds(variable, abs_value_threshold);
   if (!bound_error.empty()) return bound_error;
 
   if (variable.is_integer() &&
@@ -70,7 +71,8 @@ std::string FindErrorInMPVariable(const MPVariableProto& variable) {
         "Infeasible bounds for integer variable: [", (variable.lower_bound()),
         ", ", (variable.upper_bound()), "]", " translate to the empty set");
   }
-  if (!IsFinite(variable.objective_coefficient())) {
+  if (IsNanOrAbsGreaterThanOrEqual(variable.objective_coefficient(),
+                                   abs_value_threshold)) {
     return absl::StrCat("Invalid objective_coefficient: ",
                         (variable.objective_coefficient()));
   }
@@ -101,8 +103,10 @@ std::string FindDuplicateVarIndex(const Iterable& var_indices,
 // "var_mask" is a vector<bool> whose size is the number of variables in
 // the model, and it will be all set to false before and after the call.
 std::string FindErrorInMPConstraint(const MPConstraintProto& constraint,
-                                    std::vector<bool>* var_mask) {
-  const std::string bound_error = FindErrorInBounds(constraint);
+                                    std::vector<bool>* var_mask,
+                                    double abs_value_threshold) {
+  const std::string bound_error =
+      FindErrorInBounds(constraint, abs_value_threshold);
   if (!bound_error.empty()) return bound_error;
 
   // TODO(user): clarify explicitly, at least in a comment, whether we want
@@ -122,7 +126,7 @@ std::string FindErrorInMPConstraint(const MPConstraintProto& constraint,
                           " is out of bounds");
     }
     const double coeff = constraint.coefficient(i);
-    if (!IsFinite(coeff)) {
+    if (IsNanOrAbsGreaterThanOrEqual(coeff, abs_value_threshold)) {
       return absl::StrCat("coefficient(", i, ")=", (coeff), " is invalid");
     }
   }
@@ -163,7 +167,7 @@ bool IsBoolean(const MPVariableProto& variable) {
 
 std::string FindErrorInMPIndicatorConstraint(
     const MPModelProto& model, const MPIndicatorConstraint& indicator,
-    std::vector<bool>* var_mask) {
+    std::vector<bool>* var_mask, double abs_value_threshold) {
   if (!indicator.has_var_index()) {
     return "var_index is required.";
   }
@@ -179,7 +183,8 @@ std::string FindErrorInMPIndicatorConstraint(
     return absl::StrCat("var_value=", var_value, " must be 0 or 1.");
   }
   const MPConstraintProto& constraint = indicator.constraint();
-  std::string error = FindErrorInMPConstraint(constraint, var_mask);
+  std::string error =
+      FindErrorInMPConstraint(constraint, var_mask, abs_value_threshold);
   if (!error.empty()) {
     // Constraint protos can be huge, theoretically. So we guard against
     // that.
@@ -191,7 +196,8 @@ std::string FindErrorInMPIndicatorConstraint(
 
 std::string FindErrorInMPSosConstraint(const MPModelProto& model,
                                        const MPSosConstraint& sos,
-                                       std::vector<bool>* var_mask) {
+                                       std::vector<bool>* var_mask,
+                                       double abs_value_threshold) {
   if (sos.weight_size() != 0 && sos.weight_size() != sos.var_index_size()) {
     return "weight_size() > 0 and var_index_size() != weight_size()";
   }
@@ -201,7 +207,7 @@ std::string FindErrorInMPSosConstraint(const MPModelProto& model,
     }
   }
   for (int i = 0; i < sos.weight_size(); ++i) {
-    if (!IsFinite(sos.weight(i))) {
+    if (IsNanOrAbsGreaterThanOrEqual(sos.weight(i), abs_value_threshold)) {
       return absl::StrCat("Invalid weight: ", sos.weight(i));
     }
     if (i == 0) continue;
@@ -218,14 +224,15 @@ std::string FindErrorInMPSosConstraint(const MPModelProto& model,
 
 std::string FindErrorInMPQuadraticConstraint(const MPModelProto& model,
                                              const MPQuadraticConstraint& qcst,
-                                             std::vector<bool>* var_mask) {
+                                             std::vector<bool>* var_mask,
+                                             double abs_value_threshold) {
   const int num_vars = model.variable_size();
 
   if (qcst.var_index_size() != qcst.coefficient_size()) {
     return "var_index_size() != coefficient_size()";
   }
 
-  const std::string bound_error = FindErrorInBounds(qcst);
+  const std::string bound_error = FindErrorInBounds(qcst, abs_value_threshold);
   if (!bound_error.empty()) return bound_error;
 
   for (int i = 0; i < qcst.var_index_size(); ++i) {
@@ -234,7 +241,8 @@ std::string FindErrorInMPQuadraticConstraint(const MPModelProto& model,
                           " is invalid.", " It must be in [0, ", num_vars, ")");
     }
 
-    if (!IsFinite(qcst.coefficient(i))) {
+    if (IsNanOrAbsGreaterThanOrEqual(qcst.coefficient(i),
+                                     abs_value_threshold)) {
       return absl::StrCat("coefficient(", i, ")=", qcst.coefficient(i),
                           " is invalid");
     }
@@ -258,7 +266,8 @@ std::string FindErrorInMPQuadraticConstraint(const MPModelProto& model,
                           " is invalid.", " It must be in [0, ", num_vars, ")");
     }
 
-    if (!IsFinite(qcst.qcoefficient(i))) {
+    if (IsNanOrAbsGreaterThanOrEqual(qcst.qcoefficient(i),
+                                     abs_value_threshold)) {
       return absl::StrCat("qcoefficient(", i, ")=", qcst.qcoefficient(i),
                           " is invalid");
     }
@@ -319,7 +328,8 @@ std::string FindErrorInMPAndOrConstraint(const MPModelProto& model,
 }
 
 std::string FindErrorInMPMinMaxConstraint(
-    const MPModelProto& model, const MPArrayWithConstantConstraint& min_max) {
+    const MPModelProto& model, const MPArrayWithConstantConstraint& min_max,
+    double abs_value_threshold) {
   if (min_max.var_index_size() == 0) {
     return "var_index cannot be empty.";
   }
@@ -327,7 +337,7 @@ std::string FindErrorInMPMinMaxConstraint(
     return "resultant_var_index is required.";
   }
 
-  if (!IsFinite(min_max.constant())) {
+  if (IsNanOrAbsGreaterThanOrEqual(min_max.constant(), abs_value_threshold)) {
     return absl::StrCat("Invalid constant: ", (min_max.constant()));
   }
 
@@ -347,7 +357,8 @@ std::string FindErrorInMPMinMaxConstraint(
 }
 
 std::string FindErrorInQuadraticObjective(const MPQuadraticObjective& qobj,
-                                          int num_vars) {
+                                          int num_vars,
+                                          double abs_value_threshold) {
   if (qobj.qvar1_index_size() != qobj.qvar2_index_size() ||
       qobj.qvar1_index_size() != qobj.coefficient_size()) {
     return "indices and coefficients must have the same size";
@@ -364,7 +375,8 @@ std::string FindErrorInQuadraticObjective(const MPQuadraticObjective& qobj,
                           " is invalid.", " It must be in [0, ", num_vars, ")");
     }
 
-    if (!IsFinite(qobj.coefficient(i))) {
+    if (IsNanOrAbsGreaterThanOrEqual(qobj.coefficient(i),
+                                     abs_value_threshold)) {
       return absl::StrCat("coefficient(", i, ")=", (qobj.coefficient(i)),
                           " is invalid");
     }
@@ -373,7 +385,8 @@ std::string FindErrorInQuadraticObjective(const MPQuadraticObjective& qobj,
 }
 
 std::string FindErrorInSolutionHint(
-    const PartialVariableAssignment& solution_hint, int num_vars) {
+    const PartialVariableAssignment& solution_hint, int num_vars,
+    double abs_value_threshold) {
   if (solution_hint.var_index_size() != solution_hint.var_value_size()) {
     return absl::StrCat("var_index_size() != var_value_size() [",
                         solution_hint.var_index_size(), " VS ",
@@ -390,7 +403,8 @@ std::string FindErrorInSolutionHint(
       return absl::StrCat("Duplicate var_index = ", var_index);
     }
     var_in_hint[var_index] = true;
-    if (!IsFinite(solution_hint.var_value(i))) {
+    if (IsNanOrAbsGreaterThanOrEqual(solution_hint.var_value(i),
+                                     abs_value_threshold)) {
       return absl::StrCat("var_value(", i, ")=", (solution_hint.var_value(i)),
                           " is invalid");
     }
@@ -399,12 +413,17 @@ std::string FindErrorInSolutionHint(
 }
 }  // namespace
 
-std::string FindErrorInMPModelProto(const MPModelProto& model) {
+std::string FindErrorInMPModelProto(const MPModelProto& model,
+                                    double abs_value_threshold) {
   // NOTE(user): Empty models are considered fine by this function, although
   // it is not clear whether MPSolver::Solve() will always respond in the same
   // way, depending on the solvers.
+  if (abs_value_threshold == 0.0) {
+    abs_value_threshold = absl::GetFlag(FLAGS_model_validator_infinity);
+  }
 
-  if (!IsFinite(model.objective_offset())) {
+  if (IsNanOrAbsGreaterThanOrEqual(model.objective_offset(),
+                                   abs_value_threshold)) {
     return absl::StrCat("Invalid objective_offset: ",
                         (model.objective_offset()));
   }
@@ -414,7 +433,7 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
   // Validate variables.
   std::string error;
   for (int i = 0; i < num_vars; ++i) {
-    error = FindErrorInMPVariable(model.variable(i));
+    error = FindErrorInMPVariable(model.variable(i), abs_value_threshold);
     if (!error.empty()) {
       return absl::StrCat("In variable #", i, ": ", error, ". Variable proto: ",
                           ProtobufShortDebugString(model.variable(i)));
@@ -425,7 +444,8 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
   std::vector<bool> variable_appears(num_vars, false);
   for (int i = 0; i < num_cts; ++i) {
     const MPConstraintProto& constraint = model.constraint(i);
-    error = FindErrorInMPConstraint(constraint, &variable_appears);
+    error = FindErrorInMPConstraint(constraint, &variable_appears,
+                                    abs_value_threshold);
     if (!error.empty()) {
       // Constraint protos can be huge, theoretically. So we guard against that.
       return absl::StrCat("In constraint #", i, ": ", error, ". ",
@@ -441,17 +461,20 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
     switch (gen_constraint.general_constraint_case()) {
       case MPGeneralConstraintProto::kIndicatorConstraint:
         error = FindErrorInMPIndicatorConstraint(
-            model, gen_constraint.indicator_constraint(), &variable_appears);
+            model, gen_constraint.indicator_constraint(), &variable_appears,
+            abs_value_threshold);
         break;
 
       case MPGeneralConstraintProto::kSosConstraint:
-        error = FindErrorInMPSosConstraint(
-            model, gen_constraint.sos_constraint(), &variable_appears);
+        error =
+            FindErrorInMPSosConstraint(model, gen_constraint.sos_constraint(),
+                                       &variable_appears, abs_value_threshold);
         break;
 
       case MPGeneralConstraintProto::kQuadraticConstraint:
         error = FindErrorInMPQuadraticConstraint(
-            model, gen_constraint.quadratic_constraint(), &variable_appears);
+            model, gen_constraint.quadratic_constraint(), &variable_appears,
+            abs_value_threshold);
         break;
 
       case MPGeneralConstraintProto::kAbsConstraint:
@@ -470,13 +493,13 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
         break;
 
       case MPGeneralConstraintProto::kMinConstraint:
-        error = FindErrorInMPMinMaxConstraint(model,
-                                              gen_constraint.min_constraint());
+        error = FindErrorInMPMinMaxConstraint(
+            model, gen_constraint.min_constraint(), abs_value_threshold);
         break;
 
       case MPGeneralConstraintProto::kMaxConstraint:
-        error = FindErrorInMPMinMaxConstraint(model,
-                                              gen_constraint.max_constraint());
+        error = FindErrorInMPMinMaxConstraint(
+            model, gen_constraint.max_constraint(), abs_value_threshold);
         break;
       default:
         return absl::StrCat("Unknown general constraint type ",
@@ -489,13 +512,14 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
 
   // Validate objectives.
   if (model.has_quadratic_objective()) {
-    error =
-        FindErrorInQuadraticObjective(model.quadratic_objective(), num_vars);
+    error = FindErrorInQuadraticObjective(model.quadratic_objective(), num_vars,
+                                          abs_value_threshold);
     if (!error.empty()) return absl::StrCat("In quadratic_objective: ", error);
   }
 
   // Validate the solution hint.
-  error = FindErrorInSolutionHint(model.solution_hint(), num_vars);
+  error = FindErrorInSolutionHint(model.solution_hint(), num_vars,
+                                  abs_value_threshold);
   if (!error.empty()) {
     return absl::StrCat("In solution_hint(): ", error);
   }
@@ -599,7 +623,9 @@ std::string FindFeasibilityErrorInSolutionHint(const MPModelProto& model,
   const int num_vars = model.variable_size();
 
   // First, we validate the solution hint.
-  std::string error = FindErrorInSolutionHint(model.solution_hint(), num_vars);
+  std::string error =
+      FindErrorInSolutionHint(model.solution_hint(), num_vars,
+                              absl::GetFlag(FLAGS_model_validator_infinity));
   if (!error.empty()) return absl::StrCat("Invalid solution_hint: ", error);
 
   // Special error message for the empty case.
@@ -655,6 +681,8 @@ std::string FindFeasibilityErrorInSolutionHint(const MPModelProto& model,
 
 std::string FindErrorInMPModelDeltaProto(const MPModelDeltaProto& delta,
                                          const MPModelProto& model) {
+  const double abs_value_threshold =
+      absl::GetFlag(FLAGS_model_validator_infinity);
   int num_vars = model.variable_size();
   // Validate delta variables.
   std::string error;
@@ -669,13 +697,13 @@ std::string FindErrorInMPModelDeltaProto(const MPModelDeltaProto& delta,
     } else if (var_index >= num_vars) {
       max_var_index = std::max(max_var_index, var_index);
       new_var_indices.insert(var_index);
-      error = FindErrorInMPVariable(var_override_proto);
+      error = FindErrorInMPVariable(var_override_proto, abs_value_threshold);
     } else {
       tmp_var_proto = model.variable(var_index);
       // NOTE(user): It is OK for the override proto to be empty, i.e. be a
       // non-override.
       tmp_var_proto.MergeFrom(var_override_proto);
-      error = FindErrorInMPVariable(tmp_var_proto);
+      error = FindErrorInMPVariable(tmp_var_proto, abs_value_threshold);
     }
     if (!error.empty()) {
       return absl::StrFormat(
@@ -710,8 +738,8 @@ std::string FindErrorInMPModelDeltaProto(const MPModelDeltaProto& delta,
     } else if (ct_index >= num_constraints) {
       max_ct_index = std::max(max_ct_index, ct_index);
       new_ct_indices.insert(ct_index);
-      error =
-          FindErrorInMPConstraint(constraint_override_proto, &variable_appears);
+      error = FindErrorInMPConstraint(constraint_override_proto,
+                                      &variable_appears, abs_value_threshold);
     } else {
       // NOTE(user): We don't need to do the merging of var_index/coefficient:
       // that part of the merged constraint will be valid iff the override is
@@ -724,7 +752,8 @@ std::string FindErrorInMPModelDeltaProto(const MPModelDeltaProto& delta,
       MergeMPConstraintProtoExceptTerms(model.constraint(ct_index),
                                         &tmp_constraint_proto);
       tmp_constraint_proto.MergeFrom(constraint_override_proto);
-      error = FindErrorInMPConstraint(tmp_constraint_proto, &variable_appears);
+      error = FindErrorInMPConstraint(tmp_constraint_proto, &variable_appears,
+                                      abs_value_threshold);
     }
     if (!error.empty()) {
       return absl::StrFormat(

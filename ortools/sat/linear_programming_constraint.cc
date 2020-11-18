@@ -24,12 +24,12 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/numeric/int128.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
 #include "ortools/glop/status.h"
@@ -1058,15 +1058,15 @@ void LinearProgrammingConstraint::AddMirCuts() {
   // TODO(user): We could combine n rows to make sure we eliminate n variables
   // far away from their bounds by solving exactly in integer small linear
   // system.
-  gtl::ITIVector<ColIndex, IntegerValue> dense_cut(integer_variables_.size(),
-                                                   IntegerValue(0));
+  absl::StrongVector<ColIndex, IntegerValue> dense_cut(
+      integer_variables_.size(), IntegerValue(0));
   SparseBitset<ColIndex> non_zeros_(ColIndex(integer_variables_.size()));
 
   // We compute all the rows that are tight, these will be used as the base row
   // for the MIR_n procedure below.
   const RowIndex num_rows = lp_data_.num_constraints();
   std::vector<std::pair<RowIndex, IntegerValue>> base_rows;
-  gtl::ITIVector<RowIndex, double> row_weights(num_rows.value(), 0.0);
+  absl::StrongVector<RowIndex, double> row_weights(num_rows.value(), 0.0);
   for (RowIndex row(0); row < num_rows; ++row) {
     const auto status = simplex_.GetConstraintStatus(row);
     if (status == glop::ConstraintStatus::BASIC) continue;
@@ -1100,7 +1100,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
   }
 
   std::vector<double> weights;
-  gtl::ITIVector<RowIndex, bool> used_rows;
+  absl::StrongVector<RowIndex, bool> used_rows;
   std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
   for (const std::pair<RowIndex, IntegerValue>& entry : base_rows) {
     if (time_limit_->LimitReached()) break;
@@ -2173,15 +2173,13 @@ namespace {
 // Note that we used to also add the same cut for the incoming arcs, but because
 // of flow conservation on these problems, the outgoing flow is always the same
 // as the incoming flow, so adding this extra cut doesn't seem relevant.
-void AddOutgoingCut(int num_nodes, int subset_size,
-                    const std::vector<bool>& in_subset,
-                    const std::vector<int>& tails,
-                    const std::vector<int>& heads,
-                    const std::vector<Literal>& literals,
-                    const std::vector<double>& literal_lp_values,
-                    int64 rhs_lower_bound,
-                    const gtl::ITIVector<IntegerVariable, double>& lp_values,
-                    LinearConstraintManager* manager, Model* model) {
+void AddOutgoingCut(
+    int num_nodes, int subset_size, const std::vector<bool>& in_subset,
+    const std::vector<int>& tails, const std::vector<int>& heads,
+    const std::vector<Literal>& literals,
+    const std::vector<double>& literal_lp_values, int64 rhs_lower_bound,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    LinearConstraintManager* manager, Model* model) {
   // A node is said to be optional if it can be excluded from the subcircuit,
   // in which case there is a self-loop on that node.
   // If there are optional nodes, use extended formula:
@@ -2273,7 +2271,7 @@ void AddOutgoingCut(int num_nodes, int subset_size,
 void SeparateSubtourInequalities(
     int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
     const std::vector<Literal>& literals,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
     absl::Span<const int64> demands, int64 capacity,
     LinearConstraintManager* manager, Model* model) {
   if (num_nodes <= 2) return;
@@ -2518,7 +2516,7 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
   result.vars = GetAssociatedVariables(literals, model);
   result.generate_cuts =
       [num_nodes, tails, heads, literals, model](
-          const gtl::ITIVector<IntegerVariable, double>& lp_values,
+          const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         SeparateSubtourInequalities(
             num_nodes, tails, heads, literals, lp_values,
@@ -2537,7 +2535,7 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
   result.vars = GetAssociatedVariables(literals, model);
   result.generate_cuts =
       [num_nodes, tails, heads, demands, capacity, literals, model](
-          const gtl::ITIVector<IntegerVariable, double>& lp_values,
+          const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         SeparateSubtourInequalities(num_nodes, tails, heads, literals,
                                     lp_values, demands, capacity, manager,

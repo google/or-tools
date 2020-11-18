@@ -818,7 +818,7 @@ int PrecedencesPropagator::
   auto* solver = model->GetOrCreate<SatSolver>();
 
   // Fill the set of incoming conditional arcs for each variables.
-  gtl::ITIVector<IntegerVariable, std::vector<ArcIndex>> incoming_arcs_;
+  absl::StrongVector<IntegerVariable, std::vector<ArcIndex>> incoming_arcs_;
   for (ArcIndex arc_index(0); arc_index < arcs_.size(); ++arc_index) {
     const ArcInfo& arc = arcs_[arc_index];
 

@@ -338,6 +338,13 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     strategies["core_max_lp"] = new_params;
   }
 
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    new_params.set_use_probing_search(true);
+    strategies["probing"] = new_params;
+  }
+
   // Search variation.
   {
     SatParameters new_params = base_params;
@@ -423,6 +430,9 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     if (num_workers > 10) {
       names.push_back("quick_restart_no_lp");
     }
+  }
+  if (num_workers > 12) {
+    names.push_back("probing");
   }
 
   // Creates the diverse set of parameters with names and seed. We remove the

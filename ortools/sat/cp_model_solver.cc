@@ -44,10 +44,10 @@
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/vlog_is_on.h"
@@ -1322,7 +1322,8 @@ void LoadCpModel(const CpModelProto& model_proto,
   // TODO(user): We don't have a good deterministic time on all constraints,
   // so this might take more time than wanted.
   if (parameters.cp_model_probing_level() > 1) {
-    ProbeBooleanVariables(/*deterministic_time_limit=*/1.0, model);
+    Prober* prober = model->GetOrCreate<Prober>();
+    prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0);
     if (model->GetOrCreate<SatSolver>()->IsModelUnsat()) {
       return unsat();
     }
@@ -1549,7 +1550,24 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
   const auto& mapping = *model->GetOrCreate<CpModelMapping>();
   SatSolver::Status status;
   const SatParameters& parameters = *model->GetOrCreate<SatParameters>();
-  if (!model_proto.has_objective()) {
+  if (parameters.use_probing_search()) {
+    std::vector<BooleanVariable> bool_vars;
+    std::vector<IntegerVariable> int_vars;
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    for (int v = 0; v < model_proto.variables_size(); ++v) {
+      if (mapping.IsBoolean(v)) {
+        const Literal literal = mapping.Literal(v);
+        if (literal.IsPositive()) {
+          bool_vars.push_back(literal.Variable());
+        }
+      } else {
+        IntegerVariable var = mapping.Integer(v);
+        if (integer_trail->IsFixed(var)) continue;
+        int_vars.push_back(var);
+      }
+    }
+    status = ContinuousProbing(bool_vars, int_vars, solution_observer, model);
+  } else if (!model_proto.has_objective()) {
     while (true) {
       status = ResetAndSolveIntegerProblem(
           mapping.Literals(model_proto.assumptions()), model);

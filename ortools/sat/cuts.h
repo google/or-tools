@@ -39,8 +39,9 @@ namespace sat {
 // - Only add cuts in term of the same variables or their negation.
 struct CutGenerator {
   std::vector<IntegerVariable> vars;
-  std::function<void(const gtl::ITIVector<IntegerVariable, double>& lp_values,
-                     LinearConstraintManager* manager)>
+  std::function<void(
+      const absl::StrongVector<IntegerVariable, double>& lp_values,
+      LinearConstraintManager* manager)>
       generate_cuts;
 };
 
@@ -63,7 +64,7 @@ class ImpliedBoundsProcessor {
 
   // Processes and updates the given cut.
   void ProcessUpperBoundedConstraint(
-      const gtl::ITIVector<IntegerVariable, double>& lp_values,
+      const absl::StrongVector<IntegerVariable, double>& lp_values,
       LinearConstraint* cut);
 
   // Same as ProcessUpperBoundedConstraint() but instead of just using
@@ -85,13 +86,13 @@ class ImpliedBoundsProcessor {
   };
   void ProcessUpperBoundedConstraintWithSlackCreation(
       bool substitute_only_inner_variables, IntegerVariable first_slack,
-      const gtl::ITIVector<IntegerVariable, double>& lp_values,
+      const absl::StrongVector<IntegerVariable, double>& lp_values,
       LinearConstraint* cut, std::vector<SlackInfo>* slack_infos);
 
   // See if some of the implied bounds equation are violated and add them to
   // the IB cut pool if it is the case.
   void SeparateSomeImpliedBoundCuts(
-      const gtl::ITIVector<IntegerVariable, double>& lp_values);
+      const absl::StrongVector<IntegerVariable, double>& lp_values);
 
   // Only used for debugging.
   //
@@ -125,7 +126,7 @@ class ImpliedBoundsProcessor {
  private:
   BestImpliedBoundInfo ComputeBestImpliedBound(
       IntegerVariable var,
-      const gtl::ITIVector<IntegerVariable, double>& lp_values);
+      const absl::StrongVector<IntegerVariable, double>& lp_values);
 
   absl::flat_hash_set<IntegerVariable> lp_vars_;
   mutable absl::flat_hash_map<IntegerVariable, BestImpliedBoundInfo> cache_;
@@ -272,7 +273,7 @@ class CoverCutHelper {
 // constraint.
 LinearConstraint GetPreprocessedLinearConstraint(
     const LinearConstraint& constraint,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
     const IntegerTrail& integer_trail);
 
 // Returns true if sum of all the variables in the given constraint is less than
@@ -296,7 +297,7 @@ bool ConstraintIsTriviallyTrue(const LinearConstraint& constraint,
 // negative coefficients.
 bool CanBeFilteredUsingCutLowerBound(
     const LinearConstraint& preprocessed_constraint,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
     const IntegerTrail& integer_trail);
 
 // Struct to help compute upper bound for knapsack instance.
@@ -317,7 +318,7 @@ double GetKnapsackUpperBound(std::vector<KnapsackItem> items, double capacity);
 // that all the coefficients are non negative.
 bool CanBeFilteredUsingKnapsackUpperBound(
     const LinearConstraint& constraint,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
     const IntegerTrail& integer_trail);
 
 // Returns true if the given constraint passes all the filters described above.
@@ -325,7 +326,7 @@ bool CanBeFilteredUsingKnapsackUpperBound(
 // negative coefficients.
 bool CanFormValidKnapsackCover(
     const LinearConstraint& preprocessed_constraint,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
     const IntegerTrail& integer_trail);
 
 // Converts the given constraint into canonical knapsack form (described
@@ -350,7 +351,7 @@ void ConvertToKnapsackForm(const LinearConstraint& constraint,
 // difference between the cut upper bound and this maximum value.
 bool LiftKnapsackCut(
     const LinearConstraint& constraint,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
     const std::vector<IntegerValue>& cut_vars_original_coefficients,
     const IntegerTrail& integer_trail, TimeLimit* time_limit,
     LinearConstraint* cut);

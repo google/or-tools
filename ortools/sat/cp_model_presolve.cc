@@ -1233,6 +1233,10 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
       // constraint by expanding its rhs.
       context_->UpdateRuleStats(
           "linear: singleton column in equality and in objective.");
+
+      // TODO(b/173280761): Prevent potential overflow here. Even if coeff
+      // divide objective_coeff, we might add big coefficients to the objective
+      // this way which will break our linear expression overflow precondition.
       context_->SubstituteVariableInObjective(var, coeff, *ct);
       rhs = new_rhs;
       index_to_erase.insert(i);
@@ -3427,7 +3431,8 @@ void CpModelPresolver::Probe() {
   // TODO(user): Compute the transitive reduction instead of just the
   // equivalences, and use the newly learned binary clauses?
   auto* implication_graph = model.GetOrCreate<BinaryImplicationGraph>();
-  ProbeBooleanVariables(/*deterministic_time_limit=*/1.0, &model);
+  auto* prober = model.GetOrCreate<Prober>();
+  prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0);
   if (options_.time_limit != nullptr) {
     options_.time_limit->AdvanceDeterministicTime(
         model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime());

@@ -3186,9 +3186,9 @@ void RevisedSimplex::DisplayVariableBounds() {
   }
 }
 
-gtl::ITIVector<RowIndex, SparseRow> RevisedSimplex::ComputeDictionary(
+absl::StrongVector<RowIndex, SparseRow> RevisedSimplex::ComputeDictionary(
     const DenseRow* column_scales) {
-  gtl::ITIVector<RowIndex, SparseRow> dictionary(num_rows_.value());
+  absl::StrongVector<RowIndex, SparseRow> dictionary(num_rows_.value());
   for (ColIndex col(0); col < num_cols_; ++col) {
     ComputeDirection(col);
     for (const auto e : direction_) {

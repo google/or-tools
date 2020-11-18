@@ -21,8 +21,8 @@
 
 #include "ortools/base/basictypes.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/util/bitset.h"
 
 // We use typedefs as much as possible to later permit the usage of
@@ -249,10 +249,10 @@ ConstraintStatus VariableToConstraintStatus(VariableStatus status);
 // TODO(user): This should probably move into ITIVector, but note that this
 // version is more strict and does not allow any other size types.
 template <typename IntType, typename T>
-class StrictITIVector : public gtl::ITIVector<IntType, T> {
+class StrictITIVector : public absl::StrongVector<IntType, T> {
  public:
   typedef IntType IndexType;  // g++ 4.8.1 needs this.
-  typedef gtl::ITIVector<IntType, T> ParentType;
+  typedef absl::StrongVector<IntType, T> ParentType;
 // This allows for brace initialization, which is really useful in tests.
 // It is not 'explicit' by design, so one can do vector = {...};
 #if !defined(__ANDROID__) && (!defined(_MSC_VER) || (_MSC_VER >= 1800))

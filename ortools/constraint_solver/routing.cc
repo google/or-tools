@@ -612,121 +612,6 @@ Constraint* MakeLightElement2(Solver* const solver, IntVar* const var,
       std::move(deep_serialize)));
 }
 
-// Shortcuts to spawn neighborhood operators from ./routing_neighborhoods.h.
-// TODO(user): Consider removing all these trivial wrappers and just inlining
-// the solver->RevAlloc(new ...Operator()) calls in the client code.
-
-LocalSearchOperator* MakeRelocateNeighbors(
-    Solver* solver, const std::vector<IntVar*>& vars,
-    const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64)> start_empty_path_class,
-    RoutingModel::TransitCallback2 arc_evaluator) {
-  return solver->RevAlloc(new MakeRelocateNeighborsOperator(
-      vars, secondary_vars, std::move(start_empty_path_class),
-      std::move(arc_evaluator)));
-}
-
-LocalSearchOperator* MakePairActive(
-    Solver* const solver, const std::vector<IntVar*>& vars,
-    const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64)> start_empty_path_class,
-    const RoutingModel::IndexPairs& pairs) {
-  return solver->RevAlloc(new MakePairActiveOperator(
-      vars, secondary_vars, std::move(start_empty_path_class), pairs));
-}
-
-LocalSearchOperator* MakePairInactive(
-    Solver* const solver, const std::vector<IntVar*>& vars,
-    const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64)> start_empty_path_class,
-    const RoutingModel::IndexPairs& pairs) {
-  return solver->RevAlloc(new MakePairInactiveOperator(
-      vars, secondary_vars, std::move(start_empty_path_class), pairs));
-}
-
-LocalSearchOperator* MakePairRelocate(
-    Solver* const solver, const std::vector<IntVar*>& vars,
-    const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64)> start_empty_path_class,
-    const RoutingModel::IndexPairs& pairs) {
-  return solver->RevAlloc(new PairRelocateOperator(
-      vars, secondary_vars, std::move(start_empty_path_class), pairs));
-}
-
-LocalSearchOperator* MakeLightPairRelocate(
-    Solver* const solver, const std::vector<IntVar*>& vars,
-    const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64)> start_empty_path_class,
-    const RoutingModel::IndexPairs& pairs) {
-  return solver->RevAlloc(new LightPairRelocateOperator(
-      vars, secondary_vars, std::move(start_empty_path_class), pairs));
-}
-
-LocalSearchOperator* MakePairExchange(
-    Solver* const solver, const std::vector<IntVar*>& vars,
-    const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64)> start_empty_path_class,
-    const RoutingModel::IndexPairs& pairs) {
-  return solver->RevAlloc(new PairExchangeOperator(
-      vars, secondary_vars, std::move(start_empty_path_class), pairs));
-}
-
-LocalSearchOperator* MakePairExchangeRelocate(
-    Solver* const solver, const std::vector<IntVar*>& vars,
-    const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64)> start_empty_path_class,
-    const RoutingModel::IndexPairs& pairs) {
-  return solver->RevAlloc(new PairExchangeRelocateOperator(
-      vars, secondary_vars, std::move(start_empty_path_class), pairs));
-}
-
-LocalSearchOperator* SwapIndexPair(Solver* const solver,
-                                   const std::vector<IntVar*>& vars,
-                                   const std::vector<IntVar*>& secondary_vars,
-                                   const RoutingModel::IndexPairs& pairs) {
-  return solver->RevAlloc(
-      new SwapIndexPairOperator(vars, secondary_vars, pairs));
-}
-
-LocalSearchOperator* IndexPairSwapActive(
-    Solver* const solver, const std::vector<IntVar*>& vars,
-    const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64)> start_empty_path_class,
-    const RoutingModel::IndexPairs& pairs) {
-  return solver->RevAlloc(new IndexPairSwapActiveOperator(
-      vars, secondary_vars, std::move(start_empty_path_class), pairs));
-}
-
-LocalSearchOperator* PairNodeSwapActive(
-    Solver* const solver, const std::vector<IntVar*>& vars,
-    const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64)> start_empty_path_class,
-    const RoutingModel::IndexPairs& pairs) {
-  return solver->ConcatenateOperators(
-      {solver->RevAlloc(new PairNodeSwapActiveOperator<true>(
-           vars, secondary_vars, start_empty_path_class, pairs)),
-       solver->RevAlloc(new PairNodeSwapActiveOperator<false>(
-           vars, secondary_vars, std::move(start_empty_path_class), pairs))});
-}
-
-LocalSearchOperator* MakeRelocateSubtrip(
-    Solver* const solver, const std::vector<IntVar*>& vars,
-    const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64)> start_empty_path_class,
-    const RoutingModel::IndexPairs& pairs) {
-  return solver->RevAlloc(new RelocateSubtrip(
-      vars, secondary_vars, std::move(start_empty_path_class), pairs));
-}
-
-LocalSearchOperator* MakeExchangeSubtrip(
-    Solver* const solver, const std::vector<IntVar*>& vars,
-    const std::vector<IntVar*>& secondary_vars,
-    std::function<int(int64)> start_empty_path_class,
-    const RoutingModel::IndexPairs& pairs) {
-  return solver->RevAlloc(new ExchangeSubtrip(
-      vars, secondary_vars, std::move(start_empty_path_class), pairs));
-}
-
 // Evaluators
 template <class A, class B>
 static int64 ReturnZero(A a, B b) {
@@ -4495,26 +4380,15 @@ RoutingModel::GetOrCreateFirstSolutionLargeNeighborhoodSearchLimit() {
 }
 
 LocalSearchOperator* RoutingModel::CreateInsertionOperator() {
-  std::vector<IntVar*> empty;
   LocalSearchOperator* insertion_operator =
-      MakeLocalSearchOperator<MakeActiveOperator>(
-          solver_.get(), nexts_,
-          CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-          vehicle_start_class_callback_);
+      CreateCPOperator<MakeActiveOperator>();
   if (!pickup_delivery_pairs_.empty()) {
     insertion_operator = solver_->ConcatenateOperators(
-        {MakePairActive(
-             solver_.get(), nexts_,
-             CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-             vehicle_start_class_callback_, pickup_delivery_pairs_),
-         insertion_operator});
+        {CreatePairOperator<MakePairActiveOperator>(), insertion_operator});
   }
   if (!implicit_pickup_delivery_pairs_without_alternatives_.empty()) {
     insertion_operator = solver_->ConcatenateOperators(
-        {MakePairActive(
-             solver_.get(), nexts_,
-             CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-             vehicle_start_class_callback_,
+        {CreateOperator<MakePairActiveOperator>(
              implicit_pickup_delivery_pairs_without_alternatives_),
          insertion_operator});
   }
@@ -4522,97 +4396,95 @@ LocalSearchOperator* RoutingModel::CreateInsertionOperator() {
 }
 
 LocalSearchOperator* RoutingModel::CreateMakeInactiveOperator() {
-  std::vector<IntVar*> empty;
   LocalSearchOperator* make_inactive_operator =
-      MakeLocalSearchOperator<MakeInactiveOperator>(
-          solver_.get(), nexts_,
-          CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-          vehicle_start_class_callback_);
+      CreateCPOperator<MakeInactiveOperator>();
   if (!pickup_delivery_pairs_.empty()) {
     make_inactive_operator = solver_->ConcatenateOperators(
-        {MakePairInactive(
-             solver_.get(), nexts_,
-             CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-             vehicle_start_class_callback_, pickup_delivery_pairs_),
+        {CreatePairOperator<MakePairInactiveOperator>(),
          make_inactive_operator});
   }
   return make_inactive_operator;
 }
 
-#define CP_ROUTING_ADD_OPERATOR(operator_type, cp_operator_type)    \
-  if (CostsAreHomogeneousAcrossVehicles()) {                        \
-    local_search_operators_[operator_type] =                        \
-        solver_->MakeOperator(nexts_, Solver::cp_operator_type);    \
-  } else {                                                          \
-    local_search_operators_[operator_type] = solver_->MakeOperator( \
-        nexts_, vehicle_vars_, Solver::cp_operator_type);           \
-  }
-
-#define CP_ROUTING_ADD_OPERATOR2(operator_type, cp_operator_class)     \
-  local_search_operators_[operator_type] =                             \
-      MakeLocalSearchOperator<cp_operator_class>(                      \
-          solver_.get(), nexts_,                                       \
-          CostsAreHomogeneousAcrossVehicles() ? std::vector<IntVar*>() \
-                                              : vehicle_vars_,         \
-          vehicle_start_class_callback_);
-
-#define CP_ROUTING_ADD_CALLBACK_OPERATOR(operator_type, cp_operator_type) \
-  if (CostsAreHomogeneousAcrossVehicles()) {                              \
-    local_search_operators_[operator_type] = solver_->MakeOperator(       \
-        nexts_,                                                           \
-        [this](int64 i, int64 j, int64 k) {                               \
-          return GetArcCostForVehicle(i, j, k);                           \
-        },                                                                \
-        Solver::cp_operator_type);                                        \
-  } else {                                                                \
-    local_search_operators_[operator_type] = solver_->MakeOperator(       \
-        nexts_, vehicle_vars_,                                            \
-        [this](int64 i, int64 j, int64 k) {                               \
-          return GetArcCostForVehicle(i, j, k);                           \
-        },                                                                \
-        Solver::cp_operator_type);                                        \
-  }
-
 void RoutingModel::CreateNeighborhoodOperators(
     const RoutingSearchParameters& parameters) {
   local_search_operators_.clear();
   local_search_operators_.resize(LOCAL_SEARCH_OPERATOR_COUNTER, nullptr);
-  CP_ROUTING_ADD_OPERATOR2(RELOCATE, Relocate);
-  std::vector<IntVar*> empty;
-  local_search_operators_[RELOCATE_PAIR] = MakePairRelocate(
-      solver_.get(), nexts_,
-      CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-      vehicle_start_class_callback_, pickup_delivery_pairs_);
-  local_search_operators_[LIGHT_RELOCATE_PAIR] = MakeLightPairRelocate(
-      solver_.get(), nexts_,
-      CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-      vehicle_start_class_callback_, pickup_delivery_pairs_);
-  local_search_operators_[EXCHANGE_PAIR] = MakePairExchange(
-      solver_.get(), nexts_,
-      CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-      vehicle_start_class_callback_, pickup_delivery_pairs_);
-  local_search_operators_[EXCHANGE_RELOCATE_PAIR] = MakePairExchangeRelocate(
-      solver_.get(), nexts_,
-      CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-      vehicle_start_class_callback_, pickup_delivery_pairs_);
-  local_search_operators_[RELOCATE_NEIGHBORS] = MakeRelocateNeighbors(
-      solver_.get(), nexts_,
-      CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-      vehicle_start_class_callback_,
-      [this](int64 from, int64 to) { return GetHomogeneousCost(from, to); });
+  {
+    // Operators defined by Solver::LocalSearchOperators.
+    const std::vector<
+        std::pair<RoutingLocalSearchOperator, Solver::LocalSearchOperators>>
+        operator_by_type = {{OR_OPT, Solver::OROPT},
+                            {PATH_LNS, Solver::PATHLNS},
+                            {FULL_PATH_LNS, Solver::FULLPATHLNS},
+                            {INACTIVE_LNS, Solver::UNACTIVELNS}};
+    for (const auto [type, op] : operator_by_type) {
+      local_search_operators_[type] =
+          CostsAreHomogeneousAcrossVehicles()
+              ? solver_->MakeOperator(nexts_, op)
+              : solver_->MakeOperator(nexts_, vehicle_vars_, op);
+    }
+  }
+  {
+    // Operators defined by Solver::EvaluatorLocalSearchOperators.
+    const std::vector<std::pair<RoutingLocalSearchOperator,
+                                Solver::EvaluatorLocalSearchOperators>>
+        operator_by_type = {{LIN_KERNIGHAN, Solver::LK},
+                            {TSP_OPT, Solver::TSPOPT},
+                            {TSP_LNS, Solver::TSPLNS}};
+    for (const auto [type, op] : operator_by_type) {
+      auto arc_cost =
+          absl::bind_front(&RoutingModel::GetArcCostForVehicle, this);
+      local_search_operators_[type] =
+          CostsAreHomogeneousAcrossVehicles()
+              ? solver_->MakeOperator(nexts_, std::move(arc_cost), op)
+              : solver_->MakeOperator(nexts_, vehicle_vars_,
+                                      std::move(arc_cost), op);
+    }
+  }
+
+  // Other operators defined in the CP solver.
+  local_search_operators_[RELOCATE] = CreateCPOperator<Relocate>();
+  local_search_operators_[EXCHANGE] = CreateCPOperator<Exchange>();
+  local_search_operators_[CROSS] = CreateCPOperator<Cross>();
+  local_search_operators_[TWO_OPT] = CreateCPOperator<TwoOpt>();
+  local_search_operators_[RELOCATE_AND_MAKE_ACTIVE] =
+      CreateCPOperator<RelocateAndMakeActiveOperator>();
+  local_search_operators_[MAKE_ACTIVE_AND_RELOCATE] =
+      CreateCPOperator<MakeActiveAndRelocate>();
+  local_search_operators_[MAKE_CHAIN_INACTIVE] =
+      CreateCPOperator<MakeChainInactiveOperator>();
+  local_search_operators_[SWAP_ACTIVE] = CreateCPOperator<SwapActiveOperator>();
+  local_search_operators_[EXTENDED_SWAP_ACTIVE] =
+      CreateCPOperator<ExtendedSwapActiveOperator>();
+
+  // Routing-specific operators.
+  local_search_operators_[MAKE_ACTIVE] = CreateInsertionOperator();
+  local_search_operators_[MAKE_INACTIVE] = CreateMakeInactiveOperator();
+  local_search_operators_[RELOCATE_PAIR] =
+      CreatePairOperator<PairRelocateOperator>();
+  std::vector<LocalSearchOperator*> light_relocate_pair_operators;
+  light_relocate_pair_operators.push_back(
+      CreatePairOperator<LightPairRelocateOperator>());
+  local_search_operators_[LIGHT_RELOCATE_PAIR] =
+      solver_->ConcatenateOperators(light_relocate_pair_operators);
+  local_search_operators_[EXCHANGE_PAIR] =
+      CreatePairOperator<PairExchangeOperator>();
+  local_search_operators_[EXCHANGE_RELOCATE_PAIR] =
+      CreatePairOperator<PairExchangeRelocateOperator>();
+  local_search_operators_[RELOCATE_NEIGHBORS] =
+      CreateOperator<MakeRelocateNeighborsOperator>(
+          absl::bind_front(&RoutingModel::GetHomogeneousCost, this));
   local_search_operators_[NODE_PAIR_SWAP] = solver_->ConcatenateOperators(
-      {IndexPairSwapActive(
-           solver_.get(), nexts_,
-           CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-           vehicle_start_class_callback_, pickup_delivery_pairs_),
-       SwapIndexPair(
-           solver_.get(), nexts_,
-           CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-           pickup_delivery_pairs_),
-       PairNodeSwapActive(
-           solver_.get(), nexts_,
-           CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-           vehicle_start_class_callback_, pickup_delivery_pairs_)});
+      {CreatePairOperator<IndexPairSwapActiveOperator>(),
+       CreatePairOperator<SwapIndexPairOperator>(),
+       CreatePairOperator<PairNodeSwapActiveOperator<true>>(),
+       CreatePairOperator<PairNodeSwapActiveOperator<false>>()});
+  local_search_operators_[RELOCATE_SUBTRIP] =
+      CreatePairOperator<RelocateSubtrip>();
+  local_search_operators_[EXCHANGE_SUBTRIP] =
+      CreatePairOperator<ExchangeSubtrip>();
+
   const auto arc_cost_for_path_start =
       [this](int64 before_node, int64 after_node, int64 start_index) {
         const int vehicle = index_to_vehicle_[start_index];
@@ -4622,131 +4494,72 @@ void RoutingModel::CreateNeighborhoodOperators(
                    ? arc_cost
                    : CapSub(arc_cost, GetFixedCostOfVehicle(vehicle));
       };
-  GlobalCheapestInsertionFilteredHeuristic::GlobalCheapestInsertionParameters
-      ls_gci_parameters = {
-          /* is_sequential */ false,
-          /* farthest_seeds_ratio */ 0.0,
-          parameters.cheapest_insertion_ls_operator_neighbors_ratio(),
-          /* use_neighbors_ratio_for_initialization */ true,
-          parameters.cheapest_insertion_add_unperformed_entries()};
+  local_search_operators_[RELOCATE_EXPENSIVE_CHAIN] =
+      solver_->RevAlloc(new RelocateExpensiveChain(
+          nexts_,
+          CostsAreHomogeneousAcrossVehicles() ? std::vector<IntVar*>()
+                                              : vehicle_vars_,
+          vehicle_start_class_callback_,
+          parameters.relocate_expensive_chain_num_arcs_to_consider(),
+          arc_cost_for_path_start));
+
+  // Insertion-based LNS neighborhoods.
+  const auto make_global_cheapest_insertion_filtered_heuristic =
+      [this, &parameters]() {
+        using Heuristic = GlobalCheapestInsertionFilteredHeuristic;
+        Heuristic::GlobalCheapestInsertionParameters ls_gci_parameters = {
+            /* is_sequential */ false,
+            /* farthest_seeds_ratio */ 0.0,
+            parameters.cheapest_insertion_ls_operator_neighbors_ratio(),
+            /* use_neighbors_ratio_for_initialization */ true,
+            parameters.cheapest_insertion_add_unperformed_entries()};
+        return absl::make_unique<Heuristic>(
+            this, absl::bind_front(&RoutingModel::GetArcCostForVehicle, this),
+            absl::bind_front(&RoutingModel::UnperformedPenaltyOrValue, this, 0),
+            GetOrCreateFeasibilityFilterManager(parameters), ls_gci_parameters);
+      };
+  const auto make_local_cheapest_insertion_filtered_heuristic =
+      [this, &parameters]() {
+        return absl::make_unique<LocalCheapestInsertionFilteredHeuristic>(
+            this, absl::bind_front(&RoutingModel::GetArcCostForVehicle, this),
+            GetOrCreateFeasibilityFilterManager(parameters));
+      };
   local_search_operators_[GLOBAL_CHEAPEST_INSERTION_CLOSE_NODES_LNS] =
       solver_->RevAlloc(new FilteredHeuristicCloseNodesLNSOperator(
-          absl::make_unique<GlobalCheapestInsertionFilteredHeuristic>(
-              this,
-              [this](int64 i, int64 j, int64 vehicle) {
-                return GetArcCostForVehicle(i, j, vehicle);
-              },
-              [this](int64 i) { return UnperformedPenaltyOrValue(0, i); },
-              GetOrCreateFeasibilityFilterManager(parameters),
-              ls_gci_parameters),
+          make_global_cheapest_insertion_filtered_heuristic(),
           parameters.heuristic_close_nodes_lns_num_nodes()));
 
   local_search_operators_[LOCAL_CHEAPEST_INSERTION_CLOSE_NODES_LNS] =
       solver_->RevAlloc(new FilteredHeuristicCloseNodesLNSOperator(
-          absl::make_unique<LocalCheapestInsertionFilteredHeuristic>(
-              this,
-              [this](int64 i, int64 j, int64 vehicle) {
-                return GetArcCostForVehicle(i, j, vehicle);
-              },
-              GetOrCreateFeasibilityFilterManager(parameters)),
+          make_local_cheapest_insertion_filtered_heuristic(),
           parameters.heuristic_close_nodes_lns_num_nodes()));
 
   local_search_operators_[GLOBAL_CHEAPEST_INSERTION_PATH_LNS] =
       solver_->RevAlloc(new FilteredHeuristicPathLNSOperator(
-          absl::make_unique<GlobalCheapestInsertionFilteredHeuristic>(
-              this,
-              [this](int64 i, int64 j, int64 vehicle) {
-                return GetArcCostForVehicle(i, j, vehicle);
-              },
-              [this](int64 i) { return UnperformedPenaltyOrValue(0, i); },
-              GetOrCreateFeasibilityFilterManager(parameters),
-              ls_gci_parameters)));
+          make_global_cheapest_insertion_filtered_heuristic()));
 
   local_search_operators_[LOCAL_CHEAPEST_INSERTION_PATH_LNS] =
       solver_->RevAlloc(new FilteredHeuristicPathLNSOperator(
-          absl::make_unique<LocalCheapestInsertionFilteredHeuristic>(
-              this,
-              [this](int64 i, int64 j, int64 vehicle) {
-                return GetArcCostForVehicle(i, j, vehicle);
-              },
-              GetOrCreateFeasibilityFilterManager(parameters))));
+          make_local_cheapest_insertion_filtered_heuristic()));
 
   local_search_operators_
       [RELOCATE_PATH_GLOBAL_CHEAPEST_INSERTION_INSERT_UNPERFORMED] =
           solver_->RevAlloc(
               new RelocatePathAndHeuristicInsertUnperformedOperator(
-                  absl::make_unique<GlobalCheapestInsertionFilteredHeuristic>(
-                      this,
-                      [this](int64 i, int64 j, int64 vehicle) {
-                        return GetArcCostForVehicle(i, j, vehicle);
-                      },
-                      [this](int64 i) {
-                        return UnperformedPenaltyOrValue(0, i);
-                      },
-                      GetOrCreateFeasibilityFilterManager(parameters),
-                      ls_gci_parameters)));
+                  make_global_cheapest_insertion_filtered_heuristic()));
 
   local_search_operators_[GLOBAL_CHEAPEST_INSERTION_EXPENSIVE_CHAIN_LNS] =
       solver_->RevAlloc(new FilteredHeuristicExpensiveChainLNSOperator(
-          absl::make_unique<GlobalCheapestInsertionFilteredHeuristic>(
-              this,
-              [this](int64 i, int64 j, int64 vehicle) {
-                return GetArcCostForVehicle(i, j, vehicle);
-              },
-              [this](int64 i) { return UnperformedPenaltyOrValue(0, i); },
-              GetOrCreateFeasibilityFilterManager(parameters),
-              ls_gci_parameters),
+          make_global_cheapest_insertion_filtered_heuristic(),
           parameters.heuristic_expensive_chain_lns_num_arcs_to_consider(),
           arc_cost_for_path_start));
 
   local_search_operators_[LOCAL_CHEAPEST_INSERTION_EXPENSIVE_CHAIN_LNS] =
       solver_->RevAlloc(new FilteredHeuristicExpensiveChainLNSOperator(
-          absl::make_unique<LocalCheapestInsertionFilteredHeuristic>(
-              this,
-              [this](int64 i, int64 j, int64 vehicle) {
-                return GetArcCostForVehicle(i, j, vehicle);
-              },
-              GetOrCreateFeasibilityFilterManager(parameters)),
+          make_local_cheapest_insertion_filtered_heuristic(),
           parameters.heuristic_expensive_chain_lns_num_arcs_to_consider(),
           arc_cost_for_path_start));
-  local_search_operators_[RELOCATE_EXPENSIVE_CHAIN] =
-      solver_->RevAlloc(new RelocateExpensiveChain(
-          nexts_, CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-          vehicle_start_class_callback_,
-          parameters.relocate_expensive_chain_num_arcs_to_consider(),
-          arc_cost_for_path_start));
-  local_search_operators_[RELOCATE_SUBTRIP] = MakeRelocateSubtrip(
-      solver_.get(), nexts_,
-      CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-      vehicle_start_class_callback_, pickup_delivery_pairs_);
-  local_search_operators_[EXCHANGE_SUBTRIP] = MakeExchangeSubtrip(
-      solver_.get(), nexts_,
-      CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-      vehicle_start_class_callback_, pickup_delivery_pairs_);
-
-  CP_ROUTING_ADD_OPERATOR2(EXCHANGE, Exchange);
-  CP_ROUTING_ADD_OPERATOR2(CROSS, Cross);
-  CP_ROUTING_ADD_OPERATOR2(TWO_OPT, TwoOpt);
-  CP_ROUTING_ADD_OPERATOR(OR_OPT, OROPT);
-  CP_ROUTING_ADD_CALLBACK_OPERATOR(LIN_KERNIGHAN, LK);
-  local_search_operators_[MAKE_ACTIVE] = CreateInsertionOperator();
-  CP_ROUTING_ADD_OPERATOR2(RELOCATE_AND_MAKE_ACTIVE,
-                           RelocateAndMakeActiveOperator);
-  CP_ROUTING_ADD_OPERATOR2(MAKE_ACTIVE_AND_RELOCATE, MakeActiveAndRelocate);
-  local_search_operators_[MAKE_INACTIVE] = CreateMakeInactiveOperator();
-  CP_ROUTING_ADD_OPERATOR2(MAKE_CHAIN_INACTIVE, MakeChainInactiveOperator);
-  CP_ROUTING_ADD_OPERATOR2(SWAP_ACTIVE, SwapActiveOperator);
-  CP_ROUTING_ADD_OPERATOR2(EXTENDED_SWAP_ACTIVE, ExtendedSwapActiveOperator);
-  CP_ROUTING_ADD_CALLBACK_OPERATOR(TSP_OPT, TSPOPT);
-  CP_ROUTING_ADD_CALLBACK_OPERATOR(TSP_LNS, TSPLNS);
-  CP_ROUTING_ADD_OPERATOR(PATH_LNS, PATHLNS);
-  CP_ROUTING_ADD_OPERATOR(FULL_PATH_LNS, FULLPATHLNS);
-  CP_ROUTING_ADD_OPERATOR(INACTIVE_LNS, UNACTIVELNS);
 }
-
-#undef CP_ROUTING_ADD_CALLBACK_OPERATOR
-#undef CP_ROUTING_ADD_OPERATOR2
-#undef CP_ROUTING_ADD_OPERATOR
 
 #define CP_ROUTING_PUSH_OPERATOR(operator_type, operator_method, operators) \
   if (search_parameters.local_search_operators().use_##operator_method() == \

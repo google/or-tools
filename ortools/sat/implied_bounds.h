@@ -19,9 +19,9 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -145,7 +145,7 @@ class ImpliedBounds {
   //
   // TODO(user): Use inlined vectors.
   std::vector<ImpliedBoundEntry> empty_implied_bounds_;
-  gtl::ITIVector<IntegerVariable, std::vector<ImpliedBoundEntry>>
+  absl::StrongVector<IntegerVariable, std::vector<ImpliedBoundEntry>>
       var_to_bounds_;
 
   // Track the list of variables with some implied bounds.
@@ -153,7 +153,7 @@ class ImpliedBounds {
 
   // TODO(user): Ideally, this should go away if we manage to push level-zero
   // fact at a positive level directly.
-  gtl::ITIVector<IntegerVariable, IntegerValue> level_zero_lower_bounds_;
+  absl::StrongVector<IntegerVariable, IntegerValue> level_zero_lower_bounds_;
   SparseBitset<IntegerVariable> new_level_zero_bounds_;
 
   // Stats.

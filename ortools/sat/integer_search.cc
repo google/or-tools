@@ -17,6 +17,8 @@
 #include <functional>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
+#include "absl/types/span.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
@@ -110,6 +112,10 @@ IntegerLiteral SplitAroundLpValue(IntegerVariable var, Model* model) {
     return IntegerLiteral();
   }
 
+  // TODO(user): Depending if we branch up or down, this might not exclude the
+  // LP value, which is potentially a bad thing.
+  //
+  // TODO(user): Why is the reduced cost doing things differently?
   const IntegerValue value = IntegerValue(
       static_cast<int64>(std::round(lp->GetSolutionValue(positive_var))));
 
@@ -135,7 +141,6 @@ IntegerLiteral SplitUsingBestSolutionValueInRepository(
     return IntegerLiteral();
   }
 
-  VLOG(2) << "Using solution value for branching.";
   const IntegerValue value(solution_repo.GetVariableValueInSolution(
       proto_var, /*solution_index=*/0));
   return SplitAroundGivenValue(positive_var, value, model);
@@ -198,10 +203,18 @@ std::function<BooleanOrIntegerLiteral()> SequentialValueSelection(
     Model* model) {
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* sat_policy = model->GetOrCreate<SatDecisionPolicy>();
   return [=]() {
     // Get the current decision.
     const BooleanOrIntegerLiteral current_decision = var_selection_heuristic();
     if (!current_decision.HasValue()) return current_decision;
+
+    // When we are in the "stable" phase, we prefer to follow the SAT polarity
+    // heuristic.
+    if (current_decision.boolean_literal_index != kNoLiteralIndex &&
+        sat_policy->InStablePhase()) {
+      return current_decision;
+    }
 
     // IntegerLiteral case.
     if (current_decision.boolean_literal_index == kNoLiteralIndex) {
@@ -226,7 +239,6 @@ std::function<BooleanOrIntegerLiteral()> SequentialValueSelection(
       }
     }
 
-    VLOG(2) << "Value selection: using default decision.";
     return current_decision;
   };
 }
@@ -258,7 +270,6 @@ std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
   if (LinearizedPartIsLarge(model) &&
       (parameters.exploit_integer_lp_solution() ||
        parameters.exploit_all_lp_solution())) {
-    VLOG(1) << "Using LP value selection heuristic.";
     value_selection_heuristics.push_back([model](IntegerVariable var) {
       return SplitAroundLpValue(PositiveVariable(var), model);
     });
@@ -268,7 +279,7 @@ std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
   if (parameters.exploit_best_solution()) {
     auto* response_manager = model->Get<SharedResponseManager>();
     if (response_manager != nullptr) {
-      VLOG(1) << "Using best solution value selection heuristic.";
+      VLOG(2) << "Using best solution value selection heuristic.";
       value_selection_heuristics.push_back(
           [model, response_manager](IntegerVariable var) {
             return SplitUsingBestSolutionValueInRepository(
@@ -284,7 +295,7 @@ std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
     if (relaxation_solutions != nullptr) {
       value_selection_heuristics.push_back(
           [model, relaxation_solutions](IntegerVariable var) {
-            VLOG(1) << "Using relaxation solution value selection heuristic.";
+            VLOG(2) << "Using relaxation solution value selection heuristic.";
             return SplitUsingBestSolutionValueInRepository(
                 var, *relaxation_solutions, model);
           });
@@ -293,7 +304,6 @@ std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
 
   // Objective based value.
   if (parameters.exploit_objective()) {
-    VLOG(1) << "Using objective value selection heuristic.";
     value_selection_heuristics.push_back([model](IntegerVariable var) {
       return ChooseBestObjectiveValue(var, model);
     });
@@ -329,6 +339,9 @@ std::function<BooleanOrIntegerLiteral()> PseudoCost(Model* model) {
   return [pseudo_costs, integer_trail]() {
     const IntegerVariable chosen_var = pseudo_costs->GetBestDecisionVar();
     if (chosen_var == kNoIntegerVariable) return BooleanOrIntegerLiteral();
+
+    // TODO(user): This will be overidden by the value decision heuristic in
+    // almost all cases.
     return BooleanOrIntegerLiteral(
         GreaterOrEqualToMiddleValue(chosen_var, integer_trail));
   };
@@ -673,6 +686,7 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
   auto* implied_bounds = model->GetOrCreate<ImpliedBounds>();
+  auto* prober = model->GetOrCreate<Prober>();
 
   const SatParameters& sat_parameters = *(model->GetOrCreate<SatParameters>());
 
@@ -771,9 +785,8 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
         num_decisions_without_probing = 0;
         // TODO(user): Be smarter about what variables we probe, we can also
         // do more than one.
-
-        if (!ProbeBooleanVariables(0.1, {Literal(decision).Variable()},
-                                   model)) {
+        if (!prober->ClearStatisticsAndResetSearch() ||
+            !prober->ProbeOneVariable(Literal(decision).Variable())) {
           return SatSolver::INFEASIBLE;
         }
         DCHECK_EQ(sat_solver->CurrentDecisionLevel(), 0);
@@ -899,6 +912,102 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model) {
        FirstUnassignedVarAtItsMinHeuristic(all_variables, model)})};
   heuristics.restart_policies = {SatSolverRestartPolicy(model)};
   return ResetAndSolveIntegerProblem(/*assumptions=*/{}, model);
+}
+
+SatSolver::Status ContinuousProbing(
+    const std::vector<BooleanVariable>& bool_vars,
+    const std::vector<IntegerVariable>& int_vars,
+    const std::function<void()>& feasible_solution_observer, Model* model) {
+  VLOG(1) << "Start continuous probing with " << bool_vars.size()
+          << " Boolean variables, and " << int_vars.size()
+          << " integer variables";
+
+  SatSolver* solver = model->GetOrCreate<SatSolver>();
+  TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+  const SatParameters& sat_parameters = *(model->GetOrCreate<SatParameters>());
+  auto* level_zero_callbacks = model->GetOrCreate<LevelZeroCallbackHelper>();
+  Prober* prober = model->GetOrCreate<Prober>();
+
+  std::vector<BooleanVariable> active_vars;
+  std::vector<BooleanVariable> integer_bounds;
+  absl::flat_hash_set<BooleanVariable> integer_bounds_set;
+
+  int loop = 0;
+  while (!time_limit->LimitReached()) {
+    VLOG(1) << "Loop " << loop++;
+
+    // Sync the bounds first.
+    auto SyncBounds = [solver, &level_zero_callbacks]() {
+      if (!solver->ResetToLevelZero()) return false;
+      for (const auto& cb : level_zero_callbacks->callbacks) {
+        if (!cb()) return false;
+      }
+      return true;
+    };
+    if (!SyncBounds()) {
+      return SatSolver::INFEASIBLE;
+    }
+
+    // Run sat in-processing to reduce the size of the clause database.
+    if (sat_parameters.use_sat_inprocessing() &&
+        !model->GetOrCreate<Inprocessing>()->InprocessingRound()) {
+      return SatSolver::INFEASIBLE;
+    }
+
+    // Probe variable bounds.
+    for (const IntegerVariable int_var : int_vars) {
+      if (integer_trail->IsFixed(int_var) ||
+          integer_trail->IsOptional(int_var)) {
+        continue;
+      }
+      IntegerLiteral fix_to_lb = IntegerLiteral::LowerOrEqual(
+          int_var, integer_trail->LowerBound(int_var));
+      const Literal shave_lb = encoder->GetOrCreateAssociatedLiteral(fix_to_lb);
+      if (shave_lb.IsPositive()) {
+        if (!prober->ClearStatisticsAndResetSearch() ||
+            !prober->ProbeOneVariable(shave_lb.Variable())) {
+          return SatSolver::INFEASIBLE;
+        }
+      }
+
+      IntegerLiteral fix_to_ub = IntegerLiteral::GreaterOrEqual(
+          int_var, integer_trail->UpperBound(int_var));
+      const Literal shave_ub = encoder->GetOrCreateAssociatedLiteral(fix_to_ub);
+      if (shave_ub.IsPositive()) {
+        if (!prober->ClearStatisticsAndResetSearch() ||
+            !prober->ProbeOneVariable(shave_ub.Variable())) {
+          return SatSolver::INFEASIBLE;
+        }
+      }
+
+      if (!SyncBounds()) {
+        return SatSolver::INFEASIBLE;
+      }
+    }
+
+    // Probe Boolean variables from the model.
+    int count = 0;
+    for (const BooleanVariable& bool_var : bool_vars) {
+      if (!solver->Assignment().LiteralIsAssigned(Literal(bool_var, true))) {
+        if (!prober->ClearStatisticsAndResetSearch() ||
+            !prober->ProbeOneVariable(bool_var)) {
+          return SatSolver::INFEASIBLE;
+        }
+      }
+      if (++count > 10) {
+        count = 0;
+        if (!SyncBounds()) {
+          return SatSolver::INFEASIBLE;
+        }
+        if (time_limit->LimitReached()) {
+          return SatSolver::LIMIT_REACHED;
+        }
+      }
+    }
+  }
+  return SatSolver::LIMIT_REACHED;
 }
 
 }  // namespace sat

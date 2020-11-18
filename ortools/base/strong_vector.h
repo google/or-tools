@@ -11,10 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This file provides the ITIVector container that wraps around the STL
+// This file provides the StrongVector container that wraps around the STL
 // std::vector.
 // The wrapper restricts indexing to a pre-specified type-safe integer type or
-// IntType (see base/int_type.h).  It prevents accidental indexing
+// IntType (see int_type.h).  It prevents accidental indexing
 // by different "logical" integer-like types (e.g.  another IntType) or native
 // integer types.  The wrapper is useful as C++ and the standard template
 // library allows the user to mix "logical" integral indices that might have a
@@ -27,7 +27,7 @@
 //
 // where IntTypeName is the desired name for the "logical" integer-like type
 // and the ValueType is a supported native integer type such as int or
-// uint64 (see ortools/base/int_type.h for details).
+// uint64 (see int_type.h for details).
 //
 // The wrapper exposes all public methods of STL vector and behaves mostly as
 // pass-through.  The only method modified to ensure type-safety is the operator
@@ -36,7 +36,7 @@
 // EXAMPLES --------------------------------------------------------------------
 //
 //    DEFINE_INT_TYPE(PhysicalChildIndex, int32);
-//    ITIVector<PhysicalChildIndex, ChildStats*> vec;
+//    absl::StrongVector<PhysicalChildIndex, ChildStats*> vec;
 //
 //    PhysicalChildIndex physical_index;
 //    vec[physical_index] = ...;        <-- index type match: compiles properly.
@@ -55,8 +55,8 @@
 // themselves.  Therefore, the following caveat is possible:
 //    *(vec.begin() + 0) = ...;
 
-#ifndef OR_TOOLS_BASE_INT_TYPE_INDEXED_VECTOR_H_
-#define OR_TOOLS_BASE_INT_TYPE_INDEXED_VECTOR_H_
+#ifndef OR_TOOLS_BASE_STRONG_VECTOR_H_
+#define OR_TOOLS_BASE_STRONG_VECTOR_H_
 
 #include <stddef.h>
 
@@ -69,11 +69,11 @@
 #include "ortools/base/int_type.h"
 #include "ortools/base/macros.h"
 
-namespace gtl {
+namespace absl {
 
 // STL vector ------------------------------------------------------------------
 template <typename IntType, typename T, typename Alloc = std::allocator<T> >
-class ITIVector {
+class StrongVector {
  public:
   typedef IntType IndexType;
   typedef std::vector<T, Alloc> ParentType;
@@ -92,21 +92,22 @@ class ITIVector {
   typedef typename ParentType::const_reverse_iterator const_reverse_iterator;
 
  public:
-  ITIVector() {}
+  StrongVector() {}
 
-  explicit ITIVector(const allocator_type& a) : v_(a) {}
-  explicit ITIVector(size_type n) : v_(n) {}
+  explicit StrongVector(const allocator_type& a) : v_(a) {}
+  explicit StrongVector(size_type n) : v_(n) {}
 
-  ITIVector(size_type n, const value_type& v,
-            const allocator_type& a = allocator_type())
+  StrongVector(size_type n, const value_type& v,
+               const allocator_type& a = allocator_type())
       : v_(n, v, a) {}
 
-  ITIVector(std::initializer_list<value_type> il)  // NOLINT(runtime/explicit)
+  StrongVector(
+      std::initializer_list<value_type> il)  // NOLINT(runtime/explicit)
       : v_(il) {}
 
   template <typename InputIteratorType>
-  ITIVector(InputIteratorType first, InputIteratorType last,
-            const allocator_type& a = allocator_type())
+  StrongVector(InputIteratorType first, InputIteratorType last,
+               const allocator_type& a = allocator_type())
       : v_(first, last, a) {}
 
   // -- Accessors --------------------------------------------------------------
@@ -165,7 +166,7 @@ class ITIVector {
     return v_.emplace(pos, std::forward<Args>(args)...);
   }
   void pop_back() { v_.pop_back(); }
-  void swap(ITIVector& x) { v_.swap(x.v_); }
+  void swap(StrongVector& x) { v_.swap(x.v_); }
   void clear() { v_.clear(); }
 
   reference front() { return v_.front(); }
@@ -196,28 +197,28 @@ class ITIVector {
     return v_.insert(pos, ilist);
   }
 
-  friend bool operator==(const ITIVector& x, const ITIVector& y) {
+  friend bool operator==(const StrongVector& x, const StrongVector& y) {
     return x.get() == y.get();
   }
-  friend bool operator!=(const ITIVector& x, const ITIVector& y) {
+  friend bool operator!=(const StrongVector& x, const StrongVector& y) {
     return x.get() != y.get();
   }
-  friend bool operator<(const ITIVector& x, const ITIVector& y) {
+  friend bool operator<(const StrongVector& x, const StrongVector& y) {
     return x.get() < y.get();
   }
-  friend bool operator>(const ITIVector& x, const ITIVector& y) {
+  friend bool operator>(const StrongVector& x, const StrongVector& y) {
     return x.get() > y.get();
   }
-  friend bool operator<=(const ITIVector& x, const ITIVector& y) {
+  friend bool operator<=(const StrongVector& x, const StrongVector& y) {
     return x.get() <= y.get();
   }
-  friend bool operator>=(const ITIVector& x, const ITIVector& y) {
+  friend bool operator>=(const StrongVector& x, const StrongVector& y) {
     return x.get() >= y.get();
   }
-  friend void swap(ITIVector& x, ITIVector& y) { x.swap(y); }
+  friend void swap(StrongVector& x, StrongVector& y) { x.swap(y); }
 
   template <typename H>
-  friend H AbslHashValue(H h, const ITIVector& v) {
+  friend H AbslHashValue(H h, const StrongVector& v) {
     return H::combine(std::move(h), v.v_);
   }
 
@@ -230,6 +231,6 @@ class ITIVector {
                  int_type_indexed_vector_must_have_integral_index);
 };
 
-}  // namespace gtl
+}  // namespace absl
 
-#endif  // OR_TOOLS_BASE_INT_TYPE_INDEXED_VECTOR_H_
+#endif  // OR_TOOLS_BASE_STRONG_VECTOR_H_

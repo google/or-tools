@@ -155,7 +155,7 @@ class FeasibilityPump {
   double objective_normalization_factor_ = 0.0;
   double mixing_factor_ = 1.0;
 
-  gtl::ITIVector<glop::RowIndex, LinearConstraintInternal> integer_lp_;
+  absl::StrongVector<glop::RowIndex, LinearConstraintInternal> integer_lp_;
   int model_vars_size_ = 0;
 
   // Underlying LP solver API.

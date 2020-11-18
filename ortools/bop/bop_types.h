@@ -16,7 +16,7 @@
 
 #include "ortools/base/basictypes.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/strong_vector.h"
 
 namespace operations_research {
 namespace bop {
@@ -82,7 +82,7 @@ struct BopConstraintTerm {
     return search_id < other.search_id;
   }
 };
-typedef gtl::ITIVector<SparseIndex, BopConstraintTerm> BopConstraintTerms;
+typedef absl::StrongVector<SparseIndex, BopConstraintTerm> BopConstraintTerms;
 
 }  // namespace bop
 }  // namespace operations_research

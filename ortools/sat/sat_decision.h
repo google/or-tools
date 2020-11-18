@@ -78,6 +78,7 @@ class SatDecisionPolicy {
   // This changes a bit the polarity heuristics and is controlled from within
   // SatRestartPolicy.
   void SetStablePhase(bool is_stable) { in_stable_phase_ = is_stable; }
+  bool InStablePhase() const { return in_stable_phase_; }
 
   // This is used to temporarily disable phase_saving when we do some probing
   // during search for instance.
@@ -199,24 +200,24 @@ class SatDecisionPolicy {
 
   // Stores variable activity and the number of time each variable was "bumped".
   // The later is only used with the ERWA heuristic.
-  gtl::ITIVector<BooleanVariable, double> activities_;
-  gtl::ITIVector<BooleanVariable, double> tie_breakers_;
-  gtl::ITIVector<BooleanVariable, int64> num_bumps_;
+  absl::StrongVector<BooleanVariable, double> activities_;
+  absl::StrongVector<BooleanVariable, double> tie_breakers_;
+  absl::StrongVector<BooleanVariable, int64> num_bumps_;
 
   // If the polarity if forced (externally) we alway use this first.
-  gtl::ITIVector<BooleanVariable, bool> has_forced_polarity_;
-  gtl::ITIVector<BooleanVariable, bool> forced_polarity_;
+  absl::StrongVector<BooleanVariable, bool> has_forced_polarity_;
+  absl::StrongVector<BooleanVariable, bool> forced_polarity_;
 
   // If we are in a stable phase, we follow the current target.
   bool in_stable_phase_ = false;
   int target_length_ = 0;
-  gtl::ITIVector<BooleanVariable, bool> has_target_polarity_;
-  gtl::ITIVector<BooleanVariable, bool> target_polarity_;
+  absl::StrongVector<BooleanVariable, bool> has_target_polarity_;
+  absl::StrongVector<BooleanVariable, bool> target_polarity_;
 
   // Otherwise we follow var_polarity_ which is reset at the beginning of
   // each new polarity phase. This is also overwritten by phase saving.
   // Each phase last for an arithmetically increasing number of conflicts.
-  gtl::ITIVector<BooleanVariable, bool> var_polarity_;
+  absl::StrongVector<BooleanVariable, bool> var_polarity_;
   bool maybe_enable_phase_saving_ = true;
   int64 polarity_phase_ = 0;
   int64 num_conflicts_until_rephase_ = 1000;
@@ -225,7 +226,7 @@ class SatDecisionPolicy {
   std::vector<Literal> best_partial_assignment_;
 
   // Used in initial polarity computation.
-  gtl::ITIVector<BooleanVariable, double> weighted_sign_;
+  absl::StrongVector<BooleanVariable, double> weighted_sign_;
 };
 
 }  // namespace sat

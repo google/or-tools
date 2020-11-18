@@ -271,8 +271,10 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
 
   const RoutingModel& routing_model_;
 
-  gtl::ITIVector<RoutingModel::DisjunctionIndex, int> active_per_disjunction_;
-  gtl::ITIVector<RoutingModel::DisjunctionIndex, int> inactive_per_disjunction_;
+  absl::StrongVector<RoutingModel::DisjunctionIndex, int>
+      active_per_disjunction_;
+  absl::StrongVector<RoutingModel::DisjunctionIndex, int>
+      inactive_per_disjunction_;
   int64 synchronized_objective_value_;
   int64 accepted_objective_value_;
 };

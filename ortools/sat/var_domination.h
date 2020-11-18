@@ -172,16 +172,16 @@ class VarDomination {
   // S.
   std::vector<int> tmp_vars_;
   std::unique_ptr<DynamicPartition> partition_;
-  gtl::ITIVector<IntegerVariable, bool> can_freely_decrease_;
+  absl::StrongVector<IntegerVariable, bool> can_freely_decrease_;
 
   // For all one sided constraints, we keep the bitmap of constraint indices
   // modulo 64 that block on the lower side each variable.
   int64 ct_index_for_signature_ = 0;
-  gtl::ITIVector<IntegerVariable, uint64> block_down_signatures_;
+  absl::StrongVector<IntegerVariable, uint64> block_down_signatures_;
 
   // Used by FilterUsingTempRanks().
   int num_vars_with_negation_;
-  gtl::ITIVector<IntegerVariable, int> tmp_var_to_rank_;
+  absl::StrongVector<IntegerVariable, int> tmp_var_to_rank_;
 
   // We don't use absl::Span() because the underlying buffer can be resized.
   // This however serve the same purpose.
@@ -193,12 +193,12 @@ class VarDomination {
   // This hold the first phase best candidate.
   // Warning, the initial candidates span can overlap in the shared_buffer_.
   std::vector<IntegerVariable> shared_buffer_;
-  gtl::ITIVector<IntegerVariable, IntegerVariableSpan> initial_candidates_;
+  absl::StrongVector<IntegerVariable, IntegerVariableSpan> initial_candidates_;
 
   // This will hold the final result.
   // Buffer with independent content for each vars.
   std::vector<IntegerVariable> buffer_;
-  gtl::ITIVector<IntegerVariable, IntegerVariableSpan> dominating_vars_;
+  absl::StrongVector<IntegerVariable, IntegerVariableSpan> dominating_vars_;
 };
 
 // This detects variables that can move freely in one direction, or that can
@@ -244,7 +244,7 @@ class DualBoundStrengthening {
   }
 
   // Starts with kMaxIntegerValue, and decrease as constraints are processed.
-  gtl::ITIVector<IntegerVariable, IntegerValue> can_freely_decrease_until_;
+  absl::StrongVector<IntegerVariable, IntegerValue> can_freely_decrease_until_;
 };
 
 // Detect the variable dominance relations within the given model. Note that

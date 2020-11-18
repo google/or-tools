@@ -40,7 +40,8 @@ const double kMinCutViolation = 1e-4;
 
 // Returns the lp value of a Literal.
 double GetLiteralLpValue(
-    const Literal lit, const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    const Literal lit,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
     const IntegerEncoder* encoder) {
   const IntegerVariable direct_view = encoder->GetLiteralView(lit);
   if (direct_view != kNoIntegerVariable) {
@@ -84,7 +85,7 @@ LinearConstraint GenerateKnapsackCutForCover(
 
 bool SolutionSatisfiesConstraint(
     const LinearConstraint& constraint,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values) {
+    const absl::StrongVector<IntegerVariable, double>& lp_values) {
   const double activity = ComputeActivity(constraint, lp_values);
   const double tolerance = 1e-6;
   return (activity <= constraint.ub.value() + tolerance &&
@@ -114,7 +115,7 @@ bool SmallRangeAndAllCoefficientsMagnitudeAreTheSame(
 
 bool AllVarsTakeIntegerValue(
     const std::vector<IntegerVariable> vars,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values) {
+    const absl::StrongVector<IntegerVariable, double>& lp_values) {
   for (IntegerVariable var : vars) {
     if (std::abs(lp_values[var] - std::round(lp_values[var])) > 1e-6) {
       return false;
@@ -169,7 +170,7 @@ bool ConstraintIsEligibleForLifting(const LinearConstraint& constraint,
 
 bool LiftKnapsackCut(
     const LinearConstraint& constraint,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
     const std::vector<IntegerValue>& cut_vars_original_coefficients,
     const IntegerTrail& integer_trail, TimeLimit* time_limit,
     LinearConstraint* cut) {
@@ -247,7 +248,7 @@ bool LiftKnapsackCut(
 
 LinearConstraint GetPreprocessedLinearConstraint(
     const LinearConstraint& constraint,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
     const IntegerTrail& integer_trail) {
   IntegerValue ub = constraint.ub;
   LinearConstraint constraint_with_left_vars;
@@ -287,7 +288,7 @@ bool ConstraintIsTriviallyTrue(const LinearConstraint& constraint,
 
 bool CanBeFilteredUsingCutLowerBound(
     const LinearConstraint& preprocessed_constraint,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
     const IntegerTrail& integer_trail) {
   std::vector<double> variable_upper_bound_distances;
   for (const IntegerVariable var : preprocessed_constraint.vars) {
@@ -333,7 +334,7 @@ double GetKnapsackUpperBound(std::vector<KnapsackItem> items,
 
 bool CanBeFilteredUsingKnapsackUpperBound(
     const LinearConstraint& constraint,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
     const IntegerTrail& integer_trail) {
   std::vector<KnapsackItem> items;
   double capacity = -constraint.ub.value() - 1.0;
@@ -367,7 +368,7 @@ bool CanBeFilteredUsingKnapsackUpperBound(
 
 bool CanFormValidKnapsackCover(
     const LinearConstraint& preprocessed_constraint,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
     const IntegerTrail& integer_trail) {
   if (ConstraintIsTriviallyTrue(preprocessed_constraint, integer_trail)) {
     return false;
@@ -463,7 +464,7 @@ CutGenerator CreateKnapsackCoverCutGenerator(
   // TODO(user): do not add generator if there are no knapsack constraints.
   result.generate_cuts = [implied_bounds_processor, knapsack_constraints, vars,
                           model, integer_trail](
-                             const gtl::ITIVector<IntegerVariable, double>&
+                             const absl::StrongVector<IntegerVariable, double>&
                                  lp_values,
                              LinearConstraintManager* manager) mutable {
     // TODO(user): When we use implied-bound substitution, we might still infer
@@ -1332,7 +1333,7 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
   IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
   result.generate_cuts =
       [z, x, y, integer_trail](
-          const gtl::ITIVector<IntegerVariable, double>& lp_values,
+          const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         const int64 x_lb = integer_trail->LevelZeroLowerBound(x).value();
         const int64 x_ub = integer_trail->LevelZeroUpperBound(x).value();
@@ -1426,7 +1427,7 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   result.generate_cuts =
       [y, x, integer_trail](
-          const gtl::ITIVector<IntegerVariable, double>& lp_values,
+          const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         const int64 x_ub = integer_trail->LevelZeroUpperBound(x).value();
         const int64 x_lb = integer_trail->LevelZeroLowerBound(x).value();
@@ -1486,7 +1487,7 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
 }
 
 void ImpliedBoundsProcessor::ProcessUpperBoundedConstraint(
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
     LinearConstraint* cut) {
   ProcessUpperBoundedConstraintWithSlackCreation(
       /*substitute_only_inner_variables=*/false, IntegerVariable(0), lp_values,
@@ -1503,7 +1504,7 @@ ImpliedBoundsProcessor::GetCachedImpliedBoundInfo(IntegerVariable var) {
 ImpliedBoundsProcessor::BestImpliedBoundInfo
 ImpliedBoundsProcessor::ComputeBestImpliedBound(
     IntegerVariable var,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values) {
+    const absl::StrongVector<IntegerVariable, double>& lp_values) {
   auto it = cache_.find(var);
   if (it != cache_.end()) return it->second;
   BestImpliedBoundInfo result;
@@ -1570,7 +1571,7 @@ ImpliedBoundsProcessor::ComputeBestImpliedBound(
 
 // TODO(user): restrict to a subset of the variables to not spend too much time.
 void ImpliedBoundsProcessor::SeparateSomeImpliedBoundCuts(
-    const gtl::ITIVector<IntegerVariable, double>& lp_values) {
+    const absl::StrongVector<IntegerVariable, double>& lp_values) {
   for (const IntegerVariable var :
        implied_bounds_->VariablesWithImpliedBounds()) {
     if (!lp_vars_.contains(PositiveVariable(var))) continue;
@@ -1580,7 +1581,7 @@ void ImpliedBoundsProcessor::SeparateSomeImpliedBoundCuts(
 
 void ImpliedBoundsProcessor::ProcessUpperBoundedConstraintWithSlackCreation(
     bool substitute_only_inner_variables, IntegerVariable first_slack,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
     LinearConstraint* cut, std::vector<SlackInfo>* slack_infos) {
   tmp_terms_.clear();
   IntegerValue new_ub = cut->ub;
@@ -1776,7 +1777,7 @@ namespace {
 void TryToGenerateAllDiffCut(
     const std::vector<std::pair<double, IntegerVariable>>& sorted_vars_lp,
     const IntegerTrail& integer_trail,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
     LinearConstraintManager* manager) {
   Domain current_union;
   std::vector<IntegerVariable> current_set_vars;
@@ -1820,7 +1821,7 @@ CutGenerator CreateAllDifferentCutGenerator(
   Trail* trail = model->GetOrCreate<Trail>();
   result.generate_cuts =
       [vars, integer_trail, trail](
-          const gtl::ITIVector<IntegerVariable, double>& lp_values,
+          const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         // These cuts work at all levels but the generator adds too many cuts on
         // some instances and degrade the performance so we only use it at level
@@ -1866,7 +1867,7 @@ IntegerValue MaxCornerDifference(const IntegerVariable var,
 IntegerValue MPlusCoefficient(
     const std::vector<IntegerVariable>& x_vars,
     const std::vector<LinearExpression>& exprs,
-    const gtl::ITIVector<IntegerVariable, int>& variable_partition,
+    const absl::StrongVector<IntegerVariable, int>& variable_partition,
     const int max_index, const IntegerTrail& integer_trail) {
   IntegerValue coeff = exprs[max_index].offset;
   // TODO(user): This algo is quadratic since GetCoefficientOfPositiveVar()
@@ -1888,7 +1889,7 @@ IntegerValue MPlusCoefficient(
 double ComputeContribution(
     const IntegerVariable xi_var, const std::vector<IntegerVariable>& z_vars,
     const std::vector<LinearExpression>& exprs,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
     const IntegerTrail& integer_trail, const int target_index) {
   CHECK_GE(target_index, 0);
   CHECK_LT(target_index, exprs.size());
@@ -1930,11 +1931,11 @@ CutGenerator CreateLinMaxCutGenerator(
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   result.generate_cuts =
       [x_vars, z_vars, target, num_exprs, exprs, integer_trail, model](
-          const gtl::ITIVector<IntegerVariable, double>& lp_values,
+          const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
-        gtl::ITIVector<IntegerVariable, int> variable_partition(
+        absl::StrongVector<IntegerVariable, int> variable_partition(
             lp_values.size(), -1);
-        gtl::ITIVector<IntegerVariable, double> variable_partition_contrib(
+        absl::StrongVector<IntegerVariable, double> variable_partition_contrib(
             lp_values.size(), std::numeric_limits<double>::infinity());
         for (int expr_index = 0; expr_index < num_exprs; ++expr_index) {
           for (const IntegerVariable var : x_vars) {
@@ -2007,7 +2008,7 @@ void AddIntegerVariableFromIntervals(SchedulingConstraintHelper* helper,
   }
 }
 
-std::function<void(const gtl::ITIVector<IntegerVariable, double>&,
+std::function<void(const absl::StrongVector<IntegerVariable, double>&,
                    LinearConstraintManager*)>
 GenerateCumulativeCut(const std::string& cut_name,
                       SchedulingConstraintHelper* helper,
@@ -2018,7 +2019,7 @@ GenerateCumulativeCut(const std::string& cut_name,
   IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
 
   return [capacity, demands, trail, integer_trail, helper, model, cut_name,
-          encoder](const gtl::ITIVector<IntegerVariable, double>& lp_values,
+          encoder](const absl::StrongVector<IntegerVariable, double>& lp_values,
                    LinearConstraintManager* manager) {
     if (trail->CurrentDecisionLevel() > 0) return;
 
@@ -2233,7 +2234,7 @@ CutGenerator CreateOverlappingCumulativeCutGenerator(
 
   result.generate_cuts =
       [helper, capacity, demands, trail, integer_trail, model](
-          const gtl::ITIVector<IntegerVariable, double>& lp_values,
+          const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         if (trail->CurrentDecisionLevel() > 0) return;
 
@@ -2352,7 +2353,7 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
 
   result.generate_cuts =
       [trail, helper, model](
-          const gtl::ITIVector<IntegerVariable, double>& lp_values,
+          const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         if (trail->CurrentDecisionLevel() > 0) return;
 
@@ -2428,7 +2429,7 @@ CutGenerator CreateCliqueCutGenerator(
   auto* implication_graph = model->GetOrCreate<BinaryImplicationGraph>();
   result.generate_cuts =
       [variables, literals, implication_graph, positive_map, negative_map,
-       model](const gtl::ITIVector<IntegerVariable, double>& lp_values,
+       model](const absl::StrongVector<IntegerVariable, double>& lp_values,
               LinearConstraintManager* manager) {
         std::vector<double> packed_values;
         for (int i = 0; i < literals.size(); ++i) {
