@@ -37,7 +37,6 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from __future__ import print_function
 import sys
 import re
 from ortools.constraint_solver import pywrapcp

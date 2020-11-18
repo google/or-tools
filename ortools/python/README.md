@@ -15,7 +15,7 @@ This project aim to explain how you build a Python native wheel package using [`
 * [Misc](#misc)
 
 # Requirement
-You'll need "Python >= 3.5" and few python modules ("wheel" and "six").
+You'll need "Python >= 3.6" and few python modules ("wheel" and "absl-py").
 
 # Directory Layout
 * [setup.py.in](setup.py.in) `Setup.py` template to build the python native project.

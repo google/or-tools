@@ -1,4 +1,3 @@
-from __future__ import division
 
 from ortools.sat.python import cp_model
 

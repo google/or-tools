@@ -171,7 +171,7 @@ do
     "${PYBIN}/virtualenv" -p "${PYBIN}/python" "${BUILD_ROOT}/${PYTAG}"
     # shellcheck source=/dev/null
     source "${BUILD_ROOT}/${PYTAG}/bin/activate"
-    pip install -U pip setuptools wheel six  # six is needed by make test_python
+    pip install -U pip setuptools wheel absl-py  # absl-py is needed by make test_python
     # Build artifact
     export PKG_CONFIG_PATH="${PYROOT}/lib/pkgconfig:${BASE_PKG_CONFIG}"
     echo "PKG_CONFIG_PATH: ${PKG_CONFIG_PATH}"
@@ -234,7 +234,7 @@ hashlib.sha256(open('${WHEEL_FILE}', 'rb').read())\
     "${PYBIN}/virtualenv" -p "${PYBIN}/python" "${BUILD_ROOT}/${PYTAG}-test"
     # shellcheck source=/dev/null
     source "${BUILD_ROOT}/${PYTAG}-test/bin/activate"
-    pip install -U pip setuptools wheel six
+    pip install -U pip setuptools wheel absl-py
 
     # Install wheel and run tests
     pip install --no-cache-dir "$WHEEL_FILE"
