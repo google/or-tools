@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """OR-tools solution to the N-queens problem."""
-from __future__ import print_function
 import time
 import sys
 from ortools.sat.python import cp_model

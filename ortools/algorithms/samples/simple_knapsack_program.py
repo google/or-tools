@@ -13,7 +13,6 @@
 # [START program]
 """A simple knapsack problem."""
 # [START import]
-from __future__ import print_function
 from ortools.algorithms import pywrapknapsack_solver
 # [END import]
 

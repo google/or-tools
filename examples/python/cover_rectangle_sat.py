@@ -12,8 +12,6 @@
 # limitations under the License.
 """Fill a 72x37 rectangle by a minimum number of non-overlapping squares."""
 
-from __future__ import print_function
-from __future__ import division
 
 from ortools.sat.python import cp_model
 

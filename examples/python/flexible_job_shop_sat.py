@@ -12,7 +12,6 @@
 # limitations under the License.
 """Solves a flexible jobshop problems with the CP-SAT solver."""
 
-from __future__ import print_function
 
 import collections
 from ortools.sat.python import cp_model

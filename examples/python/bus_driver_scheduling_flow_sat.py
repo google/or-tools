@@ -21,7 +21,6 @@ Constraints:
 - 15 min cleaning time after the last shift
 - 2 min waiting time after each shift for passenger boarding and alighting
 """
-from __future__ import print_function
 
 import argparse
 import collections

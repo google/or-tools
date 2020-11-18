@@ -20,7 +20,6 @@ This problem has 72 different solutions in base 10.
 """
 
 # [START program]
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 

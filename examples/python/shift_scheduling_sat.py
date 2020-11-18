@@ -12,21 +12,17 @@
 # limitations under the License.
 """Creates a shift scheduling problem and solves it."""
 
-from __future__ import print_function
-
-import argparse
-
 from ortools.sat.python import cp_model
 
 from google.protobuf import text_format
+from absl import app
+from absl import flags
 
-PARSER = argparse.ArgumentParser()
-PARSER.add_argument(
-    '--output_proto',
-    default="",
-    help='Output file to write the cp_model'
-    'proto to.')
-PARSER.add_argument('--params', default="", help='Sat solver parameters.')
+FLAGS = flags.FLAGS
+
+flags.DEFINE_string('output_proto', '',
+                    'Output file to write the cp_model proto to.')
+flags.DEFINE_string('params', '', 'Sat solver parameters.')
 
 
 def negated_bounded_span(works, start, length):
@@ -92,13 +88,13 @@ def add_soft_sequence_constraint(model, works, hard_min, soft_min, min_cost,
 
     # Forbid sequences that are too short.
     for length in range(1, hard_min):
-        for start in range(len(works) - length + 1):
+        for start in range(len(works) - length - 1):
             model.AddBoolOr(negated_bounded_span(works, start, length))
 
     # Penalize sequences that are below the soft limit.
     if min_cost > 0:
         for length in range(hard_min, soft_min):
-            for start in range(len(works) - length + 1):
+            for start in range(len(works) - length - 1):
                 span = negated_bounded_span(works, start, length)
                 name = ': under_span(start=%i, length=%i)' % (start, length)
                 lit = model.NewBoolVar(prefix + name)
@@ -112,7 +108,7 @@ def add_soft_sequence_constraint(model, works, hard_min, soft_min, min_cost,
     # Penalize sequences that are above the soft limit.
     if max_cost > 0:
         for length in range(soft_max + 1, hard_max + 1):
-            for start in range(len(works) - length + 1):
+            for start in range(len(works) - length - 1):
                 span = negated_bounded_span(works, start, length)
                 name = ': over_span(start=%i, length=%i)' % (start, length)
                 lit = model.NewBoolVar(prefix + name)
@@ -123,7 +119,7 @@ def add_soft_sequence_constraint(model, works, hard_min, soft_min, min_cost,
                 cost_coefficients.append(max_cost * (length - soft_max))
 
     # Just forbid any sequence of true variables with length hard_max + 1
-    for start in range(len(works) - hard_max):
+    for start in range(len(works) - hard_max - 1):
         model.AddBoolOr(
             [works[i].Not() for i in range(start, start + hard_max + 1)])
     return cost_literals, cost_coefficients
@@ -221,7 +217,7 @@ def solve_shift_scheduling(params, output_proto):
         (3, 0, 5, -2),
         # Employee 5 wants a night shift on the second Thursday.
         (5, 3, 10, -2),
-        # Employee 2 does not want a night shift on the first Friday.
+        # Employee 2 does not want a night shift on the third Friday.
         (2, 3, 4, 4)
     ]
 
@@ -308,8 +304,8 @@ def solve_shift_scheduling(params, output_proto):
             works = [work[e, shift, d] for d in range(num_days)]
             variables, coeffs = add_soft_sequence_constraint(
                 model, works, hard_min, soft_min, min_cost, soft_max, hard_max,
-                max_cost, 'shift_constraint(employee %i, shift %i)' % (e,
-                                                                       shift))
+                max_cost,
+                'shift_constraint(employee %i, shift %i)' % (e, shift))
             obj_bool_vars.extend(variables)
             obj_bool_coeffs.extend(coeffs)
 
@@ -332,8 +328,8 @@ def solve_shift_scheduling(params, output_proto):
         for e in range(num_employees):
             for d in range(num_days - 1):
                 transition = [
-                    work[e, previous_shift, d].Not(),
-                    work[e, next_shift, d + 1].Not()
+                    work[e, previous_shift, d].Not(), work[e, next_shift,
+                                                           d + 1].Not()
                 ]
                 if cost == 0:
                     model.AddBoolOr(transition)
@@ -367,9 +363,9 @@ def solve_shift_scheduling(params, output_proto):
     # Objective
     model.Minimize(
         sum(obj_bool_vars[i] * obj_bool_coeffs[i]
-            for i in range(len(obj_bool_vars)))
-        + sum(obj_int_vars[i] * obj_int_coeffs[i]
-              for i in range(len(obj_int_vars))))
+            for i in range(len(obj_bool_vars))) +
+        sum(obj_int_vars[i] * obj_int_coeffs[i]
+            for i in range(len(obj_int_vars))))
 
     if output_proto:
         print('Writing proto to %s' % output_proto)
@@ -378,9 +374,8 @@ def solve_shift_scheduling(params, output_proto):
 
     # Solve the model.
     solver = cp_model.CpSolver()
-    solver.parameters.num_search_workers = 8
     if params:
-        text_format.Merge(params, solver.parameters)
+        text_format.Parse(params, solver.parameters)
     solution_printer = cp_model.ObjectiveSolutionPrinter()
     status = solver.SolveWithSolutionCallback(model, solution_printer)
 
@@ -414,13 +409,16 @@ def solve_shift_scheduling(params, output_proto):
                       (var.Name(), solver.Value(var), obj_int_coeffs[i]))
 
     print()
-    print(solver.ResponseStats())
+    print('Statistics')
+    print('  - status          : %s' % solver.StatusName(status))
+    print('  - conflicts       : %i' % solver.NumConflicts())
+    print('  - branches        : %i' % solver.NumBranches())
+    print('  - wall time       : %f s' % solver.WallTime())
 
 
-def main(args):
-    """Main."""
-    solve_shift_scheduling(args.params, args.output_proto)
+def main(_):
+    solve_shift_scheduling(FLAGS.params, FLAGS.output_proto)
 
 
 if __name__ == '__main__':
-    main(PARSER.parse_args())
+    app.run(main)

@@ -16,21 +16,31 @@ This models aims at building a sequence of numbers such that the number of
 occurrences of i in this sequence is equal to the value of the ith number.
 It uses an aggregated formulation of the count expression called
 distribute().
-"""
-from __future__ import print_function
 
+Usage: python magic_sequence_distribute.py NUMBER
+"""
+
+from absl import app
+from absl import flags
 from ortools.constraint_solver import pywrapcp
 
+FLAGS = flags.FLAGS
 
-def main():
+
+def main(argv):
     # Create the solver.
     solver = pywrapcp.Solver('magic sequence')
 
-    size = 100
+    # Create an array of IntVars to hold the answers.
+    size = int(argv[1]) if len(argv) > 1 else 100
     all_values = list(range(0, size))
     all_vars = [solver.IntVar(0, size, 'vars_%d' % i) for i in all_values]
 
+    # The number of variables equal to j shall be the value of all_vars[j].
     solver.Add(solver.Distribute(all_vars, all_values, all_vars))
+
+    # The sum of all the values shall be equal to the size.
+    # (This constraint is redundant, but speeds up the search.)
     solver.Add(solver.Sum(all_vars) == size)
 
     solver.NewSearch(
@@ -42,4 +52,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    app.run(main)

@@ -20,14 +20,18 @@ between all marks are all different. The objective is to minimize the length
 of the rule.
 """
 
+from absl import app
+from absl import flags
 from ortools.constraint_solver import pywrapcp
+
+FLAGS = flags.FLAGS
 
 # We disable the following warning because it is a false positive on constraints
 # like: solver.Add(x == 0)
 # pylint: disable=g-explicit-bool-comparison
 
 
-def main():
+def main(_):
     # Create the solver.
     solver = pywrapcp.Solver('golomb ruler')
 
@@ -40,11 +44,13 @@ def main():
     objective = solver.Minimize(marks[size - 1], 1)
 
     solver.Add(marks[0] == 0)
-    solver.Add(
-        solver.AllDifferent([
-            marks[j] - marks[i]
-            for i in range(0, size - 1) for j in range(i + 1, size)
-        ]))
+
+    # We expand the creation of the diff array to avoid a pylint warning.
+    diffs = []
+    for i in range(0, size - 1):
+        for j in range(i + 1, size):
+            diffs.append(marks[j] - marks[i])
+    solver.Add(solver.AllDifferent(diffs))
 
     solver.Add(marks[size - 1] - marks[size - 2] > marks[1] - marks[0])
     for i in range(0, size - 2):
@@ -72,4 +78,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    app.run(main)

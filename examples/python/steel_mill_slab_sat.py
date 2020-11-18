@@ -12,7 +12,6 @@
 # limitations under the License.
 """Solves the Stell Mill Slab problem with 4 different techniques."""
 
-from __future__ import print_function
 
 import argparse
 import collections

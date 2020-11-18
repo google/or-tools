@@ -1,6 +1,5 @@
 """Solves a Qubo program using the CP-SAT solver."""
 
-from __future__ import print_function
 
 import time
 

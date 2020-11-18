@@ -12,8 +12,6 @@
 # limitations under the License.
 """Jobshop with maintenance tasks using the CP-SAT solver."""
 
-from __future__ import absolute_import
-from __future__ import print_function
 
 import collections
 
