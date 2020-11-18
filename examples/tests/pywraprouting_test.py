@@ -12,7 +12,6 @@
 # limitations under the License.
 """pywrapcp unittest file."""
 
-from __future__ import print_function
 
 from functools import partial
 
