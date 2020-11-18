@@ -430,8 +430,8 @@ class Trail {
   // Note that we use a deque for the reason repository so that if we add
   // variables, the memory address of the vectors (kept in reasons_) are still
   // valid.
-  mutable std::deque<std::vector<Literal> > reasons_repository_;
-  mutable gtl::ITIVector<BooleanVariable, absl::Span<const Literal> > reasons_;
+  mutable std::deque<std::vector<Literal>> reasons_repository_;
+  mutable gtl::ITIVector<BooleanVariable, absl::Span<const Literal>> reasons_;
   mutable gtl::ITIVector<BooleanVariable, int> old_type_;
 
   // This is used by RegisterPropagator() and Reason().

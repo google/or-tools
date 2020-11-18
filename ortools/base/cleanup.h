@@ -117,8 +117,8 @@ class ABSL_MUST_USE_RESULT Cleanup {
 };
 
 template <int&... PreventExplicitTemplateArguments, typename Callback>
-absl::Cleanup<absl::decay_t<Callback> > MakeCleanup(Callback&& callback) {
-  return absl::Cleanup<absl::decay_t<Callback> >(
+absl::Cleanup<absl::decay_t<Callback>> MakeCleanup(Callback&& callback) {
+  return absl::Cleanup<absl::decay_t<Callback>>(
       std::forward<Callback>(callback));
 }
 

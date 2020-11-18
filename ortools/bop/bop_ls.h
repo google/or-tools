@@ -388,7 +388,7 @@ class AssignmentAndConstraintFeasibilityMaintainer {
     int64 weight;
   };
 
-  gtl::ITIVector<VariableIndex, gtl::ITIVector<EntryIndex, ConstraintEntry> >
+  gtl::ITIVector<VariableIndex, gtl::ITIVector<EntryIndex, ConstraintEntry>>
       by_variable_matrix_;
   gtl::ITIVector<ConstraintIndex, int64> constraint_lower_bounds_;
   gtl::ITIVector<ConstraintIndex, int64> constraint_upper_bounds_;
@@ -408,7 +408,7 @@ class AssignmentAndConstraintFeasibilityMaintainer {
   // Members used by PotentialOneFlipRepairs().
   std::vector<sat::Literal> tmp_potential_repairs_;
   NonOrderedSetHasher<ConstraintIndexWithDirection> constraint_set_hasher_;
-  absl::flat_hash_map<uint64, std::vector<sat::Literal> >
+  absl::flat_hash_map<uint64, std::vector<sat::Literal>>
       hash_to_potential_repairs_;
 
   DISALLOW_COPY_AND_ASSIGN(AssignmentAndConstraintFeasibilityMaintainer);
@@ -485,7 +485,7 @@ class OneFlipConstraintRepairer {
   // on most promising variables first.
   void SortTermsOfEachConstraints(int num_variables);
 
-  gtl::ITIVector<ConstraintIndex, gtl::ITIVector<TermIndex, ConstraintTerm> >
+  gtl::ITIVector<ConstraintIndex, gtl::ITIVector<TermIndex, ConstraintTerm>>
       by_constraint_matrix_;
   const AssignmentAndConstraintFeasibilityMaintainer& maintainer_;
   const sat::VariablesAssignment& sat_assignment_;
@@ -616,7 +616,7 @@ class LocalSearchAssignmentIterator {
   // Ideally, this should be related to the maximum number of decision in the
   // LS, but that requires templating the whole LS optimizer.
   bool use_transposition_table_;
-  absl::flat_hash_set<std::array<int32, kStoredMaxDecisions> >
+  absl::flat_hash_set<std::array<int32, kStoredMaxDecisions>>
       transposition_table_;
 
   bool use_potential_one_flip_repairs_;

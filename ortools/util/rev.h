@@ -80,7 +80,7 @@ class RevRepository : public ReversibleInterface {
 
   // TODO(user): If we ever see this in any cpu profile, consider using two
   // vectors for a better memory packing in case sizeof(T) is not sizeof(T*).
-  std::vector<std::pair<T*, T> > stack_;
+  std::vector<std::pair<T*, T>> stack_;
 };
 
 // A basic reversible vector implementation.
@@ -126,7 +126,7 @@ class RevVector : public ReversibleInterface {
 
  private:
   std::vector<int> end_of_level_;  // In stack_.
-  std::vector<std::pair<IndexType, T> > stack_;
+  std::vector<std::pair<IndexType, T>> stack_;
   gtl::ITIVector<IndexType, T> vector_;
 };
 
@@ -267,7 +267,7 @@ class RevGrowingMultiMap : ReversibleInterface {
   // TODO(user): use inlined vectors. Another datastructure that may be more
   // efficient is to use a linked list inside added_keys_ for the values sharing
   // the same key.
-  absl::flat_hash_map<Key, std::vector<Value> > map_;
+  absl::flat_hash_map<Key, std::vector<Value>> map_;
 
   // Backtracking data.
   std::vector<Key> added_keys_;

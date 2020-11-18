@@ -145,7 +145,7 @@ class ImpliedBounds {
   //
   // TODO(user): Use inlined vectors.
   std::vector<ImpliedBoundEntry> empty_implied_bounds_;
-  gtl::ITIVector<IntegerVariable, std::vector<ImpliedBoundEntry> >
+  gtl::ITIVector<IntegerVariable, std::vector<ImpliedBoundEntry>>
       var_to_bounds_;
 
   // Track the list of variables with some implied bounds.

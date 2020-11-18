@@ -81,7 +81,7 @@ class LPDecomposer {
 
  private:
   const LinearProgram* original_problem_;
-  std::vector<std::vector<ColIndex> > clusters_;
+  std::vector<std::vector<ColIndex>> clusters_;
 
   mutable absl::Mutex mutex_;
 

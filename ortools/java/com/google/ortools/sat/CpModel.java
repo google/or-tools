@@ -592,8 +592,7 @@ public final class CpModel {
     for (IntVar var : actives) {
       reservoir.addActives(var.getIndex());
     }
-    reservoir.setMinLevel(minLevel);
-    reservoir.setMaxLevel(maxLevel);
+    reservoir.setMinLevel(minLevel).setMaxLevel(maxLevel);
     return ct;
   }
 

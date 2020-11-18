@@ -163,7 +163,7 @@ class CanonicalBooleanLinearProblem {
                      Coefficient max_value, Coefficient rhs);
 
   std::vector<Coefficient> rhs_;
-  std::vector<std::vector<LiteralWithCoeff> > constraints_;
+  std::vector<std::vector<LiteralWithCoeff>> constraints_;
   DISALLOW_COPY_AND_ASSIGN(CanonicalBooleanLinearProblem);
 };
 
@@ -636,14 +636,14 @@ class PbConstraints : public SatPropagator {
   };
 
   // The set of all pseudo-boolean constraint managed by this class.
-  std::vector<std::unique_ptr<UpperBoundedLinearConstraint> > constraints_;
+  std::vector<std::unique_ptr<UpperBoundedLinearConstraint>> constraints_;
 
   // The current value of the threshold for each constraints.
   gtl::ITIVector<ConstraintIndex, Coefficient> thresholds_;
 
   // For each literal, the list of all the constraints that contains it together
   // with the literal coefficient in these constraints.
-  gtl::ITIVector<LiteralIndex, std::vector<ConstraintIndexWithCoeff> >
+  gtl::ITIVector<LiteralIndex, std::vector<ConstraintIndexWithCoeff>>
       to_update_;
 
   // Bitset used to optimize the Untrail() function.
@@ -651,7 +651,7 @@ class PbConstraints : public SatPropagator {
 
   // Pointers to the constraints grouped by their hash.
   // This is used to find duplicate constraints by AddConstraint().
-  absl::flat_hash_map<int64, std::vector<UpperBoundedLinearConstraint*> >
+  absl::flat_hash_map<int64, std::vector<UpperBoundedLinearConstraint*>>
       possible_duplicates_;
 
   // Helper to enqueue propagated literals on the trail and store their reasons.

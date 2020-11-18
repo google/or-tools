@@ -398,8 +398,8 @@ class ModelStatistics {
 
  private:
   const Model& model_;
-  std::map<std::string, std::vector<Constraint*> > constraints_per_type_;
-  absl::flat_hash_map<const IntegerVariable*, std::vector<Constraint*> >
+  std::map<std::string, std::vector<Constraint*>> constraints_per_type_;
+  absl::flat_hash_map<const IntegerVariable*, std::vector<Constraint*>>
       constraints_per_variables_;
 };
 

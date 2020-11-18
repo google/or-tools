@@ -212,7 +212,7 @@ class Model {
   // TODO(user): I don't think we need the two layers of unique_ptr, but we
   // don't care too much about efficiency here and this was easier to get
   // working.
-  std::vector<std::unique_ptr<DeleteInterface> > cleanup_list_;
+  std::vector<std::unique_ptr<DeleteInterface>> cleanup_list_;
 
   DISALLOW_COPY_AND_ASSIGN(Model);
 };

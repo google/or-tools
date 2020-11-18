@@ -223,7 +223,7 @@ class CpModelMapping {
   absl::flat_hash_set<const ConstraintProto*> already_loaded_ct_;
   absl::flat_hash_set<const ConstraintProto*> is_half_encoding_ct_;
 
-  absl::flat_hash_map<int, absl::flat_hash_set<int64> >
+  absl::flat_hash_map<int, absl::flat_hash_set<int64>>
       variables_to_encoded_values_;
   const absl::flat_hash_set<int64> empty_set_;
 };

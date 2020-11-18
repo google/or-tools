@@ -120,7 +120,7 @@ class LinearConstraintBuilder {
 
   // Initially we push all AddTerm() here, and during Build() we merge terms
   // on the same variable.
-  std::vector<std::pair<IntegerVariable, IntegerValue> > terms_;
+  std::vector<std::pair<IntegerVariable, IntegerValue>> terms_;
 };
 
 // Returns the activity of the given constraint. That is the current value of
@@ -155,7 +155,7 @@ void MakeAllVariablesPositive(LinearConstraint* constraint);
 // Sorts and merges duplicate IntegerVariable in the given "terms".
 // Fills the given LinearConstraint with the result.
 void CleanTermsAndFillConstraint(
-    std::vector<std::pair<IntegerVariable, IntegerValue> >* terms,
+    std::vector<std::pair<IntegerVariable, IntegerValue>>* terms,
     LinearConstraint* constraint);
 
 // Sorts the terms and makes all IntegerVariable positive. This assumes that a

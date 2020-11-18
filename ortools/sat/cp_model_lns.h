@@ -107,10 +107,10 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 
   // Constraints <-> Variables graph.
   // Note that only non-constant variable are listed here.
-  const std::vector<std::vector<int> >& ConstraintToVar() const {
+  const std::vector<std::vector<int>>& ConstraintToVar() const {
     return constraint_to_var_;
   }
-  const std::vector<std::vector<int> >& VarToConstraint() const {
+  const std::vector<std::vector<int>>& VarToConstraint() const {
     return var_to_constraint_;
   }
 
@@ -164,11 +164,11 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   mutable absl::Mutex mutex_;
 
   // Constraints by types.
-  std::vector<std::vector<int> > type_to_constraints_;
+  std::vector<std::vector<int>> type_to_constraints_;
 
   // Variable-Constraint graph.
-  std::vector<std::vector<int> > constraint_to_var_;
-  std::vector<std::vector<int> > var_to_constraint_;
+  std::vector<std::vector<int>> constraint_to_var_;
+  std::vector<std::vector<int>> var_to_constraint_;
 
   // The set of active variables, that is the list of non constant variables if
   // parameters_.focus_on_decision_variables() is false, or the list of non
@@ -501,7 +501,7 @@ class WeightedRandomRelaxationNeighborhoodGenerator
   int num_removable_constraints_ = 0;
 
   // Indices of the removed constraints per generated neighborhood.
-  absl::flat_hash_map<int64, std::vector<int> > removed_constraints_
+  absl::flat_hash_map<int64, std::vector<int>> removed_constraints_
       ABSL_GUARDED_BY(mutex_);
 
   // TODO(user): Move this to parent class if other generators start using

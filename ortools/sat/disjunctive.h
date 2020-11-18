@@ -204,7 +204,7 @@ class CombinedDisjunctive : public PropagatorInterface {
 
  private:
   AllIntervalsHelper* helper_;
-  std::vector<std::vector<int> > task_to_disjunctives_;
+  std::vector<std::vector<int>> task_to_disjunctives_;
   std::vector<bool> task_is_added_;
   std::vector<TaskSet> task_sets_;
   std::vector<IntegerValue> end_mins_;

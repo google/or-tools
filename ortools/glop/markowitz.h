@@ -186,7 +186,7 @@ class MatrixNonZeroPattern {
   //
   // TODO(user): We could be even more efficient since a size of int32 is enough
   // for us and we could store in common the inlined/not-inlined size.
-  gtl::ITIVector<RowIndex, absl::InlinedVector<ColIndex, 6> > row_non_zero_;
+  gtl::ITIVector<RowIndex, absl::InlinedVector<ColIndex, 6>> row_non_zero_;
   StrictITIVector<RowIndex, int32> row_degree_;
   StrictITIVector<ColIndex, int32> col_degree_;
   DenseBooleanRow deleted_columns_;
@@ -223,7 +223,7 @@ class ColumnPriorityQueue {
  private:
   StrictITIVector<ColIndex, int32> col_index_;
   StrictITIVector<ColIndex, int32> col_degree_;
-  std::vector<std::vector<ColIndex> > col_by_degree_;
+  std::vector<std::vector<ColIndex>> col_by_degree_;
   int32 min_degree_;
   DISALLOW_COPY_AND_ASSIGN(ColumnPriorityQueue);
 };

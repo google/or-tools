@@ -122,7 +122,7 @@ class MainLpPreprocessor : public Preprocessor {
   // TODO(user): This is mutable so that the preprocessor can be freed as soon
   // as their RecoverSolution() is called. Make RecoverSolution() non-const or
   // remove this optimization?
-  mutable std::vector<std::unique_ptr<Preprocessor> > preprocessors_;
+  mutable std::vector<std::unique_ptr<Preprocessor>> preprocessors_;
 
   // Initial dimension of the lp given to Run(), for displaying purpose.
   EntryIndex initial_num_entries_;

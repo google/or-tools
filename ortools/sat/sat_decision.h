@@ -99,7 +99,7 @@ class SatDecisionPolicy {
   void SetAssignmentPreference(Literal literal, double weight);
 
   // Returns the vector of the current assignment preferences.
-  std::vector<std::pair<Literal, double> > AllPreferences() const;
+  std::vector<std::pair<Literal, double>> AllPreferences() const;
 
  private:
   // Computes an initial variable ordering.

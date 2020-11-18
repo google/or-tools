@@ -247,6 +247,11 @@ bool SearchForGurobiDynamicLibrary() {
             gurobi_home_from_env, "/lib/libgurobi", number, ".so"))) {
       return true;
     }
+    if (gurobi_home_from_env != nullptr &&
+        LoadSpecificGurobiLibrary(absl::StrCat(
+            gurobi_home_from_env, "/lib64/libgurobi", number, ".so"))) {
+      return true;
+    }
 #endif
   }
 

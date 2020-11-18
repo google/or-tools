@@ -37,7 +37,7 @@ class VectorOrFunction {
 
 // Specialization for vectors.
 template <typename ScalarType>
-class VectorOrFunction<ScalarType, std::vector<ScalarType> > {
+class VectorOrFunction<ScalarType, std::vector<ScalarType>> {
  public:
   explicit VectorOrFunction(std::vector<ScalarType> values)
       : values_(std::move(values)) {}
@@ -65,12 +65,12 @@ class MatrixOrFunction {
 
 // Specialization for vector-based matrices.
 template <typename ScalarType, bool square>
-class MatrixOrFunction<ScalarType, std::vector<std::vector<ScalarType> >,
+class MatrixOrFunction<ScalarType, std::vector<std::vector<ScalarType>>,
                        square> {
  public:
-  explicit MatrixOrFunction(std::vector<std::vector<ScalarType> > matrix)
+  explicit MatrixOrFunction(std::vector<std::vector<ScalarType>> matrix)
       : matrix_(std::move(matrix)) {}
-  void Reset(std::vector<std::vector<ScalarType> > matrix) {
+  void Reset(std::vector<std::vector<ScalarType>> matrix) {
     matrix_ = std::move(matrix);
   }
   ScalarType operator()(int i, int j) const { return matrix_[i][j]; }
@@ -88,7 +88,7 @@ class MatrixOrFunction<ScalarType, std::vector<std::vector<ScalarType> >,
   }
 
  private:
-  std::vector<std::vector<ScalarType> > matrix_;
+  std::vector<std::vector<ScalarType>> matrix_;
 };
 
 }  // namespace operations_research

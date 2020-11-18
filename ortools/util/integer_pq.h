@@ -33,7 +33,7 @@ namespace operations_research {
 // Classic asjustable priority queue implementation. It behaves exactly the same
 // as AdjustablePriorityQueue regarding identical elements, but it uses less
 // memory and is in general slightly faster.
-template <typename Element, class Compare = std::less<Element> >
+template <typename Element, class Compare = std::less<Element>>
 class IntegerPriorityQueue {
  public:
   // Starts with an empty queue and reserve space for n elements.

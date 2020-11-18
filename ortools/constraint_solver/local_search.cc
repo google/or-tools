@@ -108,9 +108,8 @@ bool BaseLns::MakeOneNeighbor() {
       Deactivate(candidate);
     }
     return true;
-  } else {
-    return false;
   }
+  return false;
 }
 
 void BaseLns::OnStart() { InitFragments(); }
@@ -154,9 +153,8 @@ bool SimpleLns::NextFragment() {
     }
     ++index_;
     return true;
-  } else {
-    return false;
   }
+  return false;
 }
 
 // ----- Random Large Neighborhood Search operator -----
@@ -405,10 +403,9 @@ bool PathOperator::SkipUnchanged(int index) const {
   if (index < number_of_nexts_) {
     int path_index = index + number_of_nexts_;
     return Value(path_index) == OldValue(path_index);
-  } else {
-    int next_index = index - number_of_nexts_;
-    return Value(next_index) == OldValue(next_index);
   }
+  int next_index = index - number_of_nexts_;
+  return Value(next_index) == OldValue(next_index);
 }
 
 bool PathOperator::MoveChain(int64 before_chain, int64 chain_end,
@@ -463,9 +460,8 @@ bool PathOperator::MakeActive(int64 node, int64 destination) {
     SetNext(node, Next(destination), destination_path);
     SetNext(destination, node, destination_path);
     return true;
-  } else {
-    return false;
   }
+  return false;
 }
 
 bool PathOperator::MakeChainInactive(int64 before_chain, int64 chain_end) {
@@ -513,9 +509,8 @@ bool PathOperator::IncrementPosition() {
                 alternative_sets_[sibling_alternative_index].size() - 1) {
               ++base_sibling_alternatives_[i];
               break;
-            } else {
-              base_sibling_alternatives_[i] = 0;
             }
+            base_sibling_alternatives_[i] = 0;
           }
           // Iterate on base alternatives.
           const int alternative_index = alternative_index_[base_nodes_[i]];
@@ -524,10 +519,9 @@ bool PathOperator::IncrementPosition() {
                 alternative_sets_[alternative_index].size() - 1) {
               ++base_alternatives_[i];
               break;
-            } else {
-              base_alternatives_[i] = 0;
-              base_sibling_alternatives_[i] = 0;
             }
+            base_alternatives_[i] = 0;
+            base_sibling_alternatives_[i] = 0;
           }
         }
         base_alternatives_[i] = 0;
@@ -687,11 +681,8 @@ void PathOperator::InitializePathStarts() {
     if (!has_prevs[i]) {
       if (use_empty_path_symmetry_breaker && IsPathEnd(OldNext(i))) {
         if (start_empty_path_class_ != nullptr) {
-          if (empty_found[start_empty_path_class_(i)]) {
-            continue;
-          } else {
-            empty_found[start_empty_path_class_(i)] = true;
-          }
+          if (empty_found[start_empty_path_class_(i)]) continue;
+          empty_found[start_empty_path_class_(i)] = true;
         }
       }
       new_path_starts.push_back(i);
@@ -917,15 +908,13 @@ bool TwoOpt::MakeNeighbor() {
         // single node is a NOP).
         && last_ != chain_last) {
       return true;
-    } else {
-      last_ = -1;
-      return false;
     }
-  } else {
-    const int64 to_move = Next(last_);
-    DCHECK_EQ(Next(to_move), BaseNode(1));
-    return MoveChain(last_, to_move, BaseNode(0));
+    last_ = -1;
+    return false;
   }
+  const int64 to_move = Next(last_);
+  DCHECK_EQ(Next(to_move), BaseNode(1));
+  return MoveChain(last_, to_move, BaseNode(0));
 }
 
 // ----- Relocate -----
@@ -1072,11 +1061,9 @@ bool Cross::MakeNeighbor() {
       return false;
     }
     return MoveChain(start0, node0, start1) && MoveChain(node0, node1, start0);
-  } else if (!IsPathEnd(node0)) {
-    return MoveChain(start0, node0, start1);
-  } else if (!IsPathEnd(node1)) {
-    return MoveChain(start1, node1, start0);
   }
+  if (!IsPathEnd(node0)) return MoveChain(start0, node0, start1);
+  if (!IsPathEnd(node1)) return MoveChain(start1, node1, start0);
   return false;
 }
 
@@ -1307,11 +1294,7 @@ class MakeChainInactiveOperator : public PathOperator {
 
   int64 GetBaseNodeRestartPosition(int base_index) override {
     // Base node 1 must be after base node 0.
-    if (base_index == 0) {
-      return StartNode(base_index);
-    } else {
-      return BaseNode(base_index - 1);
-    }
+    return (base_index == 0) ? StartNode(base_index) : BaseNode(base_index - 1);
   }
 };
 
@@ -1529,10 +1512,7 @@ bool TSPLns::MakeNeighbor() {
   breaks_set.insert(base_node);
   CHECK(!nodes.empty());  // Should have been caught earlier.
   while (breaks_set.size() < tsp_size_) {
-    const int64 one_break = nodes[absl::Uniform<int>(rand_, 0, nodes.size())];
-    if (!gtl::ContainsKey(breaks_set, one_break)) {
-      breaks_set.insert(one_break);
-    }
+    breaks_set.insert(nodes[absl::Uniform<int>(rand_, 0, nodes.size())]);
   }
   CHECK_EQ(breaks_set.size(), tsp_size_);
   // Setup break node indexing and internal meta-node cost (cost of partial
@@ -2023,11 +2003,8 @@ bool CompoundOperator::MakeNextNeighbor(Assignment* delta,
 
 int64 CompoundOperatorNoRestart(int size, int active_index,
                                 int operator_index) {
-  if (operator_index < active_index) {
-    return size + operator_index - active_index;
-  } else {
-    return operator_index - active_index;
-  }
+  return (operator_index < active_index) ? size + operator_index - active_index
+                                         : operator_index - active_index;
 }
 
 int64 CompoundOperatorRestart(int active_index, int operator_index) {
@@ -2045,12 +2022,11 @@ LocalSearchOperator* Solver::ConcatenateOperators(
   if (restart) {
     std::function<int64(int, int)> eval = CompoundOperatorRestart;
     return ConcatenateOperators(ops, eval);
-  } else {
-    const int size = ops.size();
-    return ConcatenateOperators(ops, [size](int i, int j) {
-      return CompoundOperatorNoRestart(size, i, j);
-    });
   }
+  const int size = ops.size();
+  return ConcatenateOperators(ops, [size](int i, int j) {
+    return CompoundOperatorNoRestart(size, i, j);
+  });
 }
 
 LocalSearchOperator* Solver::ConcatenateOperators(
@@ -2632,35 +2608,53 @@ PathState::NodeRange PathState::Nodes(int path) const {
                               committed_nodes_.data());
 }
 
-void PathState::CutChains() {
-  if (is_invalid_) return;
-  // Filter out unchanged arcs from changed_arcs_,
-  // translate changed arcs to changed arc indices.
-  // Fill changed_paths_ while we hold node_path.
-  DCHECK_EQ(chains_.size(), num_paths_ + 1);  // One per path + sentinel.
-  DCHECK(changed_paths_.empty());
-  tail_head_indices_.clear();
-  int num_changed_arcs = 0;
-  for (const auto& arc : changed_arcs_) {
-    int node, next;
-    std::tie(node, next) = arc;
-    const int node_index = committed_index_[node];
-    const int next_index = committed_index_[next];
-    const int node_path = committed_nodes_[node_index].path;
-    if (next != node &&
-        (next_index != node_index + 1 || node_path == -1)) {  // New arc.
-      tail_head_indices_.push_back({node_index, next_index});
-      changed_arcs_[num_changed_arcs++] = {node, next};
-      if (node_path != -1 && !path_has_changed_[node_path]) {
-        path_has_changed_[node_path] = true;
-        changed_paths_.push_back(node_path);
+void PathState::MakeChainsFromChangedPathsAndArcsWithSelectionAlgorithm() {
+  int num_visited_changed_arcs = 0;
+  const int num_changed_arcs = tail_head_indices_.size();
+  const int num_committed_nodes = committed_nodes_.size();
+  // For every path, find all its chains.
+  for (const int path : changed_paths_) {
+    const int old_chain_size = chains_.size();
+    const ChainBounds bounds = chains_[paths_[path].begin_index];
+    const int start_index = bounds.begin_index;
+    const int end_index = bounds.end_index - 1;
+    int current_index = start_index;
+    while (true) {
+      // Look for smallest non-visited tail_index that is no smaller than
+      // current_index.
+      int selected_arc = -1;
+      int selected_tail_index = num_committed_nodes;
+      for (int i = num_visited_changed_arcs; i < num_changed_arcs; ++i) {
+        const int tail_index = tail_head_indices_[i].tail_index;
+        if (current_index <= tail_index && tail_index < selected_tail_index) {
+          selected_arc = i;
+          selected_tail_index = tail_index;
+        }
       }
-    } else if (node == next && node_path != -1) {  // New loop.
-      changed_arcs_[num_changed_arcs++] = {node, node};
+      // If there is no such tail index, or more generally if the next chain
+      // would be cut by end of path,
+      // stack {current_index, end_index + 1} in chains_, and go to next path.
+      // Otherwise, stack {current_index, tail_index+1} in chains_,
+      // set current_index = head_index, set pair to visited.
+      if (start_index <= current_index && current_index <= end_index &&
+          end_index < selected_tail_index) {
+        chains_.emplace_back(current_index, end_index + 1);
+        break;
+      } else {
+        chains_.emplace_back(current_index, selected_tail_index + 1);
+        current_index = tail_head_indices_[selected_arc].head_index;
+        std::swap(tail_head_indices_[num_visited_changed_arcs],
+                  tail_head_indices_[selected_arc]);
+        ++num_visited_changed_arcs;
+      }
     }
+    const int new_chain_size = chains_.size();
+    paths_[path] = {old_chain_size, new_chain_size};
   }
-  changed_arcs_.resize(num_changed_arcs);
+  chains_.emplace_back(0, 0);  // Sentinel.
+}
 
+void PathState::MakeChainsFromChangedPathsAndArcsWithGenericAlgorithm() {
   // TRICKY: For each changed path, we want to generate a sequence of chains
   // that represents the path in the changed state.
   // First, notice that if we add a fake end->start arc for each changed path,
@@ -2717,6 +2711,42 @@ void PathState::CutChains() {
     paths_[path] = {new_path_begin, new_path_end};
   }
   chains_.emplace_back(0, 0);  // Sentinel.
+}
+
+void PathState::CutChains() {
+  if (is_invalid_) return;
+  // Filter out unchanged arcs from changed_arcs_,
+  // translate changed arcs to changed arc indices.
+  // Fill changed_paths_ while we hold node_path.
+  DCHECK_EQ(chains_.size(), num_paths_ + 1);  // One per path + sentinel.
+  DCHECK(changed_paths_.empty());
+  tail_head_indices_.clear();
+  int num_changed_arcs = 0;
+  for (const auto& arc : changed_arcs_) {
+    int node, next;
+    std::tie(node, next) = arc;
+    const int node_index = committed_index_[node];
+    const int next_index = committed_index_[next];
+    const int node_path = committed_nodes_[node_index].path;
+    if (next != node &&
+        (next_index != node_index + 1 || node_path == -1)) {  // New arc.
+      tail_head_indices_.push_back({node_index, next_index});
+      changed_arcs_[num_changed_arcs++] = {node, next};
+      if (node_path != -1 && !path_has_changed_[node_path]) {
+        path_has_changed_[node_path] = true;
+        changed_paths_.push_back(node_path);
+      }
+    } else if (node == next && node_path != -1) {  // New loop.
+      changed_arcs_[num_changed_arcs++] = {node, node};
+    }
+  }
+  changed_arcs_.resize(num_changed_arcs);
+
+  if (tail_head_indices_.size() + changed_paths_.size() <= 8) {
+    MakeChainsFromChangedPathsAndArcsWithSelectionAlgorithm();
+  } else {
+    MakeChainsFromChangedPathsAndArcsWithGenericAlgorithm();
+  }
 }
 
 void PathState::Commit() {
@@ -3419,12 +3449,11 @@ class BinaryObjectiveFilter : public SumObjectiveFilter {
     if (element.Activated()) {
       *new_cost = value_evaluator_(index, element.Value());
       return true;
-    } else {
-      const IntVar* var = element.Var();
-      if (var->Bound()) {
-        *new_cost = value_evaluator_(index, var->Min());
-        return true;
-      }
+    }
+    const IntVar* var = element.Var();
+    if (var->Bound()) {
+      *new_cost = value_evaluator_(index, var->Min());
+      return true;
     }
     *new_cost = 0;
     return false;
@@ -3476,12 +3505,11 @@ class TernaryObjectiveFilter : public SumObjectiveFilter {
                                      container.Element(secondary_var).Value());
       }
       return true;
-    } else {
-      const IntVar* var = element.Var();
-      if (var->Bound() && secondary_var->Bound()) {
-        *new_cost = value_evaluator_(index, var->Min(), secondary_var->Min());
-        return true;
-      }
+    }
+    const IntVar* var = element.Var();
+    if (var->Bound() && secondary_var->Bound()) {
+      *new_cost = value_evaluator_(index, var->Min(), secondary_var->Min());
+      return true;
     }
     *new_cost = 0;
     return false;
@@ -3806,9 +3834,8 @@ void InstallLocalSearchProfiler(LocalSearchProfiler* monitor) {
 LocalSearchProfiler* BuildLocalSearchProfiler(Solver* solver) {
   if (solver->IsLocalSearchProfilingEnabled()) {
     return new LocalSearchProfiler(solver);
-  } else {
-    return nullptr;
   }
+  return nullptr;
 }
 
 void DeleteLocalSearchProfiler(LocalSearchProfiler* monitor) { delete monitor; }
@@ -4171,25 +4198,24 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
             neighbor_found_ = true;
             has_checked_assignment_ = true;
             return nullptr;
-          } else {
-            solver->SetSearchContext(solver->ActiveSearch(),
-                                     ls_operator_->DebugString());
-            assignment_->CopyIntersection(assignment_copy);
-            assignment_->SetObjectiveValue(
-                filter_manager_ ? filter_manager_->GetAcceptedObjectiveValue()
-                                : 0);
-            // Advancing local search to the current solution without
-            // checking.
-            // TODO(user): support the case were limit_ accepts more than
-            // one solution (e.g. best accept).
-            AcceptUncheckedNeighbor(solver->ParentSearch());
-            solver->IncrementUncheckedSolutionCounter();
-            pool_->RegisterNewSolution(assignment_);
-            SynchronizeAll(solver);
-            // NOTE: SynchronizeAll() sets neighbor_found_ to false, force it
-            // back to true when skipping checks.
-            neighbor_found_ = true;
           }
+          solver->SetSearchContext(solver->ActiveSearch(),
+                                   ls_operator_->DebugString());
+          assignment_->CopyIntersection(assignment_copy);
+          assignment_->SetObjectiveValue(
+              filter_manager_ ? filter_manager_->GetAcceptedObjectiveValue()
+                              : 0);
+          // Advancing local search to the current solution without
+          // checking.
+          // TODO(user): support the case were limit_ accepts more than
+          // one solution (e.g. best accept).
+          AcceptUncheckedNeighbor(solver->ParentSearch());
+          solver->IncrementUncheckedSolutionCounter();
+          pool_->RegisterNewSolution(assignment_);
+          SynchronizeAll(solver);
+          // NOTE: SynchronizeAll() sets neighbor_found_ to false, force it
+          // back to true when skipping checks.
+          neighbor_found_ = true;
         } else {
           if (filter_manager_ != nullptr) filter_manager_->Revert();
           if (check_period_ > 1 && has_checked_assignment_) {
@@ -4649,7 +4675,8 @@ Decision* LocalSearch::Next(Solver* const solver) {
       const int depth = solver->SearchDepth();
       if (depth < kLocalSearchBalancedTreeDepth) {
         return solver->balancing_decision();
-      } else if (depth > kLocalSearchBalancedTreeDepth) {
+      }
+      if (depth > kLocalSearchBalancedTreeDepth) {
         solver->Fail();
       }
       return decision;

@@ -14,7 +14,7 @@ cc_library(
 
 cc_test(
     name = "hungarian_test",
-    size = "small",
+    size = "medium",
     srcs = ["hungarian_test.cc"],
     copts = ["-Iexternal/gtest/include"],
     deps = [

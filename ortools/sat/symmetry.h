@@ -101,7 +101,7 @@ class SymmetryPropagator : public SatPropagator {
 
   // The permutations.
   // The index of a permutation is its position in this vector.
-  std::vector<std::unique_ptr<SparsePermutation> > permutations_;
+  std::vector<std::unique_ptr<SparsePermutation>> permutations_;
 
   // Reverse mapping (source literal) -> list of (permutation_index, image).
   struct ImageInfo {
@@ -110,7 +110,7 @@ class SymmetryPropagator : public SatPropagator {
     int permutation_index;
     Literal image;
   };
-  gtl::ITIVector<LiteralIndex, std::vector<ImageInfo> > images_;
+  gtl::ITIVector<LiteralIndex, std::vector<ImageInfo>> images_;
 
   // For each permutation p, we maintain the list of all assigned literals
   // affected by p whose trail index is < propagation_trail_index_; sorted by
@@ -130,7 +130,7 @@ class SymmetryPropagator : public SatPropagator {
     // AssignedLiteralInfo's literal was assigned (i.e. earlier in the trail).
     int first_non_symmetric_info_index_so_far;
   };
-  std::vector<std::vector<AssignedLiteralInfo> > permutation_trails_;
+  std::vector<std::vector<AssignedLiteralInfo>> permutation_trails_;
 
   // Adds an AssignedLiteralInfo to the given permutation trail.
   // Returns false if there is a non-symmetric literal in this trail with its

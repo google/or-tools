@@ -30,7 +30,7 @@ namespace operations_research {
 // might be INFEASIBLE if there is some trivial infeasiblity in the model.
 MPSolverResponseStatus ApplyMipPresolveSteps(
     bool log_info, const glop::GlopParameters& glop_params, MPModelProto* model,
-    std::vector<std::unique_ptr<glop::Preprocessor> >* for_postsolve);
+    std::vector<std::unique_ptr<glop::Preprocessor>>* for_postsolve);
 
 }  // namespace operations_research
 #endif  // OR_TOOLS_LINEAR_SOLVER_SAT_SOLVER_UTILS_H_

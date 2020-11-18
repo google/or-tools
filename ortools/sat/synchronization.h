@@ -157,7 +157,7 @@ class SharedIncompleteSolutionManager {
 
  private:
   // New solutions are added and removed from the back.
-  std::vector<std::vector<double> > solutions_;
+  std::vector<std::vector<double>> solutions_;
   mutable absl::Mutex mutex_;
 };
 
@@ -321,7 +321,7 @@ class SharedResponseManager {
   double last_primal_integral_time_stamp_ ABSL_GUARDED_BY(mutex_) = 0.0;
 
   int next_callback_id_ ABSL_GUARDED_BY(mutex_) = 0;
-  std::vector<std::pair<int, std::function<void(const CpSolverResponse&)> > >
+  std::vector<std::pair<int, std::function<void(const CpSolverResponse&)>>>
       callbacks_ ABSL_GUARDED_BY(mutex_);
 
   // Dump prefix.
@@ -373,7 +373,7 @@ class SharedBoundsManager {
   // These are only updated on Synchronize().
   std::vector<int64> synchronized_lower_bounds_ ABSL_GUARDED_BY(mutex_);
   std::vector<int64> synchronized_upper_bounds_ ABSL_GUARDED_BY(mutex_);
-  std::deque<SparseBitset<int64> > id_to_changed_variables_
+  std::deque<SparseBitset<int64>> id_to_changed_variables_
       ABSL_GUARDED_BY(mutex_);
 };
 

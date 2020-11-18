@@ -36,7 +36,7 @@ inline void Truncate(RepeatedPtrField<T>* array, int new_size) {
 // 1] where N is the number of elements in 'array', and RepeatedType must be
 // RepeatedField or RepeatedPtrField.
 // Returns number of elements erased.
-template <typename RepeatedType, typename IndexContainer = std::vector<int> >
+template <typename RepeatedType, typename IndexContainer = std::vector<int>>
 int RemoveAt(RepeatedType* array, const IndexContainer& indices) {
   if (indices.size() == 0) {
     return 0;

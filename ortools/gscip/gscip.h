@@ -121,7 +121,7 @@ class GScip {
  public:
   // Create a new GScip (the constructor is private). The default objective
   // direction is minimization.
-  static absl::StatusOr<std::unique_ptr<GScip> > Create(
+  static absl::StatusOr<std::unique_ptr<GScip>> Create(
       const std::string& problem_name);
   ~GScip();
   static std::string ScipVersion();

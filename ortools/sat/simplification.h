@@ -325,7 +325,7 @@ class SatPresolver {
   std::set<LiteralIndex> m_lit_;
   std::vector<ClauseIndex> m_cls_;
   gtl::ITIVector<LiteralIndex, int> literal_to_p_size_;
-  std::vector<std::pair<LiteralIndex, ClauseIndex> > flattened_p_;
+  std::vector<std::pair<LiteralIndex, ClauseIndex>> flattened_p_;
   std::vector<Literal> tmp_new_clause_;
 
   // List of clauses on which we need to call ProcessClauseToSimplifyOthers().
@@ -335,7 +335,7 @@ class SatPresolver {
 
   // The set of all clauses.
   // An empty clause means that it has been removed.
-  std::vector<std::vector<Literal> > clauses_;  // Indexed by ClauseIndex
+  std::vector<std::vector<Literal>> clauses_;  // Indexed by ClauseIndex
 
   // The cached value of ComputeSignatureOfClauseVariables() for each clause.
   std::vector<uint64> signatures_;  // Indexed by ClauseIndex
@@ -344,7 +344,7 @@ class SatPresolver {
 
   // Occurrence list. For each literal, contains the ClauseIndex of the clause
   // that contains it (ordered by clause index).
-  gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex> > literal_to_clauses_;
+  gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex>> literal_to_clauses_;
 
   // Because we only lazily clean the occurrence list after clause deletions,
   // we keep the size of the occurrence list (without the deleted clause) here.

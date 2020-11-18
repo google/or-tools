@@ -3028,6 +3028,45 @@ void RoutingFilteredHeuristic::MakeUnassignedNodesUnperformed() {
   }
 }
 
+void RoutingFilteredHeuristic::MakePartiallyPerformedPairsUnperformed() {
+  std::vector<bool> to_make_unperformed(Size(), false);
+  for (const auto& [pickups, deliveries] :
+       model()->GetPickupAndDeliveryPairs()) {
+    int64 performed_pickup = -1;
+    for (int64 pickup : pickups) {
+      if (Contains(pickup) && Value(pickup) != pickup) {
+        performed_pickup = pickup;
+        break;
+      }
+    }
+    int64 performed_delivery = -1;
+    for (int64 delivery : deliveries) {
+      if (Contains(delivery) && Value(delivery) != delivery) {
+        performed_delivery = delivery;
+        break;
+      }
+    }
+    if ((performed_pickup == -1) != (performed_delivery == -1)) {
+      if (performed_pickup != -1) {
+        to_make_unperformed[performed_pickup] = true;
+      }
+      if (performed_delivery != -1) {
+        to_make_unperformed[performed_delivery] = true;
+      }
+    }
+  }
+  for (int index = 0; index < Size(); ++index) {
+    if (to_make_unperformed[index] || !Contains(index)) continue;
+    int64 next = Value(index);
+    while (next < Size() && to_make_unperformed[next]) {
+      const int64 next_of_next = Value(next);
+      SetValue(index, next_of_next);
+      SetValue(next, next);
+      next = next_of_next;
+    }
+  }
+}
+
 // CheapestInsertionFilteredHeuristic
 
 CheapestInsertionFilteredHeuristic::CheapestInsertionFilteredHeuristic(
@@ -5060,6 +5099,8 @@ bool SavingsFilteredHeuristic::BuildSolutionInternal() {
   // Free all the space used to store the Savings in the container.
   savings_container_.reset();
   MakeUnassignedNodesUnperformed();
+  if (!Commit()) return false;
+  MakePartiallyPerformedPairsUnperformed();
   return Commit();
 }
 

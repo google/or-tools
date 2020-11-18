@@ -53,7 +53,7 @@ class ScatteredVectorEntry {
 // A simple struct that contains a DenseVector and its non-zero indices.
 // TODO(user): This should be changed from struct to class.
 template <typename Index,
-          typename Iterator = VectorIterator<ScatteredVectorEntry<Index> > >
+          typename Iterator = VectorIterator<ScatteredVectorEntry<Index>>>
 struct ScatteredVector {
   StrictITIVector<Index, Fractional> values;
 

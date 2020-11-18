@@ -62,14 +62,14 @@ class SparseMatrix {
  public:
   SparseMatrix();
 
-// Useful for testing. This makes it possible to write:
-// SparseMatrix matrix {
-//    {1, 2, 3},
-//    {4, 5, 6},
-//    {7, 8, 9}};
+  // Useful for testing. This makes it possible to write:
+  // SparseMatrix matrix {
+  //    {1, 2, 3},
+  //    {4, 5, 6},
+  //    {7, 8, 9}};
 #if (!defined(_MSC_VER) || _MSC_VER >= 1800)
   SparseMatrix(
-      std::initializer_list<std::initializer_list<Fractional> > init_list);
+      std::initializer_list<std::initializer_list<Fractional>> init_list);
 #endif
   // Clears internal data structure, i.e. erases all the columns and set
   // the number of rows to zero.
