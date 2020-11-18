@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -136,11 +136,13 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a49e3e072964907e3918e4dd580c64f00"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="routing_8cc.html#a49e3e072964907e3918e4dd580c64f00">DEFINE_int64</a> (sweep_sectors, 1, &quot;The number of sectors the space is divided before it is sweeped &quot; &quot;by the ray.&quot;)</td></tr>
-<tr class="separator:a49e3e072964907e3918e4dd580c64f00"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1672e1017f4a78d0f4979681b5693470"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="routing_8cc.html#a1672e1017f4a78d0f4979681b5693470">ABSL_FLAG</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>, sweep_sectors, 1, &quot;The number of sectors the space is divided before it is sweeped &quot; &quot;by the ray.&quot;)</td></tr>
+<tr class="separator:a1672e1017f4a78d0f4979681b5693470"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc5fb4c667b6bfb245eb96188d7365e9"><td class="memItemLeft" align="right" valign="top">DecisionBuilder *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#afc5fb4c667b6bfb245eb96188d7365e9">MakeSetValuesFromTargets</a> (Solver *solver, std::vector&lt; IntVar * &gt; variables, std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt; targets)</td></tr>
 <tr class="memdesc:afc5fb4c667b6bfb245eb96188d7365e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">A decision builder which tries to assign values to variables as close as possible to target values first.  <a href="namespaceoperations__research.html#afc5fb4c667b6bfb245eb96188d7365e9">More...</a><br /></td></tr>
 <tr class="separator:afc5fb4c667b6bfb245eb96188d7365e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adc5e06b587829ed7c5e02c1d95293378"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#adc5e06b587829ed7c5e02c1d95293378">HasUnaryDimension</a> (const std::vector&lt; RoutingDimension * &gt; &amp;dimensions)</td></tr>
+<tr class="separator:adc5e06b587829ed7c5e02c1d95293378"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad13d20d0a1737677a4757bd6ef8a95b3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ad13d20d0a1737677a4757bd6ef8a95b3">FillPathEvaluation</a> (const std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt; &amp;path, const RoutingModel::TransitCallback2 &amp;evaluator, std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt; *values)</td></tr>
 <tr class="separator:ad13d20d0a1737677a4757bd6ef8a95b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -197,7 +199,7 @@ Variables</h2></td></tr>
 <div class="line">        Solver::cp_operator_type);                                        \</div>
 <div class="line">  }</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04432">4432</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04559">4559</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -234,7 +236,7 @@ Variables</h2></td></tr>
 <div class="line">        nexts_, vehicle_vars_, Solver::cp_operator_type);           \</div>
 <div class="line">  }</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04415">4415</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04542">4542</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -270,7 +272,7 @@ Variables</h2></td></tr>
 <div class="line">                                              : vehicle_vars_,         \</div>
 <div class="line">          vehicle_start_class_callback_);</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04424">4424</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04551">4551</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -310,20 +312,26 @@ Variables</h2></td></tr>
 <div class="line">    operators.push_back(local_search_operators_[operator_type]);            \</div>
 <div class="line">  }</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04607">4607</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04751">4751</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="a49e3e072964907e3918e4dd580c64f00"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a49e3e072964907e3918e4dd580c64f00">&#9670;&nbsp;</a></span>DEFINE_int64()</h2>
+<a id="a1672e1017f4a78d0f4979681b5693470"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1672e1017f4a78d0f4979681b5693470">&#9670;&nbsp;</a></span>ABSL_FLAG()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_int64 </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">sweep_sectors&#160;</td>
           <td class="paramname">, </td>
         </tr>

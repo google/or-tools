@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -85,117 +85,12 @@ $(document).ready(function(){initNavTree('commandlineflags_8h.html',''); initRes
 </div>
 
 <div class="header">
-  <div class="summary">
-<a href="#namespaces">Namespaces</a> &#124;
-<a href="#define-members">Macros</a> &#124;
-<a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">commandlineflags.h File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
 <p><a href="commandlineflags_8h_source.html">Go to the source code of this file.</a></p>
-<table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
-Namespaces</h2></td></tr>
-<tr class="memitem:namespaceabsl"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceabsl.html">absl</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
-Macros</h2></td></tr>
-<tr class="memitem:ab7d3ca984cd7a51a348e3645459f3869"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="commandlineflags_8h.html#ab7d3ca984cd7a51a348e3645459f3869">ABSL_DECLARE_FLAG</a>(t,  n)&#160;&#160;&#160;DECLARE_##t(n)</td></tr>
-<tr class="separator:ab7d3ca984cd7a51a348e3645459f3869"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9db80fde0da0698435ff692bb20b7562"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="commandlineflags_8h.html#a9db80fde0da0698435ff692bb20b7562">ABSL_FLAG</a>(t,  n,  d,  h)&#160;&#160;&#160;DEFINE_##t(n, d, h)</td></tr>
-<tr class="separator:a9db80fde0da0698435ff692bb20b7562"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:a9c118785a20ddd52594f23e7dc08527d"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
-<tr class="memitem:a9c118785a20ddd52594f23e7dc08527d"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceabsl.html#a9c118785a20ddd52594f23e7dc08527d">SetFlag</a> (T *flag, const T &amp;<a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>)</td></tr>
-<tr class="separator:a9c118785a20ddd52594f23e7dc08527d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa15080b0d00a1f04fed5357e45b10370"><td class="memTemplParams" colspan="2">template&lt;class T , class V &gt; </td></tr>
-<tr class="memitem:aa15080b0d00a1f04fed5357e45b10370"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceabsl.html#aa15080b0d00a1f04fed5357e45b10370">SetFlag</a> (T *flag, const V &amp;<a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>)</td></tr>
-<tr class="separator:aa15080b0d00a1f04fed5357e45b10370"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4d14e15acf1b838f6564f50fb035876e"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
-<tr class="memitem:a4d14e15acf1b838f6564f50fb035876e"><td class="memTemplItemLeft" align="right" valign="top">const T &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceabsl.html#a4d14e15acf1b838f6564f50fb035876e">GetFlag</a> (T *flag)</td></tr>
-<tr class="separator:a4d14e15acf1b838f6564f50fb035876e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5060b48efbe5a99d2ffaf74b57461e19"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
-<tr class="memitem:a5060b48efbe5a99d2ffaf74b57461e19"><td class="memTemplItemLeft" align="right" valign="top">const T &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceabsl.html#a5060b48efbe5a99d2ffaf74b57461e19">GetFlag</a> (const T &amp;flag)</td></tr>
-<tr class="separator:a5060b48efbe5a99d2ffaf74b57461e19"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table>
-<h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="ab7d3ca984cd7a51a348e3645459f3869"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab7d3ca984cd7a51a348e3645459f3869">&#9670;&nbsp;</a></span>ABSL_DECLARE_FLAG</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define ABSL_DECLARE_FLAG</td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">t, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">n&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td>&#160;&#160;&#160;DECLARE_##t(n)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="commandlineflags_8h_source.html#l00043">43</a> of file <a class="el" href="commandlineflags_8h_source.html">commandlineflags.h</a>.</p>
-
-</div>
-</div>
-<a id="a9db80fde0da0698435ff692bb20b7562"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9db80fde0da0698435ff692bb20b7562">&#9670;&nbsp;</a></span>ABSL_FLAG</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define ABSL_FLAG</td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">t, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">n, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">d, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">h&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td>&#160;&#160;&#160;DEFINE_##t(n, d, h)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="commandlineflags_8h_source.html#l00044">44</a> of file <a class="el" href="commandlineflags_8h_source.html">commandlineflags.h</a>.</p>
-
-</div>
-</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.8.18-->

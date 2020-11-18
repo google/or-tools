@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -139,7 +139,7 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="keyword">class </span>NoCycle : <span class="keyword">public</span> Constraint {</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; <span class="keyword">public</span>:</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;  NoCycle(Solver* <span class="keyword">const</span> s, <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts,</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;          <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; active, Solver::IndexFilter1 sink_handler,</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;          <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; active, <a class="code" href="classoperations__research_1_1_solver.html#a021ae5a2766d4ccaa133a5bbb5398464">Solver::IndexFilter1</a> sink_handler,</div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;          <span class="keywordtype">bool</span> assume_paths);</div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;  ~NoCycle()<span class="keyword"> override </span>{}</div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;  <span class="keywordtype">void</span> Post() <span class="keyword">override</span>;</div>
@@ -152,14 +152,14 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;  std::string DebugString() <span class="keyword">const override</span>;</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;  <span class="keywordtype">void</span> Accept(ModelVisitor* <span class="keyword">const</span> visitor)<span class="keyword"> const override </span>{</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    visitor-&gt;BeginVisitConstraint(ModelVisitor::kNoCycle, <span class="keyword">this</span>);</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    visitor-&gt;VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    visitor-&gt;BeginVisitConstraint(<a class="code" href="classoperations__research_1_1_model_visitor.html#accbdf8149c4c29d3b64b43837d0bc3e1">ModelVisitor::kNoCycle</a>, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    visitor-&gt;VisitIntegerVariableArrayArgument(<a class="code" href="classoperations__research_1_1_model_visitor.html#a91247898d81dc2bca2833abef17f0816">ModelVisitor::kNextsArgument</a>,</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;                                               nexts_);</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    visitor-&gt;VisitIntegerVariableArrayArgument(ModelVisitor::kActiveArgument,</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    visitor-&gt;VisitIntegerVariableArrayArgument(<a class="code" href="classoperations__research_1_1_model_visitor.html#a4a0c229a0e9dcf7122ebd68f501a6ef1">ModelVisitor::kActiveArgument</a>,</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;                                               active_);</div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    visitor-&gt;VisitIntegerArgument(<span class="stringliteral">&quot;assume_paths&quot;</span>, assume_paths_);</div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    visitor-&gt;VisitInt64ToBoolExtension(sink_handler_, -size(), size());</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    visitor-&gt;EndVisitConstraint(ModelVisitor::kNoCycle, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    visitor-&gt;EndVisitConstraint(<a class="code" href="classoperations__research_1_1_model_visitor.html#accbdf8149c4c29d3b64b43837d0bc3e1">ModelVisitor::kNoCycle</a>, <span class="keyword">this</span>);</div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;  }</div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; <span class="keyword">private</span>:</div>
@@ -175,14 +175,14 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;  std::vector&lt;int64&gt; outbound_supports_;</div>
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;  std::vector&lt;int64&gt; support_leaves_;</div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;  std::vector&lt;int64&gt; unsupported_;</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;  Solver::IndexFilter1 sink_handler_;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;  <a class="code" href="classoperations__research_1_1_solver.html#a021ae5a2766d4ccaa133a5bbb5398464">Solver::IndexFilter1</a> sink_handler_;</div>
 <div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;  std::vector&lt;int64&gt; sinks_;</div>
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;  <span class="keywordtype">bool</span> assume_paths_;</div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;};</div>
 <div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
 <div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;NoCycle::NoCycle(Solver* <span class="keyword">const</span> s, <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts,</div>
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;                 <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; active,</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                 Solver::IndexFilter1 sink_handler, <span class="keywordtype">bool</span> assume_paths)</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                 <a class="code" href="classoperations__research_1_1_solver.html#a021ae5a2766d4ccaa133a5bbb5398464">Solver::IndexFilter1</a> sink_handler, <span class="keywordtype">bool</span> assume_paths)</div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    : Constraint(s),</div>
 <div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;      nexts_(nexts),</div>
 <div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;      active_(active),</div>
@@ -503,7 +503,7 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;  <span class="keywordtype">void</span> InitialPropagate()<span class="keyword"> override </span>{</div>
 <div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;    Solver* <span class="keyword">const</span> s = solver();</div>
 <div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;    <span class="keywordflow">if</span> (!sub_circuit_) {</div>
-<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;      root_.SetValue(solver(), 0);</div>
+<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;      root_.<a class="code" href="classoperations__research_1_1_rev.html#a95da6a138a3b56de0cf0c3c4ba7c4688">SetValue</a>(solver(), 0);</div>
 <div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;    }</div>
 <div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; size_; ++i) {</div>
 <div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;      nexts_[i]-&gt;SetRange(0, size_ - 1);</div>
@@ -546,10 +546,10 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;  <span class="keywordtype">void</span> NextBound(<span class="keywordtype">int</span> <a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) {</div>
 <div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;    Solver* <span class="keyword">const</span> s = solver();</div>
 <div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">int</span> destination = nexts_[<a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>]-&gt;Value();</div>
-<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">int</span> root = root_.Value();</div>
+<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">int</span> root = root_.<a class="code" href="classoperations__research_1_1_rev.html#affc0b3b0a5efa3efc9d0d86344d4a29f">Value</a>();</div>
 <div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;    <span class="keywordflow">if</span> (destination != <a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) {</div>
 <div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;      <span class="keywordflow">if</span> (root == -1) {</div>
-<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;        root_.SetValue(s, <a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>);</div>
+<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;        root_.<a class="code" href="classoperations__research_1_1_rev.html#a95da6a138a3b56de0cf0c3c4ba7c4688">SetValue</a>(s, <a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>);</div>
 <div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;      }</div>
 <div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;      <span class="keyword">const</span> <span class="keywordtype">int</span> new_end = ends_.Value(destination);</div>
 <div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;      <span class="keyword">const</span> <span class="keywordtype">int</span> new_start = starts_.Value(<a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>);</div>
@@ -562,12 +562,12 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l00471"></a><span class="lineno">  471</span>&#160;        <span class="comment">// You are creating the only path. Nexts can no longer loop upon itself.</span></div>
 <div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;        nexts_[destination]-&gt;RemoveValue(destination);</div>
 <div class="line"><a name="l00473"></a><span class="lineno">  473</span>&#160;      } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160;        <span class="keywordflow">if</span> (lengths_.Value(new_start) &lt; size_ - 1 - num_inactives_.Value()) {</div>
+<div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160;        <span class="keywordflow">if</span> (lengths_.Value(new_start) &lt; size_ - 1 - num_inactives_.<a class="code" href="classoperations__research_1_1_rev.html#affc0b3b0a5efa3efc9d0d86344d4a29f">Value</a>()) {</div>
 <div class="line"><a name="l00475"></a><span class="lineno">  475</span>&#160;          nexts_[new_end]-&gt;RemoveValue(new_start);</div>
 <div class="line"><a name="l00476"></a><span class="lineno">  476</span>&#160;        }</div>
 <div class="line"><a name="l00477"></a><span class="lineno">  477</span>&#160;      }</div>
 <div class="line"><a name="l00478"></a><span class="lineno">  478</span>&#160;    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00479"></a><span class="lineno">  479</span>&#160;      num_inactives_.Incr(solver());</div>
+<div class="line"><a name="l00479"></a><span class="lineno">  479</span>&#160;      num_inactives_.<a class="code" href="classoperations__research_1_1_numerical_rev.html#ac8beef1ef5cd6ce8bdfb3f48016ff72b">Incr</a>(solver());</div>
 <div class="line"><a name="l00480"></a><span class="lineno">  480</span>&#160;    }</div>
 <div class="line"><a name="l00481"></a><span class="lineno">  481</span>&#160;    <span class="comment">// TODO(user): You might get more propagation if you maintain</span></div>
 <div class="line"><a name="l00482"></a><span class="lineno">  482</span>&#160;    <span class="comment">//     num_undecided_actives_;</span></div>
@@ -580,7 +580,7 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l00489"></a><span class="lineno">  489</span>&#160;  }</div>
 <div class="line"><a name="l00490"></a><span class="lineno">  490</span>&#160; </div>
 <div class="line"><a name="l00491"></a><span class="lineno">  491</span>&#160;  <span class="keywordtype">void</span> NextDomain(<span class="keywordtype">int</span> <a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) {</div>
-<div class="line"><a name="l00492"></a><span class="lineno">  492</span>&#160;    <span class="keywordflow">if</span> (root_.Value() == -1) {</div>
+<div class="line"><a name="l00492"></a><span class="lineno">  492</span>&#160;    <span class="keywordflow">if</span> (root_.<a class="code" href="classoperations__research_1_1_rev.html#affc0b3b0a5efa3efc9d0d86344d4a29f">Value</a>() == -1) {</div>
 <div class="line"><a name="l00493"></a><span class="lineno">  493</span>&#160;      <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00494"></a><span class="lineno">  494</span>&#160;    }</div>
 <div class="line"><a name="l00495"></a><span class="lineno">  495</span>&#160;    <span class="keywordflow">if</span> (!nexts_[<a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>]-&gt;Contains(outbound_support_[<a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>])) {</div>
@@ -600,7 +600,7 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l00509"></a><span class="lineno">  509</span>&#160;  }</div>
 <div class="line"><a name="l00510"></a><span class="lineno">  510</span>&#160; </div>
 <div class="line"><a name="l00511"></a><span class="lineno">  511</span>&#160;  <span class="keywordtype">void</span> CheckReachabilityFromRoot() {</div>
-<div class="line"><a name="l00512"></a><span class="lineno">  512</span>&#160;    <span class="keywordflow">if</span> (root_.Value() == -1) {  <span class="comment">// Root is not yet defined. Nothing to deduce.</span></div>
+<div class="line"><a name="l00512"></a><span class="lineno">  512</span>&#160;    <span class="keywordflow">if</span> (root_.<a class="code" href="classoperations__research_1_1_rev.html#affc0b3b0a5efa3efc9d0d86344d4a29f">Value</a>() == -1) {  <span class="comment">// Root is not yet defined. Nothing to deduce.</span></div>
 <div class="line"><a name="l00513"></a><span class="lineno">  513</span>&#160;      <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00514"></a><span class="lineno">  514</span>&#160;    }</div>
 <div class="line"><a name="l00515"></a><span class="lineno">  515</span>&#160; </div>
@@ -611,12 +611,12 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160;    reached_.assign(size_, <span class="keyword">false</span>);</div>
 <div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160;    insertion_queue_.clear();</div>
 <div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;    <span class="comment">// Add the root node.</span></div>
-<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">int</span> root_value = root_.Value();</div>
+<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">int</span> root_value = root_.<a class="code" href="classoperations__research_1_1_rev.html#affc0b3b0a5efa3efc9d0d86344d4a29f">Value</a>();</div>
 <div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;    reached_[root_value] = <span class="keyword">true</span>;</div>
 <div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;    insertion_queue_.push_back(root_value);</div>
 <div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;    <span class="comment">// Compute reachable nodes.</span></div>
 <div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;    <span class="keywordflow">while</span> (processed &lt; insertion_queue_.size() &amp;&amp;</div>
-<div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;           insertion_queue_.size() + num_inactives_.Value() &lt; size_) {</div>
+<div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;           insertion_queue_.size() + num_inactives_.<a class="code" href="classoperations__research_1_1_rev.html#affc0b3b0a5efa3efc9d0d86344d4a29f">Value</a>() &lt; size_) {</div>
 <div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160;      <span class="keyword">const</span> <span class="keywordtype">int</span> candidate = insertion_queue_[processed++];</div>
 <div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;      IntVar* <span class="keyword">const</span> <a class="code" href="expr__array_8cc.html#a472a99923cbe11ae7b5a5d157d9ad465">var</a> = nexts_[candidate];</div>
 <div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160;      <span class="keywordflow">switch</span> (<a class="code" href="expr__array_8cc.html#a472a99923cbe11ae7b5a5d157d9ad465">var</a>-&gt;Size()) {</div>
@@ -650,21 +650,21 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160; </div>
 <div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;  <span class="keywordtype">void</span> CheckReachabilityToRoot() {</div>
 <div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;    <span class="comment">// TODO(user): Improve with prev_ data structure.</span></div>
-<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;    <span class="keywordflow">if</span> (root_.Value() == -1) {</div>
+<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;    <span class="keywordflow">if</span> (root_.<a class="code" href="classoperations__research_1_1_rev.html#affc0b3b0a5efa3efc9d0d86344d4a29f">Value</a>() == -1) {</div>
 <div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160;      <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;    }</div>
 <div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160; </div>
 <div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160;    insertion_queue_.clear();</div>
-<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;    insertion_queue_.push_back(root_.Value());</div>
-<div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;    temp_support_[root_.Value()] = nexts_[root_.Value()]-&gt;Min();</div>
+<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;    insertion_queue_.push_back(root_.<a class="code" href="classoperations__research_1_1_rev.html#affc0b3b0a5efa3efc9d0d86344d4a29f">Value</a>());</div>
+<div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;    temp_support_[root_.<a class="code" href="classoperations__research_1_1_rev.html#affc0b3b0a5efa3efc9d0d86344d4a29f">Value</a>()] = nexts_[root_.<a class="code" href="classoperations__research_1_1_rev.html#affc0b3b0a5efa3efc9d0d86344d4a29f">Value</a>()]-&gt;Min();</div>
 <div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160;    <span class="keywordtype">int</span> processed = 0;</div>
 <div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;    to_visit_.clear();</div>
 <div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; size_; ++i) {</div>
-<div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;      <span class="keywordflow">if</span> (!Inactive(i) &amp;&amp; i != root_.Value()) {</div>
+<div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;      <span class="keywordflow">if</span> (!Inactive(i) &amp;&amp; i != root_.<a class="code" href="classoperations__research_1_1_rev.html#affc0b3b0a5efa3efc9d0d86344d4a29f">Value</a>()) {</div>
 <div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;        to_visit_.push_back(i);</div>
 <div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;      }</div>
 <div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160;    }</div>
-<div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">int</span> inactive = num_inactives_.Value();</div>
+<div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">int</span> inactive = num_inactives_.<a class="code" href="classoperations__research_1_1_rev.html#affc0b3b0a5efa3efc9d0d86344d4a29f">Value</a>();</div>
 <div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160;    <span class="keywordflow">while</span> (processed &lt; insertion_queue_.size() &amp;&amp;</div>
 <div class="line"><a name="l00578"></a><span class="lineno">  578</span>&#160;           insertion_queue_.size() + inactive &lt; size_) {</div>
 <div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160;      <span class="keyword">const</span> <span class="keywordtype">int</span> inserted = insertion_queue_[processed++];</div>
@@ -707,11 +707,11 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;};</div>
 <div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;}  <span class="comment">// namespace</span></div>
 <div class="line"><a name="l00618"></a><span class="lineno">  618</span>&#160; </div>
-<div class="line"><a name="l00619"></a><span class="lineno">  619</span>&#160;Constraint* Solver::MakeNoCycle(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts,</div>
+<div class="line"><a name="l00619"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#a81fb93226e8adf2f9131624b7a0eaba3">  619</a></span>&#160;<a class="code" href="classoperations__research_1_1_constraint.html">Constraint</a>* Solver::MakeNoCycle(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts,</div>
 <div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160;                                <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; active,</div>
-<div class="line"><a name="l00621"></a><span class="lineno">  621</span>&#160;                                Solver::IndexFilter1 sink_handler,</div>
+<div class="line"><a name="l00621"></a><span class="lineno">  621</span>&#160;                                <a class="code" href="classoperations__research_1_1_solver.html#a021ae5a2766d4ccaa133a5bbb5398464">Solver::IndexFilter1</a> sink_handler,</div>
 <div class="line"><a name="l00622"></a><span class="lineno">  622</span>&#160;                                <span class="keywordtype">bool</span> assume_paths) {</div>
-<div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160;  CHECK_EQ(nexts.size(), active.size());</div>
+<div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160;  <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(nexts.size(), active.size());</div>
 <div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160;  <span class="keywordflow">if</span> (sink_handler == <span class="keyword">nullptr</span>) {</div>
 <div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160;    <span class="keyword">const</span> <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> size = nexts.size();</div>
 <div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160;    sink_handler = [size](<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) { <span class="keywordflow">return</span> <a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a> &gt;= size; };</div>
@@ -719,38 +719,38 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l00628"></a><span class="lineno">  628</span>&#160;  <span class="keywordflow">return</span> RevAlloc(<span class="keyword">new</span> NoCycle(<span class="keyword">this</span>, nexts, active, sink_handler, assume_paths));</div>
 <div class="line"><a name="l00629"></a><span class="lineno">  629</span>&#160;}</div>
 <div class="line"><a name="l00630"></a><span class="lineno">  630</span>&#160; </div>
-<div class="line"><a name="l00631"></a><span class="lineno">  631</span>&#160;Constraint* Solver::MakeNoCycle(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts,</div>
+<div class="line"><a name="l00631"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#af86d4d3fd4b1b37d56a50a0a6c7628d6">  631</a></span>&#160;<a class="code" href="classoperations__research_1_1_constraint.html">Constraint</a>* Solver::MakeNoCycle(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts,</div>
 <div class="line"><a name="l00632"></a><span class="lineno">  632</span>&#160;                                <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; active,</div>
-<div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160;                                Solver::IndexFilter1 sink_handler) {</div>
+<div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160;                                <a class="code" href="classoperations__research_1_1_solver.html#a021ae5a2766d4ccaa133a5bbb5398464">Solver::IndexFilter1</a> sink_handler) {</div>
 <div class="line"><a name="l00634"></a><span class="lineno">  634</span>&#160;  <span class="keywordflow">return</span> MakeNoCycle(nexts, active, std::move(sink_handler), <span class="keyword">true</span>);</div>
 <div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;}</div>
 <div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160; </div>
 <div class="line"><a name="l00637"></a><span class="lineno">  637</span>&#160;<span class="comment">// TODO(user): Merge NoCycle and Circuit.</span></div>
-<div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;Constraint* Solver::MakeCircuit(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts) {</div>
+<div class="line"><a name="l00638"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#a399fa67037695a2651e9e9c49ec1e014">  638</a></span>&#160;<a class="code" href="classoperations__research_1_1_constraint.html">Constraint</a>* Solver::MakeCircuit(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts) {</div>
 <div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160;  <span class="keywordflow">return</span> RevAlloc(<span class="keyword">new</span> Circuit(<span class="keyword">this</span>, nexts, <span class="keyword">false</span>));</div>
 <div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;}</div>
 <div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160; </div>
-<div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160;Constraint* Solver::MakeSubCircuit(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts) {</div>
+<div class="line"><a name="l00642"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#a1c08fc5456634780867df83cff1d8a54">  642</a></span>&#160;<a class="code" href="classoperations__research_1_1_constraint.html">Constraint</a>* Solver::MakeSubCircuit(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts) {</div>
 <div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;  <span class="keywordflow">return</span> RevAlloc(<span class="keyword">new</span> Circuit(<span class="keyword">this</span>, nexts, <span class="keyword">true</span>));</div>
 <div class="line"><a name="l00644"></a><span class="lineno">  644</span>&#160;}</div>
 <div class="line"><a name="l00645"></a><span class="lineno">  645</span>&#160; </div>
 <div class="line"><a name="l00646"></a><span class="lineno">  646</span>&#160;<span class="comment">// ----- Path cumul constraints -----</span></div>
 <div class="line"><a name="l00647"></a><span class="lineno">  647</span>&#160; </div>
 <div class="line"><a name="l00648"></a><span class="lineno">  648</span>&#160;<span class="keyword">namespace </span>{</div>
-<div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160;<span class="keyword">class </span>BasePathCumul : <span class="keyword">public</span> Constraint {</div>
+<div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160;<span class="keyword">class </span>BasePathCumul : <span class="keyword">public</span> <a class="code" href="classoperations__research_1_1_constraint.html">Constraint</a> {</div>
 <div class="line"><a name="l00650"></a><span class="lineno">  650</span>&#160; <span class="keyword">public</span>:</div>
-<div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160;  BasePathCumul(Solver* <span class="keyword">const</span> s, <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts,</div>
+<div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160;  BasePathCumul(<a class="code" href="classoperations__research_1_1_solver.html">Solver</a>* <span class="keyword">const</span> s, <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts,</div>
 <div class="line"><a name="l00652"></a><span class="lineno">  652</span>&#160;                <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; active,</div>
 <div class="line"><a name="l00653"></a><span class="lineno">  653</span>&#160;                <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; cumuls);</div>
 <div class="line"><a name="l00654"></a><span class="lineno">  654</span>&#160;  ~BasePathCumul()<span class="keyword"> override </span>{}</div>
-<div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160;  <span class="keywordtype">void</span> Post() <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00656"></a><span class="lineno">  656</span>&#160;  <span class="keywordtype">void</span> InitialPropagate() <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1_constraint.html#af33bad3aa81a2f411224d5e471f9956f">Post</a>() <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00656"></a><span class="lineno">  656</span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1_constraint.html#a9100fab5545234f60a4ce442dbb45630">InitialPropagate</a>() <span class="keyword">override</span>;</div>
 <div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160;  <span class="keywordtype">void</span> ActiveBound(<span class="keywordtype">int</span> <a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>);</div>
 <div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160;  <span class="keyword">virtual</span> <span class="keywordtype">void</span> NextBound(<span class="keywordtype">int</span> <a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) = 0;</div>
 <div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;  <span class="keyword">virtual</span> <span class="keywordtype">bool</span> AcceptLink(<span class="keywordtype">int</span> i, <span class="keywordtype">int</span> j) <span class="keyword">const</span> = 0;</div>
 <div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160;  <span class="keywordtype">void</span> UpdateSupport(<span class="keywordtype">int</span> <a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>);</div>
 <div class="line"><a name="l00661"></a><span class="lineno">  661</span>&#160;  <span class="keywordtype">void</span> CumulRange(<span class="keywordtype">int</span> <a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>);</div>
-<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160;  std::string DebugString() <span class="keyword">const override</span>;</div>
+<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160;  std::string <a class="code" href="classoperations__research_1_1_constraint.html#aed804747c45a7e1caf81461f9e45dd91">DebugString</a>() <span class="keyword">const override</span>;</div>
 <div class="line"><a name="l00663"></a><span class="lineno">  663</span>&#160; </div>
 <div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160; <span class="keyword">protected</span>:</div>
 <div class="line"><a name="l00665"></a><span class="lineno">  665</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> size()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> nexts_.size(); }</div>
@@ -772,7 +772,7 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;      <a class="code" href="graph__constraints_8cc.html#ada20fc3a4c70c79d8b02df6b8c2413f5">cumuls_</a>(cumuls),</div>
 <div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;      <a class="code" href="graph__constraints_8cc.html#add322b0a7e2fd5300764079896a11bcb">prevs_</a>(cumuls.size(), -1),</div>
 <div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;      <a class="code" href="graph__constraints_8cc.html#adee0f668fb19c3cd4247a4fc74bca2d6">supports_</a>(nexts.size()) {</div>
-<div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160;  CHECK_GE(cumul_size(), size());</div>
+<div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160;  <a class="code" href="base_2logging_8h.html#a7cc25402ecd7591b4c39934dd656b1f9">CHECK_GE</a>(cumul_size(), size());</div>
 <div class="line"><a name="l00685"></a><span class="lineno">  685</span>&#160;  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; size(); ++i) {</div>
 <div class="line"><a name="l00686"></a><span class="lineno">  686</span>&#160;    <a class="code" href="graph__constraints_8cc.html#adee0f668fb19c3cd4247a4fc74bca2d6">supports_</a>[i] = -1;</div>
 <div class="line"><a name="l00687"></a><span class="lineno">  687</span>&#160;  }</div>
@@ -1385,60 +1385,60 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l01294"></a><span class="lineno"> 1294</span>&#160;}</div>
 <div class="line"><a name="l01295"></a><span class="lineno"> 1295</span>&#160;}  <span class="comment">// namespace</span></div>
 <div class="line"><a name="l01296"></a><span class="lineno"> 1296</span>&#160; </div>
-<div class="line"><a name="l01297"></a><span class="lineno"> 1297</span>&#160;Constraint* Solver::MakePathCumul(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts,</div>
+<div class="line"><a name="l01297"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#ad66fddae43e332f97a4adc47624b799b"> 1297</a></span>&#160;<a class="code" href="classoperations__research_1_1_constraint.html">Constraint</a>* Solver::MakePathCumul(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts,</div>
 <div class="line"><a name="l01298"></a><span class="lineno"> 1298</span>&#160;                                  <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; active,</div>
 <div class="line"><a name="l01299"></a><span class="lineno"> 1299</span>&#160;                                  <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; cumuls,</div>
 <div class="line"><a name="l01300"></a><span class="lineno"> 1300</span>&#160;                                  <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; transits) {</div>
-<div class="line"><a name="l01301"></a><span class="lineno"> 1301</span>&#160;  CHECK_EQ(nexts.size(), active.size());</div>
-<div class="line"><a name="l01302"></a><span class="lineno"> 1302</span>&#160;  CHECK_EQ(transits.size(), nexts.size());</div>
+<div class="line"><a name="l01301"></a><span class="lineno"> 1301</span>&#160;  <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(nexts.size(), active.size());</div>
+<div class="line"><a name="l01302"></a><span class="lineno"> 1302</span>&#160;  <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(transits.size(), nexts.size());</div>
 <div class="line"><a name="l01303"></a><span class="lineno"> 1303</span>&#160;  <span class="keywordflow">return</span> RevAlloc(<span class="keyword">new</span> PathCumul(<span class="keyword">this</span>, nexts, active, cumuls, transits));</div>
 <div class="line"><a name="l01304"></a><span class="lineno"> 1304</span>&#160;}</div>
 <div class="line"><a name="l01305"></a><span class="lineno"> 1305</span>&#160; </div>
-<div class="line"><a name="l01306"></a><span class="lineno"> 1306</span>&#160;Constraint* Solver::MakePathCumul(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts,</div>
+<div class="line"><a name="l01306"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#a69686be8775ce21f8f1da5ae8570ec71"> 1306</a></span>&#160;<a class="code" href="classoperations__research_1_1_constraint.html">Constraint</a>* Solver::MakePathCumul(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts,</div>
 <div class="line"><a name="l01307"></a><span class="lineno"> 1307</span>&#160;                                  <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; active,</div>
 <div class="line"><a name="l01308"></a><span class="lineno"> 1308</span>&#160;                                  <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; cumuls,</div>
-<div class="line"><a name="l01309"></a><span class="lineno"> 1309</span>&#160;                                  Solver::IndexEvaluator2 transit_evaluator) {</div>
-<div class="line"><a name="l01310"></a><span class="lineno"> 1310</span>&#160;  CHECK_EQ(nexts.size(), active.size());</div>
+<div class="line"><a name="l01309"></a><span class="lineno"> 1309</span>&#160;                                  <a class="code" href="classoperations__research_1_1_solver.html#abb24034fec2804ac3c0172f043087321">Solver::IndexEvaluator2</a> transit_evaluator) {</div>
+<div class="line"><a name="l01310"></a><span class="lineno"> 1310</span>&#160;  <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(nexts.size(), active.size());</div>
 <div class="line"><a name="l01311"></a><span class="lineno"> 1311</span>&#160;  <span class="keywordflow">return</span> RevAlloc(<span class="keyword">new</span> IndexEvaluator2PathCumul(<span class="keyword">this</span>, nexts, active, cumuls,</div>
 <div class="line"><a name="l01312"></a><span class="lineno"> 1312</span>&#160;                                               std::move(transit_evaluator)));</div>
 <div class="line"><a name="l01313"></a><span class="lineno"> 1313</span>&#160;}</div>
 <div class="line"><a name="l01314"></a><span class="lineno"> 1314</span>&#160; </div>
-<div class="line"><a name="l01315"></a><span class="lineno"> 1315</span>&#160;Constraint* Solver::MakePathCumul(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts,</div>
+<div class="line"><a name="l01315"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#ad92d314c2a6358cff54e0cafbee5c5af"> 1315</a></span>&#160;<a class="code" href="classoperations__research_1_1_constraint.html">Constraint</a>* Solver::MakePathCumul(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts,</div>
 <div class="line"><a name="l01316"></a><span class="lineno"> 1316</span>&#160;                                  <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; active,</div>
 <div class="line"><a name="l01317"></a><span class="lineno"> 1317</span>&#160;                                  <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; cumuls,</div>
 <div class="line"><a name="l01318"></a><span class="lineno"> 1318</span>&#160;                                  <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; slacks,</div>
-<div class="line"><a name="l01319"></a><span class="lineno"> 1319</span>&#160;                                  Solver::IndexEvaluator2 transit_evaluator) {</div>
-<div class="line"><a name="l01320"></a><span class="lineno"> 1320</span>&#160;  CHECK_EQ(nexts.size(), active.size());</div>
+<div class="line"><a name="l01319"></a><span class="lineno"> 1319</span>&#160;                                  <a class="code" href="classoperations__research_1_1_solver.html#abb24034fec2804ac3c0172f043087321">Solver::IndexEvaluator2</a> transit_evaluator) {</div>
+<div class="line"><a name="l01320"></a><span class="lineno"> 1320</span>&#160;  <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(nexts.size(), active.size());</div>
 <div class="line"><a name="l01321"></a><span class="lineno"> 1321</span>&#160;  <span class="keywordflow">return</span> RevAlloc(<span class="keyword">new</span> IndexEvaluator2SlackPathCumul(</div>
 <div class="line"><a name="l01322"></a><span class="lineno"> 1322</span>&#160;      <span class="keyword">this</span>, nexts, active, cumuls, slacks, std::move(transit_evaluator)));</div>
 <div class="line"><a name="l01323"></a><span class="lineno"> 1323</span>&#160;}</div>
 <div class="line"><a name="l01324"></a><span class="lineno"> 1324</span>&#160; </div>
-<div class="line"><a name="l01325"></a><span class="lineno"> 1325</span>&#160;Constraint* Solver::MakeDelayedPathCumul(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts,</div>
+<div class="line"><a name="l01325"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#a46d06186cf102695501bfc59cf790877"> 1325</a></span>&#160;<a class="code" href="classoperations__research_1_1_constraint.html">Constraint</a>* Solver::MakeDelayedPathCumul(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; nexts,</div>
 <div class="line"><a name="l01326"></a><span class="lineno"> 1326</span>&#160;                                         <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; active,</div>
 <div class="line"><a name="l01327"></a><span class="lineno"> 1327</span>&#160;                                         <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; cumuls,</div>
 <div class="line"><a name="l01328"></a><span class="lineno"> 1328</span>&#160;                                         <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; transits) {</div>
-<div class="line"><a name="l01329"></a><span class="lineno"> 1329</span>&#160;  CHECK_EQ(nexts.size(), active.size());</div>
-<div class="line"><a name="l01330"></a><span class="lineno"> 1330</span>&#160;  CHECK_EQ(transits.size(), nexts.size());</div>
+<div class="line"><a name="l01329"></a><span class="lineno"> 1329</span>&#160;  <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(nexts.size(), active.size());</div>
+<div class="line"><a name="l01330"></a><span class="lineno"> 1330</span>&#160;  <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(transits.size(), nexts.size());</div>
 <div class="line"><a name="l01331"></a><span class="lineno"> 1331</span>&#160;  <span class="keywordflow">return</span> RevAlloc(<span class="keyword">new</span> DelayedPathCumul(<span class="keyword">this</span>, nexts, active, cumuls, transits));</div>
 <div class="line"><a name="l01332"></a><span class="lineno"> 1332</span>&#160;}</div>
 <div class="line"><a name="l01333"></a><span class="lineno"> 1333</span>&#160; </div>
 <div class="line"><a name="l01334"></a><span class="lineno"> 1334</span>&#160;<span class="comment">// Constraint enforcing that status[i] is true iff there&#39;s a path defined on</span></div>
 <div class="line"><a name="l01335"></a><span class="lineno"> 1335</span>&#160;<span class="comment">// next variables from sources[i] to sinks[i].</span></div>
 <div class="line"><a name="l01336"></a><span class="lineno"> 1336</span>&#160;<span class="keyword">namespace </span>{</div>
-<div class="line"><a name="l01337"></a><span class="lineno"> 1337</span>&#160;<span class="keyword">class </span>PathConnectedConstraint : <span class="keyword">public</span> Constraint {</div>
+<div class="line"><a name="l01337"></a><span class="lineno"> 1337</span>&#160;<span class="keyword">class </span>PathConnectedConstraint : <span class="keyword">public</span> <a class="code" href="classoperations__research_1_1_constraint.html">Constraint</a> {</div>
 <div class="line"><a name="l01338"></a><span class="lineno"> 1338</span>&#160; <span class="keyword">public</span>:</div>
-<div class="line"><a name="l01339"></a><span class="lineno"> 1339</span>&#160;  PathConnectedConstraint(Solver* solver, std::vector&lt;IntVar*&gt; nexts,</div>
+<div class="line"><a name="l01339"></a><span class="lineno"> 1339</span>&#160;  PathConnectedConstraint(<a class="code" href="classoperations__research_1_1_solver.html">Solver</a>* solver, std::vector&lt;IntVar*&gt; nexts,</div>
 <div class="line"><a name="l01340"></a><span class="lineno"> 1340</span>&#160;                          <span class="keyword">const</span> std::vector&lt;int64&gt;&amp; sources,</div>
 <div class="line"><a name="l01341"></a><span class="lineno"> 1341</span>&#160;                          std::vector&lt;int64&gt; sinks, std::vector&lt;IntVar*&gt; status)</div>
-<div class="line"><a name="l01342"></a><span class="lineno"> 1342</span>&#160;      : Constraint(solver),</div>
+<div class="line"><a name="l01342"></a><span class="lineno"> 1342</span>&#160;      : <a class="code" href="classoperations__research_1_1_constraint.html">Constraint</a>(solver),</div>
 <div class="line"><a name="l01343"></a><span class="lineno"> 1343</span>&#160;        sources_(sources.size(), -1),</div>
 <div class="line"><a name="l01344"></a><span class="lineno"> 1344</span>&#160;        index_to_path_(nexts.size(), -1),</div>
 <div class="line"><a name="l01345"></a><span class="lineno"> 1345</span>&#160;        sinks_(std::move(sinks)),</div>
 <div class="line"><a name="l01346"></a><span class="lineno"> 1346</span>&#160;        nexts_(std::move(nexts)),</div>
 <div class="line"><a name="l01347"></a><span class="lineno"> 1347</span>&#160;        status_(std::move(status)),</div>
 <div class="line"><a name="l01348"></a><span class="lineno"> 1348</span>&#160;        touched_(nexts_.size()) {</div>
-<div class="line"><a name="l01349"></a><span class="lineno"> 1349</span>&#160;    CHECK_EQ(status_.size(), sources_.size());</div>
-<div class="line"><a name="l01350"></a><span class="lineno"> 1350</span>&#160;    CHECK_EQ(status_.size(), sinks_.size());</div>
+<div class="line"><a name="l01349"></a><span class="lineno"> 1349</span>&#160;    <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(status_.size(), sources_.size());</div>
+<div class="line"><a name="l01350"></a><span class="lineno"> 1350</span>&#160;    <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(status_.size(), sinks_.size());</div>
 <div class="line"><a name="l01351"></a><span class="lineno"> 1351</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; status_.size(); ++i) {</div>
 <div class="line"><a name="l01352"></a><span class="lineno"> 1352</span>&#160;      <span class="keyword">const</span> <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> source = sources[i];</div>
 <div class="line"><a name="l01353"></a><span class="lineno"> 1353</span>&#160;      sources_.SetValue(solver, i, source);</div>
@@ -1447,10 +1447,10 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l01356"></a><span class="lineno"> 1356</span>&#160;      }</div>
 <div class="line"><a name="l01357"></a><span class="lineno"> 1357</span>&#160;    }</div>
 <div class="line"><a name="l01358"></a><span class="lineno"> 1358</span>&#160;  }</div>
-<div class="line"><a name="l01359"></a><span class="lineno"> 1359</span>&#160;  <span class="keywordtype">void</span> Post()<span class="keyword"> override </span>{</div>
+<div class="line"><a name="l01359"></a><span class="lineno"> 1359</span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1_constraint.html#af33bad3aa81a2f411224d5e471f9956f">Post</a>()<span class="keyword"> override </span>{</div>
 <div class="line"><a name="l01360"></a><span class="lineno"> 1360</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; nexts_.size(); ++i) {</div>
 <div class="line"><a name="l01361"></a><span class="lineno"> 1361</span>&#160;      nexts_[i]-&gt;WhenBound(<a class="code" href="namespaceoperations__research.html#a4fb750da00c784e5ffd1763fd3ce88f7">MakeConstraintDemon1</a>(</div>
-<div class="line"><a name="l01362"></a><span class="lineno"> 1362</span>&#160;          solver(), <span class="keyword">this</span>, &amp;PathConnectedConstraint::NextBound, <span class="stringliteral">&quot;NextValue&quot;</span>, i));</div>
+<div class="line"><a name="l01362"></a><span class="lineno"> 1362</span>&#160;          <a class="code" href="classoperations__research_1_1_propagation_base_object.html#a5f32c22c620c811754ba7b6f977db864">solver</a>(), <span class="keyword">this</span>, &amp;PathConnectedConstraint::NextBound, <span class="stringliteral">&quot;NextValue&quot;</span>, i));</div>
 <div class="line"><a name="l01363"></a><span class="lineno"> 1363</span>&#160;    }</div>
 <div class="line"><a name="l01364"></a><span class="lineno"> 1364</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; status_.size(); ++i) {</div>
 <div class="line"><a name="l01365"></a><span class="lineno"> 1365</span>&#160;      <span class="keywordflow">if</span> (sources_[i] &lt; nexts_.size()) {</div>
@@ -1460,12 +1460,12 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l01369"></a><span class="lineno"> 1369</span>&#160;      }</div>
 <div class="line"><a name="l01370"></a><span class="lineno"> 1370</span>&#160;    }</div>
 <div class="line"><a name="l01371"></a><span class="lineno"> 1371</span>&#160;  }</div>
-<div class="line"><a name="l01372"></a><span class="lineno"> 1372</span>&#160;  <span class="keywordtype">void</span> InitialPropagate()<span class="keyword"> override </span>{</div>
+<div class="line"><a name="l01372"></a><span class="lineno"> 1372</span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1_constraint.html#a9100fab5545234f60a4ce442dbb45630">InitialPropagate</a>()<span class="keyword"> override </span>{</div>
 <div class="line"><a name="l01373"></a><span class="lineno"> 1373</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; status_.size(); ++i) {</div>
 <div class="line"><a name="l01374"></a><span class="lineno"> 1374</span>&#160;      EvaluatePath(i);</div>
 <div class="line"><a name="l01375"></a><span class="lineno"> 1375</span>&#160;    }</div>
 <div class="line"><a name="l01376"></a><span class="lineno"> 1376</span>&#160;  }</div>
-<div class="line"><a name="l01377"></a><span class="lineno"> 1377</span>&#160;  std::string DebugString()<span class="keyword"> const override </span>{</div>
+<div class="line"><a name="l01377"></a><span class="lineno"> 1377</span>&#160;  std::string <a class="code" href="classoperations__research_1_1_constraint.html#aed804747c45a7e1caf81461f9e45dd91">DebugString</a>()<span class="keyword"> const override </span>{</div>
 <div class="line"><a name="l01378"></a><span class="lineno"> 1378</span>&#160;    std::string output = <span class="stringliteral">&quot;PathConnected(&quot;</span>;</div>
 <div class="line"><a name="l01379"></a><span class="lineno"> 1379</span>&#160;    std::vector&lt;std::string&gt; elements;</div>
 <div class="line"><a name="l01380"></a><span class="lineno"> 1380</span>&#160;    <span class="keywordflow">for</span> (IntVar* <span class="keyword">const</span> <a class="code" href="constraint__solver_8cc.html#a395f613555f398dd389670bb4c2a4599">next</a> : nexts_) {</div>
@@ -1505,8 +1505,8 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l01414"></a><span class="lineno"> 1414</span>&#160;      <span class="keywordflow">if</span> (<a class="code" href="constraint__solver_8cc.html#a395f613555f398dd389670bb4c2a4599">next</a>-&gt;Bound()) {</div>
 <div class="line"><a name="l01415"></a><span class="lineno"> 1415</span>&#160;        source = <a class="code" href="constraint__solver_8cc.html#a395f613555f398dd389670bb4c2a4599">next</a>-&gt;Min();</div>
 <div class="line"><a name="l01416"></a><span class="lineno"> 1416</span>&#160;      } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l01417"></a><span class="lineno"> 1417</span>&#160;        sources_.SetValue(solver(), path, source);</div>
-<div class="line"><a name="l01418"></a><span class="lineno"> 1418</span>&#160;        index_to_path_.SetValue(solver(), source, path);</div>
+<div class="line"><a name="l01417"></a><span class="lineno"> 1417</span>&#160;        sources_.SetValue(<a class="code" href="classoperations__research_1_1_propagation_base_object.html#a5f32c22c620c811754ba7b6f977db864">solver</a>(), path, source);</div>
+<div class="line"><a name="l01418"></a><span class="lineno"> 1418</span>&#160;        index_to_path_.SetValue(<a class="code" href="classoperations__research_1_1_propagation_base_object.html#a5f32c22c620c811754ba7b6f977db864">solver</a>(), source, path);</div>
 <div class="line"><a name="l01419"></a><span class="lineno"> 1419</span>&#160;        <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l01420"></a><span class="lineno"> 1420</span>&#160;      }</div>
 <div class="line"><a name="l01421"></a><span class="lineno"> 1421</span>&#160;    }</div>
@@ -1522,7 +1522,7 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l01431"></a><span class="lineno"> 1431</span>&#160;};</div>
 <div class="line"><a name="l01432"></a><span class="lineno"> 1432</span>&#160;}  <span class="comment">// namespace</span></div>
 <div class="line"><a name="l01433"></a><span class="lineno"> 1433</span>&#160; </div>
-<div class="line"><a name="l01434"></a><span class="lineno"> 1434</span>&#160;Constraint* Solver::MakePathConnected(std::vector&lt;IntVar*&gt; nexts,</div>
+<div class="line"><a name="l01434"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#a58c31dc4ccc27831f8c75359865e6185"> 1434</a></span>&#160;<a class="code" href="classoperations__research_1_1_constraint.html">Constraint</a>* Solver::MakePathConnected(std::vector&lt;IntVar*&gt; nexts,</div>
 <div class="line"><a name="l01435"></a><span class="lineno"> 1435</span>&#160;                                      std::vector&lt;int64&gt; sources,</div>
 <div class="line"><a name="l01436"></a><span class="lineno"> 1436</span>&#160;                                      std::vector&lt;int64&gt; sinks,</div>
 <div class="line"><a name="l01437"></a><span class="lineno"> 1437</span>&#160;                                      std::vector&lt;IntVar*&gt; status) {</div>
@@ -1531,7 +1531,7 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l01440"></a><span class="lineno"> 1440</span>&#160;}</div>
 <div class="line"><a name="l01441"></a><span class="lineno"> 1441</span>&#160; </div>
 <div class="line"><a name="l01442"></a><span class="lineno"> 1442</span>&#160;<span class="keyword">namespace </span>{</div>
-<div class="line"><a name="l01443"></a><span class="lineno"> 1443</span>&#160;<span class="keyword">class </span>PathTransitPrecedenceConstraint : <span class="keyword">public</span> Constraint {</div>
+<div class="line"><a name="l01443"></a><span class="lineno"> 1443</span>&#160;<span class="keyword">class </span>PathTransitPrecedenceConstraint : <span class="keyword">public</span> <a class="code" href="classoperations__research_1_1_constraint.html">Constraint</a> {</div>
 <div class="line"><a name="l01444"></a><span class="lineno"> 1444</span>&#160; <span class="keyword">public</span>:</div>
 <div class="line"><a name="l01445"></a><span class="lineno"> 1445</span>&#160;  <span class="keyword">enum</span> PrecedenceType {</div>
 <div class="line"><a name="l01446"></a><span class="lineno"> 1446</span>&#160;    ANY,</div>
@@ -1565,26 +1565,26 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l01474"></a><span class="lineno"> 1474</span>&#160;    }</div>
 <div class="line"><a name="l01475"></a><span class="lineno"> 1475</span>&#160;  }</div>
 <div class="line"><a name="l01476"></a><span class="lineno"> 1476</span>&#160;  ~PathTransitPrecedenceConstraint()<span class="keyword"> override </span>{}</div>
-<div class="line"><a name="l01477"></a><span class="lineno"> 1477</span>&#160;  <span class="keywordtype">void</span> Post()<span class="keyword"> override </span>{</div>
+<div class="line"><a name="l01477"></a><span class="lineno"> 1477</span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1_constraint.html#af33bad3aa81a2f411224d5e471f9956f">Post</a>()<span class="keyword"> override </span>{</div>
 <div class="line"><a name="l01478"></a><span class="lineno"> 1478</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; nexts_.size(); ++i) {</div>
 <div class="line"><a name="l01479"></a><span class="lineno"> 1479</span>&#160;      nexts_[i]-&gt;WhenBound(<a class="code" href="namespaceoperations__research.html#a11f4a7dbafd8e00a36b892a82e44445f">MakeDelayedConstraintDemon1</a>(</div>
-<div class="line"><a name="l01480"></a><span class="lineno"> 1480</span>&#160;          solver(), <span class="keyword">this</span>, &amp;PathTransitPrecedenceConstraint::NextBound,</div>
+<div class="line"><a name="l01480"></a><span class="lineno"> 1480</span>&#160;          <a class="code" href="classoperations__research_1_1_propagation_base_object.html#a5f32c22c620c811754ba7b6f977db864">solver</a>(), <span class="keyword">this</span>, &amp;PathTransitPrecedenceConstraint::NextBound,</div>
 <div class="line"><a name="l01481"></a><span class="lineno"> 1481</span>&#160;          <span class="stringliteral">&quot;NextBound&quot;</span>, i));</div>
 <div class="line"><a name="l01482"></a><span class="lineno"> 1482</span>&#160;    }</div>
 <div class="line"><a name="l01483"></a><span class="lineno"> 1483</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; transits_.size(); ++i) {</div>
 <div class="line"><a name="l01484"></a><span class="lineno"> 1484</span>&#160;      transits_[i]-&gt;WhenRange(<a class="code" href="namespaceoperations__research.html#a11f4a7dbafd8e00a36b892a82e44445f">MakeDelayedConstraintDemon1</a>(</div>
-<div class="line"><a name="l01485"></a><span class="lineno"> 1485</span>&#160;          solver(), <span class="keyword">this</span>, &amp;PathTransitPrecedenceConstraint::NextBound,</div>
+<div class="line"><a name="l01485"></a><span class="lineno"> 1485</span>&#160;          <a class="code" href="classoperations__research_1_1_propagation_base_object.html#a5f32c22c620c811754ba7b6f977db864">solver</a>(), <span class="keyword">this</span>, &amp;PathTransitPrecedenceConstraint::NextBound,</div>
 <div class="line"><a name="l01486"></a><span class="lineno"> 1486</span>&#160;          <span class="stringliteral">&quot;TransitRange&quot;</span>, i));</div>
 <div class="line"><a name="l01487"></a><span class="lineno"> 1487</span>&#160;    }</div>
 <div class="line"><a name="l01488"></a><span class="lineno"> 1488</span>&#160;  }</div>
-<div class="line"><a name="l01489"></a><span class="lineno"> 1489</span>&#160;  <span class="keywordtype">void</span> InitialPropagate()<span class="keyword"> override </span>{</div>
+<div class="line"><a name="l01489"></a><span class="lineno"> 1489</span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1_constraint.html#a9100fab5545234f60a4ce442dbb45630">InitialPropagate</a>()<span class="keyword"> override </span>{</div>
 <div class="line"><a name="l01490"></a><span class="lineno"> 1490</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; nexts_.size(); ++i) {</div>
 <div class="line"><a name="l01491"></a><span class="lineno"> 1491</span>&#160;      <span class="keywordflow">if</span> (nexts_[i]-&gt;Bound()) {</div>
 <div class="line"><a name="l01492"></a><span class="lineno"> 1492</span>&#160;        NextBound(i);</div>
 <div class="line"><a name="l01493"></a><span class="lineno"> 1493</span>&#160;      }</div>
 <div class="line"><a name="l01494"></a><span class="lineno"> 1494</span>&#160;    }</div>
 <div class="line"><a name="l01495"></a><span class="lineno"> 1495</span>&#160;  }</div>
-<div class="line"><a name="l01496"></a><span class="lineno"> 1496</span>&#160;  std::string DebugString()<span class="keyword"> const override </span>{</div>
+<div class="line"><a name="l01496"></a><span class="lineno"> 1496</span>&#160;  std::string <a class="code" href="classoperations__research_1_1_constraint.html#aed804747c45a7e1caf81461f9e45dd91">DebugString</a>()<span class="keyword"> const override </span>{</div>
 <div class="line"><a name="l01497"></a><span class="lineno"> 1497</span>&#160;    std::string output = <span class="stringliteral">&quot;PathPrecedence(&quot;</span>;</div>
 <div class="line"><a name="l01498"></a><span class="lineno"> 1498</span>&#160;    std::vector&lt;std::string&gt; elements = {<a class="code" href="namespaceoperations__research.html#a9be76edcbd5ccb982d92c8d90421a73c">JoinDebugStringPtr</a>(nexts_, <span class="stringliteral">&quot;,&quot;</span>)};</div>
 <div class="line"><a name="l01499"></a><span class="lineno"> 1499</span>&#160;    <span class="keywordflow">if</span> (!transits_.empty()) {</div>
@@ -1598,7 +1598,7 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l01507"></a><span class="lineno"> 1507</span>&#160;    output += absl::StrJoin(elements, <span class="stringliteral">&quot;,&quot;</span>) + <span class="stringliteral">&quot;)&quot;</span>;</div>
 <div class="line"><a name="l01508"></a><span class="lineno"> 1508</span>&#160;    <span class="keywordflow">return</span> output;</div>
 <div class="line"><a name="l01509"></a><span class="lineno"> 1509</span>&#160;  }</div>
-<div class="line"><a name="l01510"></a><span class="lineno"> 1510</span>&#160;  <span class="keywordtype">void</span> Accept(ModelVisitor* <span class="keyword">const</span> visitor)<span class="keyword"> const override </span>{</div>
+<div class="line"><a name="l01510"></a><span class="lineno"> 1510</span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1_constraint.html#aac4aa5ecf086378b1bbac4b669bab4db">Accept</a>(ModelVisitor* <span class="keyword">const</span> visitor)<span class="keyword"> const override </span>{</div>
 <div class="line"><a name="l01511"></a><span class="lineno"> 1511</span>&#160;    <span class="comment">// TODO(user): Implement.</span></div>
 <div class="line"><a name="l01512"></a><span class="lineno"> 1512</span>&#160;  }</div>
 <div class="line"><a name="l01513"></a><span class="lineno"> 1513</span>&#160; </div>
@@ -1609,7 +1609,7 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l01518"></a><span class="lineno"> 1518</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">int</span> start = starts_[<a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>];</div>
 <div class="line"><a name="l01519"></a><span class="lineno"> 1519</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">int</span> end = (<a class="code" href="constraint__solver_8cc.html#a395f613555f398dd389670bb4c2a4599">next</a> &lt; nexts_.size()) ? ends_[<a class="code" href="constraint__solver_8cc.html#a395f613555f398dd389670bb4c2a4599">next</a>] : <a class="code" href="constraint__solver_8cc.html#a395f613555f398dd389670bb4c2a4599">next</a>;</div>
 <div class="line"><a name="l01520"></a><span class="lineno"> 1520</span>&#160;    <span class="keywordflow">if</span> (end &lt; nexts_.size()) starts_.SetValue(solver(), end, start);</div>
-<div class="line"><a name="l01521"></a><span class="lineno"> 1521</span>&#160;    ends_.SetValue(solver(), start, end);</div>
+<div class="line"><a name="l01521"></a><span class="lineno"> 1521</span>&#160;    ends_.SetValue(<a class="code" href="classoperations__research_1_1_propagation_base_object.html#a5f32c22c620c811754ba7b6f977db864">solver</a>(), start, end);</div>
 <div class="line"><a name="l01522"></a><span class="lineno"> 1522</span>&#160;    <span class="keywordtype">int</span> current = start;</div>
 <div class="line"><a name="l01523"></a><span class="lineno"> 1523</span>&#160;    PrecedenceType type = ANY;</div>
 <div class="line"><a name="l01524"></a><span class="lineno"> 1524</span>&#160;    <span class="keyword">auto</span> it = precedence_types_.find(start);</div>
@@ -1634,7 +1634,7 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l01543"></a><span class="lineno"> 1543</span>&#160;            <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l01544"></a><span class="lineno"> 1544</span>&#160;          }</div>
 <div class="line"><a name="l01545"></a><span class="lineno"> 1545</span>&#160;        }</div>
-<div class="line"><a name="l01546"></a><span class="lineno"> 1546</span>&#160;        <span class="keywordflow">if</span> (!found) solver()-&gt;Fail();</div>
+<div class="line"><a name="l01546"></a><span class="lineno"> 1546</span>&#160;        <span class="keywordflow">if</span> (!found) <a class="code" href="classoperations__research_1_1_propagation_base_object.html#a5f32c22c620c811754ba7b6f977db864">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1_solver.html#aeb92d4addb41255c9732cacfcb54f795">Fail</a>();</div>
 <div class="line"><a name="l01547"></a><span class="lineno"> 1547</span>&#160;        pushed_.pop_back();</div>
 <div class="line"><a name="l01548"></a><span class="lineno"> 1548</span>&#160;      }</div>
 <div class="line"><a name="l01549"></a><span class="lineno"> 1549</span>&#160;      <span class="keywordflow">if</span> (forbidden_.find(current) != forbidden_.end()) {</div>
@@ -1642,7 +1642,7 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l01551"></a><span class="lineno"> 1551</span>&#160;          <span class="keywordflow">if</span> (marked_.find(successor) != marked_.end()) {</div>
 <div class="line"><a name="l01552"></a><span class="lineno"> 1552</span>&#160;            <span class="keywordflow">if</span> (!has_transits ||</div>
 <div class="line"><a name="l01553"></a><span class="lineno"> 1553</span>&#160;                <a class="code" href="namespaceoperations__research.html#a228fe84d99348c2b62bb4f70a6371d9b">CapSub</a>(transit_cumul, transit_cumuls_[successor]) &gt; 0) {</div>
-<div class="line"><a name="l01554"></a><span class="lineno"> 1554</span>&#160;              solver()-&gt;Fail();</div>
+<div class="line"><a name="l01554"></a><span class="lineno"> 1554</span>&#160;              <a class="code" href="classoperations__research_1_1_propagation_base_object.html#a5f32c22c620c811754ba7b6f977db864">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1_solver.html#aeb92d4addb41255c9732cacfcb54f795">Fail</a>();</div>
 <div class="line"><a name="l01555"></a><span class="lineno"> 1555</span>&#160;            }</div>
 <div class="line"><a name="l01556"></a><span class="lineno"> 1556</span>&#160;          }</div>
 <div class="line"><a name="l01557"></a><span class="lineno"> 1557</span>&#160;        }</div>
@@ -1672,7 +1672,7 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l01581"></a><span class="lineno"> 1581</span>&#160;        <span class="keywordflow">if</span> (marked_.find(successor) != marked_.end()) {</div>
 <div class="line"><a name="l01582"></a><span class="lineno"> 1582</span>&#160;          <span class="keywordflow">if</span> (!has_transits ||</div>
 <div class="line"><a name="l01583"></a><span class="lineno"> 1583</span>&#160;              <a class="code" href="namespaceoperations__research.html#a228fe84d99348c2b62bb4f70a6371d9b">CapSub</a>(transit_cumul, transit_cumuls_[successor]) &gt; 0) {</div>
-<div class="line"><a name="l01584"></a><span class="lineno"> 1584</span>&#160;            solver()-&gt;Fail();</div>
+<div class="line"><a name="l01584"></a><span class="lineno"> 1584</span>&#160;            <a class="code" href="classoperations__research_1_1_propagation_base_object.html#a5f32c22c620c811754ba7b6f977db864">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1_solver.html#aeb92d4addb41255c9732cacfcb54f795">Fail</a>();</div>
 <div class="line"><a name="l01585"></a><span class="lineno"> 1585</span>&#160;          }</div>
 <div class="line"><a name="l01586"></a><span class="lineno"> 1586</span>&#160;        }</div>
 <div class="line"><a name="l01587"></a><span class="lineno"> 1587</span>&#160;      }</div>
@@ -1707,13 +1707,13 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l01616"></a><span class="lineno"> 1616</span>&#160; </div>
 <div class="line"><a name="l01617"></a><span class="lineno"> 1617</span>&#160;}  <span class="comment">// namespace</span></div>
 <div class="line"><a name="l01618"></a><span class="lineno"> 1618</span>&#160; </div>
-<div class="line"><a name="l01619"></a><span class="lineno"> 1619</span>&#160;Constraint* Solver::MakePathPrecedenceConstraint(</div>
+<div class="line"><a name="l01619"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#ae5119b2b21dac7cbfa3eea46b1103a9e"> 1619</a></span>&#160;<a class="code" href="classoperations__research_1_1_constraint.html">Constraint</a>* Solver::MakePathPrecedenceConstraint(</div>
 <div class="line"><a name="l01620"></a><span class="lineno"> 1620</span>&#160;    std::vector&lt;IntVar*&gt; nexts,</div>
 <div class="line"><a name="l01621"></a><span class="lineno"> 1621</span>&#160;    <span class="keyword">const</span> std::vector&lt;std::pair&lt;int, int&gt;&gt;&amp; precedences) {</div>
 <div class="line"><a name="l01622"></a><span class="lineno"> 1622</span>&#160;  <span class="keywordflow">return</span> MakePathTransitPrecedenceConstraint(std::move(nexts), {}, precedences);</div>
 <div class="line"><a name="l01623"></a><span class="lineno"> 1623</span>&#160;}</div>
 <div class="line"><a name="l01624"></a><span class="lineno"> 1624</span>&#160; </div>
-<div class="line"><a name="l01625"></a><span class="lineno"> 1625</span>&#160;Constraint* Solver::MakePathPrecedenceConstraint(</div>
+<div class="line"><a name="l01625"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#ae628366b4d1baa03c3129d7610e4dc55"> 1625</a></span>&#160;<a class="code" href="classoperations__research_1_1_constraint.html">Constraint</a>* Solver::MakePathPrecedenceConstraint(</div>
 <div class="line"><a name="l01626"></a><span class="lineno"> 1626</span>&#160;    std::vector&lt;IntVar*&gt; nexts,</div>
 <div class="line"><a name="l01627"></a><span class="lineno"> 1627</span>&#160;    <span class="keyword">const</span> std::vector&lt;std::pair&lt;int, int&gt;&gt;&amp; precedences,</div>
 <div class="line"><a name="l01628"></a><span class="lineno"> 1628</span>&#160;    <span class="keyword">const</span> std::vector&lt;int&gt;&amp; lifo_path_starts,</div>
@@ -1730,7 +1730,7 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 <div class="line"><a name="l01639"></a><span class="lineno"> 1639</span>&#160;      <span class="keyword">this</span>, std::move(nexts), {}, precedences, std::move(precedence_types));</div>
 <div class="line"><a name="l01640"></a><span class="lineno"> 1640</span>&#160;}</div>
 <div class="line"><a name="l01641"></a><span class="lineno"> 1641</span>&#160; </div>
-<div class="line"><a name="l01642"></a><span class="lineno"> 1642</span>&#160;Constraint* Solver::MakePathTransitPrecedenceConstraint(</div>
+<div class="line"><a name="l01642"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#ac8b98f1f83afa9e3b5828dc2349e3837"> 1642</a></span>&#160;<a class="code" href="classoperations__research_1_1_constraint.html">Constraint</a>* Solver::MakePathTransitPrecedenceConstraint(</div>
 <div class="line"><a name="l01643"></a><span class="lineno"> 1643</span>&#160;    std::vector&lt;IntVar*&gt; nexts, std::vector&lt;IntVar*&gt; transits,</div>
 <div class="line"><a name="l01644"></a><span class="lineno"> 1644</span>&#160;    <span class="keyword">const</span> std::vector&lt;std::pair&lt;int, int&gt;&gt;&amp; precedences) {</div>
 <div class="line"><a name="l01645"></a><span class="lineno"> 1645</span>&#160;  <span class="keywordflow">return</span> MakePathTransitTypedPrecedenceConstraint(</div>
@@ -1740,31 +1740,49 @@ $(document).ready(function(){initNavTree('graph__constraints_8cc_source.html',''
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <div class="ttc" id="aexpr__array_8cc_html_a472a99923cbe11ae7b5a5d157d9ad465"><div class="ttname"><a href="expr__array_8cc.html#a472a99923cbe11ae7b5a5d157d9ad465">var</a></div><div class="ttdeci">IntVar * var</div><div class="ttdef"><b>Definition:</b> <a href="expr__array_8cc_source.html#l01858">expr_array.cc:1858</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_solver_html_abb24034fec2804ac3c0172f043087321"><div class="ttname"><a href="classoperations__research_1_1_solver.html#abb24034fec2804ac3c0172f043087321">operations_research::Solver::IndexEvaluator2</a></div><div class="ttdeci">std::function&lt; int64(int64, int64)&gt; IndexEvaluator2</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l00739">constraint_solver.h:739</a></div></div>
 <div class="ttc" id="agraph__constraints_8cc_html_adee0f668fb19c3cd4247a4fc74bca2d6"><div class="ttname"><a href="graph__constraints_8cc.html#adee0f668fb19c3cd4247a4fc74bca2d6">supports_</a></div><div class="ttdeci">std::vector&lt; int &gt; supports_</div><div class="ttdef"><b>Definition:</b> <a href="graph__constraints_8cc_source.html#l00672">graph_constraints.cc:672</a></div></div>
 <div class="ttc" id="aalldiff__cst_8cc_html_a021e695f54a13bd809c34b2f4ca87c37"><div class="ttname"><a href="alldiff__cst_8cc.html#a021e695f54a13bd809c34b2f4ca87c37">min</a></div><div class="ttdeci">int64 min</div><div class="ttdef"><b>Definition:</b> <a href="alldiff__cst_8cc_source.html#l00138">alldiff_cst.cc:138</a></div></div>
 <div class="ttc" id="aintegral__types_8h_html"><div class="ttname"><a href="integral__types_8h.html">integral_types.h</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a228fe84d99348c2b62bb4f70a6371d9b"><div class="ttname"><a href="namespaceoperations__research.html#a228fe84d99348c2b62bb4f70a6371d9b">operations_research::CapSub</a></div><div class="ttdeci">int64 CapSub(int64 x, int64 y)</div><div class="ttdef"><b>Definition:</b> <a href="saturated__arithmetic_8h_source.html#l00154">saturated_arithmetic.h:154</a></div></div>
 <div class="ttc" id="aalldiff__cst_8cc_html_a9d0c202d5fdd62f4fa2c613339ff168a"><div class="ttname"><a href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">max</a></div><div class="ttdeci">int64 max</div><div class="ttdef"><b>Definition:</b> <a href="alldiff__cst_8cc_source.html#l00139">alldiff_cst.cc:139</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_constraint_html_aed804747c45a7e1caf81461f9e45dd91"><div class="ttname"><a href="classoperations__research_1_1_constraint.html#aed804747c45a7e1caf81461f9e45dd91">operations_research::Constraint::DebugString</a></div><div class="ttdeci">std::string DebugString() const override</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8cc_source.html#l03237">constraint_solver.cc:3237</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a7cc25402ecd7591b4c39934dd656b1f9"><div class="ttname"><a href="base_2logging_8h.html#a7cc25402ecd7591b4c39934dd656b1f9">CHECK_GE</a></div><div class="ttdeci">#define CHECK_GE(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00701">base/logging.h:701</a></div></div>
 <div class="ttc" id="agraph__constraints_8cc_html_add322b0a7e2fd5300764079896a11bcb"><div class="ttname"><a href="graph__constraints_8cc.html#add322b0a7e2fd5300764079896a11bcb">prevs_</a></div><div class="ttdeci">RevArray&lt; int &gt; prevs_</div><div class="ttdef"><b>Definition:</b> <a href="graph__constraints_8cc_source.html#l00671">graph_constraints.cc:671</a></div></div>
 <div class="ttc" id="abase_2logging_8h_html"><div class="ttname"><a href="base_2logging_8h.html">logging.h</a></div></div>
-<div class="ttc" id="asearch_8cc_html_a1ab3854946bf086fbb0971cc82516104"><div class="ttname"><a href="search_8cc.html#a1ab3854946bf086fbb0971cc82516104">stamp_</a></div><div class="ttdeci">const int64 stamp_</div><div class="ttdef"><b>Definition:</b> <a href="search_8cc_source.html#l03033">search.cc:3033</a></div></div>
+<div class="ttc" id="asearch_8cc_html_a1ab3854946bf086fbb0971cc82516104"><div class="ttname"><a href="search_8cc.html#a1ab3854946bf086fbb0971cc82516104">stamp_</a></div><div class="ttdeci">const int64 stamp_</div><div class="ttdef"><b>Definition:</b> <a href="search_8cc_source.html#l03039">search.cc:3039</a></div></div>
 <div class="ttc" id="ademon__profiler_8cc_html_a21edc7ca4cc5802c8779d68556bc09cf"><div class="ttname"><a href="demon__profiler_8cc.html#a21edc7ca4cc5802c8779d68556bc09cf">value</a></div><div class="ttdeci">int64 value</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8cc_source.html#l00043">demon_profiler.cc:43</a></div></div>
 <div class="ttc" id="asaturated__arithmetic_8h_html"><div class="ttname"><a href="saturated__arithmetic_8h.html">saturated_arithmetic.h</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdoc">The vehicle routing library lets one model and solve generic vehicle routing problems ranging from th...</div><div class="ttdef"><b>Definition:</b> <a href="dense__doubly__linked__list_8h_source.html#l00021">dense_doubly_linked_list.h:21</a></div></div>
 <div class="ttc" id="aintegral__types_8h_html_a7cde0074dfd288f2d70c0e035dacb28a"><div class="ttname"><a href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a></div><div class="ttdeci">int64_t int64</div><div class="ttdef"><b>Definition:</b> <a href="integral__types_8h_source.html#l00034">integral_types.h:34</a></div></div>
 <div class="ttc" id="aconstraint__solveri_8h_html"><div class="ttname"><a href="constraint__solveri_8h.html">constraint_solveri.h</a></div></div>
 <div class="ttc" id="apack_8cc_html_a750b5d744c39a06bfb13e6eb010e35d0"><div class="ttname"><a href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a></div><div class="ttdeci">int index</div><div class="ttdef"><b>Definition:</b> <a href="pack_8cc_source.html#l00508">pack.cc:508</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_html_a82110ba1f45aa29ffc933102880dbd82"><div class="ttname"><a href="namespaceoperations__research.html#a82110ba1f45aa29ffc933102880dbd82">operations_research::MakeDelayedConstraintDemon0</a></div><div class="ttdeci">Demon * MakeDelayedConstraintDemon0(Solver *const s, T *const ct, void(T::*method)(), const std::string &amp;name)</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solveri_8h_source.html#l00696">constraint_solveri.h:696</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_model_visitor_html_accbdf8149c4c29d3b64b43837d0bc3e1"><div class="ttname"><a href="classoperations__research_1_1_model_visitor.html#accbdf8149c4c29d3b64b43837d0bc3e1">operations_research::ModelVisitor::kNoCycle</a></div><div class="ttdeci">static const char kNoCycle[]</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l03384">constraint_solver.h:3384</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_html_a82110ba1f45aa29ffc933102880dbd82"><div class="ttname"><a href="namespaceoperations__research.html#a82110ba1f45aa29ffc933102880dbd82">operations_research::MakeDelayedConstraintDemon0</a></div><div class="ttdeci">Demon * MakeDelayedConstraintDemon0(Solver *const s, T *const ct, void(T::*method)(), const std::string &amp;name)</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solveri_8h_source.html#l00688">constraint_solveri.h:688</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_model_visitor_html_a4a0c229a0e9dcf7122ebd68f501a6ef1"><div class="ttname"><a href="classoperations__research_1_1_model_visitor.html#a4a0c229a0e9dcf7122ebd68f501a6ef1">operations_research::ModelVisitor::kActiveArgument</a></div><div class="ttdeci">static const char kActiveArgument[]</div><div class="ttdoc">argument names:</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l03430">constraint_solver.h:3430</a></div></div>
 <div class="ttc" id="aconstraint__solver_8h_html"><div class="ttname"><a href="constraint__solver_8h.html">constraint_solver.h</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_solver_html_a021ae5a2766d4ccaa133a5bbb5398464"><div class="ttname"><a href="classoperations__research_1_1_solver.html#a021ae5a2766d4ccaa133a5bbb5398464">operations_research::Solver::IndexFilter1</a></div><div class="ttdeci">std::function&lt; bool(int64)&gt; IndexFilter1</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l00742">constraint_solver.h:742</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_rev_html_affc0b3b0a5efa3efc9d0d86344d4a29f"><div class="ttname"><a href="classoperations__research_1_1_rev.html#affc0b3b0a5efa3efc9d0d86344d4a29f">operations_research::Rev::Value</a></div><div class="ttdeci">const T &amp; Value() const</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l03734">constraint_solver.h:3734</a></div></div>
 <div class="ttc" id="agraph__constraints_8cc_html_ada20fc3a4c70c79d8b02df6b8c2413f5"><div class="ttname"><a href="graph__constraints_8cc.html#ada20fc3a4c70c79d8b02df6b8c2413f5">cumuls_</a></div><div class="ttdeci">const std::vector&lt; IntVar * &gt; cumuls_</div><div class="ttdef"><b>Definition:</b> <a href="graph__constraints_8cc_source.html#l00670">graph_constraints.cc:670</a></div></div>
 <div class="ttc" id="astring__array_8h_html"><div class="ttname"><a href="string__array_8h.html">string_array.h</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a99264812cf177270e521f226a5c012c3"><div class="ttname"><a href="namespaceoperations__research.html#a99264812cf177270e521f226a5c012c3">operations_research::CapAdd</a></div><div class="ttdeci">int64 CapAdd(int64 x, int64 y)</div><div class="ttdef"><b>Definition:</b> <a href="saturated__arithmetic_8h_source.html#l00124">saturated_arithmetic.h:124</a></div></div>
 <div class="ttc" id="aconstraint__solver_2table_8cc_html_af6a9149207c05695bc2e26a658461abd"><div class="ttname"><a href="constraint__solver_2table_8cc.html#af6a9149207c05695bc2e26a658461abd">iterators_</a></div><div class="ttdeci">std::vector&lt; IntVarIterator * &gt; iterators_</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_2table_8cc_source.html#l00225">constraint_solver/table.cc:225</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_html_a4fb750da00c784e5ffd1763fd3ce88f7"><div class="ttname"><a href="namespaceoperations__research.html#a4fb750da00c784e5ffd1763fd3ce88f7">operations_research::MakeConstraintDemon1</a></div><div class="ttdeci">Demon * MakeConstraintDemon1(Solver *const s, T *const ct, void(T::*method)(P), const std::string &amp;name, P param1)</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solveri_8h_source.html#l00574">constraint_solveri.h:574</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a7c0ce053b28d53aa4eaf3eb7fb71663b"><div class="ttname"><a href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a></div><div class="ttdeci">#define CHECK_EQ(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00697">base/logging.h:697</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_constraint_html_a9100fab5545234f60a4ce442dbb45630"><div class="ttname"><a href="classoperations__research_1_1_constraint.html#a9100fab5545234f60a4ce442dbb45630">operations_research::Constraint::InitialPropagate</a></div><div class="ttdeci">virtual void InitialPropagate()=0</div><div class="ttdoc">This method performs the initial propagation of the constraint.</div></div>
+<div class="ttc" id="anamespaceoperations__research_html_a4fb750da00c784e5ffd1763fd3ce88f7"><div class="ttname"><a href="namespaceoperations__research.html#a4fb750da00c784e5ffd1763fd3ce88f7">operations_research::MakeConstraintDemon1</a></div><div class="ttdeci">Demon * MakeConstraintDemon1(Solver *const s, T *const ct, void(T::*method)(P), const std::string &amp;name, P param1)</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solveri_8h_source.html#l00566">constraint_solveri.h:566</a></div></div>
 <div class="ttc" id="aintegral__types_8h_html_abc0f5bc07737e498f287334775dff2b6"><div class="ttname"><a href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a></div><div class="ttdeci">uint64_t uint64</div><div class="ttdef"><b>Definition:</b> <a href="integral__types_8h_source.html#l00039">integral_types.h:39</a></div></div>
-<div class="ttc" id="aconstraint__solver_8cc_html_a395f613555f398dd389670bb4c2a4599"><div class="ttname"><a href="constraint__solver_8cc.html#a395f613555f398dd389670bb4c2a4599">next</a></div><div class="ttdeci">Block * next</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8cc_source.html#l00667">constraint_solver.cc:667</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_constraint_html_af33bad3aa81a2f411224d5e471f9956f"><div class="ttname"><a href="classoperations__research_1_1_constraint.html#af33bad3aa81a2f411224d5e471f9956f">operations_research::Constraint::Post</a></div><div class="ttdeci">virtual void Post()=0</div><div class="ttdoc">This method is called when the constraint is processed by the solver.</div></div>
+<div class="ttc" id="aclassoperations__research_1_1_rev_html_a95da6a138a3b56de0cf0c3c4ba7c4688"><div class="ttname"><a href="classoperations__research_1_1_rev.html#a95da6a138a3b56de0cf0c3c4ba7c4688">operations_research::Rev::SetValue</a></div><div class="ttdeci">void SetValue(Solver *const s, const T &amp;val)</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l03736">constraint_solver.h:3736</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_solver_html_aeb92d4addb41255c9732cacfcb54f795"><div class="ttname"><a href="classoperations__research_1_1_solver.html#aeb92d4addb41255c9732cacfcb54f795">operations_research::Solver::Fail</a></div><div class="ttdeci">void Fail()</div><div class="ttdoc">Abandon the current branch in the search tree. A backtrack will follow.</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8cc_source.html#l02416">constraint_solver.cc:2416</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_constraint_html"><div class="ttname"><a href="classoperations__research_1_1_constraint.html">operations_research::Constraint</a></div><div class="ttdoc">A constraint is the main modeling object.</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l03579">constraint_solver.h:3579</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_solver_html"><div class="ttname"><a href="classoperations__research_1_1_solver.html">operations_research::Solver</a></div><div class="ttdoc">Solver Class.</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l00248">constraint_solver.h:248</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_numerical_rev_html_ac8beef1ef5cd6ce8bdfb3f48016ff72b"><div class="ttname"><a href="classoperations__research_1_1_numerical_rev.html#ac8beef1ef5cd6ce8bdfb3f48016ff72b">operations_research::NumericalRev::Incr</a></div><div class="ttdeci">void Incr(Solver *const s)</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l03761">constraint_solver.h:3761</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_constraint_html_aac4aa5ecf086378b1bbac4b669bab4db"><div class="ttname"><a href="classoperations__research_1_1_constraint.html#aac4aa5ecf086378b1bbac4b669bab4db">operations_research::Constraint::Accept</a></div><div class="ttdeci">virtual void Accept(ModelVisitor *const visitor) const</div><div class="ttdoc">Accepts the given visitor.</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8cc_source.html#l03247">constraint_solver.cc:3247</a></div></div>
+<div class="ttc" id="aconstraint__solver_8cc_html_a395f613555f398dd389670bb4c2a4599"><div class="ttname"><a href="constraint__solver_8cc.html#a395f613555f398dd389670bb4c2a4599">next</a></div><div class="ttdeci">Block * next</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8cc_source.html#l00674">constraint_solver.cc:674</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_propagation_base_object_html_a5f32c22c620c811754ba7b6f977db864"><div class="ttname"><a href="classoperations__research_1_1_propagation_base_object.html#a5f32c22c620c811754ba7b6f977db864">operations_research::PropagationBaseObject::solver</a></div><div class="ttdeci">Solver * solver() const</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l03174">constraint_solver.h:3174</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_model_visitor_html_a91247898d81dc2bca2833abef17f0816"><div class="ttname"><a href="classoperations__research_1_1_model_visitor.html#a91247898d81dc2bca2833abef17f0816">operations_research::ModelVisitor::kNextsArgument</a></div><div class="ttdeci">static const char kNextsArgument[]</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l03463">constraint_solver.h:3463</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a9be76edcbd5ccb982d92c8d90421a73c"><div class="ttname"><a href="namespaceoperations__research.html#a9be76edcbd5ccb982d92c8d90421a73c">operations_research::JoinDebugStringPtr</a></div><div class="ttdeci">std::string JoinDebugStringPtr(const std::vector&lt; T &gt; &amp;v, const std::string &amp;separator)</div><div class="ttdef"><b>Definition:</b> <a href="string__array_8h_source.html#l00045">string_array.h:45</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_html_a11f4a7dbafd8e00a36b892a82e44445f"><div class="ttname"><a href="namespaceoperations__research.html#a11f4a7dbafd8e00a36b892a82e44445f">operations_research::MakeDelayedConstraintDemon1</a></div><div class="ttdeci">Demon * MakeDelayedConstraintDemon1(Solver *const s, T *const ct, void(T::*method)(P), const std::string &amp;name, P param1)</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solveri_8h_source.html#l00732">constraint_solveri.h:732</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_html_a11f4a7dbafd8e00a36b892a82e44445f"><div class="ttname"><a href="namespaceoperations__research.html#a11f4a7dbafd8e00a36b892a82e44445f">operations_research::MakeDelayedConstraintDemon1</a></div><div class="ttdeci">Demon * MakeDelayedConstraintDemon1(Solver *const s, T *const ct, void(T::*method)(P), const std::string &amp;name, P param1)</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solveri_8h_source.html#l00724">constraint_solveri.h:724</a></div></div>
 <!-- HTML footer for doxygen 1.8.18-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

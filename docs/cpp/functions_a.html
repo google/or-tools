@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -116,43 +116,66 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 <li>absolute_gap_limit()
 : <a class="el" href="classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#abb3344cbbb76992d335e8f15673a5628">PROTOBUF_FINAL</a>
 </li>
+<li>AbsoluteSolverDeadline()
+: <a class="el" href="classoperations__research_1_1_regular_limit.html#a8cc63d9778229883ca7594b3a47d8f5b">RegularLimit</a>
+</li>
 <li>Accept()
 : <a class="el" href="classoperations__research_1_1_base_path_filter.html#a511cf14b54c83cffc0a673985db90643">BasePathFilter</a>
+, <a class="el" href="classoperations__research_1_1_constraint.html#aac4aa5ecf086378b1bbac4b669bab4db">Constraint</a>
 , <a class="el" href="classoperations__research_1_1_c_p_feasibility_filter.html#a511cf14b54c83cffc0a673985db90643">CPFeasibilityFilter</a>
+, <a class="el" href="classoperations__research_1_1_decision.html#a3acdd325e92a8174c158f99e273d4cbd">Decision</a>
+, <a class="el" href="classoperations__research_1_1_decision_builder.html#aac4aa5ecf086378b1bbac4b669bab4db">DecisionBuilder</a>
 , <a class="el" href="classoperations__research_1_1_dimension.html#a7b8a6f05fe0fcec065317fbd8694969d">Dimension</a>
 , <a class="el" href="classoperations__research_1_1_if_then_else_ct.html#aa30c84aec5e60d6b74e1e1eb15011d4a">IfThenElseCt</a>
+, <a class="el" href="classoperations__research_1_1_interval_var.html#a7b8a6f05fe0fcec065317fbd8694969d">IntervalVar</a>
+, <a class="el" href="classoperations__research_1_1_int_expr.html#aac4aa5ecf086378b1bbac4b669bab4db">IntExpr</a>
+, <a class="el" href="classoperations__research_1_1_int_var.html#aa30c84aec5e60d6b74e1e1eb15011d4a">IntVar</a>
 , <a class="el" href="classoperations__research_1_1_local_search_filter.html#a1eebe2111d0d0d63bc00b6fd5927b616">LocalSearchFilter</a>
 , <a class="el" href="classoperations__research_1_1_local_search_filter_manager.html#ac01556936ee8bcfe89ee8a7088ee260d">LocalSearchFilterManager</a>
+, <a class="el" href="classoperations__research_1_1_optimize_var.html#aa30c84aec5e60d6b74e1e1eb15011d4a">OptimizeVar</a>
+, <a class="el" href="classoperations__research_1_1_pack.html#aa30c84aec5e60d6b74e1e1eb15011d4a">Pack</a>
 , <a class="el" href="classoperations__research_1_1_piecewise_linear_expr.html#aa30c84aec5e60d6b74e1e1eb15011d4a">PiecewiseLinearExpr</a>
+, <a class="el" href="classoperations__research_1_1_regular_limit.html#aa30c84aec5e60d6b74e1e1eb15011d4a">RegularLimit</a>
 , <a class="el" href="classoperations__research_1_1_search.html#aac4aa5ecf086378b1bbac4b669bab4db">Search</a>
+, <a class="el" href="classoperations__research_1_1_search_monitor.html#aac4aa5ecf086378b1bbac4b669bab4db">SearchMonitor</a>
+, <a class="el" href="classoperations__research_1_1_sequence_var.html#aac4aa5ecf086378b1bbac4b669bab4db">SequenceVar</a>
+, <a class="el" href="classoperations__research_1_1_solver.html#aac4aa5ecf086378b1bbac4b669bab4db">Solver</a>
 , <a class="el" href="class_swig_director___constraint.html#a8043b2f97c119b7f9281a7a5a88089f0">SwigDirector_Constraint</a>
 , <a class="el" href="class_swig_director___decision.html#a4aaf50f0ff59f675220c02d9c1cf0a1c">SwigDirector_Decision</a>
-, <a class="el" href="class_swig_director___int_var_local_search_filter.html#a9cc10efa032068f86dac86abdf79b58d">SwigDirector_IntVarLocalSearchFilter</a>
-, <a class="el" href="class_swig_director___local_search_filter.html#a9cc10efa032068f86dac86abdf79b58d">SwigDirector_LocalSearchFilter</a>
+, <a class="el" href="class_swig_director___int_var_local_search_filter.html#ac4584ec23f13d93d8ea86bb70cabede4">SwigDirector_IntVarLocalSearchFilter</a>
+, <a class="el" href="class_swig_director___local_search_filter.html#ac4584ec23f13d93d8ea86bb70cabede4">SwigDirector_LocalSearchFilter</a>
 , <a class="el" href="class_swig_director___optimize_var.html#a8043b2f97c119b7f9281a7a5a88089f0">SwigDirector_OptimizeVar</a>
 , <a class="el" href="class_swig_director___regular_limit.html#a8043b2f97c119b7f9281a7a5a88089f0">SwigDirector_RegularLimit</a>
 , <a class="el" href="class_swig_director___search_limit.html#a8043b2f97c119b7f9281a7a5a88089f0">SwigDirector_SearchLimit</a>
-, <a class="el" href="class_swig_director___search_monitor.html#ad0f2a75923aef3a6f04fb96a98747020">SwigDirector_SearchMonitor</a>
+, <a class="el" href="class_swig_director___search_monitor.html#a8043b2f97c119b7f9281a7a5a88089f0">SwigDirector_SearchMonitor</a>
 , <a class="el" href="class_swig_director___solution_collector.html#a8043b2f97c119b7f9281a7a5a88089f0">SwigDirector_SolutionCollector</a>
 </li>
 <li>AcceptDelta()
-: <a class="el" href="classoperations__research_1_1_search.html#aa4cca7d45ca58320464928dd79fc706e">Search</a>
+: <a class="el" href="classoperations__research_1_1_optimize_var.html#ae983cf659c971e1f2095a2c5a0e81eca">OptimizeVar</a>
+, <a class="el" href="classoperations__research_1_1_search.html#aa4cca7d45ca58320464928dd79fc706e">Search</a>
+, <a class="el" href="classoperations__research_1_1_search_monitor.html#aa4cca7d45ca58320464928dd79fc706e">SearchMonitor</a>
 , <a class="el" href="class_swig_director___optimize_var.html#acf41c9f9ab81aa3416113f1281d3ea64">SwigDirector_OptimizeVar</a>
 , <a class="el" href="class_swig_director___regular_limit.html#acf41c9f9ab81aa3416113f1281d3ea64">SwigDirector_RegularLimit</a>
 , <a class="el" href="class_swig_director___search_limit.html#acf41c9f9ab81aa3416113f1281d3ea64">SwigDirector_SearchLimit</a>
 , <a class="el" href="class_swig_director___search_monitor.html#acf41c9f9ab81aa3416113f1281d3ea64">SwigDirector_SearchMonitor</a>
 , <a class="el" href="class_swig_director___solution_collector.html#acf41c9f9ab81aa3416113f1281d3ea64">SwigDirector_SolutionCollector</a>
 </li>
+<li>accepted_neighbors()
+: <a class="el" href="classoperations__research_1_1_solver.html#a85b32a82ff9c91dd572222116e4a0adb">Solver</a>
+</li>
 <li>AcceptNeighbor()
 : <a class="el" href="classoperations__research_1_1_search.html#aea42093b3b9c8525f4a98a30ad5257d8">Search</a>
+, <a class="el" href="classoperations__research_1_1_search_monitor.html#aea42093b3b9c8525f4a98a30ad5257d8">SearchMonitor</a>
 , <a class="el" href="class_swig_director___optimize_var.html#aea42093b3b9c8525f4a98a30ad5257d8">SwigDirector_OptimizeVar</a>
 , <a class="el" href="class_swig_director___regular_limit.html#aea42093b3b9c8525f4a98a30ad5257d8">SwigDirector_RegularLimit</a>
 , <a class="el" href="class_swig_director___search_limit.html#aea42093b3b9c8525f4a98a30ad5257d8">SwigDirector_SearchLimit</a>
-, <a class="el" href="class_swig_director___search_monitor.html#aea42093b3b9c8525f4a98a30ad5257d8">SwigDirector_SearchMonitor</a>
+, <a class="el" href="class_swig_director___search_monitor.html#a36df6248a273f003d8d9e1414e3c5e5c">SwigDirector_SearchMonitor</a>
 , <a class="el" href="class_swig_director___solution_collector.html#aea42093b3b9c8525f4a98a30ad5257d8">SwigDirector_SolutionCollector</a>
 </li>
 <li>AcceptSolution()
-: <a class="el" href="classoperations__research_1_1_search.html#af413a50ef58e2b1026f3d89bfb85215a">Search</a>
+: <a class="el" href="classoperations__research_1_1_optimize_var.html#aa8900234762f2b2015b9108accdf10ff">OptimizeVar</a>
+, <a class="el" href="classoperations__research_1_1_search.html#af413a50ef58e2b1026f3d89bfb85215a">Search</a>
+, <a class="el" href="classoperations__research_1_1_search_monitor.html#af413a50ef58e2b1026f3d89bfb85215a">SearchMonitor</a>
 , <a class="el" href="class_swig_director___optimize_var.html#af413a50ef58e2b1026f3d89bfb85215a">SwigDirector_OptimizeVar</a>
 , <a class="el" href="class_swig_director___regular_limit.html#af413a50ef58e2b1026f3d89bfb85215a">SwigDirector_RegularLimit</a>
 , <a class="el" href="class_swig_director___search_limit.html#af413a50ef58e2b1026f3d89bfb85215a">SwigDirector_SearchLimit</a>
@@ -162,10 +185,11 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 <li>AcceptUncheckedNeighbor()
 : <a class="el" href="classoperations__research_1_1_search.html#a9c5c737b0e0cc86888b5a32f445cfc7f">Search</a>
 , <a class="el" href="classoperations__research_1_1_search_log.html#afc36af1852ba6e2dbe650aa172e4c680">SearchLog</a>
+, <a class="el" href="classoperations__research_1_1_search_monitor.html#a9c5c737b0e0cc86888b5a32f445cfc7f">SearchMonitor</a>
 , <a class="el" href="class_swig_director___optimize_var.html#a9c5c737b0e0cc86888b5a32f445cfc7f">SwigDirector_OptimizeVar</a>
 , <a class="el" href="class_swig_director___regular_limit.html#a9c5c737b0e0cc86888b5a32f445cfc7f">SwigDirector_RegularLimit</a>
 , <a class="el" href="class_swig_director___search_limit.html#a9c5c737b0e0cc86888b5a32f445cfc7f">SwigDirector_SearchLimit</a>
-, <a class="el" href="class_swig_director___search_monitor.html#ae08d9f4aadd8be8f98637c6dec237b57">SwigDirector_SearchMonitor</a>
+, <a class="el" href="class_swig_director___search_monitor.html#a9c5c737b0e0cc86888b5a32f445cfc7f">SwigDirector_SearchMonitor</a>
 , <a class="el" href="class_swig_director___solution_collector.html#a9c5c737b0e0cc86888b5a32f445cfc7f">SwigDirector_SolutionCollector</a>
 </li>
 <li>AccurateSum()
@@ -174,14 +198,27 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 <li>ACMRandom()
 : <a class="el" href="classoperations__research_1_1_a_c_m_random.html#a5a406ae0072bacae11a7919f206aeeb6">ACMRandom</a>
 </li>
+<li>Action
+: <a class="el" href="classoperations__research_1_1_solver.html#ad7946514ee3dd6cb3ab993dc9e98b33b">Solver</a>
+</li>
 <li>Activate()
-: <a class="el" href="classoperations__research_1_1_var_local_search_operator.html#aebf766478091209b6170b5de179f9067">VarLocalSearchOperator&lt; V, Val, Handler &gt;</a>
+: <a class="el" href="classoperations__research_1_1_assignment.html#a89527a874098e35f9729eb276297cab1">Assignment</a>
+, <a class="el" href="classoperations__research_1_1_assignment_element.html#ae8753efaeea05f65094a4875a694a368">AssignmentElement</a>
+, <a class="el" href="classoperations__research_1_1_var_local_search_operator.html#aebf766478091209b6170b5de179f9067">VarLocalSearchOperator&lt; V, Val, Handler &gt;</a>
 </li>
 <li>Activated()
-: <a class="el" href="classoperations__research_1_1_var_local_search_operator.html#aff9b327f2a97858ac30a718bba4029c0">VarLocalSearchOperator&lt; V, Val, Handler &gt;</a>
+: <a class="el" href="classoperations__research_1_1_assignment.html#a6798e539bb42f8c4bebb89e810acad7d">Assignment</a>
+, <a class="el" href="classoperations__research_1_1_assignment_element.html#ae79195ce9bb522329dfaedaba78bd4e2">AssignmentElement</a>
+, <a class="el" href="classoperations__research_1_1_var_local_search_operator.html#aff9b327f2a97858ac30a718bba4029c0">VarLocalSearchOperator&lt; V, Val, Handler &gt;</a>
 </li>
 <li>activated_
 : <a class="el" href="classoperations__research_1_1_var_local_search_operator.html#a7135085df615773e63a206e65ea21d53">VarLocalSearchOperator&lt; V, Val, Handler &gt;</a>
+</li>
+<li>ActivatedObjective()
+: <a class="el" href="classoperations__research_1_1_assignment.html#a01570ac6b0a24b922703e61d13499491">Assignment</a>
+</li>
+<li>ActivateObjective()
+: <a class="el" href="classoperations__research_1_1_assignment.html#a39e5a78e9409aad82cd5349dcb0f4c01">Assignment</a>
 </li>
 <li>active
 : <a class="el" href="structoperations__research_1_1fz_1_1_constraint.html#a03c996f9fcf0e10baeb3e700be0c409a">Constraint</a>
@@ -203,11 +240,18 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 <li>active_words()
 : <a class="el" href="classoperations__research_1_1_unsorted_nullable_rev_bitset.html#ac1cb8e65b730ce99b1d99d5a37f578bd">UnsortedNullableRevBitset</a>
 </li>
+<li>ActiveHorizonRange()
+: <a class="el" href="classoperations__research_1_1_sequence_var.html#a356dffbba8246298635e4d5714f5ff25">SequenceVar</a>
+</li>
 <li>actives()
-: <a class="el" href="classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#aba68ac1dad332ea695d29605bd8258a7">PROTOBUF_FINAL</a>
+: <a class="el" href="classoperations__research_1_1_disjunctive_constraint.html#a7c019b394b4c8624bc4de977cdfc627c">DisjunctiveConstraint</a>
+, <a class="el" href="classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#aba68ac1dad332ea695d29605bd8258a7">PROTOBUF_FINAL</a>
 </li>
 <li>actives_size()
 : <a class="el" href="classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#ac671609a4ad4a0545c6d3ec619164a8b">PROTOBUF_FINAL</a>
+</li>
+<li>ActiveSearch()
+: <a class="el" href="classoperations__research_1_1_solver.html#a7c06ab0a290a6fbdc909fd63c192a4bf">Solver</a>
 </li>
 <li>ActiveVar()
 : <a class="el" href="classoperations__research_1_1_routing_model.html#afadc1348f0318e9bc8cebb75b2fc4234">RoutingModel</a>
@@ -225,18 +269,31 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 : <a class="el" href="structoperations__research_1_1sat_1_1_clause_info.html#ac3e857ac5cab6563bdbf0dd5632df5ea">ClauseInfo</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1_upper_bounded_linear_constraint.html#add3bd69a358a7351a31f0a12a4bf16b0">UpperBoundedLinearConstraint</a>
 </li>
+<li>ActivityShouldNotChange()
+: <a class="el" href="classoperations__research_1_1sat_1_1_var_domination.html#a7b3e19ea0bc9643cd98679632fb72c13">VarDomination</a>
+</li>
+<li>ActivityShouldNotDecrease()
+: <a class="el" href="classoperations__research_1_1sat_1_1_var_domination.html#a00174020e05dcb9b7b5270f5f99ef7ae">VarDomination</a>
+</li>
+<li>ActivityShouldNotIncrease()
+: <a class="el" href="classoperations__research_1_1sat_1_1_var_domination.html#a3c403add1108067dbdbcf06bcc564086">VarDomination</a>
+</li>
 <li>AdaptiveParameterValue()
 : <a class="el" href="classoperations__research_1_1_adaptive_parameter_value.html#a5910cbe817fbb6a65be0c3ddf2534f35">AdaptiveParameterValue</a>
 </li>
 <li>Add()
 : <a class="el" href="class_adjustable_priority_queue.html#ac312fa979ea8afd5deabd6b581b3bb1f">AdjustablePriorityQueue&lt; T, Comp &gt;</a>
 , <a class="el" href="classoperations__research_1_1_accurate_sum.html#acc8fad1f98b885fa7d0504f4dfc71f08">AccurateSum&lt; FpNumber &gt;</a>
+, <a class="el" href="classoperations__research_1_1_assignment.html#ae8ff1d18d50b93a2499ccd7130addecb">Assignment</a>
+, <a class="el" href="classoperations__research_1_1_assignment_container.html#aeeda3757b9ae10662dc2ba27ee44cd48">AssignmentContainer&lt; V, E &gt;</a>
 , <a class="el" href="classoperations__research_1_1_double_distribution.html#ac9d765ba162438b4963dabe51ffc97f1">DoubleDistribution</a>
 , <a class="el" href="structoperations__research_1_1glop_1_1_scattered_vector.html#a9bb4f0967311f0f79a279879c4d69678">ScatteredVector&lt; Index, Iterator &gt;</a>
 , <a class="el" href="classoperations__research_1_1glop_1_1_sum_with_one_missing.html#a8e16e2adc11d40ca12b2735ae21623b8">SumWithOneMissing&lt; supported_infinity_is_positive &gt;</a>
 , <a class="el" href="classoperations__research_1_1_integer_distribution.html#af4cfe0e87612156b8bc44ea1b5ca5abf">IntegerDistribution</a>
 , <a class="el" href="classoperations__research_1_1_integer_priority_queue.html#a260b134ff6e3aa564e8ba1f879aea3d9">IntegerPriorityQueue&lt; Element, Compare &gt;</a>
 , <a class="el" href="classoperations__research_1_1_local_search_monitor_master.html#a2effa33f6e0f92c44bce85efc5c4b738">LocalSearchMonitorMaster</a>
+, <a class="el" href="classoperations__research_1_1_numerical_rev.html#acefa703f28a3c0a63d826bba8f19deb9">NumericalRev&lt; T &gt;</a>
+, <a class="el" href="classoperations__research_1_1_numerical_rev_array.html#a651028799de2560833cac2fff292fdf1">NumericalRevArray&lt; T &gt;</a>
 , <a class="el" href="classoperations__research_1_1_piecewise_linear_function.html#a78f2b8d3ca022083cdb9930fa0b15df5">PiecewiseLinearFunction</a>
 , <a class="el" href="classoperations__research_1_1_ratio_distribution.html#ac9d765ba162438b4963dabe51ffc97f1">RatioDistribution</a>
 , <a class="el" href="classoperations__research_1_1_rev_growing_multi_map.html#a84ec92c62069c7e7a9513750518a76ba">RevGrowingMultiMap&lt; Key, Value &gt;</a>
@@ -250,6 +307,7 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 , <a class="el" href="classoperations__research_1_1sat_1_1_scattered_integer_vector.html#a4940f758f3c0e757a4bcb5bbf795ce67">ScatteredIntegerVector</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1_shared_solution_repository.html#a309d07a2f536805271e68a5420afbc49">SharedSolutionRepository&lt; ValueType &gt;</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1_top_n.html#a6562540dd1028bdfeea27af27d4d4d10">TopN&lt; Element &gt;</a>
+, <a class="el" href="classoperations__research_1_1_solution_collector.html#a5a589c2741d5a4b5b777b0dfe2433d13">SolutionCollector</a>
 , <a class="el" href="classoperations__research_1_1_trace.html#ac182223c7eb04a48d2378c72711021aa">Trace</a>
 , <a class="el" href="classoperations__research_1_1_vector_map.html#a1f665a2e76399cbf821a5ef03eb5d400">VectorMap&lt; T &gt;</a>
 </li>
@@ -360,6 +418,9 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 </li>
 <li>add_literals()
 : <a class="el" href="classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a9abd20cd5c98c0a4535d168a1c7bb18e">PROTOBUF_FINAL</a>
+</li>
+<li>add_local_search_filter_statistics()
+: <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a60ca938753cc4b844d723e3e9089107f">PROTOBUF_FINAL</a>
 </li>
 <li>add_local_search_operator_statistics()
 : <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#ac6f26bdbd808604700c828fbac5cd987">PROTOBUF_FINAL</a>
@@ -478,6 +539,9 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 <li>add_unperformed()
 : <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a809048a7be8a73475fa2910c436a719c">PROTOBUF_FINAL</a>
 </li>
+<li>add_unperformed_entries
+: <a class="el" href="structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#ad962358b9cb4da242cdc3c98ee2ce6ce">GlobalCheapestInsertionFilteredHeuristic::GlobalCheapestInsertionParameters</a>
+</li>
 <li>add_values()
 : <a class="el" href="classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a22414a046a10e101e63455e8cd5b734b">PROTOBUF_FINAL</a>
 </li>
@@ -538,12 +602,14 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 <li>AddAndClearColumnWithNonZeros()
 : <a class="el" href="classoperations__research_1_1glop_1_1_compact_sparse_matrix.html#a66f88c5340a0acaa44643526f4ab7d33">CompactSparseMatrix</a>
 </li>
+<li>AddAndConstraint()
+: <a class="el" href="classoperations__research_1_1_g_scip.html#a228924ec570e67f8f6b01e638f06c98f">GScip</a>
+</li>
 <li>AddAndNormalizeTriangularColumn()
 : <a class="el" href="classoperations__research_1_1glop_1_1_triangular_matrix.html#a8d3594198944bf0a6ac2669581085683">TriangularMatrix</a>
 </li>
 <li>AddArc()
-: <a class="el" href="classoperations__research_1_1_connected_components.html#a07ef59a345df6bddab386c943af4238c">ConnectedComponents&lt; NodeIndex, ArcIndex &gt;</a>
-, <a class="el" href="classoperations__research_1_1_ebert_graph_base.html#a7b505ba4a01bce342d049f5a8674da72">EbertGraphBase&lt; NodeIndexType, ArcIndexType, DerivedGraph &gt;</a>
+: <a class="el" href="classoperations__research_1_1_ebert_graph_base.html#a7b505ba4a01bce342d049f5a8674da72">EbertGraphBase&lt; NodeIndexType, ArcIndexType, DerivedGraph &gt;</a>
 , <a class="el" href="classoperations__research_1_1or__internal_1_1_graph_builder_from_arcs.html#a4de07ac4885d7183fdb859bd112ad6f1">GraphBuilderFromArcs&lt; GraphType, is_dynamic &gt;</a>
 , <a class="el" href="classoperations__research_1_1or__internal_1_1_graph_builder_from_arcs_3_01_graph_type_00_01true_01_4.html#aceabecf2a86411c8dd599a21cec79aee">GraphBuilderFromArcs&lt; GraphType, true &gt;</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1_circuit_constraint.html#ac64dffddebc8b332ee6a4db064c426d2">CircuitConstraint</a>
@@ -566,11 +632,17 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 <li>AddAtMostOne()
 : <a class="el" href="classoperations__research_1_1sat_1_1_binary_implication_graph.html#aec717d6bc59b3b48bb21276a081c62c1">BinaryImplicationGraph</a>
 </li>
+<li>AddAtPosition()
+: <a class="el" href="classoperations__research_1_1_assignment_container.html#a55e6ebe94a380d6a66e470eafc84f6ff">AssignmentContainer&lt; V, E &gt;</a>
+</li>
 <li>AddAtSolutionCallback()
 : <a class="el" href="classoperations__research_1_1_routing_model.html#a086605d9650ce3c576d8a9c45ce0b9fc">RoutingModel</a>
 </li>
 <li>AddAutomaton()
 : <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#abf7850d0824985bff25b3013958f2b50">CpModelBuilder</a>
+</li>
+<li>AddBacktrackAction()
+: <a class="el" href="classoperations__research_1_1_solver.html#aae6945c57651cb226561a0ef988a02ac">Solver</a>
 </li>
 <li>AddBacktrackingLevel()
 : <a class="el" href="classoperations__research_1_1bop_1_1_assignment_and_constraint_feasibility_maintainer.html#a5ddd49b322ff7e6a3b502ab8df60ce98">AssignmentAndConstraintFeasibilityMaintainer</a>
@@ -598,6 +670,9 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 </li>
 <li>AddBoolXor()
 : <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a93e3463c812581d990d7c4524cc8c4c7">CpModelBuilder</a>
+</li>
+<li>AddCastConstraint()
+: <a class="el" href="classoperations__research_1_1_solver.html#ae2d27e0db523a7b883fe8bd2f40e9968">Solver</a>
 </li>
 <li>AddCircuitConstraint()
 : <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a75c76026eaca8ea83038fb6dfc9e734e">CpModelBuilder</a>
@@ -644,12 +719,19 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 : <a class="el" href="classoperations__research_1_1fz_1_1_model.html#ac06ff8f8b48463ca8f5f0cd471e04a4f">Model</a>
 , <a class="el" href="classoperations__research_1_1_queue.html#a5931080c9bfda8dedfef0e3adf313ab3">Queue</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1_pb_constraints.html#a668f93c96cd8a83dd4bf3da35ba8b7b0">PbConstraints</a>
+, <a class="el" href="classoperations__research_1_1_solver.html#a5931080c9bfda8dedfef0e3adf313ab3">Solver</a>
 </li>
 <li>AddConstraints()
 : <a class="el" href="classoperations__research_1_1glop_1_1_linear_program.html#a742dbe4804ed01bc7a27724f6b672466">LinearProgram</a>
 </li>
 <li>AddConstraintsWithSlackVariables()
 : <a class="el" href="classoperations__research_1_1glop_1_1_linear_program.html#ae8a25f4344e17329c596cd1c387f70b2">LinearProgram</a>
+</li>
+<li>AddCountAssignedItemsDimension()
+: <a class="el" href="classoperations__research_1_1_pack.html#a27d5048553d708cb8f1f7b6f7b48052c">Pack</a>
+</li>
+<li>AddCountUsedBinDimension()
+: <a class="el" href="classoperations__research_1_1_pack.html#a90028870fef41c9ce7029c52f194eacd">Pack</a>
 </li>
 <li>AddCumulative()
 : <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a7eaa53689ca6adc2a83db42dfb81e2ed">CpModelBuilder</a>
@@ -658,6 +740,7 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 : <a class="el" href="classoperations__research_1_1_m_p_callback_context.html#aad0fd4b98cffeb1caa42d0bf3032607b">MPCallbackContext</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1_linear_constraint_manager.html#ad7adb503e78ae317a4406bdaca027494">LinearConstraintManager</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1_top_n_cuts.html#a00de98e511fe874e46e121ed09ff136e">TopNCuts</a>
+, <a class="el" href="classoperations__research_1_1_scip_m_p_callback_context.html#aaf98ff95af0e9af5addadb5b3c271fc9">ScipMPCallbackContext</a>
 </li>
 <li>AddCutGenerator()
 : <a class="el" href="classoperations__research_1_1sat_1_1_linear_programming_constraint.html#aefa083730af18963c9bfd9915b5cd187">LinearProgrammingConstraint</a>
@@ -751,9 +834,6 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 <li>AddForbiddenAssignments()
 : <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a0efb111b753edb71e39cb7d1243d93d1">CpModelBuilder</a>
 </li>
-<li>AddGraph()
-: <a class="el" href="classoperations__research_1_1_connected_components.html#a0f653082d74e1d7e9d8e97be437ba036">ConnectedComponents&lt; NodeIndex, ArcIndex &gt;</a>
-</li>
 <li>AddGreaterOrEqual()
 : <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ab6091344cb80f81a2b80c4cad2233457">CpModelBuilder</a>
 </li>
@@ -778,7 +858,8 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 : <a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#af0280b2bda95804c4166638e7b490ce9">PresolveContext</a>
 </li>
 <li>AddIndicatorConstraint()
-: <a class="el" href="classoperations__research_1_1_gurobi_interface.html#aeeadd101415d24d02e7ccb85844ef763">GurobiInterface</a>
+: <a class="el" href="classoperations__research_1_1_g_scip.html#a9991cb920857500706ba6863637ab7b6">GScip</a>
+, <a class="el" href="classoperations__research_1_1_gurobi_interface.html#aeeadd101415d24d02e7ccb85844ef763">GurobiInterface</a>
 , <a class="el" href="classoperations__research_1_1_m_p_solver_interface.html#a2b2f8f7646c004cda3de338bd11ec0f2">MPSolverInterface</a>
 , <a class="el" href="classoperations__research_1_1_sat_interface.html#aeeadd101415d24d02e7ccb85844ef763">SatInterface</a>
 , <a class="el" href="classoperations__research_1_1_s_c_i_p_interface.html#acf102e862da164f1dc4c7bdc8ef83031">SCIPInterface</a>
@@ -818,6 +899,7 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 </li>
 <li>AddLazyConstraint()
 : <a class="el" href="classoperations__research_1_1_m_p_callback_context.html#aa1db5c0051875f7406a147aed7a13649">MPCallbackContext</a>
+, <a class="el" href="classoperations__research_1_1_scip_m_p_callback_context.html#a79b0b72307928b949a6818ef134c4b2f">ScipMPCallbackContext</a>
 </li>
 <li>AddLearnedConstraint()
 : <a class="el" href="classoperations__research_1_1sat_1_1_pb_constraints.html#afea0121eba5886052ba91716acf7f29f">PbConstraints</a>
@@ -829,7 +911,8 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 : <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a8e6a73106e33c7acb3a0c13adca6af07">CpModelBuilder</a>
 </li>
 <li>AddLinearConstraint()
-: <a class="el" href="classoperations__research_1_1_routing_linear_solver_wrapper.html#a96c0dc62ea646307ec5007fea27721c5">RoutingLinearSolverWrapper</a>
+: <a class="el" href="classoperations__research_1_1_g_scip.html#a2b576f762517cd3e18d24d02435eb3f6">GScip</a>
+, <a class="el" href="classoperations__research_1_1_routing_linear_solver_wrapper.html#a96c0dc62ea646307ec5007fea27721c5">RoutingLinearSolverWrapper</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1_canonical_boolean_linear_problem.html#a05c49a95f6af6f8d873c96cae6ab6653">CanonicalBooleanLinearProblem</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a18f5b0a54e5d977cbc51978dbb58a083">CpModelBuilder</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1_feasibility_pump.html#aaac2d8dee4d7fc8d5e9a1b1cfc3021bc">FeasibilityPump</a>
@@ -854,8 +937,14 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 <li>AddLocalSearchFilter()
 : <a class="el" href="classoperations__research_1_1_routing_model.html#a566384949e6395952f6f6b48603fd87f">RoutingModel</a>
 </li>
+<li>AddLocalSearchMonitor()
+: <a class="el" href="classoperations__research_1_1_solver.html#a6c3752c7d9425f4a5243176d3f6fcbc7">Solver</a>
+</li>
 <li>AddLocalSearchOperator()
 : <a class="el" href="classoperations__research_1_1_routing_model.html#a1156fa8214dba09e2a2a94862244aa1f">RoutingModel</a>
+</li>
+<li>AddLogSink()
+: <a class="el" href="classgoogle_1_1_log_destination.html#a043cd6b97be276f99eea8f0ea3ece475">LogDestination</a>
 </li>
 <li>AddLpVariable()
 : <a class="el" href="classoperations__research_1_1sat_1_1_implied_bounds_processor.html#a07e1de12d9a4b00c96911544e72b86d4">ImpliedBoundsProcessor</a>
@@ -909,7 +998,7 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 , <a class="el" href="classutil_1_1_topological_sorter.html#adf35867ff0932290f5456b27d1ed6bff">TopologicalSorter&lt; T, stable_sort, Hash, KeyEqual &gt;</a>
 </li>
 <li>AddNodePrecedence()
-: <a class="el" href="classoperations__research_1_1_routing_dimension.html#a80ebd60db4ccb3f512288a553f181fe9">RoutingDimension</a>
+: <a class="el" href="classoperations__research_1_1_routing_dimension.html#a10fbd239f47aef280b475ae0db9e8f9a">RoutingDimension</a>
 </li>
 <li>AddNoOverlap()
 : <a class="el" href="classoperations__research_1_1sat_1_1_combined_disjunctive.html#a55a91d657715ec9c9d5a0d2a54239957">CombinedDisjunctive&lt; time_direction &gt;</a>
@@ -921,6 +1010,10 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 <li>AddNotEqual()
 : <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ae17bac92c54a4eabc1ddaa875d32cdd2">CpModelBuilder</a>
 </li>
+<li>AddObjective()
+: <a class="el" href="classoperations__research_1_1_assignment.html#a86601a2dad7a051d7b387ffa789898ff">Assignment</a>
+, <a class="el" href="classoperations__research_1_1_solution_collector.html#a40060f6e513255a9133645c7179fa0d1">SolutionCollector</a>
+</li>
 <li>AddOneConstraint()
 : <a class="el" href="classoperations__research_1_1sat_1_1_zero_half_cut_helper.html#afbba3b7980ea3f2da0bbb57e1a0df4d6">ZeroHalfCutHelper</a>
 </li>
@@ -929,6 +1022,9 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 </li>
 <li>AddOptionalEvent()
 : <a class="el" href="classoperations__research_1_1sat_1_1_reservoir_constraint.html#af1151b0627920bc9eddd2b532dd274b2">ReservoirConstraint</a>
+</li>
+<li>AddOrConstraint()
+: <a class="el" href="classoperations__research_1_1_g_scip.html#a122bc247cae2b6136e2629f0e1f5b5b1">GScip</a>
 </li>
 <li>AddOrUpdateEvent()
 : <a class="el" href="classoperations__research_1_1sat_1_1_theta_lambda_tree.html#ad812cddd43d03a817341c9875f4f6f4f">ThetaLambdaTree&lt; IntegerType &gt;</a>
@@ -979,8 +1075,14 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 <li>AddProductEquality()
 : <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#acc9c643fff37dd8f960fb0a6d67803f6">CpModelBuilder</a>
 </li>
+<li>AddPropagationMonitor()
+: <a class="el" href="classoperations__research_1_1_solver.html#a4260a3ba3644fec332cd650e2d3c9f68">Solver</a>
+</li>
 <li>AddPropagator()
 : <a class="el" href="classoperations__research_1_1sat_1_1_sat_solver.html#a2d1cea64152ca53ac5df160b48059800">SatSolver</a>
+</li>
+<li>AddQuadraticConstraint()
+: <a class="el" href="classoperations__research_1_1_g_scip.html#ae429c1ac9342e0f0185169be5d34a021">GScip</a>
 </li>
 <li>AddReasonForBeingBefore()
 : <a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#adbfab9aa6e8f73dcff6e5f1d7d7debfa">SchedulingConstraintHelper</a>
@@ -1029,7 +1131,7 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 : <a class="el" href="classoperations__research_1_1sat_1_1_task_set.html#a7e3986de45625c55b092944d4cd9e547">TaskSet</a>
 </li>
 <li>AddSizeMinReason()
-: <a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#aa4be957a7f3b0a652e4a7fefe2f16809">SchedulingConstraintHelper</a>
+: <a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a37d7d6ef38f2acb9f12940ec8f68283a">SchedulingConstraintHelper</a>
 </li>
 <li>AddSlackVariablesPreprocessor()
 : <a class="el" href="classoperations__research_1_1glop_1_1_add_slack_variables_preprocessor.html#a590bbc619c0079ea174d76f13689170e">AddSlackVariablesPreprocessor</a>
@@ -1046,11 +1148,20 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 <li>AddSolveData()
 : <a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator.html#a24d01ebae72ddcb6d698c97add3f41a5">NeighborhoodGenerator</a>
 </li>
+<li>AddSOS1Constraint()
+: <a class="el" href="classoperations__research_1_1_g_scip.html#afd384ebf9ff05c00f6ef9bb745d3b8fd">GScip</a>
+</li>
+<li>AddSOS2Constraint()
+: <a class="el" href="classoperations__research_1_1_g_scip.html#ae2320128d48a640a84f584a8b1a32171">GScip</a>
+</li>
 <li>AddStartMaxReason()
 : <a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#ae6aff7693fe8d422dedbc67f30621d4d">SchedulingConstraintHelper</a>
 </li>
 <li>AddStartMinReason()
 : <a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a3dc35c00655b5b7a99fea52e432adf4b">SchedulingConstraintHelper</a>
+</li>
+<li>AddSumVariableWeightsLessOrEqualConstantDimension()
+: <a class="el" href="classoperations__research_1_1_pack.html#a9a5ab9fb129f8b45255d5fbed741d2b2">Pack</a>
 </li>
 <li>AddSymmetry()
 : <a class="el" href="classoperations__research_1_1sat_1_1_symmetry_propagator.html#ab3ea09bd62099558df839d90dbf75f18">SymmetryPropagator</a>
@@ -1126,6 +1237,7 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 , <a class="el" href="classoperations__research_1_1_c_l_p_interface.html#acb9df3ca8afb4544653536fbf27fde55">CLPInterface</a>
 , <a class="el" href="classoperations__research_1_1fz_1_1_model.html#a226db3a600529d463f7b19c4ded05bfc">Model</a>
 , <a class="el" href="classoperations__research_1_1_g_l_o_p_interface.html#acb9df3ca8afb4544653536fbf27fde55">GLOPInterface</a>
+, <a class="el" href="classoperations__research_1_1_g_scip.html#a0fc54fff7fc2db6aae9022575429cbf9">GScip</a>
 , <a class="el" href="classoperations__research_1_1_gurobi_interface.html#acb9df3ca8afb4544653536fbf27fde55">GurobiInterface</a>
 , <a class="el" href="classoperations__research_1_1_local_search_state.html#a88160424ed9e9ed9b891fafd45ec0218">LocalSearchState</a>
 , <a class="el" href="classoperations__research_1_1_m_p_solver_interface.html#a2e3afb4a4e412bffafd7052b5dc149ac">MPSolverInterface</a>
@@ -1152,22 +1264,31 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 <li>AddVectorDimension()
 : <a class="el" href="classoperations__research_1_1_routing_model.html#aedbec46c51bb2d8b0b0f77fc98ac8e9e">RoutingModel</a>
 </li>
+<li>AddWeightedSumEqualVarDimension()
+: <a class="el" href="classoperations__research_1_1_pack.html#a5549bd43ea2777cc9f0f3e4da3a87cdd">Pack</a>
+</li>
+<li>AddWeightedSumLessOrEqualConstantDimension()
+: <a class="el" href="classoperations__research_1_1_pack.html#aff830cb111951824bd4c72ddd6d4db6b">Pack</a>
+</li>
+<li>AddWeightedSumOfAssignedDimension()
+: <a class="el" href="classoperations__research_1_1_pack.html#a08cff80b27c0080341992cad2966dc78">Pack</a>
+</li>
 <li>AddWeightedVariableMinimizedByFinalizer()
 : <a class="el" href="classoperations__research_1_1_routing_model.html#a939aa2ef2afec0337b0f9d4dcb1c2db8">RoutingModel</a>
 </li>
 <li>AdjacencyList
-: <a class="el" href="classutil_1_1internal_1_1_dense_int_topological_sorter_tpl.html#a8e04d102002277e27e3a913eea3dfd0e">DenseIntTopologicalSorterTpl&lt; stable_sort &gt;</a>
+: <a class="el" href="classutil_1_1internal_1_1_dense_int_topological_sorter_tpl.html#aae2aec5b86307e8702d0a3fdd74f9be2">DenseIntTopologicalSorterTpl&lt; stable_sort &gt;</a>
 </li>
 <li>AdjacencyListIterator()
 : <a class="el" href="classutil_1_1_undirected_adjacency_lists_of_directed_graph_1_1_adjacency_list_iterator.html#a544dc5fdf254f2bcd1b7dfa67ef41b7a">UndirectedAdjacencyListsOfDirectedGraph&lt; Graph &gt;::AdjacencyListIterator</a>
 </li>
 <li>AdjustablePriorityQueue()
-: <a class="el" href="class_adjustable_priority_queue.html#a1b5aac314749f1999e7c1b78da268877">AdjustablePriorityQueue&lt; T, Comp &gt;</a>
+: <a class="el" href="class_adjustable_priority_queue.html#a742bb30d772bef615843b04c073a56c6">AdjustablePriorityQueue&lt; T, Comp &gt;</a>
 </li>
 <li>AdvanceDeterministicTime()
 : <a class="el" href="classoperations__research_1_1sat_1_1_sat_solver.html#a705eddd5baee23097daf34b73e66eae3">SatSolver</a>
 , <a class="el" href="classoperations__research_1_1_shared_time_limit.html#af90cfd1fc238433fc303ee28c5914eb9">SharedTimeLimit</a>
-, <a class="el" href="classoperations__research_1_1_time_limit.html#ad068edb54c705c548c20e4ba47b4e3a8">TimeLimit</a>
+, <a class="el" href="classoperations__research_1_1_time_limit.html#af90cfd1fc238433fc303ee28c5914eb9">TimeLimit</a>
 </li>
 <li>AffineExpression()
 : <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html#afebdcd02275fbb761414876dfa5ed93d">AffineExpression</a>
@@ -1180,6 +1301,7 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 </li>
 <li>AfterDecision()
 : <a class="el" href="classoperations__research_1_1_search.html#a488f1d99cc1f61acdc6782dcfee86e49">Search</a>
+, <a class="el" href="classoperations__research_1_1_search_monitor.html#a488f1d99cc1f61acdc6782dcfee86e49">SearchMonitor</a>
 , <a class="el" href="class_swig_director___optimize_var.html#a3ed59b6b2264dc78871fcdc6a5f76205">SwigDirector_OptimizeVar</a>
 , <a class="el" href="class_swig_director___regular_limit.html#a3ed59b6b2264dc78871fcdc6a5f76205">SwigDirector_RegularLimit</a>
 , <a class="el" href="class_swig_director___search_limit.html#a3ed59b6b2264dc78871fcdc6a5f76205">SwigDirector_SearchLimit</a>
@@ -1192,11 +1314,14 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 <li>AggregateAssignments()
 : <a class="el" href="classoperations__research_1_1glop_1_1_l_p_decomposer.html#a9a8563415a3a317bf6f245e01d1ce080">LPDecomposer</a>
 </li>
-<li>algorithm
-: <a class="el" href="structoperations__research_1_1_traveling_salesman_lower_bound_parameters.html#acc4ba09a6333be056db50ed15007518c">TravelingSalesmanLowerBoundParameters</a>
+<li>AGGRESSIVE
+: <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a13e7be7b1a61fa8ee704a497ea2a76e4">PROTOBUF_FINAL</a>
 </li>
 <li>Algorithm
 : <a class="el" href="structoperations__research_1_1_traveling_salesman_lower_bound_parameters.html#a5e41188f16a381c8915a17a22228e691">TravelingSalesmanLowerBoundParameters</a>
+</li>
+<li>algorithm
+: <a class="el" href="structoperations__research_1_1_traveling_salesman_lower_bound_parameters.html#acc4ba09a6333be056db50ed15007518c">TravelingSalesmanLowerBoundParameters</a>
 </li>
 <li>all_diff()
 : <a class="el" href="classoperations__research_1_1sat_1_1_constraint_proto_1_1___internal.html#aeed3f003f1164cfa3ce85e45aad05a02">_Internal</a>
@@ -1314,6 +1439,9 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 <li>AppendAllIntegerVariables()
 : <a class="el" href="structoperations__research_1_1fz_1_1_annotation.html#ad410d852dec8abeab2e519df165e01dd">Annotation</a>
 </li>
+<li>AppendDimensionCumulFilters
+: <a class="el" href="classoperations__research_1_1_routing_dimension.html#a0e3e4445c55d0c59ef4edbaf7acbd3a8">RoutingDimension</a>
+</li>
 <li>AppendEmptyColumn()
 : <a class="el" href="classoperations__research_1_1glop_1_1_sparse_matrix.html#a86fd105be79f4f2dbaf3a21e64e4d022">SparseMatrix</a>
 </li>
@@ -1322,6 +1450,9 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 </li>
 <li>AppendEvaluatedPositionsAfter()
 : <a class="el" href="classoperations__research_1_1_cheapest_insertion_filtered_heuristic.html#aafc4ebf202cabd64f7854c274f425866">CheapestInsertionFilteredHeuristic</a>
+</li>
+<li>AppendMonitors()
+: <a class="el" href="classoperations__research_1_1_decision_builder.html#aba5193a76f57d66707f9256ac1d6cc78">DecisionBuilder</a>
 </li>
 <li>AppendNewBounds()
 : <a class="el" href="classoperations__research_1_1sat_1_1_integer_trail.html#aab182be7f1a6eccbc2b14c21fce5e9dd">IntegerTrail</a>
@@ -1339,8 +1470,12 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 : <a class="el" href="classoperations__research_1_1glop_1_1_sparse_matrix.html#a06d22c92f8b45b18560b46797f98a81b">SparseMatrix</a>
 </li>
 <li>Apply()
-: <a class="el" href="classoperations__research_1_1_permutation_applier.html#ad4775eecdf6f1fcbddac8c58f4f52c4b">PermutationApplier&lt; IndexType &gt;</a>
+: <a class="el" href="classoperations__research_1_1_decision.html#a4adc076f6a88e85584762d4b7f30a820">Decision</a>
+, <a class="el" href="classoperations__research_1_1_permutation_applier.html#ad4775eecdf6f1fcbddac8c58f4f52c4b">PermutationApplier&lt; IndexType &gt;</a>
 , <a class="el" href="class_swig_director___decision.html#adab8c70c8471708e5ff8402d79145a69">SwigDirector_Decision</a>
+</li>
+<li>ApplyBound()
+: <a class="el" href="classoperations__research_1_1_optimize_var.html#a042bc511877a33bbbc296383c0797650">OptimizeVar</a>
 </li>
 <li>ApplyChanges()
 : <a class="el" href="classoperations__research_1_1_var_local_search_operator.html#aabafb6d8996f5101db26b30efff406b0">VarLocalSearchOperator&lt; V, Val, Handler &gt;</a>
@@ -1352,10 +1487,11 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 : <a class="el" href="classoperations__research_1_1bop_1_1_sat_wrapper.html#a93950a274a35f37cbe2a5a0932232da6">SatWrapper</a>
 , <a class="el" href="classoperations__research_1_1_search.html#a093de3a1c47e97d7d50bea387482a7e7">Search</a>
 , <a class="el" href="classoperations__research_1_1_search_log.html#a9af93e0c2f02218bf4e586dda448fabe">SearchLog</a>
+, <a class="el" href="classoperations__research_1_1_search_monitor.html#a093de3a1c47e97d7d50bea387482a7e7">SearchMonitor</a>
 , <a class="el" href="class_swig_director___optimize_var.html#a7a6c102610d28e2d79f56ea5c820cda9">SwigDirector_OptimizeVar</a>
 , <a class="el" href="class_swig_director___regular_limit.html#a7a6c102610d28e2d79f56ea5c820cda9">SwigDirector_RegularLimit</a>
 , <a class="el" href="class_swig_director___search_limit.html#a7a6c102610d28e2d79f56ea5c820cda9">SwigDirector_SearchLimit</a>
-, <a class="el" href="class_swig_director___search_monitor.html#a7a6c102610d28e2d79f56ea5c820cda9">SwigDirector_SearchMonitor</a>
+, <a class="el" href="class_swig_director___search_monitor.html#a599ea72927eb3e9e3c11d551be3eaeee">SwigDirector_SearchMonitor</a>
 , <a class="el" href="class_swig_director___solution_collector.html#a7a6c102610d28e2d79f56ea5c820cda9">SwigDirector_SolutionCollector</a>
 </li>
 <li>ApplyIndexPermutation()
@@ -1393,17 +1529,20 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 <li>ApplyUpperBound()
 : <a class="el" href="classoperations__research_1_1sat_1_1_encoding_node.html#aa8ff3ff545b564b3bdde393df6c37faa">EncodingNode</a>
 </li>
+<li>Arc()
+: <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a9da2daa646ba83cf05f2911e9b711395">PROTOBUF_FINAL</a>
+</li>
 <li>arc()
 : <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a8e5db729ae07d5d12b72acf301edf991">PROTOBUF_FINAL</a>
 </li>
 <li>Arc()
-: <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#aaa99ebc4cae75f52f3b2940b0691c34d">PROTOBUF_FINAL</a>
+: <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a1040e05051f515040b9f36e7b927f254">PROTOBUF_FINAL</a>
 </li>
 <li>arc()
 : <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a79a545e557e428c2c38bcc267317a727">PROTOBUF_FINAL</a>
 </li>
 <li>Arc()
-: <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a1040e05051f515040b9f36e7b927f254">PROTOBUF_FINAL</a>
+: <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#aa201dc6917780fb5e04142d729bb979c">PROTOBUF_FINAL</a>
 </li>
 <li>arc_capacity()
 : <a class="el" href="classutil_1_1_base_graph.html#a836b3d486d4b0cc4595afcdcbbf4e183">BaseGraph&lt; NodeIndexType, ArcIndexType, HasReverseArcs &gt;</a>
@@ -1461,6 +1600,10 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 : <a class="el" href="structoperations__research_1_1_graphs.html#a42fb6857e088a176a53232b910715260">Graphs&lt; Graph &gt;</a>
 , <a class="el" href="structoperations__research_1_1_graphs_3_01operations__research_1_1_star_graph_01_4.html#a42fb6857e088a176a53232b910715260">Graphs&lt; operations_research::StarGraph &gt;</a>
 </li>
+<li>AreAllElementsBound()
+: <a class="el" href="classoperations__research_1_1_assignment.html#a1f87693caae60c7469fbffaadd6f0649">Assignment</a>
+, <a class="el" href="classoperations__research_1_1_assignment_container.html#a1f87693caae60c7469fbffaadd6f0649">AssignmentContainer&lt; V, E &gt;</a>
+</li>
 <li>AreEmptyRouteCostsConsideredForVehicle()
 : <a class="el" href="classoperations__research_1_1_routing_model.html#aed6760664a6e4f3427832ee3b7ba0602">RoutingModel</a>
 </li>
@@ -1515,26 +1658,45 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 : <a class="el" href="classoperations__research_1_1glop_1_1_permutation.html#acb8f594fc0399176a6201d6c66eb0419">Permutation&lt; IndexType &gt;</a>
 , <a class="el" href="classoperations__research_1_1glop_1_1_strict_i_t_i_vector.html#af8d7048738ceb4c753b040e6d29db79c">StrictITIVector&lt; IntType, T &gt;</a>
 </li>
+<li>Assign()
+: <a class="el" href="classoperations__research_1_1_pack.html#ac6980496b7938cb743ac658fd0d2d6c8">Pack</a>
+</li>
+<li>ASSIGN_CENTER_VALUE
+: <a class="el" href="classoperations__research_1_1_solver.html#a45c5a2dd0d47110ef5b00408854d8d84a18c9277012e856da1bf8fcdbe79b2173">Solver</a>
+</li>
+<li>ASSIGN_MAX_VALUE
+: <a class="el" href="classoperations__research_1_1_solver.html#a45c5a2dd0d47110ef5b00408854d8d84a6cc67468f22769f3bdfe3032b760b8c0">Solver</a>
+</li>
+<li>ASSIGN_MIN_VALUE
+: <a class="el" href="classoperations__research_1_1_solver.html#a45c5a2dd0d47110ef5b00408854d8d84a26ee6f4132972f3880a16bf01faf5886">Solver</a>
+</li>
+<li>ASSIGN_RANDOM_VALUE
+: <a class="el" href="classoperations__research_1_1_solver.html#a45c5a2dd0d47110ef5b00408854d8d84a56859813749c27c6c20f8cdfec9eb9c2">Solver</a>
+</li>
 <li>AssignAllPossibleToBin()
 : <a class="el" href="classoperations__research_1_1_dimension.html#aa7cb2bb52c194f51ff28294b05c1e4af">Dimension</a>
+, <a class="el" href="classoperations__research_1_1_pack.html#aa7cb2bb52c194f51ff28294b05c1e4af">Pack</a>
 </li>
 <li>AssignAllRemainingItems()
 : <a class="el" href="classoperations__research_1_1_dimension.html#aedb66bf31047064fd332fb6c6afa027d">Dimension</a>
+, <a class="el" href="classoperations__research_1_1_pack.html#aedb66bf31047064fd332fb6c6afa027d">Pack</a>
 </li>
 <li>AssignedJob()
-: <a class="el" href="classoperations__research_1_1data_1_1jssp_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a03242dcf5972f3c3c4b97b4a846f6e09">PROTOBUF_FINAL</a>
+: <a class="el" href="classoperations__research_1_1data_1_1jssp_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#af80379e3663d6a1b0e2b1f3abb404fd1">PROTOBUF_FINAL</a>
 </li>
 <li>AssignedTask()
-: <a class="el" href="classoperations__research_1_1data_1_1jssp_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#aebd8b0d4aac95d0ab63f447218adca78">PROTOBUF_FINAL</a>
+: <a class="el" href="classoperations__research_1_1data_1_1jssp_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a636d43f0cc5d9019516860a5c6dd121a">PROTOBUF_FINAL</a>
 </li>
 <li>AssignFirstPossibleToBin()
 : <a class="el" href="classoperations__research_1_1_dimension.html#a8d4b11f435b76c6568c2c0a08cccb976">Dimension</a>
+, <a class="el" href="classoperations__research_1_1_pack.html#a8d4b11f435b76c6568c2c0a08cccb976">Pack</a>
 </li>
 <li>AssignFromTrueLiteral()
 : <a class="el" href="classoperations__research_1_1sat_1_1_variables_assignment.html#a945bb6c1e83f281fdde5778473a12b37">VariablesAssignment</a>
 </li>
 <li>Assignment()
-: <a class="el" href="classoperations__research_1_1bop_1_1_assignment_and_constraint_feasibility_maintainer.html#aba2b4531d3e07e40f22f2a40e527c7fd">AssignmentAndConstraintFeasibilityMaintainer</a>
+: <a class="el" href="classoperations__research_1_1_assignment.html#afaefc7559a8bbef854438d9196eb28e9">Assignment</a>
+, <a class="el" href="classoperations__research_1_1bop_1_1_assignment_and_constraint_feasibility_maintainer.html#aba2b4531d3e07e40f22f2a40e527c7fd">AssignmentAndConstraintFeasibilityMaintainer</a>
 </li>
 <li>assignment()
 : <a class="el" href="classoperations__research_1_1_knapsack_search_node.html#afca45ec0f9ea0c2b36804720f5fa8655">KnapsackSearchNode</a>
@@ -1558,11 +1720,17 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 <li>AssignmentAndConstraintFeasibilityMaintainer()
 : <a class="el" href="classoperations__research_1_1bop_1_1_assignment_and_constraint_feasibility_maintainer.html#a00f4006611a6be7146be3c212f390409">AssignmentAndConstraintFeasibilityMaintainer</a>
 </li>
+<li>AssignmentContainer()
+: <a class="el" href="classoperations__research_1_1_assignment_container.html#a7d320f70aa1037c9c92e89ba597b5ee0">AssignmentContainer&lt; V, E &gt;</a>
+</li>
 <li>AssignmentCost()
 : <a class="el" href="classoperations__research_1_1_simple_linear_sum_assignment.html#ab7875735876a2959ef189b32b8e831b5">SimpleLinearSumAssignment</a>
 </li>
+<li>AssignmentElement()
+: <a class="el" href="classoperations__research_1_1_assignment_element.html#af5b9d7522539d5b89a7c7652bdcd2a3e">AssignmentElement</a>
+</li>
 <li>AssignmentProto()
-: <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#acdc6df769f41c949f95414c37b4302ed">PROTOBUF_FINAL</a>
+: <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a663d50c7b2177e33e1ce3b0c076a80f8">PROTOBUF_FINAL</a>
 </li>
 <li>AssignmentToRoutes()
 : <a class="el" href="classoperations__research_1_1_routing_model.html#a97d152b7049084186342b719eee6fa15">RoutingModel</a>
@@ -1575,6 +1743,7 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 </li>
 <li>AssignVar()
 : <a class="el" href="classoperations__research_1_1_dimension.html#a95323420129d3971fc27df7ae4cafa35">Dimension</a>
+, <a class="el" href="classoperations__research_1_1_pack.html#af2aa063b55dd569411d0fdc0c0ea6dfb">Pack</a>
 </li>
 <li>AssociateToIntegerEqualValue()
 : <a class="el" href="classoperations__research_1_1sat_1_1_integer_encoder.html#a5d4a4c93f937463d529aabb222804816">IntegerEncoder</a>
@@ -1601,7 +1770,7 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 : <a class="el" href="classoperations__research_1_1_a_star_s_p.html#a5911c013ea3dfaee8b3c9c8f145900f4">AStarSP</a>
 </li>
 <li>at()
-: <a class="el" href="classgtl_1_1_i_t_i_vector.html#a8b95a5f2cb564d592805b2f96644ac86">ITIVector&lt; IntType, T, Alloc &gt;</a>
+: <a class="el" href="classgtl_1_1_i_t_i_vector.html#a3232a557477de0f859d70a9216e6eb81">ITIVector&lt; IntType, T, Alloc &gt;</a>
 </li>
 <li>At()
 : <a class="el" href="classoperations__research_1_1_rev_growing_array.html#a34cf2377c5f844fb774ff490259f935d">RevGrowingArray&lt; T, C &gt;</a>
@@ -1619,6 +1788,9 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 <li>at_most_ones
 : <a class="el" href="structoperations__research_1_1sat_1_1_linear_relaxation.html#a0bffb74eb458b339aa75f20b6c982a60">LinearRelaxation</a>
 </li>
+<li>AT_SOLUTION
+: <a class="el" href="classoperations__research_1_1_solver.html#a2f2bea2202c96738b11b050e71a28e63a6ee4694724cd35dac21d0f5db73c8650">Solver</a>
+</li>
 <li>AT_UPPER_BOUND
 : <a class="el" href="classoperations__research_1_1_m_p_solver.html#afd922eb2bef96597c426557a8056f76da0d243399df954cc7c42a62953ca00aa2">MPSolver</a>
 </li>
@@ -1626,12 +1798,15 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 : <a class="el" href="classoperations__research_1_1sat_1_1_scc_graph.html#a4279d1564e3b30028ccab3a7b8dd1cf3">SccGraph</a>
 </li>
 <li>AtSolution()
-: <a class="el" href="classoperations__research_1_1_search.html#aab2e7f61fef0e7a0ef5bb35cfc051199">Search</a>
+: <a class="el" href="classoperations__research_1_1_improvement_search_limit.html#ab3631067f88ccc24c5db6a8a0dc64e47">ImprovementSearchLimit</a>
+, <a class="el" href="classoperations__research_1_1_optimize_var.html#ab3631067f88ccc24c5db6a8a0dc64e47">OptimizeVar</a>
+, <a class="el" href="classoperations__research_1_1_search.html#aab2e7f61fef0e7a0ef5bb35cfc051199">Search</a>
 , <a class="el" href="classoperations__research_1_1_search_log.html#ab3631067f88ccc24c5db6a8a0dc64e47">SearchLog</a>
+, <a class="el" href="classoperations__research_1_1_search_monitor.html#aab2e7f61fef0e7a0ef5bb35cfc051199">SearchMonitor</a>
 , <a class="el" href="class_swig_director___optimize_var.html#aab2e7f61fef0e7a0ef5bb35cfc051199">SwigDirector_OptimizeVar</a>
 , <a class="el" href="class_swig_director___regular_limit.html#aab2e7f61fef0e7a0ef5bb35cfc051199">SwigDirector_RegularLimit</a>
 , <a class="el" href="class_swig_director___search_limit.html#aab2e7f61fef0e7a0ef5bb35cfc051199">SwigDirector_SearchLimit</a>
-, <a class="el" href="class_swig_director___search_monitor.html#a9f55f75747d65ad9c4ca9c6fdc01800d">SwigDirector_SearchMonitor</a>
+, <a class="el" href="class_swig_director___search_monitor.html#aab2e7f61fef0e7a0ef5bb35cfc051199">SwigDirector_SearchMonitor</a>
 , <a class="el" href="class_swig_director___solution_collector.html#aab2e7f61fef0e7a0ef5bb35cfc051199">SwigDirector_SolutionCollector</a>
 </li>
 <li>Attach()
@@ -1666,7 +1841,7 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 : <a class="el" href="classoperations__research_1_1sat_1_1_constraint_proto_default_type_internal.html#aaa9300312e779e169b5e6ab1c70afb73">ConstraintProtoDefaultTypeInternal</a>
 </li>
 <li>AutomatonConstraintProto()
-: <a class="el" href="classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a03072e1fbb45edb7bb8ac7f9e77c4c92">PROTOBUF_FINAL</a>
+: <a class="el" href="classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#ae002b7aaffbffe441fcafa0a27fbdcec">PROTOBUF_FINAL</a>
 </li>
 <li>Average()
 : <a class="el" href="classoperations__research_1_1_distribution_stat.html#ad779bb497179db63b116a844818ad2ea">DistributionStat</a>
@@ -1676,6 +1851,9 @@ $(document).ready(function(){initNavTree('functions_a.html',''); initResizable()
 </li>
 <li>average_degeneracy()
 : <a class="el" href="classoperations__research_1_1sat_1_1_linear_programming_constraint.html#a0e49aa5d4eabab5cd4c30c0d3498204f">LinearProgrammingConstraint</a>
+</li>
+<li>AVOID_DATE
+: <a class="el" href="classoperations__research_1_1_solver.html#a46ad005bf538f19f4f1a45b357561be9a59a769807fd4d1f4a9bab3dcbe120cd4">Solver</a>
 </li>
 </ul>
 </div><!-- contents -->

@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -737,7 +737,7 @@ $(document).ready(function(){initNavTree('hungarian_8cc_source.html',''); initRe
 <div class="line"><a name="l00646"></a><span class="lineno">  646</span>&#160;  <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; subvector : <a class="code" href="parser_8yy_8cc.html#a5a634cf4429798b1c921a81de8250051">input</a>) {</div>
 <div class="line"><a name="l00647"></a><span class="lineno">  647</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; num : subvector) {</div>
 <div class="line"><a name="l00648"></a><span class="lineno">  648</span>&#160;      <span class="keywordflow">if</span> (std::isnan(num)) {</div>
-<div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160;        LOG(ERROR) &lt;&lt; <span class="stringliteral">&quot;The provided input contains &quot;</span> &lt;&lt; num &lt;&lt; <span class="stringliteral">&quot;.&quot;</span>;</div>
+<div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160;        <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#ac9bcbe19995a8140cd4ec61773cd6e67">ERROR</a>) &lt;&lt; <span class="stringliteral">&quot;The provided input contains &quot;</span> &lt;&lt; num &lt;&lt; <span class="stringliteral">&quot;.&quot;</span>;</div>
 <div class="line"><a name="l00650"></a><span class="lineno">  650</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
 <div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160;      }</div>
 <div class="line"><a name="l00652"></a><span class="lineno">  652</span>&#160;    }</div>
@@ -750,7 +750,7 @@ $(document).ready(function(){initNavTree('hungarian_8cc_source.html',''); initRe
 <div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;    absl::flat_hash_map&lt;int, int&gt;* direct_assignment,</div>
 <div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160;    absl::flat_hash_map&lt;int, int&gt;* reverse_assignment) {</div>
 <div class="line"><a name="l00661"></a><span class="lineno">  661</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceoperations__research.html#ad2f70b568650cff5c9a578485a83d154">InputContainsNan</a>(<a class="code" href="routing__flow_8cc.html#a26a8cbbc7bcf4117c2bf65104b4a54b4">cost</a>)) {</div>
-<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160;    LOG(ERROR) &lt;&lt; <span class="stringliteral">&quot;Returning before invoking the Hungarian optimizer.&quot;</span>;</div>
+<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160;    <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#ac9bcbe19995a8140cd4ec61773cd6e67">ERROR</a>) &lt;&lt; <span class="stringliteral">&quot;Returning before invoking the Hungarian optimizer.&quot;</span>;</div>
 <div class="line"><a name="l00663"></a><span class="lineno">  663</span>&#160;    <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160;  }</div>
 <div class="line"><a name="l00665"></a><span class="lineno">  665</span>&#160;  std::vector&lt;int&gt; agent;</div>
@@ -768,7 +768,7 @@ $(document).ready(function(){initNavTree('hungarian_8cc_source.html',''); initRe
 <div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;    absl::flat_hash_map&lt;int, int&gt;* direct_assignment,</div>
 <div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;    absl::flat_hash_map&lt;int, int&gt;* reverse_assignment) {</div>
 <div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceoperations__research.html#ad2f70b568650cff5c9a578485a83d154">InputContainsNan</a>(<a class="code" href="routing__flow_8cc.html#a26a8cbbc7bcf4117c2bf65104b4a54b4">cost</a>)) {</div>
-<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;    LOG(ERROR) &lt;&lt; <span class="stringliteral">&quot;Returning before invoking the Hungarian optimizer.&quot;</span>;</div>
+<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;    <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#ac9bcbe19995a8140cd4ec61773cd6e67">ERROR</a>) &lt;&lt; <span class="stringliteral">&quot;Returning before invoking the Hungarian optimizer.&quot;</span>;</div>
 <div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;    <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;  }</div>
 <div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;  std::vector&lt;int&gt; agent;</div>
@@ -787,6 +787,8 @@ $(document).ready(function(){initNavTree('hungarian_8cc_source.html',''); initRe
 <div class="ttc" id="aclassoperations__research_1_1_hungarian_optimizer_html_ab14e1591074136eb2ae00cae73c92002"><div class="ttname"><a href="classoperations__research_1_1_hungarian_optimizer.html#ab14e1591074136eb2ae00cae73c92002">operations_research::HungarianOptimizer::Minimize</a></div><div class="ttdeci">void Minimize(std::vector&lt; int &gt; *preimage, std::vector&lt; int &gt; *image)</div><div class="ttdef"><b>Definition:</b> <a href="hungarian_8cc_source.html#l00288">hungarian.cc:288</a></div></div>
 <div class="ttc" id="aalldiff__cst_8cc_html_a021e695f54a13bd809c34b2f4ca87c37"><div class="ttname"><a href="alldiff__cst_8cc.html#a021e695f54a13bd809c34b2f4ca87c37">min</a></div><div class="ttdeci">int64 min</div><div class="ttdef"><b>Definition:</b> <a href="alldiff__cst_8cc_source.html#l00138">alldiff_cst.cc:138</a></div></div>
 <div class="ttc" id="aalldiff__cst_8cc_html_a9d0c202d5fdd62f4fa2c613339ff168a"><div class="ttname"><a href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">max</a></div><div class="ttdeci">int64 max</div><div class="ttdef"><b>Definition:</b> <a href="alldiff__cst_8cc_source.html#l00139">alldiff_cst.cc:139</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_accad43a85d781d53381cd53a9894b6ae"><div class="ttname"><a href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a></div><div class="ttdeci">#define LOG(severity)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00420">base/logging.h:420</a></div></div>
+<div class="ttc" id="alog__severity_8h_html_ac9bcbe19995a8140cd4ec61773cd6e67"><div class="ttname"><a href="log__severity_8h.html#ac9bcbe19995a8140cd4ec61773cd6e67">ERROR</a></div><div class="ttdeci">const int ERROR</div><div class="ttdef"><b>Definition:</b> <a href="log__severity_8h_source.html#l00032">log_severity.h:32</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_ad2f70b568650cff5c9a578485a83d154"><div class="ttname"><a href="namespaceoperations__research.html#ad2f70b568650cff5c9a578485a83d154">operations_research::InputContainsNan</a></div><div class="ttdeci">bool InputContainsNan(const std::vector&lt; std::vector&lt; double &gt;&gt; &amp;input)</div><div class="ttdef"><b>Definition:</b> <a href="hungarian_8cc_source.html#l00645">hungarian.cc:645</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_hungarian_optimizer_html_af9f5df225aff9d876650f829050f78e9"><div class="ttname"><a href="classoperations__research_1_1_hungarian_optimizer.html#af9f5df225aff9d876650f829050f78e9">operations_research::HungarianOptimizer::Maximize</a></div><div class="ttdeci">void Maximize(std::vector&lt; int &gt; *preimage, std::vector&lt; int &gt; *image)</div><div class="ttdef"><b>Definition:</b> <a href="hungarian_8cc_source.html#l00273">hungarian.cc:273</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a5b5b68992f8a3ad22b89d61bcbd72504"><div class="ttname"><a href="namespaceoperations__research.html#a5b5b68992f8a3ad22b89d61bcbd72504">operations_research::MaximizeLinearAssignment</a></div><div class="ttdeci">void MaximizeLinearAssignment(const std::vector&lt; std::vector&lt; double &gt;&gt; &amp;cost, absl::flat_hash_map&lt; int, int &gt; *direct_assignment, absl::flat_hash_map&lt; int, int &gt; *reverse_assignment)</div><div class="ttdef"><b>Definition:</b> <a href="hungarian_8cc_source.html#l00675">hungarian.cc:675</a></div></div>

@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -105,42 +105,14 @@ $(document).ready(function(){initNavTree('commandlineflags_8h_source.html',''); 
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#ifndef OR_TOOLS_BASE_COMMANDLINEFLAGS_H_</span></div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#define OR_TOOLS_BASE_COMMANDLINEFLAGS_H_</span></div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#include &quot;gflags/gflags.h&quot;</span></div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceabsl.html">absl</a> {</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160; </div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
-<div class="line"><a name="l00022"></a><span class="lineno"><a class="line" href="namespaceabsl.html#a9c118785a20ddd52594f23e7dc08527d">   22</a></span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code" href="namespaceabsl.html#a9c118785a20ddd52594f23e7dc08527d">SetFlag</a>(T* flag, <span class="keyword">const</span> T&amp; <a class="code" href="demon__profiler_8cc.html#a21edc7ca4cc5802c8779d68556bc09cf">value</a>) {</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;  *flag = <a class="code" href="demon__profiler_8cc.html#a21edc7ca4cc5802c8779d68556bc09cf">value</a>;</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;}</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T, <span class="keyword">class</span> V&gt;</div>
-<div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="namespaceabsl.html#aa15080b0d00a1f04fed5357e45b10370">   27</a></span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code" href="namespaceabsl.html#a9c118785a20ddd52594f23e7dc08527d">SetFlag</a>(T* flag, <span class="keyword">const</span> V&amp; <a class="code" href="demon__profiler_8cc.html#a21edc7ca4cc5802c8779d68556bc09cf">value</a>) {</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;  *flag = <a class="code" href="demon__profiler_8cc.html#a21edc7ca4cc5802c8779d68556bc09cf">value</a>;</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;}</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
-<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="namespaceabsl.html#a4d14e15acf1b838f6564f50fb035876e">   32</a></span>&#160;<span class="keyword">inline</span> <span class="keyword">const</span> T&amp; <a class="code" href="namespaceabsl.html#a4d14e15acf1b838f6564f50fb035876e">GetFlag</a>(T* flag) {</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;  <span class="keywordflow">return</span> *flag;</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;}</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
-<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="namespaceabsl.html#a5060b48efbe5a99d2ffaf74b57461e19">   37</a></span>&#160;<span class="keyword">inline</span> <span class="keyword">const</span> T&amp; <a class="code" href="namespaceabsl.html#a4d14e15acf1b838f6564f50fb035876e">GetFlag</a>(<span class="keyword">const</span> T&amp; flag) {</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;  <span class="keywordflow">return</span> flag;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;}</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;}  <span class="comment">// namespace absl</span></div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno"><a class="line" href="commandlineflags_8h.html#ab7d3ca984cd7a51a348e3645459f3869">   43</a></span>&#160;<span class="preprocessor">#define ABSL_DECLARE_FLAG(t, n) DECLARE_##t(n)</span></div>
-<div class="line"><a name="l00044"></a><span class="lineno"><a class="line" href="commandlineflags_8h.html#a9db80fde0da0698435ff692bb20b7562">   44</a></span>&#160;<span class="preprocessor">#define ABSL_FLAG(t, n, d, h) DEFINE_##t(n, d, h)</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="preprocessor">#endif  // OR_TOOLS_BASE_COMMANDLINEFLAGS_H_</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#include &quot;absl/flags/declare.h&quot;</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="preprocessor">#include &quot;absl/flags/flag.h&quot;</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &quot;absl/flags/parse.h&quot;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &quot;absl/flags/usage.h&quot;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#endif  // OR_TOOLS_BASE_COMMANDLINEFLAGS_H_</span></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
-<div class="ttc" id="ademon__profiler_8cc_html_a21edc7ca4cc5802c8779d68556bc09cf"><div class="ttname"><a href="demon__profiler_8cc.html#a21edc7ca4cc5802c8779d68556bc09cf">value</a></div><div class="ttdeci">int64 value</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8cc_source.html#l00043">demon_profiler.cc:43</a></div></div>
-<div class="ttc" id="anamespaceabsl_html_a4d14e15acf1b838f6564f50fb035876e"><div class="ttname"><a href="namespaceabsl.html#a4d14e15acf1b838f6564f50fb035876e">absl::GetFlag</a></div><div class="ttdeci">const T &amp; GetFlag(T *flag)</div><div class="ttdef"><b>Definition:</b> <a href="commandlineflags_8h_source.html#l00032">commandlineflags.h:32</a></div></div>
-<div class="ttc" id="anamespaceabsl_html_a9c118785a20ddd52594f23e7dc08527d"><div class="ttname"><a href="namespaceabsl.html#a9c118785a20ddd52594f23e7dc08527d">absl::SetFlag</a></div><div class="ttdeci">void SetFlag(T *flag, const T &amp;value)</div><div class="ttdef"><b>Definition:</b> <a href="commandlineflags_8h_source.html#l00022">commandlineflags.h:22</a></div></div>
-<div class="ttc" id="anamespaceabsl_html"><div class="ttname"><a href="namespaceabsl.html">absl</a></div><div class="ttdef"><b>Definition:</b> <a href="cleanup_8h_source.html#l00022">cleanup.h:22</a></div></div>
 <!-- HTML footer for doxygen 1.8.18-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -114,13 +114,13 @@ $(document).ready(function(){initNavTree('io_8h_source.html',''); initResizable(
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;vector&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &quot;absl/status/status.h&quot;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &quot;absl/strings/numbers.h&quot;</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &quot;absl/strings/str_cat.h&quot;</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &quot;absl/strings/str_format.h&quot;</span></div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &quot;absl/strings/str_join.h&quot;</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &quot;absl/strings/str_split.h&quot;</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="filelineiter_8h.html">ortools/base/filelineiter.h</a>&quot;</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="statusor_8h.html">ortools/base/statusor.h</a>&quot;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &quot;absl/status/statusor.h&quot;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &quot;absl/strings/numbers.h&quot;</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &quot;absl/strings/str_cat.h&quot;</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &quot;absl/strings/str_format.h&quot;</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &quot;absl/strings/str_join.h&quot;</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &quot;absl/strings/str_split.h&quot;</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="filelineiter_8h.html">ortools/base/filelineiter.h</a>&quot;</span></div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="graph_8h.html">ortools/graph/graph.h</a>&quot;</span></div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceutil.html">util</a> {</div>
@@ -149,7 +149,7 @@ $(document).ready(function(){initNavTree('io_8h_source.html',''); initResizable(
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="comment">//   &lt;node1&gt; &lt;node2&gt;.</span></div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="comment">//</span></div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="comment">// This returns a newly created graph upon success, which the user needs to take</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="comment">// ownership of, or a failure status. See ortools/base/statusor.h.</span></div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="comment">// ownership of, or a failure status. See absl/status/statusor.h.</span></div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="comment">//</span></div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="comment">// If &quot;num_nodes_with_color_or_null&quot; is not nullptr, it will be filled with the</span></div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="comment">// color information: num_nodes_with_color_or_null[i] will be the number of</span></div>
@@ -171,7 +171,7 @@ $(document).ready(function(){initNavTree('io_8h_source.html',''); initResizable(
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="comment">//     ...</span></div>
 <div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<span class="comment">//   }</span></div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Graph&gt;</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<a class="code" href="structabsl_1_1_status_or.html">absl::StatusOr&lt;Graph*&gt;</a> <a class="code" href="namespaceutil.html#ac1f20692bcd36ed6d01b970af9eb2972">ReadGraphFile</a>(</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;absl::StatusOr&lt;Graph*&gt; <a class="code" href="namespaceutil.html#ac1f20692bcd36ed6d01b970af9eb2972">ReadGraphFile</a>(</div>
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keyword">const</span> std::string&amp; filename, <span class="keywordtype">bool</span> directed,</div>
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    std::vector&lt;int&gt;* num_nodes_with_color_or_null);</div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
@@ -220,7 +220,7 @@ $(document).ready(function(){initNavTree('io_8h_source.html',''); initResizable(
 <div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;}</div>
 <div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160; </div>
 <div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Graph&gt;</div>
-<div class="line"><a name="l00132"></a><span class="lineno"><a class="line" href="namespaceutil.html#ac1f20692bcd36ed6d01b970af9eb2972">  132</a></span>&#160;<a class="code" href="structabsl_1_1_status_or.html">absl::StatusOr&lt;Graph*&gt;</a> <a class="code" href="namespaceutil.html#ac1f20692bcd36ed6d01b970af9eb2972">ReadGraphFile</a>(</div>
+<div class="line"><a name="l00132"></a><span class="lineno"><a class="line" href="namespaceutil.html#ac1f20692bcd36ed6d01b970af9eb2972">  132</a></span>&#160;absl::StatusOr&lt;Graph*&gt; <a class="code" href="namespaceutil.html#ac1f20692bcd36ed6d01b970af9eb2972">ReadGraphFile</a>(</div>
 <div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    <span class="keyword">const</span> std::string&amp; filename, <span class="keywordtype">bool</span> directed,</div>
 <div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    std::vector&lt;int&gt;* num_nodes_with_color_or_null) {</div>
 <div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;  std::unique_ptr&lt;Graph&gt; graph;</div>
@@ -231,7 +231,7 @@ $(document).ready(function(){initNavTree('io_8h_source.html',''); initResizable(
 <div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    ++num_lines_read;</div>
 <div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;    <span class="keywordflow">if</span> (num_lines_read == 1) {</div>
 <div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;      std::vector&lt;int64&gt; header_ints;</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;      <span class="comment">// if (!SplitStringAndParse(line, &quot; &quot;, &amp;absl::SimpleAtoi,</span></div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;      <span class="comment">// if (!SplitStringAndParse(line, &quot; &quot;, &amp;strings::safe_strto64,</span></div>
 <div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;      <span class="comment">//                          &amp;header_ints) ||</span></div>
 <div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;      <span class="comment">//     header_ints.size() &lt; 2 || header_ints[0] &lt; 0 || header_ints[1] &lt; 0)</span></div>
 <div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;      <span class="comment">//     {</span></div>
@@ -381,7 +381,6 @@ $(document).ready(function(){initNavTree('io_8h_source.html',''); initResizable(
 <div class="ttc" id="anamespaceutil_html_a2d1e9c029dfaa2e8dfd58862836440b9ac932364714f74e3ca75990c8126019a1"><div class="ttname"><a href="namespaceutil.html#a2d1e9c029dfaa2e8dfd58862836440b9ac932364714f74e3ca75990c8126019a1">util::PRINT_GRAPH_ADJACENCY_LISTS</a></div><div class="ttdeci">@ PRINT_GRAPH_ADJACENCY_LISTS</div><div class="ttdef"><b>Definition:</b> <a href="io_8h_source.html#l00044">io.h:44</a></div></div>
 <div class="ttc" id="aclassutil_1_1_base_graph_html_a92531459eff09455cfa63976f5024906"><div class="ttname"><a href="classutil_1_1_base_graph.html#a92531459eff09455cfa63976f5024906">util::BaseGraph&lt; int32, int32, false &gt;::ArcIndex</a></div><div class="ttdeci">int32 ArcIndex</div><div class="ttdef"><b>Definition:</b> <a href="graph_8h_source.html#l00190">graph.h:190</a></div></div>
 <div class="ttc" id="anamespaceutil_html_a2f76166dbe0c4055a1f256235ad00478"><div class="ttname"><a href="namespaceutil.html#a2f76166dbe0c4055a1f256235ad00478">util::Graph</a></div><div class="ttdeci">ListGraph Graph</div><div class="ttdef"><b>Definition:</b> <a href="graph_8h_source.html#l02354">graph.h:2354</a></div></div>
-<div class="ttc" id="astatusor_8h_html"><div class="ttname"><a href="statusor_8h.html">statusor.h</a></div></div>
 <div class="ttc" id="anamespaceutil_html_a372b5c94ec5d30f923449516ebc2a963"><div class="ttname"><a href="namespaceutil.html#a372b5c94ec5d30f923449516ebc2a963">util::GraphToString</a></div><div class="ttdeci">std::string GraphToString(const Graph &amp;graph, GraphToStringFormat format)</div><div class="ttdef"><b>Definition:</b> <a href="io_8h_source.html#l00107">io.h:107</a></div></div>
 <div class="ttc" id="aintegral__types_8h_html_a7cde0074dfd288f2d70c0e035dacb28a"><div class="ttname"><a href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a></div><div class="ttdeci">int64_t int64</div><div class="ttdef"><b>Definition:</b> <a href="integral__types_8h_source.html#l00034">integral_types.h:34</a></div></div>
 <div class="ttc" id="aclassutil_1_1_base_graph_html_a4d3fc55a2fe209a908470199437cec9a"><div class="ttname"><a href="classutil_1_1_base_graph.html#a4d3fc55a2fe209a908470199437cec9a">util::BaseGraph::num_arcs</a></div><div class="ttdeci">ArcIndexType num_arcs() const</div><div class="ttdef"><b>Definition:</b> <a href="graph_8h_source.html#l00204">graph.h:204</a></div></div>
@@ -394,7 +393,6 @@ $(document).ready(function(){initNavTree('io_8h_source.html',''); initResizable(
 <div class="ttc" id="aclassutil_1_1_list_graph_html"><div class="ttname"><a href="classutil_1_1_list_graph.html">util::ListGraph</a></div><div class="ttdef"><b>Definition:</b> <a href="graph_8h_source.html#l00297">graph.h:297</a></div></div>
 <div class="ttc" id="aclassutil_1_1_list_graph_html_aceb0938bcb2e8e5f37986d4cf8e3a955"><div class="ttname"><a href="classutil_1_1_list_graph.html#aceb0938bcb2e8e5f37986d4cf8e3a955">util::ListGraph::Head</a></div><div class="ttdeci">NodeIndexType Head(ArcIndexType arc) const</div><div class="ttdef"><b>Definition:</b> <a href="graph_8h_source.html#l01111">graph.h:1111</a></div></div>
 <div class="ttc" id="aintegral__types_8h_html_abc0f5bc07737e498f287334775dff2b6"><div class="ttname"><a href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a></div><div class="ttdeci">uint64_t uint64</div><div class="ttdef"><b>Definition:</b> <a href="integral__types_8h_source.html#l00039">integral_types.h:39</a></div></div>
-<div class="ttc" id="astructabsl_1_1_status_or_html"><div class="ttname"><a href="structabsl_1_1_status_or.html">absl::StatusOr</a></div><div class="ttdef"><b>Definition:</b> <a href="statusor_8h_source.html#l00024">statusor.h:24</a></div></div>
 <div class="ttc" id="anamespaceutil_html_a2d1e9c029dfaa2e8dfd58862836440b9a59afa9bae775818b44690c5d14cdf8d0"><div class="ttname"><a href="namespaceutil.html#a2d1e9c029dfaa2e8dfd58862836440b9a59afa9bae775818b44690c5d14cdf8d0">util::PRINT_GRAPH_ARCS</a></div><div class="ttdeci">@ PRINT_GRAPH_ARCS</div><div class="ttdef"><b>Definition:</b> <a href="io_8h_source.html#l00040">io.h:40</a></div></div>
 <div class="ttc" id="agraph_8h_html"><div class="ttname"><a href="graph_8h.html">graph.h</a></div></div>
 <div class="ttc" id="anamespaceutil_html_ac1f20692bcd36ed6d01b970af9eb2972"><div class="ttname"><a href="namespaceutil.html#ac1f20692bcd36ed6d01b970af9eb2972">util::ReadGraphFile</a></div><div class="ttdeci">absl::StatusOr&lt; Graph * &gt; ReadGraphFile(const std::string &amp;filename, bool directed, std::vector&lt; int &gt; *num_nodes_with_color_or_null)</div><div class="ttdef"><b>Definition:</b> <a href="io_8h_source.html#l00132">io.h:132</a></div></div>

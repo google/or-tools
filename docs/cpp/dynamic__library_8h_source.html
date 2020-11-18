@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -158,7 +158,7 @@ $(document).ready(function(){initNavTree('dynamic__library_8h_source.html',''); 
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        dlsym(library_handle_, function_name);</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="preprocessor">#endif</span></div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    CHECK(function_address != <span class="keyword">nullptr</span>)</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(function_address != <span class="keyword">nullptr</span>)</div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        &lt;&lt; <span class="stringliteral">&quot;Error: could not find function &quot;</span> &lt;&lt; std::string(function_name)</div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        &lt;&lt; <span class="stringliteral">&quot; in &quot;</span> &lt;&lt; library_name_;</div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
@@ -210,6 +210,7 @@ $(document).ready(function(){initNavTree('dynamic__library_8h_source.html',''); 
 <div class="ttc" id="aclass_dynamic_library_html_afc2eff6666031583a0f6c183f2e3ed52"><div class="ttname"><a href="class_dynamic_library.html#afc2eff6666031583a0f6c183f2e3ed52">DynamicLibrary::LibraryIsLoaded</a></div><div class="ttdeci">bool LibraryIsLoaded() const</div><div class="ttdef"><b>Definition:</b> <a href="dynamic__library_8h_source.html#l00058">dynamic_library.h:58</a></div></div>
 <div class="ttc" id="aclass_dynamic_library_html_aab057573b6283fd7b47e3162f00c1e49"><div class="ttname"><a href="class_dynamic_library.html#aab057573b6283fd7b47e3162f00c1e49">DynamicLibrary::GetFunction</a></div><div class="ttdeci">void GetFunction(std::function&lt; T &gt; *function, const std::string function_name)</div><div class="ttdef"><b>Definition:</b> <a href="dynamic__library_8h_source.html#l00088">dynamic_library.h:88</a></div></div>
 <div class="ttc" id="aclass_dynamic_library_html_a20afab9ed7f3ab0ec028854573061c04"><div class="ttname"><a href="class_dynamic_library.html#a20afab9ed7f3ab0ec028854573061c04">DynamicLibrary::GetFunction</a></div><div class="ttdeci">std::function&lt; T &gt; GetFunction(const char *function_name)</div><div class="ttdef"><b>Definition:</b> <a href="dynamic__library_8h_source.html#l00061">dynamic_library.h:61</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a3e1cfef60e774a81f30eaddf26a3a274"><div class="ttname"><a href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a></div><div class="ttdeci">#define CHECK(condition)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00495">base/logging.h:495</a></div></div>
 <div class="ttc" id="aclass_dynamic_library_html_a995bc0595e32ef0d1a0a408b8da08615"><div class="ttname"><a href="class_dynamic_library.html#a995bc0595e32ef0d1a0a408b8da08615">DynamicLibrary::~DynamicLibrary</a></div><div class="ttdeci">~DynamicLibrary()</div><div class="ttdef"><b>Definition:</b> <a href="dynamic__library_8h_source.html#l00036">dynamic_library.h:36</a></div></div>
 <!-- HTML footer for doxygen 1.8.18-->
 <!-- start footer part -->

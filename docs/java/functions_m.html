@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.0</span>
+                <span id="sfml">Google OR-Tools 8.1</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -152,7 +152,8 @@ $(document).ready(function(){initNavTree('functions_m.html',''); initResizable()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a0a81d8afee11c0474b2fc80c72c3e528">Solver</a>
 </li>
 <li>makeClone()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimit.html#a6597357cfaf87286f11abf163a498540">RegularLimit</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ImprovementSearchLimit.html#a6597357cfaf87286f11abf163a498540">ImprovementSearchLimit</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimit.html#a6597357cfaf87286f11abf163a498540">RegularLimit</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLimit.html#a6597357cfaf87286f11abf163a498540">SearchLimit</a>
 </li>
 <li>makeClosureDemon()
@@ -213,7 +214,7 @@ $(document).ready(function(){initNavTree('functions_m.html',''); initResizable()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#ac6237536d53a3e996c43d43d884532a8">Solver</a>
 </li>
 <li>makeDifference()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#af962923185ab88c705cb71e9f04a5937">Solver</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a420d96c79d5d8c45667706d19d1942d9">Solver</a>
 </li>
 <li>makeDisjunctiveConstraint()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#ab49bd7d97d2e8724f27bd906a91e8ee1">Solver</a>
@@ -300,6 +301,9 @@ $(document).ready(function(){initNavTree('functions_m.html',''); initResizable()
 </li>
 <li>makeIfThenElseCt()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#ae7fed3f06b22bf548e8b11475e08cc09">Solver</a>
+</li>
+<li>MakeImprovementLimit()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a7c6c9472fb9ad81a590d0954432a8166">Solver</a>
 </li>
 <li>MAKEINACTIVE
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a9f160f2434f2c62879a8ffeea8ddad81">Solver</a>
@@ -437,9 +441,6 @@ $(document).ready(function(){initNavTree('functions_m.html',''); initResizable()
 </li>
 <li>makeLimit()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a043ef2d47b28e81a7004bea194c1efe7">Solver</a>
-</li>
-<li>MakeLocalSearchFilterManager()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a6224d421644b87a0b3c2185242a1fe63">Solver</a>
 </li>
 <li>makeLocalSearchPhase()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a7641b6a95819b18bc4664a1865d3f523">Solver</a>
@@ -761,7 +762,7 @@ $(document).ready(function(){initNavTree('functions_m.html',''); initResizable()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a414345be8f0229e6df657dbb37d01cf2">SatParameters</a>
 </li>
 <li>MaxFlow()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow.html#a0da5e7869f9c28f6a9ed32b704051b13">MaxFlow</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow.html#aad58557b2b77f88cd3facf5f05ec5832">MaxFlow</a>
 </li>
 <li>MAXIMIZATION
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#ac976ac84be88263f798e4021691c733a">Solver</a>
@@ -831,56 +832,60 @@ $(document).ready(function(){initNavTree('functions_m.html',''); initResizable()
 </li>
 <li>mergeFrom()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ConstraintSolverParameters_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">ConstraintSolverParameters.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">FirstSolutionStrategy.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Builder.html#a290ae22f465e8996adf8f356426908c7">FirstSolutionStrategy.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">LocalSearchMetaheuristic.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html#a72e7f01cf18222a2a097d3d7d2dc7e26">RegularLimitParameters.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModelParameters_1_1Builder.html#a290ae22f465e8996adf8f356426908c7">RoutingModelParameters.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">RegularLimitParameters.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModelParameters_1_1Builder.html#a20a33c546ec1488011c5a66d2891894b">RoutingModelParameters.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">RoutingSearchParameters.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperators_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">RoutingSearchParameters.LocalSearchNeighborhoodOperators.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1ImprovementSearchLimitParameters_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">RoutingSearchParameters.ImprovementSearchLimitParameters.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperators_1_1Builder.html#a290ae22f465e8996adf8f356426908c7">RoutingSearchParameters.LocalSearchNeighborhoodOperators.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPAbsConstraint_1_1Builder.html#a670f8bb128210a4000d6fdaea714f8fe">MPAbsConstraint.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPArrayConstraint_1_1Builder.html#a290ae22f465e8996adf8f356426908c7">MPArrayConstraint.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPArrayWithConstantConstraint_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">MPArrayWithConstantConstraint.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraintProto_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">MPConstraintProto.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPGeneralConstraintProto_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">MPGeneralConstraintProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPGeneralConstraintProto_1_1Builder.html#a02a005cf7f960e0002430f571c9fe1e9">MPGeneralConstraintProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPIndicatorConstraint_1_1Builder.html#a290ae22f465e8996adf8f356426908c7">MPIndicatorConstraint.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelDeltaProto_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">MPModelDeltaProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelProto_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">MPModelProto.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1Builder.html#ad1f163d889c28bd19963657353d573f3">MPModelRequest.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPQuadraticConstraint_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">MPQuadraticConstraint.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">MPModelRequest.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPQuadraticConstraint_1_1Builder.html#a290ae22f465e8996adf8f356426908c7">MPQuadraticConstraint.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPQuadraticObjective_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">MPQuadraticObjective.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">MPSolutionResponse.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverCommonParameters_1_1Builder.html#aaecc002e6a222e7c3eb132d046c40979">MPSolverCommonParameters.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html#a290ae22f465e8996adf8f356426908c7">MPSosConstraint.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">MPSosConstraint.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariableProto_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">MPVariableProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1OptionalDouble_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">OptionalDouble.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1PartialVariableAssignment_1_1Builder.html#af61d0d85bf206447289dc2016364b782">PartialVariableAssignment.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1AllDifferentConstraintProto_1_1Builder.html#a290ae22f465e8996adf8f356426908c7">AllDifferentConstraintProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1AutomatonConstraintProto_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">AutomatonConstraintProto.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1BoolArgumentProto_1_1Builder.html#a05798adb101be6a57bee52a2cdd03c01">BoolArgumentProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1BoolArgumentProto_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">BoolArgumentProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CircuitConstraintProto_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">CircuitConstraintProto.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CircuitCoveringConstraintProto_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">CircuitCoveringConstraintProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CircuitCoveringConstraintProto_1_1Builder.html#a290ae22f465e8996adf8f356426908c7">CircuitCoveringConstraintProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ConstraintProto_1_1Builder.html#a5217bc3003184acd1b8559d01a099d3a">ConstraintProto.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">CpModelProto.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProto_1_1Builder.html#a290ae22f465e8996adf8f356426908c7">CpObjectiveProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#a844a5f7906f94ae7696126509c4db8cd">CpModelProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProto_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">CpObjectiveProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">CpSolverResponse.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CumulativeConstraintProto_1_1Builder.html#a09ffade00713b7d7eab50b3721d60a68">CumulativeConstraintProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CumulativeConstraintProto_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">CumulativeConstraintProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation_1_1Builder.html#aee5d62956071696a9dfe34c2dca7a5de">DecisionStrategyProto.AffineTransformation.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1Builder.html#a290ae22f465e8996adf8f356426908c7">DecisionStrategyProto.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ElementConstraintProto_1_1Builder.html#a7a77cb886bc8ad427f3033e7a37cfb76">ElementConstraintProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ElementConstraintProto_1_1Builder.html#a290ae22f465e8996adf8f356426908c7">ElementConstraintProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntegerArgumentProto_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">IntegerArgumentProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntegerVariableProto_1_1Builder.html#a1ea2d31ccab6c0cba50b9079ee70499c">IntegerVariableProto.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a290ae22f465e8996adf8f356426908c7">IntervalConstraintProto.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1InverseConstraintProto_1_1Builder.html#ab163c481b0bda5afaeaacb65a343d5e0">InverseConstraintProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">IntervalConstraintProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1InverseConstraintProto_1_1Builder.html#a290ae22f465e8996adf8f356426908c7">InverseConstraintProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearArgumentProto_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">LinearArgumentProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearConstraintProto_1_1Builder.html#aa86fa9f66cd5686fd4fe694816a15061">LinearConstraintProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">LinearExpressionProto.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1NoOverlap2DConstraintProto_1_1Builder.html#a290ae22f465e8996adf8f356426908c7">NoOverlap2DConstraintProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1NoOverlap2DConstraintProto_1_1Builder.html#aa27f4787fd1656fc0adee7999736c190">NoOverlap2DConstraintProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1NoOverlapConstraintProto_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">NoOverlapConstraintProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1PartialVariableAssignment_1_1Builder.html#a4d915b9fa48d0b8055e2f549e35d048a">PartialVariableAssignment.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto_1_1Builder.html#a290ae22f465e8996adf8f356426908c7">ReservoirConstraintProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1RoutesConstraintProto_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">RoutesConstraintProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a916dae08dfc215ec61d3721b0eed6631">SatParameters.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1TableConstraintProto_1_1Builder.html#a3c80a1d3e84a0df4c37dda63d3a45a29">TableConstraintProto.Builder</a>
+</li>
+<li>mergeImprovementLimitParameters()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html#ab807368cde95d3c6268aa6586963e844">RoutingSearchParameters.Builder</a>
 </li>
 <li>mergeIndicatorConstraint()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPGeneralConstraintProto_1_1Builder.html#ab4326f5ce476cf8ddfc343ced8c29f00">MPGeneralConstraintProto.Builder</a>
@@ -989,6 +994,7 @@ $(document).ready(function(){initNavTree('functions_m.html',''); initResizable()
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html#a3e05e91aa90c10970a9aafb7b561e218">RegularLimitParameters.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModelParameters_1_1Builder.html#a3e05e91aa90c10970a9aafb7b561e218">RoutingModelParameters.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html#a3e05e91aa90c10970a9aafb7b561e218">RoutingSearchParameters.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1ImprovementSearchLimitParameters_1_1Builder.html#a3e05e91aa90c10970a9aafb7b561e218">RoutingSearchParameters.ImprovementSearchLimitParameters.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperators_1_1Builder.html#a3e05e91aa90c10970a9aafb7b561e218">RoutingSearchParameters.LocalSearchNeighborhoodOperators.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPAbsConstraint_1_1Builder.html#a3e05e91aa90c10970a9aafb7b561e218">MPAbsConstraint.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPArrayConstraint_1_1Builder.html#a3e05e91aa90c10970a9aafb7b561e218">MPArrayConstraint.Builder</a>
@@ -1058,7 +1064,7 @@ $(document).ready(function(){initNavTree('functions_m.html',''); initResizable()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1graph_1_1MinCostFlow.html#a82b6b3dc202ff1bf9aafa63aa195600b">MinCostFlow</a>
 </li>
 <li>MinCostFlowBase()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1graph_1_1MinCostFlowBase.html#a7733496a2b3c8765498e7af2445533bd">MinCostFlowBase</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1graph_1_1MinCostFlowBase.html#a3ab002b3ae2d8a883049e4d4bd53c4bf">MinCostFlowBase</a>
 </li>
 <li>MINIMIZATION
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#add9f770d4f761fb0c05dff6b965727f4">Solver</a>
@@ -1135,7 +1141,7 @@ $(document).ready(function(){initNavTree('functions_m.html',''); initResizable()
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatHelper.html#aaff7a338c4e319bdc81e3936adccdf76">SatHelper</a>
 </li>
 <li>ModelVisitor()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#aab6495f3eaf3856308f886422e1a384e">ModelVisitor</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#ae6e022371a70e0677cef1c009677d576">ModelVisitor</a>
 </li>
 <li>modifyValue()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ChangeValue.html#aa038688da7d58ba8d4f07b4edbbd0ac8">ChangeValue</a>
@@ -1225,18 +1231,27 @@ $(document).ready(function(){initNavTree('functions_m.html',''); initResizable()
 : <a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverResponseStatus.html#a76fb41c9832782e6e2c4a4c63011925b">MPSolverResponseStatus</a>
 </li>
 <li>MPSolverParameters()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverParameters.html#aeeef6511f130ba8a9db2c308dbeada5c">MPSolverParameters</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverParameters.html#ae0d102ca0a87467cd9750d8e24db5194">MPSolverParameters</a>
 </li>
 <li>MPVariable()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html#a1687210c1557a7025c46180b1a2473af">MPVariable</a>
+</li>
+<li>MULTI_ARMED_BANDIT_COMPOUND_OPERATOR_EXPLORATION_COEFFICIENT_FIELD_NUMBER
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html#a1b5ed0e868a58faf98da90a7e98423d4">RoutingSearchParameters</a>
+</li>
+<li>MULTI_ARMED_BANDIT_COMPOUND_OPERATOR_MEMORY_COEFFICIENT_FIELD_NUMBER
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html#a403815a3a09ba87f63c72b2a573d8771">RoutingSearchParameters</a>
+</li>
+<li>MultiArmedBanditConcatenateOperators()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a47cd7b8471e82af78399ed697aff14a3">Solver</a>
 </li>
 <li>mustBePerformed()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#aa1650e03b5a34ba7fa099b86b0543006">IntervalVar</a>
 </li>
 <li>mutableElement()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentIntContainer.html#a2e9a2b24ed351548732df4ba9c2da269">AssignmentIntContainer</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentIntContainer.html#a0ec000748c23647a05402258c822dbc3">AssignmentIntContainer</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentIntervalContainer.html#adcced7bf99cdcf8c80350374fc5e0b31">AssignmentIntervalContainer</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentSequenceContainer.html#ac2b0e7982da09e558c205ac983cf9a0e">AssignmentSequenceContainer</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentSequenceContainer.html#ab55f7495e4d919e4b016910003a6e34f">AssignmentSequenceContainer</a>
 </li>
 <li>mutableIntervalVarContainer()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html#ae8bbb8b0a08fce4794ce7a8015903f73">Assignment</a>

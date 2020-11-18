@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -104,17 +104,17 @@ $(document).ready(function(){initNavTree('flatzinc_2logging_8cc_source.html','')
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160; </div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="flatzinc_2logging_8h.html">ortools/flatzinc/logging.h</a>&quot;</span></div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
-<div class="line"><a name="l00016"></a><span class="lineno"><a class="line" href="flatzinc_2logging_8cc.html#a517a3970b470bac0a1efb3b98d16b883">   16</a></span>&#160;<a class="code" href="flatzinc_2logging_8cc.html#a517a3970b470bac0a1efb3b98d16b883">DEFINE_bool</a>(fz_logging, <span class="keyword">false</span>,</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;            <span class="stringliteral">&quot;Print logging information from the flatzinc interpreter.&quot;</span>);</div>
+<div class="line"><a name="l00016"></a><span class="lineno"><a class="line" href="flatzinc_2logging_8cc.html#adfaa35cae22db07f4988924b69c40297">   16</a></span>&#160;<a class="code" href="flatzinc_2logging_8cc.html#adfaa35cae22db07f4988924b69c40297">ABSL_FLAG</a>(<span class="keywordtype">bool</span>, fz_logging, <span class="keyword">false</span>,</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;          <span class="stringliteral">&quot;Print logging information from the flatzinc interpreter.&quot;</span>);</div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
-<div class="line"><a name="l00019"></a><span class="lineno"><a class="line" href="flatzinc_2logging_8cc.html#a50516281b69e9dc59aab985c15c9e0ab">   19</a></span>&#160;<a class="code" href="flatzinc_2logging_8cc.html#a517a3970b470bac0a1efb3b98d16b883">DEFINE_bool</a>(fz_verbose, <span class="keyword">false</span>,</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;            <span class="stringliteral">&quot;Print verbose logging information from the flatzinc interpreter.&quot;</span>);</div>
-<div class="line"><a name="l00021"></a><span class="lineno"><a class="line" href="flatzinc_2logging_8cc.html#a449f009b9a1e85eec445760a37a62595">   21</a></span>&#160;<a class="code" href="flatzinc_2logging_8cc.html#a517a3970b470bac0a1efb3b98d16b883">DEFINE_bool</a>(fz_debug, <span class="keyword">false</span>,</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;            <span class="stringliteral">&quot;Print debug logging information from the flatzinc interpreter.&quot;</span>);</div>
+<div class="line"><a name="l00019"></a><span class="lineno"><a class="line" href="flatzinc_2logging_8cc.html#a5b83d14cf145d7b9399293f2e307a9a8">   19</a></span>&#160;<a class="code" href="flatzinc_2logging_8cc.html#adfaa35cae22db07f4988924b69c40297">ABSL_FLAG</a>(<span class="keywordtype">bool</span>, fz_verbose, <span class="keyword">false</span>,</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;          <span class="stringliteral">&quot;Print verbose logging information from the flatzinc interpreter.&quot;</span>);</div>
+<div class="line"><a name="l00021"></a><span class="lineno"><a class="line" href="flatzinc_2logging_8cc.html#a3545a60998632385ee74717256040cfe">   21</a></span>&#160;<a class="code" href="flatzinc_2logging_8cc.html#adfaa35cae22db07f4988924b69c40297">ABSL_FLAG</a>(<span class="keywordtype">bool</span>, fz_debug, <span class="keyword">false</span>,</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;          <span class="stringliteral">&quot;Print debug logging information from the flatzinc interpreter.&quot;</span>);</div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
-<div class="ttc" id="aflatzinc_2logging_8cc_html_a517a3970b470bac0a1efb3b98d16b883"><div class="ttname"><a href="flatzinc_2logging_8cc.html#a517a3970b470bac0a1efb3b98d16b883">DEFINE_bool</a></div><div class="ttdeci">DEFINE_bool(fz_logging, false, &quot;Print logging information from the flatzinc interpreter.&quot;)</div></div>
 <div class="ttc" id="aflatzinc_2logging_8h_html"><div class="ttname"><a href="flatzinc_2logging_8h.html">logging.h</a></div></div>
+<div class="ttc" id="aflatzinc_2logging_8cc_html_adfaa35cae22db07f4988924b69c40297"><div class="ttname"><a href="flatzinc_2logging_8cc.html#adfaa35cae22db07f4988924b69c40297">ABSL_FLAG</a></div><div class="ttdeci">ABSL_FLAG(bool, fz_logging, false, &quot;Print logging information from the flatzinc interpreter.&quot;)</div></div>
 <!-- HTML footer for doxygen 1.8.18-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

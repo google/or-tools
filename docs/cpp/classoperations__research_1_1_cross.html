@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -96,11 +96,11 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_cross.ht
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l01047">1047</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l01036">1036</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:aa3f50578f19035826b916147d39cd101"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_cross.html#aa3f50578f19035826b916147d39cd101">Cross</a> (const std::vector&lt; IntVar * &gt; &amp;vars, const std::vector&lt; IntVar * &gt; &amp;secondary_vars, std::function&lt; int(<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>)&gt; start_empty_path_class)</td></tr>
+<tr class="memitem:aa3f50578f19035826b916147d39cd101"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_cross.html#aa3f50578f19035826b916147d39cd101">Cross</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;vars, const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;secondary_vars, std::function&lt; int(<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>)&gt; start_empty_path_class)</td></tr>
 <tr class="separator:aa3f50578f19035826b916147d39cd101"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f87335744e20933551ed011c3822bd5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_cross.html#a9f87335744e20933551ed011c3822bd5">~Cross</a> () override</td></tr>
 <tr class="separator:a9f87335744e20933551ed011c3822bd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -124,14 +124,14 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a208d45797eebd7cad439cc43b049103d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_path_operator.html#a208d45797eebd7cad439cc43b049103d">number_of_nexts</a> () const</td></tr>
 <tr class="memdesc:a208d45797eebd7cad439cc43b049103d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of next variables.  <a href="classoperations__research_1_1_path_operator.html#a208d45797eebd7cad439cc43b049103d">More...</a><br /></td></tr>
 <tr class="separator:a208d45797eebd7cad439cc43b049103d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2b47576627076cc054924a89a08f69a6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_local_search_operator.html#a2b47576627076cc054924a89a08f69a6">MakeNextNeighbor</a> (Assignment *<a class="el" href="resource_8cc.html#a73461c37822b6ebb75b54ba1a9ffb442">delta</a>, Assignment *deltadelta) override</td></tr>
+<tr class="memitem:a2b47576627076cc054924a89a08f69a6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_local_search_operator.html#a2b47576627076cc054924a89a08f69a6">MakeNextNeighbor</a> (<a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *<a class="el" href="resource_8cc.html#a73461c37822b6ebb75b54ba1a9ffb442">delta</a>, <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *deltadelta) override</td></tr>
 <tr class="memdesc:a2b47576627076cc054924a89a08f69a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Redefines MakeNextNeighbor to export a simpler interface.  <a href="classoperations__research_1_1_int_var_local_search_operator.html#a2b47576627076cc054924a89a08f69a6">More...</a><br /></td></tr>
 <tr class="separator:a2b47576627076cc054924a89a08f69a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a35de616bef50b1661e3133761f7260e1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_var_local_search_operator.html#a35de616bef50b1661e3133761f7260e1">HoldsDelta</a> () const override</td></tr>
 <tr class="separator:a35de616bef50b1661e3133761f7260e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1e1cf9d9c4228f22482c4ee6c58951a8"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_local_search_operator.html#a1e1cf9d9c4228f22482c4ee6c58951a8">HoldsDelta</a> () const</td></tr>
 <tr class="separator:a1e1cf9d9c4228f22482c4ee6c58951a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeacffb05338262fd232dc77fed8cc586"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_var_local_search_operator.html#aeacffb05338262fd232dc77fed8cc586">Start</a> (const Assignment *assignment) override</td></tr>
+<tr class="memitem:aeacffb05338262fd232dc77fed8cc586"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_var_local_search_operator.html#aeacffb05338262fd232dc77fed8cc586">Start</a> (const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *assignment) override</td></tr>
 <tr class="memdesc:aeacffb05338262fd232dc77fed8cc586"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method should not be overridden.  <a href="classoperations__research_1_1_var_local_search_operator.html#aeacffb05338262fd232dc77fed8cc586">More...</a><br /></td></tr>
 <tr class="separator:aeacffb05338262fd232dc77fed8cc586"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa21d5f9b4adc94167e3a466095d82fd5"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_var_local_search_operator.html#aa21d5f9b4adc94167e3a466095d82fd5">IsIncremental</a> () const</td></tr>
@@ -141,7 +141,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a8d7b37de1f314b5dddb025a11d57e1e0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_var_local_search_operator.html#a8d7b37de1f314b5dddb025a11d57e1e0">Value</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) const</td></tr>
 <tr class="memdesc:a8d7b37de1f314b5dddb025a11d57e1e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the value in the current assignment of the variable of given index.  <a href="classoperations__research_1_1_var_local_search_operator.html#a8d7b37de1f314b5dddb025a11d57e1e0">More...</a><br /></td></tr>
 <tr class="separator:a8d7b37de1f314b5dddb025a11d57e1e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8beb998a68abceb71f87d3bc8a35bd78"><td class="memItemLeft" align="right" valign="top">IntVar *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_var_local_search_operator.html#a8beb998a68abceb71f87d3bc8a35bd78">Var</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) const</td></tr>
+<tr class="memitem:a8beb998a68abceb71f87d3bc8a35bd78"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_var_local_search_operator.html#a8beb998a68abceb71f87d3bc8a35bd78">Var</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) const</td></tr>
 <tr class="memdesc:a8beb998a68abceb71f87d3bc8a35bd78"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the variable of given index.  <a href="classoperations__research_1_1_var_local_search_operator.html#a8beb998a68abceb71f87d3bc8a35bd78">More...</a><br /></td></tr>
 <tr class="separator:a8beb998a68abceb71f87d3bc8a35bd78"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af0cd6b9a608c61a52933fd53d53873af"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_var_local_search_operator.html#af0cd6b9a608c61a52933fd53d53873af">OldValue</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) const</td></tr>
@@ -154,11 +154,11 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aebf766478091209b6170b5de179f9067"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abcdbe360c416a4cbb906188a13860d7f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_var_local_search_operator.html#abcdbe360c416a4cbb906188a13860d7f">Deactivate</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>)</td></tr>
 <tr class="separator:abcdbe360c416a4cbb906188a13860d7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aabafb6d8996f5101db26b30efff406b0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_var_local_search_operator.html#aabafb6d8996f5101db26b30efff406b0">ApplyChanges</a> (Assignment *<a class="el" href="resource_8cc.html#a73461c37822b6ebb75b54ba1a9ffb442">delta</a>, Assignment *deltadelta) const</td></tr>
+<tr class="memitem:aabafb6d8996f5101db26b30efff406b0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_var_local_search_operator.html#aabafb6d8996f5101db26b30efff406b0">ApplyChanges</a> (<a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *<a class="el" href="resource_8cc.html#a73461c37822b6ebb75b54ba1a9ffb442">delta</a>, <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *deltadelta) const</td></tr>
 <tr class="separator:aabafb6d8996f5101db26b30efff406b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06eb05df61a9b9fce744928947f43d89"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_var_local_search_operator.html#a06eb05df61a9b9fce744928947f43d89">RevertChanges</a> (bool incremental)</td></tr>
 <tr class="separator:a06eb05df61a9b9fce744928947f43d89"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae2af73491ab2aa6804b443d442026a5e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_var_local_search_operator.html#ae2af73491ab2aa6804b443d442026a5e">AddVars</a> (const std::vector&lt; IntVar * &gt; &amp;vars)</td></tr>
+<tr class="memitem:ae2af73491ab2aa6804b443d442026a5e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_var_local_search_operator.html#ae2af73491ab2aa6804b443d442026a5e">AddVars</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;vars)</td></tr>
 <tr class="separator:ae2af73491ab2aa6804b443d442026a5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2030c5ed835cf4196e8cab0033a6d7bd"><td class="memItemLeft" align="right" valign="top">virtual const <a class="el" href="classoperations__research_1_1_local_search_operator.html">LocalSearchOperator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_local_search_operator.html#a2030c5ed835cf4196e8cab0033a6d7bd">Self</a> () const</td></tr>
 <tr class="separator:a2030c5ed835cf4196e8cab0033a6d7bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -298,7 +298,7 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:afd4107d44c9d70962fa429ecd6cc8312"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3d38b45f5f2c2c53a8ab77643839b080"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_path_operator.html#a3d38b45f5f2c2c53a8ab77643839b080">start_to_path_</a></td></tr>
 <tr class="separator:a3d38b45f5f2c2c53a8ab77643839b080"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acb9668115d3d60818099ce9ce80d1ec1"><td class="memItemLeft" align="right" valign="top">std::vector&lt; IntVar * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_var_local_search_operator.html#acb9668115d3d60818099ce9ce80d1ec1">vars_</a></td></tr>
+<tr class="memitem:acb9668115d3d60818099ce9ce80d1ec1"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_var_local_search_operator.html#acb9668115d3d60818099ce9ce80d1ec1">vars_</a></td></tr>
 <tr class="separator:acb9668115d3d60818099ce9ce80d1ec1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a38b2df531e660bd3c43b896970a4f014"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_var_local_search_operator.html#a38b2df531e660bd3c43b896970a4f014">values_</a></td></tr>
 <tr class="separator:a38b2df531e660bd3c43b896970a4f014"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -334,13 +334,13 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classoperations__research_1_1_cross.html">Cross</a> </td>
           <td>(</td>
-          <td class="paramtype">const std::vector&lt; IntVar * &gt; &amp;&#160;</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;&#160;</td>
           <td class="paramname"><em>vars</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::vector&lt; IntVar * &gt; &amp;&#160;</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;&#160;</td>
           <td class="paramname"><em>secondary_vars</em>, </td>
         </tr>
         <tr>
@@ -362,7 +362,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l01049">1049</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l01038">1038</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
 </div>
 </div>
@@ -389,7 +389,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l01054">1054</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l01043">1043</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
 </div>
 </div>
@@ -418,7 +418,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00864">864</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00856">856</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -446,7 +446,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00863">863</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00855">855</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -477,7 +477,7 @@ Protected Attributes</h2></td></tr>
 <p>Handling node alternatives. </p>
 <p>Adds a set of node alternatives to the neighborhood. No node can be in two altrnatives. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01513">1513</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01507">1507</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -508,7 +508,7 @@ Protected Attributes</h2></td></tr>
 <p>Adds all sets of node alternatives of a vector of alternative pairs. </p>
 <p>No node can be in two altrnatives. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01526">1526</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01520">1520</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -536,7 +536,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00909">909</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00901">901</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -552,13 +552,13 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">bool ApplyChanges </td>
           <td>(</td>
-          <td class="paramtype">Assignment *&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td>
           <td class="paramname"><em>delta</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">Assignment *&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td>
           <td class="paramname"><em>deltadelta</em>&#160;</td>
         </tr>
         <tr>
@@ -574,7 +574,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00872">872</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00864">864</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -604,7 +604,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the alternative for the ith base node. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01384">1384</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01378">1378</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -634,7 +634,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the alternative node for the ith base node. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01386">1386</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01380">1380</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -664,7 +664,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the ith base node of the operator. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01382">1382</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01376">1376</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -694,7 +694,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the alternative for the sibling of the ith base node. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01394">1394</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01388">1388</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -724,7 +724,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the alternative node for the sibling of the ith base node. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01398">1398</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01392">1392</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -770,7 +770,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns true if the chain is a valid path without cycles from before_chain to chain_end and does not contain exclude. </p>
 
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00842">842</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00833">833</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
 </div>
 </div>
@@ -802,7 +802,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_pair_relocate_operator.html#ab26d6a936473dac60bb3b9aa46d38722">PairRelocateOperator</a>, <a class="el" href="class_swig_director___path_operator.html#a3062cf7eeb53d8cc4cc02e3359d27531">SwigDirector_PathOperator</a>, and <a class="el" href="class_swig_director___path_operator.html#a9dab1b0d0b85dec05719b3e5932e9ed2">SwigDirector_PathOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01447">1447</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01441">1441</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -830,7 +830,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00868">868</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00860">860</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -852,12 +852,14 @@ Protected Attributes</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l01057">1057</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_base_object.html#a8eba5d533fa9df4617c1868d3ec2afc4">BaseObject</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l01046">1046</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
 </div>
 </div>
@@ -887,7 +889,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the active node in the alternative set of the given node. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01543">1543</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01537">1537</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -917,7 +919,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the active node in the alternative set of the sibling of the given node. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01554">1554</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01548">1548</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -947,7 +949,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the active node in the given alternative set. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01537">1537</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01531">1531</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -980,7 +982,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_pair_node_swap_active_operator.html#ad5f473fb19f98b38567ace0fa11f58b0">PairNodeSwapActiveOperator&lt; swap_first &gt;</a>, <a class="el" href="classoperations__research_1_1_pair_exchange_relocate_operator.html#ad5f473fb19f98b38567ace0fa11f58b0">PairExchangeRelocateOperator</a>, <a class="el" href="classoperations__research_1_1_pair_relocate_operator.html#ad5f473fb19f98b38567ace0fa11f58b0">PairRelocateOperator</a>, <a class="el" href="classoperations__research_1_1_make_pair_active_operator.html#ad5f473fb19f98b38567ace0fa11f58b0">MakePairActiveOperator</a>, <a class="el" href="classoperations__research_1_1_make_chain_inactive_operator.html#ad5f473fb19f98b38567ace0fa11f58b0">MakeChainInactiveOperator</a>, <a class="el" href="classoperations__research_1_1_two_opt.html#ad5f473fb19f98b38567ace0fa11f58b0">TwoOpt</a>, <a class="el" href="class_swig_director___path_operator.html#ac7ffd8565f01cb9eb72fcc94204327a2">SwigDirector_PathOperator</a>, and <a class="el" href="class_swig_director___path_operator.html#a27accbeb4dfb9604e5e3a746e96bd4bd">SwigDirector_PathOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01437">1437</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01431">1431</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1010,7 +1012,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the index of the alternative set of the sibling of node. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01547">1547</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01541">1541</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1039,7 +1041,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_path_lns.html#a4c069642a869d9055609c7eac7078f8c">PathLns</a>, <a class="el" href="classoperations__research_1_1_base_lns.html#a4c069642a869d9055609c7eac7078f8c">BaseLns</a>, <a class="el" href="class_swig_director___change_value.html#a1b0063f805d92ed061848616d08f4664">SwigDirector_ChangeValue</a>, <a class="el" href="class_swig_director___base_lns.html#a1b0063f805d92ed061848616d08f4664">SwigDirector_BaseLns</a>, <a class="el" href="class_swig_director___int_var_local_search_operator.html#a1b0063f805d92ed061848616d08f4664">SwigDirector_IntVarLocalSearchOperator</a>, <a class="el" href="class_swig_director___local_search_operator.html#a1b0063f805d92ed061848616d08f4664">SwigDirector_LocalSearchOperator</a>, <a class="el" href="class_swig_director___path_operator.html#a1b0063f805d92ed061848616d08f4664">SwigDirector_PathOperator</a>, <a class="el" href="class_swig_director___change_value.html#a1b0063f805d92ed061848616d08f4664">SwigDirector_ChangeValue</a>, <a class="el" href="class_swig_director___base_lns.html#a1b0063f805d92ed061848616d08f4664">SwigDirector_BaseLns</a>, <a class="el" href="class_swig_director___sequence_var_local_search_operator.html#a1b0063f805d92ed061848616d08f4664">SwigDirector_SequenceVarLocalSearchOperator</a>, <a class="el" href="class_swig_director___int_var_local_search_operator.html#a1b0063f805d92ed061848616d08f4664">SwigDirector_IntVarLocalSearchOperator</a>, <a class="el" href="class_swig_director___local_search_operator.html#a1b0063f805d92ed061848616d08f4664">SwigDirector_LocalSearchOperator</a>, <a class="el" href="class_swig_director___path_operator.html#a1c43e22699ec4dff03195005615b0ee6">SwigDirector_PathOperator</a>, <a class="el" href="class_swig_director___change_value.html#a1c43e22699ec4dff03195005615b0ee6">SwigDirector_ChangeValue</a>, <a class="el" href="class_swig_director___base_lns.html#a1c43e22699ec4dff03195005615b0ee6">SwigDirector_BaseLns</a>, <a class="el" href="class_swig_director___sequence_var_local_search_operator.html#a1c43e22699ec4dff03195005615b0ee6">SwigDirector_SequenceVarLocalSearchOperator</a>, <a class="el" href="class_swig_director___int_var_local_search_operator.html#a1c43e22699ec4dff03195005615b0ee6">SwigDirector_IntVarLocalSearchOperator</a>, and <a class="el" href="class_swig_director___local_search_operator.html#a1c43e22699ec4dff03195005615b0ee6">SwigDirector_LocalSearchOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00816">816</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00808">808</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1068,7 +1070,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_neighborhood_limit.html#a35de616bef50b1661e3133761f7260e1">NeighborhoodLimit</a>, <a class="el" href="classoperations__research_1_1_var_local_search_operator.html#a35de616bef50b1661e3133761f7260e1">VarLocalSearchOperator&lt; V, Val, Handler &gt;</a>, <a class="el" href="class_swig_director___change_value.html#a1e1cf9d9c4228f22482c4ee6c58951a8">SwigDirector_ChangeValue</a>, <a class="el" href="class_swig_director___base_lns.html#a1e1cf9d9c4228f22482c4ee6c58951a8">SwigDirector_BaseLns</a>, <a class="el" href="class_swig_director___int_var_local_search_operator.html#a1e1cf9d9c4228f22482c4ee6c58951a8">SwigDirector_IntVarLocalSearchOperator</a>, <a class="el" href="class_swig_director___local_search_operator.html#a1e1cf9d9c4228f22482c4ee6c58951a8">SwigDirector_LocalSearchOperator</a>, <a class="el" href="class_swig_director___path_operator.html#a1e1cf9d9c4228f22482c4ee6c58951a8">SwigDirector_PathOperator</a>, <a class="el" href="class_swig_director___change_value.html#a1e1cf9d9c4228f22482c4ee6c58951a8">SwigDirector_ChangeValue</a>, <a class="el" href="class_swig_director___base_lns.html#a1e1cf9d9c4228f22482c4ee6c58951a8">SwigDirector_BaseLns</a>, <a class="el" href="class_swig_director___sequence_var_local_search_operator.html#a1e1cf9d9c4228f22482c4ee6c58951a8">SwigDirector_SequenceVarLocalSearchOperator</a>, <a class="el" href="class_swig_director___int_var_local_search_operator.html#a1e1cf9d9c4228f22482c4ee6c58951a8">SwigDirector_IntVarLocalSearchOperator</a>, <a class="el" href="class_swig_director___local_search_operator.html#a1e1cf9d9c4228f22482c4ee6c58951a8">SwigDirector_LocalSearchOperator</a>, <a class="el" href="class_swig_director___path_operator.html#a0f13404d57183b4dac8f069f6881e62d">SwigDirector_PathOperator</a>, <a class="el" href="class_swig_director___change_value.html#a0f13404d57183b4dac8f069f6881e62d">SwigDirector_ChangeValue</a>, <a class="el" href="class_swig_director___base_lns.html#a0f13404d57183b4dac8f069f6881e62d">SwigDirector_BaseLns</a>, <a class="el" href="class_swig_director___sequence_var_local_search_operator.html#a0f13404d57183b4dac8f069f6881e62d">SwigDirector_SequenceVarLocalSearchOperator</a>, <a class="el" href="class_swig_director___int_var_local_search_operator.html#a0f13404d57183b4dac8f069f6881e62d">SwigDirector_IntVarLocalSearchOperator</a>, and <a class="el" href="class_swig_director___local_search_operator.html#a0f13404d57183b4dac8f069f6881e62d">SwigDirector_LocalSearchOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00817">817</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00809">809</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1095,7 +1097,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00831">831</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00823">823</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1126,7 +1128,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="class_swig_director___path_operator.html#ae1c162cfc11069e25becbd53cdce7def">SwigDirector_PathOperator</a>, and <a class="el" href="class_swig_director___path_operator.html#a09e338733d3bca035293d1f8a444c38a">SwigDirector_PathOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01504">1504</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01498">1498</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1154,7 +1156,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01078">1078</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01072">1072</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1184,7 +1186,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns true if node is inactive. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01498">1498</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01492">1492</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1211,7 +1213,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00847">847</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00839">839</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1239,7 +1241,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01073">1073</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01067">1067</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1269,7 +1271,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns true if node is the last node on the path; defined by the fact that node is outside the range of the variable array. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01492">1492</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01486">1486</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1299,7 +1301,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns true if node is the first node on the path. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01495">1495</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01489">1489</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1339,7 +1341,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Insert the inactive node after destination. </p>
 
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00460">460</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00457">457</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
 </div>
 </div>
@@ -1379,7 +1381,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Makes the nodes on the chain starting after before_chain and ending at chain_end inactive. </p>
 
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00471">471</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00467">467</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
 </div>
 </div>
@@ -1408,7 +1410,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1_path_operator.html#a10ae14d6daad9088377260420952f814">PathOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l01060">1060</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l01049">1049</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
 </div>
 </div>
@@ -1424,13 +1426,13 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">bool MakeNextNeighbor </td>
           <td>(</td>
-          <td class="paramtype">Assignment *&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td>
           <td class="paramname"><em>delta</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">Assignment *&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td>
           <td class="paramname"><em>deltadelta</em>&#160;</td>
         </tr>
         <tr>
@@ -1451,7 +1453,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1_local_search_operator.html#a9bd1712271364632b22009ef10eb2172">LocalSearchOperator</a>.</p>
 
-<p>Reimplemented in <a class="el" href="classoperations__research_1_1_pair_node_swap_active_operator.html#a2b47576627076cc054924a89a08f69a6">PairNodeSwapActiveOperator&lt; swap_first &gt;</a>, <a class="el" href="classoperations__research_1_1_index_pair_swap_active_operator.html#a2b47576627076cc054924a89a08f69a6">IndexPairSwapActiveOperator</a>, and <a class="el" href="classoperations__research_1_1_swap_index_pair_operator.html#a2b47576627076cc054924a89a08f69a6">SwapIndexPairOperator</a>.</p>
+<p>Reimplemented in <a class="el" href="class_swig_director___change_value.html#a173370237af9a45d288723806dcb0961">SwigDirector_ChangeValue</a>, <a class="el" href="class_swig_director___base_lns.html#a173370237af9a45d288723806dcb0961">SwigDirector_BaseLns</a>, <a class="el" href="class_swig_director___int_var_local_search_operator.html#a173370237af9a45d288723806dcb0961">SwigDirector_IntVarLocalSearchOperator</a>, <a class="el" href="class_swig_director___path_operator.html#a173370237af9a45d288723806dcb0961">SwigDirector_PathOperator</a>, <a class="el" href="class_swig_director___change_value.html#a173370237af9a45d288723806dcb0961">SwigDirector_ChangeValue</a>, <a class="el" href="class_swig_director___base_lns.html#a173370237af9a45d288723806dcb0961">SwigDirector_BaseLns</a>, <a class="el" href="class_swig_director___int_var_local_search_operator.html#a173370237af9a45d288723806dcb0961">SwigDirector_IntVarLocalSearchOperator</a>, <a class="el" href="class_swig_director___path_operator.html#a2a7217fa202f109db68943fd04f08ea3">SwigDirector_PathOperator</a>, <a class="el" href="class_swig_director___change_value.html#a2a7217fa202f109db68943fd04f08ea3">SwigDirector_ChangeValue</a>, <a class="el" href="class_swig_director___base_lns.html#a2a7217fa202f109db68943fd04f08ea3">SwigDirector_BaseLns</a>, <a class="el" href="class_swig_director___int_var_local_search_operator.html#a2a7217fa202f109db68943fd04f08ea3">SwigDirector_IntVarLocalSearchOperator</a>, <a class="el" href="classoperations__research_1_1_pair_node_swap_active_operator.html#a2b47576627076cc054924a89a08f69a6">PairNodeSwapActiveOperator&lt; swap_first &gt;</a>, <a class="el" href="classoperations__research_1_1_index_pair_swap_active_operator.html#a2b47576627076cc054924a89a08f69a6">IndexPairSwapActiveOperator</a>, and <a class="el" href="classoperations__research_1_1_swap_index_pair_operator.html#a2b47576627076cc054924a89a08f69a6">SwapIndexPairOperator</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00074">74</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
@@ -1486,7 +1488,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_relocate_expensive_chain.html#ad14cde260686e5b4174e691675df3139">RelocateExpensiveChain</a>, <a class="el" href="classoperations__research_1_1_make_pair_active_operator.html#ad14cde260686e5b4174e691675df3139">MakePairActiveOperator</a>, <a class="el" href="classoperations__research_1_1_t_s_p_lns.html#ad14cde260686e5b4174e691675df3139">TSPLns</a>, <a class="el" href="classoperations__research_1_1_base_inactive_node_to_path_operator.html#ad14cde260686e5b4174e691675df3139">BaseInactiveNodeToPathOperator</a>, <a class="el" href="class_swig_director___path_operator.html#a4e4f1f53f6a8a6bdb6c9d7c97842565d">SwigDirector_PathOperator</a>, and <a class="el" href="class_swig_director___path_operator.html#ac7dcbffbe392b653b5e0674631d03d3d">SwigDirector_PathOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00389">389</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00387">387</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
 </div>
 </div>
@@ -1517,7 +1519,7 @@ Protected Attributes</h2></td></tr>
 <p>OnStart() should really be protected, but then SWIG doesn't see it. </p>
 <p>So we make it public, but only subclasses should access to it (to override it). </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00933">933</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00925">925</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1563,7 +1565,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Moves the chain starting after the node before_chain and ending at the node chain_end after the node destination. </p>
 
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00414">414</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00411">411</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
 </div>
 </div>
@@ -1593,7 +1595,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the node after node in the current delta. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01352">1352</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01346">1346</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1622,7 +1624,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Number of next variables. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01371">1371</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01365">1365</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1650,7 +1652,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01080">1080</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01074">1074</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1678,7 +1680,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01449">1449</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01443">1443</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1706,7 +1708,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01459">1459</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01453">1453</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1734,7 +1736,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01454">1454</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01448">1448</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1762,7 +1764,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00858">858</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00850">850</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1794,7 +1796,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="class_swig_director___path_operator.html#a1223e0b8dbca7cd9c296fc4de65080b2">SwigDirector_PathOperator</a>, and <a class="el" href="class_swig_director___path_operator.html#a4d08a724b60322e5d590d32fe10ed2aa">SwigDirector_PathOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01379">1379</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01373">1373</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1827,7 +1829,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_pair_node_swap_active_operator.html#ac7df4d8cca71e3ceb0e5b8c0c53bc50f">PairNodeSwapActiveOperator&lt; swap_first &gt;</a>, <a class="el" href="classoperations__research_1_1_pair_exchange_relocate_operator.html#ac7df4d8cca71e3ceb0e5b8c0c53bc50f">PairExchangeRelocateOperator</a>, <a class="el" href="classoperations__research_1_1_pair_relocate_operator.html#ac7df4d8cca71e3ceb0e5b8c0c53bc50f">PairRelocateOperator</a>, <a class="el" href="classoperations__research_1_1_make_pair_active_operator.html#ac7df4d8cca71e3ceb0e5b8c0c53bc50f">MakePairActiveOperator</a>, <a class="el" href="classoperations__research_1_1_make_chain_inactive_operator.html#ac7df4d8cca71e3ceb0e5b8c0c53bc50f">MakeChainInactiveOperator</a>, <a class="el" href="classoperations__research_1_1_relocate.html#ac7df4d8cca71e3ceb0e5b8c0c53bc50f">Relocate</a>, <a class="el" href="classoperations__research_1_1_two_opt.html#ac7df4d8cca71e3ceb0e5b8c0c53bc50f">TwoOpt</a>, <a class="el" href="class_swig_director___path_operator.html#adb210d557c5ff1bc78ae493364868bb5">SwigDirector_PathOperator</a>, and <a class="el" href="class_swig_director___path_operator.html#a3d33bfaa78b13a8132450058111ee10a">SwigDirector_PathOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01431">1431</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01425">1425</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1858,7 +1860,7 @@ Protected Attributes</h2></td></tr>
 <p>Returns the index of the path to which node belongs in the current delta. </p>
 <p>Only returns a valid value if path variables are taken into account. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01366">1366</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01360">1360</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1887,7 +1889,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the vector of path start nodes. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01410">1410</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01404">1404</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1917,7 +1919,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the class of the path of the ith base node. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01412">1412</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01406">1406</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1947,7 +1949,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the node before node in the current delta. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01358">1358</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01352">1352</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1978,7 +1980,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="class_swig_director___path_operator.html#a4c4ba0ffe635d14b93794268bd8e5995">SwigDirector_PathOperator</a>, and <a class="el" href="class_swig_director___path_operator.html#a372de693ad40b3f42839c8ec6ac845f4">SwigDirector_PathOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00380">380</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00378">378</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
 </div>
 </div>
@@ -2007,7 +2009,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reset the position of the operator to its position when <a class="el" href="classoperations__research_1_1_var_local_search_operator.html#aeacffb05338262fd232dc77fed8cc586" title="This method should not be overridden.">Start()</a> was last called; this can be used to let an operator iterate more than once over the paths. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01508">1508</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01502">1502</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2039,7 +2041,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_pair_node_swap_active_operator.html#aab68dfb72803f3ee3116e4425113ed11">PairNodeSwapActiveOperator&lt; swap_first &gt;</a>, <a class="el" href="classoperations__research_1_1_make_pair_active_operator.html#aab68dfb72803f3ee3116e4425113ed11">MakePairActiveOperator</a>, <a class="el" href="class_swig_director___path_operator.html#a38b76e1e3a147226d4981b05e4ec2c55">SwigDirector_PathOperator</a>, and <a class="el" href="class_swig_director___path_operator.html#abaf377c5931e459a507a306103695bfc">SwigDirector_PathOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01425">1425</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01419">1419</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2085,7 +2087,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reverses the chain starting after before_chain and ending before after_chain. </p>
 
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00437">437</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00434">434</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
 </div>
 </div>
@@ -2113,7 +2115,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00896">896</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00888">888</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2140,7 +2142,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00814">814</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00806">806</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2178,7 +2180,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01084">1084</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01078">1078</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2224,7 +2226,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Sets 'to' to be the node after 'from' on the given path. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01480">1480</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01474">1474</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2257,7 +2259,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="class_swig_director___path_operator.html#a2c928a4ff549033f6b44e423ec61b0d5">SwigDirector_PathOperator</a>, and <a class="el" href="class_swig_director___path_operator.html#a606dae607251890612cd39269e68639d">SwigDirector_PathOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01442">1442</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01436">1436</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2295,7 +2297,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01088">1088</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01082">1082</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2333,7 +2335,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00859">859</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00851">851</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2360,7 +2362,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00848">848</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00840">840</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2392,7 +2394,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="class_swig_director___path_operator.html#a18eb329b669c6a2e4e2431ea950b52fe">SwigDirector_PathOperator</a>, and <a class="el" href="class_swig_director___path_operator.html#ab33238363822fa54f6b7a588d29930ca">SwigDirector_PathOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00401">401</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00399">399</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
 </div>
 </div>
@@ -2408,7 +2410,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">void Start </td>
           <td>(</td>
-          <td class="paramtype">const Assignment *&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td>
           <td class="paramname"><em>assignment</em></td><td>)</td>
           <td></td>
         </tr>
@@ -2425,7 +2427,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1_local_search_operator.html#ae8505ab0739cf0b585de5844f7a6703c">LocalSearchOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00834">834</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00826">826</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2455,7 +2457,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the start node of the ith base node. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01408">1408</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01402">1402</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2495,7 +2497,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Replaces active by inactive in the current path, making active inactive. </p>
 
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00488">488</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l00484">484</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
 </div>
 </div>
@@ -2525,7 +2527,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the value in the current assignment of the variable of given index. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00851">851</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00843">843</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2539,7 +2541,7 @@ Protected Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">IntVar * Var </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * Var </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
@@ -2555,7 +2557,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the variable of given index. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00856">856</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00848">848</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2580,7 +2582,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00943">943</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00935">935</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2604,7 +2606,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00942">942</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00934">934</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2628,7 +2630,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00945">945</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00937">937</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2652,7 +2654,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00947">947</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00939">939</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2676,7 +2678,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00946">946</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00938">938</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2700,7 +2702,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01567">1567</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01561">1561</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2724,7 +2726,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01568">1568</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01562">1562</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2748,7 +2750,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01569">1569</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01563">1563</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2772,7 +2774,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01566">1566</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01560">1560</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2796,7 +2798,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00940">940</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00932">932</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2820,7 +2822,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00941">941</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00933">933</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2844,7 +2846,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01570">1570</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01564">1564</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2868,7 +2870,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00939">939</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00931">931</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2892,7 +2894,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00948">948</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00940">940</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2906,7 +2908,7 @@ Protected Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;IntVar *&gt; vars_</td>
+          <td class="memname">std::vector&lt;<a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&gt; vars_</td>
         </tr>
       </table>
   </td>
@@ -2916,7 +2918,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00938">938</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00930">930</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2940,7 +2942,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00944">944</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00936">936</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>

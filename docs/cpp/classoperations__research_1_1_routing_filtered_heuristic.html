@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -97,7 +97,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_routing_
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Filter-based heuristic dedicated to routing. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02996">2996</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03040">3040</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -105,7 +105,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aebd7c1966b7626a3b6cdfcbbc69ae2cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e2e09ac8fcd3f591b0a6ae0cf5ea613"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_filtered_heuristic.html#a0e2e09ac8fcd3f591b0a6ae0cf5ea613">~RoutingFilteredHeuristic</a> () override</td></tr>
 <tr class="separator:a0e2e09ac8fcd3f591b0a6ae0cf5ea613"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9099c1d103124dca895eaa153e0656d4"><td class="memItemLeft" align="right" valign="top">const Assignment *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_filtered_heuristic.html#a9099c1d103124dca895eaa153e0656d4">BuildSolutionFromRoutes</a> (const std::function&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>(<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>)&gt; &amp;next_accessor)</td></tr>
+<tr class="memitem:a9099c1d103124dca895eaa153e0656d4"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_filtered_heuristic.html#a9099c1d103124dca895eaa153e0656d4">BuildSolutionFromRoutes</a> (const std::function&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>(<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>)&gt; &amp;next_accessor)</td></tr>
 <tr class="memdesc:a9099c1d103124dca895eaa153e0656d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Builds a solution starting from the routes formed by the next accessor.  <a href="classoperations__research_1_1_routing_filtered_heuristic.html#a9099c1d103124dca895eaa153e0656d4">More...</a><br /></td></tr>
 <tr class="separator:a9099c1d103124dca895eaa153e0656d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a35a576bb3ea6814f122593d44a3c391e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_filtered_heuristic.html#a35a576bb3ea6814f122593d44a3c391e">model</a> () const</td></tr>
@@ -122,7 +122,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a97049801609b8cb68c0428970f916fd4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_filtered_heuristic.html#a97049801609b8cb68c0428970f916fd4">MakeUnassignedNodesUnperformed</a> ()</td></tr>
 <tr class="memdesc:a97049801609b8cb68c0428970f916fd4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Make all unassigned nodes unperformed.  <a href="classoperations__research_1_1_routing_filtered_heuristic.html#a97049801609b8cb68c0428970f916fd4">More...</a><br /></td></tr>
 <tr class="separator:a97049801609b8cb68c0428970f916fd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af3787f4febdbe5033e9834b770476f5d"><td class="memItemLeft" align="right" valign="top">Assignment *const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_heuristic.html#af3787f4febdbe5033e9834b770476f5d">BuildSolution</a> ()</td></tr>
+<tr class="memitem:abaca104cf41b5a5e3554f8ad72cdc28c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_filtered_heuristic.html#abaca104cf41b5a5e3554f8ad72cdc28c">MakePartiallyPerformedPairsUnperformed</a> ()</td></tr>
+<tr class="memdesc:abaca104cf41b5a5e3554f8ad72cdc28c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Make all partially performed pickup and delivery pairs unperformed.  <a href="classoperations__research_1_1_routing_filtered_heuristic.html#abaca104cf41b5a5e3554f8ad72cdc28c">More...</a><br /></td></tr>
+<tr class="separator:abaca104cf41b5a5e3554f8ad72cdc28c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af3787f4febdbe5033e9834b770476f5d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_heuristic.html#af3787f4febdbe5033e9834b770476f5d">BuildSolution</a> ()</td></tr>
 <tr class="memdesc:af3787f4febdbe5033e9834b770476f5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Builds a solution.  <a href="classoperations__research_1_1_int_var_filtered_heuristic.html#af3787f4febdbe5033e9834b770476f5d">More...</a><br /></td></tr>
 <tr class="separator:af3787f4febdbe5033e9834b770476f5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9cbb9e796806062460be9c7a4033e80"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_heuristic.html#ab9cbb9e796806062460be9c7a4033e80">number_of_decisions</a> () const</td></tr>
@@ -163,7 +166,7 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:a24926108b770033792d015cb86aeffb3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_heuristic.html#a24926108b770033792d015cb86aeffb3">Size</a> () const</td></tr>
 <tr class="memdesc:a24926108b770033792d015cb86aeffb3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of variables the decision builder is trying to instantiate.  <a href="classoperations__research_1_1_int_var_filtered_heuristic.html#a24926108b770033792d015cb86aeffb3">More...</a><br /></td></tr>
 <tr class="separator:a24926108b770033792d015cb86aeffb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a609a96f8163121290267059fc6f27a4a"><td class="memItemLeft" align="right" valign="top">IntVar *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_heuristic.html#a609a96f8163121290267059fc6f27a4a">Var</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) const</td></tr>
+<tr class="memitem:a609a96f8163121290267059fc6f27a4a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_heuristic.html#a609a96f8163121290267059fc6f27a4a">Var</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) const</td></tr>
 <tr class="memdesc:a609a96f8163121290267059fc6f27a4a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the variable of index 'index'.  <a href="classoperations__research_1_1_int_var_filtered_heuristic.html#a609a96f8163121290267059fc6f27a4a">More...</a><br /></td></tr>
 <tr class="separator:a609a96f8163121290267059fc6f27a4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8447b106d07db2466b60e534964730d3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_heuristic.html#a8447b106d07db2466b60e534964730d3">SynchronizeFilters</a> ()</td></tr>
@@ -172,7 +175,7 @@ Protected Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:a6743122cc2fc4818b402ba3d484c6ea4"><td class="memItemLeft" align="right" valign="top">Assignment *const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_heuristic.html#a6743122cc2fc4818b402ba3d484c6ea4">assignment_</a></td></tr>
+<tr class="memitem:a6743122cc2fc4818b402ba3d484c6ea4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_heuristic.html#a6743122cc2fc4818b402ba3d484c6ea4">assignment_</a></td></tr>
 <tr class="separator:a6743122cc2fc4818b402ba3d484c6ea4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
@@ -202,7 +205,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02850">2850</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02933">2933</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -229,7 +232,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03000">3000</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03044">3044</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -244,7 +247,7 @@ Protected Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">Assignment *const BuildSolution </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *const BuildSolution </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -260,7 +263,7 @@ Protected Attributes</h2></td></tr>
 <p>Builds a solution. </p>
 <p>Returns the resulting assignment if a solution was found, and nullptr otherwise. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02766">2766</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02848">2848</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -271,7 +274,7 @@ Protected Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const Assignment * BuildSolutionFromRoutes </td>
+          <td class="memname">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> * BuildSolutionFromRoutes </td>
           <td>(</td>
           <td class="paramtype">const std::function&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>(<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>)&gt; &amp;&#160;</td>
           <td class="paramname"><em>next_accessor</em></td><td>)</td>
@@ -282,7 +285,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Builds a solution starting from the routes formed by the next accessor. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02778">2778</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02860">2860</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -340,7 +343,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Commits the modifications to the current solution if these modifications are "filter-feasible", returns false otherwise; in any case discards all modifications. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02810">2810</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02893">2893</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -370,7 +373,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns true if the variable of index 'index' is in the current solution. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02965">2965</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03009">3009</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -399,7 +402,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_christofides_filtered_heuristic.html#aed804747c45a7e1caf81461f9e45dd91">ChristofidesFilteredHeuristic</a>, <a class="el" href="classoperations__research_1_1_parallel_savings_filtered_heuristic.html#aed804747c45a7e1caf81461f9e45dd91">ParallelSavingsFilteredHeuristic</a>, <a class="el" href="classoperations__research_1_1_sequential_savings_filtered_heuristic.html#aed804747c45a7e1caf81461f9e45dd91">SequentialSavingsFilteredHeuristic</a>, <a class="el" href="classoperations__research_1_1_comparator_cheapest_addition_filtered_heuristic.html#aed804747c45a7e1caf81461f9e45dd91">ComparatorCheapestAdditionFilteredHeuristic</a>, <a class="el" href="classoperations__research_1_1_evaluator_cheapest_addition_filtered_heuristic.html#aed804747c45a7e1caf81461f9e45dd91">EvaluatorCheapestAdditionFilteredHeuristic</a>, <a class="el" href="classoperations__research_1_1_local_cheapest_insertion_filtered_heuristic.html#aed804747c45a7e1caf81461f9e45dd91">LocalCheapestInsertionFilteredHeuristic</a>, and <a class="el" href="classoperations__research_1_1_global_cheapest_insertion_filtered_heuristic.html#aed804747c45a7e1caf81461f9e45dd91">GlobalCheapestInsertionFilteredHeuristic</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02933">2933</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02977">2977</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -429,7 +432,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the start of the end chain of vehicle,. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03008">3008</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03052">3052</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -459,7 +462,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the end of the start chain of vehicle,. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03006">3006</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03050">3050</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -482,7 +485,29 @@ Protected Attributes</h2></td></tr>
 <p>Make nodes in the same disjunction as 'node' unperformed. </p>
 <p>'node' is a variable index corresponding to a node. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02931">2931</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l03014">3014</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+
+</div>
+</div>
+<a id="abaca104cf41b5a5e3554f8ad72cdc28c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abaca104cf41b5a5e3554f8ad72cdc28c">&#9670;&nbsp;</a></span>MakePartiallyPerformedPairsUnperformed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void MakePartiallyPerformedPairsUnperformed </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Make all partially performed pickup and delivery pairs unperformed. </p>
+<p>A pair is partially unperformed if one element of the pair has one of its alternatives performed in the solution and the other has no alternatives in the solution or none performed. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l03031">3031</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -503,7 +528,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Make all unassigned nodes unperformed. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02940">2940</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l03023">3023</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -530,7 +555,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03004">3004</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03048">3048</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -559,7 +584,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns statistics on search, number of decisions sent to filters, number of decisions rejected by filters. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02930">2930</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02974">2974</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -586,7 +611,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02931">2931</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02975">2975</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -615,7 +640,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Resets the data members for a new solution. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02756">2756</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02838">2838</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -642,7 +667,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03018">3018</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03067">3067</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -682,7 +707,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Modifies the current solution by setting the variable of index 'index' to value 'value'. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02950">2950</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02994">2994</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -720,7 +745,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03017">3017</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03066">3066</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -749,7 +774,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the number of variables the decision builder is trying to instantiate. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02970">2970</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03014">3014</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -780,7 +805,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1_int_var_filtered_heuristic.html#a64b348f1f572b9ea470c453a027e6d25">IntVarFilteredHeuristic</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03016">3016</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03065">3065</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -809,7 +834,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Synchronizes filters with an assignment (the current solution). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02838">2838</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02921">2921</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -839,7 +864,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the value of the variable of index 'index' in the last committed solution. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02961">2961</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03005">3005</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -853,7 +878,7 @@ Protected Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">IntVar* Var </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a>* Var </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
@@ -869,7 +894,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the variable of index 'index'. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02972">2972</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03016">3016</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -884,7 +909,7 @@ Protected Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">Assignment* const assignment_</td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a>* const assignment_</td>
         </tr>
       </table>
   </td>
@@ -894,7 +919,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02976">2976</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03020">3020</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

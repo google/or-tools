@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -114,14 +114,14 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:affeb8d5f6671bc64d5e1076e1a30efcf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="revised__simplex_8cc.html#affeb8d5f6671bc64d5e1076e1a30efcf">DEFINE_bool</a> (simplex_display_numbers_as_fractions, false, &quot;Display numbers as fractions.&quot;)</td></tr>
-<tr class="separator:affeb8d5f6671bc64d5e1076e1a30efcf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aedb141d859e1c18d36815a28ed2b5f1f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="revised__simplex_8cc.html#aedb141d859e1c18d36815a28ed2b5f1f">DEFINE_bool</a> (simplex_stop_after_first_basis, false, &quot;Stop after first basis has been computed.&quot;)</td></tr>
-<tr class="separator:aedb141d859e1c18d36815a28ed2b5f1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a71a603091ff6bef6ec60d4b5ad774b52"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="revised__simplex_8cc.html#a71a603091ff6bef6ec60d4b5ad774b52">DEFINE_bool</a> (simplex_stop_after_feasibility, false, &quot;Stop after first <a class="el" href="default__search_8cc.html#ad1547dc5c5aeb23eaccef64028eaef25">phase</a> has been completed.&quot;)</td></tr>
-<tr class="separator:a71a603091ff6bef6ec60d4b5ad774b52"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afa9922b1aad15d1b06306e84a709766e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="revised__simplex_8cc.html#afa9922b1aad15d1b06306e84a709766e">DEFINE_bool</a> (simplex_display_stats, false, &quot;Display algorithm statistics.&quot;)</td></tr>
-<tr class="separator:afa9922b1aad15d1b06306e84a709766e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acbeead810cb856b2daab5362d543d727"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="revised__simplex_8cc.html#acbeead810cb856b2daab5362d543d727">ABSL_FLAG</a> (bool, simplex_display_numbers_as_fractions, false, &quot;Display numbers as fractions.&quot;)</td></tr>
+<tr class="separator:acbeead810cb856b2daab5362d543d727"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5a65d2edddec64f308ea409703708acf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="revised__simplex_8cc.html#a5a65d2edddec64f308ea409703708acf">ABSL_FLAG</a> (bool, simplex_stop_after_first_basis, false, &quot;Stop after first basis has been computed.&quot;)</td></tr>
+<tr class="separator:a5a65d2edddec64f308ea409703708acf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abd7c97d0007f059b2a31c19fdbd6f9c8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="revised__simplex_8cc.html#abd7c97d0007f059b2a31c19fdbd6f9c8">ABSL_FLAG</a> (bool, simplex_stop_after_feasibility, false, &quot;Stop after first <a class="el" href="default__search_8cc.html#ad1547dc5c5aeb23eaccef64028eaef25">phase</a> has been completed.&quot;)</td></tr>
+<tr class="separator:abd7c97d0007f059b2a31c19fdbd6f9c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a64f746b4688ff40ab91eac0c1779ba95"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="revised__simplex_8cc.html#a64f746b4688ff40ab91eac0c1779ba95">ABSL_FLAG</a> (bool, simplex_display_stats, false, &quot;Display algorithm statistics.&quot;)</td></tr>
+<tr class="separator:a64f746b4688ff40ab91eac0c1779ba95"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
@@ -178,15 +178,21 @@ Variables</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="affeb8d5f6671bc64d5e1076e1a30efcf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#affeb8d5f6671bc64d5e1076e1a30efcf">&#9670;&nbsp;</a></span>DEFINE_bool() <span class="overload">[1/4]</span></h2>
+<a id="acbeead810cb856b2daab5362d543d727"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acbeead810cb856b2daab5362d543d727">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_bool </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">simplex_display_numbers_as_fractions&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -212,15 +218,21 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="afa9922b1aad15d1b06306e84a709766e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afa9922b1aad15d1b06306e84a709766e">&#9670;&nbsp;</a></span>DEFINE_bool() <span class="overload">[2/4]</span></h2>
+<a id="a64f746b4688ff40ab91eac0c1779ba95"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a64f746b4688ff40ab91eac0c1779ba95">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[2/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_bool </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">simplex_display_stats&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -246,15 +258,21 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a71a603091ff6bef6ec60d4b5ad774b52"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a71a603091ff6bef6ec60d4b5ad774b52">&#9670;&nbsp;</a></span>DEFINE_bool() <span class="overload">[3/4]</span></h2>
+<a id="abd7c97d0007f059b2a31c19fdbd6f9c8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abd7c97d0007f059b2a31c19fdbd6f9c8">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[3/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_bool </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">simplex_stop_after_feasibility&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -280,15 +298,21 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="aedb141d859e1c18d36815a28ed2b5f1f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aedb141d859e1c18d36815a28ed2b5f1f">&#9670;&nbsp;</a></span>DEFINE_bool() <span class="overload">[4/4]</span></h2>
+<a id="a5a65d2edddec64f308ea409703708acf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5a65d2edddec64f308ea409703708acf">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_bool </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">simplex_stop_after_first_basis&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -327,7 +351,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="revised__simplex_8cc_source.html#l01794">1794</a> of file <a class="el" href="revised__simplex_8cc_source.html">revised_simplex.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="revised__simplex_8cc_source.html#l01803">1803</a> of file <a class="el" href="revised__simplex_8cc_source.html">revised_simplex.cc</a>.</p>
 
 </div>
 </div>
@@ -343,7 +367,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="revised__simplex_8cc_source.html#l01793">1793</a> of file <a class="el" href="revised__simplex_8cc_source.html">revised_simplex.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="revised__simplex_8cc_source.html#l01802">1802</a> of file <a class="el" href="revised__simplex_8cc_source.html">revised_simplex.cc</a>.</p>
 
 </div>
 </div>
@@ -359,7 +383,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="revised__simplex_8cc_source.html#l01792">1792</a> of file <a class="el" href="revised__simplex_8cc_source.html">revised_simplex.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="revised__simplex_8cc_source.html#l01801">1801</a> of file <a class="el" href="revised__simplex_8cc_source.html">revised_simplex.cc</a>.</p>
 
 </div>
 </div>
@@ -375,13 +399,13 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="revised__simplex_8cc_source.html#l01795">1795</a> of file <a class="el" href="revised__simplex_8cc_source.html">revised_simplex.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="revised__simplex_8cc_source.html#l01804">1804</a> of file <a class="el" href="revised__simplex_8cc_source.html">revised_simplex.cc</a>.</p>
 
 </div>
 </div>
 </div><!-- contents -->
 </div><!-- doc-content -->
-<div class="ttc" id="arevised__simplex_8cc_html_aea35f36ba98d5bbd8d033382f50c9e52"><div class="ttname"><a href="revised__simplex_8cc.html#aea35f36ba98d5bbd8d033382f50c9e52">row</a></div><div class="ttdeci">RowIndex row</div><div class="ttdef"><b>Definition:</b> <a href="revised__simplex_8cc_source.html#l01792">revised_simplex.cc:1792</a></div></div>
+<div class="ttc" id="arevised__simplex_8cc_html_aea35f36ba98d5bbd8d033382f50c9e52"><div class="ttname"><a href="revised__simplex_8cc.html#aea35f36ba98d5bbd8d033382f50c9e52">row</a></div><div class="ttdeci">RowIndex row</div><div class="ttdef"><b>Definition:</b> <a href="revised__simplex_8cc_source.html#l01801">revised_simplex.cc:1801</a></div></div>
 <div class="ttc" id="amarkowitz_8cc_html_aa9d6c98fdf8d89b0e2321fda02adc82c"><div class="ttname"><a href="markowitz_8cc.html#aa9d6c98fdf8d89b0e2321fda02adc82c">col</a></div><div class="ttdeci">ColIndex col</div><div class="ttdef"><b>Definition:</b> <a href="markowitz_8cc_source.html#l00176">markowitz.cc:176</a></div></div>
 <!-- HTML footer for doxygen 1.8.18-->
 <!-- start footer part -->

@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -151,7 +151,7 @@ $(document).ready(function(){initNavTree('cp__model__symmetries_8cc_source.html'
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="keywordtype">void</span> Append(</div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">const</span> google::protobuf::RepeatedField&lt;FieldInt64Type&gt;&amp; repeated_field,</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    std::vector&lt;int64&gt;* vector) {</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;  CHECK(vector != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;  <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(vector != <span class="keyword">nullptr</span>);</div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;  <span class="keywordflow">for</span> (<span class="keyword">const</span> FieldInt64Type <a class="code" href="demon__profiler_8cc.html#a21edc7ca4cc5802c8779d68556bc09cf">value</a> : repeated_field) {</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    vector-&gt;push_back(<a class="code" href="demon__profiler_8cc.html#a21edc7ca4cc5802c8779d68556bc09cf">value</a>);</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;  }</div>
@@ -175,7 +175,7 @@ $(document).ready(function(){initNavTree('cp__model__symmetries_8cc_source.html'
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;std::unique_ptr&lt;Graph&gt; <a class="code" href="namespaceoperations__research_1_1sat.html#a3f6fa74408ea28eb41f29e9696d9a9a2">GenerateGraphForSymmetryDetection</a>(</div>
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keyword">const</span> CpModelProto&amp; problem,</div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    std::vector&lt;int&gt;* initial_equivalence_classes) {</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;  CHECK(initial_equivalence_classes != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;  <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(initial_equivalence_classes != <span class="keyword">nullptr</span>);</div>
 <div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;  <span class="keyword">const</span> <span class="keywordtype">int</span> num_variables = problem.variables_size();</div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;  <span class="keyword">auto</span> graph = absl::make_unique&lt;Graph&gt;();</div>
@@ -209,7 +209,7 @@ $(document).ready(function(){initNavTree('cp__model__symmetries_8cc_source.html'
 <div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <span class="keyword">const</span> IntegerVariableProto&amp; variable = problem.variables(v);</div>
 <div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    std::vector&lt;int64&gt; key = {VARIABLE_NODE, objective_by_var[v]};</div>
 <div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    Append(variable.domain(), &amp;key);</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    CHECK_EQ(v, new_node(key));</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(v, new_node(key));</div>
 <div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="comment">// Make sure the graph contains all the variable nodes, even if no edges are</span></div>
 <div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    <span class="comment">// attached to them through constraints.</span></div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;    graph-&gt;AddNode(v);</div>
@@ -239,7 +239,7 @@ $(document).ready(function(){initNavTree('cp__model__symmetries_8cc_source.html'
 <div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <span class="keywordflow">switch</span> (constraint.constraint_case()) {</div>
 <div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;      <span class="keywordflow">case</span> ConstraintProto::kLinear: {</div>
 <div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        Append(constraint.linear().domain(), &amp;key);</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        CHECK_EQ(constraint_node, new_node(key));</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(constraint_node, new_node(key));</div>
 <div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160; </div>
 <div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; constraint.linear().vars_size(); ++i) {</div>
 <div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;          <span class="keywordflow">if</span> (constraint.linear().coeffs(i) == 0) <span class="keywordflow">continue</span>;</div>
@@ -264,14 +264,14 @@ $(document).ready(function(){initNavTree('cp__model__symmetries_8cc_source.html'
 <div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;        <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;      }</div>
 <div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;      <span class="keywordflow">case</span> ConstraintProto::kBoolOr: {</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;        CHECK_EQ(constraint_node, new_node(key));</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;        <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(constraint_node, new_node(key));</div>
 <div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keywordtype">int</span> ref : constraint.bool_or().literals()) {</div>
 <div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;          add_literal_edge(ref, constraint_node);</div>
 <div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;        }</div>
 <div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;      }</div>
 <div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;      <span class="keywordflow">case</span> ConstraintProto::kBoolXor: {</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;        CHECK_EQ(constraint_node, new_node(key));</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;        <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(constraint_node, new_node(key));</div>
 <div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keywordtype">int</span> ref : constraint.bool_xor().literals()) {</div>
 <div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;          add_literal_edge(ref, constraint_node);</div>
 <div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;        }</div>
@@ -280,7 +280,7 @@ $(document).ready(function(){initNavTree('cp__model__symmetries_8cc_source.html'
 <div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;      <span class="keywordflow">case</span> ConstraintProto::kBoolAnd: {</div>
 <div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;        <span class="keywordflow">if</span> (constraint.enforcement_literal_size() == 0) {</div>
 <div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;          <span class="comment">// All literals are true in this case.</span></div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;          CHECK_EQ(constraint_node, new_node(key));</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;          <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(constraint_node, new_node(key));</div>
 <div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;          <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keywordtype">int</span> ref : constraint.bool_and().literals()) {</div>
 <div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;            add_literal_edge(ref, constraint_node);</div>
 <div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;          }</div>
@@ -307,7 +307,7 @@ $(document).ready(function(){initNavTree('cp__model__symmetries_8cc_source.html'
 <div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;        <span class="comment">// If the model contains any non-supported constraints, return an empty</span></div>
 <div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;        <span class="comment">// graph.</span></div>
 <div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;        <span class="comment">// TODO(user): support other types of constraints.</span></div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;        LOG(ERROR) &lt;&lt; <span class="stringliteral">&quot;Unsupported constraint type &quot;</span></div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;        <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#ac9bcbe19995a8140cd4ec61773cd6e67">ERROR</a>) &lt;&lt; <span class="stringliteral">&quot;Unsupported constraint type &quot;</span></div>
 <div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;                   &lt;&lt; constraint.constraint_case();</div>
 <div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">nullptr</span>;</div>
 <div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;      }</div>
@@ -326,7 +326,7 @@ $(document).ready(function(){initNavTree('cp__model__symmetries_8cc_source.html'
 <div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;  }</div>
 <div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160; </div>
 <div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;  graph-&gt;Build();</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;  DCHECK_EQ(graph-&gt;num_nodes(), initial_equivalence_classes-&gt;size());</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;  <a class="code" href="base_2logging_8h.html#ae89df3243bbb8341130c7b3f44145ea0">DCHECK_EQ</a>(graph-&gt;num_nodes(), initial_equivalence_classes-&gt;size());</div>
 <div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;  <span class="keywordflow">return</span> graph;</div>
 <div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;}</div>
 <div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;}  <span class="comment">// namespace</span></div>
@@ -335,7 +335,7 @@ $(document).ready(function(){initNavTree('cp__model__symmetries_8cc_source.html'
 <div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;    <span class="keyword">const</span> CpModelProto&amp; problem,</div>
 <div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    std::vector&lt;std::unique_ptr&lt;SparsePermutation&gt;&gt;* generators,</div>
 <div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    <span class="keywordtype">double</span> time_limit_seconds) {</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;  CHECK(generators != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;  <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(generators != <span class="keyword">nullptr</span>);</div>
 <div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;  generators-&gt;clear();</div>
 <div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160; </div>
 <div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;  <span class="keyword">typedef</span> <a class="code" href="classutil_1_1_static_graph.html">GraphSymmetryFinder::Graph</a> <a class="code" href="namespaceutil.html#a2f76166dbe0c4055a1f256235ad00478">Graph</a>;</div>
@@ -345,7 +345,7 @@ $(document).ready(function(){initNavTree('cp__model__symmetries_8cc_source.html'
 <div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;      GenerateGraphForSymmetryDetection&lt;Graph&gt;(problem, &amp;equivalence_classes));</div>
 <div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;  <span class="keywordflow">if</span> (graph == <span class="keyword">nullptr</span>) <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160; </div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;  LOG(INFO) &lt;&lt; <span class="stringliteral">&quot;Graph has &quot;</span> &lt;&lt; graph-&gt;num_nodes() &lt;&lt; <span class="stringliteral">&quot; nodes and &quot;</span></div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;  <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a>) &lt;&lt; <span class="stringliteral">&quot;Graph has &quot;</span> &lt;&lt; graph-&gt;num_nodes() &lt;&lt; <span class="stringliteral">&quot; nodes and &quot;</span></div>
 <div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;            &lt;&lt; graph-&gt;num_arcs() / 2 &lt;&lt; <span class="stringliteral">&quot; edges.&quot;</span>;</div>
 <div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160; </div>
 <div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;  <a class="code" href="classoperations__research_1_1_graph_symmetry_finder.html">GraphSymmetryFinder</a> symmetry_finder(*graph, <span class="comment">/*is_undirected=*/</span><span class="keyword">true</span>);</div>
@@ -371,7 +371,7 @@ $(document).ready(function(){initNavTree('cp__model__symmetries_8cc_source.html'
 <div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="macros_8h.html#a7f536a3b33f9bed8f75734e035d30725">DEBUG_MODE</a>) {</div>
 <div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;          <span class="comment">// Verify that the cycle&#39;s entire support does not touch any variable.</span></div>
 <div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;          <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keywordtype">int</span> node : permutation-&gt;<a class="code" href="classoperations__research_1_1_sparse_permutation.html#af567b4e287e268eb9ecee908f63e5b64">Cycle</a>(j)) {</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;            DCHECK_GE(node, problem.variables_size());</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;            <a class="code" href="base_2logging_8h.html#aae2dc65d9ea248d54bf39daa986dd295">DCHECK_GE</a>(node, problem.variables_size());</div>
 <div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;          }</div>
 <div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;        }</div>
 <div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;      }</div>
@@ -382,13 +382,13 @@ $(document).ready(function(){initNavTree('cp__model__symmetries_8cc_source.html'
 <div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;      swap((*generators)[num_generators], (*generators)[i]);</div>
 <div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;      ++num_generators;</div>
 <div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;      LOG(INFO) &lt;&lt; <span class="stringliteral">&quot;The model contains duplicate constraints!&quot;</span>;</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;      <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a>) &lt;&lt; <span class="stringliteral">&quot;The model contains duplicate constraints!&quot;</span>;</div>
 <div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;    }</div>
 <div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;  }</div>
 <div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;  generators-&gt;resize(num_generators);</div>
 <div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;  average_support_size /= num_generators;</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;  LOG(INFO) &lt;&lt; <span class="stringliteral">&quot;# of generators: &quot;</span> &lt;&lt; num_generators;</div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;  LOG(INFO) &lt;&lt; <span class="stringliteral">&quot;Average support size: &quot;</span> &lt;&lt; average_support_size;</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;  <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a>) &lt;&lt; <span class="stringliteral">&quot;# of generators: &quot;</span> &lt;&lt; num_generators;</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;  <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a>) &lt;&lt; <span class="stringliteral">&quot;Average support size: &quot;</span> &lt;&lt; average_support_size;</div>
 <div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;}</div>
 <div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160; </div>
 <div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;}  <span class="comment">// namespace sat</span></div>
@@ -396,8 +396,11 @@ $(document).ready(function(){initNavTree('cp__model__symmetries_8cc_source.html'
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <div class="ttc" id="anamespacegtl_html_a7a0f8dc4187504b814d8a8be463b517c"><div class="ttname"><a href="namespacegtl.html#a7a0f8dc4187504b814d8a8be463b517c">gtl::LookupOrInsert</a></div><div class="ttdeci">Collection::value_type::second_type &amp; LookupOrInsert(Collection *const collection, const typename Collection::value_type::first_type &amp;key, const typename Collection::value_type::second_type &amp;value)</div><div class="ttdef"><b>Definition:</b> <a href="map__util_8h_source.html#l00207">map_util.h:207</a></div></div>
+<div class="ttc" id="alog__severity_8h_html_ab4a2cbab234914b320b7fae11b6e8cb9"><div class="ttname"><a href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a></div><div class="ttdeci">const int INFO</div><div class="ttdef"><b>Definition:</b> <a href="log__severity_8h_source.html#l00031">log_severity.h:31</a></div></div>
 <div class="ttc" id="amap__util_8h_html"><div class="ttname"><a href="map__util_8h.html">map_util.h</a></div></div>
-<div class="ttc" id="abase_2logging_8h_html_a9f96ed9f06763f0821fdbb4d29031d8d"><div class="ttname"><a href="base_2logging_8h.html#a9f96ed9f06763f0821fdbb4d29031d8d">CHECK_OK</a></div><div class="ttdeci">#define CHECK_OK(x)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00029">base/logging.h:29</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a9f96ed9f06763f0821fdbb4d29031d8d"><div class="ttname"><a href="base_2logging_8h.html#a9f96ed9f06763f0821fdbb4d29031d8d">CHECK_OK</a></div><div class="ttdeci">#define CHECK_OK(x)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00040">base/logging.h:40</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_accad43a85d781d53381cd53a9894b6ae"><div class="ttname"><a href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a></div><div class="ttdeci">#define LOG(severity)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00420">base/logging.h:420</a></div></div>
+<div class="ttc" id="alog__severity_8h_html_ac9bcbe19995a8140cd4ec61773cd6e67"><div class="ttname"><a href="log__severity_8h.html#ac9bcbe19995a8140cd4ec61773cd6e67">ERROR</a></div><div class="ttdeci">const int ERROR</div><div class="ttdef"><b>Definition:</b> <a href="log__severity_8h_source.html#l00032">log_severity.h:32</a></div></div>
 <div class="ttc" id="aclassutil_1_1_static_graph_html"><div class="ttname"><a href="classutil_1_1_static_graph.html">util::StaticGraph</a></div><div class="ttdef"><b>Definition:</b> <a href="graph_8h_source.html#l00396">graph.h:396</a></div></div>
 <div class="ttc" id="afind__graph__symmetries_8h_html"><div class="ttname"><a href="find__graph__symmetries_8h.html">find_graph_symmetries.h</a></div></div>
 <div class="ttc" id="anamespaceutil_html_a2f76166dbe0c4055a1f256235ad00478"><div class="ttname"><a href="namespaceutil.html#a2f76166dbe0c4055a1f256235ad00478">util::Graph</a></div><div class="ttdeci">ListGraph Graph</div><div class="ttdef"><b>Definition:</b> <a href="graph_8h_source.html#l02354">graph.h:2354</a></div></div>
@@ -409,18 +412,22 @@ $(document).ready(function(){initNavTree('cp__model__symmetries_8cc_source.html'
 <div class="ttc" id="anamespaceoperations__research_1_1sat_html_acdbc8ad33149d45a6e6fcd8b72fd68ed"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#acdbc8ad33149d45a6e6fcd8b72fd68ed">operations_research::sat::PositiveRef</a></div><div class="ttdeci">int PositiveRef(int ref)</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__utils_8h_source.html#l00033">cp_model_utils.h:33</a></div></div>
 <div class="ttc" id="amacros_8h_html_a7f536a3b33f9bed8f75734e035d30725"><div class="ttname"><a href="macros_8h.html#a7f536a3b33f9bed8f75734e035d30725">DEBUG_MODE</a></div><div class="ttdeci">const bool DEBUG_MODE</div><div class="ttdef"><b>Definition:</b> <a href="macros_8h_source.html#l00024">macros.h:24</a></div></div>
 <div class="ttc" id="astructoperations__research_1_1_sparse_permutation_1_1_iterator_html_a8497b34029ee966694083aa34c9022b5"><div class="ttname"><a href="structoperations__research_1_1_sparse_permutation_1_1_iterator.html#a8497b34029ee966694083aa34c9022b5">operations_research::SparsePermutation::Iterator::begin</a></div><div class="ttdeci">std::vector&lt; int &gt;::const_iterator begin() const</div><div class="ttdef"><b>Definition:</b> <a href="sparse__permutation_8h_source.html#l00109">sparse_permutation.h:109</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a7c0ce053b28d53aa4eaf3eb7fb71663b"><div class="ttname"><a href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a></div><div class="ttdeci">#define CHECK_EQ(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00697">base/logging.h:697</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_sparse_permutation_html_af567b4e287e268eb9ecee908f63e5b64"><div class="ttname"><a href="classoperations__research_1_1_sparse_permutation.html#af567b4e287e268eb9ecee908f63e5b64">operations_research::SparsePermutation::Cycle</a></div><div class="ttdeci">Iterator Cycle(int i) const</div><div class="ttdef"><b>Definition:</b> <a href="sparse__permutation_8h_source.html#l00117">sparse_permutation.h:117</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1sat_html_ae0803b8198728cd4f6e58498d9c60091"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#ae0803b8198728cd4f6e58498d9c60091">operations_research::sat::NegatedRef</a></div><div class="ttdeci">int NegatedRef(int ref)</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__utils_8h_source.html#l00032">cp_model_utils.h:32</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1sat_html_a3f6fa74408ea28eb41f29e9696d9a9a2"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a3f6fa74408ea28eb41f29e9696d9a9a2">operations_research::sat::GenerateGraphForSymmetryDetection</a></div><div class="ttdeci">Graph * GenerateGraphForSymmetryDetection(const LinearBooleanProblem &amp;problem, std::vector&lt; int &gt; *initial_equivalence_classes)</div><div class="ttdef"><b>Definition:</b> <a href="boolean__problem_8cc_source.html#l00532">boolean_problem.cc:532</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_sparse_permutation_html_ab601acb5aed920b1e61210d497462976"><div class="ttname"><a href="classoperations__research_1_1_sparse_permutation.html#ab601acb5aed920b1e61210d497462976">operations_research::SparsePermutation::Support</a></div><div class="ttdeci">const std::vector&lt; int &gt; &amp; Support() const</div><div class="ttdef"><b>Definition:</b> <a href="sparse__permutation_8h_source.html#l00037">sparse_permutation.h:37</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_graph_symmetry_finder_html_a3a3796326515a59739024432c5dff6d8"><div class="ttname"><a href="classoperations__research_1_1_graph_symmetry_finder.html#a3a3796326515a59739024432c5dff6d8">operations_research::GraphSymmetryFinder::FindSymmetries</a></div><div class="ttdeci">absl::Status FindSymmetries(double time_limit_seconds, std::vector&lt; int &gt; *node_equivalence_classes_io, std::vector&lt; std::unique_ptr&lt; SparsePermutation &gt; &gt; *generators, std::vector&lt; int &gt; *factorized_automorphism_group_size)</div><div class="ttdef"><b>Definition:</b> <a href="find__graph__symmetries_8cc_source.html#l00355">find_graph_symmetries.cc:355</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_sparse_permutation_html_a9add43490c45e4334099bb15b6e6eab0"><div class="ttname"><a href="classoperations__research_1_1_sparse_permutation.html#a9add43490c45e4334099bb15b6e6eab0">operations_research::SparsePermutation::RemoveCycles</a></div><div class="ttdeci">void RemoveCycles(const std::vector&lt; int &gt; &amp;cycle_indices)</div><div class="ttdef"><b>Definition:</b> <a href="sparse__permutation_8cc_source.html#l00023">sparse_permutation.cc:23</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_aae2dc65d9ea248d54bf39daa986dd295"><div class="ttname"><a href="base_2logging_8h.html#aae2dc65d9ea248d54bf39daa986dd295">DCHECK_GE</a></div><div class="ttdeci">#define DCHECK_GE(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00889">base/logging.h:889</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1sat_html_a217338425de4389014563f1f24331713"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a217338425de4389014563f1f24331713">operations_research::sat::RefIsPositive</a></div><div class="ttdeci">bool RefIsPositive(int ref)</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__utils_8h_source.html#l00034">cp_model_utils.h:34</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1sat_html_a418890b4cbc1a5c377cd8e6a7a6bc881"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a418890b4cbc1a5c377cd8e6a7a6bc881">operations_research::sat::FindCpModelSymmetries</a></div><div class="ttdeci">void FindCpModelSymmetries(const CpModelProto &amp;problem, std::vector&lt; std::unique_ptr&lt; SparsePermutation &gt;&gt; *generators, double time_limit_seconds)</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__symmetries_8cc_source.html#l00243">cp_model_symmetries.cc:243</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_graph_symmetry_finder_html"><div class="ttname"><a href="classoperations__research_1_1_graph_symmetry_finder.html">operations_research::GraphSymmetryFinder</a></div><div class="ttdef"><b>Definition:</b> <a href="find__graph__symmetries_8h_source.html#l00043">find_graph_symmetries.h:43</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_ae89df3243bbb8341130c7b3f44145ea0"><div class="ttname"><a href="base_2logging_8h.html#ae89df3243bbb8341130c7b3f44145ea0">DCHECK_EQ</a></div><div class="ttdeci">#define DCHECK_EQ(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00885">base/logging.h:885</a></div></div>
 <div class="ttc" id="ahash_8h_html"><div class="ttname"><a href="hash_8h.html">hash.h</a></div></div>
 <div class="ttc" id="aoptimization_8cc_html_af63dcc00f2023fdf498e0829e6fb8a6b"><div class="ttname"><a href="optimization_8cc.html#af63dcc00f2023fdf498e0829e6fb8a6b">literal</a></div><div class="ttdeci">Literal literal</div><div class="ttdef"><b>Definition:</b> <a href="optimization_8cc_source.html#l00084">optimization.cc:84</a></div></div>
 <div class="ttc" id="acp__model__symmetries_8h_html"><div class="ttname"><a href="cp__model__symmetries_8h.html">cp_model_symmetries.h</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a3e1cfef60e774a81f30eaddf26a3a274"><div class="ttname"><a href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a></div><div class="ttdeci">#define CHECK(condition)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00495">base/logging.h:495</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_sparse_permutation_html"><div class="ttname"><a href="classoperations__research_1_1_sparse_permutation.html">operations_research::SparsePermutation</a></div><div class="ttdef"><b>Definition:</b> <a href="sparse__permutation_8h_source.html#l00027">sparse_permutation.h:27</a></div></div>
 <div class="ttc" id="anamespaceutil__hash_html_aa2ba7114404f5416e797636b0e1eddcd"><div class="ttname"><a href="namespaceutil__hash.html#aa2ba7114404f5416e797636b0e1eddcd">util_hash::Hash</a></div><div class="ttdeci">uint64 Hash(uint64 num, uint64 c)</div><div class="ttdef"><b>Definition:</b> <a href="hash_8h_source.html#l00150">hash.h:150</a></div></div>
 <div class="ttc" id="acp__model__utils_8h_html"><div class="ttname"><a href="cp__model__utils_8h.html">cp_model_utils.h</a></div></div>

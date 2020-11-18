@@ -1,7 +1,4 @@
 """Generate OR-Tools ref doc using Doxygen."""
-
-from __future__ import print_function
-
 import os
 import re
 

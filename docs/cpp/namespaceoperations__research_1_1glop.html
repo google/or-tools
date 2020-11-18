@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -351,6 +351,12 @@ Enumerations</h2></td></tr>
 <a class="el" href="namespaceoperations__research_1_1glop.html#ac814a1dee51d1ca71aa6a98cbef56b36aa1f5030ff0a216fbd9177ec75a952c34">GlopParameters_InitialBasisHeuristic_MAROS</a> = 3
  }</td></tr>
 <tr class="separator:ac814a1dee51d1ca71aa6a98cbef56b36"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab6f11e2c930c0d4c390a9578db0af240"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#ab6f11e2c930c0d4c390a9578db0af240">GlopParameters_CostScalingAlgorithm</a> : int { <a class="el" href="namespaceoperations__research_1_1glop.html#ab6f11e2c930c0d4c390a9578db0af240a8bb4a38dc75692438cdd1bb088c141b4">GlopParameters_CostScalingAlgorithm_NO_COST_SCALING</a> = 0, 
+<a class="el" href="namespaceoperations__research_1_1glop.html#ab6f11e2c930c0d4c390a9578db0af240a9f62ed7f786ad5aa15a0ebbafbc9ddae">GlopParameters_CostScalingAlgorithm_CONTAIN_ONE_COST_SCALING</a> = 1, 
+<a class="el" href="namespaceoperations__research_1_1glop.html#ab6f11e2c930c0d4c390a9578db0af240a3cbefd1b507359b40f43bd4fc729cc63">GlopParameters_CostScalingAlgorithm_MEAN_COST_SCALING</a> = 2, 
+<a class="el" href="namespaceoperations__research_1_1glop.html#ab6f11e2c930c0d4c390a9578db0af240a8e749cf5a988894fb7025c0ddd9fe58c">GlopParameters_CostScalingAlgorithm_MEDIAN_COST_SCALING</a> = 3
+ }</td></tr>
+<tr class="separator:ab6f11e2c930c0d4c390a9578db0af240"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae8a885303349cb7807c7c87b405bc0c9"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#ae8a885303349cb7807c7c87b405bc0c9">ProblemStatus</a> : int8 { <br />
 &#160;&#160;<a class="el" href="namespaceoperations__research_1_1glop.html#ae8a885303349cb7807c7c87b405bc0c9af00c8dbdd6e1f11bdae06be94277d293">OPTIMAL</a>, 
 <a class="el" href="namespaceoperations__research_1_1glop.html#ae8a885303349cb7807c7c87b405bc0c9a7850fcfea005b86b2a3fa0d4293c5ee0">PRIMAL_INFEASIBLE</a>, 
@@ -418,6 +424,10 @@ Functions</h2></td></tr>
 <tr class="separator:ad00da1f90386e29065761ba337b5e8df"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6bdae2e4c80b0034c9dae978e7ab0a7b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a6bdae2e4c80b0034c9dae978e7ab0a7b">GlopParameters_InitialBasisHeuristic_IsValid</a> (int <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>)</td></tr>
 <tr class="separator:a6bdae2e4c80b0034c9dae978e7ab0a7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adbcd70aebdd6c407852dfb5c2d84914e"><td class="memItemLeft" align="right" valign="top">const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#adbcd70aebdd6c407852dfb5c2d84914e">GlopParameters_CostScalingAlgorithm_descriptor</a> ()</td></tr>
+<tr class="separator:adbcd70aebdd6c407852dfb5c2d84914e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c8af313e605a648512880a8a0ec1f44"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a0c8af313e605a648512880a8a0ec1f44">GlopParameters_CostScalingAlgorithm_IsValid</a> (int <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>)</td></tr>
+<tr class="separator:a0c8af313e605a648512880a8a0ec1f44"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4793230401591292124c4a43610b80b5"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a4793230401591292124c4a43610b80b5"><td class="memTemplItemLeft" align="right" valign="top">const std::string &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a4793230401591292124c4a43610b80b5">GlopParameters_ScalingAlgorithm_Name</a> (T enum_t_value)</td></tr>
 <tr class="separator:a4793230401591292124c4a43610b80b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -438,8 +448,15 @@ Functions</h2></td></tr>
 <tr class="separator:a3b699fb6a90c069c50a1d0ccff55b2c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2fd8b391fcbe412f08ff32d053417b75"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a2fd8b391fcbe412f08ff32d053417b75">GlopParameters_InitialBasisHeuristic_Parse</a> (::PROTOBUF_NAMESPACE_ID::ConstStringParam <a class="el" href="linear__solver_8cc.html#a82e2a7e0f28d620da677073b6b24574b">name</a>, <a class="el" href="namespaceoperations__research_1_1glop.html#ac814a1dee51d1ca71aa6a98cbef56b36">GlopParameters_InitialBasisHeuristic</a> *<a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>)</td></tr>
 <tr class="separator:a2fd8b391fcbe412f08ff32d053417b75"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3424d57577a71015a603882dc6986999"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a3424d57577a71015a603882dc6986999"><td class="memTemplItemLeft" align="right" valign="top">const std::string &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a3424d57577a71015a603882dc6986999">GlopParameters_CostScalingAlgorithm_Name</a> (T enum_t_value)</td></tr>
+<tr class="separator:a3424d57577a71015a603882dc6986999"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a526650e79780d2a4faecf85db8c863bd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a526650e79780d2a4faecf85db8c863bd">GlopParameters_CostScalingAlgorithm_Parse</a> (::PROTOBUF_NAMESPACE_ID::ConstStringParam <a class="el" href="linear__solver_8cc.html#a82e2a7e0f28d620da677073b6b24574b">name</a>, <a class="el" href="namespaceoperations__research_1_1glop.html#ab6f11e2c930c0d4c390a9578db0af240">GlopParameters_CostScalingAlgorithm</a> *<a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>)</td></tr>
+<tr class="separator:a526650e79780d2a4faecf85db8c863bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a58ffd8db96c399242dc718221bdc81ee"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a58ffd8db96c399242dc718221bdc81ee">FixConstraintWithFixedStatuses</a> (const <a class="el" href="namespaceoperations__research_1_1glop.html#ae5fa9e57c2d31b294195ed8a9e17bfac">DenseColumn</a> &amp;row_lower_bounds, const <a class="el" href="namespaceoperations__research_1_1glop.html#ae5fa9e57c2d31b294195ed8a9e17bfac">DenseColumn</a> &amp;row_upper_bounds, <a class="el" href="structoperations__research_1_1glop_1_1_problem_solution.html">ProblemSolution</a> *solution)</td></tr>
 <tr class="separator:a58ffd8db96c399242dc718221bdc81ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7117821f9228585a9aaff7dc62aab216"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a7117821f9228585a9aaff7dc62aab216">RunLinearExample</a> ()</td></tr>
+<tr class="separator:a7117821f9228585a9aaff7dc62aab216"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a872df76d3d034d6a75a88ba6c9d8ac4c"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a872df76d3d034d6a75a88ba6c9d8ac4c">GetErrorCodeString</a> (<a class="el" href="classoperations__research_1_1glop_1_1_status.html#a59e56af19e754a6aa26a612ebf91d05f">Status::ErrorCode</a> error_code)</td></tr>
 <tr class="separator:a872df76d3d034d6a75a88ba6c9d8ac4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2122f0c519a9e417e92c63273565d6b5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a2122f0c519a9e417e92c63273565d6b5">AreBoundsValid</a> (<a class="el" href="namespaceoperations__research_1_1glop.html#a733947145e3e1631165b618b05c9ccb7">Fractional</a> lower_bound, <a class="el" href="namespaceoperations__research_1_1glop.html#a733947145e3e1631165b618b05c9ccb7">Fractional</a> upper_bound)</td></tr>
@@ -649,6 +666,12 @@ Variables</h2></td></tr>
 <tr class="separator:a04bc84c628bc74b0429d49408bc2ecc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3799c2cf495eb9cd8eb1877f98165394"><td class="memItemLeft" align="right" valign="top">constexpr int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a3799c2cf495eb9cd8eb1877f98165394">GlopParameters_InitialBasisHeuristic_InitialBasisHeuristic_ARRAYSIZE</a> = <a class="el" href="namespaceoperations__research_1_1glop.html#a04bc84c628bc74b0429d49408bc2ecc3">GlopParameters_InitialBasisHeuristic_InitialBasisHeuristic_MAX</a> + 1</td></tr>
 <tr class="separator:a3799c2cf495eb9cd8eb1877f98165394"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9575e4a7bbfc57e79071f79ddc365bf0"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceoperations__research_1_1glop.html#ab6f11e2c930c0d4c390a9578db0af240">GlopParameters_CostScalingAlgorithm</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a9575e4a7bbfc57e79071f79ddc365bf0">GlopParameters_CostScalingAlgorithm_CostScalingAlgorithm_MIN</a> = <a class="el" href="namespaceoperations__research_1_1glop.html#ab6f11e2c930c0d4c390a9578db0af240a8bb4a38dc75692438cdd1bb088c141b4">GlopParameters_CostScalingAlgorithm_NO_COST_SCALING</a></td></tr>
+<tr class="separator:a9575e4a7bbfc57e79071f79ddc365bf0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac5827cf560be529add13a58e7e8aa4a"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceoperations__research_1_1glop.html#ab6f11e2c930c0d4c390a9578db0af240">GlopParameters_CostScalingAlgorithm</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#aac5827cf560be529add13a58e7e8aa4a">GlopParameters_CostScalingAlgorithm_CostScalingAlgorithm_MAX</a> = <a class="el" href="namespaceoperations__research_1_1glop.html#ab6f11e2c930c0d4c390a9578db0af240a8e749cf5a988894fb7025c0ddd9fe58c">GlopParameters_CostScalingAlgorithm_MEDIAN_COST_SCALING</a></td></tr>
+<tr class="separator:aac5827cf560be529add13a58e7e8aa4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a073900e7fd0059fdbef5200aecd78e97"><td class="memItemLeft" align="right" valign="top">constexpr int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a073900e7fd0059fdbef5200aecd78e97">GlopParameters_CostScalingAlgorithm_CostScalingAlgorithm_ARRAYSIZE</a> = <a class="el" href="namespaceoperations__research_1_1glop.html#aac5827cf560be529add13a58e7e8aa4a">GlopParameters_CostScalingAlgorithm_CostScalingAlgorithm_MAX</a> + 1</td></tr>
+<tr class="separator:a073900e7fd0059fdbef5200aecd78e97"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79a952bdd960fc4d23c32edea03bb8c0"><td class="memItemLeft" align="right" valign="top">constexpr const <a class="el" href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a79a952bdd960fc4d23c32edea03bb8c0">kDeterministicSeed</a> = 42</td></tr>
 <tr class="separator:a79a952bdd960fc4d23c32edea03bb8c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a66fcb4c924b3fe5ea5e6c62f461621f3"><td class="memItemLeft" align="right" valign="top">const double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1glop.html#a66fcb4c924b3fe5ea5e6c62f461621f3">kRangeMax</a> = std::numeric_limits&lt;double&gt;::<a class="el" href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">max</a>()</td></tr>
@@ -1120,6 +1143,28 @@ Variables</h2></td></tr>
 </table>
 
 <p class="definition">Definition at line <a class="el" href="lp__types_8h_source.html#l00227">227</a> of file <a class="el" href="lp__types_8h_source.html">lp_types.h</a>.</p>
+
+</div>
+</div>
+<a id="ab6f11e2c930c0d4c390a9578db0af240"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab6f11e2c930c0d4c390a9578db0af240">&#9670;&nbsp;</a></span>GlopParameters_CostScalingAlgorithm</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="namespaceoperations__research_1_1glop.html#ab6f11e2c930c0d4c390a9578db0af240">GlopParameters_CostScalingAlgorithm</a> : int</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ab6f11e2c930c0d4c390a9578db0af240a8bb4a38dc75692438cdd1bb088c141b4"></a>GlopParameters_CostScalingAlgorithm_NO_COST_SCALING&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ab6f11e2c930c0d4c390a9578db0af240a9f62ed7f786ad5aa15a0ebbafbc9ddae"></a>GlopParameters_CostScalingAlgorithm_CONTAIN_ONE_COST_SCALING&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ab6f11e2c930c0d4c390a9578db0af240a3cbefd1b507359b40f43bd4fc729cc63"></a>GlopParameters_CostScalingAlgorithm_MEAN_COST_SCALING&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ab6f11e2c930c0d4c390a9578db0af240a8e749cf5a988894fb7025c0ddd9fe58c"></a>GlopParameters_CostScalingAlgorithm_MEDIAN_COST_SCALING&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8h_source.html#l00168">168</a> of file <a class="el" href="parameters_8pb_8h_source.html">parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2037,6 +2082,111 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="adbcd70aebdd6c407852dfb5c2d84914e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adbcd70aebdd6c407852dfb5c2d84914e">&#9670;&nbsp;</a></span>GlopParameters_CostScalingAlgorithm_descriptor()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor * GlopParameters_CostScalingAlgorithm_descriptor </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00343">343</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+
+</div>
+</div>
+<a id="a0c8af313e605a648512880a8a0ec1f44"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c8af313e605a648512880a8a0ec1f44">&#9670;&nbsp;</a></span>GlopParameters_CostScalingAlgorithm_IsValid()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool GlopParameters_CostScalingAlgorithm_IsValid </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>value</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00347">347</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+
+</div>
+</div>
+<a id="a3424d57577a71015a603882dc6986999"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3424d57577a71015a603882dc6986999">&#9670;&nbsp;</a></span>GlopParameters_CostScalingAlgorithm_Name()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const std::string&amp; operations_research::glop::GlopParameters_CostScalingAlgorithm_Name </td>
+          <td>(</td>
+          <td class="paramtype">T&#160;</td>
+          <td class="paramname"><em>enum_t_value</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8h_source.html#l00181">181</a> of file <a class="el" href="parameters_8pb_8h_source.html">parameters.pb.h</a>.</p>
+
+</div>
+</div>
+<a id="a526650e79780d2a4faecf85db8c863bd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a526650e79780d2a4faecf85db8c863bd">&#9670;&nbsp;</a></span>GlopParameters_CostScalingAlgorithm_Parse()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool operations_research::glop::GlopParameters_CostScalingAlgorithm_Parse </td>
+          <td>(</td>
+          <td class="paramtype">::PROTOBUF_NAMESPACE_ID::ConstStringParam&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceoperations__research_1_1glop.html#ab6f11e2c930c0d4c390a9578db0af240">GlopParameters_CostScalingAlgorithm</a> *&#160;</td>
+          <td class="paramname"><em>value</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8h_source.html#l00188">188</a> of file <a class="el" href="parameters_8pb_8h_source.html">parameters.pb.h</a>.</p>
+
+</div>
+</div>
 <a id="ad00da1f90386e29065761ba337b5e8df"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad00da1f90386e29065761ba337b5e8df">&#9670;&nbsp;</a></span>GlopParameters_InitialBasisHeuristic_descriptor()</h2>
 
@@ -2052,7 +2202,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00311">311</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00318">318</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -2072,7 +2222,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00315">315</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00322">322</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -2157,7 +2307,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00288">288</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00295">295</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -2177,7 +2327,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00292">292</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00299">299</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -2262,7 +2412,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00242">242</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00249">249</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -2282,7 +2432,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00246">246</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00253">253</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -2367,7 +2517,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00265">265</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00272">272</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -2387,7 +2537,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00269">269</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8cc_source.html#l00276">276</a> of file <a class="el" href="parameters_8pb_8cc_source.html">parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -3421,6 +3571,25 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="a7117821f9228585a9aaff7dc62aab216"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7117821f9228585a9aaff7dc62aab216">&#9670;&nbsp;</a></span>RunLinearExample()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int operations_research::glop::RunLinearExample </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="simple__glop__program_8cc_source.html#l00007">7</a> of file <a class="el" href="simple__glop__program_8cc_source.html">simple_glop_program.cc</a>.</p>
+
+</div>
+</div>
 <a id="a46935a48ea28abfec1c2569fe4aea70f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a46935a48ea28abfec1c2569fe4aea70f">&#9670;&nbsp;</a></span>ScalarProduct() <span class="overload">[1/2]</span></h2>
 
@@ -4067,6 +4236,78 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="parameters_8pb_8h_source.html#l00062">62</a> of file <a class="el" href="parameters_8pb_8h_source.html">parameters.pb.h</a>.</p>
+
+</div>
+</div>
+<a id="a073900e7fd0059fdbef5200aecd78e97"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a073900e7fd0059fdbef5200aecd78e97">&#9670;&nbsp;</a></span>GlopParameters_CostScalingAlgorithm_CostScalingAlgorithm_ARRAYSIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr int GlopParameters_CostScalingAlgorithm_CostScalingAlgorithm_ARRAYSIZE = <a class="el" href="namespaceoperations__research_1_1glop.html#aac5827cf560be529add13a58e7e8aa4a">GlopParameters_CostScalingAlgorithm_CostScalingAlgorithm_MAX</a> + 1</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8h_source.html#l00177">177</a> of file <a class="el" href="parameters_8pb_8h_source.html">parameters.pb.h</a>.</p>
+
+</div>
+</div>
+<a id="aac5827cf560be529add13a58e7e8aa4a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aac5827cf560be529add13a58e7e8aa4a">&#9670;&nbsp;</a></span>GlopParameters_CostScalingAlgorithm_CostScalingAlgorithm_MAX</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="el" href="namespaceoperations__research_1_1glop.html#ab6f11e2c930c0d4c390a9578db0af240">GlopParameters_CostScalingAlgorithm</a> GlopParameters_CostScalingAlgorithm_CostScalingAlgorithm_MAX = <a class="el" href="namespaceoperations__research_1_1glop.html#ab6f11e2c930c0d4c390a9578db0af240a8e749cf5a988894fb7025c0ddd9fe58c">GlopParameters_CostScalingAlgorithm_MEDIAN_COST_SCALING</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8h_source.html#l00176">176</a> of file <a class="el" href="parameters_8pb_8h_source.html">parameters.pb.h</a>.</p>
+
+</div>
+</div>
+<a id="a9575e4a7bbfc57e79071f79ddc365bf0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9575e4a7bbfc57e79071f79ddc365bf0">&#9670;&nbsp;</a></span>GlopParameters_CostScalingAlgorithm_CostScalingAlgorithm_MIN</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="el" href="namespaceoperations__research_1_1glop.html#ab6f11e2c930c0d4c390a9578db0af240">GlopParameters_CostScalingAlgorithm</a> GlopParameters_CostScalingAlgorithm_CostScalingAlgorithm_MIN = <a class="el" href="namespaceoperations__research_1_1glop.html#ab6f11e2c930c0d4c390a9578db0af240a8bb4a38dc75692438cdd1bb088c141b4">GlopParameters_CostScalingAlgorithm_NO_COST_SCALING</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="parameters_8pb_8h_source.html#l00175">175</a> of file <a class="el" href="parameters_8pb_8h_source.html">parameters.pb.h</a>.</p>
 
 </div>
 </div>

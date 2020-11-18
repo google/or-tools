@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['status_3717',['Status',['../classoperations__research_1_1_routing_model.html#a67a0db04d321a74b7e7fcfd3f1a3f70b',1,'operations_research::RoutingModel']]]
+  ['markertype_5509',['MarkerType',['../classoperations__research_1_1_solver.html#ade22213fff69cfb37d8238e8fd3073df',1,'operations_research::Solver']]]
 ];

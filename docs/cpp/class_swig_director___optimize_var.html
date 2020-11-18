@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -89,6 +89,7 @@ $(document).ready(function(){initNavTree('class_swig_director___optimize_var.htm
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
+<a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="class_swig_director___optimize_var-members.html">List of all members</a>  </div>
@@ -157,64 +158,98 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a9099a878a74de31d5094cc6316c5ae29"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a9099a878a74de31d5094cc6316c5ae29">SwigDirector_OptimizeVar</a> (operations_research::Solver *const s, bool maximize, operations_research::IntVar *const <a class="el" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a>, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> step)</td></tr>
+<tr class="memitem:a9099a878a74de31d5094cc6316c5ae29"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a9099a878a74de31d5094cc6316c5ae29">SwigDirector_OptimizeVar</a> (<a class="el" href="classoperations__research_1_1_solver.html">operations_research::Solver</a> *const s, bool maximize, <a class="el" href="classoperations__research_1_1_int_var.html">operations_research::IntVar</a> *const <a class="el" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a>, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> step)</td></tr>
 <tr class="separator:a9099a878a74de31d5094cc6316c5ae29"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aecd1696393b0a5ed8070af0a7615eb3c"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#aecd1696393b0a5ed8070af0a7615eb3c">~SwigDirector_OptimizeVar</a> ()</td></tr>
 <tr class="separator:aecd1696393b0a5ed8070af0a7615eb3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a764be64f3029f8b8e23511061d8de355"><td class="memItemLeft" align="right" valign="top">virtual std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a764be64f3029f8b8e23511061d8de355">DebugString</a> () const</td></tr>
 <tr class="separator:a764be64f3029f8b8e23511061d8de355"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a64b85630107261fc085d02f6e3f30a69"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a64b85630107261fc085d02f6e3f30a69">EnterSearch</a> ()</td></tr>
+<tr class="memdesc:a64b85630107261fc085d02f6e3f30a69"><td class="mdescLeft">&#160;</td><td class="mdescRight">Beginning of the search.  <a href="class_swig_director___optimize_var.html#a64b85630107261fc085d02f6e3f30a69">More...</a><br /></td></tr>
 <tr class="separator:a64b85630107261fc085d02f6e3f30a69"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0f660e8597c620b46aa963ed7f07c4d7"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a0f660e8597c620b46aa963ed7f07c4d7">RestartSearch</a> ()</td></tr>
+<tr class="memdesc:a0f660e8597c620b46aa963ed7f07c4d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Restart the search.  <a href="class_swig_director___optimize_var.html#a0f660e8597c620b46aa963ed7f07c4d7">More...</a><br /></td></tr>
 <tr class="separator:a0f660e8597c620b46aa963ed7f07c4d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1615395b2e594ebad774615d021c2854"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a1615395b2e594ebad774615d021c2854">ExitSearch</a> ()</td></tr>
+<tr class="memdesc:a1615395b2e594ebad774615d021c2854"><td class="mdescLeft">&#160;</td><td class="mdescRight">End of the search.  <a href="class_swig_director___optimize_var.html#a1615395b2e594ebad774615d021c2854">More...</a><br /></td></tr>
 <tr class="separator:a1615395b2e594ebad774615d021c2854"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac567d74ff6ac3594e71987a3a4aeeea"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#aac567d74ff6ac3594e71987a3a4aeeea">BeginNextDecision</a> (operations_research::DecisionBuilder *const db)</td></tr>
+<tr class="memitem:aac567d74ff6ac3594e71987a3a4aeeea"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#aac567d74ff6ac3594e71987a3a4aeeea">BeginNextDecision</a> (<a class="el" href="classoperations__research_1_1_decision_builder.html">operations_research::DecisionBuilder</a> *const db)</td></tr>
+<tr class="memdesc:aac567d74ff6ac3594e71987a3a4aeeea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Before calling DecisionBuilder::Next.  <a href="class_swig_director___optimize_var.html#aac567d74ff6ac3594e71987a3a4aeeea">More...</a><br /></td></tr>
 <tr class="separator:aac567d74ff6ac3594e71987a3a4aeeea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4d3e897e80ac0751ccef9efff585027a"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a4d3e897e80ac0751ccef9efff585027a">EndNextDecision</a> (operations_research::DecisionBuilder *const <a class="el" href="constraint__solver_2table_8cc.html#a344010e26426d6a13411648d988bc9b6">b</a>, operations_research::Decision *const d)</td></tr>
+<tr class="memitem:a4d3e897e80ac0751ccef9efff585027a"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a4d3e897e80ac0751ccef9efff585027a">EndNextDecision</a> (<a class="el" href="classoperations__research_1_1_decision_builder.html">operations_research::DecisionBuilder</a> *const <a class="el" href="constraint__solver_2table_8cc.html#a344010e26426d6a13411648d988bc9b6">b</a>, <a class="el" href="classoperations__research_1_1_decision.html">operations_research::Decision</a> *const d)</td></tr>
+<tr class="memdesc:a4d3e897e80ac0751ccef9efff585027a"><td class="mdescLeft">&#160;</td><td class="mdescRight">After calling DecisionBuilder::Next, along with the returned decision.  <a href="class_swig_director___optimize_var.html#a4d3e897e80ac0751ccef9efff585027a">More...</a><br /></td></tr>
 <tr class="separator:a4d3e897e80ac0751ccef9efff585027a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7a6c102610d28e2d79f56ea5c820cda9"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a7a6c102610d28e2d79f56ea5c820cda9">ApplyDecision</a> (operations_research::Decision *const d)</td></tr>
+<tr class="memitem:a7a6c102610d28e2d79f56ea5c820cda9"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a7a6c102610d28e2d79f56ea5c820cda9">ApplyDecision</a> (<a class="el" href="classoperations__research_1_1_decision.html">operations_research::Decision</a> *const d)</td></tr>
+<tr class="memdesc:a7a6c102610d28e2d79f56ea5c820cda9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Before applying the decision.  <a href="class_swig_director___optimize_var.html#a7a6c102610d28e2d79f56ea5c820cda9">More...</a><br /></td></tr>
 <tr class="separator:a7a6c102610d28e2d79f56ea5c820cda9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad9db31a0e5c228b2193afead55895a8e"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#ad9db31a0e5c228b2193afead55895a8e">RefuteDecision</a> (operations_research::Decision *const d)</td></tr>
+<tr class="memitem:ad9db31a0e5c228b2193afead55895a8e"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#ad9db31a0e5c228b2193afead55895a8e">RefuteDecision</a> (<a class="el" href="classoperations__research_1_1_decision.html">operations_research::Decision</a> *const d)</td></tr>
+<tr class="memdesc:ad9db31a0e5c228b2193afead55895a8e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Before refuting the decision.  <a href="class_swig_director___optimize_var.html#ad9db31a0e5c228b2193afead55895a8e">More...</a><br /></td></tr>
 <tr class="separator:ad9db31a0e5c228b2193afead55895a8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3ed59b6b2264dc78871fcdc6a5f76205"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a3ed59b6b2264dc78871fcdc6a5f76205">AfterDecision</a> (operations_research::Decision *const d, bool apply)</td></tr>
+<tr class="memitem:a3ed59b6b2264dc78871fcdc6a5f76205"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a3ed59b6b2264dc78871fcdc6a5f76205">AfterDecision</a> (<a class="el" href="classoperations__research_1_1_decision.html">operations_research::Decision</a> *const d, bool apply)</td></tr>
+<tr class="memdesc:a3ed59b6b2264dc78871fcdc6a5f76205"><td class="mdescLeft">&#160;</td><td class="mdescRight">Just after refuting or applying the decision, apply is true after Apply.  <a href="class_swig_director___optimize_var.html#a3ed59b6b2264dc78871fcdc6a5f76205">More...</a><br /></td></tr>
 <tr class="separator:a3ed59b6b2264dc78871fcdc6a5f76205"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a454ac888929e304de940a94fa21c6821"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a454ac888929e304de940a94fa21c6821">BeginFail</a> ()</td></tr>
+<tr class="memdesc:a454ac888929e304de940a94fa21c6821"><td class="mdescLeft">&#160;</td><td class="mdescRight">Just when the failure occurs.  <a href="class_swig_director___optimize_var.html#a454ac888929e304de940a94fa21c6821">More...</a><br /></td></tr>
 <tr class="separator:a454ac888929e304de940a94fa21c6821"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8314a4c362f64e711ec7cd4264be1844"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a8314a4c362f64e711ec7cd4264be1844">EndFail</a> ()</td></tr>
+<tr class="memdesc:a8314a4c362f64e711ec7cd4264be1844"><td class="mdescLeft">&#160;</td><td class="mdescRight">After completing the backtrack.  <a href="class_swig_director___optimize_var.html#a8314a4c362f64e711ec7cd4264be1844">More...</a><br /></td></tr>
 <tr class="separator:a8314a4c362f64e711ec7cd4264be1844"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4b1c8b194527e84175c219213db4a1ea"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a4b1c8b194527e84175c219213db4a1ea">BeginInitialPropagation</a> ()</td></tr>
+<tr class="memdesc:a4b1c8b194527e84175c219213db4a1ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Before the initial propagation.  <a href="class_swig_director___optimize_var.html#a4b1c8b194527e84175c219213db4a1ea">More...</a><br /></td></tr>
 <tr class="separator:a4b1c8b194527e84175c219213db4a1ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a975d041f983e1fa15ed2ef96ea40271f"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a975d041f983e1fa15ed2ef96ea40271f">EndInitialPropagation</a> ()</td></tr>
+<tr class="memdesc:a975d041f983e1fa15ed2ef96ea40271f"><td class="mdescLeft">&#160;</td><td class="mdescRight">After the initial propagation.  <a href="class_swig_director___optimize_var.html#a975d041f983e1fa15ed2ef96ea40271f">More...</a><br /></td></tr>
 <tr class="separator:a975d041f983e1fa15ed2ef96ea40271f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af413a50ef58e2b1026f3d89bfb85215a"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#af413a50ef58e2b1026f3d89bfb85215a">AcceptSolution</a> ()</td></tr>
+<tr class="memdesc:af413a50ef58e2b1026f3d89bfb85215a"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method is called when a solution is found.  <a href="class_swig_director___optimize_var.html#af413a50ef58e2b1026f3d89bfb85215a">More...</a><br /></td></tr>
 <tr class="separator:af413a50ef58e2b1026f3d89bfb85215a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aab2e7f61fef0e7a0ef5bb35cfc051199"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#aab2e7f61fef0e7a0ef5bb35cfc051199">AtSolution</a> ()</td></tr>
+<tr class="memdesc:aab2e7f61fef0e7a0ef5bb35cfc051199"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method is called when a valid solution is found.  <a href="class_swig_director___optimize_var.html#aab2e7f61fef0e7a0ef5bb35cfc051199">More...</a><br /></td></tr>
 <tr class="separator:aab2e7f61fef0e7a0ef5bb35cfc051199"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a30d7b17082cedd451c6bf44260fef75d"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a30d7b17082cedd451c6bf44260fef75d">NoMoreSolutions</a> ()</td></tr>
+<tr class="memdesc:a30d7b17082cedd451c6bf44260fef75d"><td class="mdescLeft">&#160;</td><td class="mdescRight">When the search tree is finished.  <a href="class_swig_director___optimize_var.html#a30d7b17082cedd451c6bf44260fef75d">More...</a><br /></td></tr>
 <tr class="separator:a30d7b17082cedd451c6bf44260fef75d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2148f73a5d315eed3048335d0cc084c1"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a2148f73a5d315eed3048335d0cc084c1">LocalOptimum</a> ()</td></tr>
+<tr class="memdesc:a2148f73a5d315eed3048335d0cc084c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">When a local optimum is reached.  <a href="class_swig_director___optimize_var.html#a2148f73a5d315eed3048335d0cc084c1">More...</a><br /></td></tr>
 <tr class="separator:a2148f73a5d315eed3048335d0cc084c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acf41c9f9ab81aa3416113f1281d3ea64"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#acf41c9f9ab81aa3416113f1281d3ea64">AcceptDelta</a> (operations_research::Assignment *<a class="el" href="resource_8cc.html#a73461c37822b6ebb75b54ba1a9ffb442">delta</a>, operations_research::Assignment *deltadelta)</td></tr>
+<tr class="memitem:acf41c9f9ab81aa3416113f1281d3ea64"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#acf41c9f9ab81aa3416113f1281d3ea64">AcceptDelta</a> (<a class="el" href="classoperations__research_1_1_assignment.html">operations_research::Assignment</a> *<a class="el" href="resource_8cc.html#a73461c37822b6ebb75b54ba1a9ffb442">delta</a>, <a class="el" href="classoperations__research_1_1_assignment.html">operations_research::Assignment</a> *deltadelta)</td></tr>
+<tr class="memdesc:acf41c9f9ab81aa3416113f1281d3ea64"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal methods.  <a href="class_swig_director___optimize_var.html#acf41c9f9ab81aa3416113f1281d3ea64">More...</a><br /></td></tr>
 <tr class="separator:acf41c9f9ab81aa3416113f1281d3ea64"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea42093b3b9c8525f4a98a30ad5257d8"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#aea42093b3b9c8525f4a98a30ad5257d8">AcceptNeighbor</a> ()</td></tr>
+<tr class="memdesc:aea42093b3b9c8525f4a98a30ad5257d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">After accepting a neighbor during local search.  <a href="class_swig_director___optimize_var.html#aea42093b3b9c8525f4a98a30ad5257d8">More...</a><br /></td></tr>
 <tr class="separator:aea42093b3b9c8525f4a98a30ad5257d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9c5c737b0e0cc86888b5a32f445cfc7f"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a9c5c737b0e0cc86888b5a32f445cfc7f">AcceptUncheckedNeighbor</a> ()</td></tr>
+<tr class="memdesc:a9c5c737b0e0cc86888b5a32f445cfc7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">After accepting an unchecked neighbor during local search.  <a href="class_swig_director___optimize_var.html#a9c5c737b0e0cc86888b5a32f445cfc7f">More...</a><br /></td></tr>
 <tr class="separator:a9c5c737b0e0cc86888b5a32f445cfc7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab6d73292f3f6c8486d463365609ef12d"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#ab6d73292f3f6c8486d463365609ef12d">IsUncheckedSolutionLimitReached</a> ()</td></tr>
+<tr class="memdesc:ab6d73292f3f6c8486d463365609ef12d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the limit of solutions has been reached including unchecked solutions.  <a href="class_swig_director___optimize_var.html#ab6d73292f3f6c8486d463365609ef12d">More...</a><br /></td></tr>
 <tr class="separator:ab6d73292f3f6c8486d463365609ef12d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a61dc29f76a01e24526e0167c779f30d0"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a61dc29f76a01e24526e0167c779f30d0">PeriodicCheck</a> ()</td></tr>
+<tr class="memdesc:a61dc29f76a01e24526e0167c779f30d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Periodic call to check limits in long running methods.  <a href="class_swig_director___optimize_var.html#a61dc29f76a01e24526e0167c779f30d0">More...</a><br /></td></tr>
 <tr class="separator:a61dc29f76a01e24526e0167c779f30d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a004e66b858493ff4603967c4d4fb7335"><td class="memItemLeft" align="right" valign="top">virtual int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a004e66b858493ff4603967c4d4fb7335">ProgressPercent</a> ()</td></tr>
+<tr class="memdesc:a004e66b858493ff4603967c4d4fb7335"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a percentage representing the propress of the search before reaching limits.  <a href="class_swig_director___optimize_var.html#a004e66b858493ff4603967c4d4fb7335">More...</a><br /></td></tr>
 <tr class="separator:a004e66b858493ff4603967c4d4fb7335"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8043b2f97c119b7f9281a7a5a88089f0"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a8043b2f97c119b7f9281a7a5a88089f0">Accept</a> (operations_research::ModelVisitor *const visitor) const</td></tr>
+<tr class="memitem:a8043b2f97c119b7f9281a7a5a88089f0"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a8043b2f97c119b7f9281a7a5a88089f0">Accept</a> (<a class="el" href="classoperations__research_1_1_model_visitor.html">operations_research::ModelVisitor</a> *const visitor) const</td></tr>
+<tr class="memdesc:a8043b2f97c119b7f9281a7a5a88089f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Accepts the given model visitor.  <a href="class_swig_director___optimize_var.html#a8043b2f97c119b7f9281a7a5a88089f0">More...</a><br /></td></tr>
 <tr class="separator:a8043b2f97c119b7f9281a7a5a88089f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af01d6e340e0ee803b6587a736745a78c"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#af01d6e340e0ee803b6587a736745a78c">Install</a> ()</td></tr>
+<tr class="memdesc:af01d6e340e0ee803b6587a736745a78c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Registers itself on the solver such that it gets notified of the search and propagation events.  <a href="class_swig_director___optimize_var.html#af01d6e340e0ee803b6587a736745a78c">More...</a><br /></td></tr>
 <tr class="separator:af01d6e340e0ee803b6587a736745a78c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaac7de1ccab45420ade1d7446fc5830b"><td class="memItemLeft" align="right" valign="top">virtual std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#aaac7de1ccab45420ade1d7446fc5830b">Print</a> () const</td></tr>
 <tr class="separator:aaac7de1ccab45420ade1d7446fc5830b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0d1d9a2d138d78e2df7d18db175910a5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___optimize_var.html#a0d1d9a2d138d78e2df7d18db175910a5">swig_connect_director</a> (<a class="el" href="class_swig_director___optimize_var.html#a411a8fa0fb7b140467ee5b40769c347e">SWIG_Callback0_t</a> callbackToString, <a class="el" href="class_swig_director___optimize_var.html#a93002357744ec4eb7efb0d548b86dd1b">SWIG_Callback1_t</a> callbackEnterSearch, <a class="el" href="class_swig_director___optimize_var.html#a0634bbe5fa33be96d36378a5c8ef4826">SWIG_Callback2_t</a> callbackRestartSearch, <a class="el" href="class_swig_director___optimize_var.html#aef473edbdf461362ac144d8a6f58953a">SWIG_Callback3_t</a> callbackExitSearch, <a class="el" href="class_swig_director___optimize_var.html#a6cc58da5bec57c184d5b307449c4ec41">SWIG_Callback4_t</a> callbackBeginNextDecision, <a class="el" href="class_swig_director___optimize_var.html#a14a4f4def2d3c9ae6963f917ca3d4ec3">SWIG_Callback5_t</a> callbackEndNextDecision, <a class="el" href="class_swig_director___optimize_var.html#ac390dfe7549ea1b0a2027cc7c962ae08">SWIG_Callback6_t</a> callbackApplyDecision, <a class="el" href="class_swig_director___optimize_var.html#ae1c71a6b91e2a3fb79af35fb1fc28187">SWIG_Callback7_t</a> callbackRefuteDecision, <a class="el" href="class_swig_director___optimize_var.html#a0bc46db7c527a9df7cfb17d883814260">SWIG_Callback8_t</a> callbackAfterDecision, <a class="el" href="class_swig_director___optimize_var.html#a30485c2e8c8e345275c5408a9b957aa0">SWIG_Callback9_t</a> callbackBeginFail, <a class="el" href="class_swig_director___optimize_var.html#a8cce42ecfba9500acc411062187663b1">SWIG_Callback10_t</a> callbackEndFail, <a class="el" href="class_swig_director___optimize_var.html#a2b2d0ce0b3d55ffff96b2e3f84166081">SWIG_Callback11_t</a> callbackBeginInitialPropagation, <a class="el" href="class_swig_director___optimize_var.html#ae7a8d3743a3192f16ca148db5feb0fbe">SWIG_Callback12_t</a> callbackEndInitialPropagation, <a class="el" href="class_swig_director___optimize_var.html#a60bf976c65b9ed3cdb48e2c9db278006">SWIG_Callback13_t</a> callbackAcceptSolution, <a class="el" href="class_swig_director___optimize_var.html#a6e6c7cbe002c7dd1f3b0ec1013e471b1">SWIG_Callback14_t</a> callbackAtSolution, <a class="el" href="class_swig_director___optimize_var.html#a4f23e7d763f74761cf38144c4ac9ded8">SWIG_Callback15_t</a> callbackNoMoreSolutions, <a class="el" href="class_swig_director___optimize_var.html#a134c62bb69b837bd4a15774ccff578a7">SWIG_Callback16_t</a> callbackLocalOptimum, <a class="el" href="class_swig_director___optimize_var.html#a18b3232849cfa1e2f952b31f4d89704b">SWIG_Callback17_t</a> callbackAcceptDelta, <a class="el" href="class_swig_director___optimize_var.html#a7edb1dd83115684a37cecb31142da26d">SWIG_Callback18_t</a> callbackAcceptNeighbor, <a class="el" href="class_swig_director___optimize_var.html#a8dc09d83c3c4820bf7f7669e9750f475">SWIG_Callback19_t</a> callbackAcceptUncheckedNeighbor, <a class="el" href="class_swig_director___optimize_var.html#a45f85bb85556df6122c831d01b2eb2f0">SWIG_Callback20_t</a> callbackIsUncheckedSolutionLimitReached, <a class="el" href="class_swig_director___optimize_var.html#a6b147ccb80e7a8bfe89f531ab2eae538">SWIG_Callback21_t</a> callbackPeriodicCheck, <a class="el" href="class_swig_director___optimize_var.html#ac11c947c18f80f8f2c75c2fa6562ada0">SWIG_Callback22_t</a> callbackProgressPercent, <a class="el" href="class_swig_director___optimize_var.html#ad617e3f3f44a686b6e73e91ac1f464d4">SWIG_Callback23_t</a> callbackAccept, <a class="el" href="class_swig_director___optimize_var.html#ac2550bbdff9ad9ee89bc66ab90cf18a9">SWIG_Callback24_t</a> callbackInstall, <a class="el" href="class_swig_director___optimize_var.html#a68b499824b4c8a7367e21c75acce066f">SWIG_Callback25_t</a> callbackPrint)</td></tr>
 <tr class="separator:a0d1d9a2d138d78e2df7d18db175910a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f1de124cc3328c7d5077c5275d0bfd4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_optimize_var.html#a1f1de124cc3328c7d5077c5275d0bfd4">best</a> () const</td></tr>
+<tr class="memdesc:a1f1de124cc3328c7d5077c5275d0bfd4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the best value found during search.  <a href="classoperations__research_1_1_optimize_var.html#a1f1de124cc3328c7d5077c5275d0bfd4">More...</a><br /></td></tr>
+<tr class="separator:a1f1de124cc3328c7d5077c5275d0bfd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8052ccc3aba839f3befd553cc05b85a0"><td class="memItemLeft" align="right" valign="top">IntVar *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_optimize_var.html#a8052ccc3aba839f3befd553cc05b85a0">Var</a> () const</td></tr>
+<tr class="memdesc:a8052ccc3aba839f3befd553cc05b85a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the variable that is optimized.  <a href="classoperations__research_1_1_optimize_var.html#a8052ccc3aba839f3befd553cc05b85a0">More...</a><br /></td></tr>
+<tr class="separator:a8052ccc3aba839f3befd553cc05b85a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a042bc511877a33bbbc296383c0797650"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_optimize_var.html#a042bc511877a33bbbc296383c0797650">ApplyBound</a> ()</td></tr>
+<tr class="separator:a042bc511877a33bbbc296383c0797650"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f32c22c620c811754ba7b6f977db864"><td class="memItemLeft" align="right" valign="top">Solver *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_search_monitor.html#a5f32c22c620c811754ba7b6f977db864">solver</a> () const</td></tr>
+<tr class="separator:a5f32c22c620c811754ba7b6f977db864"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae73138bd79b68bb81e3a1c9b9f2cbcdf"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_1_1_director.html#ae73138bd79b68bb81e3a1c9b9f2cbcdf">swig_set_self</a> (JNIEnv *jenv, jobject jself, bool mem_own, bool weak_global)</td></tr>
 <tr class="separator:ae73138bd79b68bb81e3a1c9b9f2cbcdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae73138bd79b68bb81e3a1c9b9f2cbcdf"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_1_1_director.html#ae73138bd79b68bb81e3a1c9b9f2cbcdf">swig_set_self</a> (JNIEnv *jenv, jobject jself, bool mem_own, bool weak_global)</td></tr>
@@ -277,6 +312,11 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a81d11e03e2f92e3342f542b645c3e1dd"><td class="memTemplItemLeft" align="right" valign="top">static PyObject *&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_swig_1_1_director.html#a81d11e03e2f92e3342f542b645c3e1dd">swig_pyobj_disown</a> (PyObject *pyobj, PyObject *<a class="el" href="util__java__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">SWIGUNUSEDPARM</a>(args))</td></tr>
 <tr class="separator:a81d11e03e2f92e3342f542b645c3e1dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
+Static Public Attributes</h2></td></tr>
+<tr class="memitem:a97c59af2c64e5f0c004243f4266173cc"><td class="memItemLeft" align="right" valign="top">static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_search_monitor.html#a97c59af2c64e5f0c004243f4266173cc">kNoProgress</a> = -1</td></tr>
+<tr class="separator:a97c59af2c64e5f0c004243f4266173cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
 <tr class="memitem:ae7bcbe7078006217ee79d0dea71461b0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_1_1_director.html#ae7bcbe7078006217ee79d0dea71461b0">swig_disconnect_director_self</a> (const char *disconn_method)</td></tr>
@@ -286,6 +326,16 @@ Protected Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
+<tr class="memitem:aacb45343e78641c7b582de46225d3481"><td class="memItemLeft" align="right" valign="top">IntVar *const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_optimize_var.html#aacb45343e78641c7b582de46225d3481">var_</a></td></tr>
+<tr class="separator:aacb45343e78641c7b582de46225d3481"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a87607661db50ef1ae104b4cd6d05f8a8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_optimize_var.html#a87607661db50ef1ae104b4cd6d05f8a8">step_</a></td></tr>
+<tr class="separator:a87607661db50ef1ae104b4cd6d05f8a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62c8c6ddbd6448f66e4f17e34ef8f33b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_optimize_var.html#a62c8c6ddbd6448f66e4f17e34ef8f33b">best_</a></td></tr>
+<tr class="separator:a62c8c6ddbd6448f66e4f17e34ef8f33b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5d09a69c6c8c8eea9311b0513628683"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_optimize_var.html#ad5d09a69c6c8c8eea9311b0513628683">maximize_</a></td></tr>
+<tr class="separator:ad5d09a69c6c8c8eea9311b0513628683"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7bcea05dd62f2b212dd18322fd22b32e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_optimize_var.html#a7bcea05dd62f2b212dd18322fd22b32e">found_initial_solution_</a></td></tr>
+<tr class="separator:a7bcea05dd62f2b212dd18322fd22b32e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8fbf8fa6d8c645da8dcf83917e534c5f"><td class="memItemLeft" align="right" valign="top">JObjectWrapper&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_1_1_director.html#a8fbf8fa6d8c645da8dcf83917e534c5f">swig_self_</a></td></tr>
 <tr class="separator:a8fbf8fa6d8c645da8dcf83917e534c5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -716,7 +766,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="class_swig_director___optimize_var.html">SwigDirector_OptimizeVar</a> </td>
           <td>(</td>
-          <td class="paramtype">operations_research::Solver *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_solver.html">operations_research::Solver</a> *const&#160;</td>
           <td class="paramname"><em>s</em>, </td>
         </tr>
         <tr>
@@ -728,7 +778,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">operations_research::IntVar *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_int_var.html">operations_research::IntVar</a> *const&#160;</td>
           <td class="paramname"><em>a</em>, </td>
         </tr>
         <tr>
@@ -789,7 +839,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">void Accept </td>
           <td>(</td>
-          <td class="paramtype">operations_research::ModelVisitor *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_model_visitor.html">operations_research::ModelVisitor</a> *const&#160;</td>
           <td class="paramname"><em>visitor</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -800,6 +850,10 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Accepts the given model visitor. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_optimize_var.html#aa30c84aec5e60d6b74e1e1eb15011d4a">OptimizeVar</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03265">3265</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
@@ -817,13 +871,13 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">bool AcceptDelta </td>
           <td>(</td>
-          <td class="paramtype">operations_research::Assignment *&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_assignment.html">operations_research::Assignment</a> *&#160;</td>
           <td class="paramname"><em>delta</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">operations_research::Assignment *&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_assignment.html">operations_research::Assignment</a> *&#160;</td>
           <td class="paramname"><em>deltadelta</em>&#160;</td>
         </tr>
         <tr>
@@ -838,6 +892,10 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Internal methods. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_optimize_var.html#ae983cf659c971e1f2095a2c5a0e81eca">OptimizeVar</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03195">3195</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
@@ -866,6 +924,10 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>After accepting a neighbor during local search. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_search_monitor.html#aea42093b3b9c8525f4a98a30ad5257d8">SearchMonitor</a>.</p>
+
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03212">3212</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
 </div>
@@ -892,6 +954,11 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>This method is called when a solution is found. </p>
+<p>It asserts whether the solution is valid. A value of false indicates that the solution should be discarded. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_optimize_var.html#aa8900234762f2b2015b9108accdf10ff">OptimizeVar</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03147">3147</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
@@ -920,6 +987,10 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>After accepting an unchecked neighbor during local search. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_search_monitor.html#a9c5c737b0e0cc86888b5a32f445cfc7f">SearchMonitor</a>.</p>
+
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03221">3221</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
 </div>
@@ -936,7 +1007,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">void AfterDecision </td>
           <td>(</td>
-          <td class="paramtype">operations_research::Decision *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_decision.html">operations_research::Decision</a> *const&#160;</td>
           <td class="paramname"><em>d</em>, </td>
         </tr>
         <tr>
@@ -958,7 +1029,39 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Just after refuting or applying the decision, apply is true after Apply. </p>
+<p>This is called only if the Apply() or Refute() methods have not failed. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_search_monitor.html#a488f1d99cc1f61acdc6782dcfee86e49">SearchMonitor</a>.</p>
+
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03097">3097</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
+
+</div>
+</div>
+<a id="a042bc511877a33bbbc296383c0797650"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a042bc511877a33bbbc296383c0797650">&#9670;&nbsp;</a></span>ApplyBound()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ApplyBound </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l02753">2753</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -974,7 +1077,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">void ApplyDecision </td>
           <td>(</td>
-          <td class="paramtype">operations_research::Decision *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_decision.html">operations_research::Decision</a> *const&#160;</td>
           <td class="paramname"><em>d</em></td><td>)</td>
           <td></td>
         </tr>
@@ -985,6 +1088,10 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Before applying the decision. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_search_monitor.html#a093de3a1c47e97d7d50bea387482a7e7">SearchMonitor</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03073">3073</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
@@ -1013,6 +1120,11 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>This method is called when a valid solution is found. </p>
+<p>If the return value is true, then search will resume after. If the result is false, then search will stop there. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_optimize_var.html#ab3631067f88ccc24c5db6a8a0dc64e47">OptimizeVar</a>.</p>
+
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03160">3160</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
 </div>
@@ -1039,6 +1151,10 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Just when the failure occurs. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_search_monitor.html#a454ac888929e304de940a94fa21c6821">SearchMonitor</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03111">3111</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
@@ -1067,6 +1183,10 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Before the initial propagation. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_search_monitor.html#a4b1c8b194527e84175c219213db4a1ea">SearchMonitor</a>.</p>
+
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03129">3129</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
 </div>
@@ -1083,8 +1203,8 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">void BeginNextDecision </td>
           <td>(</td>
-          <td class="paramtype">operations_research::DecisionBuilder *const&#160;</td>
-          <td class="paramname"><em>db</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_decision_builder.html">operations_research::DecisionBuilder</a> *const&#160;</td>
+          <td class="paramname"><em>b</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -1095,7 +1215,40 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Before calling DecisionBuilder::Next. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_optimize_var.html#a2475e9789e99a92fbe93b2eaf1b5f5b3">OptimizeVar</a>.</p>
+
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03047">3047</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
+
+</div>
+</div>
+<a id="a1f1de124cc3328c7d5077c5275d0bfd4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f1de124cc3328c7d5077c5275d0bfd4">&#9670;&nbsp;</a></span>best()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> best </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the best value found during search. </p>
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04205">4205</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1121,6 +1274,8 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_optimize_var.html#aed804747c45a7e1caf81461f9e45dd91">OptimizeVar</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03003">3003</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
@@ -1149,6 +1304,10 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>After completing the backtrack. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_search_monitor.html#a8314a4c362f64e711ec7cd4264be1844">SearchMonitor</a>.</p>
+
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03120">3120</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
 </div>
@@ -1176,6 +1335,10 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>After the initial propagation. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_search_monitor.html#a975d041f983e1fa15ed2ef96ea40271f">SearchMonitor</a>.</p>
+
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03138">3138</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
 </div>
@@ -1192,13 +1355,13 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">void EndNextDecision </td>
           <td>(</td>
-          <td class="paramtype">operations_research::DecisionBuilder *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_decision_builder.html">operations_research::DecisionBuilder</a> *const&#160;</td>
           <td class="paramname"><em>b</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">operations_research::Decision *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_decision.html">operations_research::Decision</a> *const&#160;</td>
           <td class="paramname"><em>d</em>&#160;</td>
         </tr>
         <tr>
@@ -1213,6 +1376,10 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>After calling DecisionBuilder::Next, along with the returned decision. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_search_monitor.html#a782d7244d0320c93ba524bd9c74512d9">SearchMonitor</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03059">3059</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
@@ -1241,6 +1408,10 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Beginning of the search. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_optimize_var.html#a0c955ff1b2eae2daece0f25f1e57fb16">OptimizeVar</a>.</p>
+
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03020">3020</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
 </div>
@@ -1267,6 +1438,10 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>End of the search. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_search_monitor.html#a1615395b2e594ebad774615d021c2854">SearchMonitor</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03038">3038</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
@@ -1295,6 +1470,10 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Registers itself on the solver such that it gets notified of the search and propagation events. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_search_monitor.html#af01d6e340e0ee803b6587a736745a78c">SearchMonitor</a>.</p>
+
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03277">3277</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
 </div>
@@ -1321,6 +1500,10 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Returns true if the limit of solutions has been reached including unchecked solutions. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_search_monitor.html#a198e17615278d9d5b9f39e4f0493447b">SearchMonitor</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03230">3230</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
@@ -1349,6 +1532,11 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>When a local optimum is reached. </p>
+<p>If 'true' is returned, the last solution is discarded and the search proceeds with the next one. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_search_monitor.html#a2148f73a5d315eed3048335d0cc084c1">SearchMonitor</a>.</p>
+
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03182">3182</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
 </div>
@@ -1375,6 +1563,10 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>When the search tree is finished. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_search_monitor.html#a30d7b17082cedd451c6bf44260fef75d">SearchMonitor</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03173">3173</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
@@ -1403,6 +1595,10 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Periodic call to check limits in long running methods. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_search_monitor.html#a61dc29f76a01e24526e0167c779f30d0">SearchMonitor</a>.</p>
+
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03243">3243</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
 </div>
@@ -1429,6 +1625,8 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_optimize_var.html#aaac7de1ccab45420ade1d7446fc5830b">OptimizeVar</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03286">3286</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
@@ -1457,6 +1655,10 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Returns a percentage representing the propress of the search before reaching limits. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_search_monitor.html#a2ebc7607687823d65bf65f331c9ac246">SearchMonitor</a>.</p>
+
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03252">3252</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
 </div>
@@ -1473,7 +1675,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">void RefuteDecision </td>
           <td>(</td>
-          <td class="paramtype">operations_research::Decision *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_decision.html">operations_research::Decision</a> *const&#160;</td>
           <td class="paramname"><em>d</em></td><td>)</td>
           <td></td>
         </tr>
@@ -1484,6 +1686,10 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Before refuting the decision. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_optimize_var.html#acdef27972648252e66630c3b078aa962">OptimizeVar</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03085">3085</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
@@ -1512,7 +1718,38 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Restart the search. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_search_monitor.html#a0f660e8597c620b46aa963ed7f07c4d7">SearchMonitor</a>.</p>
+
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l03029">3029</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
+
+</div>
+</div>
+<a id="a5f32c22c620c811754ba7b6f977db864"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f32c22c620c811754ba7b6f977db864">&#9670;&nbsp;</a></span>solver()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Solver* solver </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03703">3703</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2612,7 +2849,156 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a8052ccc3aba839f3befd553cc05b85a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8052ccc3aba839f3befd553cc05b85a0">&#9670;&nbsp;</a></span>Var()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">IntVar* Var </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the variable that is optimized. </p>
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04208">4208</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a62c8c6ddbd6448f66e4f17e34ef8f33b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a62c8c6ddbd6448f66e4f17e34ef8f33b">&#9670;&nbsp;</a></span>best_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> best_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04225">4225</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+
+</div>
+</div>
+<a id="a7bcea05dd62f2b212dd18322fd22b32e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7bcea05dd62f2b212dd18322fd22b32e">&#9670;&nbsp;</a></span>found_initial_solution_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool found_initial_solution_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04227">4227</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+
+</div>
+</div>
+<a id="a97c59af2c64e5f0c004243f4266173cc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a97c59af2c64e5f0c004243f4266173cc">&#9670;&nbsp;</a></span>kNoProgress</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr int kNoProgress = -1</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03632">3632</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+
+</div>
+</div>
+<a id="ad5d09a69c6c8c8eea9311b0513628683"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5d09a69c6c8c8eea9311b0513628683">&#9670;&nbsp;</a></span>maximize_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool maximize_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04226">4226</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+
+</div>
+</div>
+<a id="a87607661db50ef1ae104b4cd6d05f8a8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a87607661db50ef1ae104b4cd6d05f8a8">&#9670;&nbsp;</a></span>step_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> step_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04224">4224</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+
+</div>
+</div>
 <a id="a8fbf8fa6d8c645da8dcf83917e534c5f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8fbf8fa6d8c645da8dcf83917e534c5f">&#9670;&nbsp;</a></span>swig_self_</h2>
 
@@ -2634,6 +3020,30 @@ Protected Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver__java__wrap_8cc_source.html#l00485">485</a> of file <a class="el" href="constraint__solver__java__wrap_8cc_source.html">constraint_solver_java_wrap.cc</a>.</p>
+
+</div>
+</div>
+<a id="aacb45343e78641c7b582de46225d3481"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aacb45343e78641c7b582de46225d3481">&#9670;&nbsp;</a></span>var_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">IntVar* const var_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04223">4223</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>

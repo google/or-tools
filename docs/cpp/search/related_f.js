@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['trail_41434',['Trail',['../structoperations__research_1_1_state_marker.html#a3ffe707082206cf6d91b65922bafe2e2',1,'operations_research::StateMarker']]]
+  ['queue_45180',['Queue',['../classoperations__research_1_1_solver.html#a47dfc6f2bc0d50a6e7c92eb00d97b064',1,'operations_research::Solver::Queue()'],['../classoperations__research_1_1_demon.html#a47dfc6f2bc0d50a6e7c92eb00d97b064',1,'operations_research::Demon::Queue()']]]
 ];

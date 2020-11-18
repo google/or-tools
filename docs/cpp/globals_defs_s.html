@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -88,6 +88,9 @@ $(document).ready(function(){initNavTree('globals_defs_s.html',''); initResizabl
 &#160;
 
 <h3><a id="index_s"></a>- s -</h3><ul>
+<li>safe_write
+: <a class="el" href="raw__logging_8cc.html#ae5604ff6b1ea302304b59ebd9acd4ced">raw_logging.cc</a>
+</li>
 <li>SCIP_TO_STATUS
 : <a class="el" href="scip__helper__macros_8h.html#a01a5597b6c8cb50ac465e5abebf00eec">scip_helper_macros.h</a>
 </li>
@@ -100,6 +103,18 @@ $(document).ready(function(){initNavTree('globals_defs_s.html',''); initResizabl
 <li>SIZE_MAX
 : <a class="el" href="parser_8yy_8cc.html#a3c75bb398badb69c7577b21486f9963f">parser.yy.cc</a>
 </li>
+<li>SOME_KIND_OF_LOG_EVERY_N
+: <a class="el" href="base_2logging_8h.html#aa321a7b734f6f0c9c1905b3ab421e250">base/logging.h</a>
+</li>
+<li>SOME_KIND_OF_LOG_FIRST_N
+: <a class="el" href="base_2logging_8h.html#adabea66c27a9cc615c19a36b63a3a6e1">base/logging.h</a>
+</li>
+<li>SOME_KIND_OF_LOG_IF_EVERY_N
+: <a class="el" href="base_2logging_8h.html#a7eb9b33343a474ae5b7352b5cf0686bc">base/logging.h</a>
+</li>
+<li>SOME_KIND_OF_PLOG_EVERY_N
+: <a class="el" href="base_2logging_8h.html#aafe267ea6e159dd46f38fa22d7347c43">base/logging.h</a>
+</li>
 <li>STATUS_MACROS_CONCAT_NAME
 : <a class="el" href="status__macros_8h.html#adfa1b5068b2bb4dcfd48879d7af43e21">status_macros.h</a>
 </li>
@@ -110,40 +125,40 @@ $(document).ready(function(){initNavTree('globals_defs_s.html',''); initResizabl
 : <a class="el" href="gurobi__environment_8h.html#a446cf449a6234c9b177309d5ba0852c0">gurobi_environment.h</a>
 </li>
 <li>SWIG_AcquirePtr
-: <a class="el" href="knapsack__solver__python__wrap_8cc.html#aef3a3f2d1e735f02817fb26d61c8ee3d">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#aef3a3f2d1e735f02817fb26d61c8ee3d">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#aef3a3f2d1e735f02817fb26d61c8ee3d">rcpsp_python_wrap.cc</a>
-, <a class="el" href="graph__python__wrap_8cc.html#aef3a3f2d1e735f02817fb26d61c8ee3d">graph_python_wrap.cc</a>
+: <a class="el" href="graph__python__wrap_8cc.html#aef3a3f2d1e735f02817fb26d61c8ee3d">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#aef3a3f2d1e735f02817fb26d61c8ee3d">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#aef3a3f2d1e735f02817fb26d61c8ee3d">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#aef3a3f2d1e735f02817fb26d61c8ee3d">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#aef3a3f2d1e735f02817fb26d61c8ee3d">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#aef3a3f2d1e735f02817fb26d61c8ee3d">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#aef3a3f2d1e735f02817fb26d61c8ee3d">rcpsp_python_wrap.cc</a>
 </li>
 <li>SWIG_AddCast
-: <a class="el" href="constraint__solver__python__wrap_8cc.html#a4f6f5e0444e44e48aef51f6620438a5f">constraint_solver_python_wrap.cc</a>
+: <a class="el" href="knapsack__solver__python__wrap_8cc.html#a4f6f5e0444e44e48aef51f6620438a5f">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#a4f6f5e0444e44e48aef51f6620438a5f">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#a4f6f5e0444e44e48aef51f6620438a5f">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a4f6f5e0444e44e48aef51f6620438a5f">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#a4f6f5e0444e44e48aef51f6620438a5f">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a4f6f5e0444e44e48aef51f6620438a5f">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a4f6f5e0444e44e48aef51f6620438a5f">sorted_interval_list_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a4f6f5e0444e44e48aef51f6620438a5f">knapsack_solver_python_wrap.cc</a>
 </li>
 <li>SWIG_AddNewMask
-: <a class="el" href="knapsack__solver__python__wrap_8cc.html#af7ac7e424b623712f70e9b6640a54853">knapsack_solver_python_wrap.cc</a>
+: <a class="el" href="sat__python__wrap_8cc.html#af7ac7e424b623712f70e9b6640a54853">sat_python_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#af7ac7e424b623712f70e9b6640a54853">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#af7ac7e424b623712f70e9b6640a54853">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#af7ac7e424b623712f70e9b6640a54853">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#af7ac7e424b623712f70e9b6640a54853">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#af7ac7e424b623712f70e9b6640a54853">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#af7ac7e424b623712f70e9b6640a54853">linear_solver_python_wrap.cc</a>
-, <a class="el" href="sat__python__wrap_8cc.html#af7ac7e424b623712f70e9b6640a54853">sat_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#af7ac7e424b623712f70e9b6640a54853">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIG_AddTmpMask
-: <a class="el" href="graph__python__wrap_8cc.html#af8527f0123949ec90e05d0fb156c11e3">graph_python_wrap.cc</a>
+: <a class="el" href="knapsack__solver__python__wrap_8cc.html#af8527f0123949ec90e05d0fb156c11e3">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#af8527f0123949ec90e05d0fb156c11e3">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#af8527f0123949ec90e05d0fb156c11e3">rcpsp_python_wrap.cc</a>
+, <a class="el" href="graph__python__wrap_8cc.html#af8527f0123949ec90e05d0fb156c11e3">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#af8527f0123949ec90e05d0fb156c11e3">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#af8527f0123949ec90e05d0fb156c11e3">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#af8527f0123949ec90e05d0fb156c11e3">sorted_interval_list_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#af8527f0123949ec90e05d0fb156c11e3">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#af8527f0123949ec90e05d0fb156c11e3">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#af8527f0123949ec90e05d0fb156c11e3">rcpsp_python_wrap.cc</a>
 </li>
 <li>SWIG_addvarlink
 : <a class="el" href="knapsack__solver__python__wrap_8cc.html#a49a542a5f7eb7a97541accc2cde0eed9">knapsack_solver_python_wrap.cc</a>
@@ -173,13 +188,13 @@ $(document).ready(function(){initNavTree('globals_defs_s.html',''); initResizabl
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a95bab7504841595502bac5ed195becc1">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIG_as_voidptr
-: <a class="el" href="knapsack__solver__python__wrap_8cc.html#a6dc8f6b962375bf647fc53ecbeca2d20">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#a6dc8f6b962375bf647fc53ecbeca2d20">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a6dc8f6b962375bf647fc53ecbeca2d20">rcpsp_python_wrap.cc</a>
+: <a class="el" href="rcpsp__python__wrap_8cc.html#a6dc8f6b962375bf647fc53ecbeca2d20">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a6dc8f6b962375bf647fc53ecbeca2d20">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#a6dc8f6b962375bf647fc53ecbeca2d20">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a6dc8f6b962375bf647fc53ecbeca2d20">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a6dc8f6b962375bf647fc53ecbeca2d20">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a6dc8f6b962375bf647fc53ecbeca2d20">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#a6dc8f6b962375bf647fc53ecbeca2d20">constraint_solver_python_wrap.cc</a>
 </li>
 <li>SWIG_as_voidptrptr
 : <a class="el" href="knapsack__solver__python__wrap_8cc.html#a46d91724837c8d2846b0b27f8bf1626c">knapsack_solver_python_wrap.cc</a>
@@ -256,13 +271,13 @@ $(document).ready(function(){initNavTree('globals_defs_s.html',''); initResizabl
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a2f15c36f8b66185937b8232640be62e4">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIG_CheckImplicit
-: <a class="el" href="sorted__interval__list__python__wrap_8cc.html#acc6f7f7ae2459bfdbe0292aeb22f527e">sorted_interval_list_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#acc6f7f7ae2459bfdbe0292aeb22f527e">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#acc6f7f7ae2459bfdbe0292aeb22f527e">constraint_solver_python_wrap.cc</a>
+: <a class="el" href="constraint__solver__python__wrap_8cc.html#acc6f7f7ae2459bfdbe0292aeb22f527e">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#acc6f7f7ae2459bfdbe0292aeb22f527e">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#acc6f7f7ae2459bfdbe0292aeb22f527e">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#acc6f7f7ae2459bfdbe0292aeb22f527e">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#acc6f7f7ae2459bfdbe0292aeb22f527e">sat_python_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#acc6f7f7ae2459bfdbe0292aeb22f527e">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#acc6f7f7ae2459bfdbe0292aeb22f527e">knapsack_solver_python_wrap.cc</a>
 </li>
 <li>SWIG_CheckState
 : <a class="el" href="knapsack__solver__python__wrap_8cc.html#a1faed8ca17e98c961611bc35fde708a9">knapsack_solver_python_wrap.cc</a>
@@ -421,13 +436,13 @@ $(document).ready(function(){initNavTree('globals_defs_s.html',''); initResizabl
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a01b485cfacae7d870729eea43fb17cb0">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIG_ErrorType
-: <a class="el" href="knapsack__solver__python__wrap_8cc.html#a21d4e75f4bb2519f73467e922c7b51d7">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#a21d4e75f4bb2519f73467e922c7b51d7">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a21d4e75f4bb2519f73467e922c7b51d7">rcpsp_python_wrap.cc</a>
+: <a class="el" href="rcpsp__python__wrap_8cc.html#a21d4e75f4bb2519f73467e922c7b51d7">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a21d4e75f4bb2519f73467e922c7b51d7">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#a21d4e75f4bb2519f73467e922c7b51d7">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a21d4e75f4bb2519f73467e922c7b51d7">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a21d4e75f4bb2519f73467e922c7b51d7">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a21d4e75f4bb2519f73467e922c7b51d7">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#a21d4e75f4bb2519f73467e922c7b51d7">constraint_solver_python_wrap.cc</a>
 </li>
 <li>SWIG_exception
 : <a class="el" href="knapsack__solver__python__wrap_8cc.html#a664a6783f29e62cc081a7a28720c573e">knapsack_solver_python_wrap.cc</a>
@@ -753,13 +768,13 @@ $(document).ready(function(){initNavTree('globals_defs_s.html',''); initResizabl
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a28a70d0513a11dd60735baa8e09c9e44">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIG_POINTER_NEW
-: <a class="el" href="sat__python__wrap_8cc.html#a1d7a891b8fceac04d0954a0e7aaf7d1c">sat_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a1d7a891b8fceac04d0954a0e7aaf7d1c">sorted_interval_list_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a1d7a891b8fceac04d0954a0e7aaf7d1c">knapsack_solver_python_wrap.cc</a>
+: <a class="el" href="knapsack__solver__python__wrap_8cc.html#a1d7a891b8fceac04d0954a0e7aaf7d1c">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#a1d7a891b8fceac04d0954a0e7aaf7d1c">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#a1d7a891b8fceac04d0954a0e7aaf7d1c">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a1d7a891b8fceac04d0954a0e7aaf7d1c">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#a1d7a891b8fceac04d0954a0e7aaf7d1c">linear_solver_python_wrap.cc</a>
+, <a class="el" href="sat__python__wrap_8cc.html#a1d7a891b8fceac04d0954a0e7aaf7d1c">sat_python_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a1d7a891b8fceac04d0954a0e7aaf7d1c">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIG_POINTER_NO_NULL
 : <a class="el" href="knapsack__solver__python__wrap_8cc.html#a9a8dd7e2f7caadfb7b1ffd75653d2975">knapsack_solver_python_wrap.cc</a>
@@ -861,47 +876,47 @@ $(document).ready(function(){initNavTree('globals_defs_s.html',''); initResizabl
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a866b998f49f1870f2a0af8e30c738d15">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIG_Python_str_FromFormat
-: <a class="el" href="knapsack__solver__python__wrap_8cc.html#a9b793ab094535913288a25a20906bc8e">knapsack_solver_python_wrap.cc</a>
+: <a class="el" href="graph__python__wrap_8cc.html#a9b793ab094535913288a25a20906bc8e">graph_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a9b793ab094535913288a25a20906bc8e">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#a9b793ab094535913288a25a20906bc8e">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#a9b793ab094535913288a25a20906bc8e">rcpsp_python_wrap.cc</a>
-, <a class="el" href="graph__python__wrap_8cc.html#a9b793ab094535913288a25a20906bc8e">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#a9b793ab094535913288a25a20906bc8e">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a9b793ab094535913288a25a20906bc8e">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a9b793ab094535913288a25a20906bc8e">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIG_PYTHON_THREAD_BEGIN_ALLOW
-: <a class="el" href="constraint__solver__python__wrap_8cc.html#afcf771f05d7d2e2508d33c729ed06df9">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="sat__python__wrap_8cc.html#afcf771f05d7d2e2508d33c729ed06df9">sat_python_wrap.cc</a>
+: <a class="el" href="linear__solver__python__wrap_8cc.html#afcf771f05d7d2e2508d33c729ed06df9">linear_solver_python_wrap.cc</a>
 , <a class="el" href="knapsack__solver__python__wrap_8cc.html#afcf771f05d7d2e2508d33c729ed06df9">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#afcf771f05d7d2e2508d33c729ed06df9">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#afcf771f05d7d2e2508d33c729ed06df9">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#afcf771f05d7d2e2508d33c729ed06df9">graph_python_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#afcf771f05d7d2e2508d33c729ed06df9">linear_solver_python_wrap.cc</a>
+, <a class="el" href="sat__python__wrap_8cc.html#afcf771f05d7d2e2508d33c729ed06df9">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#afcf771f05d7d2e2508d33c729ed06df9">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIG_PYTHON_THREAD_BEGIN_BLOCK
-: <a class="el" href="rcpsp__python__wrap_8cc.html#afc4dd083ffcb3bc22ea34b1f3c4afd7c">rcpsp_python_wrap.cc</a>
+: <a class="el" href="sat__python__wrap_8cc.html#afc4dd083ffcb3bc22ea34b1f3c4afd7c">sat_python_wrap.cc</a>
 , <a class="el" href="knapsack__solver__python__wrap_8cc.html#afc4dd083ffcb3bc22ea34b1f3c4afd7c">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#afc4dd083ffcb3bc22ea34b1f3c4afd7c">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#afc4dd083ffcb3bc22ea34b1f3c4afd7c">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#afc4dd083ffcb3bc22ea34b1f3c4afd7c">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#afc4dd083ffcb3bc22ea34b1f3c4afd7c">linear_solver_python_wrap.cc</a>
-, <a class="el" href="sat__python__wrap_8cc.html#afc4dd083ffcb3bc22ea34b1f3c4afd7c">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#afc4dd083ffcb3bc22ea34b1f3c4afd7c">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIG_PYTHON_THREAD_END_ALLOW
-: <a class="el" href="graph__python__wrap_8cc.html#acbaf738de1eb9d87f30c14046482544f">graph_python_wrap.cc</a>
+: <a class="el" href="sorted__interval__list__python__wrap_8cc.html#acbaf738de1eb9d87f30c14046482544f">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#acbaf738de1eb9d87f30c14046482544f">rcpsp_python_wrap.cc</a>
 , <a class="el" href="knapsack__solver__python__wrap_8cc.html#acbaf738de1eb9d87f30c14046482544f">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#acbaf738de1eb9d87f30c14046482544f">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#acbaf738de1eb9d87f30c14046482544f">rcpsp_python_wrap.cc</a>
+, <a class="el" href="graph__python__wrap_8cc.html#acbaf738de1eb9d87f30c14046482544f">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#acbaf738de1eb9d87f30c14046482544f">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#acbaf738de1eb9d87f30c14046482544f">sat_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#acbaf738de1eb9d87f30c14046482544f">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIG_PYTHON_THREAD_END_BLOCK
-: <a class="el" href="linear__solver__python__wrap_8cc.html#a320aff2875f19ba4cfb71eefd84fd618">linear_solver_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a320aff2875f19ba4cfb71eefd84fd618">knapsack_solver_python_wrap.cc</a>
+: <a class="el" href="knapsack__solver__python__wrap_8cc.html#a320aff2875f19ba4cfb71eefd84fd618">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#a320aff2875f19ba4cfb71eefd84fd618">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#a320aff2875f19ba4cfb71eefd84fd618">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a320aff2875f19ba4cfb71eefd84fd618">graph_python_wrap.cc</a>
+, <a class="el" href="linear__solver__python__wrap_8cc.html#a320aff2875f19ba4cfb71eefd84fd618">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a320aff2875f19ba4cfb71eefd84fd618">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a320aff2875f19ba4cfb71eefd84fd618">sorted_interval_list_python_wrap.cc</a>
 </li>
@@ -912,348 +927,349 @@ $(document).ready(function(){initNavTree('globals_defs_s.html',''); initResizabl
 : <a class="el" href="sat__python__wrap_8cc.html#a4ab22bbd70ef451cace1cd14dd1c4736">sat_python_wrap.cc</a>
 </li>
 <li>SWIG_RUNTIME_VERSION
-: <a class="el" href="graph__python__wrap_8cc.html#a4895907de5539551925ab5c03ea05d28">graph_python_wrap.cc</a>
+: <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a4895907de5539551925ab5c03ea05d28">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a4895907de5539551925ab5c03ea05d28">rcpsp_python_wrap.cc</a>
 , <a class="el" href="knapsack__solver__python__wrap_8cc.html#a4895907de5539551925ab5c03ea05d28">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#a4895907de5539551925ab5c03ea05d28">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a4895907de5539551925ab5c03ea05d28">rcpsp_python_wrap.cc</a>
+, <a class="el" href="graph__python__wrap_8cc.html#a4895907de5539551925ab5c03ea05d28">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#a4895907de5539551925ab5c03ea05d28">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a4895907de5539551925ab5c03ea05d28">sat_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a4895907de5539551925ab5c03ea05d28">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIG_RuntimeError
-: <a class="el" href="rcpsp__python__wrap_8cc.html#a34d3d1c1310427d00140bf1cc8de3ef6">rcpsp_python_wrap.cc</a>
+: <a class="el" href="sat__python__wrap_8cc.html#a34d3d1c1310427d00140bf1cc8de3ef6">sat_python_wrap.cc</a>
 , <a class="el" href="knapsack__solver__python__wrap_8cc.html#a34d3d1c1310427d00140bf1cc8de3ef6">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a34d3d1c1310427d00140bf1cc8de3ef6">constraint_solver_csharp_wrap.cc</a>
 , <a class="el" href="constraint__solver__java__wrap_8cc.html#a34d3d1c1310427d00140bf1cc8de3ef6">constraint_solver_java_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#a34d3d1c1310427d00140bf1cc8de3ef6">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a34d3d1c1310427d00140bf1cc8de3ef6">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a34d3d1c1310427d00140bf1cc8de3ef6">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#a34d3d1c1310427d00140bf1cc8de3ef6">linear_solver_python_wrap.cc</a>
-, <a class="el" href="sat__python__wrap_8cc.html#a34d3d1c1310427d00140bf1cc8de3ef6">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a34d3d1c1310427d00140bf1cc8de3ef6">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIG_SetErrorMsg
-: <a class="el" href="graph__python__wrap_8cc.html#a47f0648c02682836188562820e28e9c5">graph_python_wrap.cc</a>
+: <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a47f0648c02682836188562820e28e9c5">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a47f0648c02682836188562820e28e9c5">rcpsp_python_wrap.cc</a>
 , <a class="el" href="knapsack__solver__python__wrap_8cc.html#a47f0648c02682836188562820e28e9c5">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#a47f0648c02682836188562820e28e9c5">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a47f0648c02682836188562820e28e9c5">rcpsp_python_wrap.cc</a>
+, <a class="el" href="graph__python__wrap_8cc.html#a47f0648c02682836188562820e28e9c5">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#a47f0648c02682836188562820e28e9c5">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a47f0648c02682836188562820e28e9c5">sat_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a47f0648c02682836188562820e28e9c5">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIG_SetErrorObj
-: <a class="el" href="linear__solver__python__wrap_8cc.html#a874120d0e9be7616d706e1bfe98cfe6f">linear_solver_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a874120d0e9be7616d706e1bfe98cfe6f">knapsack_solver_python_wrap.cc</a>
+: <a class="el" href="knapsack__solver__python__wrap_8cc.html#a874120d0e9be7616d706e1bfe98cfe6f">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#a874120d0e9be7616d706e1bfe98cfe6f">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#a874120d0e9be7616d706e1bfe98cfe6f">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a874120d0e9be7616d706e1bfe98cfe6f">graph_python_wrap.cc</a>
+, <a class="el" href="linear__solver__python__wrap_8cc.html#a874120d0e9be7616d706e1bfe98cfe6f">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a874120d0e9be7616d706e1bfe98cfe6f">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a874120d0e9be7616d706e1bfe98cfe6f">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIG_SetModule
-: <a class="el" href="knapsack__solver__python__wrap_8cc.html#a673a7dcc5c15f5cffa7072785a6c7972">knapsack_solver_python_wrap.cc</a>
+: <a class="el" href="linear__solver__python__wrap_8cc.html#a673a7dcc5c15f5cffa7072785a6c7972">linear_solver_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a673a7dcc5c15f5cffa7072785a6c7972">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#a673a7dcc5c15f5cffa7072785a6c7972">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#a673a7dcc5c15f5cffa7072785a6c7972">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a673a7dcc5c15f5cffa7072785a6c7972">graph_python_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#a673a7dcc5c15f5cffa7072785a6c7972">linear_solver_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a673a7dcc5c15f5cffa7072785a6c7972">sorted_interval_list_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a673a7dcc5c15f5cffa7072785a6c7972">sat_python_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a673a7dcc5c15f5cffa7072785a6c7972">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIG_STATIC_POINTER
-: <a class="el" href="knapsack__solver__python__wrap_8cc.html#aa58fdef163810db36a21536e3fef11fc">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#aa58fdef163810db36a21536e3fef11fc">constraint_solver_python_wrap.cc</a>
+: <a class="el" href="constraint__solver__python__wrap_8cc.html#aa58fdef163810db36a21536e3fef11fc">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#aa58fdef163810db36a21536e3fef11fc">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#aa58fdef163810db36a21536e3fef11fc">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#aa58fdef163810db36a21536e3fef11fc">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#aa58fdef163810db36a21536e3fef11fc">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#aa58fdef163810db36a21536e3fef11fc">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#aa58fdef163810db36a21536e3fef11fc">sorted_interval_list_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#aa58fdef163810db36a21536e3fef11fc">rcpsp_python_wrap.cc</a>
 </li>
 <li>SWIG_SyntaxError
 : <a class="el" href="knapsack__solver__python__wrap_8cc.html#a1c4e29c043d3220cedca539360e07148">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a1c4e29c043d3220cedca539360e07148">constraint_solver_csharp_wrap.cc</a>
-, <a class="el" href="constraint__solver__java__wrap_8cc.html#a1c4e29c043d3220cedca539360e07148">constraint_solver_java_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#a1c4e29c043d3220cedca539360e07148">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#a1c4e29c043d3220cedca539360e07148">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a1c4e29c043d3220cedca539360e07148">graph_python_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#a1c4e29c043d3220cedca539360e07148">linear_solver_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a1c4e29c043d3220cedca539360e07148">sorted_interval_list_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a1c4e29c043d3220cedca539360e07148">sat_python_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a1c4e29c043d3220cedca539360e07148">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__java__wrap_8cc.html#a1c4e29c043d3220cedca539360e07148">constraint_solver_java_wrap.cc</a>
+, <a class="el" href="linear__solver__python__wrap_8cc.html#a1c4e29c043d3220cedca539360e07148">linear_solver_python_wrap.cc</a>
 </li>
 <li>SWIG_SystemError
 : <a class="el" href="knapsack__solver__python__wrap_8cc.html#ae4a7b4ce78e031cbf5227bea38d81221">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ae4a7b4ce78e031cbf5227bea38d81221">constraint_solver_csharp_wrap.cc</a>
+, <a class="el" href="constraint__solver__java__wrap_8cc.html#ae4a7b4ce78e031cbf5227bea38d81221">constraint_solver_java_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#ae4a7b4ce78e031cbf5227bea38d81221">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#ae4a7b4ce78e031cbf5227bea38d81221">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#ae4a7b4ce78e031cbf5227bea38d81221">graph_python_wrap.cc</a>
+, <a class="el" href="linear__solver__python__wrap_8cc.html#ae4a7b4ce78e031cbf5227bea38d81221">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#ae4a7b4ce78e031cbf5227bea38d81221">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#ae4a7b4ce78e031cbf5227bea38d81221">sorted_interval_list_python_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#ae4a7b4ce78e031cbf5227bea38d81221">linear_solver_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__java__wrap_8cc.html#ae4a7b4ce78e031cbf5227bea38d81221">constraint_solver_java_wrap.cc</a>
+, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ae4a7b4ce78e031cbf5227bea38d81221">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>SWIG_TMPOBJ
-: <a class="el" href="knapsack__solver__python__wrap_8cc.html#ab1fe70ae34b39b709eb4cfb084862236">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#ab1fe70ae34b39b709eb4cfb084862236">constraint_solver_python_wrap.cc</a>
+: <a class="el" href="constraint__solver__python__wrap_8cc.html#ab1fe70ae34b39b709eb4cfb084862236">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#ab1fe70ae34b39b709eb4cfb084862236">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#ab1fe70ae34b39b709eb4cfb084862236">graph_python_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#ab1fe70ae34b39b709eb4cfb084862236">linear_solver_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#ab1fe70ae34b39b709eb4cfb084862236">sorted_interval_list_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#ab1fe70ae34b39b709eb4cfb084862236">sat_python_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#ab1fe70ae34b39b709eb4cfb084862236">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#ab1fe70ae34b39b709eb4cfb084862236">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="linear__solver__python__wrap_8cc.html#ab1fe70ae34b39b709eb4cfb084862236">linear_solver_python_wrap.cc</a>
 </li>
 <li>SWIG_TMPOBJMASK
 : <a class="el" href="knapsack__solver__python__wrap_8cc.html#a399dafc6302bd9b309041d5570ae94c9">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#a399dafc6302bd9b309041d5570ae94c9">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a399dafc6302bd9b309041d5570ae94c9">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a399dafc6302bd9b309041d5570ae94c9">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#a399dafc6302bd9b309041d5570ae94c9">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a399dafc6302bd9b309041d5570ae94c9">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a399dafc6302bd9b309041d5570ae94c9">sorted_interval_list_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a399dafc6302bd9b309041d5570ae94c9">rcpsp_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#a399dafc6302bd9b309041d5570ae94c9">constraint_solver_python_wrap.cc</a>
 </li>
 <li>SWIG_TYPE_TABLE_NAME
 : <a class="el" href="knapsack__solver__python__wrap_8cc.html#ac619a84edecccb5e00c1b4a3180b8c3a">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#ac619a84edecccb5e00c1b4a3180b8c3a">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#ac619a84edecccb5e00c1b4a3180b8c3a">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#ac619a84edecccb5e00c1b4a3180b8c3a">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#ac619a84edecccb5e00c1b4a3180b8c3a">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#ac619a84edecccb5e00c1b4a3180b8c3a">sat_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#ac619a84edecccb5e00c1b4a3180b8c3a">rcpsp_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#ac619a84edecccb5e00c1b4a3180b8c3a">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIG_TypeError
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a2685345a18f9d5fe8a390ec8500cb916">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="knapsack__solver__python__wrap_8cc.html#a2685345a18f9d5fe8a390ec8500cb916">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a2685345a18f9d5fe8a390ec8500cb916">constraint_solver_csharp_wrap.cc</a>
 , <a class="el" href="constraint__solver__java__wrap_8cc.html#a2685345a18f9d5fe8a390ec8500cb916">constraint_solver_java_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#a2685345a18f9d5fe8a390ec8500cb916">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a2685345a18f9d5fe8a390ec8500cb916">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a2685345a18f9d5fe8a390ec8500cb916">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#a2685345a18f9d5fe8a390ec8500cb916">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a2685345a18f9d5fe8a390ec8500cb916">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a2685345a18f9d5fe8a390ec8500cb916">sorted_interval_list_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a2685345a18f9d5fe8a390ec8500cb916">rcpsp_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a2685345a18f9d5fe8a390ec8500cb916">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#a2685345a18f9d5fe8a390ec8500cb916">constraint_solver_python_wrap.cc</a>
 </li>
 <li>SWIG_TypeQuery
 : <a class="el" href="knapsack__solver__python__wrap_8cc.html#a184d005bbcde85bc7d3f652de20d10b3">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#a184d005bbcde85bc7d3f652de20d10b3">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#a6714a0d197e29a8d6b466366272b2e3d">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#a184d005bbcde85bc7d3f652de20d10b3">rcpsp_python_wrap.cc</a>
-, <a class="el" href="graph__python__wrap_8cc.html#a184d005bbcde85bc7d3f652de20d10b3">graph_python_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#a184d005bbcde85bc7d3f652de20d10b3">linear_solver_python_wrap.cc</a>
-, <a class="el" href="sat__python__wrap_8cc.html#a184d005bbcde85bc7d3f652de20d10b3">sat_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a184d005bbcde85bc7d3f652de20d10b3">sorted_interval_list_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a6714a0d197e29a8d6b466366272b2e3d">graph_python_wrap.cc</a>
+, <a class="el" href="linear__solver__python__wrap_8cc.html#a184d005bbcde85bc7d3f652de20d10b3">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a6714a0d197e29a8d6b466366272b2e3d">sat_python_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a184d005bbcde85bc7d3f652de20d10b3">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#a184d005bbcde85bc7d3f652de20d10b3">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="sat__python__wrap_8cc.html#a184d005bbcde85bc7d3f652de20d10b3">sat_python_wrap.cc</a>
+, <a class="el" href="graph__python__wrap_8cc.html#a184d005bbcde85bc7d3f652de20d10b3">graph_python_wrap.cc</a>
 </li>
 <li>SWIG_UnknownError
 : <a class="el" href="knapsack__solver__python__wrap_8cc.html#a45817cd389e6f40d0ffb004ff0678031">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a45817cd389e6f40d0ffb004ff0678031">constraint_solver_csharp_wrap.cc</a>
 , <a class="el" href="constraint__solver__java__wrap_8cc.html#a45817cd389e6f40d0ffb004ff0678031">constraint_solver_java_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#a45817cd389e6f40d0ffb004ff0678031">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a45817cd389e6f40d0ffb004ff0678031">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a45817cd389e6f40d0ffb004ff0678031">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#a45817cd389e6f40d0ffb004ff0678031">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a45817cd389e6f40d0ffb004ff0678031">sat_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a45817cd389e6f40d0ffb004ff0678031">rcpsp_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a45817cd389e6f40d0ffb004ff0678031">sorted_interval_list_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a45817cd389e6f40d0ffb004ff0678031">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>SWIG_ValueError
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a4c1b15a2401d60351d98df9327886280">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="knapsack__solver__python__wrap_8cc.html#a4c1b15a2401d60351d98df9327886280">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a4c1b15a2401d60351d98df9327886280">constraint_solver_csharp_wrap.cc</a>
 , <a class="el" href="constraint__solver__java__wrap_8cc.html#a4c1b15a2401d60351d98df9327886280">constraint_solver_java_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#a4c1b15a2401d60351d98df9327886280">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a4c1b15a2401d60351d98df9327886280">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a4c1b15a2401d60351d98df9327886280">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#a4c1b15a2401d60351d98df9327886280">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a4c1b15a2401d60351d98df9327886280">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a4c1b15a2401d60351d98df9327886280">sorted_interval_list_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a4c1b15a2401d60351d98df9327886280">rcpsp_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a4c1b15a2401d60351d98df9327886280">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#a4c1b15a2401d60351d98df9327886280">constraint_solver_python_wrap.cc</a>
 </li>
 <li>SWIG_VERSION
 : <a class="el" href="knapsack__solver__python__wrap_8cc.html#a8180a5d9a951bc3a9c5852fce5fde4e8">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#a8180a5d9a951bc3a9c5852fce5fde4e8">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a8180a5d9a951bc3a9c5852fce5fde4e8">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a8180a5d9a951bc3a9c5852fce5fde4e8">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#a8180a5d9a951bc3a9c5852fce5fde4e8">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a8180a5d9a951bc3a9c5852fce5fde4e8">sat_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a8180a5d9a951bc3a9c5852fce5fde4e8">rcpsp_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a8180a5d9a951bc3a9c5852fce5fde4e8">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIGCSHARP
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a8b1bf5bd8374ca61c5ac75d346cfb824">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#a8b1bf5bd8374ca61c5ac75d346cfb824">knapsack_solver_csharp_wrap.cc</a>
+, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a8b1bf5bd8374ca61c5ac75d346cfb824">constraint_solver_csharp_wrap.cc</a>
 , <a class="el" href="graph__csharp__wrap_8cc.html#a8b1bf5bd8374ca61c5ac75d346cfb824">graph_csharp_wrap.cc</a>
-, <a class="el" href="linear__solver__csharp__wrap_8cc.html#a8b1bf5bd8374ca61c5ac75d346cfb824">linear_solver_csharp_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#a8b1bf5bd8374ca61c5ac75d346cfb824">sorted_interval_list_csharp_wrap.cc</a>
-, <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#a8b1bf5bd8374ca61c5ac75d346cfb824">knapsack_solver_csharp_wrap.cc</a>
 , <a class="el" href="sat__csharp__wrap_8cc.html#a8b1bf5bd8374ca61c5ac75d346cfb824">sat_csharp_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#a8b1bf5bd8374ca61c5ac75d346cfb824">sorted_interval_list_csharp_wrap.cc</a>
+, <a class="el" href="linear__solver__csharp__wrap_8cc.html#a8b1bf5bd8374ca61c5ac75d346cfb824">linear_solver_csharp_wrap.cc</a>
 </li>
 <li>SWIGEXPORT
 : <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">knapsack_solver_csharp_wrap.cc</a>
 , <a class="el" href="knapsack__solver__java__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">knapsack_solver_java_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">constraint_solver_csharp_wrap.cc</a>
 , <a class="el" href="constraint__solver__java__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">constraint_solver_java_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__csharp__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">graph_csharp_wrap.cc</a>
 , <a class="el" href="graph__java__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">graph_java_wrap.cc</a>
-, <a class="el" href="graph__python__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">graph_python_wrap.cc</a>
+, <a class="el" href="linear__solver__csharp__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">linear_solver_csharp_wrap.cc</a>
 , <a class="el" href="linear__solver__java__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">linear_solver_java_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">linear_solver_python_wrap.cc</a>
-, <a class="el" href="sat__csharp__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">sat_csharp_wrap.cc</a>
+, <a class="el" href="sat__java__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">sat_java_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">sorted_interval_list_csharp_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">sorted_interval_list_python_wrap.cc</a>
 , <a class="el" href="util__java__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">util_java_wrap.cc</a>
-, <a class="el" href="sat__java__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">sat_java_wrap.cc</a>
-, <a class="el" href="linear__solver__csharp__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">linear_solver_csharp_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="sat__csharp__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">sat_csharp_wrap.cc</a>
+, <a class="el" href="graph__python__wrap_8cc.html#aea3c8b056dcc8c1ab93f6b825cd1371b">graph_python_wrap.cc</a>
 </li>
 <li>SWIGINLINE
-: <a class="el" href="constraint__solver__python__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">rcpsp_python_wrap.cc</a>
-, <a class="el" href="graph__csharp__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">graph_csharp_wrap.cc</a>
-, <a class="el" href="sat__java__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">sat_java_wrap.cc</a>
-, <a class="el" href="sat__csharp__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">sat_csharp_wrap.cc</a>
-, <a class="el" href="linear__solver__csharp__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">linear_solver_csharp_wrap.cc</a>
-, <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">knapsack_solver_csharp_wrap.cc</a>
-, <a class="el" href="knapsack__solver__java__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">knapsack_solver_java_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__java__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">constraint_solver_java_wrap.cc</a>
-, <a class="el" href="graph__java__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">graph_java_wrap.cc</a>
-, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">constraint_solver_csharp_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">linear_solver_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">sorted_interval_list_csharp_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">sorted_interval_list_python_wrap.cc</a>
+: <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">sorted_interval_list_csharp_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="util__java__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">util_java_wrap.cc</a>
-, <a class="el" href="linear__solver__java__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">linear_solver_java_wrap.cc</a>
-, <a class="el" href="sat__python__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">sat_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">rcpsp_python_wrap.cc</a>
+, <a class="el" href="sat__csharp__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">sat_csharp_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="graph__java__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">graph_java_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">graph_python_wrap.cc</a>
+, <a class="el" href="linear__solver__csharp__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">linear_solver_csharp_wrap.cc</a>
+, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">constraint_solver_csharp_wrap.cc</a>
+, <a class="el" href="constraint__solver__java__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">constraint_solver_java_wrap.cc</a>
+, <a class="el" href="graph__csharp__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">graph_csharp_wrap.cc</a>
+, <a class="el" href="sat__python__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">sat_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">knapsack_solver_csharp_wrap.cc</a>
+, <a class="el" href="linear__solver__java__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">linear_solver_java_wrap.cc</a>
+, <a class="el" href="linear__solver__python__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">linear_solver_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__java__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">knapsack_solver_java_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="sat__java__wrap_8cc.html#a6d0a7c65b3712775e92c8bdb7acdd0ee">sat_java_wrap.cc</a>
 </li>
 <li>SWIGINTERN
-: <a class="el" href="util__java__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">util_java_wrap.cc</a>
-, <a class="el" href="linear__solver__java__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">linear_solver_java_wrap.cc</a>
-, <a class="el" href="linear__solver__csharp__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">linear_solver_csharp_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="sat__python__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">sat_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">constraint_solver_csharp_wrap.cc</a>
-, <a class="el" href="knapsack__solver__java__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">knapsack_solver_java_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="graph__csharp__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">graph_csharp_wrap.cc</a>
-, <a class="el" href="graph__python__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">graph_python_wrap.cc</a>
-, <a class="el" href="sat__csharp__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">sat_csharp_wrap.cc</a>
-, <a class="el" href="sat__java__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">sat_java_wrap.cc</a>
+: <a class="el" href="sat__python__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="sat__csharp__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">sat_csharp_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__java__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">knapsack_solver_java_wrap.cc</a>
+, <a class="el" href="util__java__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">util_java_wrap.cc</a>
+, <a class="el" href="linear__solver__csharp__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">linear_solver_csharp_wrap.cc</a>
+, <a class="el" href="graph__python__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">graph_python_wrap.cc</a>
 , <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">knapsack_solver_csharp_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__java__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">constraint_solver_java_wrap.cc</a>
 , <a class="el" href="graph__java__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">graph_java_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">linear_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">rcpsp_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">sorted_interval_list_csharp_wrap.cc</a>
+, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">constraint_solver_csharp_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">rcpsp_python_wrap.cc</a>
+, <a class="el" href="graph__csharp__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">graph_csharp_wrap.cc</a>
+, <a class="el" href="sat__java__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">sat_java_wrap.cc</a>
+, <a class="el" href="linear__solver__java__wrap_8cc.html#a8f2319f775e5b9d5906c9ef25d9b819a">linear_solver_java_wrap.cc</a>
 </li>
 <li>SWIGINTERNINLINE
-: <a class="el" href="knapsack__solver__java__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">knapsack_solver_java_wrap.cc</a>
-, <a class="el" href="graph__java__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">graph_java_wrap.cc</a>
-, <a class="el" href="graph__csharp__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">graph_csharp_wrap.cc</a>
-, <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">knapsack_solver_csharp_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">sorted_interval_list_csharp_wrap.cc</a>
-, <a class="el" href="constraint__solver__java__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">constraint_solver_java_wrap.cc</a>
-, <a class="el" href="sat__python__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">sat_python_wrap.cc</a>
+: <a class="el" href="linear__solver__python__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">linear_solver_python_wrap.cc</a>
+, <a class="el" href="util__java__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">util_java_wrap.cc</a>
+, <a class="el" href="sat__java__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">sat_java_wrap.cc</a>
 , <a class="el" href="knapsack__solver__python__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">rcpsp_python_wrap.cc</a>
 , <a class="el" href="linear__solver__csharp__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">linear_solver_csharp_wrap.cc</a>
 , <a class="el" href="linear__solver__java__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">linear_solver_java_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">linear_solver_python_wrap.cc</a>
-, <a class="el" href="sat__java__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">sat_java_wrap.cc</a>
-, <a class="el" href="util__java__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">util_java_wrap.cc</a>
+, <a class="el" href="knapsack__solver__java__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">knapsack_solver_java_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">rcpsp_python_wrap.cc</a>
+, <a class="el" href="graph__csharp__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">graph_csharp_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">graph_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">constraint_solver_csharp_wrap.cc</a>
 , <a class="el" href="sat__csharp__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">sat_csharp_wrap.cc</a>
+, <a class="el" href="sat__python__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">knapsack_solver_csharp_wrap.cc</a>
+, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">constraint_solver_csharp_wrap.cc</a>
+, <a class="el" href="constraint__solver__java__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">constraint_solver_java_wrap.cc</a>
+, <a class="el" href="graph__java__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">graph_java_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#afc5b08bb3c3cd2e3fb2e34b775346153">sorted_interval_list_csharp_wrap.cc</a>
 </li>
 <li>SWIGJAVA
-: <a class="el" href="util__java__wrap_8cc.html#aa44de7bf6024602ca7e923c0fa5bd119">util_java_wrap.cc</a>
-, <a class="el" href="sat__java__wrap_8cc.html#aa44de7bf6024602ca7e923c0fa5bd119">sat_java_wrap.cc</a>
-, <a class="el" href="constraint__solver__java__wrap_8cc.html#aa44de7bf6024602ca7e923c0fa5bd119">constraint_solver_java_wrap.cc</a>
+: <a class="el" href="graph__java__wrap_8cc.html#aa44de7bf6024602ca7e923c0fa5bd119">graph_java_wrap.cc</a>
 , <a class="el" href="linear__solver__java__wrap_8cc.html#aa44de7bf6024602ca7e923c0fa5bd119">linear_solver_java_wrap.cc</a>
+, <a class="el" href="sat__java__wrap_8cc.html#aa44de7bf6024602ca7e923c0fa5bd119">sat_java_wrap.cc</a>
 , <a class="el" href="knapsack__solver__java__wrap_8cc.html#aa44de7bf6024602ca7e923c0fa5bd119">knapsack_solver_java_wrap.cc</a>
-, <a class="el" href="graph__java__wrap_8cc.html#aa44de7bf6024602ca7e923c0fa5bd119">graph_java_wrap.cc</a>
+, <a class="el" href="constraint__solver__java__wrap_8cc.html#aa44de7bf6024602ca7e923c0fa5bd119">constraint_solver_java_wrap.cc</a>
+, <a class="el" href="util__java__wrap_8cc.html#aa44de7bf6024602ca7e923c0fa5bd119">util_java_wrap.cc</a>
 </li>
 <li>SWIGPY_CAPSULE_NAME
-: <a class="el" href="linear__solver__python__wrap_8cc.html#a9569372a2f05c24acc013e50f0399a0b">linear_solver_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a9569372a2f05c24acc013e50f0399a0b">sorted_interval_list_python_wrap.cc</a>
-, <a class="el" href="graph__python__wrap_8cc.html#a9569372a2f05c24acc013e50f0399a0b">graph_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#a9569372a2f05c24acc013e50f0399a0b">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a9569372a2f05c24acc013e50f0399a0b">rcpsp_python_wrap.cc</a>
+: <a class="el" href="graph__python__wrap_8cc.html#a9569372a2f05c24acc013e50f0399a0b">graph_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a9569372a2f05c24acc013e50f0399a0b">sat_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#a9569372a2f05c24acc013e50f0399a0b">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="knapsack__solver__python__wrap_8cc.html#a9569372a2f05c24acc013e50f0399a0b">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="linear__solver__python__wrap_8cc.html#a9569372a2f05c24acc013e50f0399a0b">linear_solver_python_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a9569372a2f05c24acc013e50f0399a0b">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a9569372a2f05c24acc013e50f0399a0b">rcpsp_python_wrap.cc</a>
 </li>
 <li>SWIGPY_USE_CAPSULE
 : <a class="el" href="knapsack__solver__python__wrap_8cc.html#ae3360186a49695b175fca7590941bf26">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="sat__python__wrap_8cc.html#ae3360186a49695b175fca7590941bf26">sat_python_wrap.cc</a>
-, <a class="el" href="graph__python__wrap_8cc.html#ae3360186a49695b175fca7590941bf26">graph_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#ae3360186a49695b175fca7590941bf26">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#ae3360186a49695b175fca7590941bf26">rcpsp_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#ae3360186a49695b175fca7590941bf26">linear_solver_python_wrap.cc</a>
+, <a class="el" href="graph__python__wrap_8cc.html#ae3360186a49695b175fca7590941bf26">graph_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#ae3360186a49695b175fca7590941bf26">rcpsp_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#ae3360186a49695b175fca7590941bf26">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="sat__python__wrap_8cc.html#ae3360186a49695b175fca7590941bf26">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#ae3360186a49695b175fca7590941bf26">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIGPYTHON
-: <a class="el" href="rcpsp__python__wrap_8cc.html#a8db301777472eabaccb1d609dcedb54e">rcpsp_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a8db301777472eabaccb1d609dcedb54e">sorted_interval_list_python_wrap.cc</a>
+: <a class="el" href="graph__python__wrap_8cc.html#a8db301777472eabaccb1d609dcedb54e">graph_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#a8db301777472eabaccb1d609dcedb54e">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a8db301777472eabaccb1d609dcedb54e">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a8db301777472eabaccb1d609dcedb54e">sat_python_wrap.cc</a>
-, <a class="el" href="graph__python__wrap_8cc.html#a8db301777472eabaccb1d609dcedb54e">graph_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#a8db301777472eabaccb1d609dcedb54e">linear_solver_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a8db301777472eabaccb1d609dcedb54e">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a8db301777472eabaccb1d609dcedb54e">rcpsp_python_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a8db301777472eabaccb1d609dcedb54e">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIGRUNTIME
-: <a class="el" href="graph__python__wrap_8cc.html#a42cd9c1d67d803040a3e78515945afcb">graph_python_wrap.cc</a>
-, <a class="el" href="sat__python__wrap_8cc.html#a42cd9c1d67d803040a3e78515945afcb">sat_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#a42cd9c1d67d803040a3e78515945afcb">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a42cd9c1d67d803040a3e78515945afcb">rcpsp_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a42cd9c1d67d803040a3e78515945afcb">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#a42cd9c1d67d803040a3e78515945afcb">linear_solver_python_wrap.cc</a>
+: <a class="el" href="rcpsp__python__wrap_8cc.html#a42cd9c1d67d803040a3e78515945afcb">rcpsp_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a42cd9c1d67d803040a3e78515945afcb">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="sat__python__wrap_8cc.html#a42cd9c1d67d803040a3e78515945afcb">sat_python_wrap.cc</a>
+, <a class="el" href="linear__solver__python__wrap_8cc.html#a42cd9c1d67d803040a3e78515945afcb">linear_solver_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a42cd9c1d67d803040a3e78515945afcb">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#a42cd9c1d67d803040a3e78515945afcb">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="graph__python__wrap_8cc.html#a42cd9c1d67d803040a3e78515945afcb">graph_python_wrap.cc</a>
 </li>
 <li>SWIGRUNTIMEINLINE
-: <a class="el" href="knapsack__solver__python__wrap_8cc.html#affa7aa2bcce5bea24a20e5b184ae0533">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#affa7aa2bcce5bea24a20e5b184ae0533">linear_solver_python_wrap.cc</a>
-, <a class="el" href="graph__python__wrap_8cc.html#affa7aa2bcce5bea24a20e5b184ae0533">graph_python_wrap.cc</a>
+: <a class="el" href="graph__python__wrap_8cc.html#affa7aa2bcce5bea24a20e5b184ae0533">graph_python_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#affa7aa2bcce5bea24a20e5b184ae0533">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="sat__python__wrap_8cc.html#affa7aa2bcce5bea24a20e5b184ae0533">sat_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#affa7aa2bcce5bea24a20e5b184ae0533">rcpsp_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#affa7aa2bcce5bea24a20e5b184ae0533">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="sat__python__wrap_8cc.html#affa7aa2bcce5bea24a20e5b184ae0533">sat_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#affa7aa2bcce5bea24a20e5b184ae0533">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#affa7aa2bcce5bea24a20e5b184ae0533">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="linear__solver__python__wrap_8cc.html#affa7aa2bcce5bea24a20e5b184ae0533">linear_solver_python_wrap.cc</a>
 </li>
 <li>SWIGSTDCALL
-: <a class="el" href="constraint__solver__python__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">sorted_interval_list_python_wrap.cc</a>
+: <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">sorted_interval_list_csharp_wrap.cc</a>
+, <a class="el" href="util__java__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">util_java_wrap.cc</a>
+, <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">knapsack_solver_csharp_wrap.cc</a>
+, <a class="el" href="constraint__solver__java__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">constraint_solver_java_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">linear_solver_python_wrap.cc</a>
 , <a class="el" href="graph__csharp__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">graph_csharp_wrap.cc</a>
-, <a class="el" href="sat__csharp__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">sat_csharp_wrap.cc</a>
-, <a class="el" href="linear__solver__java__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">linear_solver_java_wrap.cc</a>
-, <a class="el" href="graph__python__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">graph_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__java__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">constraint_solver_java_wrap.cc</a>
-, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">constraint_solver_csharp_wrap.cc</a>
-, <a class="el" href="knapsack__solver__java__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">knapsack_solver_java_wrap.cc</a>
-, <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">knapsack_solver_csharp_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__java__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">graph_java_wrap.cc</a>
-, <a class="el" href="linear__solver__csharp__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">linear_solver_csharp_wrap.cc</a>
-, <a class="el" href="sat__java__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">sat_java_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__java__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">knapsack_solver_java_wrap.cc</a>
+, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">constraint_solver_csharp_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">sat_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">sorted_interval_list_csharp_wrap.cc</a>
-, <a class="el" href="util__java__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">util_java_wrap.cc</a>
+, <a class="el" href="graph__python__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">graph_python_wrap.cc</a>
+, <a class="el" href="linear__solver__csharp__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">linear_solver_csharp_wrap.cc</a>
+, <a class="el" href="linear__solver__java__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">linear_solver_java_wrap.cc</a>
+, <a class="el" href="sat__csharp__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">sat_csharp_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="sat__java__wrap_8cc.html#adcd6410456ea7a76147d3ad95b9bcb36">sat_java_wrap.cc</a>
 </li>
 <li>SWIGTEMPLATEDISAMBIGUATOR
-: <a class="el" href="sat__java__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">sat_java_wrap.cc</a>
-, <a class="el" href="graph__python__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">graph_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__java__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">constraint_solver_java_wrap.cc</a>
-, <a class="el" href="linear__solver__csharp__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">linear_solver_csharp_wrap.cc</a>
-, <a class="el" href="graph__java__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">graph_java_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">rcpsp_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__java__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">knapsack_solver_java_wrap.cc</a>
-, <a class="el" href="sat__csharp__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">sat_csharp_wrap.cc</a>
-, <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">knapsack_solver_csharp_wrap.cc</a>
+: <a class="el" href="sat__csharp__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">sat_csharp_wrap.cc</a>
+, <a class="el" href="sat__python__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">sorted_interval_list_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">sorted_interval_list_csharp_wrap.cc</a>
-, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">constraint_solver_csharp_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="graph__csharp__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">graph_csharp_wrap.cc</a>
 , <a class="el" href="linear__solver__java__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">linear_solver_java_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">linear_solver_python_wrap.cc</a>
-, <a class="el" href="sat__python__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">sat_python_wrap.cc</a>
+, <a class="el" href="graph__python__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">graph_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">constraint_solver_csharp_wrap.cc</a>
+, <a class="el" href="constraint__solver__java__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">constraint_solver_java_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__java__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">knapsack_solver_java_wrap.cc</a>
+, <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">knapsack_solver_csharp_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">rcpsp_python_wrap.cc</a>
+, <a class="el" href="graph__csharp__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">graph_csharp_wrap.cc</a>
+, <a class="el" href="graph__java__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">graph_java_wrap.cc</a>
+, <a class="el" href="linear__solver__csharp__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">linear_solver_csharp_wrap.cc</a>
+, <a class="el" href="sat__java__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">sat_java_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">sorted_interval_list_csharp_wrap.cc</a>
 , <a class="el" href="util__java__wrap_8cc.html#a7e84031693895e512662f5b390c6d0e4">util_java_wrap.cc</a>
 </li>
 <li>SWIGTYPE_p_absl__Duration
@@ -1263,13 +1279,13 @@ $(document).ready(function(){initNavTree('globals_defs_s.html',''); initResizabl
 : <a class="el" href="constraint__solver__python__wrap_8cc.html#af9ef28027b5ecc7fcffa8b6e35cff075">constraint_solver_python_wrap.cc</a>
 </li>
 <li>SWIGTYPE_p_char
-: <a class="el" href="knapsack__solver__python__wrap_8cc.html#a4fea528f7738d5fc0e2f14911d2b9d38">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a4fea528f7738d5fc0e2f14911d2b9d38">rcpsp_python_wrap.cc</a>
+: <a class="el" href="linear__solver__python__wrap_8cc.html#a4fea528f7738d5fc0e2f14911d2b9d38">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a4fea528f7738d5fc0e2f14911d2b9d38">sorted_interval_list_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a4fea528f7738d5fc0e2f14911d2b9d38">graph_python_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#a4fea528f7738d5fc0e2f14911d2b9d38">linear_solver_python_wrap.cc</a>
-, <a class="el" href="sat__python__wrap_8cc.html#a4fea528f7738d5fc0e2f14911d2b9d38">sat_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a4fea528f7738d5fc0e2f14911d2b9d38">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#a4fea528f7738d5fc0e2f14911d2b9d38">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a4fea528f7738d5fc0e2f14911d2b9d38">rcpsp_python_wrap.cc</a>
+, <a class="el" href="sat__python__wrap_8cc.html#a4fea528f7738d5fc0e2f14911d2b9d38">sat_python_wrap.cc</a>
 </li>
 <li>SWIGTYPE_p_CostClassIndex
 : <a class="el" href="constraint__solver__python__wrap_8cc.html#a806709c5a16ba5b46989afeee06b56ff">constraint_solver_python_wrap.cc</a>
@@ -1281,22 +1297,22 @@ $(document).ready(function(){initNavTree('globals_defs_s.html',''); initResizabl
 : <a class="el" href="constraint__solver__python__wrap_8cc.html#ace51089105dac4aac79145534f1f504f">constraint_solver_python_wrap.cc</a>
 </li>
 <li>SWIGTYPE_p_int
-: <a class="el" href="graph__python__wrap_8cc.html#a73413c3e668627181e90558738caccd5">graph_python_wrap.cc</a>
+: <a class="el" href="constraint__solver__python__wrap_8cc.html#a73413c3e668627181e90558738caccd5">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="graph__python__wrap_8cc.html#a73413c3e668627181e90558738caccd5">graph_python_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a73413c3e668627181e90558738caccd5">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="linear__solver__python__wrap_8cc.html#a73413c3e668627181e90558738caccd5">linear_solver_python_wrap.cc</a>
+, <a class="el" href="sat__python__wrap_8cc.html#a73413c3e668627181e90558738caccd5">sat_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#a73413c3e668627181e90558738caccd5">rcpsp_python_wrap.cc</a>
 , <a class="el" href="knapsack__solver__python__wrap_8cc.html#a73413c3e668627181e90558738caccd5">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#a73413c3e668627181e90558738caccd5">linear_solver_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a73413c3e668627181e90558738caccd5">sorted_interval_list_python_wrap.cc</a>
-, <a class="el" href="sat__python__wrap_8cc.html#a73413c3e668627181e90558738caccd5">sat_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#a73413c3e668627181e90558738caccd5">constraint_solver_python_wrap.cc</a>
 </li>
 <li>SWIGTYPE_p_long
-: <a class="el" href="knapsack__solver__python__wrap_8cc.html#a68b3a79b0ab4669698b423b274a16641">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a68b3a79b0ab4669698b423b274a16641">sorted_interval_list_python_wrap.cc</a>
+: <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a68b3a79b0ab4669698b423b274a16641">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a68b3a79b0ab4669698b423b274a16641">rcpsp_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a68b3a79b0ab4669698b423b274a16641">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#a68b3a79b0ab4669698b423b274a16641">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#a68b3a79b0ab4669698b423b274a16641">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a68b3a79b0ab4669698b423b274a16641">sat_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a68b3a79b0ab4669698b423b274a16641">graph_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a68b3a79b0ab4669698b423b274a16641">rcpsp_python_wrap.cc</a>
 </li>
 <li>SWIGTYPE_p_operations_research__Assignment
 : <a class="el" href="constraint__solver__python__wrap_8cc.html#ac2e464b07912e495ff99d6c72acb192a">constraint_solver_python_wrap.cc</a>
@@ -1385,6 +1401,9 @@ $(document).ready(function(){initNavTree('globals_defs_s.html',''); initResizabl
 </li>
 <li>SWIGTYPE_p_operations_research__GlobalVehicleBreaksConstraint
 : <a class="el" href="constraint__solver__python__wrap_8cc.html#a89c3504bd49efd0323d2c5e10f627e0c">constraint_solver_python_wrap.cc</a>
+</li>
+<li>SWIGTYPE_p_operations_research__ImprovementSearchLimit
+: <a class="el" href="constraint__solver__python__wrap_8cc.html#a9dae184a92ef725c3f335b22f8c35822">constraint_solver_python_wrap.cc</a>
 </li>
 <li>SWIGTYPE_p_operations_research__IntervalVar
 : <a class="el" href="constraint__solver__python__wrap_8cc.html#a864a820347ea2d7b1590b7e9a7b821e8">constraint_solver_python_wrap.cc</a>
@@ -1582,22 +1601,22 @@ $(document).ready(function(){initNavTree('globals_defs_s.html',''); initResizabl
 : <a class="el" href="constraint__solver__python__wrap_8cc.html#ae7ed11c4b6c5dc0b5dc1ebc05f54f7f2">constraint_solver_python_wrap.cc</a>
 </li>
 <li>SWIGTYPE_p_short
-: <a class="el" href="knapsack__solver__python__wrap_8cc.html#a5c5780ae27f78ff6ac0f8ccec1f7d134">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#a5c5780ae27f78ff6ac0f8ccec1f7d134">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#a5c5780ae27f78ff6ac0f8ccec1f7d134">linear_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a5c5780ae27f78ff6ac0f8ccec1f7d134">rcpsp_python_wrap.cc</a>
+: <a class="el" href="constraint__solver__python__wrap_8cc.html#a5c5780ae27f78ff6ac0f8ccec1f7d134">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a5c5780ae27f78ff6ac0f8ccec1f7d134">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a5c5780ae27f78ff6ac0f8ccec1f7d134">sorted_interval_list_python_wrap.cc</a>
-, <a class="el" href="sat__python__wrap_8cc.html#a5c5780ae27f78ff6ac0f8ccec1f7d134">sat_python_wrap.cc</a>
+, <a class="el" href="linear__solver__python__wrap_8cc.html#a5c5780ae27f78ff6ac0f8ccec1f7d134">linear_solver_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a5c5780ae27f78ff6ac0f8ccec1f7d134">graph_python_wrap.cc</a>
+, <a class="el" href="sat__python__wrap_8cc.html#a5c5780ae27f78ff6ac0f8ccec1f7d134">sat_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a5c5780ae27f78ff6ac0f8ccec1f7d134">rcpsp_python_wrap.cc</a>
 </li>
 <li>SWIGTYPE_p_signed_char
-: <a class="el" href="knapsack__solver__python__wrap_8cc.html#ad8f3976ee71daf88cd84661847340a6f">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#ad8f3976ee71daf88cd84661847340a6f">rcpsp_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#ad8f3976ee71daf88cd84661847340a6f">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#ad8f3976ee71daf88cd84661847340a6f">linear_solver_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#ad8f3976ee71daf88cd84661847340a6f">sorted_interval_list_python_wrap.cc</a>
+: <a class="el" href="linear__solver__python__wrap_8cc.html#ad8f3976ee71daf88cd84661847340a6f">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#ad8f3976ee71daf88cd84661847340a6f">sat_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#ad8f3976ee71daf88cd84661847340a6f">graph_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#ad8f3976ee71daf88cd84661847340a6f">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#ad8f3976ee71daf88cd84661847340a6f">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#ad8f3976ee71daf88cd84661847340a6f">rcpsp_python_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#ad8f3976ee71daf88cd84661847340a6f">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIGTYPE_p_std__functionT_long_flong_longF_t
 : <a class="el" href="constraint__solver__python__wrap_8cc.html#acb2649a4edd125f7d4f55e9411e33755">constraint_solver_python_wrap.cc</a>
@@ -1607,8 +1626,8 @@ $(document).ready(function(){initNavTree('globals_defs_s.html',''); initResizabl
 </li>
 <li>SWIGTYPE_p_std__ostream
 : <a class="el" href="linear__solver__python__wrap_8cc.html#ad859763432268f5b698de3cfe4d43069">linear_solver_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#ad859763432268f5b698de3cfe4d43069">constraint_solver_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#ad859763432268f5b698de3cfe4d43069">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#ad859763432268f5b698de3cfe4d43069">constraint_solver_python_wrap.cc</a>
 </li>
 <li>SWIGTYPE_p_std__pairT_std__vectorT_long_t_std__vectorT_long_t_t
 : <a class="el" href="constraint__solver__python__wrap_8cc.html#aca035be8e5e9091bc95473949d65e67e">constraint_solver_python_wrap.cc</a>
@@ -1659,40 +1678,40 @@ $(document).ready(function(){initNavTree('globals_defs_s.html',''); initResizabl
 : <a class="el" href="constraint__solver__python__wrap_8cc.html#ad06fc1c8b331ee320690ffc09654a5ee">constraint_solver_python_wrap.cc</a>
 </li>
 <li>SWIGTYPE_p_unsigned_char
-: <a class="el" href="constraint__solver__python__wrap_8cc.html#a2e2b42f6fbe7fb7aac2ead6d7e96c303">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a2e2b42f6fbe7fb7aac2ead6d7e96c303">rcpsp_python_wrap.cc</a>
+: <a class="el" href="graph__python__wrap_8cc.html#a2e2b42f6fbe7fb7aac2ead6d7e96c303">graph_python_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a2e2b42f6fbe7fb7aac2ead6d7e96c303">sorted_interval_list_python_wrap.cc</a>
 , <a class="el" href="knapsack__solver__python__wrap_8cc.html#a2e2b42f6fbe7fb7aac2ead6d7e96c303">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#a2e2b42f6fbe7fb7aac2ead6d7e96c303">linear_solver_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a2e2b42f6fbe7fb7aac2ead6d7e96c303">sat_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a2e2b42f6fbe7fb7aac2ead6d7e96c303">sorted_interval_list_python_wrap.cc</a>
-, <a class="el" href="graph__python__wrap_8cc.html#a2e2b42f6fbe7fb7aac2ead6d7e96c303">graph_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#a2e2b42f6fbe7fb7aac2ead6d7e96c303">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a2e2b42f6fbe7fb7aac2ead6d7e96c303">rcpsp_python_wrap.cc</a>
 </li>
 <li>SWIGTYPE_p_unsigned_int
-: <a class="el" href="sat__python__wrap_8cc.html#ac97b19aa5dc7dde3dfd22b663edbca22">sat_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#ac97b19aa5dc7dde3dfd22b663edbca22">knapsack_solver_python_wrap.cc</a>
+: <a class="el" href="knapsack__solver__python__wrap_8cc.html#ac97b19aa5dc7dde3dfd22b663edbca22">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#ac97b19aa5dc7dde3dfd22b663edbca22">linear_solver_python_wrap.cc</a>
+, <a class="el" href="sat__python__wrap_8cc.html#ac97b19aa5dc7dde3dfd22b663edbca22">sat_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#ac97b19aa5dc7dde3dfd22b663edbca22">sorted_interval_list_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#ac97b19aa5dc7dde3dfd22b663edbca22">rcpsp_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#ac97b19aa5dc7dde3dfd22b663edbca22">graph_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#ac97b19aa5dc7dde3dfd22b663edbca22">constraint_solver_python_wrap.cc</a>
 </li>
 <li>SWIGTYPE_p_unsigned_long
-: <a class="el" href="sat__python__wrap_8cc.html#ac7a3bc99c0f0cde6e41ef27b378d692f">sat_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#ac7a3bc99c0f0cde6e41ef27b378d692f">rcpsp_python_wrap.cc</a>
-, <a class="el" href="graph__python__wrap_8cc.html#ac7a3bc99c0f0cde6e41ef27b378d692f">graph_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#ac7a3bc99c0f0cde6e41ef27b378d692f">knapsack_solver_python_wrap.cc</a>
+: <a class="el" href="knapsack__solver__python__wrap_8cc.html#ac7a3bc99c0f0cde6e41ef27b378d692f">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="sat__python__wrap_8cc.html#ac7a3bc99c0f0cde6e41ef27b378d692f">sat_python_wrap.cc</a>
 , <a class="el" href="linear__solver__python__wrap_8cc.html#ac7a3bc99c0f0cde6e41ef27b378d692f">linear_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#ac7a3bc99c0f0cde6e41ef27b378d692f">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#ac7a3bc99c0f0cde6e41ef27b378d692f">rcpsp_python_wrap.cc</a>
+, <a class="el" href="graph__python__wrap_8cc.html#ac7a3bc99c0f0cde6e41ef27b378d692f">graph_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__python__wrap_8cc.html#ac7a3bc99c0f0cde6e41ef27b378d692f">sorted_interval_list_python_wrap.cc</a>
 </li>
 <li>SWIGTYPE_p_unsigned_short
-: <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a7ac492f9a19efbd2b78fda35c9764135">sorted_interval_list_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a7ac492f9a19efbd2b78fda35c9764135">rcpsp_python_wrap.cc</a>
+: <a class="el" href="knapsack__solver__python__wrap_8cc.html#a7ac492f9a19efbd2b78fda35c9764135">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#a7ac492f9a19efbd2b78fda35c9764135">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#a7ac492f9a19efbd2b78fda35c9764135">linear_solver_python_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a7ac492f9a19efbd2b78fda35c9764135">sorted_interval_list_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a7ac492f9a19efbd2b78fda35c9764135">graph_python_wrap.cc</a>
+, <a class="el" href="linear__solver__python__wrap_8cc.html#a7ac492f9a19efbd2b78fda35c9764135">linear_solver_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a7ac492f9a19efbd2b78fda35c9764135">rcpsp_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a7ac492f9a19efbd2b78fda35c9764135">sat_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a7ac492f9a19efbd2b78fda35c9764135">knapsack_solver_python_wrap.cc</a>
 </li>
 <li>SWIGTYPE_p_VehicleClassIndex
 : <a class="el" href="constraint__solver__python__wrap_8cc.html#ae05f2b802877bec89864078a4f8073b7">constraint_solver_python_wrap.cc</a>
@@ -1704,76 +1723,103 @@ $(document).ready(function(){initNavTree('globals_defs_s.html',''); initResizabl
 : <a class="el" href="graph__python__wrap_8cc.html#a1cbff4700d9575b1e87df09d0edcf646">graph_python_wrap.cc</a>
 </li>
 <li>SWIGUNUSED
-: <a class="el" href="sat__csharp__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">sat_csharp_wrap.cc</a>
-, <a class="el" href="util__java__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">util_java_wrap.cc</a>
-, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">constraint_solver_csharp_wrap.cc</a>
 , <a class="el" href="graph__java__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">graph_java_wrap.cc</a>
-, <a class="el" href="sat__python__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">sat_python_wrap.cc</a>
-, <a class="el" href="sat__java__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">sat_java_wrap.cc</a>
-, <a class="el" href="linear__solver__csharp__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">linear_solver_csharp_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">rcpsp_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">knapsack_solver_csharp_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">linear_solver_python_wrap.cc</a>
-, <a class="el" href="graph__csharp__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">graph_csharp_wrap.cc</a>
-, <a class="el" href="graph__python__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">graph_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__java__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">knapsack_solver_java_wrap.cc</a>
-, <a class="el" href="linear__solver__java__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">linear_solver_java_wrap.cc</a>
-, <a class="el" href="constraint__solver__java__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">constraint_solver_java_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">sorted_interval_list_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">knapsack_solver_python_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">sorted_interval_list_csharp_wrap.cc</a>
+, <a class="el" href="linear__solver__csharp__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">linear_solver_csharp_wrap.cc</a>
+, <a class="el" href="graph__csharp__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">graph_csharp_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="linear__solver__python__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">linear_solver_python_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="sat__python__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">sat_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">rcpsp_python_wrap.cc</a>
+, <a class="el" href="util__java__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">util_java_wrap.cc</a>
+, <a class="el" href="sat__csharp__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">sat_csharp_wrap.cc</a>
+, <a class="el" href="constraint__solver__java__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">constraint_solver_java_wrap.cc</a>
+, <a class="el" href="linear__solver__java__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">linear_solver_java_wrap.cc</a>
+, <a class="el" href="knapsack__solver__java__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">knapsack_solver_java_wrap.cc</a>
+, <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">knapsack_solver_csharp_wrap.cc</a>
+, <a class="el" href="sat__java__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">sat_java_wrap.cc</a>
+, <a class="el" href="graph__python__wrap_8cc.html#a6ee41cd160d397aa76668bf4db65e2d1">graph_python_wrap.cc</a>
 </li>
 <li>SWIGUNUSEDPARM
-: <a class="el" href="linear__solver__java__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">linear_solver_java_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">linear_solver_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">knapsack_solver_python_wrap.cc</a>
+: <a class="el" href="rcpsp__python__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">rcpsp_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="graph__java__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">graph_java_wrap.cc</a>
 , <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">sorted_interval_list_csharp_wrap.cc</a>
-, <a class="el" href="graph__python__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">graph_python_wrap.cc</a>
+, <a class="el" href="linear__solver__python__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">linear_solver_python_wrap.cc</a>
 , <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">knapsack_solver_csharp_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__java__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">constraint_solver_java_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">sat_python_wrap.cc</a>
 , <a class="el" href="util__java__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">util_java_wrap.cc</a>
-, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">constraint_solver_csharp_wrap.cc</a>
-, <a class="el" href="graph__csharp__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">graph_csharp_wrap.cc</a>
-, <a class="el" href="knapsack__solver__java__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">knapsack_solver_java_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">rcpsp_python_wrap.cc</a>
 , <a class="el" href="sat__csharp__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">sat_csharp_wrap.cc</a>
 , <a class="el" href="linear__solver__csharp__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">linear_solver_csharp_wrap.cc</a>
-, <a class="el" href="constraint__solver__java__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">constraint_solver_java_wrap.cc</a>
-, <a class="el" href="graph__java__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">graph_java_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">sorted_interval_list_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__java__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">knapsack_solver_java_wrap.cc</a>
+, <a class="el" href="linear__solver__java__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">linear_solver_java_wrap.cc</a>
+, <a class="el" href="graph__python__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">graph_python_wrap.cc</a>
+, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">constraint_solver_csharp_wrap.cc</a>
 , <a class="el" href="sat__java__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">sat_java_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="graph__csharp__wrap_8cc.html#a6a54164d0685c632e7540c5ad32a453a">graph_csharp_wrap.cc</a>
 </li>
 <li>SWIGVERSION
 : <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a82758940324a80fe482f130cc097c36e">sorted_interval_list_python_wrap.cc</a>
 , <a class="el" href="knapsack__solver__python__wrap_8cc.html#a82758940324a80fe482f130cc097c36e">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#a82758940324a80fe482f130cc097c36e">linear_solver_python_wrap.cc</a>
-, <a class="el" href="sat__python__wrap_8cc.html#a82758940324a80fe482f130cc097c36e">sat_python_wrap.cc</a>
-, <a class="el" href="rcpsp__python__wrap_8cc.html#a82758940324a80fe482f130cc097c36e">rcpsp_python_wrap.cc</a>
 , <a class="el" href="constraint__solver__python__wrap_8cc.html#a82758940324a80fe482f130cc097c36e">constraint_solver_python_wrap.cc</a>
+, <a class="el" href="linear__solver__python__wrap_8cc.html#a82758940324a80fe482f130cc097c36e">linear_solver_python_wrap.cc</a>
 , <a class="el" href="graph__python__wrap_8cc.html#a82758940324a80fe482f130cc097c36e">graph_python_wrap.cc</a>
+, <a class="el" href="rcpsp__python__wrap_8cc.html#a82758940324a80fe482f130cc097c36e">rcpsp_python_wrap.cc</a>
+, <a class="el" href="sat__python__wrap_8cc.html#a82758940324a80fe482f130cc097c36e">sat_python_wrap.cc</a>
 </li>
 <li>SWIGWORDSIZE64
-: <a class="el" href="constraint__solver__java__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">constraint_solver_java_wrap.cc</a>
-, <a class="el" href="sat__java__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">sat_java_wrap.cc</a>
-, <a class="el" href="linear__solver__python__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">linear_solver_python_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">sorted_interval_list_csharp_wrap.cc</a>
-, <a class="el" href="graph__python__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">graph_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">knapsack_solver_csharp_wrap.cc</a>
-, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">sorted_interval_list_python_wrap.cc</a>
-, <a class="el" href="knapsack__solver__java__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">knapsack_solver_java_wrap.cc</a>
+: <a class="el" href="linear__solver__python__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">linear_solver_python_wrap.cc</a>
 , <a class="el" href="graph__java__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">graph_java_wrap.cc</a>
-, <a class="el" href="constraint__solver__python__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">constraint_solver_python_wrap.cc</a>
-, <a class="el" href="util__java__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">util_java_wrap.cc</a>
-, <a class="el" href="sat__csharp__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">sat_csharp_wrap.cc</a>
 , <a class="el" href="linear__solver__csharp__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">linear_solver_csharp_wrap.cc</a>
-, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">knapsack_solver_python_wrap.cc</a>
-, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">constraint_solver_csharp_wrap.cc</a>
-, <a class="el" href="graph__csharp__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">graph_csharp_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__python__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">sorted_interval_list_python_wrap.cc</a>
 , <a class="el" href="rcpsp__python__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">rcpsp_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__java__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">knapsack_solver_java_wrap.cc</a>
+, <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">constraint_solver_csharp_wrap.cc</a>
+, <a class="el" href="sat__java__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">sat_java_wrap.cc</a>
+, <a class="el" href="graph__python__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">graph_python_wrap.cc</a>
 , <a class="el" href="sat__python__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">sat_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__python__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">knapsack_solver_python_wrap.cc</a>
+, <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">knapsack_solver_csharp_wrap.cc</a>
+, <a class="el" href="constraint__solver__java__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">constraint_solver_java_wrap.cc</a>
+, <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">sorted_interval_list_csharp_wrap.cc</a>
+, <a class="el" href="sat__csharp__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">sat_csharp_wrap.cc</a>
 , <a class="el" href="linear__solver__java__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">linear_solver_java_wrap.cc</a>
+, <a class="el" href="graph__csharp__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">graph_csharp_wrap.cc</a>
+, <a class="el" href="util__java__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">util_java_wrap.cc</a>
+, <a class="el" href="constraint__solver__python__wrap_8cc.html#a166de8bdcf295101efabbdb2d5f3fb18">constraint_solver_python_wrap.cc</a>
+</li>
+<li>SYSLOG
+: <a class="el" href="base_2logging_8h.html#aec55dbc0eb86bb6a02de6f05fac15b83">base/logging.h</a>
+</li>
+<li>SYSLOG_ASSERT
+: <a class="el" href="base_2logging_8h.html#abc77aea95e5c8144159322c9fd919808">base/logging.h</a>
+</li>
+<li>SYSLOG_DFATAL
+: <a class="el" href="base_2logging_8h.html#a3eb4d4ad8da2d68b560f4a75226212a2">base/logging.h</a>
+</li>
+<li>SYSLOG_ERROR
+: <a class="el" href="base_2logging_8h.html#a2e1c9947244f6d46509f5b4713183cce">base/logging.h</a>
+</li>
+<li>SYSLOG_EVERY_N
+: <a class="el" href="base_2logging_8h.html#ac70fb29939438041a7f1b8a5f735efaf">base/logging.h</a>
+</li>
+<li>SYSLOG_FATAL
+: <a class="el" href="base_2logging_8h.html#af8855f312b15c336d9b4e5530cb37a39">base/logging.h</a>
+</li>
+<li>SYSLOG_IF
+: <a class="el" href="base_2logging_8h.html#ad7a43d8ca082105d21e75c822aa2cf21">base/logging.h</a>
+</li>
+<li>SYSLOG_INFO
+: <a class="el" href="base_2logging_8h.html#aa064c8bce1a9b8103221af95da828e76">base/logging.h</a>
+</li>
+<li>SYSLOG_WARNING
+: <a class="el" href="base_2logging_8h.html#a820f091989b1e85a4728a9818fdcfb7e">base/logging.h</a>
 </li>
 </ul>
 </div><!-- contents -->

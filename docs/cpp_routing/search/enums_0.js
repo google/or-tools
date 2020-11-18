@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['constraintsolverparameters_5ftrailcompression_3705',['ConstraintSolverParameters_TrailCompression',['../namespaceoperations__research.html#ac5e380bc50cb14374c22d16ed40a8422',1,'operations_research']]]
+  ['binaryintervalrelation_5488',['BinaryIntervalRelation',['../classoperations__research_1_1_solver.html#a6f66063ebaf61025e27e96719affa3ee',1,'operations_research::Solver']]]
 ];
