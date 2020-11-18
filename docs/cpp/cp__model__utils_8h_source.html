@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -208,7 +208,7 @@ $(document).ready(function(){initNavTree('cp__model__utils_8h_source.html',''); 
 <div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;  std::vector&lt;int64&gt; result;</div>
 <div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; <a class="code" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a>.domain_size(); i += 2) {</div>
 <div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="keywordflow">for</span> (<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> v = <a class="code" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a>.domain(i); v &lt;= <a class="code" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a>.domain(i + 1); ++v) {</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;      CHECK_LE(result.size(), 1e6);</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;      <a class="code" href="base_2logging_8h.html#ae4db23f10f5d4aad6d735f5a74cd6f8c">CHECK_LE</a>(result.size(), 1e6);</div>
 <div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;      result.push_back(v);</div>
 <div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    }</div>
 <div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;  }</div>
@@ -248,7 +248,7 @@ $(document).ready(function(){initNavTree('cp__model__utils_8h_source.html',''); 
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <div class="ttc" id="anamespaceoperations__research_1_1sat_html_ab5f94367fbf4ab2c03bd6bef412c41f7"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#ab5f94367fbf4ab2c03bd6bef412c41f7">operations_research::sat::ApplyToAllVariableIndices</a></div><div class="ttdeci">void ApplyToAllVariableIndices(const std::function&lt; void(int *)&gt; &amp;f, ConstraintProto *ct)</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__utils_8cc_source.html#l00226">cp_model_utils.cc:226</a></div></div>
-<div class="ttc" id="acp__model__solver_8cc_html_abcd33b18ce6d5a90a4ba5c37cfa58829"><div class="ttname"><a href="cp__model__solver_8cc.html#abcd33b18ce6d5a90a4ba5c37cfa58829">response</a></div><div class="ttdeci">SharedResponseManager * response</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__solver_8cc_source.html#l02065">cp_model_solver.cc:2065</a></div></div>
+<div class="ttc" id="acp__model__solver_8cc_html_abcd33b18ce6d5a90a4ba5c37cfa58829"><div class="ttname"><a href="cp__model__solver_8cc.html#abcd33b18ce6d5a90a4ba5c37cfa58829">response</a></div><div class="ttdeci">SharedResponseManager * response</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__solver_8cc_source.html#l02085">cp_model_solver.cc:2085</a></div></div>
 <div class="ttc" id="aintegral__types_8h_html"><div class="ttname"><a href="integral__types_8h.html">integral_types.h</a></div></div>
 <div class="ttc" id="acp__model_8pb_8h_html"><div class="ttname"><a href="cp__model_8pb_8h.html">cp_model.pb.h</a></div></div>
 <div class="ttc" id="aalldiff__cst_8cc_html_a9d0c202d5fdd62f4fa2c613339ff168a"><div class="ttname"><a href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">max</a></div><div class="ttdeci">int64 max</div><div class="ttdef"><b>Definition:</b> <a href="alldiff__cst_8cc_source.html#l00139">alldiff_cst.cc:139</a></div></div>
@@ -274,6 +274,7 @@ $(document).ready(function(){initNavTree('cp__model__utils_8h_source.html',''); 
 <div class="ttc" id="anamespaceoperations__research_1_1sat_html_a44f635d04529be503aa7f14917185a37"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a44f635d04529be503aa7f14917185a37">operations_research::sat::ComputeInnerObjective</a></div><div class="ttdeci">int64 ComputeInnerObjective(const CpObjectiveProto &amp;objective, const CpSolverResponse &amp;response)</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__utils_8cc_source.html#l00520">cp_model_utils.cc:520</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1sat_html_ac52c02e968c262e71312e8e8462013ac"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#ac52c02e968c262e71312e8e8462013ac">operations_research::sat::DomainInProtoContains</a></div><div class="ttdeci">bool DomainInProtoContains(const ProtoWithDomain &amp;proto, int64 value)</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__utils_8h_source.html#l00082">cp_model_utils.h:82</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1sat_html_ae0803b8198728cd4f6e58498d9c60091"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#ae0803b8198728cd4f6e58498d9c60091">operations_research::sat::NegatedRef</a></div><div class="ttdeci">int NegatedRef(int ref)</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__utils_8h_source.html#l00032">cp_model_utils.h:32</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_ae4db23f10f5d4aad6d735f5a74cd6f8c"><div class="ttname"><a href="base_2logging_8h.html#ae4db23f10f5d4aad6d735f5a74cd6f8c">CHECK_LE</a></div><div class="ttdeci">#define CHECK_LE(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00699">base/logging.h:699</a></div></div>
 <div class="ttc" id="asorted__interval__list_8h_html"><div class="ttname"><a href="sorted__interval__list_8h.html">sorted_interval_list.h</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1sat_html_a1ff712b32e44ffd2e7f40042330bf2ad"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a1ff712b32e44ffd2e7f40042330bf2ad">operations_research::sat::UnscaleObjectiveValue</a></div><div class="ttdeci">double UnscaleObjectiveValue(const CpObjectiveProto &amp;proto, double value)</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__utils_8h_source.html#l00138">cp_model_utils.h:138</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1sat_html_a901c19b12842f8af153e588a689a90b5"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a901c19b12842f8af153e588a689a90b5">operations_research::sat::FillDomainInProto</a></div><div class="ttdeci">void FillDomainInProto(const Domain &amp;domain, ProtoWithDomain *proto)</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__utils_8h_source.html#l00091">cp_model_utils.h:91</a></div></div>

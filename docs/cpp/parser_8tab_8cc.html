@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -103,12 +103,14 @@ $(document).ready(function(){initNavTree('parser_8tab_8cc.html',''); initResizab
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">union &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="unionyyalloc.html">yyalloc</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structyypcontext__t.html">yypcontext_t</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:a9f092f5b1dca6a6249fb2c7c8065b031"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a9f092f5b1dca6a6249fb2c7c8065b031">YYBISON</a>&#160;&#160;&#160;1</td></tr>
 <tr class="separator:a9f092f5b1dca6a6249fb2c7c8065b031"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a72ebd0ca5807efcc6a5ae4fb72dd1553"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a72ebd0ca5807efcc6a5ae4fb72dd1553">YYBISON_VERSION</a>&#160;&#160;&#160;&quot;3.5.1&quot;</td></tr>
+<tr class="memitem:a72ebd0ca5807efcc6a5ae4fb72dd1553"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a72ebd0ca5807efcc6a5ae4fb72dd1553">YYBISON_VERSION</a>&#160;&#160;&#160;&quot;3.7.2&quot;</td></tr>
 <tr class="separator:a72ebd0ca5807efcc6a5ae4fb72dd1553"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a50db5aef8c2b6f13961b2480b37f84c0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a50db5aef8c2b6f13961b2480b37f84c0">YYSKELETON_NAME</a>&#160;&#160;&#160;&quot;yacc.c&quot;</td></tr>
 <tr class="separator:a50db5aef8c2b6f13961b2480b37f84c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -120,7 +122,7 @@ Macros</h2></td></tr>
 <tr class="separator:a90f059b8a9d6c30a1e44e1b80d3fd6c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ceb5b985e149f18e018b142cfdd7264"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a>&#160;&#160;&#160;ORFZ_STYPE</td></tr>
 <tr class="separator:a2ceb5b985e149f18e018b142cfdd7264"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7482716c0f7d5bc8387ad56daa3a9fde"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a7482716c0f7d5bc8387ad56daa3a9fde">yyparse</a>&#160;&#160;&#160;<a class="el" href="parser_8tab_8cc.html#aee2b7b5220408c9e064821483dc12b70">orfz_parse</a></td></tr>
+<tr class="memitem:a7482716c0f7d5bc8387ad56daa3a9fde"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a7482716c0f7d5bc8387ad56daa3a9fde">yyparse</a>&#160;&#160;&#160;<a class="el" href="parser_8cc.html#a2f629584ac193a76a6f3bbafa776b61e">orfz_parse</a></td></tr>
 <tr class="separator:a7482716c0f7d5bc8387ad56daa3a9fde"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5611300548b2030d86b6ab9168132b88"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a5611300548b2030d86b6ab9168132b88">yylex</a>&#160;&#160;&#160;<a class="el" href="parser__util_8cc.html#a64b811412d07ee7fab6a4fdb95969f66">orfz_lex</a></td></tr>
 <tr class="separator:a5611300548b2030d86b6ab9168132b88"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -136,18 +138,6 @@ Macros</h2></td></tr>
 <tr class="separator:ad56e31fec1bf5fadf90c0ff7f13b0020"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a6c82f7ce4ad9cc8c6c08b7a2de5b84"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a5a6c82f7ce4ad9cc8c6c08b7a2de5b84">YY_NULLPTR</a>&#160;&#160;&#160;((void*)0)</td></tr>
 <tr class="separator:a5a6c82f7ce4ad9cc8c6c08b7a2de5b84"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0943f558a560b9b5fa0593d7e36496c1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a0943f558a560b9b5fa0593d7e36496c1">YYERROR_VERBOSE</a>&#160;&#160;&#160;1</td></tr>
-<tr class="separator:a0943f558a560b9b5fa0593d7e36496c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4a98f3c1f88438b6fc740c8b213aca4a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a4a98f3c1f88438b6fc740c8b213aca4a">YY_ORFZ_ORTOOLS_FLATZINC_PARSER_TAB_HH_INCLUDED</a></td></tr>
-<tr class="separator:a4a98f3c1f88438b6fc740c8b213aca4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa9f05d9712a795f726cffb4cc5c3393d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#aa9f05d9712a795f726cffb4cc5c3393d">ORFZ_DEBUG</a>&#160;&#160;&#160;1</td></tr>
-<tr class="separator:aa9f05d9712a795f726cffb4cc5c3393d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a97892774e598d42ed1db9dc820794888"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a97892774e598d42ed1db9dc820794888">OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_</a></td></tr>
-<tr class="separator:a97892774e598d42ed1db9dc820794888"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adc0d8ea07f0c331fcda68c49fe1145bc"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#adc0d8ea07f0c331fcda68c49fe1145bc">YYLEX_PARAM</a>&#160;&#160;&#160;scanner</td></tr>
-<tr class="separator:adc0d8ea07f0c331fcda68c49fe1145bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a769f973b7f1d3270f6030dc7553be8ed"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a769f973b7f1d3270f6030dc7553be8ed">ORFZ_TOKENTYPE</a></td></tr>
-<tr class="separator:a769f973b7f1d3270f6030dc7553be8ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92593b1fc9021b99ffcfc5d2a89f5ca2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a92593b1fc9021b99ffcfc5d2a89f5ca2">YYPTRDIFF_T</a>&#160;&#160;&#160;long</td></tr>
 <tr class="separator:a92593b1fc9021b99ffcfc5d2a89f5ca2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1eea12826e9366705730412c56defe4c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a1eea12826e9366705730412c56defe4c">YYPTRDIFF_MAXIMUM</a>&#160;&#160;&#160;LONG_MAX</td></tr>
@@ -190,7 +180,7 @@ Macros</h2></td></tr>
 <tr class="separator:ac8adfd73c006c1926f387feb1eced3ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afcd15dd0fa87ffba0371c6d6a0cc9631"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#afcd15dd0fa87ffba0371c6d6a0cc9631">YYSTACK_GAP_MAXIMUM</a>&#160;&#160;&#160;(<a class="el" href="parser_8tab_8cc.html#af2e4a0ea3879fcb3f8e84faa1e551202">YYSIZEOF</a>(union <a class="el" href="unionyyalloc.html">yyalloc</a>) - 1)</td></tr>
 <tr class="separator:afcd15dd0fa87ffba0371c6d6a0cc9631"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a40beb355f2cf230a99e2e2bb54909a5a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a40beb355f2cf230a99e2e2bb54909a5a">YYSTACK_BYTES</a>(N)&#160;&#160;&#160;  ((N) * (<a class="el" href="parser_8tab_8cc.html#af2e4a0ea3879fcb3f8e84faa1e551202">YYSIZEOF</a>(<a class="el" href="parser_8tab_8cc.html#a45e9bf3a1bc80cfb98fe9fc5d8049255">yy_state_t</a>) + <a class="el" href="parser_8tab_8cc.html#af2e4a0ea3879fcb3f8e84faa1e551202">YYSIZEOF</a>(<a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a>)) + <a class="el" href="parser_8tab_8cc.html#afcd15dd0fa87ffba0371c6d6a0cc9631">YYSTACK_GAP_MAXIMUM</a>)</td></tr>
+<tr class="memitem:a40beb355f2cf230a99e2e2bb54909a5a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a40beb355f2cf230a99e2e2bb54909a5a">YYSTACK_BYTES</a>(N)&#160;&#160;&#160;  ((N) * (<a class="el" href="parser_8tab_8cc.html#af2e4a0ea3879fcb3f8e84faa1e551202">YYSIZEOF</a>(<a class="el" href="parser_8tab_8cc.html#a45e9bf3a1bc80cfb98fe9fc5d8049255">yy_state_t</a>) + <a class="el" href="parser_8tab_8cc.html#af2e4a0ea3879fcb3f8e84faa1e551202">YYSIZEOF</a>(<a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a>)) + <a class="el" href="parser_8tab_8cc.html#afcd15dd0fa87ffba0371c6d6a0cc9631">YYSTACK_GAP_MAXIMUM</a>)</td></tr>
 <tr class="separator:a40beb355f2cf230a99e2e2bb54909a5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3b270b13a13550fb9cefc929dad206ac"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a3b270b13a13550fb9cefc929dad206ac">YYCOPY_NEEDED</a>&#160;&#160;&#160;1</td></tr>
 <tr class="separator:a3b270b13a13550fb9cefc929dad206ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -210,12 +200,13 @@ Macros</h2></td></tr>
 <tr class="separator:aceaba8997dc3867478ae3b816647eb7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2c387ba2caaade8bf8f78ed30023f79f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a2c387ba2caaade8bf8f78ed30023f79f">YYNSTATES</a>&#160;&#160;&#160;223</td></tr>
 <tr class="separator:a2c387ba2caaade8bf8f78ed30023f79f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a926181abd06b6d1df27b6133971c24ce"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a926181abd06b6d1df27b6133971c24ce">YYUNDEFTOK</a>&#160;&#160;&#160;2</td></tr>
-<tr class="separator:a926181abd06b6d1df27b6133971c24ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3f5ed4bc4517eff0ef1b17541192a58"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#af3f5ed4bc4517eff0ef1b17541192a58">YYMAXUTOK</a>&#160;&#160;&#160;276</td></tr>
 <tr class="separator:af3f5ed4bc4517eff0ef1b17541192a58"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad19ee88e33c02c4e720b28f78249bd7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#aad19ee88e33c02c4e720b28f78249bd7">YYTRANSLATE</a>(YYX)&#160;&#160;&#160;  (0 &lt;= (YYX) &amp;&amp; (YYX) &lt;= <a class="el" href="parser_8tab_8cc.html#af3f5ed4bc4517eff0ef1b17541192a58">YYMAXUTOK</a> ? <a class="el" href="parser_8tab_8cc.html#a1d8883fe4dadf185e4ba432f9474a732">yytranslate</a>[YYX] : <a class="el" href="parser_8tab_8cc.html#a926181abd06b6d1df27b6133971c24ce">YYUNDEFTOK</a>)</td></tr>
+<tr class="memitem:aad19ee88e33c02c4e720b28f78249bd7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#aad19ee88e33c02c4e720b28f78249bd7">YYTRANSLATE</a>(YYX)</td></tr>
 <tr class="separator:aad19ee88e33c02c4e720b28f78249bd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a66cf4d76b944949bcae07cf6656a135a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a66cf4d76b944949bcae07cf6656a135a">YY_ACCESSING_SYMBOL</a>(State)&#160;&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a4b53a97e60d84c765592be332ef6adce">YY_CAST</a>(<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a>, <a class="el" href="parser_8tab_8cc.html#aad79c36d81324c1cebc5182a54c2743d">yystos</a>[State])</td></tr>
+<tr class="memdesc:a66cf4d76b944949bcae07cf6656a135a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Accessing symbol of state STATE.  <a href="parser_8tab_8cc.html#a66cf4d76b944949bcae07cf6656a135a">More...</a><br /></td></tr>
+<tr class="separator:a66cf4d76b944949bcae07cf6656a135a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a62bf0ed0c4360b077071b5cf3177823b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a62bf0ed0c4360b077071b5cf3177823b">YYPACT_NINF</a>&#160;&#160;&#160;(-182)</td></tr>
 <tr class="separator:a62bf0ed0c4360b077071b5cf3177823b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae8bc340f59d04f9d2e7cac952743f410"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#ae8bc340f59d04f9d2e7cac952743f410">yypact_value_is_default</a>(Yyn)&#160;&#160;&#160;((Yyn) == <a class="el" href="parser_8tab_8cc.html#a62bf0ed0c4360b077071b5cf3177823b">YYPACT_NINF</a>)</td></tr>
@@ -226,12 +217,8 @@ Macros</h2></td></tr>
 <tr class="separator:aa73e0c1ca0d85df7ad7b6851321fc331"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a20bf055e53dc4fd5afddfd752a4d1adb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a20bf055e53dc4fd5afddfd752a4d1adb">yyerrok</a>&#160;&#160;&#160;(yyerrstatus = 0)</td></tr>
 <tr class="separator:a20bf055e53dc4fd5afddfd752a4d1adb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5035d59933b3f5388c44f596145db047"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a5035d59933b3f5388c44f596145db047">yyclearin</a>&#160;&#160;&#160;(yychar = <a class="el" href="parser_8tab_8cc.html#ae59196b3765411a06cf234cf9bcae2e7">YYEMPTY</a>)</td></tr>
+<tr class="memitem:a5035d59933b3f5388c44f596145db047"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a5035d59933b3f5388c44f596145db047">yyclearin</a>&#160;&#160;&#160;(yychar = ORFZ_EMPTY)</td></tr>
 <tr class="separator:a5035d59933b3f5388c44f596145db047"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae59196b3765411a06cf234cf9bcae2e7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#ae59196b3765411a06cf234cf9bcae2e7">YYEMPTY</a>&#160;&#160;&#160;(-2)</td></tr>
-<tr class="separator:ae59196b3765411a06cf234cf9bcae2e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3b1e3628411fabac03abe0a337322016"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a3b1e3628411fabac03abe0a337322016">YYEOF</a>&#160;&#160;&#160;0</td></tr>
-<tr class="separator:a3b1e3628411fabac03abe0a337322016"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa6c7a65b580c214b2ea832fd7bdd472e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#aa6c7a65b580c214b2ea832fd7bdd472e">YYACCEPT</a>&#160;&#160;&#160;goto yyacceptlab</td></tr>
 <tr class="separator:aa6c7a65b580c214b2ea832fd7bdd472e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3bcde0b05b9aa4ec5169092d9d211dbd"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a3bcde0b05b9aa4ec5169092d9d211dbd">YYABORT</a>&#160;&#160;&#160;goto yyabortlab</td></tr>
@@ -242,9 +229,7 @@ Macros</h2></td></tr>
 <tr class="separator:ad860e18ca4b79fc589895b531bdb7948"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adfcaf974b837e3efc130377e9837b4fd"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#adfcaf974b837e3efc130377e9837b4fd">YYBACKUP</a>(Token,  Value)</td></tr>
 <tr class="separator:adfcaf974b837e3efc130377e9837b4fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad2b58b1851184ddb3b60fede50bc7946"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#ad2b58b1851184ddb3b60fede50bc7946">YYTERROR</a>&#160;&#160;&#160;1</td></tr>
-<tr class="separator:ad2b58b1851184ddb3b60fede50bc7946"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a552f295255821fa7dea11b0237e1d61a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a552f295255821fa7dea11b0237e1d61a">YYERRCODE</a>&#160;&#160;&#160;256</td></tr>
+<tr class="memitem:a552f295255821fa7dea11b0237e1d61a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a552f295255821fa7dea11b0237e1d61a">YYERRCODE</a>&#160;&#160;&#160;ORFZ_UNDEF</td></tr>
 <tr class="separator:a552f295255821fa7dea11b0237e1d61a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3b78184b3e3414afdaf2bbbff4a8bfe"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#af3b78184b3e3414afdaf2bbbff4a8bfe">YYFPRINTF</a>&#160;&#160;&#160;fprintf</td></tr>
 <tr class="separator:af3b78184b3e3414afdaf2bbbff4a8bfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -252,8 +237,8 @@ Macros</h2></td></tr>
 <tr class="separator:af6d6ca80e87922f90264f1a4a802ea04"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a52c7d936ca7e6c34687ff71f29b8cfd1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a52c7d936ca7e6c34687ff71f29b8cfd1">YY_LOCATION_PRINT</a>(<a class="el" href="class_file.html">File</a>,  Loc)&#160;&#160;&#160;((void)0)</td></tr>
 <tr class="separator:a52c7d936ca7e6c34687ff71f29b8cfd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1c510d33cb388afc9411141ba3076a36"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a1c510d33cb388afc9411141ba3076a36">YY_SYMBOL_PRINT</a>(Title,  Type,  Value,  Location)</td></tr>
-<tr class="separator:a1c510d33cb388afc9411141ba3076a36"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a67fc08e7fcabdbe0d83fc4077437d64b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a67fc08e7fcabdbe0d83fc4077437d64b">YY_SYMBOL_PRINT</a>(Title,  Kind,  Value,  Location)</td></tr>
+<tr class="separator:a67fc08e7fcabdbe0d83fc4077437d64b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7a52157fbe194e3a347afc4ef750af77"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a7a52157fbe194e3a347afc4ef750af77">YY_STACK_PRINT</a>(Bottom,  Top)</td></tr>
 <tr class="separator:a7a52157fbe194e3a347afc4ef750af77"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a49ad456240785266cadae498ddae9310"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a49ad456240785266cadae498ddae9310">YY_REDUCE_PRINT</a>(Rule)</td></tr>
@@ -266,13 +251,11 @@ Macros</h2></td></tr>
 <tr class="separator:a5678224066e7b61a101000279b4bb0be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad2f9773cd9c031026b2ef4c1ee7be1be"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#ad2f9773cd9c031026b2ef4c1ee7be1be">YYPOPSTACK</a>(N)&#160;&#160;&#160;(yyvsp -= (N), yyssp -= (N))</td></tr>
 <tr class="separator:ad2f9773cd9c031026b2ef4c1ee7be1be"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af0e752e92b35e76f827643476f07eeeb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#af0e752e92b35e76f827643476f07eeeb">YYSYNTAX_ERROR</a>&#160;&#160;&#160;<a class="el" href="parser_8tab_8cc.html#adbccd08ca5358356a3abe128fce9c70f">yysyntax_error</a>(&amp;yymsg_alloc, &amp;yymsg, yyssp, yytoken)</td></tr>
-<tr class="separator:af0e752e92b35e76f827643476f07eeeb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:ada05af3f6f19ddaae9f4a382f8a4e4cd"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="structoperations__research_1_1fz_1_1_lexer_info.html">operations_research::fz::LexerInfo</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a></td></tr>
-<tr class="separator:ada05af3f6f19ddaae9f4a382f8a4e4cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5770f4481fa757da330a70e968998447"><td class="memItemLeft" align="right" valign="top">typedef enum <a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a5770f4481fa757da330a70e968998447">yysymbol_kind_t</a></td></tr>
+<tr class="separator:a5770f4481fa757da330a70e968998447"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed557a488f2c08c0956e2237f8eba464"><td class="memItemLeft" align="right" valign="top">typedef signed char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#aed557a488f2c08c0956e2237f8eba464">yytype_int8</a></td></tr>
 <tr class="separator:aed557a488f2c08c0956e2237f8eba464"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a33032314af14de925471bbd792c4bd92"><td class="memItemLeft" align="right" valign="top">typedef short&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a33032314af14de925471bbd792c4bd92">yytype_int16</a></td></tr>
@@ -288,67 +271,130 @@ Typedefs</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:a85ce62c6a1b129948aacc3737e8aad69"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69">orfz_tokentype</a> { <br />
-&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69a1e029fbf0c881b85d80fc8e89b753688">ARRAY</a> = 258, 
-<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69af33660babf67070998c4a81bfdc98e3b">TOKEN_BOOL</a> = 259, 
-<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69a66ac5e8d9f64e87683ee297651628ae3">CONSTRAINT</a> = 260, 
-<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69a1035420c8105e3a23dfa2adeba7b4490">TOKEN_FLOAT</a> = 261, 
+<tr class="memitem:a20a769e9b8f129abf35d03d3904ec0e5"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a> { <br />
+&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5ad800db300c50056778ac571ac922e993">YYSYMBOL_YYEMPTY</a> = -2, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5abae1143ba84f95c06898deb2b78f935b">YYSYMBOL_YYEOF</a> = 0, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a3969eee4c6f66d8fcd47acb3d217390d">YYSYMBOL_YYerror</a> = 1, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a12c1e8bf6f8dfd4f8dd46a667481e96e">YYSYMBOL_YYUNDEF</a> = 2, 
 <br />
-&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69a8f5182347f4a0efa0aa628f093aad2fa">TOKEN_INT</a> = 262, 
-<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69a39e4d67df76a12c9a04ec2805577c062">MAXIMIZE</a> = 263, 
-<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69a3758306c4779769024bd3257595ea040">MINIMIZE</a> = 264, 
-<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69a721d4f1eaa4a30661aaef3353e5305e2">OF</a> = 265, 
+&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5aa044f09a1c983b9eb796d8132b9b4322">YYSYMBOL_ARRAY</a> = 3, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a9726d3d67dde6625337a314bb371cac5">YYSYMBOL_TOKEN_BOOL</a> = 4, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5af0062401633886d1715e8e87d92badb5">YYSYMBOL_CONSTRAINT</a> = 5, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a5675cf8f2f1aaa794b3bf372ad6e663c">YYSYMBOL_TOKEN_FLOAT</a> = 6, 
 <br />
-&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69aa8538ba97ca9f6595e893e078c865ab2">PREDICATE</a> = 266, 
-<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69ac926eedaa6137662204f84a1b3286db1">SATISFY</a> = 267, 
-<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69ab44c8101cc294c074709ec1b14211792">SET</a> = 268, 
-<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69ab9fc7975179c642bbac2b6ffd8fa3579">SOLVE</a> = 269, 
+&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a8beceaa38309611962bf031e4673551c">YYSYMBOL_TOKEN_INT</a> = 7, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5af52354f30f8c6460d948c154427fbb1e">YYSYMBOL_MAXIMIZE</a> = 8, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a9f3978e41c1d205b7cdbf173f71c73b1">YYSYMBOL_MINIMIZE</a> = 9, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5abe96b21934e1ca0907db004b00180348">YYSYMBOL_OF</a> = 10, 
 <br />
-&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69af68346ce0bfce7ab2ca0a240f5132863">VAR</a> = 270, 
-<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69aaf40bb46e66376286beeb28ad11c9c95">DOTDOT</a> = 271, 
-<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69abee8872d8a99eca1c42be614675c3bd7">COLONCOLON</a> = 272, 
-<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69a88461b654d99891ef99eb92d5119d638">IVALUE</a> = 273, 
+&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5aedb53376ca8359ce1ecfc73732d414b2">YYSYMBOL_PREDICATE</a> = 11, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a4697fb6c13533508f9b4078d56472562">YYSYMBOL_SATISFY</a> = 12, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a3d7145041fd6b27fca95692c6606f0a5">YYSYMBOL_SET</a> = 13, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5afc451cabe95aa5b2d55a1b9c3fd7acb9">YYSYMBOL_SOLVE</a> = 14, 
 <br />
-&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69a4c8512f7f8df911344c4575182e42abf">SVALUE</a> = 274, 
-<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69a84f8ae2490f9e4bd2321fd21f4b0e807">IDENTIFIER</a> = 275, 
-<a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69af30c26ebeb1c287be2915ca5f9f79502">DVALUE</a> = 276
+&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a90e8e2075bbc26f45047a89b16d6c0fe">YYSYMBOL_VAR</a> = 15, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a8a9784feb7273e1259951f1b837399b7">YYSYMBOL_DOTDOT</a> = 16, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5aa595b551229bcbaef138a72691a8dd8e">YYSYMBOL_COLONCOLON</a> = 17, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a42b7660064a17617f9fc491f9d79b427">YYSYMBOL_IVALUE</a> = 18, 
+<br />
+&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a2b8e41b7867dda42751814be1ab808d1">YYSYMBOL_SVALUE</a> = 19, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5ae702096399b44107aa51a4eb1e18451d">YYSYMBOL_IDENTIFIER</a> = 20, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a23c8e1dabc2913bb380fb43635eebef0">YYSYMBOL_DVALUE</a> = 21, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5abf6aa884ce21c74b920efaa114d69290">YYSYMBOL_22_</a> = 22, 
+<br />
+&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5ab725bc01508bc07772a3b1951d38f491">YYSYMBOL_23_</a> = 23, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5abf77724caf95f61267d5e6e45f5bea8e">YYSYMBOL_24_</a> = 24, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a116ef405bcae7390c9c75b931c624d45">YYSYMBOL_25_</a> = 25, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a2d2c19437b373807c3625b31630a026e">YYSYMBOL_26_</a> = 26, 
+<br />
+&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5ac9989629042199497642a2412b83ce16">YYSYMBOL_27_</a> = 27, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a569fdc814b7e0cb234446d63553ea7f6">YYSYMBOL_28_</a> = 28, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a5537563f60bc97f48ba2bd915ec95a27">YYSYMBOL_29_</a> = 29, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5aaaae1fb3054fabae2c3c0ce712b7c00a">YYSYMBOL_30_</a> = 30, 
+<br />
+&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5aef7a3733fcfc4e8f29b98bba1ff6c3eb">YYSYMBOL_31_</a> = 31, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5aa95ab546bba1fe8445b54f24a1009c5b">YYSYMBOL_YYACCEPT</a> = 32, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a79d8156349f6806b26846bed53ba1907">YYSYMBOL_model</a> = 33, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5ae98d97da249da7fd4140f6fe07ddcb47">YYSYMBOL_predicates</a> = 34, 
+<br />
+&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a4313ea62f91791cf8c89e1a752a3ab2b">YYSYMBOL_predicate</a> = 35, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a5ff903c7b61c0048a77659038b89beb9">YYSYMBOL_predicate_arguments</a> = 36, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5aa52fe440a5fb13766493ee7fe0331672">YYSYMBOL_predicate_argument</a> = 37, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a85c9545b9a4af67d1c37bcb9c89f761c">YYSYMBOL_predicate_array_argument</a> = 38, 
+<br />
+&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5aa8e1fab75b4177ecd8e1d843ffe41731">YYSYMBOL_predicate_ints</a> = 39, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a5a6936d9b5e9c53766b58e12482a7439">YYSYMBOL_variable_or_constant_declarations</a>, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a6947ce5339188db58f6e7b973c0b2d01">YYSYMBOL_variable_or_constant_declaration</a>, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a7d6f1957246c52cc5f6745c1f82222cf">YYSYMBOL_optional_var_or_value</a> = 42, 
+<br />
+&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a17b8070afc8086cbc4cdd0c63296cff7">YYSYMBOL_optional_var_or_value_array</a> = 43, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a1b55d6029224850cdf10586fdd5a7233">YYSYMBOL_var_or_value_array</a> = 44, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a1e0f213f7f40901ba7ab989a32ee996a">YYSYMBOL_var_or_value</a> = 45, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5aedac9292d0dd616e421d5f709edd80fb">YYSYMBOL_int_domain</a> = 46, 
+<br />
+&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a93b3fa23505e35c8ee8dcba75d1da999">YYSYMBOL_set_domain</a> = 47, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a1ae5baadb18e8453cbe2cd6f11a242d8">YYSYMBOL_float_domain</a> = 48, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5abab91a7a8273dcdab563699a4761e335">YYSYMBOL_domain</a> = 49, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a7b5fbef78051ea804d808b3d78323ed2">YYSYMBOL_integers</a> = 50, 
+<br />
+&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a0130f88eeb6f184086aae8d036a29abf">YYSYMBOL_integer</a> = 51, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a702e541647e287df48fc0c2b5588d1d5">YYSYMBOL_floats</a> = 52, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5aa24c905a06e4791b1b1328964edf2b7c">YYSYMBOL_float</a> = 53, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5aa5dc64cd1c8711e11e4c3c49a07f4627">YYSYMBOL_const_literal</a> = 54, 
+<br />
+&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a1555a76cb3bfd13c0c36c59ad772577b">YYSYMBOL_const_literals</a> = 55, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a6564abf63b0e031a817d73052f672469">YYSYMBOL_constraints</a> = 56, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a9e3912019c7d64c3437af53d5170c230">YYSYMBOL_constraint</a> = 57, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a7cd506039f2993392550b10eaa605242">YYSYMBOL_arguments</a> = 58, 
+<br />
+&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5ad7205d2c38ae4fb9c249117739248fb7">YYSYMBOL_argument</a> = 59, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a6c1a8490ed3014c73703f985e992126e">YYSYMBOL_annotations</a> = 60, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a89809f35afc2c4aefe7ed3fc01b464fa">YYSYMBOL_annotation_arguments</a> = 61, 
+<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a5c58adb549a1683fe49a4de42b3ee634">YYSYMBOL_annotation</a> = 62, 
+<br />
+&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a7b82b229824b5865467e87f403c6168d">YYSYMBOL_solve</a> = 63
 <br />
  }</td></tr>
-<tr class="separator:a85ce62c6a1b129948aacc3737e8aad69"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a20a769e9b8f129abf35d03d3904ec0e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06fc87d81c62e9abb8790b6e5713c55b"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom">{ <a class="el" href="parser_8tab_8cc.html#a06fc87d81c62e9abb8790b6e5713c55ba33b65b59dd6c18a52cd4e662918a0742">YYENOMEM</a> = -2
+ }</td></tr>
+<tr class="separator:a06fc87d81c62e9abb8790b6e5713c55b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:aee2b7b5220408c9e064821483dc12b70"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#aee2b7b5220408c9e064821483dc12b70">orfz_parse</a> (<a class="el" href="structoperations__research_1_1fz_1_1_parser_context.html">operations_research::fz::ParserContext</a> *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>, <a class="el" href="classoperations__research_1_1fz_1_1_model.html">operations_research::fz::Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, bool *ok, void *scanner)</td></tr>
-<tr class="separator:aee2b7b5220408c9e064821483dc12b70"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5faf6a2d99f50a4655dd390199a8db7b"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a5faf6a2d99f50a4655dd390199a8db7b">malloc</a> (<a class="el" href="parser_8tab_8cc.html#a7d535939e93253736c6eeda569d24de5">YYSIZE_T</a>)</td></tr>
 <tr class="separator:a5faf6a2d99f50a4655dd390199a8db7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af07d89f5ceaea0c7c8252cc41fd75f37"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#af07d89f5ceaea0c7c8252cc41fd75f37">free</a> (void *)</td></tr>
 <tr class="separator:af07d89f5ceaea0c7c8252cc41fd75f37"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae1f5a2eb134dc544bc3eb33d073c8fad"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#ae1f5a2eb134dc544bc3eb33d073c8fad">yy_symbol_value_print</a> (FILE *yyo, int yytype, <a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a> const *const yyvaluep, <a class="el" href="structoperations__research_1_1fz_1_1_parser_context.html">operations_research::fz::ParserContext</a> *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>, <a class="el" href="classoperations__research_1_1fz_1_1_model.html">operations_research::fz::Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, bool *ok, void *scanner)</td></tr>
-<tr class="separator:ae1f5a2eb134dc544bc3eb33d073c8fad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abd85289a0c07c0528ba76a425617d93f"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#abd85289a0c07c0528ba76a425617d93f">yy_symbol_print</a> (FILE *yyo, int yytype, <a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a> const *const yyvaluep, <a class="el" href="structoperations__research_1_1fz_1_1_parser_context.html">operations_research::fz::ParserContext</a> *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>, <a class="el" href="classoperations__research_1_1fz_1_1_model.html">operations_research::fz::Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, bool *ok, void *scanner)</td></tr>
-<tr class="separator:abd85289a0c07c0528ba76a425617d93f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a071c1cdd80746b1320346e80ef837463"><td class="memItemLeft" align="right" valign="top">static const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a071c1cdd80746b1320346e80ef837463">yysymbol_name</a> (<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a> yysymbol) <a class="el" href="parser_8tab_8cc.html#ab312a884bd41ff11bbd1aa6c1a0e1b0a">YY_ATTRIBUTE_UNUSED</a></td></tr>
+<tr class="separator:a071c1cdd80746b1320346e80ef837463"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6db296b322ba189ff0c49d89300aaa57"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a6db296b322ba189ff0c49d89300aaa57">yy_symbol_value_print</a> (FILE *yyo, <a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a> yykind, <a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a> const *const yyvaluep, <a class="el" href="structoperations__research_1_1fz_1_1_parser_context.html">operations_research::fz::ParserContext</a> *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>, <a class="el" href="classoperations__research_1_1fz_1_1_model.html">operations_research::fz::Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, bool *ok, void *scanner)</td></tr>
+<tr class="separator:a6db296b322ba189ff0c49d89300aaa57"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b7b4ee4001c682174489279f98db39b"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a5b7b4ee4001c682174489279f98db39b">yy_symbol_print</a> (FILE *yyo, <a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a> yykind, <a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a> const *const yyvaluep, <a class="el" href="structoperations__research_1_1fz_1_1_parser_context.html">operations_research::fz::ParserContext</a> *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>, <a class="el" href="classoperations__research_1_1fz_1_1_model.html">operations_research::fz::Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, bool *ok, void *scanner)</td></tr>
+<tr class="separator:a5b7b4ee4001c682174489279f98db39b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af1f78a43f8493fce72bbac770e6901dc"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#af1f78a43f8493fce72bbac770e6901dc">yy_stack_print</a> (<a class="el" href="parser_8tab_8cc.html#a45e9bf3a1bc80cfb98fe9fc5d8049255">yy_state_t</a> *yybottom, <a class="el" href="parser_8tab_8cc.html#a45e9bf3a1bc80cfb98fe9fc5d8049255">yy_state_t</a> *yytop)</td></tr>
 <tr class="separator:af1f78a43f8493fce72bbac770e6901dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aec1098c15df08a596232ad224040801e"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#aec1098c15df08a596232ad224040801e">yy_reduce_print</a> (<a class="el" href="parser_8tab_8cc.html#a45e9bf3a1bc80cfb98fe9fc5d8049255">yy_state_t</a> *yyssp, <a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a> *yyvsp, int yyrule, <a class="el" href="structoperations__research_1_1fz_1_1_parser_context.html">operations_research::fz::ParserContext</a> *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>, <a class="el" href="classoperations__research_1_1fz_1_1_model.html">operations_research::fz::Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, bool *ok, void *scanner)</td></tr>
+<tr class="memitem:aec1098c15df08a596232ad224040801e"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#aec1098c15df08a596232ad224040801e">yy_reduce_print</a> (<a class="el" href="parser_8tab_8cc.html#a45e9bf3a1bc80cfb98fe9fc5d8049255">yy_state_t</a> *yyssp, <a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a> *yyvsp, int yyrule, <a class="el" href="structoperations__research_1_1fz_1_1_parser_context.html">operations_research::fz::ParserContext</a> *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>, <a class="el" href="classoperations__research_1_1fz_1_1_model.html">operations_research::fz::Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, bool *ok, void *scanner)</td></tr>
 <tr class="separator:aec1098c15df08a596232ad224040801e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab84d04dc4d60fbb57b1b043252951f6f"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#ab84d04dc4d60fbb57b1b043252951f6f">yypcontext_expected_tokens</a> (const <a class="el" href="structyypcontext__t.html">yypcontext_t</a> *yyctx, <a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a> yyarg[], int yyargn)</td></tr>
+<tr class="separator:ab84d04dc4d60fbb57b1b043252951f6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08805bee041fbf844f75fb5391af38df"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="parser_8tab_8cc.html#a92593b1fc9021b99ffcfc5d2a89f5ca2">YYPTRDIFF_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a08805bee041fbf844f75fb5391af38df">yystrlen</a> (const char *yystr)</td></tr>
 <tr class="separator:a08805bee041fbf844f75fb5391af38df"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79c0cbb33ee2f626ebdf5933080ea385"><td class="memItemLeft" align="right" valign="top">static char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a79c0cbb33ee2f626ebdf5933080ea385">yystpcpy</a> (char *yydest, const char *yysrc)</td></tr>
 <tr class="separator:a79c0cbb33ee2f626ebdf5933080ea385"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a728278de601ce42e57461d90d2ce578a"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="parser_8tab_8cc.html#a92593b1fc9021b99ffcfc5d2a89f5ca2">YYPTRDIFF_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a728278de601ce42e57461d90d2ce578a">yytnamerr</a> (char *yyres, const char *yystr)</td></tr>
 <tr class="separator:a728278de601ce42e57461d90d2ce578a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adbccd08ca5358356a3abe128fce9c70f"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#adbccd08ca5358356a3abe128fce9c70f">yysyntax_error</a> (<a class="el" href="parser_8tab_8cc.html#a92593b1fc9021b99ffcfc5d2a89f5ca2">YYPTRDIFF_T</a> *yymsg_alloc, char **yymsg, <a class="el" href="parser_8tab_8cc.html#a45e9bf3a1bc80cfb98fe9fc5d8049255">yy_state_t</a> *yyssp, int yytoken)</td></tr>
-<tr class="separator:adbccd08ca5358356a3abe128fce9c70f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a81b72553bde38f4eb00c1fd50ebc910c"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a81b72553bde38f4eb00c1fd50ebc910c">yydestruct</a> (const char *yymsg, int yytype, <a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a> *yyvaluep, <a class="el" href="structoperations__research_1_1fz_1_1_parser_context.html">operations_research::fz::ParserContext</a> *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>, <a class="el" href="classoperations__research_1_1fz_1_1_model.html">operations_research::fz::Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, bool *ok, void *scanner)</td></tr>
-<tr class="separator:a81b72553bde38f4eb00c1fd50ebc910c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aebacff42edcda56c1d50d8001f2c4a75"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#aebacff42edcda56c1d50d8001f2c4a75">yy_syntax_error_arguments</a> (const <a class="el" href="structyypcontext__t.html">yypcontext_t</a> *yyctx, <a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a> yyarg[], int yyargn)</td></tr>
+<tr class="separator:aebacff42edcda56c1d50d8001f2c4a75"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afd3e02421327dce36a20aea578df7824"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#afd3e02421327dce36a20aea578df7824">yysyntax_error</a> (<a class="el" href="parser_8tab_8cc.html#a92593b1fc9021b99ffcfc5d2a89f5ca2">YYPTRDIFF_T</a> *yymsg_alloc, char **yymsg, const <a class="el" href="structyypcontext__t.html">yypcontext_t</a> *yyctx)</td></tr>
+<tr class="separator:afd3e02421327dce36a20aea578df7824"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19841edc50abf99aa085a2a06ca7e63b"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a19841edc50abf99aa085a2a06ca7e63b">yydestruct</a> (const char *yymsg, <a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a> yykind, <a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a> *yyvaluep, <a class="el" href="structoperations__research_1_1fz_1_1_parser_context.html">operations_research::fz::ParserContext</a> *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>, <a class="el" href="classoperations__research_1_1fz_1_1_model.html">operations_research::fz::Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, bool *ok, void *scanner)</td></tr>
+<tr class="separator:a19841edc50abf99aa085a2a06ca7e63b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad3cdc959806aba1ada0fd7e5d4184f88"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#ad3cdc959806aba1ada0fd7e5d4184f88">yyparse</a> (<a class="el" href="structoperations__research_1_1fz_1_1_parser_context.html">operations_research::fz::ParserContext</a> *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>, <a class="el" href="classoperations__research_1_1fz_1_1_model.html">operations_research::fz::Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, bool *ok, void *scanner)</td></tr>
 <tr class="separator:ad3cdc959806aba1ada0fd7e5d4184f88"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a84c51f873e0b406b886ae6eef8a06a8f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a84c51f873e0b406b886ae6eef8a06a8f">orfz_debug</a></td></tr>
-<tr class="separator:a84c51f873e0b406b886ae6eef8a06a8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1d8883fe4dadf185e4ba432f9474a732"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="parser_8tab_8cc.html#aed557a488f2c08c0956e2237f8eba464">yytype_int8</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a1d8883fe4dadf185e4ba432f9474a732">yytranslate</a> []</td></tr>
 <tr class="separator:a1d8883fe4dadf185e4ba432f9474a732"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f0ba955170e0ff3ee0377d7161cd88f"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="parser_8tab_8cc.html#a33032314af14de925471bbd792c4bd92">yytype_int16</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8tab_8cc.html#a3f0ba955170e0ff3ee0377d7161cd88f">yyrline</a> []</td></tr>
@@ -377,54 +423,6 @@ Variables</h2></td></tr>
 <tr class="separator:ab138aa8e11f58bcdcc7134adf240ea8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="a97892774e598d42ed1db9dc820794888"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a97892774e598d42ed1db9dc820794888">&#9670;&nbsp;</a></span>OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00139">139</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
-
-</div>
-</div>
-<a id="aa9f05d9712a795f726cffb4cc5c3393d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa9f05d9712a795f726cffb4cc5c3393d">&#9670;&nbsp;</a></span>ORFZ_DEBUG</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define ORFZ_DEBUG&#160;&#160;&#160;1</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00129">129</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
-
-</div>
-</div>
-<a id="a769f973b7f1d3270f6030dc7553be8ed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a769f973b7f1d3270f6030dc7553be8ed">&#9670;&nbsp;</a></span>ORFZ_TOKENTYPE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define ORFZ_TOKENTYPE</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00156">156</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
-
-</div>
-</div>
 <a id="a25298af10c853371e8da3227e3feaaa0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a25298af10c853371e8da3227e3feaaa0">&#9670;&nbsp;</a></span>YY_</h2>
 
@@ -441,7 +439,31 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00318">318</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00313">313</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+
+</div>
+</div>
+<a id="a66cf4d76b944949bcae07cf6656a135a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a66cf4d76b944949bcae07cf6656a135a">&#9670;&nbsp;</a></span>YY_ACCESSING_SYMBOL</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define YY_ACCESSING_SYMBOL</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">State</td><td>)</td>
+          <td>&#160;&#160;&#160;<a class="el" href="parser_8tab_8cc.html#a4b53a97e60d84c765592be332ef6adce">YY_CAST</a>(<a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a>, <a class="el" href="parser_8tab_8cc.html#aad79c36d81324c1cebc5182a54c2743d">yystos</a>[State])</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Accessing symbol of state STATE. </p>
+<p><br  />
+ </p>
+
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00549">549</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -461,7 +483,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00374">374</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00369">369</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -477,7 +499,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00326">326</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00321">321</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -493,7 +515,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00334">334</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00329">329</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -523,7 +545,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00092">92</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00093">93</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -539,7 +561,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00356">356</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00351">351</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -555,7 +577,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00357">357</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00352">352</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -571,7 +593,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00370">370</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00365">365</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -587,7 +609,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00371">371</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00366">366</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -607,7 +629,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00353">353</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00348">348</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -637,7 +659,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00810">810</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00818">818</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -653,23 +675,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00104">104</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
-
-</div>
-</div>
-<a id="a4a98f3c1f88438b6fc740c8b213aca4a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4a98f3c1f88438b6fc740c8b213aca4a">&#9670;&nbsp;</a></span>YY_ORFZ_ORTOOLS_FLATZINC_PARSER_TAB_HH_INCLUDED</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define YY_ORFZ_ORTOOLS_FLATZINC_PARSER_TAB_HH_INCLUDED</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00119">119</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00105">105</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -693,7 +699,7 @@ Variables</h2></td></tr>
 <div class="line">      yy_reduce_print(yyssp, yyvsp, Rule, <a class="code" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>, <a class="code" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, ok, scanner); \</div>
 <div class="line">  } <span class="keywordflow">while</span> (0)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00902">902</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00910">910</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -723,7 +729,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00093">93</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00094">94</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -756,12 +762,12 @@ Variables</h2></td></tr>
 <div class="line">    if (<a class="code" href="parser_8tab_8cc.html#a7fde6236fcb0f6e5d1d20ce98d9f0d01">yydebug</a>) <a class="code" href="parser_8tab_8cc.html#af1f78a43f8493fce72bbac770e6901dc">yy_stack_print</a>((Bottom), (Top)); \</div>
 <div class="line">  } <span class="keywordflow">while</span> (0)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00875">875</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00883">883</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
-<a id="a1c510d33cb388afc9411141ba3076a36"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1c510d33cb388afc9411141ba3076a36">&#9670;&nbsp;</a></span>YY_SYMBOL_PRINT</h2>
+<a id="a67fc08e7fcabdbe0d83fc4077437d64b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a67fc08e7fcabdbe0d83fc4077437d64b">&#9670;&nbsp;</a></span>YY_SYMBOL_PRINT</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -776,7 +782,7 @@ Variables</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname">Type, </td>
+          <td class="paramname">Kind, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -800,12 +806,12 @@ Variables</h2></td></tr>
 <b>Value:</b><div class="fragment"><div class="line">  <span class="keywordflow">do</span> {                                                                   \</div>
 <div class="line">    if (<a class="code" href="parser_8tab_8cc.html#a7fde6236fcb0f6e5d1d20ce98d9f0d01">yydebug</a>) {                                                       \</div>
 <div class="line">      YYFPRINTF(stderr, <span class="stringliteral">&quot;%s &quot;</span>, Title);                                   \</div>
-<div class="line">      yy_symbol_print(stderr, Type, <a class="code" href="namespaceoperations__research_1_1sat.html#a3f1a1b8a7a1a488e263a2e74f45d2a59">Value</a>, <a class="code" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>, <a class="code" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, ok, scanner); \</div>
+<div class="line">      yy_symbol_print(stderr, Kind, <a class="code" href="namespaceoperations__research_1_1sat.html#a3f1a1b8a7a1a488e263a2e74f45d2a59">Value</a>, <a class="code" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>, <a class="code" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, ok, scanner); \</div>
 <div class="line">      YYFPRINTF(stderr, <span class="stringliteral">&quot;\n&quot;</span>);                                           \</div>
 <div class="line">    }                                                                    \</div>
 <div class="line">  } <span class="keywordflow">while</span> (0)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00813">813</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00821">821</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -821,7 +827,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00771">771</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00779">779</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -837,7 +843,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00770">770</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00778">778</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -867,7 +873,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line">  <a class="code" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">do                                                \</a></div>
-<div class="line"><a class="code" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">    if</a> (yychar == <a class="code" href="parser_8tab_8cc.html#ae59196b3765411a06cf234cf9bcae2e7">YYEMPTY</a>) {                        \</div>
+<div class="line"><a class="code" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">    if</a> (yychar == ORFZ_EMPTY) {                     \</div>
 <div class="line">      yychar = (Token);                             \</div>
 <div class="line">      yylval = (<a class="code" href="namespaceoperations__research_1_1sat.html#a3f1a1b8a7a1a488e263a2e74f45d2a59">Value</a>);                             \</div>
 <div class="line">      YYPOPSTACK(yylen);                            \</div>
@@ -880,7 +886,7 @@ Variables</h2></td></tr>
 <div class="line">    }                                               \</div>
 <div class="line">  while (0)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00776">776</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00784">784</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -896,7 +902,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00061">61</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00062">62</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -907,12 +913,12 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define YYBISON_VERSION&#160;&#160;&#160;&quot;3.5.1&quot;</td>
+          <td class="memname">#define YYBISON_VERSION&#160;&#160;&#160;&quot;3.7.2&quot;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00064">64</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00065">65</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -954,12 +960,12 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define yyclearin&#160;&#160;&#160;(yychar = <a class="el" href="parser_8tab_8cc.html#ae59196b3765411a06cf234cf9bcae2e7">YYEMPTY</a>)</td>
+          <td class="memname">#define yyclearin&#160;&#160;&#160;(yychar = ORFZ_EMPTY)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00766">766</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00776">776</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -999,7 +1005,7 @@ Variables</h2></td></tr>
 <div class="line">    for (yyi = 0; yyi &lt; (Count); yyi++) (Dst)[yyi] = (Src)[yyi]; \</div>
 <div class="line">  } <span class="keywordflow">while</span> (0)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00490">490</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00485">485</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1015,7 +1021,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00464">464</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00459">459</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1031,7 +1037,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00084">84</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00085">85</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1054,39 +1060,7 @@ Variables</h2></td></tr>
 <div class="line">    if (<a class="code" href="parser_8tab_8cc.html#a7fde6236fcb0f6e5d1d20ce98d9f0d01">yydebug</a>) <a class="code" href="parser_8tab_8cc.html#af3b78184b3e3414afdaf2bbbff4a8bfe">YYFPRINTF</a> Args; \</div>
 <div class="line">  } <span class="keywordflow">while</span> (0)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00803">803</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
-
-</div>
-</div>
-<a id="ae59196b3765411a06cf234cf9bcae2e7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae59196b3765411a06cf234cf9bcae2e7">&#9670;&nbsp;</a></span>YYEMPTY</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define YYEMPTY&#160;&#160;&#160;(-2)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00767">767</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
-
-</div>
-</div>
-<a id="a3b1e3628411fabac03abe0a337322016"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3b1e3628411fabac03abe0a337322016">&#9670;&nbsp;</a></span>YYEOF</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define YYEOF&#160;&#160;&#160;0</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00768">768</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00811">811</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1097,12 +1071,12 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define YYERRCODE&#160;&#160;&#160;256</td>
+          <td class="memname">#define YYERRCODE&#160;&#160;&#160;ORFZ_UNDEF</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00793">793</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00801">801</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1118,7 +1092,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00765">765</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00775">775</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1134,7 +1108,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00083">83</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00084">84</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1150,23 +1124,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00772">772</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
-
-</div>
-</div>
-<a id="a0943f558a560b9b5fa0593d7e36496c1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0943f558a560b9b5fa0593d7e36496c1">&#9670;&nbsp;</a></span>YYERROR_VERBOSE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define YYERROR_VERBOSE&#160;&#160;&#160;1</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00113">113</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00780">780</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1182,7 +1140,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00500">500</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00495">495</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1198,7 +1156,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00800">800</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00808">808</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1214,7 +1172,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00438">438</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00433">433</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1230,7 +1188,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00920">920</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00928">928</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1246,7 +1204,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00502">502</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00497">497</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1262,23 +1220,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00082">82</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
-
-</div>
-</div>
-<a id="adc0d8ea07f0c331fcda68c49fe1145bc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adc0d8ea07f0c331fcda68c49fe1145bc">&#9670;&nbsp;</a></span>YYLEX_PARAM</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define YYLEX_PARAM&#160;&#160;&#160;scanner</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00148">148</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00083">83</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1294,7 +1236,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00432">432</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00427">427</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1310,7 +1252,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00931">931</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00939">939</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1326,7 +1268,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00514">514</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00509">509</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1342,7 +1284,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00085">85</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00086">86</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1358,7 +1300,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00507">507</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00502">502</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1374,7 +1316,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00509">509</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00504">504</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1390,7 +1332,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00511">511</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00506">506</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1406,7 +1348,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00505">505</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00500">500</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1422,7 +1364,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00630">630</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00638">638</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1442,7 +1384,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00632">632</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00640">640</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1453,12 +1395,12 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define yyparse&#160;&#160;&#160;<a class="el" href="parser_8tab_8cc.html#aee2b7b5220408c9e064821483dc12b70">orfz_parse</a></td>
+          <td class="memname">#define yyparse&#160;&#160;&#160;<a class="el" href="parser_8cc.html#a2f629584ac193a76a6f3bbafa776b61e">orfz_parse</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00081">81</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00082">82</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1492,7 +1434,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00280">280</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00275">275</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1508,7 +1450,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00279">279</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00274">274</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1524,7 +1466,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00076">76</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00077">77</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1540,7 +1482,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00070">70</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00071">71</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1556,7 +1498,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00073">73</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00074">74</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1575,7 +1517,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00774">774</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00782">782</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1594,7 +1536,7 @@ Variables</h2></td></tr>
 <div class="line">          (<a class="code" href="parser_8tab_8cc.html#a1eea12826e9366705730412c56defe4c">YYPTRDIFF_MAXIMUM</a> &lt; <a class="code" href="parser_8tab_8cc.html#a4b53a97e60d84c765592be332ef6adce">YY_CAST</a>(<a class="code" href="parser_8tab_8cc.html#a7d535939e93253736c6eeda569d24de5">YYSIZE_T</a>, -1) ? <a class="code" href="parser_8tab_8cc.html#a1eea12826e9366705730412c56defe4c">YYPTRDIFF_MAXIMUM</a> \</div>
 <div class="line">                                                     : <a class="code" href="parser_8tab_8cc.html#a4b53a97e60d84c765592be332ef6adce">YY_CAST</a>(<a class="code" href="parser_8tab_8cc.html#a7d535939e93253736c6eeda569d24de5">YYSIZE_T</a>, -1)))</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00297">297</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00292">292</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1610,7 +1552,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00293">293</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00288">288</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1630,7 +1572,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00302">302</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00297">297</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1646,7 +1588,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00067">67</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00068">68</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1662,7 +1604,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00418">418</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00413">413</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1678,7 +1620,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00421">421</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00416">416</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1693,12 +1635,12 @@ Variables</h2></td></tr>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname">N</td><td>)</td>
-          <td>&#160;&#160;&#160;  ((N) * (<a class="el" href="parser_8tab_8cc.html#af2e4a0ea3879fcb3f8e84faa1e551202">YYSIZEOF</a>(<a class="el" href="parser_8tab_8cc.html#a45e9bf3a1bc80cfb98fe9fc5d8049255">yy_state_t</a>) + <a class="el" href="parser_8tab_8cc.html#af2e4a0ea3879fcb3f8e84faa1e551202">YYSIZEOF</a>(<a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a>)) + <a class="el" href="parser_8tab_8cc.html#afcd15dd0fa87ffba0371c6d6a0cc9631">YYSTACK_GAP_MAXIMUM</a>)</td>
+          <td>&#160;&#160;&#160;  ((N) * (<a class="el" href="parser_8tab_8cc.html#af2e4a0ea3879fcb3f8e84faa1e551202">YYSIZEOF</a>(<a class="el" href="parser_8tab_8cc.html#a45e9bf3a1bc80cfb98fe9fc5d8049255">yy_state_t</a>) + <a class="el" href="parser_8tab_8cc.html#af2e4a0ea3879fcb3f8e84faa1e551202">YYSIZEOF</a>(<a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a>)) + <a class="el" href="parser_8tab_8cc.html#afcd15dd0fa87ffba0371c6d6a0cc9631">YYSTACK_GAP_MAXIMUM</a>)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00461">461</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00456">456</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1714,7 +1656,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00419">419</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00414">414</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1730,7 +1672,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00457">457</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00452">452</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1767,7 +1709,7 @@ Variables</h2></td></tr>
 <div class="line">    yyptr += yynewbytes / <a class="code" href="parser_8tab_8cc.html#af2e4a0ea3879fcb3f8e84faa1e551202">YYSIZEOF</a>(*yyptr);                            \</div>
 <div class="line">  } <span class="keywordflow">while</span> (0)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00471">471</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00466">466</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1778,26 +1720,12 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define <a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a>&#160;&#160;&#160;ORFZ_STYPE</td>
+          <td class="memname">#define YYSTYPE&#160;&#160;&#160;ORFZ_STYPE</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00079">79</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
-
-</div>
-</div>
-<a id="af0e752e92b35e76f827643476f07eeeb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af0e752e92b35e76f827643476f07eeeb">&#9670;&nbsp;</a></span>YYSYNTAX_ERROR</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define YYSYNTAX_ERROR&#160;&#160;&#160;<a class="el" href="parser_8tab_8cc.html#adbccd08ca5358356a3abe128fce9c70f">yysyntax_error</a>(&amp;yymsg_alloc, &amp;yymsg, yyssp, yytoken)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00080">80</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1813,7 +1741,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00634">634</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00642">642</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1833,23 +1761,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00636">636</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
-
-</div>
-</div>
-<a id="ad2b58b1851184ddb3b60fede50bc7946"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad2b58b1851184ddb3b60fede50bc7946">&#9670;&nbsp;</a></span>YYTERROR</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define YYTERROR&#160;&#160;&#160;1</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00792">792</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00644">644</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1864,27 +1776,14 @@ Variables</h2></td></tr>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname">YYX</td><td>)</td>
-          <td>&#160;&#160;&#160;  (0 &lt;= (YYX) &amp;&amp; (YYX) &lt;= <a class="el" href="parser_8tab_8cc.html#af3f5ed4bc4517eff0ef1b17541192a58">YYMAXUTOK</a> ? <a class="el" href="parser_8tab_8cc.html#a1d8883fe4dadf185e4ba432f9474a732">yytranslate</a>[YYX] : <a class="el" href="parser_8tab_8cc.html#a926181abd06b6d1df27b6133971c24ce">YYUNDEFTOK</a>)</td>
+          <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00518">518</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
-
-</div>
-</div>
-<a id="a926181abd06b6d1df27b6133971c24ce"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a926181abd06b6d1df27b6133971c24ce">&#9670;&nbsp;</a></span>YYUNDEFTOK</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define YYUNDEFTOK&#160;&#160;&#160;2</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
+<b>Value:</b><div class="fragment"><div class="line">  (0 &lt;= (YYX) &amp;&amp; (YYX) &lt;= <a class="code" href="parser_8tab_8cc.html#af3f5ed4bc4517eff0ef1b17541192a58">YYMAXUTOK</a>                 \</div>
+<div class="line">       ? <a class="code" href="parser_8tab_8cc.html#a4b53a97e60d84c765592be332ef6adce">YY_CAST</a>(<a class="code" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a>, <a class="code" href="parser_8tab_8cc.html#a1d8883fe4dadf185e4ba432f9474a732">yytranslate</a>[YYX]) \</div>
+<div class="line">       : <a class="code" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a12c1e8bf6f8dfd4f8dd46a667481e96e">YYSYMBOL_YYUNDEF</a>)</div>
+</div><!-- fragment -->
 <p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00513">513</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
@@ -1905,7 +1804,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00340">340</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00335">335</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1922,7 +1821,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00308">308</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00303">303</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1938,23 +1837,23 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00305">305</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00300">300</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
-<a id="ada05af3f6f19ddaae9f4a382f8a4e4cd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ada05af3f6f19ddaae9f4a382f8a4e4cd">&#9670;&nbsp;</a></span>YYSTYPE</h2>
+<a id="a5770f4481fa757da330a70e968998447"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5770f4481fa757da330a70e968998447">&#9670;&nbsp;</a></span>yysymbol_kind_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="structoperations__research_1_1fz_1_1_lexer_info.html">operations_research::fz::LexerInfo</a> <a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a></td>
+          <td class="memname">typedef enum <a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a> <a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00145">145</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00001">1</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1970,7 +1869,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00243">243</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00238">238</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -1986,7 +1885,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00235">235</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00230">230</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -2002,7 +1901,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00263">263</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00258">258</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -2018,45 +1917,110 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00252">252</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00247">247</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Enumeration Type Documentation</h2>
-<a id="a85ce62c6a1b129948aacc3737e8aad69"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a85ce62c6a1b129948aacc3737e8aad69">&#9670;&nbsp;</a></span>orfz_tokentype</h2>
+<a id="a06fc87d81c62e9abb8790b6e5713c55b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a06fc87d81c62e9abb8790b6e5713c55b">&#9670;&nbsp;</a></span>anonymous enum</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">enum <a class="el" href="parser_8tab_8cc.html#a85ce62c6a1b129948aacc3737e8aad69">orfz_tokentype</a></td>
+          <td class="memname">anonymous enum</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69a1e029fbf0c881b85d80fc8e89b753688"></a>ARRAY&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69af33660babf67070998c4a81bfdc98e3b"></a>TOKEN_BOOL&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69a66ac5e8d9f64e87683ee297651628ae3"></a>CONSTRAINT&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69a1035420c8105e3a23dfa2adeba7b4490"></a>TOKEN_FLOAT&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69a8f5182347f4a0efa0aa628f093aad2fa"></a>TOKEN_INT&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69a39e4d67df76a12c9a04ec2805577c062"></a>MAXIMIZE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69a3758306c4779769024bd3257595ea040"></a>MINIMIZE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69a721d4f1eaa4a30661aaef3353e5305e2"></a>OF&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69aa8538ba97ca9f6595e893e078c865ab2"></a>PREDICATE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69ac926eedaa6137662204f84a1b3286db1"></a>SATISFY&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69ab44c8101cc294c074709ec1b14211792"></a>SET&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69ab9fc7975179c642bbac2b6ffd8fa3579"></a>SOLVE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69af68346ce0bfce7ab2ca0a240f5132863"></a>VAR&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69aaf40bb46e66376286beeb28ad11c9c95"></a>DOTDOT&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69abee8872d8a99eca1c42be614675c3bd7"></a>COLONCOLON&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69a88461b654d99891ef99eb92d5119d638"></a>IVALUE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69a4c8512f7f8df911344c4575182e42abf"></a>SVALUE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69a84f8ae2490f9e4bd2321fd21f4b0e807"></a>IDENTIFIER&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a85ce62c6a1b129948aacc3737e8aad69af30c26ebeb1c287be2915ca5f9f79502"></a>DVALUE&#160;</td><td class="fielddoc"></td></tr>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba33b65b59dd6c18a52cd4e662918a0742"></a>YYENOMEM&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00157">157</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00773">773</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+
+</div>
+</div>
+<a id="a20a769e9b8f129abf35d03d3904ec0e5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a20a769e9b8f129abf35d03d3904ec0e5">&#9670;&nbsp;</a></span>yysymbol_kind_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5ad800db300c50056778ac571ac922e993"></a>YYSYMBOL_YYEMPTY&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5abae1143ba84f95c06898deb2b78f935b"></a>YYSYMBOL_YYEOF&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a3969eee4c6f66d8fcd47acb3d217390d"></a>YYSYMBOL_YYerror&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a12c1e8bf6f8dfd4f8dd46a667481e96e"></a>YYSYMBOL_YYUNDEF&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5aa044f09a1c983b9eb796d8132b9b4322"></a>YYSYMBOL_ARRAY&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a9726d3d67dde6625337a314bb371cac5"></a>YYSYMBOL_TOKEN_BOOL&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5af0062401633886d1715e8e87d92badb5"></a>YYSYMBOL_CONSTRAINT&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a5675cf8f2f1aaa794b3bf372ad6e663c"></a>YYSYMBOL_TOKEN_FLOAT&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a8beceaa38309611962bf031e4673551c"></a>YYSYMBOL_TOKEN_INT&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5af52354f30f8c6460d948c154427fbb1e"></a>YYSYMBOL_MAXIMIZE&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a9f3978e41c1d205b7cdbf173f71c73b1"></a>YYSYMBOL_MINIMIZE&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5abe96b21934e1ca0907db004b00180348"></a>YYSYMBOL_OF&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5aedb53376ca8359ce1ecfc73732d414b2"></a>YYSYMBOL_PREDICATE&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a4697fb6c13533508f9b4078d56472562"></a>YYSYMBOL_SATISFY&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a3d7145041fd6b27fca95692c6606f0a5"></a>YYSYMBOL_SET&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5afc451cabe95aa5b2d55a1b9c3fd7acb9"></a>YYSYMBOL_SOLVE&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a90e8e2075bbc26f45047a89b16d6c0fe"></a>YYSYMBOL_VAR&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a8a9784feb7273e1259951f1b837399b7"></a>YYSYMBOL_DOTDOT&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5aa595b551229bcbaef138a72691a8dd8e"></a>YYSYMBOL_COLONCOLON&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a42b7660064a17617f9fc491f9d79b427"></a>YYSYMBOL_IVALUE&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a2b8e41b7867dda42751814be1ab808d1"></a>YYSYMBOL_SVALUE&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5ae702096399b44107aa51a4eb1e18451d"></a>YYSYMBOL_IDENTIFIER&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a23c8e1dabc2913bb380fb43635eebef0"></a>YYSYMBOL_DVALUE&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5abf6aa884ce21c74b920efaa114d69290"></a>YYSYMBOL_22_&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5ab725bc01508bc07772a3b1951d38f491"></a>YYSYMBOL_23_&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5abf77724caf95f61267d5e6e45f5bea8e"></a>YYSYMBOL_24_&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a116ef405bcae7390c9c75b931c624d45"></a>YYSYMBOL_25_&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a2d2c19437b373807c3625b31630a026e"></a>YYSYMBOL_26_&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5ac9989629042199497642a2412b83ce16"></a>YYSYMBOL_27_&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a569fdc814b7e0cb234446d63553ea7f6"></a>YYSYMBOL_28_&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a5537563f60bc97f48ba2bd915ec95a27"></a>YYSYMBOL_29_&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5aaaae1fb3054fabae2c3c0ce712b7c00a"></a>YYSYMBOL_30_&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5aef7a3733fcfc4e8f29b98bba1ff6c3eb"></a>YYSYMBOL_31_&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5aa95ab546bba1fe8445b54f24a1009c5b"></a>YYSYMBOL_YYACCEPT&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a79d8156349f6806b26846bed53ba1907"></a>YYSYMBOL_model&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5ae98d97da249da7fd4140f6fe07ddcb47"></a>YYSYMBOL_predicates&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a4313ea62f91791cf8c89e1a752a3ab2b"></a>YYSYMBOL_predicate&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a5ff903c7b61c0048a77659038b89beb9"></a>YYSYMBOL_predicate_arguments&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5aa52fe440a5fb13766493ee7fe0331672"></a>YYSYMBOL_predicate_argument&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a85c9545b9a4af67d1c37bcb9c89f761c"></a>YYSYMBOL_predicate_array_argument&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5aa8e1fab75b4177ecd8e1d843ffe41731"></a>YYSYMBOL_predicate_ints&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a5a6936d9b5e9c53766b58e12482a7439"></a>YYSYMBOL_variable_or_constant_declarations&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a6947ce5339188db58f6e7b973c0b2d01"></a>YYSYMBOL_variable_or_constant_declaration&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a7d6f1957246c52cc5f6745c1f82222cf"></a>YYSYMBOL_optional_var_or_value&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a17b8070afc8086cbc4cdd0c63296cff7"></a>YYSYMBOL_optional_var_or_value_array&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a1b55d6029224850cdf10586fdd5a7233"></a>YYSYMBOL_var_or_value_array&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a1e0f213f7f40901ba7ab989a32ee996a"></a>YYSYMBOL_var_or_value&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5aedac9292d0dd616e421d5f709edd80fb"></a>YYSYMBOL_int_domain&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a93b3fa23505e35c8ee8dcba75d1da999"></a>YYSYMBOL_set_domain&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a1ae5baadb18e8453cbe2cd6f11a242d8"></a>YYSYMBOL_float_domain&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5abab91a7a8273dcdab563699a4761e335"></a>YYSYMBOL_domain&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a7b5fbef78051ea804d808b3d78323ed2"></a>YYSYMBOL_integers&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a0130f88eeb6f184086aae8d036a29abf"></a>YYSYMBOL_integer&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a702e541647e287df48fc0c2b5588d1d5"></a>YYSYMBOL_floats&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5aa24c905a06e4791b1b1328964edf2b7c"></a>YYSYMBOL_float&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5aa5dc64cd1c8711e11e4c3c49a07f4627"></a>YYSYMBOL_const_literal&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a1555a76cb3bfd13c0c36c59ad772577b"></a>YYSYMBOL_const_literals&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a6564abf63b0e031a817d73052f672469"></a>YYSYMBOL_constraints&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a9e3912019c7d64c3437af53d5170c230"></a>YYSYMBOL_constraint&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a7cd506039f2993392550b10eaa605242"></a>YYSYMBOL_arguments&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5ad7205d2c38ae4fb9c249117739248fb7"></a>YYSYMBOL_argument&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a6c1a8490ed3014c73703f985e992126e"></a>YYSYMBOL_annotations&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a89809f35afc2c4aefe7ed3fc01b464fa"></a>YYSYMBOL_annotation_arguments&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a5c58adb549a1683fe49a4de42b3ee634"></a>YYSYMBOL_annotation&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a20a769e9b8f129abf35d03d3904ec0e5a7b82b229824b5865467e87f403c6168d"></a>YYSYMBOL_solve&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00111">111</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -2097,46 +2061,6 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="aee2b7b5220408c9e064821483dc12b70"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aee2b7b5220408c9e064821483dc12b70">&#9670;&nbsp;</a></span>orfz_parse()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int orfz_parse </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structoperations__research_1_1fz_1_1_parser_context.html">operations_research::fz::ParserContext</a> *&#160;</td>
-          <td class="paramname"><em>context</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1fz_1_1_model.html">operations_research::fz::Model</a> *&#160;</td>
-          <td class="paramname"><em>model</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool *&#160;</td>
-          <td class="paramname"><em>ok</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>scanner</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a id="aec1098c15df08a596232ad224040801e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aec1098c15df08a596232ad224040801e">&#9670;&nbsp;</a></span>yy_reduce_print()</h2>
 
@@ -2155,7 +2079,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a> *&#160;</td>
           <td class="paramname"><em>yyvsp</em>, </td>
         </tr>
         <tr>
@@ -2201,7 +2125,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00884">884</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00892">892</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -2239,12 +2163,12 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00866">866</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00874">874</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
-<a id="abd85289a0c07c0528ba76a425617d93f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abd85289a0c07c0528ba76a425617d93f">&#9670;&nbsp;</a></span>yy_symbol_print()</h2>
+<a id="a5b7b4ee4001c682174489279f98db39b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b7b4ee4001c682174489279f98db39b">&#9670;&nbsp;</a></span>yy_symbol_print()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2261,13 +2185,13 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>yytype</em>, </td>
+          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a>&#160;</td>
+          <td class="paramname"><em>yykind</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a> const *const&#160;</td>
+          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a> const *const&#160;</td>
           <td class="paramname"><em>yyvaluep</em>, </td>
         </tr>
         <tr>
@@ -2307,12 +2231,12 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00849">849</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00857">857</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
-<a id="ae1f5a2eb134dc544bc3eb33d073c8fad"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae1f5a2eb134dc544bc3eb33d073c8fad">&#9670;&nbsp;</a></span>yy_symbol_value_print()</h2>
+<a id="a6db296b322ba189ff0c49d89300aaa57"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6db296b322ba189ff0c49d89300aaa57">&#9670;&nbsp;</a></span>yy_symbol_value_print()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2329,13 +2253,13 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>yytype</em>, </td>
+          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a>&#160;</td>
+          <td class="paramname"><em>yykind</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a> const *const&#160;</td>
+          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a> const *const&#160;</td>
           <td class="paramname"><em>yyvaluep</em>, </td>
         </tr>
         <tr>
@@ -2375,12 +2299,56 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00826">826</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00834">834</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
-<a id="a81b72553bde38f4eb00c1fd50ebc910c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a81b72553bde38f4eb00c1fd50ebc910c">&#9670;&nbsp;</a></span>yydestruct()</h2>
+<a id="aebacff42edcda56c1d50d8001f2c4a75"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aebacff42edcda56c1d50d8001f2c4a75">&#9670;&nbsp;</a></span>yy_syntax_error_arguments()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static int yy_syntax_error_arguments </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structyypcontext__t.html">yypcontext_t</a> *&#160;</td>
+          <td class="paramname"><em>yyctx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a>&#160;</td>
+          <td class="paramname"><em>yyarg</em>[], </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>yyargn</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l01056">1056</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+
+</div>
+</div>
+<a id="a19841edc50abf99aa085a2a06ca7e63b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19841edc50abf99aa085a2a06ca7e63b">&#9670;&nbsp;</a></span>yydestruct()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2397,13 +2365,13 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>yytype</em>, </td>
+          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a>&#160;</td>
+          <td class="paramname"><em>yykind</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a> *&#160;</td>
           <td class="paramname"><em>yyvaluep</em>, </td>
         </tr>
         <tr>
@@ -2443,7 +2411,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l01146">1146</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l01180">1180</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -2485,7 +2453,51 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l01167">1167</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l01202">1202</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+
+</div>
+</div>
+<a id="ab84d04dc4d60fbb57b1b043252951f6f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab84d04dc4d60fbb57b1b043252951f6f">&#9670;&nbsp;</a></span>yypcontext_expected_tokens()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static int yypcontext_expected_tokens </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structyypcontext__t.html">yypcontext_t</a> *&#160;</td>
+          <td class="paramname"><em>yyctx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a>&#160;</td>
+          <td class="paramname"><em>yyarg</em>[], </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>yyargn</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00954">954</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -2523,7 +2535,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00955">955</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l01002">1002</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -2551,12 +2563,40 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00941">941</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00988">988</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
-<a id="adbccd08ca5358356a3abe128fce9c70f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adbccd08ca5358356a3abe128fce9c70f">&#9670;&nbsp;</a></span>yysyntax_error()</h2>
+<a id="a071c1cdd80746b1320346e80ef837463"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a071c1cdd80746b1320346e80ef837463">&#9670;&nbsp;</a></span>yysymbol_name()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static const char * yysymbol_name </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a>&#160;</td>
+          <td class="paramname"><em>yysymbol</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00624">624</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+
+</div>
+</div>
+<a id="afd3e02421327dce36a20aea578df7824"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afd3e02421327dce36a20aea578df7824">&#9670;&nbsp;</a></span>yysyntax_error()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2579,14 +2619,8 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#a45e9bf3a1bc80cfb98fe9fc5d8049255">yy_state_t</a> *&#160;</td>
-          <td class="paramname"><em>yyssp</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>yytoken</em>&#160;</td>
+          <td class="paramtype">const <a class="el" href="structyypcontext__t.html">yypcontext_t</a> *&#160;</td>
+          <td class="paramname"><em>yyctx</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -2601,7 +2635,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l01018">1018</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l01105">1105</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -2639,33 +2673,11 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00974">974</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l01021">1021</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
-<a id="a84c51f873e0b406b886ae6eef8a06a8f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a84c51f873e0b406b886ae6eef8a06a8f">&#9670;&nbsp;</a></span>orfz_debug</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int orfz_debug</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a id="af434820fddd4631c08de7a1d9629ff18"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af434820fddd4631c08de7a1d9629ff18">&#9670;&nbsp;</a></span>yycheck</h2>
 
@@ -2704,7 +2716,7 @@ Variables</h2></td></tr>
 <div class="line">    28,  28,  26,  26,  20,  20,  20,  27,  27,  27,  27, -1, -1, -1, 27, -1,</div>
 <div class="line">    28,  66,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1, -1, -1, -1, -1, 56}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00713">713</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00721">721</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -2720,7 +2732,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00910">910</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00918">918</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -2757,7 +2769,7 @@ Variables</h2></td></tr>
 <div class="line">    0,  31, 0,  0,  0,  0,  26, 0,  0,  0,  0,  21, 0,  68, 0,  58, 57, 23, 0,</div>
 <div class="line">    56, 30, 0,  20, 0,  24, 0,  0,  22, 29, 67, 0,  55, 59}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00664">664</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00672">672</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -2784,7 +2796,7 @@ Variables</h2></td></tr>
 <div class="line">    -1, 1,  2,  6,  44,  45,  82,  83,  7,  20, 114, 196, 125, 126, 21,  22,</div>
 <div class="line">    23, 46, 34, 35, 208, 209, 119, 204, 25, 40, 99,  100, 60,  133, 134, 41}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00685">685</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00693">693</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -2828,7 +2840,7 @@ Variables</h2></td></tr>
 <div class="line">    137,  227,  -182, -182, 138,  -182, -182, 139,  -182, 75,   -182, 214,</div>
 <div class="line">    153,  -182, -182, -182, 228,  -182, -182}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00640">640</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00648">648</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -2856,7 +2868,7 @@ Variables</h2></td></tr>
 <div class="line">    -182, 25,   -107, 88,   89,   92,   -7,   -50, 215,  -182, 13,</div>
 <div class="line">    -181, -182, -182, -182, -182, -72,  -56,  100, -76,  -182}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00679">679</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00687">687</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -2887,7 +2899,7 @@ Variables</h2></td></tr>
 <div class="line">    55, 56, 56, 57, 58, 58, 59, 59, 59, 59, 59, 59, 59, 59, 59, 60, 60,</div>
 <div class="line">    61, 61, 62, 62, 62, 62, 62, 62, 62, 63, 63, 63}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00749">749</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00757">757</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -2917,7 +2929,7 @@ Variables</h2></td></tr>
 <div class="line">    1,  3,  3,  2,  1,  1, 4,  3, 1, 3, 0, 6, 3, 1, 1, 1, 1, 3, 3, 1,</div>
 <div class="line">    4,  3,  2,  3,  0,  3, 1,  3, 1, 1, 1, 4, 4, 3, 3, 4, 4}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00758">758</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00766">766</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -2949,7 +2961,7 @@ Variables</h2></td></tr>
 <div class="line">    485, 488, 500, 501, 504, 505, 506, 507, 508, 513, 544, 561, 586, 595,</div>
 <div class="line">    599, 602, 603, 606, 607, 608, 609, 619, 628, 634, 649, 657, 666}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00541">541</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00538">538</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -2986,7 +2998,7 @@ Variables</h2></td></tr>
 <div class="line">    60, 60, 29, 29, 29, 29, 43, 27, 27, 27, 27, 28, 50, 54, 55, 20, 21, 28, 52,</div>
 <div class="line">    53, 28, 44, 28, 25, 28, 27, 25, 28, 28, 54, 18, 53, 28}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00734">734</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00742">742</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -3030,7 +3042,7 @@ Variables</h2></td></tr>
 <div class="line">    0,   222, 85,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,</div>
 <div class="line">    0,   73}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00692">692</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00700">700</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -3054,7 +3066,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00554">554</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00558">558</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
@@ -3093,27 +3105,30 @@ Variables</h2></td></tr>
 <div class="line">    2,  2,  2, 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  1, 2, 3,  4,</div>
 <div class="line">    5,  6,  7, 8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00523">523</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser_8tab_8cc_source.html#l00520">520</a> of file <a class="el" href="parser_8tab_8cc_source.html">parser.tab.cc</a>.</p>
 
 </div>
 </div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <div class="ttc" id="aparser_8yy_8cc_html_a33e91cd0cef6786e9e3a27ac67707207"><div class="ttname"><a href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a></div><div class="ttdeci">if(!yyg-&gt;yy_init)</div><div class="ttdef"><b>Definition:</b> <a href="parser_8yy_8cc_source.html#l00965">parser.yy.cc:965</a></div></div>
-<div class="ttc" id="aparser_8tab_8cc_html_a25298af10c853371e8da3227e3feaaa0"><div class="ttname"><a href="parser_8tab_8cc.html#a25298af10c853371e8da3227e3feaaa0">YY_</a></div><div class="ttdeci">#define YY_(Msgid)</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00318">parser.tab.cc:318</a></div></div>
-<div class="ttc" id="aparser_8tab_8cc_html_af1f78a43f8493fce72bbac770e6901dc"><div class="ttname"><a href="parser_8tab_8cc.html#af1f78a43f8493fce72bbac770e6901dc">yy_stack_print</a></div><div class="ttdeci">static void yy_stack_print(yy_state_t *yybottom, yy_state_t *yytop)</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00866">parser.tab.cc:866</a></div></div>
-<div class="ttc" id="agurobi__interface_8cc_html_a5f287b83a753915ae862fed64f8640a6"><div class="ttname"><a href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a></div><div class="ttdeci">GurobiMPCallbackContext * context</div><div class="ttdef"><b>Definition:</b> <a href="gurobi__interface_8cc_source.html#l00439">gurobi_interface.cc:439</a></div></div>
-<div class="ttc" id="aparser_8tab_8cc_html_af3b78184b3e3414afdaf2bbbff4a8bfe"><div class="ttname"><a href="parser_8tab_8cc.html#af3b78184b3e3414afdaf2bbbff4a8bfe">YYFPRINTF</a></div><div class="ttdeci">#define YYFPRINTF</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00800">parser.tab.cc:800</a></div></div>
-<div class="ttc" id="aparser_8tab_8cc_html_a92593b1fc9021b99ffcfc5d2a89f5ca2"><div class="ttname"><a href="parser_8tab_8cc.html#a92593b1fc9021b99ffcfc5d2a89f5ca2">YYPTRDIFF_T</a></div><div class="ttdeci">#define YYPTRDIFF_T</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00279">parser.tab.cc:279</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_1_1sat_html_a3f1a1b8a7a1a488e263a2e74f45d2a59"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a3f1a1b8a7a1a488e263a2e74f45d2a59">operations_research::sat::Value</a></div><div class="ttdeci">std::function&lt; int64(const Model &amp;)&gt; Value(IntegerVariable v)</div><div class="ttdef"><b>Definition:</b> <a href="integer_8h_source.html#l01406">integer.h:1406</a></div></div>
-<div class="ttc" id="aparser_8tab_8cc_html_a7d535939e93253736c6eeda569d24de5"><div class="ttname"><a href="parser_8tab_8cc.html#a7d535939e93253736c6eeda569d24de5">YYSIZE_T</a></div><div class="ttdeci">#define YYSIZE_T</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00293">parser.tab.cc:293</a></div></div>
-<div class="ttc" id="aparser_8tab_8cc_html_a7fde6236fcb0f6e5d1d20ce98d9f0d01"><div class="ttname"><a href="parser_8tab_8cc.html#a7fde6236fcb0f6e5d1d20ce98d9f0d01">yydebug</a></div><div class="ttdeci">#define yydebug</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00084">parser.tab.cc:84</a></div></div>
-<div class="ttc" id="agurobi__interface_8cc_html_a0728f23c9a47655d38e0bf1a2f200bcf"><div class="ttname"><a href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a></div><div class="ttdeci">GRBmodel * model</div><div class="ttdef"><b>Definition:</b> <a href="gurobi__interface_8cc_source.html#l00195">gurobi_interface.cc:195</a></div></div>
-<div class="ttc" id="aparser_8tab_8cc_html_a1eea12826e9366705730412c56defe4c"><div class="ttname"><a href="parser_8tab_8cc.html#a1eea12826e9366705730412c56defe4c">YYPTRDIFF_MAXIMUM</a></div><div class="ttdeci">#define YYPTRDIFF_MAXIMUM</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00280">parser.tab.cc:280</a></div></div>
-<div class="ttc" id="aparser_8tab_8cc_html_afcd15dd0fa87ffba0371c6d6a0cc9631"><div class="ttname"><a href="parser_8tab_8cc.html#afcd15dd0fa87ffba0371c6d6a0cc9631">YYSTACK_GAP_MAXIMUM</a></div><div class="ttdeci">#define YYSTACK_GAP_MAXIMUM</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00457">parser.tab.cc:457</a></div></div>
-<div class="ttc" id="aparser_8tab_8cc_html_ae59196b3765411a06cf234cf9bcae2e7"><div class="ttname"><a href="parser_8tab_8cc.html#ae59196b3765411a06cf234cf9bcae2e7">YYEMPTY</a></div><div class="ttdeci">#define YYEMPTY</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00767">parser.tab.cc:767</a></div></div>
-<div class="ttc" id="aparser_8tab_8cc_html_af2e4a0ea3879fcb3f8e84faa1e551202"><div class="ttname"><a href="parser_8tab_8cc.html#af2e4a0ea3879fcb3f8e84faa1e551202">YYSIZEOF</a></div><div class="ttdeci">#define YYSIZEOF(X)</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00302">parser.tab.cc:302</a></div></div>
-<div class="ttc" id="aparser_8tab_8cc_html_a4b53a97e60d84c765592be332ef6adce"><div class="ttname"><a href="parser_8tab_8cc.html#a4b53a97e60d84c765592be332ef6adce">YY_CAST</a></div><div class="ttdeci">#define YY_CAST(Type, Val)</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00092">parser.tab.cc:92</a></div></div>
+<div class="ttc" id="aparser_8tab_8cc_html_af3f5ed4bc4517eff0ef1b17541192a58"><div class="ttname"><a href="parser_8tab_8cc.html#af3f5ed4bc4517eff0ef1b17541192a58">YYMAXUTOK</a></div><div class="ttdeci">#define YYMAXUTOK</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00509">parser.tab.cc:509</a></div></div>
+<div class="ttc" id="aparser_8tab_8cc_html_a25298af10c853371e8da3227e3feaaa0"><div class="ttname"><a href="parser_8tab_8cc.html#a25298af10c853371e8da3227e3feaaa0">YY_</a></div><div class="ttdeci">#define YY_(Msgid)</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00313">parser.tab.cc:313</a></div></div>
+<div class="ttc" id="aparser_8tab_8cc_html_a20a769e9b8f129abf35d03d3904ec0e5a12c1e8bf6f8dfd4f8dd46a667481e96e"><div class="ttname"><a href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5a12c1e8bf6f8dfd4f8dd46a667481e96e">YYSYMBOL_YYUNDEF</a></div><div class="ttdeci">@ YYSYMBOL_YYUNDEF</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00115">parser.tab.cc:115</a></div></div>
+<div class="ttc" id="aparser_8tab_8cc_html_a20a769e9b8f129abf35d03d3904ec0e5"><div class="ttname"><a href="parser_8tab_8cc.html#a20a769e9b8f129abf35d03d3904ec0e5">yysymbol_kind_t</a></div><div class="ttdeci">yysymbol_kind_t</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00111">parser.tab.cc:111</a></div></div>
+<div class="ttc" id="aparser_8tab_8cc_html_af1f78a43f8493fce72bbac770e6901dc"><div class="ttname"><a href="parser_8tab_8cc.html#af1f78a43f8493fce72bbac770e6901dc">yy_stack_print</a></div><div class="ttdeci">static void yy_stack_print(yy_state_t *yybottom, yy_state_t *yytop)</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00874">parser.tab.cc:874</a></div></div>
+<div class="ttc" id="agurobi__interface_8cc_html_a5f287b83a753915ae862fed64f8640a6"><div class="ttname"><a href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a></div><div class="ttdeci">GurobiMPCallbackContext * context</div><div class="ttdef"><b>Definition:</b> <a href="gurobi__interface_8cc_source.html#l00509">gurobi_interface.cc:509</a></div></div>
+<div class="ttc" id="aparser_8tab_8cc_html_af3b78184b3e3414afdaf2bbbff4a8bfe"><div class="ttname"><a href="parser_8tab_8cc.html#af3b78184b3e3414afdaf2bbbff4a8bfe">YYFPRINTF</a></div><div class="ttdeci">#define YYFPRINTF</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00808">parser.tab.cc:808</a></div></div>
+<div class="ttc" id="aparser_8tab_8cc_html_a92593b1fc9021b99ffcfc5d2a89f5ca2"><div class="ttname"><a href="parser_8tab_8cc.html#a92593b1fc9021b99ffcfc5d2a89f5ca2">YYPTRDIFF_T</a></div><div class="ttdeci">#define YYPTRDIFF_T</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00274">parser.tab.cc:274</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_1_1sat_html_a3f1a1b8a7a1a488e263a2e74f45d2a59"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a3f1a1b8a7a1a488e263a2e74f45d2a59">operations_research::sat::Value</a></div><div class="ttdeci">std::function&lt; int64(const Model &amp;)&gt; Value(IntegerVariable v)</div><div class="ttdef"><b>Definition:</b> <a href="integer_8h_source.html#l01414">integer.h:1414</a></div></div>
+<div class="ttc" id="aparser_8tab_8cc_html_a7d535939e93253736c6eeda569d24de5"><div class="ttname"><a href="parser_8tab_8cc.html#a7d535939e93253736c6eeda569d24de5">YYSIZE_T</a></div><div class="ttdeci">#define YYSIZE_T</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00288">parser.tab.cc:288</a></div></div>
+<div class="ttc" id="aparser_8tab_8cc_html_a7fde6236fcb0f6e5d1d20ce98d9f0d01"><div class="ttname"><a href="parser_8tab_8cc.html#a7fde6236fcb0f6e5d1d20ce98d9f0d01">yydebug</a></div><div class="ttdeci">#define yydebug</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00085">parser.tab.cc:85</a></div></div>
+<div class="ttc" id="agurobi__interface_8cc_html_a0728f23c9a47655d38e0bf1a2f200bcf"><div class="ttname"><a href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a></div><div class="ttdeci">GRBmodel * model</div><div class="ttdef"><b>Definition:</b> <a href="gurobi__interface_8cc_source.html#l00269">gurobi_interface.cc:269</a></div></div>
+<div class="ttc" id="aparser_8tab_8cc_html_a1eea12826e9366705730412c56defe4c"><div class="ttname"><a href="parser_8tab_8cc.html#a1eea12826e9366705730412c56defe4c">YYPTRDIFF_MAXIMUM</a></div><div class="ttdeci">#define YYPTRDIFF_MAXIMUM</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00275">parser.tab.cc:275</a></div></div>
+<div class="ttc" id="aparser_8tab_8cc_html_a1d8883fe4dadf185e4ba432f9474a732"><div class="ttname"><a href="parser_8tab_8cc.html#a1d8883fe4dadf185e4ba432f9474a732">yytranslate</a></div><div class="ttdeci">static const yytype_int8 yytranslate[]</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00520">parser.tab.cc:520</a></div></div>
+<div class="ttc" id="aparser_8tab_8cc_html_afcd15dd0fa87ffba0371c6d6a0cc9631"><div class="ttname"><a href="parser_8tab_8cc.html#afcd15dd0fa87ffba0371c6d6a0cc9631">YYSTACK_GAP_MAXIMUM</a></div><div class="ttdeci">#define YYSTACK_GAP_MAXIMUM</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00452">parser.tab.cc:452</a></div></div>
+<div class="ttc" id="aparser_8tab_8cc_html_af2e4a0ea3879fcb3f8e84faa1e551202"><div class="ttname"><a href="parser_8tab_8cc.html#af2e4a0ea3879fcb3f8e84faa1e551202">YYSIZEOF</a></div><div class="ttdeci">#define YYSIZEOF(X)</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00297">parser.tab.cc:297</a></div></div>
+<div class="ttc" id="aparser_8tab_8cc_html_a4b53a97e60d84c765592be332ef6adce"><div class="ttname"><a href="parser_8tab_8cc.html#a4b53a97e60d84c765592be332ef6adce">YY_CAST</a></div><div class="ttdeci">#define YY_CAST(Type, Val)</div><div class="ttdef"><b>Definition:</b> <a href="parser_8tab_8cc_source.html#l00093">parser.tab.cc:93</a></div></div>
 <!-- HTML footer for doxygen 1.8.18-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

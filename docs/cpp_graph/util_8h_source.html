@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.0</span>
+                <span id="sfml">Google OR-Tools 8.1</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -106,9 +106,9 @@ $(document).ready(function(){initNavTree('util_8h_source.html',''); initResizabl
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;memory&gt;</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;set&gt;</span></div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;string&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;unordered_map&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;vector&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;vector&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &quot;absl/container/flat_hash_map.h&quot;</span></div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &quot;absl/container/inlined_vector.h&quot;</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &quot;ortools/base/hash.h&quot;</span></div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &quot;ortools/base/map_util.h&quot;</span></div>
@@ -265,7 +265,7 @@ $(document).ready(function(){initNavTree('util_8h_source.html',''); initResizabl
 <div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;<span class="comment">// unique, hence the function name.</span></div>
 <div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;<span class="comment">//</span></div>
 <div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;<span class="comment">// PERFORMANCE: If you see this function taking too much memory and/or too much</span></div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;<span class="comment">// time, reach out to @user: one could halve the memory usage and speed it up.</span></div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;<span class="comment">// time, reach out to viger@: one could halve the memory usage and speed it up.</span></div>
 <div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Graph&gt;</div>
 <div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;std::vector&lt;int&gt; <a class="code" href="namespaceutil.html#a00a901881f9035f66a4204da4c0ea3e5">ComputeOnePossibleReverseArcMapping</a>(<span class="keyword">const</span> <a class="code" href="namespaceutil.html#a2f76166dbe0c4055a1f256235ad00478">Graph</a>&amp; graph,</div>
 <div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;                                                     <span class="keywordtype">bool</span> die_if_not_symmetric);</div>
@@ -554,7 +554,7 @@ $(document).ready(function(){initNavTree('util_8h_source.html',''); initResizabl
 <div class="ttc" id="anamespaceutil_html_ad7986b01cf61a31c09a27b4a97db6a83"><div class="ttname"><a href="namespaceutil.html#ad7986b01cf61a31c09a27b4a97db6a83">util::IsValidPermutation</a></div><div class="ttdeci">bool IsValidPermutation(const std::vector&lt; int &gt; &amp;v)</div><div class="ttdef"><b>Definition:</b> <a href="util_8h_source.html#l00144">util.h:144</a></div></div>
 <div class="ttc" id="aclassutil_1_1_list_graph_html_aceb0938bcb2e8e5f37986d4cf8e3a955"><div class="ttname"><a href="classutil_1_1_list_graph.html#aceb0938bcb2e8e5f37986d4cf8e3a955">util::ListGraph::Head</a></div><div class="ttdeci">NodeIndexType Head(ArcIndexType arc) const</div><div class="ttdef"><b>Definition:</b> <a href="graph_8h_source.html#l01111">graph.h:1111</a></div></div>
 <div class="ttc" id="aclassutil_1_1_undirected_adjacency_lists_of_directed_graph_html"><div class="ttname"><a href="classutil_1_1_undirected_adjacency_lists_of_directed_graph.html">util::UndirectedAdjacencyListsOfDirectedGraph</a></div><div class="ttdef"><b>Definition:</b> <a href="util_8h_source.html#l00099">util.h:99</a></div></div>
-<div class="ttc" id="anamespaceutil_html_a366d433bd2afb387ea527c581447dffc"><div class="ttname"><a href="namespaceutil.html#a366d433bd2afb387ea527c581447dffc">util::GetConnectedComponents</a></div><div class="ttdeci">std::vector&lt; int &gt; GetConnectedComponents(int num_nodes, const UndirectedGraph &amp;graph)</div><div class="ttdef"><b>Definition:</b> <a href="connected__components_8h_source.html#l00287">connected_components.h:287</a></div></div>
+<div class="ttc" id="anamespaceutil_html_a366d433bd2afb387ea527c581447dffc"><div class="ttname"><a href="namespaceutil.html#a366d433bd2afb387ea527c581447dffc">util::GetConnectedComponents</a></div><div class="ttdeci">std::vector&lt; int &gt; GetConnectedComponents(int num_nodes, const UndirectedGraph &amp;graph)</div><div class="ttdef"><b>Definition:</b> <a href="connected__components_8h_source.html#l00296">connected_components.h:296</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_ad90a9fc7d16bb2c98a088a4162bbbc9d"><div class="ttname"><a href="namespaceoperations__research.html#ad90a9fc7d16bb2c98a088a4162bbbc9d">operations_research::ArcIndex</a></div><div class="ttdeci">int32 ArcIndex</div><div class="ttdef"><b>Definition:</b> <a href="ebert__graph_8h_source.html#l00201">ebert_graph.h:201</a></div></div>
 <div class="ttc" id="aclassutil_1_1_undirected_adjacency_lists_of_directed_graph_html_a2380f2634e304c2161485c0d395b78eb"><div class="ttname"><a href="classutil_1_1_undirected_adjacency_lists_of_directed_graph.html#a2380f2634e304c2161485c0d395b78eb">util::UndirectedAdjacencyListsOfDirectedGraph::ArcIterator</a></div><div class="ttdeci">Graph::OutgoingOrOppositeIncomingArcIterator ArcIterator</div><div class="ttdef"><b>Definition:</b> <a href="util_8h_source.html#l00104">util.h:104</a></div></div>
 <div class="ttc" id="anamespaceutil_html_a99094e047812eb44a7c2b3b82091f560"><div class="ttname"><a href="namespaceutil.html#a99094e047812eb44a7c2b3b82091f560">util::GetSubgraphOfNodes</a></div><div class="ttdeci">std::unique_ptr&lt; Graph &gt; GetSubgraphOfNodes(const Graph &amp;graph, const std::vector&lt; int &gt; &amp;nodes)</div><div class="ttdef"><b>Definition:</b> <a href="util_8h_source.html#l00294">util.h:294</a></div></div>

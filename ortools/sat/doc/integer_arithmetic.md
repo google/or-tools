@@ -149,7 +149,6 @@ rabbits and pheasants are there?
 ```python
 """Rabbits and Pheasants quizz."""
 
-
 from ortools.sat.python import cp_model
 
 

@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['localsearchstate_3987',['LocalSearchState',['../classoperations__research_1_1_local_search_variable.html#aff1f964f65624725a91c1536c7af0320',1,'operations_research::LocalSearchVariable']]],
-  ['localsearchvariable_3988',['LocalSearchVariable',['../classoperations__research_1_1_local_search_state.html#a8f5c510ca9b60acf27d2cd564c723ff7',1,'operations_research::LocalSearchState']]]
+  ['chainrange_5896',['ChainRange',['../classoperations__research_1_1_path_state_1_1_chain_range_1_1_iterator.html#ab380032b13d5d06e904bd53236ae8acc',1,'operations_research::PathState::ChainRange::Iterator']]],
+  ['constraint_5897',['Constraint',['../classoperations__research_1_1_solver.html#a697ed9eaa8955d595a023663ab1e8418',1,'operations_research::Solver']]]
 ];

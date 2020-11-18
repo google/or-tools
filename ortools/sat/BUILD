@@ -85,7 +85,6 @@ cc_library(
 )
 
 cc_library(
-    
     name = "synchronization",
     srcs = ["synchronization.cc"],
     hdrs = ["synchronization.h"],

@@ -12,7 +12,6 @@
 # limitations under the License.
 """Link integer constraints together."""
 
-
 from ortools.sat.python import cp_model
 
 

@@ -12,7 +12,6 @@
 # limitations under the License.
 """Code sample to demonstrates a simple Boolean constraint."""
 
-
 from ortools.sat.python import cp_model
 
 

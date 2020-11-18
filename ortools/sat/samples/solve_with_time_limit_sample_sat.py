@@ -12,7 +12,6 @@
 # limitations under the License.
 """Solves a problem with a time limit."""
 
-
 from ortools.sat.python import cp_model
 
 

@@ -12,7 +12,6 @@
 # limitations under the License.
 """Simple model with a reified constraint."""
 
-
 from ortools.sat.python import cp_model
 
 

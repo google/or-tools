@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -98,7 +98,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_local_se
 <div class="textblock"><p>Filter manager: when a move is made, filters are executed to decide whether the solution is feasible and compute parts of the new cost. </p>
 <p>This class schedules filter execution and composes costs as a sum. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01766">1766</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01763">1763</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
@@ -122,10 +122,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a4bc6d7a7fb2d16cbc67f5bd65c9f3d05"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad415204991d6155dd37e84f3a306ccca"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_local_search_filter_manager.html#ad415204991d6155dd37e84f3a306ccca">Revert</a> ()</td></tr>
 <tr class="separator:ad415204991d6155dd37e84f3a306ccca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac01556936ee8bcfe89ee8a7088ee260d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_local_search_filter_manager.html#ac01556936ee8bcfe89ee8a7088ee260d">Accept</a> (<a class="el" href="classoperations__research_1_1_local_search_monitor.html">LocalSearchMonitor</a> *const monitor, const Assignment *<a class="el" href="resource_8cc.html#a73461c37822b6ebb75b54ba1a9ffb442">delta</a>, const Assignment *deltadelta, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> objective_min, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> objective_max)</td></tr>
+<tr class="memitem:ac01556936ee8bcfe89ee8a7088ee260d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_local_search_filter_manager.html#ac01556936ee8bcfe89ee8a7088ee260d">Accept</a> (<a class="el" href="classoperations__research_1_1_local_search_monitor.html">LocalSearchMonitor</a> *const monitor, const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *<a class="el" href="resource_8cc.html#a73461c37822b6ebb75b54ba1a9ffb442">delta</a>, const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *deltadelta, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> objective_min, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> objective_max)</td></tr>
 <tr class="memdesc:ac01556936ee8bcfe89ee8a7088ee260d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true iff all filters return true, and the sum of their accepted objectives is between objective_min and objective_max.  <a href="classoperations__research_1_1_local_search_filter_manager.html#ac01556936ee8bcfe89ee8a7088ee260d">More...</a><br /></td></tr>
 <tr class="separator:ac01556936ee8bcfe89ee8a7088ee260d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae90693395653f673140e7bee51daf656"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_local_search_filter_manager.html#ae90693395653f673140e7bee51daf656">Synchronize</a> (const Assignment *assignment, const Assignment *<a class="el" href="resource_8cc.html#a73461c37822b6ebb75b54ba1a9ffb442">delta</a>)</td></tr>
+<tr class="memitem:ae90693395653f673140e7bee51daf656"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_local_search_filter_manager.html#ae90693395653f673140e7bee51daf656">Synchronize</a> (const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *assignment, const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *<a class="el" href="resource_8cc.html#a73461c37822b6ebb75b54ba1a9ffb442">delta</a>)</td></tr>
 <tr class="memdesc:ae90693395653f673140e7bee51daf656"><td class="mdescLeft">&#160;</td><td class="mdescRight">Synchronizes all filters to assignment.  <a href="classoperations__research_1_1_local_search_filter_manager.html#ae90693395653f673140e7bee51daf656">More...</a><br /></td></tr>
 <tr class="separator:ae90693395653f673140e7bee51daf656"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e12ecb41f49732af540d54a3e71b6e7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_local_search_filter_manager.html#a5e12ecb41f49732af540d54a3e71b6e7">GetSynchronizedObjectiveValue</a> () const</td></tr>
@@ -150,7 +150,7 @@ Public Member Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="a448820cc5c3ca1a3f6ef0357404d9ecca96bfee136337653e47d722bade9c1ca0"></a>kRelax&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01770">1770</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01767">1767</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -179,7 +179,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l03612">3612</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l03884">3884</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
 </div>
 </div>
@@ -207,7 +207,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l03599">3599</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l03871">3871</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
 </div>
 </div>
@@ -227,13 +227,13 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const Assignment *&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td>
           <td class="paramname"><em>delta</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const Assignment *&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td>
           <td class="paramname"><em>deltadelta</em>, </td>
         </tr>
         <tr>
@@ -259,7 +259,7 @@ Public Member Functions</h2></td></tr>
 <p>Returns true iff all filters return true, and the sum of their accepted objectives is between objective_min and objective_max. </p>
 <p>The monitor has its Begin/EndFiltering events triggered. </p>
 
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l03633">3633</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l03905">3905</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
 </div>
 </div>
@@ -281,12 +281,16 @@ Public Member Functions</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01776">1776</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_base_object.html#a8eba5d533fa9df4617c1868d3ec2afc4">BaseObject</a>.</p>
+
+<p>Reimplemented in <a class="el" href="class_swig_director___local_search_filter_manager.html#a8eba5d533fa9df4617c1868d3ec2afc4">SwigDirector_LocalSearchFilterManager</a>, and <a class="el" href="class_swig_director___local_search_filter_manager.html#a764be64f3029f8b8e23511061d8de355">SwigDirector_LocalSearchFilterManager</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01773">1773</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -313,7 +317,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01798">1798</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01795">1795</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -340,7 +344,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01797">1797</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01794">1794</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -359,7 +363,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l03622">3622</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l03894">3894</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
 </div>
 </div>
@@ -372,13 +376,13 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void Synchronize </td>
           <td>(</td>
-          <td class="paramtype">const Assignment *&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td>
           <td class="paramname"><em>assignment</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const Assignment *&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td>
           <td class="paramname"><em>delta</em>&#160;</td>
         </tr>
         <tr>
@@ -391,7 +395,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Synchronizes all filters to assignment. </p>
 
-<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l03678">3678</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="local__search_8cc_source.html#l03950">3950</a> of file <a class="el" href="local__search_8cc_source.html">local_search.cc</a>.</p>
 
 </div>
 </div>

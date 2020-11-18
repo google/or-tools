@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -115,25 +115,31 @@ Typedefs</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a9b16db7d2bc20b77514471f3caf78650"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="search_8cc.html#a9b16db7d2bc20b77514471f3caf78650">DEFINE_bool</a> (cp_use_sparse_gls_penalties, false, &quot;Use sparse implementation to store Guided Local Search penalties&quot;)</td></tr>
-<tr class="separator:a9b16db7d2bc20b77514471f3caf78650"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae4c2af96650ebf7abe0bfc09a56e8e32"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="search_8cc.html#ae4c2af96650ebf7abe0bfc09a56e8e32">DEFINE_bool</a> (cp_log_to_vlog, false, &quot;Whether search related logging should be &quot; &quot;vlog or info.&quot;)</td></tr>
-<tr class="separator:ae4c2af96650ebf7abe0bfc09a56e8e32"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aef33aa22a496a9004f8f240cb6e3dcc4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="search_8cc.html#aef33aa22a496a9004f8f240cb6e3dcc4">DEFINE_int64</a> (cp_large_domain_no_splitting_limit, 0xFFFFF, &quot;Size limit to allow holes in variables from the strategy.&quot;)</td></tr>
-<tr class="separator:aef33aa22a496a9004f8f240cb6e3dcc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81a9d3639953160f110d3e47c52a7169"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="search_8cc.html#a81a9d3639953160f110d3e47c52a7169">ABSL_FLAG</a> (bool, cp_use_sparse_gls_penalties, false, &quot;Use sparse implementation to store Guided Local Search penalties&quot;)</td></tr>
+<tr class="separator:a81a9d3639953160f110d3e47c52a7169"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab31a551e11c50cf1ec89282555478f87"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="search_8cc.html#ab31a551e11c50cf1ec89282555478f87">ABSL_FLAG</a> (bool, cp_log_to_vlog, false, &quot;Whether search related logging should be &quot; &quot;vlog or info.&quot;)</td></tr>
+<tr class="separator:ab31a551e11c50cf1ec89282555478f87"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8bdb24b2d86234a42a0de1f9668887d8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="search_8cc.html#a8bdb24b2d86234a42a0de1f9668887d8">ABSL_FLAG</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>, cp_large_domain_no_splitting_limit, 0xFFFFF, &quot;Size limit to allow holes in variables from the strategy.&quot;)</td></tr>
+<tr class="separator:a8bdb24b2d86234a42a0de1f9668887d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af7dae3ea7fbd3c3a43dd7d5a28ca544b"><td class="memItemLeft" align="right" valign="top">BaseAssignVariables::Mode&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#af7dae3ea7fbd3c3a43dd7d5a28ca544b">ChooseMode</a> (Solver::IntValueStrategy val_str)</td></tr>
 <tr class="separator:af7dae3ea7fbd3c3a43dd7d5a28ca544b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ae4c2af96650ebf7abe0bfc09a56e8e32"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae4c2af96650ebf7abe0bfc09a56e8e32">&#9670;&nbsp;</a></span>DEFINE_bool() <span class="overload">[1/2]</span></h2>
+<a id="ab31a551e11c50cf1ec89282555478f87"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab31a551e11c50cf1ec89282555478f87">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_bool </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">cp_log_to_vlog&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -159,15 +165,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a9b16db7d2bc20b77514471f3caf78650"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9b16db7d2bc20b77514471f3caf78650">&#9670;&nbsp;</a></span>DEFINE_bool() <span class="overload">[2/2]</span></h2>
+<a id="a81a9d3639953160f110d3e47c52a7169"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a81a9d3639953160f110d3e47c52a7169">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_bool </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">cp_use_sparse_gls_penalties&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -193,15 +205,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="aef33aa22a496a9004f8f240cb6e3dcc4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aef33aa22a496a9004f8f240cb6e3dcc4">&#9670;&nbsp;</a></span>DEFINE_int64()</h2>
+<a id="a8bdb24b2d86234a42a0de1f9668887d8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8bdb24b2d86234a42a0de1f9668887d8">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_int64 </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">cp_large_domain_no_splitting_limit&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -248,7 +266,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l03483">3483</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l03489">3489</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -264,7 +282,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l02494">2494</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l02500">2500</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -288,7 +306,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l00470">470</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l00476">476</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -312,7 +330,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l02947">2947</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l02953">2953</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -336,7 +354,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l03489">3489</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l03495">3495</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -360,7 +378,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l03490">3490</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l03496">3496</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -384,7 +402,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l01355">1355</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l01361">1361</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -408,7 +426,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l00781">781</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l00787">787</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -432,7 +450,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l03491">3491</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l03497">3497</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -456,7 +474,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l03486">3486</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l03492">3492</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -480,7 +498,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l00782">782</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l00788">788</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -496,7 +514,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l02493">2493</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l02499">2499</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -520,7 +538,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l01851">1851</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l01857">1857</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -544,7 +562,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l02945">2945</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l02951">2951</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -568,7 +586,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l03484">3484</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l03490">3490</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -592,7 +610,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l03481">3481</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l03487">3487</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -616,7 +634,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l03487">3487</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l03493">3493</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -640,7 +658,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l01850">1850</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l01856">1856</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -656,7 +674,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l02572">2572</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l02578">2578</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -672,7 +690,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l02571">2571</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l02577">2577</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -696,7 +714,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l00779">779</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l00785">785</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -712,7 +730,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l03033">3033</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l03039">3039</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -736,7 +754,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l02946">2946</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l02952">2952</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -752,7 +770,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l01348">1348</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l01354">1354</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -768,7 +786,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l01347">1347</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l01353">1353</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>
@@ -792,7 +810,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l00780">780</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="search_8cc_source.html#l00786">786</a> of file <a class="el" href="search_8cc_source.html">search.cc</a>.</p>
 
 </div>
 </div>

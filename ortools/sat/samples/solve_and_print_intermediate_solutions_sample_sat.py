@@ -13,7 +13,6 @@
 """Solves an optimization problem and displays all intermediate solutions."""
 
 # [START program]
-
 from ortools.sat.python import cp_model
 
 

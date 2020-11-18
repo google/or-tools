@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -210,7 +210,7 @@ $(document).ready(function(){initNavTree('strongly__connected__components_8h_sou
 <div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="comment">// them.</span></div>
 <div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <span class="keywordflow">for</span> (<a class="code" href="namespaceoperations__research.html#a7ae31ba4c3b4899478e53ca13df35dfc">NodeIndex</a> base_node = 0; base_node &lt; num_nodes; ++base_node) {</div>
 <div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;      <span class="keywordflow">if</span> (node_index_[base_node] != 0) <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;      DCHECK_EQ(0, node_to_process_.size());</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;      <a class="code" href="base_2logging_8h.html#ae89df3243bbb8341130c7b3f44145ea0">DCHECK_EQ</a>(0, node_to_process_.size());</div>
 <div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;      node_to_process_.push_back(base_node);</div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;      <span class="keywordflow">do</span> {</div>
 <div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#a7ae31ba4c3b4899478e53ca13df35dfc">NodeIndex</a> node = node_to_process_.back();</div>
@@ -323,6 +323,7 @@ $(document).ready(function(){initNavTree('strongly__connected__components_8h_sou
 <div class="ttc" id="apack_8cc_html_a750b5d744c39a06bfb13e6eb010e35d0"><div class="ttname"><a href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a></div><div class="ttdeci">int index</div><div class="ttdef"><b>Definition:</b> <a href="pack_8cc_source.html#l00508">pack.cc:508</a></div></div>
 <div class="ttc" id="astruct_scc_counter_output_html_af9593d4a5ff4274efaf429cb4f9e57cc"><div class="ttname"><a href="struct_scc_counter_output.html#af9593d4a5ff4274efaf429cb4f9e57cc">SccCounterOutput::size</a></div><div class="ttdeci">int size() const</div><div class="ttdef"><b>Definition:</b> <a href="strongly__connected__components_8h_source.html#l00089">strongly_connected_components.h:89</a></div></div>
 <div class="ttc" id="aclass_strongly_connected_components_finder_html_ae578e6662172f4c25bb8ad068a597ba5"><div class="ttname"><a href="class_strongly_connected_components_finder.html#ae578e6662172f4c25bb8ad068a597ba5">StronglyConnectedComponentsFinder::FindStronglyConnectedComponents</a></div><div class="ttdeci">void FindStronglyConnectedComponents(const NodeIndex num_nodes, const Graph &amp;graph, SccOutput *components)</div><div class="ttdef"><b>Definition:</b> <a href="strongly__connected__components_8h_source.html#l00105">strongly_connected_components.h:105</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_ae89df3243bbb8341130c7b3f44145ea0"><div class="ttname"><a href="base_2logging_8h.html#ae89df3243bbb8341130c7b3f44145ea0">DCHECK_EQ</a></div><div class="ttdeci">#define DCHECK_EQ(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00885">base/logging.h:885</a></div></div>
 <div class="ttc" id="aconstraint__solver_2table_8cc_html_a344010e26426d6a13411648d988bc9b6"><div class="ttname"><a href="constraint__solver_2table_8cc.html#a344010e26426d6a13411648d988bc9b6">b</a></div><div class="ttdeci">int64 b</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_2table_8cc_source.html#l00043">constraint_solver/table.cc:43</a></div></div>
 <div class="ttc" id="astrongly__connected__components_8h_html_aafab5785b250e1013c13511ce478f36b"><div class="ttname"><a href="strongly__connected__components_8h.html#aafab5785b250e1013c13511ce478f36b">FindStronglyConnectedComponents</a></div><div class="ttdeci">void FindStronglyConnectedComponents(const NodeIndex num_nodes, const Graph &amp;graph, SccOutput *components)</div><div class="ttdef"><b>Definition:</b> <a href="strongly__connected__components_8h_source.html#l00211">strongly_connected_components.h:211</a></div></div>
 <div class="ttc" id="arouting__flow_8cc_html_ac891d9f514e55ec8ee1212757a147888"><div class="ttname"><a href="routing__flow_8cc.html#ac891d9f514e55ec8ee1212757a147888">head</a></div><div class="ttdeci">int64 head</div><div class="ttdef"><b>Definition:</b> <a href="routing__flow_8cc_source.html#l00128">routing_flow.cc:128</a></div></div>

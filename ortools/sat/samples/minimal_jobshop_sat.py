@@ -13,7 +13,6 @@
 """Minimal jobshop example."""
 
 # [START program]
-
 import collections
 
 # [START model]

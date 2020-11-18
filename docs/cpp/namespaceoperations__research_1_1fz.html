@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -128,8 +128,8 @@ Classes</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:a8451e6a72eeb9f0ae3ee0ea8187fe880"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1fz.html#a8451e6a72eeb9f0ae3ee0ea8187fe880">CheckSolution</a> (const <a class="el" href="classoperations__research_1_1fz_1_1_model.html">Model</a> &amp;<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, const std::function&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>(<a class="el" href="structoperations__research_1_1fz_1_1_integer_variable.html">IntegerVariable</a> *)&gt; &amp;evaluator)</td></tr>
 <tr class="separator:a8451e6a72eeb9f0ae3ee0ea8187fe880"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a43243224bd66bd30d91a7488eaf36799"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1fz.html#a43243224bd66bd30d91a7488eaf36799">FixAndParseParameters</a> (int *argc, char ***argv)</td></tr>
-<tr class="separator:a43243224bd66bd30d91a7488eaf36799"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2cb71f73d942e9447c279808fcf6f036"><td class="memItemLeft" align="right" valign="top">std::vector&lt; char * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1fz.html#a2cb71f73d942e9447c279808fcf6f036">FixAndParseParameters</a> (int *argc, char ***argv)</td></tr>
+<tr class="separator:a2cb71f73d942e9447c279808fcf6f036"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0af8473d9e8a9a36f386d6ea0a5918df"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1fz_1_1_model.html">Model</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1fz.html#a0af8473d9e8a9a36f386d6ea0a5918df">ParseFlatzincModel</a> (const std::string &amp;<a class="el" href="parser_8yy_8cc.html#a5a634cf4429798b1c921a81de8250051">input</a>, bool input_is_filename)</td></tr>
 <tr class="separator:a0af8473d9e8a9a36f386d6ea0a5918df"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a70646f2d97d75f508a02310c0c4aa4b3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1fz.html#a70646f2d97d75f508a02310c0c4aa4b3">FlattenAnnotations</a> (const <a class="el" href="structoperations__research_1_1fz_1_1_annotation.html">Annotation</a> &amp;ann, std::vector&lt; <a class="el" href="structoperations__research_1_1fz_1_1_annotation.html">Annotation</a> &gt; *out)</td></tr>
@@ -197,7 +197,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="checker_8cc_source.html#l01256">1256</a> of file <a class="el" href="checker_8cc_source.html">checker.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="checker_8cc_source.html#l01263">1263</a> of file <a class="el" href="checker_8cc_source.html">checker.cc</a>.</p>
 
 </div>
 </div>
@@ -251,14 +251,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a43243224bd66bd30d91a7488eaf36799"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a43243224bd66bd30d91a7488eaf36799">&#9670;&nbsp;</a></span>FixAndParseParameters()</h2>
+<a id="a2cb71f73d942e9447c279808fcf6f036"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2cb71f73d942e9447c279808fcf6f036">&#9670;&nbsp;</a></span>FixAndParseParameters()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void operations_research::fz::FixAndParseParameters </td>
+          <td class="memname">std::vector&lt;char*&gt; operations_research::fz::FixAndParseParameters </td>
           <td>(</td>
           <td class="paramtype">int *&#160;</td>
           <td class="paramname"><em>argc</em>, </td>
@@ -277,7 +277,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fz_8cc_source.html#l00062">62</a> of file <a class="el" href="fz_8cc_source.html">fz.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fz_8cc_source.html#l00061">61</a> of file <a class="el" href="fz_8cc_source.html">fz.cc</a>.</p>
 
 </div>
 </div>
@@ -367,7 +367,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="parser__main_8cc_source.html#l00034">34</a> of file <a class="el" href="parser__main_8cc_source.html">parser_main.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="parser__main_8cc_source.html#l00035">35</a> of file <a class="el" href="parser__main_8cc_source.html">parser_main.cc</a>.</p>
 
 </div>
 </div>
@@ -427,7 +427,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fz_8cc_source.html#l00122">122</a> of file <a class="el" href="fz_8cc_source.html">fz.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fz_8cc_source.html#l00123">123</a> of file <a class="el" href="fz_8cc_source.html">fz.cc</a>.</p>
 
 </div>
 </div>

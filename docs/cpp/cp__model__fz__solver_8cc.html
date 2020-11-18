@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -105,23 +105,29 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:adfac1024ee9010509057f0c7ee62de33"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__fz__solver_8cc.html#adfac1024ee9010509057f0c7ee62de33">DEFINE_bool</a> (use_flatzinc_format, true, &quot;Output uses the flatzinc format&quot;)</td></tr>
-<tr class="separator:adfac1024ee9010509057f0c7ee62de33"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeff938f3e9808023355400e5e6473333"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__fz__solver_8cc.html#aeff938f3e9808023355400e5e6473333">DEFINE_int64</a> (fz_int_max, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>{1}&lt;&lt; 50, &quot;Default <a class="el" href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">max</a> <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a> for unbounded integer variables.&quot;)</td></tr>
-<tr class="separator:aeff938f3e9808023355400e5e6473333"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab460ab792f7cf11e24191f801189ace5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__fz__solver_8cc.html#ab460ab792f7cf11e24191f801189ace5">ABSL_FLAG</a> (bool, use_flatzinc_format, true, &quot;Output uses the flatzinc format&quot;)</td></tr>
+<tr class="separator:ab460ab792f7cf11e24191f801189ace5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad17a3425dec8a1412f018d36d1b5929f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__fz__solver_8cc.html#ad17a3425dec8a1412f018d36d1b5929f">ABSL_FLAG</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>, fz_int_max, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>{1}&lt;&lt; 50, &quot;Default <a class="el" href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">max</a> <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a> for unbounded integer variables.&quot;)</td></tr>
+<tr class="separator:ad17a3425dec8a1412f018d36d1b5929f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aacff7ad03783c59b06f7a206a882b829"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aacff7ad03783c59b06f7a206a882b829">SolveFzWithCpModelProto</a> (const fz::Model &amp;fz_model, const fz::FlatzincSatParameters &amp;p, const std::string &amp;sat_params)</td></tr>
 <tr class="separator:aacff7ad03783c59b06f7a206a882b829"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="adfac1024ee9010509057f0c7ee62de33"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adfac1024ee9010509057f0c7ee62de33">&#9670;&nbsp;</a></span>DEFINE_bool()</h2>
+<a id="ab460ab792f7cf11e24191f801189ace5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab460ab792f7cf11e24191f801189ace5">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_bool </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">use_flatzinc_format&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -147,15 +153,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="aeff938f3e9808023355400e5e6473333"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeff938f3e9808023355400e5e6473333">&#9670;&nbsp;</a></span>DEFINE_int64()</h2>
+<a id="ad17a3425dec8a1412f018d36d1b5929f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad17a3425dec8a1412f018d36d1b5929f">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_int64 </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">fz_int_max&#160;</td>
           <td class="paramname">, </td>
         </tr>

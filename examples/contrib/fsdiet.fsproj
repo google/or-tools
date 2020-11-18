@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-
+    
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <EnableDefaultItems>false</EnableDefaultItems>
     <!-- see https://github.com/dotnet/docs/issues/12237 -->
@@ -19,6 +19,6 @@
 
   <ItemGroup>
     <Compile Include="fsdiet.fs" />
-    <PackageReference Include="Google.OrTools.FSharp" Version="8.0.*" />
+    <PackageReference Include="Google.OrTools.FSharp" Version="8.1.*" />
   </ItemGroup>
 </Project>

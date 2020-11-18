@@ -12,7 +12,6 @@
 # limitations under the License.
 """Encodes an convex piecewise linear function."""
 
-
 from ortools.sat.python import cp_model
 
 

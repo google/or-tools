@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['pickuptodeliverylimitfunction_3688',['PickupToDeliveryLimitFunction',['../classoperations__research_1_1_routing_dimension.html#a64f4e1f55b71a9f9a0d7e3ef7033ade7',1,'operations_research::RoutingDimension']]]
+  ['localsearchneighborhoodoperators_5465',['LocalSearchNeighborhoodOperators',['../classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#ae635d50fff08c042dbf2094bde963345',1,'operations_research::PROTOBUF_FINAL']]]
 ];

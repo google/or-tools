@@ -12,7 +12,7 @@
 <area shape="rect" id="node23" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html" title="NOLINT &#160;The PropagationBaseObject is a subclass of BaseObject that is also &#160;friend to the Solver clas..." alt="" coords="157,461,332,488"/>
 <area shape="rect" id="node37" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModelVisitor.html" title="Routing model visitor." alt="" coords="167,512,322,539"/>
 <area shape="rect" id="node38" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events." alt="" coords="187,691,303,717"/>
-<area shape="rect" id="node46" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionPool.html" title="This class is used to manage a pool of solutions." alt="" coords="193,741,296,768"/>
+<area shape="rect" id="node47" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionPool.html" title="This class is used to manage a pool of solutions." alt="" coords="193,741,296,768"/>
 <area shape="rect" id="node4" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1JavaDecisionBuilder.html" title="This class acts as a intermediate step between a c++ decision builder and a java one." alt="" coords="433,56,585,83"/>
 <area shape="rect" id="node6" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SymmetryBreaker.html" title="A symmetry breaker is an object that will visit a decision and &#160;create the &#39;symmetrical&#39; decision in ..." alt="" coords="439,107,579,133"/>
 <area shape="rect" id="node10" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html" title=" " alt="" coords="423,160,594,187"/>
@@ -42,7 +42,8 @@
 <area shape="rect" id="node40" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1OptimizeVar.html" title="This class encapsulates an objective." alt="" coords="457,665,560,692"/>
 <area shape="rect" id="node41" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationMonitor.html" title=" " alt="" coords="433,716,584,743"/>
 <area shape="rect" id="node42" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLimit.html" title="Base class of all search limits." alt="" coords="459,767,558,793"/>
-<area shape="rect" id="node44" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLog.html" title="The base class of all search logs that periodically outputs information when &#160;the search is running." alt="" coords="464,817,553,844"/>
-<area shape="rect" id="node45" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html" title="This class is the root class of all solution collectors." alt="" coords="442,868,575,895"/>
-<area shape="rect" id="node43" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimit.html" title="Usual limit based on wall_time, number of explored branches and &#160;number of failures in the search tre..." alt="" coords="745,767,851,793"/>
+<area shape="rect" id="node45" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLog.html" title="The base class of all search logs that periodically outputs information when &#160;the search is running." alt="" coords="464,817,553,844"/>
+<area shape="rect" id="node46" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html" title="This class is the root class of all solution collectors." alt="" coords="442,868,575,895"/>
+<area shape="rect" id="node43" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ImprovementSearchLimit.html" title=" " alt="" coords="705,741,891,768"/>
+<area shape="rect" id="node44" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimit.html" title="Usual limit based on wall_time, number of explored branches and &#160;number of failures in the search tre..." alt="" coords="745,792,851,819"/>
 </map>

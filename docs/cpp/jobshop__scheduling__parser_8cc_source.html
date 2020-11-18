@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -116,15 +116,15 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="base_2logging_8h.html">ortools/base/logging.h</a>&quot;</span></div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="jobshop__scheduling_8pb_8h.html">ortools/data/jobshop_scheduling.pb.h</a>&quot;</span></div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="jobshop__scheduling__parser_8cc.html#aeb6bcb9dc7f1e00f1edcb9f41783dc0c">   28</a></span>&#160;<a class="code" href="jobshop__scheduling__parser_8cc.html#aeb6bcb9dc7f1e00f1edcb9f41783dc0c">DEFINE_int64</a>(jssp_scaling_up_factor, 100000L,</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;             <span class="stringliteral">&quot;Scaling factor for floating point penalties.&quot;</span>);</div>
+<div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="jobshop__scheduling__parser_8cc.html#a02fb717402fc4a583911d5dcb63044d0">   28</a></span>&#160;<a class="code" href="jobshop__scheduling__parser_8cc.html#a02fb717402fc4a583911d5dcb63044d0">ABSL_FLAG</a>(<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>, jssp_scaling_up_factor, 100000L,</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;          <span class="stringliteral">&quot;Scaling factor for floating point penalties.&quot;</span>);</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceoperations__research.html">operations_research</a> {</div>
 <div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="namespaceoperations__research_1_1data.html">   32</a></span>&#160;<span class="keyword">namespace </span>data {</div>
 <div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="namespaceoperations__research_1_1data_1_1jssp.html">   33</a></span>&#160;<span class="keyword">namespace </span>jssp {</div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="keywordtype">void</span> JsspParser::SetJobs(<span class="keywordtype">int</span> job_count) {</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;  CHECK_GT(job_count, 0);</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;  <a class="code" href="base_2logging_8h.html#a7e03ec13560fa94a8fea569960d7efc6">CHECK_GT</a>(job_count, 0);</div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;  declared_job_count_ = job_count;</div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;  problem_.clear_jobs();</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; job_count; ++i) {</div>
@@ -133,7 +133,7 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;}</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="keywordtype">void</span> JsspParser::SetMachines(<span class="keywordtype">int</span> machine_count) {</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;  CHECK_GT(machine_count, 0);</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;  <a class="code" href="base_2logging_8h.html#a7e03ec13560fa94a8fea569960d7efc6">CHECK_GT</a>(machine_count, 0);</div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;  declared_machine_count_ = machine_count;</div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;  problem_.clear_machines();</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; machine_count; ++i) {</div>
@@ -187,7 +187,7 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;      }</div>
 <div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;      <span class="keywordflow">default</span>: {</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        LOG(FATAL) &lt;&lt; <span class="stringliteral">&quot;Should not be here.&quot;</span>;</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a>) &lt;&lt; <span class="stringliteral">&quot;Should not be here.&quot;</span>;</div>
 <div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;      }</div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    }</div>
@@ -224,7 +224,7 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    }</div>
 <div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a989f1ca141dc0f807d5ebbb65855eda6">JOB_COUNT_READ</a>: {</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;      CHECK_GE(words.size(), declared_machine_count_ * 2);</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;      <a class="code" href="base_2logging_8h.html#a7cc25402ecd7591b4c39934dd656b1f9">CHECK_GE</a>(words.size(), declared_machine_count_ * 2);</div>
 <div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;      Job* <span class="keyword">const</span> job = problem_.mutable_jobs(current_job_index_);</div>
 <div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;      <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; declared_machine_count_; ++i) {</div>
 <div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">int</span> machine_id = strtoint32(words[2 * i]);</div>
@@ -252,7 +252,7 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    }</div>
 <div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    <span class="keywordflow">default</span>: {</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;      LOG(FATAL) &lt;&lt; <span class="stringliteral">&quot;Should not be here with state &quot;</span> &lt;&lt; parser_state_;</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;      <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a>) &lt;&lt; <span class="stringliteral">&quot;Should not be here with state &quot;</span> &lt;&lt; parser_state_;</div>
 <div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    }</div>
 <div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;  }</div>
 <div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;}</div>
@@ -279,14 +279,14 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    }</div>
 <div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a989f1ca141dc0f807d5ebbb65855eda6">JOB_COUNT_READ</a>: {</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;      CHECK_EQ(1, words.size());</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(1, words.size());</div>
 <div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;      SetMachines(strtoint32(words[0]));</div>
 <div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;      problem_.set_makespan_cost_per_time_unit(1L);</div>
 <div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;      parser_state_ = <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a313a7a223d0d02086cb52df4d6934071">MACHINE_COUNT_READ</a>;</div>
 <div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    }</div>
 <div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a313a7a223d0d02086cb52df4d6934071">MACHINE_COUNT_READ</a>: {</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;      CHECK_EQ(1, words.size());</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(1, words.size());</div>
 <div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;      <span class="keyword">const</span> <span class="keywordtype">int</span> seed = strtoint32(words[0]);</div>
 <div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;      problem_.set_seed(seed);</div>
 <div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;      parser_state_ = <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a79bdc0a76041604da1b65ad4eebe7a36">SEED_READ</a>;</div>
@@ -295,18 +295,18 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a79bdc0a76041604da1b65ad4eebe7a36">SEED_READ</a>:</div>
 <div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;      ABSL_FALLTHROUGH_INTENDED;</div>
 <div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a493a49f850ceb8a1ce3ee7b918c913c2">JOB_READ</a>: {</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;      CHECK_EQ(1, words.size());</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(1, words.size());</div>
 <div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;      current_job_index_ = strtoint32(words[0]);</div>
 <div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;      parser_state_ = <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a43d8d716b5a1752bafe4a5159bc0978e">JOB_ID_READ</a>;</div>
 <div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;    }</div>
 <div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a43d8d716b5a1752bafe4a5159bc0978e">JOB_ID_READ</a>: {</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;      CHECK_EQ(1, words.size());</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(1, words.size());</div>
 <div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;      parser_state_ = <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a5033c0670aa8c1454e35960b00d341f0">JOB_LENGTH_READ</a>;</div>
 <div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    }</div>
 <div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a5033c0670aa8c1454e35960b00d341f0">JOB_LENGTH_READ</a>: {</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;      CHECK_EQ(declared_machine_count_, words.size());</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(declared_machine_count_, words.size());</div>
 <div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;      Job* <span class="keyword">const</span> job = problem_.mutable_jobs(current_job_index_);</div>
 <div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;      <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; declared_machine_count_; ++i) {</div>
 <div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        <span class="keyword">const</span> <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration = strtoint64(words[i]);</div>
@@ -319,7 +319,7 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;    }</div>
 <div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    <span class="keywordflow">default</span>: {</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;      LOG(FATAL) &lt;&lt; <span class="stringliteral">&quot;Should not be here with state &quot;</span> &lt;&lt; parser_state_;</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;      <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a>) &lt;&lt; <span class="stringliteral">&quot;Should not be here with state &quot;</span> &lt;&lt; parser_state_;</div>
 <div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    }</div>
 <div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;  }</div>
 <div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;}</div>
@@ -328,7 +328,7 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;      absl::StrSplit(line, <span class="charliteral">&#39; &#39;</span>, absl::SkipEmpty());</div>
 <div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;  <span class="keywordflow">switch</span> (parser_state_) {</div>
 <div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a13d000b4d7dc70d90239b7430d1eb6b2">START</a>: {</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;      CHECK_GE(words.size(), 2);</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;      <a class="code" href="base_2logging_8h.html#a7cc25402ecd7591b4c39934dd656b1f9">CHECK_GE</a>(words.size(), 2);</div>
 <div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;      SetJobs(strtoint32(words[0]));</div>
 <div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;      SetMachines(strtoint32(words[1]));</div>
 <div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;      problem_.set_makespan_cost_per_time_unit(1L);</div>
@@ -350,7 +350,7 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;          task-&gt;add_duration(duration);</div>
 <div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;        }</div>
 <div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;      }</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;      CHECK_LE(<a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>, words.size());  <span class="comment">// Ignore CR at the end of the line.</span></div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;      <a class="code" href="base_2logging_8h.html#ae4db23f10f5d4aad6d735f5a74cd6f8c">CHECK_LE</a>(<a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>, words.size());  <span class="comment">// Ignore CR at the end of the line.</span></div>
 <div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;      current_job_index_++;</div>
 <div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;      <span class="keywordflow">if</span> (current_job_index_ == declared_job_count_) {</div>
 <div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;        parser_state_ = <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a9c954bcf443428c80b0f107b3bc48749">DONE</a>;</div>
@@ -358,7 +358,7 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    }</div>
 <div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;    <span class="keywordflow">default</span>: {</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;      LOG(FATAL) &lt;&lt; <span class="stringliteral">&quot;Should not be here with state &quot;</span> &lt;&lt; parser_state_;</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;      <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a>) &lt;&lt; <span class="stringliteral">&quot;Should not be here with state &quot;</span> &lt;&lt; parser_state_;</div>
 <div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    }</div>
 <div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;  }</div>
 <div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;}</div>
@@ -377,7 +377,7 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;    }</div>
 <div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a989f1ca141dc0f807d5ebbb65855eda6">JOB_COUNT_READ</a>: {</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;      CHECK_EQ(words.size(), declared_machine_count_ * 2);</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(words.size(), declared_machine_count_ * 2);</div>
 <div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;      Job* <span class="keyword">const</span> job = problem_.mutable_jobs(current_job_index_);</div>
 <div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;      <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; declared_machine_count_; ++i) {</div>
 <div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">int</span> machine_id = strtoint32(words[2 * i]);</div>
@@ -393,20 +393,20 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    }</div>
 <div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a71055b8df7a1720e76ff99db37a64379">JOBS_READ</a>: {</div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;      CHECK_EQ(1, words.size());</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;      CHECK_EQ(<span class="stringliteral">&quot;SSD&quot;</span>, words[0]);</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(1, words.size());</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(<span class="stringliteral">&quot;SSD&quot;</span>, words[0]);</div>
 <div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;      parser_state_ = <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a25b8bec893a20094baafbd6b87e14796">SSD_READ</a>;</div>
 <div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;    }</div>
 <div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a25b8bec893a20094baafbd6b87e14796">SSD_READ</a>: {</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;      CHECK_EQ(1, words.size());</div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;      CHECK_EQ(words[0], absl::StrCat(<span class="stringliteral">&quot;M&quot;</span>, current_machine_index_)) &lt;&lt; line;</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(1, words.size());</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(words[0], absl::StrCat(<span class="stringliteral">&quot;M&quot;</span>, current_machine_index_)) &lt;&lt; line;</div>
 <div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;      current_job_index_ = 0;</div>
 <div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;      parser_state_ = <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a7e8fe0e7ce71c7ee44d06a521e1d10b1">MACHINE_READ</a>;</div>
 <div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;    }</div>
 <div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a7e8fe0e7ce71c7ee44d06a521e1d10b1">MACHINE_READ</a>: {</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;      CHECK_EQ(declared_job_count_, words.size());</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(declared_job_count_, words.size());</div>
 <div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;      Machine* <span class="keyword">const</span> machine =</div>
 <div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;          problem_.mutable_machines(current_machine_index_);</div>
 <div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;      <span class="keywordflow">for</span> (<span class="keyword">const</span> std::string&amp; w : words) {</div>
@@ -421,7 +421,7 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;    }</div>
 <div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;    <span class="keywordflow">default</span>: {</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;      LOG(FATAL) &lt;&lt; <span class="stringliteral">&quot;Should not be here with state &quot;</span> &lt;&lt; parser_state_</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;      <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a>) &lt;&lt; <span class="stringliteral">&quot;Should not be here with state &quot;</span> &lt;&lt; parser_state_</div>
 <div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;                 &lt;&lt; <span class="stringliteral">&quot;with line &quot;</span> &lt;&lt; line;</div>
 <div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;    }</div>
 <div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;  }</div>
@@ -432,7 +432,7 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;      absl::StrSplit(line, <span class="charliteral">&#39; &#39;</span>, absl::SkipEmpty());</div>
 <div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;  <span class="keywordflow">switch</span> (parser_state_) {</div>
 <div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a13d000b4d7dc70d90239b7430d1eb6b2">START</a>: {</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;      CHECK_EQ(3, words.size());</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(3, words.size());</div>
 <div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;      SetJobs(strtoint32(words[0]));</div>
 <div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;      SetMachines(strtoint32(words[1]));</div>
 <div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;      parser_state_ = <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a989f1ca141dc0f807d5ebbb65855eda6">JOB_COUNT_READ</a>;</div>
@@ -440,16 +440,16 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;    }</div>
 <div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a989f1ca141dc0f807d5ebbb65855eda6">JOB_COUNT_READ</a>: {</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;      CHECK_GE(words.size(), 6);</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;      <a class="code" href="base_2logging_8h.html#a7cc25402ecd7591b4c39934dd656b1f9">CHECK_GE</a>(words.size(), 6);</div>
 <div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;      Job* <span class="keyword">const</span> job = problem_.mutable_jobs(current_job_index_);</div>
 <div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;      <span class="keyword">const</span> <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> est = strtoint64(words[0]);</div>
 <div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;      <span class="keywordflow">if</span> (est != 0L) {</div>
 <div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;        job-&gt;mutable_earliest_start()-&gt;set_value(est);</div>
 <div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;      }</div>
 <div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;      job-&gt;set_late_due_date(strtoint64(words[1]));</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;      <span class="keyword">const</span> <span class="keywordtype">double</span> <a class="code" href="pack_8cc.html#ae42ca38a167164c07831993889216903">weight</a> = stod(words[2]);</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;      <span class="keyword">const</span> <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> tardiness =</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;          <span class="keyword">static_cast&lt;</span><a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a><span class="keyword">&gt;</span>(round(<a class="code" href="pack_8cc.html#ae42ca38a167164c07831993889216903">weight</a> * FLAGS_jssp_scaling_up_factor));</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;      <span class="keyword">const</span> <span class="keywordtype">double</span> <a class="code" href="pack_8cc.html#ae42ca38a167164c07831993889216903">weight</a> = std::stod(words[2]);</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;      <span class="keyword">const</span> <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> tardiness = <span class="keyword">static_cast&lt;</span><a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a><span class="keyword">&gt;</span>(</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;          round(<a class="code" href="pack_8cc.html#ae42ca38a167164c07831993889216903">weight</a> * absl::GetFlag(FLAGS_jssp_scaling_up_factor)));</div>
 <div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;      job-&gt;set_lateness_cost_per_time_unit(tardiness);</div>
 <div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;      <span class="keyword">const</span> <span class="keywordtype">int</span> num_operations = strtoint32(words[3]);</div>
 <div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;      <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; num_operations; ++i) {</div>
@@ -465,7 +465,7 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;        <span class="keywordtype">bool</span> all_integral = <span class="keyword">true</span>;</div>
 <div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> Job&amp; job : problem_.jobs()) {</div>
 <div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;          <span class="keywordflow">if</span> (job.lateness_cost_per_time_unit() %</div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;                  FLAGS_jssp_scaling_up_factor !=</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;                  absl::GetFlag(FLAGS_jssp_scaling_up_factor) !=</div>
 <div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;              0) {</div>
 <div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;            all_integral = <span class="keyword">false</span>;</div>
 <div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;            <span class="keywordflow">break</span>;</div>
@@ -475,18 +475,18 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;          <span class="keywordflow">for</span> (Job&amp; job : *problem_.mutable_jobs()) {</div>
 <div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;            job.set_lateness_cost_per_time_unit(</div>
 <div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;                job.lateness_cost_per_time_unit() /</div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;                FLAGS_jssp_scaling_up_factor);</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;                absl::GetFlag(FLAGS_jssp_scaling_up_factor));</div>
 <div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;          }</div>
 <div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;        } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;          problem_.mutable_scaling_factor()-&gt;set_value(</div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;              1.0L / FLAGS_jssp_scaling_up_factor);</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;              1.0L / absl::GetFlag(FLAGS_jssp_scaling_up_factor));</div>
 <div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;        }</div>
 <div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;        parser_state_ = <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a9c954bcf443428c80b0f107b3bc48749">DONE</a>;</div>
 <div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;      }</div>
 <div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;    }</div>
 <div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;    <span class="keywordflow">default</span>: {</div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;      LOG(FATAL) &lt;&lt; <span class="stringliteral">&quot;Should not be here with state &quot;</span> &lt;&lt; parser_state_</div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;      <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a>) &lt;&lt; <span class="stringliteral">&quot;Should not be here with state &quot;</span> &lt;&lt; parser_state_</div>
 <div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;                 &lt;&lt; <span class="stringliteral">&quot;with line &quot;</span> &lt;&lt; line;</div>
 <div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;    }</div>
 <div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;  }</div>
@@ -498,21 +498,21 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;  <span class="keywordflow">switch</span> (parser_state_) {</div>
 <div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a13d000b4d7dc70d90239b7430d1eb6b2">START</a>: {</div>
 <div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;      problem_.set_makespan_cost_per_time_unit(1L);</div>
-<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;      CHECK_EQ(1, words.size());</div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(1, words.size());</div>
 <div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;      SetJobs(strtoint32(words[0]));</div>
 <div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;      parser_state_ = <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a989f1ca141dc0f807d5ebbb65855eda6">JOB_COUNT_READ</a>;</div>
 <div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;    }</div>
 <div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a989f1ca141dc0f807d5ebbb65855eda6">JOB_COUNT_READ</a>: {</div>
-<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;      CHECK_EQ(1, words.size());</div>
+<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(1, words.size());</div>
 <div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;      SetMachines(strtoint32(words[0]));</div>
 <div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;      parser_state_ = <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a313a7a223d0d02086cb52df4d6934071">MACHINE_COUNT_READ</a>;</div>
 <div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;      current_job_index_ = 0;</div>
 <div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;    }</div>
 <div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a313a7a223d0d02086cb52df4d6934071">MACHINE_COUNT_READ</a>: {</div>
-<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;      CHECK_EQ(1, words.size());</div>
-<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;      CHECK_EQ(declared_machine_count_, strtoint32(words[0]));</div>
+<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(1, words.size());</div>
+<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(declared_machine_count_, strtoint32(words[0]));</div>
 <div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;      <span class="keywordflow">if</span> (++current_job_index_ == declared_job_count_) {</div>
 <div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;        parser_state_ = <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a5033c0670aa8c1454e35960b00d341f0">JOB_LENGTH_READ</a>;</div>
 <div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;        current_job_index_ = 0;</div>
@@ -521,9 +521,9 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;    }</div>
 <div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a5033c0670aa8c1454e35960b00d341f0">JOB_LENGTH_READ</a>: {</div>
-<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;      CHECK_EQ(4, words.size());</div>
-<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;      CHECK_EQ(0, strtoint32(words[2]));</div>
-<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;      CHECK_EQ(0, strtoint32(words[3]));</div>
+<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(4, words.size());</div>
+<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(0, strtoint32(words[2]));</div>
+<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(0, strtoint32(words[3]));</div>
 <div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;      <span class="keyword">const</span> <span class="keywordtype">int</span> machine_id = strtoint32(words[0]) - 1;</div>
 <div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;      <span class="keyword">const</span> <span class="keywordtype">int</span> duration = strtoint32(words[1]);</div>
 <div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;      Job* <span class="keyword">const</span> job = problem_.mutable_jobs(current_job_index_);</div>
@@ -549,7 +549,7 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;    }</div>
 <div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a71055b8df7a1720e76ff99db37a64379">JOBS_READ</a>: {</div>
-<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;      CHECK_EQ(1, words.size());</div>
+<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(1, words.size());</div>
 <div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;      <span class="keyword">const</span> <span class="keywordtype">int</span> <a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a> = transition_index_++;</div>
 <div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;      <span class="keyword">const</span> <span class="keywordtype">int</span> size = declared_job_count_ * declared_machine_count_ + 1;</div>
 <div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;      <span class="keyword">const</span> <span class="keywordtype">int</span> t1 = <a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a> / size;</div>
@@ -578,7 +578,7 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00487"></a><span class="lineno">  487</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00488"></a><span class="lineno">  488</span>&#160;    }</div>
 <div class="line"><a name="l00489"></a><span class="lineno">  489</span>&#160;    <span class="keywordflow">default</span>: {</div>
-<div class="line"><a name="l00490"></a><span class="lineno">  490</span>&#160;      LOG(FATAL) &lt;&lt; <span class="stringliteral">&quot;Should not be here with state &quot;</span> &lt;&lt; parser_state_</div>
+<div class="line"><a name="l00490"></a><span class="lineno">  490</span>&#160;      <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a>) &lt;&lt; <span class="stringliteral">&quot;Should not be here with state &quot;</span> &lt;&lt; parser_state_</div>
 <div class="line"><a name="l00491"></a><span class="lineno">  491</span>&#160;                 &lt;&lt; <span class="stringliteral">&quot;with line &quot;</span> &lt;&lt; line;</div>
 <div class="line"><a name="l00492"></a><span class="lineno">  492</span>&#160;    }</div>
 <div class="line"><a name="l00493"></a><span class="lineno">  493</span>&#160;  }</div>
@@ -589,7 +589,7 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00498"></a><span class="lineno">  498</span>&#160;      absl::StrSplit(line, <span class="charliteral">&#39; &#39;</span>, absl::SkipEmpty());</div>
 <div class="line"><a name="l00499"></a><span class="lineno">  499</span>&#160;  <span class="keywordflow">switch</span> (parser_state_) {</div>
 <div class="line"><a name="l00500"></a><span class="lineno">  500</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a989f1ca141dc0f807d5ebbb65855eda6">JOB_COUNT_READ</a>: {</div>
-<div class="line"><a name="l00501"></a><span class="lineno">  501</span>&#160;      CHECK_EQ(words.size(), declared_machine_count_ * 2 + 3);</div>
+<div class="line"><a name="l00501"></a><span class="lineno">  501</span>&#160;      <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(words.size(), declared_machine_count_ * 2 + 3);</div>
 <div class="line"><a name="l00502"></a><span class="lineno">  502</span>&#160;      Job* <span class="keyword">const</span> job = problem_.mutable_jobs(current_job_index_);</div>
 <div class="line"><a name="l00503"></a><span class="lineno">  503</span>&#160;      <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; declared_machine_count_; ++i) {</div>
 <div class="line"><a name="l00504"></a><span class="lineno">  504</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">int</span> machine_id = strtoint32(words[2 * i]);</div>
@@ -613,20 +613,20 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;      <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;    }</div>
 <div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;    <span class="keywordflow">default</span>: {</div>
-<div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;      LOG(FATAL) &lt;&lt; <span class="stringliteral">&quot;Should not be here with state &quot;</span> &lt;&lt; parser_state_;</div>
+<div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;      <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a>) &lt;&lt; <span class="stringliteral">&quot;Should not be here with state &quot;</span> &lt;&lt; parser_state_;</div>
 <div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;    }</div>
 <div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;  }</div>
 <div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;}</div>
 <div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160; </div>
 <div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;<span class="keywordtype">int</span> JsspParser::strtoint32(<span class="keyword">const</span> std::string&amp; word) {</div>
 <div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160;  <span class="keywordtype">int</span> result;</div>
-<div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160;  CHECK(absl::SimpleAtoi(word, &amp;result));</div>
+<div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160;  <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(absl::SimpleAtoi(word, &amp;result));</div>
 <div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;  <span class="keywordflow">return</span> result;</div>
 <div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160;}</div>
 <div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160; </div>
 <div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160;<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> JsspParser::strtoint64(<span class="keyword">const</span> std::string&amp; word) {</div>
 <div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> result;</div>
-<div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160;  CHECK(absl::SimpleAtoi(word, &amp;result));</div>
+<div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160;  <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(absl::SimpleAtoi(word, &amp;result));</div>
 <div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;  <span class="keywordflow">return</span> result;</div>
 <div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160;}</div>
 <div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160; </div>
@@ -640,22 +640,28 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="ttc" id="ajobshop__scheduling__parser_8h_html"><div class="ttname"><a href="jobshop__scheduling__parser_8h.html">jobshop_scheduling_parser.h</a></div></div>
 <div class="ttc" id="aintegral__types_8h_html"><div class="ttname"><a href="integral__types_8h.html">integral_types.h</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1data_1_1jssp_1_1_jssp_parser_html_acf067a9f09c2b2135f1a80d61e5eb253a71055b8df7a1720e76ff99db37a64379"><div class="ttname"><a href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a71055b8df7a1720e76ff99db37a64379">operations_research::data::jssp::JsspParser::JOBS_READ</a></div><div class="ttdeci">@ JOBS_READ</div><div class="ttdef"><b>Definition:</b> <a href="jobshop__scheduling__parser_8h_source.html#l00047">jobshop_scheduling_parser.h:47</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_accad43a85d781d53381cd53a9894b6ae"><div class="ttname"><a href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a></div><div class="ttdeci">#define LOG(severity)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00420">base/logging.h:420</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1data_1_1jssp_1_1_jssp_parser_html_acf067a9f09c2b2135f1a80d61e5eb253a5033c0670aa8c1454e35960b00d341f0"><div class="ttname"><a href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a5033c0670aa8c1454e35960b00d341f0">operations_research::data::jssp::JsspParser::JOB_LENGTH_READ</a></div><div class="ttdeci">@ JOB_LENGTH_READ</div><div class="ttdef"><b>Definition:</b> <a href="jobshop__scheduling__parser_8h_source.html#l00044">jobshop_scheduling_parser.h:44</a></div></div>
+<div class="ttc" id="alog__severity_8h_html_acdd38e3c9f22f127d7776920e3079eda"><div class="ttname"><a href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a></div><div class="ttdeci">const int FATAL</div><div class="ttdef"><b>Definition:</b> <a href="log__severity_8h_source.html#l00032">log_severity.h:32</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a7cc25402ecd7591b4c39934dd656b1f9"><div class="ttname"><a href="base_2logging_8h.html#a7cc25402ecd7591b4c39934dd656b1f9">CHECK_GE</a></div><div class="ttdeci">#define CHECK_GE(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00701">base/logging.h:701</a></div></div>
 <div class="ttc" id="abase_2logging_8h_html"><div class="ttname"><a href="base_2logging_8h.html">logging.h</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a7e03ec13560fa94a8fea569960d7efc6"><div class="ttname"><a href="base_2logging_8h.html#a7e03ec13560fa94a8fea569960d7efc6">CHECK_GT</a></div><div class="ttdeci">#define CHECK_GT(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00702">base/logging.h:702</a></div></div>
 <div class="ttc" id="apack_8cc_html_ae42ca38a167164c07831993889216903"><div class="ttname"><a href="pack_8cc.html#ae42ca38a167164c07831993889216903">weight</a></div><div class="ttdeci">int64 weight</div><div class="ttdef"><b>Definition:</b> <a href="pack_8cc_source.html#l00509">pack.cc:509</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdoc">The vehicle routing library lets one model and solve generic vehicle routing problems ranging from th...</div><div class="ttdef"><b>Definition:</b> <a href="dense__doubly__linked__list_8h_source.html#l00021">dense_doubly_linked_list.h:21</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1data_1_1jssp_1_1_jssp_parser_html_acf067a9f09c2b2135f1a80d61e5eb253a43d8d716b5a1752bafe4a5159bc0978e"><div class="ttname"><a href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a43d8d716b5a1752bafe4a5159bc0978e">operations_research::data::jssp::JsspParser::JOB_ID_READ</a></div><div class="ttdeci">@ JOB_ID_READ</div><div class="ttdef"><b>Definition:</b> <a href="jobshop__scheduling__parser_8h_source.html#l00043">jobshop_scheduling_parser.h:43</a></div></div>
+<div class="ttc" id="ajobshop__scheduling__parser_8cc_html_a02fb717402fc4a583911d5dcb63044d0"><div class="ttname"><a href="jobshop__scheduling__parser_8cc.html#a02fb717402fc4a583911d5dcb63044d0">ABSL_FLAG</a></div><div class="ttdeci">ABSL_FLAG(int64, jssp_scaling_up_factor, 100000L, &quot;Scaling factor for floating point penalties.&quot;)</div></div>
 <div class="ttc" id="aclassoperations__research_1_1data_1_1jssp_1_1_jssp_parser_html_acf067a9f09c2b2135f1a80d61e5eb253a493a49f850ceb8a1ce3ee7b918c913c2"><div class="ttname"><a href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a493a49f850ceb8a1ce3ee7b918c913c2">operations_research::data::jssp::JsspParser::JOB_READ</a></div><div class="ttdeci">@ JOB_READ</div><div class="ttdef"><b>Definition:</b> <a href="jobshop__scheduling__parser_8h_source.html#l00045">jobshop_scheduling_parser.h:45</a></div></div>
 <div class="ttc" id="aintegral__types_8h_html_a7cde0074dfd288f2d70c0e035dacb28a"><div class="ttname"><a href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a></div><div class="ttdeci">int64_t int64</div><div class="ttdef"><b>Definition:</b> <a href="integral__types_8h_source.html#l00034">integral_types.h:34</a></div></div>
-<div class="ttc" id="ajobshop__scheduling__parser_8cc_html_aeb6bcb9dc7f1e00f1edcb9f41783dc0c"><div class="ttname"><a href="jobshop__scheduling__parser_8cc.html#aeb6bcb9dc7f1e00f1edcb9f41783dc0c">DEFINE_int64</a></div><div class="ttdeci">DEFINE_int64(jssp_scaling_up_factor, 100000L, &quot;Scaling factor for floating point penalties.&quot;)</div></div>
 <div class="ttc" id="afilelineiter_8h_html"><div class="ttname"><a href="filelineiter_8h.html">filelineiter.h</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1data_1_1jssp_1_1_jssp_parser_html_acf067a9f09c2b2135f1a80d61e5eb253a989f1ca141dc0f807d5ebbb65855eda6"><div class="ttname"><a href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a989f1ca141dc0f807d5ebbb65855eda6">operations_research::data::jssp::JsspParser::JOB_COUNT_READ</a></div><div class="ttdeci">@ JOB_COUNT_READ</div><div class="ttdef"><b>Definition:</b> <a href="jobshop__scheduling__parser_8h_source.html#l00040">jobshop_scheduling_parser.h:40</a></div></div>
 <div class="ttc" id="apack_8cc_html_a750b5d744c39a06bfb13e6eb010e35d0"><div class="ttname"><a href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a></div><div class="ttdeci">int index</div><div class="ttdef"><b>Definition:</b> <a href="pack_8cc_source.html#l00508">pack.cc:508</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1data_1_1jssp_1_1_jssp_parser_html_a4c669cb1cb4d98dfea944e9ceec7d33ea149204ee61bdc984b96dd24c5d9afa4c"><div class="ttname"><a href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#a4c669cb1cb4d98dfea944e9ceec7d33ea149204ee61bdc984b96dd24c5d9afa4c">operations_research::data::jssp::JsspParser::SDST</a></div><div class="ttdeci">@ SDST</div><div class="ttdef"><b>Definition:</b> <a href="jobshop__scheduling__parser_8h_source.html#l00032">jobshop_scheduling_parser.h:32</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1data_1_1jssp_1_1_jssp_parser_html_acf067a9f09c2b2135f1a80d61e5eb253a9c954bcf443428c80b0f107b3bc48749"><div class="ttname"><a href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a9c954bcf443428c80b0f107b3bc48749">operations_research::data::jssp::JsspParser::DONE</a></div><div class="ttdeci">@ DONE</div><div class="ttdef"><b>Definition:</b> <a href="jobshop__scheduling__parser_8h_source.html#l00052">jobshop_scheduling_parser.h:51</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1data_1_1jssp_1_1_jssp_parser_html_acf067a9f09c2b2135f1a80d61e5eb253a25b8bec893a20094baafbd6b87e14796"><div class="ttname"><a href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a25b8bec893a20094baafbd6b87e14796">operations_research::data::jssp::JsspParser::SSD_READ</a></div><div class="ttdeci">@ SSD_READ</div><div class="ttdef"><b>Definition:</b> <a href="jobshop__scheduling__parser_8h_source.html#l00048">jobshop_scheduling_parser.h:48</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a7c0ce053b28d53aa4eaf3eb7fb71663b"><div class="ttname"><a href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a></div><div class="ttdeci">#define CHECK_EQ(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00697">base/logging.h:697</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1data_1_1jssp_1_1_jssp_parser_html_a4c669cb1cb4d98dfea944e9ceec7d33eaedf6bd011814bb5d9f5127b5b6e02cde"><div class="ttname"><a href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#a4c669cb1cb4d98dfea944e9ceec7d33eaedf6bd011814bb5d9f5127b5b6e02cde">operations_research::data::jssp::JsspParser::EARLY_TARDY</a></div><div class="ttdeci">@ EARLY_TARDY</div><div class="ttdef"><b>Definition:</b> <a href="jobshop__scheduling__parser_8h_source.html#l00035">jobshop_scheduling_parser.h:35</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1data_1_1jssp_1_1_jssp_parser_html_a2c43b179dfef891ccfd374c7ef671949"><div class="ttname"><a href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#a2c43b179dfef891ccfd374c7ef671949">operations_research::data::jssp::JsspParser::ParseFile</a></div><div class="ttdeci">bool ParseFile(const std::string &amp;filename)</div><div class="ttdef"><b>Definition:</b> <a href="jobshop__scheduling__parser_8cc_source.html#l00053">jobshop_scheduling_parser.cc:53</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_ae4db23f10f5d4aad6d735f5a74cd6f8c"><div class="ttname"><a href="base_2logging_8h.html#ae4db23f10f5d4aad6d735f5a74cd6f8c">CHECK_LE</a></div><div class="ttdeci">#define CHECK_LE(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00699">base/logging.h:699</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1data_1_1jssp_1_1_jssp_parser_html_acf067a9f09c2b2135f1a80d61e5eb253a79bdc0a76041604da1b65ad4eebe7a36"><div class="ttname"><a href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a79bdc0a76041604da1b65ad4eebe7a36">operations_research::data::jssp::JsspParser::SEED_READ</a></div><div class="ttdeci">@ SEED_READ</div><div class="ttdef"><b>Definition:</b> <a href="jobshop__scheduling__parser_8h_source.html#l00042">jobshop_scheduling_parser.h:42</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1data_1_1jssp_1_1_jssp_parser_html_acf067a9f09c2b2135f1a80d61e5eb253a313a7a223d0d02086cb52df4d6934071"><div class="ttname"><a href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a313a7a223d0d02086cb52df4d6934071">operations_research::data::jssp::JsspParser::MACHINE_COUNT_READ</a></div><div class="ttdeci">@ MACHINE_COUNT_READ</div><div class="ttdef"><b>Definition:</b> <a href="jobshop__scheduling__parser_8h_source.html#l00041">jobshop_scheduling_parser.h:41</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1data_1_1jssp_1_1_jssp_parser_html_acf067a9f09c2b2135f1a80d61e5eb253a7e8fe0e7ce71c7ee44d06a521e1d10b1"><div class="ttname"><a href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a7e8fe0e7ce71c7ee44d06a521e1d10b1">operations_research::data::jssp::JsspParser::MACHINE_READ</a></div><div class="ttdeci">@ MACHINE_READ</div><div class="ttdef"><b>Definition:</b> <a href="jobshop__scheduling__parser_8h_source.html#l00049">jobshop_scheduling_parser.h:49</a></div></div>
@@ -665,6 +671,7 @@ $(document).ready(function(){initNavTree('jobshop__scheduling__parser_8cc_source
 <div class="ttc" id="aclassoperations__research_1_1data_1_1jssp_1_1_jssp_parser_html_acf067a9f09c2b2135f1a80d61e5eb253a13d000b4d7dc70d90239b7430d1eb6b2"><div class="ttname"><a href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253a13d000b4d7dc70d90239b7430d1eb6b2">operations_research::data::jssp::JsspParser::START</a></div><div class="ttdeci">@ START</div><div class="ttdef"><b>Definition:</b> <a href="jobshop__scheduling__parser_8h_source.html#l00039">jobshop_scheduling_parser.h:39</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1data_1_1jssp_1_1_jssp_parser_html_a4c669cb1cb4d98dfea944e9ceec7d33eac381e22723c03948e65aa044f852de10"><div class="ttname"><a href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#a4c669cb1cb4d98dfea944e9ceec7d33eac381e22723c03948e65aa044f852de10">operations_research::data::jssp::JsspParser::TARDINESS</a></div><div class="ttdeci">@ TARDINESS</div><div class="ttdef"><b>Definition:</b> <a href="jobshop__scheduling__parser_8h_source.html#l00033">jobshop_scheduling_parser.h:33</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1data_1_1jssp_1_1_jssp_parser_html_a4c669cb1cb4d98dfea944e9ceec7d33eab111a04ada22c98d11fdabc88bc07b20"><div class="ttname"><a href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#a4c669cb1cb4d98dfea944e9ceec7d33eab111a04ada22c98d11fdabc88bc07b20">operations_research::data::jssp::JsspParser::TAILLARD</a></div><div class="ttdeci">@ TAILLARD</div><div class="ttdef"><b>Definition:</b> <a href="jobshop__scheduling__parser_8h_source.html#l00030">jobshop_scheduling_parser.h:30</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a3e1cfef60e774a81f30eaddf26a3a274"><div class="ttname"><a href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a></div><div class="ttdeci">#define CHECK(condition)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00495">base/logging.h:495</a></div></div>
 <div class="ttc" id="acommandlineflags_8h_html"><div class="ttname"><a href="commandlineflags_8h.html">commandlineflags.h</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1data_1_1jssp_1_1_jssp_parser_html_acf067a9f09c2b2135f1a80d61e5eb253afaab9bcdd6e7a595c96c12e09b630d41"><div class="ttname"><a href="classoperations__research_1_1data_1_1jssp_1_1_jssp_parser.html#acf067a9f09c2b2135f1a80d61e5eb253afaab9bcdd6e7a595c96c12e09b630d41">operations_research::data::jssp::JsspParser::NAME_READ</a></div><div class="ttdeci">@ NAME_READ</div><div class="ttdef"><b>Definition:</b> <a href="jobshop__scheduling__parser_8h_source.html#l00046">jobshop_scheduling_parser.h:46</a></div></div>
 <div class="ttc" id="aclass_file_lines_html"><div class="ttname"><a href="class_file_lines.html">FileLines</a></div><div class="ttdef"><b>Definition:</b> <a href="filelineiter_8h_source.html#l00115">filelineiter.h:115</a></div></div>

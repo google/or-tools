@@ -13,7 +13,6 @@
 """Code sample that solves a model and displays all solutions."""
 
 # [START program]
-
 from ortools.sat.python import cp_model
 
 

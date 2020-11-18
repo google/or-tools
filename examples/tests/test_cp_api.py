@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """ Various calls to CP api from python to verify they work."""
-from __future__ import print_function
 
 import unittest
 

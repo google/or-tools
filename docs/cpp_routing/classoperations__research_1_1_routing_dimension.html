@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.0</span>
+                <span id="sfml">Google OR-Tools 8.1</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -95,7 +95,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_routing_
 <p>if j == next(i), cumuls(j) = cumuls(i) + transits(i) + slacks(i) + state_dependent_transits(i)</p>
 <p>where slack is a positive slack variable (can represent waiting times for a time dimension), and state_dependent_transits is a non-purely functional version of transits_. Favour transits over state_dependent_transits when possible, because purely functional callbacks allow more optimisations and make the model faster and easier to solve. for a given vehicle, it is passed as an external vector, it would be better to have this information here. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02288">2288</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02331">2331</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
@@ -121,23 +121,23 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a175989a601fa29235dce43255647ab01"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#a175989a601fa29235dce43255647ab01">GetTransitValueFromClass</a> (int64 from_index, int64 to_index, int64 vehicle_class) const</td></tr>
 <tr class="memdesc:a175989a601fa29235dce43255647ab01"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as above but taking a vehicle class of the dimension instead of a vehicle (the class of a vehicle can be obtained with <a class="el" href="classoperations__research_1_1_routing_dimension.html#aa46d01169492b00c999344e8982ddd0f">vehicle_to_class()</a>).  <a href="classoperations__research_1_1_routing_dimension.html#a175989a601fa29235dce43255647ab01">More...</a><br /></td></tr>
 <tr class="separator:a175989a601fa29235dce43255647ab01"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4d87db39b37a97bcf6669448a67f0356"><td class="memItemLeft" align="right" valign="top">IntVar *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#a4d87db39b37a97bcf6669448a67f0356">CumulVar</a> (int64 index) const</td></tr>
+<tr class="memitem:a4d87db39b37a97bcf6669448a67f0356"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#a4d87db39b37a97bcf6669448a67f0356">CumulVar</a> (int64 index) const</td></tr>
 <tr class="memdesc:a4d87db39b37a97bcf6669448a67f0356"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the cumul, transit and slack variables for the given node (given as int64 var index).  <a href="classoperations__research_1_1_routing_dimension.html#a4d87db39b37a97bcf6669448a67f0356">More...</a><br /></td></tr>
 <tr class="separator:a4d87db39b37a97bcf6669448a67f0356"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abad8b7edc9f675056db28171da1da655"><td class="memItemLeft" align="right" valign="top">IntVar *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#abad8b7edc9f675056db28171da1da655">TransitVar</a> (int64 index) const</td></tr>
+<tr class="memitem:abad8b7edc9f675056db28171da1da655"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#abad8b7edc9f675056db28171da1da655">TransitVar</a> (int64 index) const</td></tr>
 <tr class="separator:abad8b7edc9f675056db28171da1da655"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5997ca01d12b18b158ac0232acc731dd"><td class="memItemLeft" align="right" valign="top">IntVar *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#a5997ca01d12b18b158ac0232acc731dd">FixedTransitVar</a> (int64 index) const</td></tr>
+<tr class="memitem:a5997ca01d12b18b158ac0232acc731dd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#a5997ca01d12b18b158ac0232acc731dd">FixedTransitVar</a> (int64 index) const</td></tr>
 <tr class="separator:a5997ca01d12b18b158ac0232acc731dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac300c6449a65333961d8abdd7ce40a7a"><td class="memItemLeft" align="right" valign="top">IntVar *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#ac300c6449a65333961d8abdd7ce40a7a">SlackVar</a> (int64 index) const</td></tr>
+<tr class="memitem:ac300c6449a65333961d8abdd7ce40a7a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#ac300c6449a65333961d8abdd7ce40a7a">SlackVar</a> (int64 index) const</td></tr>
 <tr class="separator:ac300c6449a65333961d8abdd7ce40a7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1b6f521fdc9dff38b7e065c838fa54a3"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; IntVar * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#a1b6f521fdc9dff38b7e065c838fa54a3">cumuls</a> () const</td></tr>
+<tr class="memitem:a1b6f521fdc9dff38b7e065c838fa54a3"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#a1b6f521fdc9dff38b7e065c838fa54a3">cumuls</a> () const</td></tr>
 <tr class="memdesc:a1b6f521fdc9dff38b7e065c838fa54a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Like <a class="el" href="classoperations__research_1_1_routing_dimension.html#a4d87db39b37a97bcf6669448a67f0356" title="Get the cumul, transit and slack variables for the given node (given as int64 var index).">CumulVar()</a>, <a class="el" href="classoperations__research_1_1_routing_dimension.html#abad8b7edc9f675056db28171da1da655">TransitVar()</a>, <a class="el" href="classoperations__research_1_1_routing_dimension.html#ac300c6449a65333961d8abdd7ce40a7a">SlackVar()</a> but return the whole variable vectors instead (indexed by int64 var index).  <a href="classoperations__research_1_1_routing_dimension.html#a1b6f521fdc9dff38b7e065c838fa54a3">More...</a><br /></td></tr>
 <tr class="separator:a1b6f521fdc9dff38b7e065c838fa54a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6a4b2eb4cf5999b4e84ef3da78beb42c"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; IntVar * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#a6a4b2eb4cf5999b4e84ef3da78beb42c">fixed_transits</a> () const</td></tr>
+<tr class="memitem:a6a4b2eb4cf5999b4e84ef3da78beb42c"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#a6a4b2eb4cf5999b4e84ef3da78beb42c">fixed_transits</a> () const</td></tr>
 <tr class="separator:a6a4b2eb4cf5999b4e84ef3da78beb42c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6f170c2c3b2a0c5f616aa449a38d84fa"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; IntVar * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#a6f170c2c3b2a0c5f616aa449a38d84fa">transits</a> () const</td></tr>
+<tr class="memitem:a6f170c2c3b2a0c5f616aa449a38d84fa"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#a6f170c2c3b2a0c5f616aa449a38d84fa">transits</a> () const</td></tr>
 <tr class="separator:a6f170c2c3b2a0c5f616aa449a38d84fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adeac1b3791fe4e3ba366bbb60c268ae7"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; IntVar * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#adeac1b3791fe4e3ba366bbb60c268ae7">slacks</a> () const</td></tr>
+<tr class="memitem:adeac1b3791fe4e3ba366bbb60c268ae7"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#adeac1b3791fe4e3ba366bbb60c268ae7">slacks</a> () const</td></tr>
 <tr class="separator:adeac1b3791fe4e3ba366bbb60c268ae7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aff15c149ac7cbb96d340d8c1370d5aea"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; SortedDisjointIntervalList &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#aff15c149ac7cbb96d340d8c1370d5aea">forbidden_intervals</a> () const</td></tr>
 <tr class="memdesc:aff15c149ac7cbb96d340d8c1370d5aea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns forbidden intervals for each node.  <a href="classoperations__research_1_1_routing_dimension.html#aff15c149ac7cbb96d340d8c1370d5aea">More...</a><br /></td></tr>
@@ -209,10 +209,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a51eadbd617f6658396e5ba790f6b0c19"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#a51eadbd617f6658396e5ba790f6b0c19">GetCumulVarSoftLowerBoundCoefficient</a> (int64 index) const</td></tr>
 <tr class="memdesc:a51eadbd617f6658396e5ba790f6b0c19"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the cost coefficient of the soft lower bound of a cumul variable for a given variable index.  <a href="classoperations__research_1_1_routing_dimension.html#a51eadbd617f6658396e5ba790f6b0c19">More...</a><br /></td></tr>
 <tr class="separator:a51eadbd617f6658396e5ba790f6b0c19"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae34995163df20f89961e907ac3b25532"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#ae34995163df20f89961e907ac3b25532">SetBreakIntervalsOfVehicle</a> (std::vector&lt; IntervalVar * &gt; breaks, int vehicle, int pre_travel_evaluator, int post_travel_evaluator)</td></tr>
+<tr class="memitem:ae34995163df20f89961e907ac3b25532"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#ae34995163df20f89961e907ac3b25532">SetBreakIntervalsOfVehicle</a> (std::vector&lt; <a class="el" href="classoperations__research_1_1_interval_var.html">IntervalVar</a> * &gt; breaks, int vehicle, int pre_travel_evaluator, int post_travel_evaluator)</td></tr>
 <tr class="memdesc:ae34995163df20f89961e907ac3b25532"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the breaks for a given vehicle.  <a href="classoperations__research_1_1_routing_dimension.html#ae34995163df20f89961e907ac3b25532">More...</a><br /></td></tr>
 <tr class="separator:ae34995163df20f89961e907ac3b25532"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae0ff0210afb5c8d829a9d2158833c50f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#ae0ff0210afb5c8d829a9d2158833c50f">SetBreakIntervalsOfVehicle</a> (std::vector&lt; IntervalVar * &gt; breaks, int vehicle, std::vector&lt; int64 &gt; node_visit_transits)</td></tr>
+<tr class="memitem:ae0ff0210afb5c8d829a9d2158833c50f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#ae0ff0210afb5c8d829a9d2158833c50f">SetBreakIntervalsOfVehicle</a> (std::vector&lt; <a class="el" href="classoperations__research_1_1_interval_var.html">IntervalVar</a> * &gt; breaks, int vehicle, std::vector&lt; int64 &gt; node_visit_transits)</td></tr>
 <tr class="memdesc:ae0ff0210afb5c8d829a9d2158833c50f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deprecated, sets pre_travel(i, j) = node_visit_transit[i].  <a href="classoperations__research_1_1_routing_dimension.html#ae0ff0210afb5c8d829a9d2158833c50f">More...</a><br /></td></tr>
 <tr class="separator:ae0ff0210afb5c8d829a9d2158833c50f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a68c42bd26c7f0a2f1a0247e51a45aab5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#a68c42bd26c7f0a2f1a0247e51a45aab5">SetBreakDistanceDurationOfVehicle</a> (int64 distance, int64 duration, int vehicle)</td></tr>
@@ -224,10 +224,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a6debc638c02bfb2b4afe0afccdd98ca5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#a6debc638c02bfb2b4afe0afccdd98ca5">HasBreakConstraints</a> () const</td></tr>
 <tr class="memdesc:a6debc638c02bfb2b4afe0afccdd98ca5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if any break interval or break distance was defined.  <a href="classoperations__research_1_1_routing_dimension.html#a6debc638c02bfb2b4afe0afccdd98ca5">More...</a><br /></td></tr>
 <tr class="separator:a6debc638c02bfb2b4afe0afccdd98ca5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9535f9b1e14dc539e25ef9dffacbd3d7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#a9535f9b1e14dc539e25ef9dffacbd3d7">SetBreakIntervalsOfVehicle</a> (std::vector&lt; IntervalVar * &gt; breaks, int vehicle, std::vector&lt; int64 &gt; node_visit_transits, std::function&lt; int64(int64, int64)&gt; group_delays)</td></tr>
+<tr class="memitem:a9535f9b1e14dc539e25ef9dffacbd3d7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#a9535f9b1e14dc539e25ef9dffacbd3d7">SetBreakIntervalsOfVehicle</a> (std::vector&lt; <a class="el" href="classoperations__research_1_1_interval_var.html">IntervalVar</a> * &gt; breaks, int vehicle, std::vector&lt; int64 &gt; node_visit_transits, std::function&lt; int64(int64, int64)&gt; group_delays)</td></tr>
 <tr class="memdesc:a9535f9b1e14dc539e25ef9dffacbd3d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deprecated, sets pre_travel(i, j) = node_visit_transit[i] and post_travel(i, j) = group_delays(i, j).  <a href="classoperations__research_1_1_routing_dimension.html#a9535f9b1e14dc539e25ef9dffacbd3d7">More...</a><br /></td></tr>
 <tr class="separator:a9535f9b1e14dc539e25ef9dffacbd3d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1016552c3e687e1a555e1c6cf7525e0e"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; IntervalVar * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#a1016552c3e687e1a555e1c6cf7525e0e">GetBreakIntervalsOfVehicle</a> (int vehicle) const</td></tr>
+<tr class="memitem:a1016552c3e687e1a555e1c6cf7525e0e"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="classoperations__research_1_1_interval_var.html">IntervalVar</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#a1016552c3e687e1a555e1c6cf7525e0e">GetBreakIntervalsOfVehicle</a> (int vehicle) const</td></tr>
 <tr class="memdesc:a1016552c3e687e1a555e1c6cf7525e0e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the break intervals set by <a class="el" href="classoperations__research_1_1_routing_dimension.html#ae34995163df20f89961e907ac3b25532" title="Sets the breaks for a given vehicle.">SetBreakIntervalsOfVehicle()</a>.  <a href="classoperations__research_1_1_routing_dimension.html#a1016552c3e687e1a555e1c6cf7525e0e">More...</a><br /></td></tr>
 <tr class="separator:a1016552c3e687e1a555e1c6cf7525e0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acbe051ae21f1e3a5c66455e4c408cffd"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; std::pair&lt; int64, int64 &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html#acbe051ae21f1e3a5c66455e4c408cffd">GetBreakDistanceDurationOfVehicle</a> (int vehicle) const</td></tr>
@@ -307,7 +307,7 @@ Public Member Functions</h2></td></tr>
 <p>Limits, in terms of maximum difference between the cumul variables, between the pickup and delivery alternatives belonging to a single pickup/delivery pair in the <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a>. </p>
 <p>The indices passed to the function respectively correspond to the position of the pickup in the vector of pickup alternatives, and delivery position in the delivery alternatives for this pickup/delivery pair. These limits should only be set when each node index appears in at most one pickup/delivery pair, i.e. each pickup (delivery) index is in a single pickup/delivery pair.first (pair.second). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02561">2561</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02601">2601</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -370,7 +370,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02585">2585</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02625">2625</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -398,7 +398,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02577">2577</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02617">2617</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -428,7 +428,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns true iff the transit evaluator of 'vehicle' is positive for all arcs. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02383">2383</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02426">2426</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -457,7 +457,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the parent in the dependency tree if any or nullptr otherwise. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02532">2532</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02572">2572</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -471,7 +471,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const std::vector&lt;IntVar*&gt;&amp; cumuls </td>
+          <td class="memname">const std::vector&lt;<a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a>*&gt;&amp; cumuls </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -486,7 +486,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Like <a class="el" href="classoperations__research_1_1_routing_dimension.html#a4d87db39b37a97bcf6669448a67f0356" title="Get the cumul, transit and slack variables for the given node (given as int64 var index).">CumulVar()</a>, <a class="el" href="classoperations__research_1_1_routing_dimension.html#abad8b7edc9f675056db28171da1da655">TransitVar()</a>, <a class="el" href="classoperations__research_1_1_routing_dimension.html#ac300c6449a65333961d8abdd7ce40a7a">SlackVar()</a> but return the whole variable vectors instead (indexed by int64 var index). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02314">2314</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02357">2357</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -500,7 +500,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">IntVar* CumulVar </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a>* CumulVar </td>
           <td>(</td>
           <td class="paramtype">int64&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
@@ -516,7 +516,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Get the cumul, transit and slack variables for the given node (given as int64 var index). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02306">2306</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02349">2349</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -530,7 +530,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const std::vector&lt;IntVar*&gt;&amp; fixed_transits </td>
+          <td class="memname">const std::vector&lt;<a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a>*&gt;&amp; fixed_transits </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -543,7 +543,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02315">2315</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02358">2358</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -557,7 +557,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">IntVar* FixedTransitVar </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a>* FixedTransitVar </td>
           <td>(</td>
           <td class="paramtype">int64&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
@@ -571,7 +571,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02308">2308</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02351">2351</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -600,7 +600,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns forbidden intervals for each node. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02320">2320</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02363">2363</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -667,7 +667,7 @@ Public Member Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const std::vector&lt;IntervalVar*&gt;&amp; GetBreakIntervalsOfVehicle </td>
+          <td class="memname">const std::vector&lt;<a class="el" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>*&gt;&amp; GetBreakIntervalsOfVehicle </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>vehicle</em></td><td>)</td>
@@ -823,7 +823,7 @@ Public Member Functions</h2></td></tr>
 <p>min_value is in a forbidden interval.</p>
 <p>min_value is not forbidden.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02329">2329</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02372">2372</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -850,7 +850,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02609">2609</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02649">2649</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -893,7 +893,7 @@ Public Member Functions</h2></td></tr>
 <p>max_value is in a forbidden interval.</p>
 <p>max_value is not forbidden.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02348">2348</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02391">2391</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -921,7 +921,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02613">2613</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02653">2653</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -948,7 +948,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02580">2580</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02620">2620</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -977,7 +977,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Accessors. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02547">2547</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02587">2587</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1077,7 +1077,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02654">2654</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02694">2694</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1105,7 +1105,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02634">2634</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02674">2674</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1133,7 +1133,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02597">2597</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02637">2637</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1161,7 +1161,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02589">2589</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02629">2629</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1243,7 +1243,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Same as above but taking a vehicle class of the dimension instead of a vehicle (the class of a vehicle can be obtained with <a class="el" href="classoperations__research_1_1_routing_dimension.html#aa46d01169492b00c999344e8982ddd0f">vehicle_to_class()</a>). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02299">2299</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02342">2342</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1274,7 +1274,7 @@ Public Member Functions</h2></td></tr>
 <p>Returns the unary callback evaluating the transit value between two node indices for a given vehicle. </p>
 <p>If the corresponding callback is not unary, returns a null callback. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02376">2376</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02419">2419</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1301,7 +1301,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02605">2605</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02645">2645</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1424,7 +1424,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02651">2651</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02691">2691</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1451,7 +1451,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02631">2631</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02671">2671</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1499,7 +1499,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the model on which the dimension was created. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02292">2292</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02335">2335</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1528,7 +1528,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the name of the dimension. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02543">2543</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02583">2583</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1578,7 +1578,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void SetBreakIntervalsOfVehicle </td>
           <td>(</td>
-          <td class="paramtype">std::vector&lt; IntervalVar * &gt;&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classoperations__research_1_1_interval_var.html">IntervalVar</a> * &gt;&#160;</td>
           <td class="paramname"><em>breaks</em>, </td>
         </tr>
         <tr>
@@ -1622,7 +1622,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void SetBreakIntervalsOfVehicle </td>
           <td>(</td>
-          <td class="paramtype">std::vector&lt; IntervalVar * &gt;&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classoperations__research_1_1_interval_var.html">IntervalVar</a> * &gt;&#160;</td>
           <td class="paramname"><em>breaks</em>, </td>
         </tr>
         <tr>
@@ -1658,7 +1658,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void SetBreakIntervalsOfVehicle </td>
           <td>(</td>
-          <td class="paramtype">std::vector&lt; IntervalVar * &gt;&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classoperations__research_1_1_interval_var.html">IntervalVar</a> * &gt;&#160;</td>
           <td class="paramname"><em>breaks</em>, </td>
         </tr>
         <tr>
@@ -1755,7 +1755,7 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Sets a soft lower bound to the cumul variable of a given variable index. </p>
-<p>If the value of the cumul variable is less than the bound, a cost proportional to the difference between this value and the bound is added to the cost function of the model: cumulVar &gt; lower_bound -&gt; cost = 0 cumulVar &lt;= lower_bound -&gt; cost = coefficient * (lower_bound - cumulVar). This is also handy to model earliness costs when the dimension represents time. Note: Using soft lower and upper bounds or span costs together is, as of 6/2014, not well supported in the sense that an optimal schedule is not guaranteed. </p>
+<p>If the value of the cumul variable is less than the bound, a cost proportional to the difference between this value and the bound is added to the cost function of the model: cumulVar &gt; lower_bound -&gt; cost = 0 cumulVar &lt;= lower_bound -&gt; cost = coefficient * (lower_bound - cumulVar). This is also handy to model earliness costs when the dimension represents time. </p>
 
 </div>
 </div>
@@ -1881,7 +1881,7 @@ Public Member Functions</h2></td></tr>
 
 <p>If the span of vehicle on this dimension is larger than bound, the cost will be increased by cost * (span - bound)^2. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02641">2641</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02681">2681</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1921,7 +1921,7 @@ Public Member Functions</h2></td></tr>
 
 <p>If the span of vehicle on this dimension is larger than bound, the cost will be increased by cost * (span - bound). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02623">2623</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02663">2663</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2039,7 +2039,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const std::vector&lt;IntVar*&gt;&amp; slacks </td>
+          <td class="memname">const std::vector&lt;<a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a>*&gt;&amp; slacks </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -2052,7 +2052,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02317">2317</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02360">2360</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2066,7 +2066,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">IntVar* SlackVar </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a>* SlackVar </td>
           <td>(</td>
           <td class="paramtype">int64&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
@@ -2080,7 +2080,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02309">2309</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02352">2352</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2110,7 +2110,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the callback evaluating the transit value between two node indices for a given vehicle. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02369">2369</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02412">2412</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2124,7 +2124,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const std::vector&lt;IntVar*&gt;&amp; transits </td>
+          <td class="memname">const std::vector&lt;<a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a>*&gt;&amp; transits </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -2137,7 +2137,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02316">2316</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02359">2359</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2151,7 +2151,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">IntVar* TransitVar </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a>* TransitVar </td>
           <td>(</td>
           <td class="paramtype">int64&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
@@ -2165,7 +2165,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02307">2307</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02350">2350</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2194,7 +2194,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the capacities for all vehicles. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02364">2364</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02407">2407</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2221,7 +2221,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02601">2601</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02641">2641</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2248,7 +2248,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02593">2593</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02633">2633</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2276,7 +2276,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02387">2387</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02430">2430</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
