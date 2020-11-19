@@ -376,6 +376,8 @@ def solve_shift_scheduling(params, output_proto):
     solver = cp_model.CpSolver()
     if params:
         text_format.Parse(params, solver.parameters)
+    else:
+        text_format.Parse(r'max_time_in_seconds:10.0', solver.parameters)
     solution_printer = cp_model.ObjectiveSolutionPrinter()
     status = solver.SolveWithSolutionCallback(model, solution_printer)
 
