@@ -20,7 +20,7 @@ UNIX_SWIG_BINARY ?= swig
 PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
 
 # Tags of dependencies to checkout.
-PROTOBUF_TAG = v3.13.0
+PROTOBUF_TAG = v3.14.0
 ABSL_TAG = 20200923.2
 CBC_TAG = 2.10.5
 CGL_TAG = 0.60.3
