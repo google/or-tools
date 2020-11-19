@@ -114,7 +114,7 @@ note: You may need to set
 in order for CMake to find your OR-Tools installation.
 
 ```cmake
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.14)
 project(myproj VERSION 1.0)
 
 find_package(ortools CONFIG REQUIRED)
@@ -141,7 +141,7 @@ Note: The **ortools::ortools** target is in this case an ALIAS library target
 for the **ortools** library target.
 
 ```cmake
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.14)
 project(myproj VERSION 1.0)
 
 add_subdirectory(or-tools)
