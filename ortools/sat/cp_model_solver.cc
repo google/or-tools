@@ -1554,11 +1554,13 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
     std::vector<BooleanVariable> bool_vars;
     std::vector<IntegerVariable> int_vars;
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    absl::flat_hash_set<BooleanVariable> visited;
     for (int v = 0; v < model_proto.variables_size(); ++v) {
       if (mapping.IsBoolean(v)) {
-        const Literal literal = mapping.Literal(v);
-        if (literal.IsPositive()) {
-          bool_vars.push_back(literal.Variable());
+        const BooleanVariable bool_var = mapping.Literal(v).Variable();
+        if (!visited.contains(bool_var)) {
+          visited.insert(bool_var);
+          bool_vars.push_back(bool_var);
         }
       } else {
         IntegerVariable var = mapping.Integer(v);

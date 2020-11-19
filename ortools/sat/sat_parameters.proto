@@ -756,7 +756,7 @@ message SatParameters {
   // every root node.
   optional int64 probing_period_at_root = 142 [default = 0];
 
-  // If true, this worker will continuously probe Boolean variables, and integer
+  // If true, search will continuously probe Boolean variables, and integer
   // variable bounds.
   optional bool use_probing_search = 176 [default = false];
 

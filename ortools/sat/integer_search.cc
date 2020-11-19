@@ -783,10 +783,9 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
           ++num_decisions_without_probing >=
               sat_parameters.probing_period_at_root()) {
         num_decisions_without_probing = 0;
-        // TODO(user): Be smarter about what variables we probe, we can also
-        // do more than one.
-        if (!prober->ClearStatisticsAndResetSearch() ||
-            !prober->ProbeOneVariable(Literal(decision).Variable())) {
+        // TODO(user,user): Be smarter about what variables we probe, we can
+        // also do more than one.
+        if (!prober->ProbeOneVariable(Literal(decision).Variable())) {
           return SatSolver::INFEASIBLE;
         }
         DCHECK_EQ(sat_solver->CurrentDecisionLevel(), 0);
@@ -936,7 +935,7 @@ SatSolver::Status ContinuousProbing(
 
   int loop = 0;
   while (!time_limit->LimitReached()) {
-    VLOG(1) << "Loop " << loop++;
+    VLOG(1) << "Probing loop " << loop++;
 
     // Sync the bounds first.
     auto SyncBounds = [solver, &level_zero_callbacks]() {
@@ -956,28 +955,39 @@ SatSolver::Status ContinuousProbing(
       return SatSolver::INFEASIBLE;
     }
 
+    // TODO(user): Explore fast probing methods.
+
+    // Probe each Boolean variable at most once per loop.
+    absl::flat_hash_set<BooleanVariable> probed;
+
     // Probe variable bounds.
+    // TODO(user,user): Probe optional variables.
     for (const IntegerVariable int_var : int_vars) {
       if (integer_trail->IsFixed(int_var) ||
           integer_trail->IsOptional(int_var)) {
         continue;
       }
-      IntegerLiteral fix_to_lb = IntegerLiteral::LowerOrEqual(
-          int_var, integer_trail->LowerBound(int_var));
-      const Literal shave_lb = encoder->GetOrCreateAssociatedLiteral(fix_to_lb);
-      if (shave_lb.IsPositive()) {
-        if (!prober->ClearStatisticsAndResetSearch() ||
-            !prober->ProbeOneVariable(shave_lb.Variable())) {
+
+      const BooleanVariable shave_lb =
+          encoder
+              ->GetOrCreateAssociatedLiteral(IntegerLiteral::LowerOrEqual(
+                  int_var, integer_trail->LowerBound(int_var)))
+              .Variable();
+      if (!probed.contains(shave_lb)) {
+        probed.insert(shave_lb);
+        if (!prober->ProbeOneVariable(shave_lb)) {
           return SatSolver::INFEASIBLE;
         }
       }
 
-      IntegerLiteral fix_to_ub = IntegerLiteral::GreaterOrEqual(
-          int_var, integer_trail->UpperBound(int_var));
-      const Literal shave_ub = encoder->GetOrCreateAssociatedLiteral(fix_to_ub);
-      if (shave_ub.IsPositive()) {
-        if (!prober->ClearStatisticsAndResetSearch() ||
-            !prober->ProbeOneVariable(shave_ub.Variable())) {
+      const BooleanVariable shave_ub =
+          encoder
+              ->GetOrCreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
+                  int_var, integer_trail->UpperBound(int_var)))
+              .Variable();
+      if (!probed.contains(shave_ub)) {
+        probed.insert(shave_ub);
+        if (!prober->ProbeOneVariable(shave_ub)) {
           return SatSolver::INFEASIBLE;
         }
       }
@@ -985,24 +995,24 @@ SatSolver::Status ContinuousProbing(
       if (!SyncBounds()) {
         return SatSolver::INFEASIBLE;
       }
+      if (time_limit->LimitReached()) {
+        return SatSolver::LIMIT_REACHED;
+      }
     }
 
     // Probe Boolean variables from the model.
-    int count = 0;
     for (const BooleanVariable& bool_var : bool_vars) {
-      if (!solver->Assignment().LiteralIsAssigned(Literal(bool_var, true))) {
-        if (!prober->ClearStatisticsAndResetSearch() ||
-            !prober->ProbeOneVariable(bool_var)) {
-          return SatSolver::INFEASIBLE;
-        }
+      if (solver->Assignment().VariableIsAssigned(bool_var)) continue;
+      if (time_limit->LimitReached()) {
+        return SatSolver::LIMIT_REACHED;
       }
-      if (++count > 10) {
-        count = 0;
-        if (!SyncBounds()) {
+      if (!SyncBounds()) {
+        return SatSolver::INFEASIBLE;
+      }
+      if (!probed.contains(bool_var)) {
+        probed.insert(bool_var);
+        if (!prober->ProbeOneVariable(bool_var)) {
           return SatSolver::INFEASIBLE;
-        }
-        if (time_limit->LimitReached()) {
-          return SatSolver::LIMIT_REACHED;
         }
       }
     }

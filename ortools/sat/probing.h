@@ -73,30 +73,38 @@ class Prober {
 
   bool ProbeOneVariable(BooleanVariable b);
 
-  bool ClearStatisticsAndResetSearch();
-
  private:
-  Model* model_;
-  SparseBitset<LiteralIndex> propagated_;
-  std::vector<IntegerLiteral> new_integer_bounds_;
-  Trail* trail_;
+  bool ProbeOneVariableInternal(BooleanVariable b);
+
+  // Model owned classes.
+  const Trail& trail_;
+  const VariablesAssignment& assignment_;
   IntegerTrail* integer_trail_;
   ImpliedBounds* implied_bounds_;
   SatSolver* sat_solver_;
-  BinaryImplicationGraph* implication_graph_;
   TimeLimit* time_limit_;
+  BinaryImplicationGraph* implication_graph_;
+
+  // To detect literal x that must be true because b => x and not(b) => x.
+  // When probing b, we add all propagated literal to propagated, and when
+  // probing not(b) we check if any are already there.
+  SparseBitset<LiteralIndex> propagated_;
+
+  // Modifications found during probing.
   std::vector<Literal> to_fix_at_true_;
-  int num_new_holes_;
-  int num_new_binary_;
-  int num_new_integer_bounds_;
+  std::vector<IntegerLiteral> new_integer_bounds_;
   std::vector<std::pair<Literal, Literal>> new_binary_clauses_;
-  int id_;
+
+  // Probing statistics.
+  int num_new_holes_ = 0;
+  int num_new_binary_ = 0;
+  int num_new_integer_bounds_ = 0;
 };
 
 // Try to randomly tweak the search and stop at the first conflict each time.
-// This can sometimes find feasible solution, but more importantly, it is a
-// form of probing that can sometimes find small and interesting conflicts or
-// fix variables. This seems to work well on the SAT14/app/rook-* problems and
+// This can sometimes find feasible solution, but more importantly, it is a form
+// of probing that can sometimes find small and interesting conflicts or fix
+// variables. This seems to work well on the SAT14/app/rook-* problems and
 // do fix more variables if run before probing.
 //
 // If a feasible SAT solution is found (i.e. all Boolean assigned), then this
@@ -116,20 +124,19 @@ struct ProbingOptions {
   // else can be deduced and everything has been probed until fix-point. The
   // fix point depend on the extract_binay_clauses option:
   // - If false, we will just stop when no more failed literal can be found.
-  // - If true, we will do more work and stop when all failed literal have
-  // been
+  // - If true, we will do more work and stop when all failed literal have been
   //   found and all hyper binary resolution have been performed.
   //
   // TODO(user): We can also provide a middle ground and probe all failed
   // literal but do not extract all binary clauses.
   //
-  // Note that the fix-point is unique, modulo the equivalent literal
-  // detection we do. And if we add binary clauses, modulo the transitive
-  // reduction of the binary implication graph.
+  // Note that the fix-point is unique, modulo the equivalent literal detection
+  // we do. And if we add binary clauses, modulo the transitive reduction of the
+  // binary implication graph.
   //
-  // To be fast, we only use the binary clauses in the binary implication
-  // graph for the equivalence detection. So the power of the equivalence
-  // detection changes if the extract_binay_clauses option is true or not.
+  // To be fast, we only use the binary clauses in the binary implication graph
+  // for the equivalence detection. So the power of the equivalence detection
+  // changes if the extract_binay_clauses option is true or not.
   //
   // TODO(user): The fix point is not yet reached since we don't currently
   // simplify non-binary clauses with these equivalence, but we will.
@@ -144,24 +151,22 @@ struct ProbingOptions {
   // With these extra clause the power of the equivalence literal detection
   // using only the binary implication graph with increase. Note that it is
   // possible to do exactly the same thing without adding these binary clause
-  // first. This is what is done by yet another probing algorithm (currently
-  // in simplification.cc).
+  // first. This is what is done by yet another probing algorithm (currently in
+  // simplification.cc).
   //
   // TODO(user): Note that adding binary clause before/during the SAT presolve
-  // is currently not always a good idea. This is because we don't simplify
-  // the other clause as much as we could. Also, there can be up to a
-  // quadratic number of clauses added this way, which might slow down things
-  // a lot. But then because of the deterministic limit, we usually cannot add
-  // too much clauses, even for huge problems, since we will reach the limit
-  // before that.
+  // is currently not always a good idea. This is because we don't simplify the
+  // other clause as much as we could. Also, there can be up to a quadratic
+  // number of clauses added this way, which might slow down things a lot. But
+  // then because of the deterministic limit, we usually cannot add too much
+  // clauses, even for huge problems, since we will reach the limit before that.
   bool extract_binary_clauses = false;
 
-  // Use a version of the "Tree look" algorithm as explained in the paper
-  // above. This is usually faster and more efficient. Note that when
-  // extracting binary clauses it might currently produce more "redundant" one
-  // in the sense that a transitive reduction of the binary implication graph
-  // after all hyper binary resolution have been performed may need to do more
-  // work.
+  // Use a version of the "Tree look" algorithm as explained in the paper above.
+  // This is usually faster and more efficient. Note that when extracting binary
+  // clauses it might currently produce more "redundant" one in the sense that a
+  // transitive reduction of the binary implication graph after all hyper binary
+  // resolution have been performed may need to do more work.
   bool use_tree_look = true;
 
   // There is two sligthly different implementation of the tree-look algo.
@@ -171,9 +176,9 @@ struct ProbingOptions {
   bool use_queue = true;
 
   // If we detect as we probe that a new binary clause subsumes one of the
-  // non-binary clause, we will replace the long clause by the binary one.
-  // This is orthogonal to the extract_binary_clauses parameters which will
-  // add all binary clauses but not neceassirly check for subsumption.
+  // non-binary clause, we will replace the long clause by the binary one. This
+  // is orthogonal to the extract_binary_clauses parameters which will add all
+  // binary clauses but not neceassirly check for subsumption.
   bool subsume_with_binary_clause = true;
 
   // We assume this is also true if --v 1 is activated.

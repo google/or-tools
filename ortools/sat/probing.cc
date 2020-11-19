@@ -29,17 +29,13 @@ namespace operations_research {
 namespace sat {
 
 Prober::Prober(Model* model)
-    : model_(model),
-      trail_(model->GetOrCreate<Trail>()),
+    : trail_(*model->GetOrCreate<Trail>()),
+      assignment_(model->GetOrCreate<SatSolver>()->Assignment()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       implied_bounds_(model->GetOrCreate<ImpliedBounds>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
-      implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
-      num_new_holes_(0),
-      num_new_binary_(0),
-      num_new_integer_bounds_(0),
-      id_(implication_graph_->PropagatorId()) {}
+      implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()) {}
 
 bool Prober::ProbeBooleanVariables(const double deterministic_time_limit,
                                    bool log_info) {
@@ -55,26 +51,24 @@ bool Prober::ProbeBooleanVariables(const double deterministic_time_limit,
   return ProbeBooleanVariables(deterministic_time_limit, bool_vars, log_info);
 }
 
-bool Prober::ProbeOneVariable(BooleanVariable b) {
+bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
   new_integer_bounds_.clear();
   propagated_.SparseClearAll();
   for (const Literal decision : {Literal(b, true), Literal(b, false)}) {
-    if (sat_solver_->Assignment().LiteralIsAssigned(decision)) continue;
+    if (assignment_.LiteralIsAssigned(decision)) continue;
 
     CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
-    const int saved_index = trail_->Index();
+    const int saved_index = trail_.Index();
     sat_solver_->EnqueueDecisionAndBackjumpOnConflict(decision);
     sat_solver_->AdvanceDeterministicTime(time_limit_);
 
     if (sat_solver_->IsModelUnsat()) return false;
     if (sat_solver_->CurrentDecisionLevel() == 0) continue;
 
-    if (integer_trail_ != nullptr) {
-      implied_bounds_->ProcessIntegerTrail(decision);
-      integer_trail_->AppendNewBounds(&new_integer_bounds_);
-    }
-    for (int i = saved_index + 1; i < trail_->Index(); ++i) {
-      const Literal l = (*trail_)[i];
+    implied_bounds_->ProcessIntegerTrail(decision);
+    integer_trail_->AppendNewBounds(&new_integer_bounds_);
+    for (int i = saved_index + 1; i < trail_.Index(); ++i) {
+      const Literal l = trail_[i];
 
       // We mark on the first run (b.IsPositive()) and check on the second.
       if (decision.IsPositive()) {
@@ -88,7 +82,8 @@ bool Prober::ProbeOneVariable(BooleanVariable b) {
       // Anything not propagated by the BinaryImplicationGraph is a "new"
       // binary clause. This is becaue the BinaryImplicationGraph has the
       // highest priority of all propagators.
-      if (trail_->AssignmentType(l.Variable()) != id_) {
+      if (trail_.AssignmentType(l.Variable()) !=
+          implication_graph_->PropagatorId()) {
         new_binary_clauses_.push_back({decision.Negated(), l});
       }
     }
@@ -176,9 +171,25 @@ bool Prober::ProbeOneVariable(BooleanVariable b) {
     }
   }
 
-  // We might have updates some integer domain, lets propagate.
-  if (!sat_solver_->FinishPropagation()) return false;
-  return true;
+  // We might have updated some integer domain, let's propagate.
+  return sat_solver_->FinishPropagation();
+}
+
+bool Prober::ProbeOneVariable(BooleanVariable b) {
+  // Reset statistics.
+  num_new_binary_ = 0;
+  num_new_holes_ = 0;
+  num_new_integer_bounds_ = 0;
+
+  // Resize the propagated sparse bitset.
+  const int num_variables = sat_solver_->NumVariables();
+  propagated_.ClearAndResize(LiteralIndex(2 * num_variables));
+
+  // Reset the solver in case it was already used.
+  sat_solver_->SetAssumptionLevel(0);
+  if (!sat_solver_->RestoreSolverToAssumptionLevel()) return false;
+
+  return ProbeOneVariableInternal(b);
 }
 
 bool Prober::ProbeBooleanVariables(const double deterministic_time_limit,
@@ -188,10 +199,18 @@ bool Prober::ProbeBooleanVariables(const double deterministic_time_limit,
   WallTimer wall_timer;
   wall_timer.Start();
 
+  // Reset statistics.
+  num_new_binary_ = 0;
+  num_new_holes_ = 0;
+  num_new_integer_bounds_ = 0;
+
+  // Resize the propagated sparse bitset.
+  const int num_variables = sat_solver_->NumVariables();
+  propagated_.ClearAndResize(LiteralIndex(2 * num_variables));
+
   // Reset the solver in case it was already used.
-  if (!ClearStatisticsAndResetSearch()) {
-    return SatSolver::INFEASIBLE;
-  }
+  sat_solver_->SetAssumptionLevel(0);
+  if (!sat_solver_->RestoreSolverToAssumptionLevel()) return false;
 
   const int initial_num_fixed = sat_solver_->LiteralTrail().Index();
   const double initial_deterministic_time =
@@ -217,7 +236,7 @@ bool Prober::ProbeBooleanVariables(const double deterministic_time_limit,
 
     // Propagate b=1 and then b=0.
     ++num_probed;
-    if (!ProbeOneVariable(b)) {
+    if (!ProbeOneVariableInternal(b)) {
       return false;
     }
   }
@@ -243,27 +262,6 @@ bool Prober::ProbeBooleanVariables(const double deterministic_time_limit,
     LOG_IF(INFO, num_new_binary_ > 0)
         << "  - new binary clause: " << num_new_binary_;
   }
-
-  return true;
-}
-
-bool Prober::ClearStatisticsAndResetSearch() {
-  // For the new direct implication detected.
-  num_new_binary_ = 0;
-
-  // This is used to tighten the integer variable bounds.
-  num_new_holes_ = 0;
-  num_new_integer_bounds_ = 0;
-  new_integer_bounds_.clear();
-
-  // To detect literal x that must be true because b => x and not(b) => x.
-  // When probing b, we add all propagated literal to propagated, and when
-  // probing not(b) we check if any are already there.
-  const int num_variables = sat_solver_->NumVariables();
-  propagated_.ClearAndResize(LiteralIndex(2 * num_variables));
-
-  sat_solver_->SetAssumptionLevel(0);
-  if (!sat_solver_->RestoreSolverToAssumptionLevel()) return false;
 
   return true;
 }

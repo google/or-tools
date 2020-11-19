@@ -593,10 +593,12 @@ void SharedBoundsManager::ReportPotentialNewBounds(
     changed_variables_since_last_synchronize_.Set(var);
     num_improvements++;
   }
-  // TODO(user): remove LOG_IF and display number of bound improvements
-  // propagated per workers.
-  VLOG_IF(2, num_improvements > 0)
-      << worker_name << " exports " << num_improvements << " modifications";
+  // TODO(user): Display number of bound improvements cumulatively per
+  // workers at the end of the search.
+  if (num_improvements > 0) {
+    VLOG(2) << worker_name << " exports " << num_improvements
+            << " modifications";
+  }
 }
 
 void SharedBoundsManager::Synchronize() {
