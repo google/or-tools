@@ -801,6 +801,12 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
 
     // No decision means that we reached a leave of the search tree and that
     // we have a feasible solution.
+    //
+    // Tricky: If the time limit is reached during the final propagation when
+    // all variables are fixed, there is no guarantee that the propagation
+    // responsible for testing the validity of the solution was run to
+    // completion. So we cannot report a feasible solution.
+    if (time_limit->LimitReached()) return SatSolver::LIMIT_REACHED;
     if (decision == kNoLiteralIndex) {
       // Save the current polarity of all Booleans in the solution. It will be
       // followed for the next SAT decisions. This is known to be a good policy
