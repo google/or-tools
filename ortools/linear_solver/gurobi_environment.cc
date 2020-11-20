@@ -207,7 +207,7 @@ bool LoadSpecificGurobiLibrary(const std::string& full_library_path) {
 
 namespace {
 const std::vector<std::vector<std::string>> GurobiVersionLib = {
-    {"910", "91"}, {"903", "90"}, {"902", "90"}};
+    {"911", "91"}, {"910", "91"}, {"903", "90"}, {"902", "90"}};
 }
 
 bool SearchForGurobiDynamicLibrary() {
