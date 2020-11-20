@@ -104,10 +104,10 @@ if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
 
-option(BUILD_GLOP "Build GLOP standalone" OFF)
+include(CMakeDependentOption)
+CMAKE_DEPENDENT_OPTION(BUILD_GLOP "Build GLOP standalone" ON "NOT BUILD_CXX" OFF)
 message(STATUS "Build standalone Glop: ${BUILD_GLOP}")
 
-include(CMakeDependentOption)
 option(BUILD_SAMPLES "Build samples" ON)
 message(STATUS "Build samples: ${BUILD_SAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_CXX_SAMPLES "Build cxx samples" ON "BUILD_SAMPLES;BUILD_CXX" OFF)
