@@ -105,6 +105,10 @@ if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
 endif()
 
 include(CMakeDependentOption)
+
+CMAKE_DEPENDENT_OPTION(BUILD_FLATZINC "Build flatzinc" ON "BUILD_CXX" OFF)
+message(STATUS "Build Flatzinc: ${BUILD_FLATZINC}")
+
 CMAKE_DEPENDENT_OPTION(BUILD_GLOP "Build GLOP standalone" ON "NOT BUILD_CXX" OFF)
 message(STATUS "Build standalone Glop: ${BUILD_GLOP}")
 
@@ -229,6 +233,7 @@ cmake_pop_check_state()
 
 include(deps)
 include(cpp)
+include(flatzinc)
 include(glop)
 
 include(python)
