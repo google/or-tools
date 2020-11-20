@@ -1137,6 +1137,8 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
       }
     } else if (response.status() == CpSolverStatus::INFEASIBLE) {
       std::cout << "=====UNSATISFIABLE=====" << std::endl;
+    } else if (response.status() == CpSolverStatus::MODEL_INVALID) {
+      std::cout << "=====MODEL INVALID=====" << std::endl;      
     } else {
       std::cout << "%% TIMEOUT" << std::endl;
     }
