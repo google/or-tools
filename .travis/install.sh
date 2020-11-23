@@ -13,35 +13,35 @@ function installswig() {
 }
 
 function installdotnetsdk(){
-  # Installs for Ubuntu Trusty distro
+  # Installs for Ubuntu Bionic distro
+  # see https://docs.microsoft.com/fr-fr/dotnet/core/install/linux#ubuntu
   sudo apt-get update -qq
-  # Need to upgrade to dpkg >= 1.17.5ubuntu5.8,
-  # which fixes https://bugs.launchpad.net/ubuntu/+source/dpkg/+bug/1730627
   sudo apt-get install -yq apt-transport-https dpkg
-  wget -q https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb
+  wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb
   sudo dpkg -i packages-microsoft-prod.deb
-  # Install dotnet sdk 2.1
+  # Install dotnet-sdk 3.1
   sudo apt-get update -qq
-  sudo apt-get install -yqq dotnet-sdk-2.2 dotnet-sdk-3.0
+  sudo apt-get install -yqq dotnet-sdk-3.1
 }
 
 function installcmake(){
-  # Install CMake 3.18.1
-  wget "https://cmake.org/files/v3.18/cmake-3.18.1-Linux-x86_64.sh"
-  chmod a+x cmake-3.18.1-Linux-x86_64.sh
-  sudo ./cmake-3.18.1-Linux-x86_64.sh --prefix=/usr/local/ --skip-license
-  rm cmake-3.18.1-Linux-x86_64.sh
+  # Install CMake 3.18.5
+  wget "https://cmake.org/files/v3.18/cmake-3.18.5-Linux-x86_64.sh"
+  chmod a+x cmake-3.18.5-Linux-x86_64.sh
+  sudo ./cmake-3.18.5-Linux-x86_64.sh --prefix=/usr/local/ --skip-license
+  rm cmake-3.18.5-Linux-x86_64.sh
 }
 
 ################
 ##  MAKEFILE  ##
 ################
 if [ "${BUILDER}" == make ]; then
-  echo 'TRAVIS_OS_NAME = ${TRAVIS_OS_NAME}'
+  echo "TRAVIS_OS_NAME = ${TRAVIS_OS_NAME}"
   if [ "${TRAVIS_OS_NAME}" == linux ]; then
     echo 'travis_fold:start:c++'
     sudo apt-get -qq update
     sudo apt-get -yqq install autoconf libtool zlib1g-dev gawk curl lsb-release
+    installcmake
     echo 'travis_fold:end:c++'
     if [ "${LANGUAGE}" != cc ]; then
       echo 'travis_fold:start:swig'

@@ -33,6 +33,7 @@ function checkenv() {
 ################
 if [ "${BUILDER}" == make ];then
   if [ "${TRAVIS_OS_NAME}" == linux ];then
+    export PATH=/usr/local/bin:"$PATH"
     echo 'travis_fold:start:env'
     if [ "${LANGUAGE}" != cc ]; then
       export PATH="${HOME}"/swig/bin:"${PATH}"
