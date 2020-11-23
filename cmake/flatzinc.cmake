@@ -44,7 +44,7 @@ else()
 endif()
 
 # Main Target
-add_library(flatzinc SHARED
+add_library(flatzinc
   ortools/flatzinc/checker.cc
   ortools/flatzinc/checker.h
   ortools/flatzinc/cp_model_fz_solver.cc
