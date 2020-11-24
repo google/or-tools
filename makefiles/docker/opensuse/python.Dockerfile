@@ -1,6 +1,6 @@
 FROM ortools/make:opensuse_swig AS env
 RUN zypper update -y \
-&& zypper install -y python3-devel python3-pip python3-wheel \
+&& zypper install -y lsb python3-devel python3-pip python3-wheel \
 && zypper clean -a
 RUN python3 -m pip install absl-py
 
