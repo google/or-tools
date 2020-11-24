@@ -58,7 +58,7 @@ target_compile_options(glop_proto PUBLIC ${GLOP_COMPILE_OPTIONS})
 target_link_libraries(glop_proto PRIVATE protobuf::libprotobuf)
 
 # Main Target
-add_library(glop SHARED
+add_library(glop
   ortools/base/commandlineflags.h
   ortools/base/file.cc
   ortools/base/file.h
