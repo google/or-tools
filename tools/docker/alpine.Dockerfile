@@ -8,8 +8,10 @@ RUN apk add --no-cache git build-base linux-headers cmake xfce4-dev-tools
 
 # SWIG
 RUN apk add --no-cache swig
+
 # Python
 RUN apk add --no-cache python3-dev py3-pip py3-wheel
+RUN python3 -m pip install absl-py
 
 ################
 ##  OR-TOOLS  ##

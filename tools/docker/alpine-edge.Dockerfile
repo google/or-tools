@@ -8,11 +8,15 @@ RUN apk add --no-cache git build-base linux-headers cmake xfce4-dev-tools
 
 # SWIG
 RUN apk add --no-cache swig
+
 # Python
 RUN apk add --no-cache python3-dev py3-pip py3-wheel
+RUN python3 -m pip install absl-py
+
 # Java
 ENV JAVA_HOME=/usr/lib/jvm/java-1.8-openjdk
 RUN apk add --no-cache openjdk8 maven
+
 # .NET install
 RUN apk add --no-cache wget icu-libs libintl
 RUN dotnet_sdk_version=3.1.101 \
