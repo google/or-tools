@@ -1,9 +1,10 @@
 FROM ortools/make:alpine_swig AS env
 RUN apk add --no-cache wget icu-libs libintl
 # .NET install
-RUN dotnet_sdk_version=3.1.101 \
-&& wget -O dotnet.tar.gz https://dotnetcli.azureedge.net/dotnet/Sdk/$dotnet_sdk_version/dotnet-sdk-$dotnet_sdk_version-linux-musl-x64.tar.gz \
-&& dotnet_sha512='ce386da8bc07033957fd404909fc230e8ab9e29929675478b90f400a1838223379595a4459056c6c2251ab5c722f80858b9ca536db1a2f6d1670a97094d0fe55' \
+# see: https://dotnet.microsoft.com/download/dotnet-core/3.1
+RUN dotnet_sdk_version=3.1.404 \
+&& wget -O dotnet.tar.gz https://dotnetcli.azureedge.net/dotnet/Sdk/$dotnet_sdk_version/dotnet-sdk-$dotnet_sdk_version-linux-x64.tar.gz \
+&& dotnet_sha512='94d8eca3b4e2e6c36135794330ab196c621aee8392c2545a19a991222e804027f300d8efd152e9e4893c4c610d6be8eef195e30e6f6675285755df1ea49d3605' \
 && echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
 && mkdir -p /usr/share/dotnet \
 && tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
