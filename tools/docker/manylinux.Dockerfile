@@ -20,11 +20,11 @@ RUN yum -y update \
 && yum clean all \
 && rm -rf /var/cache/yum
 
-# Install CMake 3.18.1
-RUN wget "https://cmake.org/files/v3.18/cmake-3.18.1-Linux-x86_64.sh" \
-&& chmod a+x cmake-3.18.1-Linux-x86_64.sh \
-&& ./cmake-3.18.1-Linux-x86_64.sh --prefix=/usr --skip-license \
-&& rm cmake-3.18.1-Linux-x86_64.sh
+# Install CMake 3.18.5
+RUN wget "https://cmake.org/files/v3.18/cmake-3.18.5-Linux-x86_64.sh" \
+&& chmod a+x cmake-3.18.5-Linux-x86_64.sh \
+&& ./cmake-3.18.5-Linux-x86_64.sh --prefix=/usr --skip-license \
+&& rm cmake-3.18.5-Linux-x86_64.sh
 
 # Install Swig 4.0.2
 RUN curl --location-trusted \
