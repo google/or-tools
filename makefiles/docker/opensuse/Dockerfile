@@ -6,7 +6,7 @@ LABEL maintainer="corentinl@google.com"
 ENV PATH=/usr/local/bin:$PATH
 RUN zypper update -y \
 && zypper install -y git gcc gcc-c++ cmake \
- wget which lsb-release pkgconfig autoconf libtool zlib-devel \
+ wget which lsb-release util-linux pkgconfig autoconf libtool zlib-devel \
 && zypper clean -a
 ENV CC=gcc CXX=g++
 CMD [ "/usr/bin/bash" ]
