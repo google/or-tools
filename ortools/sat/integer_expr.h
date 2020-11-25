@@ -474,18 +474,29 @@ inline std::function<void(Model*)> ConditionalWeightedSumLowerOrEqual(
                                  : integer_trail->UpperBound(vars[i]));
     }
     if (expression_min == upper_bound) {
+      // Tricky: as we create integer literal, we might propagate stuff and
+      // the bounds might change, so if the expression_min increase with the
+      // bound we use, then the literal must be false.
+      IntegerValue non_cached_min;
       for (int i = 0; i < vars.size(); ++i) {
         if (coefficients[i] > 0) {
-          model->Add(
-              Implication(enforcement_literals,
-                          IntegerLiteral::LowerOrEqual(
-                              vars[i], integer_trail->LowerBound(vars[i]))));
+          const IntegerValue lb = integer_trail->LowerBound(vars[i]);
+          non_cached_min += coefficients[i] * lb;
+          model->Add(Implication(enforcement_literals,
+                                 IntegerLiteral::LowerOrEqual(vars[i], lb)));
         } else if (coefficients[i] < 0) {
-          model->Add(
-              Implication(enforcement_literals,
-                          IntegerLiteral::GreaterOrEqual(
-                              vars[i], integer_trail->UpperBound(vars[i]))));
+          const IntegerValue ub = integer_trail->UpperBound(vars[i]);
+          non_cached_min += coefficients[i] * ub;
+          model->Add(Implication(enforcement_literals,
+                                 IntegerLiteral::GreaterOrEqual(vars[i], ub)));
         }
+      }
+      if (non_cached_min > expression_min) {
+        std::vector<Literal> clause;
+        for (const Literal l : enforcement_literals) {
+          clause.push_back(l.Negated());
+        }
+        model->Add(ClauseConstraint(clause));
       }
     } else {
       IntegerSumLE* constraint = new IntegerSumLE(

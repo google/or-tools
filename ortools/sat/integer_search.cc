@@ -706,7 +706,11 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
     }
 
     // If we pushed root level deductions, we restart to incorporate them.
+    // Note that in the present of assumptions, it is important to return to
+    // the level zero first ! otherwise, the new deductions will not be
+    // incorporated and the solver will loop forever.
     if (integer_trail->HasPendingRootLevelDeduction()) {
+      sat_solver->Backtrack(0);
       if (!sat_solver->RestoreSolverToAssumptionLevel()) {
         return sat_solver->UnsatStatus();
       }

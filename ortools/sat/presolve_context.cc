@@ -198,11 +198,10 @@ bool PresolveContext::VariableWasRemoved(int ref) const {
   if (IsFixed(ref)) return false;
   if (!removed_variables_.contains(PositiveRef(ref))) return false;
   if (!var_to_constraints_[PositiveRef(ref)].empty()) {
-    const AffineRelation::Relation r = GetAffineRelation(PositiveRef(ref));
     LOG(INFO) << "Variable " << PositiveRef(ref)
               << " was removed, yet it appears in some constraints!";
-    LOG(INFO) << "affine relation = " << r.coeff << " * X" << r.representative
-              << " + " << r.offset;
+    LOG(INFO) << "affine relation: "
+              << AffineRelationDebugString(PositiveRef(ref));
     for (const int c : var_to_constraints_[PositiveRef(ref)]) {
       LOG(INFO) << "constraint #" << c << " : "
                 << (c >= 0 ? working_model->constraints(c).ShortDebugString()
@@ -523,11 +522,7 @@ void PresolveContext::RemoveVariableFromAffineRelation(int var) {
   }
 
   if (VLOG_IS_ON(2)) {
-    const auto r = GetAffineRelation(var);
-    LOG(INFO) << "Removing affine relation for " << var << " : "
-              << DomainOf(var) << " =  " << r.coeff << " * "
-              << DomainOf(r.representative) << " + " << r.offset
-              << " ( rep : " << rep << ").";
+    LOG(INFO) << "Removing affine relation: " << AffineRelationDebugString(var);
   }
 }
 
@@ -754,6 +749,17 @@ AffineRelation::Relation PresolveContext::GetAffineRelation(int ref) const {
     r.offset *= -1;
   }
   return r;
+}
+
+std::string PresolveContext::RefDebugString(int ref) const {
+  return absl::StrCat(RefIsPositive(ref) ? "X" : "-X", PositiveRef(ref),
+                      DomainOf(ref).ToString());
+}
+
+std::string PresolveContext::AffineRelationDebugString(int ref) const {
+  const AffineRelation::Relation r = GetAffineRelation(ref);
+  return absl::StrCat(RefDebugString(ref), " = ", r.coeff, " * ",
+                      RefDebugString(r.representative), " + ", r.offset);
 }
 
 // Create the internal structure for any new variables in working_model.

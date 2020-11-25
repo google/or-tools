@@ -1092,21 +1092,28 @@ bool SolutionIsFeasible(const CpModelProto& model,
       default:
         LOG(FATAL) << "Unuspported constraint: " << ConstraintCaseName(type);
     }
+
+    // Display a message to help debugging.
     if (!is_feasible) {
       VLOG(1) << "Failing constraint #" << c << " : "
               << ProtobufShortDebugString(model.constraints(c));
       if (mapping_proto != nullptr && postsolve_mapping != nullptr) {
-        std::vector<bool> fixed(mapping_proto->variables().size(), false);
-        for (const int var : *postsolve_mapping) fixed[var] = true;
+        std::vector<int> reverse_map(mapping_proto->variables().size(), -1);
+        for (int var = 0; var < postsolve_mapping->size(); ++var) {
+          reverse_map[(*postsolve_mapping)[var]] = var;
+        }
         for (const int var : UsedVariables(model.constraints(c))) {
-          VLOG(1) << "var: " << var << " value: " << variable_values[var]
-                  << " was_fixed: " << fixed[var] << " initial_domain: "
+          VLOG(1) << "var: " << var << " mapped_to: " << reverse_map[var]
+                  << " value: " << variable_values[var] << " initial_domain: "
                   << ReadDomainFromProto(model.variables(var))
                   << " postsolved_domain: "
                   << ReadDomainFromProto(mapping_proto->variables(var));
         }
+      } else {
+        for (const int var : UsedVariables(model.constraints(c))) {
+          VLOG(1) << "var: " << var << " value: " << variable_values[var];
+        }
       }
-
       return false;
     }
   }

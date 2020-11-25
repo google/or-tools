@@ -214,6 +214,10 @@ class PresolveContext {
   // representative from the var_equiv_relations.
   AffineRelation::Relation GetAffineRelation(int ref) const;
 
+  // To facilitate debugging.
+  std::string RefDebugString(int ref) const;
+  std::string AffineRelationDebugString(int ref) const;
+
   // Makes sure the domain of ref and of its representative are in sync.
   // Returns false on unsat.
   bool PropagateAffineRelation(int ref);
