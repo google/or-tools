@@ -1,5 +1,5 @@
 FROM ortools/cmake:fedora_swig AS env
-# see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-fedora#fedora-32-
+# see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-fedora
 RUN dnf -y update \
 && dnf -y install dotnet-sdk-3.1 \
 && dnf clean all
