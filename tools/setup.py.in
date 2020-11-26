@@ -46,7 +46,7 @@ setup(
         'ortools.util',
     ],
     install_requires=[
-        'protobuf >= 3.13.0',
+        'protobuf >= 3.14.0',
         'absl-py >= 0.11',
     ],
     package_data={
