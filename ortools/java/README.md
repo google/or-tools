@@ -12,7 +12,7 @@ This project aim to explain how you build a Java 1.8 native (for win32-x86-64, l
     * [Building a Local Package](#building-local-package)
     * [Testing the Local Package](#testing-local-package)
 * [Appendices](#appendices)
-  * [Ressources](#ressources)
+  * [Resources](#resources)
 * [Misc](#misc)
 
 # Requirement
@@ -139,7 +139,7 @@ mvn exec:java
 # Appendices
 Few links on the subject...
 
-## Ressources
+## Resources
 
 - [POM.xml reference](http://maven.apache.org/pom.html)
 - [Maven Central POM requirement](https://central.sonatype.org/pages/requirements.html)
