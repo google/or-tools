@@ -16,7 +16,7 @@ and few [POM.xml](http://maven.apache.org/pom.html).
   * [Building a Local Package](#building-local-package)
   * [Testing the Local Package](#testing-local-package)
 * [Appendices](#appendices)
-  * [Ressources](#ressources)
+  * [Resources](#resources)
 * [Misc](#misc)
 
 ## Requirement
@@ -162,7 +162,7 @@ mvn exec:java
 
 Few links on the subject...
 
-### Ressources
+### Resources
 
 * [POM.xml reference](http://maven.apache.org/pom.html)
 * [Maven Central POM requirement](https://central.sonatype.org/pages/requirements.html)

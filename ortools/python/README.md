@@ -13,7 +13,7 @@ This project aim to explain how you build a Python native wheel package using
   * [Local Package](#local-package)
   * [Building a native Package](#building-local-native-package)
 * [Appendices](#appendices)
-  * [Ressources](#ressources)
+  * [Resources](#resources)
 * [Misc](#misc)
 
 ## Requirement
@@ -83,7 +83,7 @@ to study their layout.
 
 Few links on the subject...
 
-### Ressources
+### Resources
 
 * [Packaging Python Project](https://packaging.python.org/tutorials/packaging-projects/)
 * [PEP 513 -- A Platform Tag for Portable Linux Built Distributions](https://www.python.org/dev/peps/pep-0513/)
