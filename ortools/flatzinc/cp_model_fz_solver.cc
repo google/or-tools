@@ -33,6 +33,7 @@
 #include "ortools/flatzinc/model.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_search.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -1138,7 +1139,13 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     } else if (response.status() == CpSolverStatus::INFEASIBLE) {
       std::cout << "=====UNSATISFIABLE=====" << std::endl;
     } else if (response.status() == CpSolverStatus::MODEL_INVALID) {
-      std::cout << "=====MODEL INVALID=====" << std::endl;      
+      const std::string error_message = ValidateCpModel(m.proto);
+      VLOG(1) << "%% Error message = '" << error_message << "'";
+      if (absl::StrContains(error_message, "overflow")) {
+        std::cout << "=====OVERFLOW=====" << std::endl;
+      } else {
+        std::cout << "=====MODEL INVALID=====" << std::endl;
+      }
     } else {
       std::cout << "%% TIMEOUT" << std::endl;
     }
