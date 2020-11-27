@@ -15,7 +15,6 @@
 
 # [START import]
 from ortools.constraint_solver import pywrapcp
-
 # [END import]
 
 
@@ -126,7 +125,6 @@ def print_solution(data, manager, routing, solution):
         print(plan_output)
         max_route_distance = max(route_distance, max_route_distance)
     print('Maximum of the route distances: {}m'.format(max_route_distance))
-
 
 # [END solution_printer]
 
