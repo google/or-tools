@@ -38,8 +38,8 @@ namespace operations_research {
 
 // Adds the constraint y = abs(x). May create auxiliary variables. Supports
 // unbounded x.
-absl::Status CreateAbs(GScip* gscip, SCIP_Var* x, SCIP_Var* abs_x,
-                       const std::string& name = "");
+absl::Status GScipCreateAbs(GScip* gscip, SCIP_Var* x, SCIP_Var* abs_x,
+                            const std::string& name = "");
 
 // TODO(user): delete this type and the methods below, use a generic version
 // templated on the variable type that supports operator overloads.
@@ -53,26 +53,28 @@ struct GScipLinearExpr {
 };
 
 // Returns left - right.
-GScipLinearExpr Difference(GScipLinearExpr left, const GScipLinearExpr& right);
+GScipLinearExpr GScipDifference(GScipLinearExpr left,
+                                const GScipLinearExpr& right);
 
 // Returns -expr.
-GScipLinearExpr Negate(GScipLinearExpr expr);
+GScipLinearExpr GScipNegate(GScipLinearExpr expr);
 
 // Returns the range -inf <= left.terms - right.terms <= right.offset -
 // left.offset
-GScipLinearRange Le(const GScipLinearExpr left, const GScipLinearExpr& right);
+GScipLinearRange GScipLe(const GScipLinearExpr left,
+                         const GScipLinearExpr& right);
 
 // Adds the constraint resultant = maximum(terms). Supports unbounded variables
 // in terms.
-absl::Status CreateMaximum(GScip* gscip, const GScipLinearExpr& resultant,
-                           const std::vector<GScipLinearExpr>& terms,
-                           const std::string& name = "");
+absl::Status GScipCreateMaximum(GScip* gscip, const GScipLinearExpr& resultant,
+                                const std::vector<GScipLinearExpr>& terms,
+                                const std::string& name = "");
 
 // Adds the constraint resultant = minimum(terms). Supports unbounded variables
 // in terms.
-absl::Status CreateMinimum(GScip* gscip, const GScipLinearExpr& resultant,
-                           const std::vector<GScipLinearExpr>& terms,
-                           const std::string& name = "");
+absl::Status GScipCreateMinimum(GScip* gscip, const GScipLinearExpr& resultant,
+                                const std::vector<GScipLinearExpr>& terms,
+                                const std::string& name = "");
 
 // Models the constraint z = 1 => lb <= ax <= ub
 // If negate_indicator, then instead: z = 0 => lb <= ax <= ub
@@ -83,7 +85,7 @@ struct GScipIndicatorRangeConstraint {
 };
 
 // Supports unbounded variables in indicator_range.range.variables.
-absl::Status CreateIndicatorRange(
+absl::Status GScipCreateIndicatorRange(
     GScip* gscip, const GScipIndicatorRangeConstraint& indicator_range,
     const std::string& name = "",
     const GScipConstraintOptions& options = GScipConstraintOptions());
@@ -94,7 +96,7 @@ absl::Status CreateIndicatorRange(
 // constraint and a single extra variable, which is then added to the objective.
 // The inequality will be in the wrong direction if you change the objective
 // direction after calling this method.
-absl::Status AddQuadraticObjectiveTerm(
+absl::Status GScipAddQuadraticObjectiveTerm(
     GScip* gscip, std::vector<SCIP_Var*> quadratic_variables1,
     std::vector<SCIP_Var*> quadratic_variables2,
     std::vector<double> quadratic_coefficients, const std::string& name = "");

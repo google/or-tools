@@ -751,7 +751,7 @@ absl::StatusOr<GScipResult> GScip::Solve(const GScipParameters& params,
   // Step 2: Solve.
   // NOTE(user): after solve, SCIP will either be in stage PRESOLVING,
   // SOLVING, OR SOLVED.
-  if (MaxNumThreads(params) > 1) {
+  if (GScipMaxNumThreads(params) > 1) {
     RETURN_IF_SCIP_ERROR(SCIPsolveConcurrent(scip_));
   } else {
     RETURN_IF_SCIP_ERROR(SCIPsolve(scip_));

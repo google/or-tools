@@ -27,8 +27,7 @@ constexpr absl::string_view kDisplayVerbLevel = "display/verblevel";
 constexpr absl::string_view kRandomSeedParam = "randomization/randomseedshift";
 }  // namespace
 
-void SetTimeLimit(const absl::Duration time_limit,
-                  GScipParameters* parameters) {
+void GScipSetTimeLimit(absl::Duration time_limit, GScipParameters* parameters) {
   if (time_limit < absl::Seconds(1e20) && time_limit > absl::Duration()) {
     (*parameters->mutable_real_params())[std::string(kLimitsTime)] =
         absl::ToDoubleSeconds(time_limit);
@@ -37,7 +36,7 @@ void SetTimeLimit(const absl::Duration time_limit,
   }
 }
 
-absl::Duration TimeLimit(const GScipParameters& parameters) {
+absl::Duration GScipTimeLimit(const GScipParameters& parameters) {
   if (parameters.real_params().contains(std::string(kLimitsTime))) {
     const double scip_limit =
         parameters.real_params().at(std::string(kLimitsTime));
@@ -52,73 +51,73 @@ absl::Duration TimeLimit(const GScipParameters& parameters) {
   return absl::InfiniteDuration();
 }
 
-bool TimeLimitSet(const GScipParameters& parameters) {
+bool GScipTimeLimitSet(const GScipParameters& parameters) {
   return parameters.real_params().contains(std::string(kLimitsTime));
 }
 
-void SetMaxNumThreads(int num_threads, GScipParameters* parameters) {
+void GScipSetMaxNumThreads(int num_threads, GScipParameters* parameters) {
   CHECK_GE(num_threads, 1);
   (*parameters->mutable_int_params())[std::string(kParallelMaxNThreads)] =
       num_threads;
 }
 
-int MaxNumThreads(const GScipParameters& parameters) {
+int GScipMaxNumThreads(const GScipParameters& parameters) {
   if (parameters.int_params().contains(std::string(kParallelMaxNThreads))) {
     return parameters.int_params().at(std::string(kParallelMaxNThreads));
   }
   return 1;
 }
 
-bool MaxNumThreadsSet(const GScipParameters& parameters) {
+bool GScipMaxNumThreadsSet(const GScipParameters& parameters) {
   return parameters.int_params().contains(std::string(kParallelMaxNThreads));
 }
 
-void SetLogLevel(GScipParameters* parameters, int log_level) {
+void GScipSetLogLevel(GScipParameters* parameters, int log_level) {
   CHECK_GE(log_level, 0);
   CHECK_LE(log_level, 5);
   (*parameters->mutable_int_params())[std::string(kDisplayVerbLevel)] =
       log_level;
 }
 
-int LogLevel(const GScipParameters& parameters) {
+int GScipLogLevel(const GScipParameters& parameters) {
   return parameters.int_params().contains(std::string(kDisplayVerbLevel))
              ? parameters.int_params().at(std::string(kDisplayVerbLevel))
              : 4;
 }
-bool LogLevelSet(const GScipParameters& parameters) {
+bool GScipLogLevelSet(const GScipParameters& parameters) {
   return parameters.int_params().contains(std::string(kDisplayVerbLevel));
 }
 
-void SetOutputEnabled(GScipParameters* parameters, bool output_enabled) {
+void GScipSetOutputEnabled(GScipParameters* parameters, bool output_enabled) {
   if (output_enabled) {
     parameters->mutable_int_params()->erase(std::string(kDisplayVerbLevel));
   } else {
     (*parameters->mutable_int_params())[std::string(kDisplayVerbLevel)] = 0;
   }
 }
-bool OutputEnabled(const GScipParameters& parameters) {
+bool GScipOutputEnabled(const GScipParameters& parameters) {
   return !parameters.int_params().contains(std::string(kDisplayVerbLevel)) ||
          (parameters.int_params().at(std::string(kDisplayVerbLevel)) > 0);
 }
 
-bool OutputEnabledSet(const GScipParameters& parameters) {
-  return LogLevelSet(parameters);
+bool GScipOutputEnabledSet(const GScipParameters& parameters) {
+  return GScipLogLevelSet(parameters);
 }
 
-void SetRandomSeed(GScipParameters* parameters, int random_seed) {
+void GScipSetRandomSeed(GScipParameters* parameters, int random_seed) {
   random_seed = std::max(0, random_seed);
   (*parameters->mutable_int_params())[std::string(kRandomSeedParam)] =
       random_seed;
 }
 
-int RandomSeed(const GScipParameters& parameters) {
-  if (RandomSeedSet(parameters)) {
+int GScipRandomSeed(const GScipParameters& parameters) {
+  if (GScipRandomSeedSet(parameters)) {
     return parameters.int_params().at(std::string(kRandomSeedParam));
   }
   return -1;  // Unset value.
 }
 
-bool RandomSeedSet(const GScipParameters& parameters) {
+bool GScipRandomSeedSet(const GScipParameters& parameters) {
   return parameters.int_params().contains(std::string(kRandomSeedParam));
 }
 }  // namespace operations_research

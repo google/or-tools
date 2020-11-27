@@ -34,7 +34,8 @@ GScipLinearExpr::GScipLinearExpr(SCIP_VAR* variable) { terms[variable] = 1.0; }
 
 GScipLinearExpr::GScipLinearExpr(double offset) : offset(offset) {}
 
-GScipLinearExpr Difference(GScipLinearExpr left, const GScipLinearExpr& right) {
+GScipLinearExpr GScipDifference(GScipLinearExpr left,
+                                const GScipLinearExpr& right) {
   left.offset -= right.offset;
   for (const auto& term : right.terms) {
     left.terms[term.first] -= term.second;
@@ -42,7 +43,7 @@ GScipLinearExpr Difference(GScipLinearExpr left, const GScipLinearExpr& right) {
   return left;
 }
 
-GScipLinearExpr Negate(GScipLinearExpr expr) {
+GScipLinearExpr GScipNegate(GScipLinearExpr expr) {
   expr.offset = -expr.offset;
   for (auto& term : expr.terms) {
     term.second = -term.second;
@@ -52,8 +53,9 @@ GScipLinearExpr Negate(GScipLinearExpr expr) {
 
 // Returns the range -inf <= left.terms - right.terms <= right.offset -
 // left.offset
-GScipLinearRange Le(const GScipLinearExpr left, const GScipLinearExpr& right) {
-  GScipLinearExpr diff = Difference(left, right);
+GScipLinearRange GScipLe(const GScipLinearExpr left,
+                         const GScipLinearExpr& right) {
+  GScipLinearExpr diff = GScipDifference(left, right);
   GScipLinearRange result;
   result.lower_bound = -std::numeric_limits<double>::infinity();
   result.upper_bound = -diff.offset;
@@ -64,15 +66,16 @@ GScipLinearRange Le(const GScipLinearExpr left, const GScipLinearExpr& right) {
   return result;
 }
 
-absl::Status CreateAbs(GScip* gscip, SCIP_Var* x, SCIP_Var* abs_x,
-                       const std::string& name) {
-  return CreateMaximum(gscip, GScipLinearExpr(abs_x),
-                       {GScipLinearExpr(x), Negate(GScipLinearExpr(x))}, name);
+absl::Status GScipCreateAbs(GScip* gscip, SCIP_Var* x, SCIP_Var* abs_x,
+                            const std::string& name) {
+  return GScipCreateMaximum(
+      gscip, GScipLinearExpr(abs_x),
+      {GScipLinearExpr(x), GScipNegate(GScipLinearExpr(x))}, name);
 }
 
-absl::Status CreateMaximum(GScip* gscip, const GScipLinearExpr& resultant,
-                           const std::vector<GScipLinearExpr>& terms,
-                           const std::string& name) {
+absl::Status GScipCreateMaximum(GScip* gscip, const GScipLinearExpr& resultant,
+                                const std::vector<GScipLinearExpr>& terms,
+                                const std::string& name) {
   // TODO(user): it may be better to write this in terms of the disjuntive
   // constraint, we need to support disjunctions in gscip.h to do this.
   //
@@ -94,12 +97,12 @@ absl::Status CreateMaximum(GScip* gscip, const GScipLinearExpr& resultant,
     RETURN_IF_ERROR(
         gscip
             ->AddLinearConstraint(
-                Le(terms.at(i), resultant),
+                GScipLe(terms.at(i), resultant),
                 MaybeExtendName(name, absl::StrCat("x_", i, "_le_y")))
             .status());
     // z_i => y <= x_i
     {
-      GScipLinearRange y_less_x = Le(resultant, terms.at(i));
+      GScipLinearRange y_less_x = GScipLe(resultant, terms.at(i));
       CHECK_EQ(y_less_x.lower_bound, -std::numeric_limits<double>::infinity());
       GScipIndicatorConstraint ind;
       ind.indicator_variable = indicators.at(i);
@@ -126,18 +129,18 @@ absl::Status CreateMaximum(GScip* gscip, const GScipLinearExpr& resultant,
       .status();
 }
 
-absl::Status CreateMinimum(GScip* gscip, const GScipLinearExpr& resultant,
-                           const std::vector<GScipLinearExpr>& terms,
-                           const std::string& name) {
+absl::Status GScipCreateMinimum(GScip* gscip, const GScipLinearExpr& resultant,
+                                const std::vector<GScipLinearExpr>& terms,
+                                const std::string& name) {
   std::vector<GScipLinearExpr> negated_terms;
   negated_terms.reserve(terms.size());
   for (const GScipLinearExpr& e : terms) {
-    negated_terms.push_back(Negate(e));
+    negated_terms.push_back(GScipNegate(e));
   }
-  return CreateMaximum(gscip, Negate(resultant), negated_terms, name);
+  return GScipCreateMaximum(gscip, GScipNegate(resultant), negated_terms, name);
 }
 
-absl::Status AddQuadraticObjectiveTerm(
+absl::Status GScipAddQuadraticObjectiveTerm(
     GScip* gscip, std::vector<SCIP_Var*> quadratic_variables1,
     std::vector<SCIP_Var*> quadratic_variables2,
     std::vector<double> quadratic_coefficients, const std::string& name) {
@@ -167,7 +170,7 @@ absl::Status AddQuadraticObjectiveTerm(
       .status();
 }
 
-absl::Status CreateIndicatorRange(
+absl::Status GScipCreateIndicatorRange(
     GScip* gscip, const GScipIndicatorRangeConstraint& indicator_range,
     const std::string& name, const GScipConstraintOptions& options) {
   if (std::isfinite(indicator_range.range.upper_bound)) {

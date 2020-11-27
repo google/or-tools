@@ -19,37 +19,37 @@
 
 namespace operations_research {
 
-void SetTimeLimit(absl::Duration time_limit, GScipParameters* parameters);
-absl::Duration TimeLimit(const GScipParameters& parameters);
-bool TimeLimitSet(const GScipParameters& parameters);
+void GScipSetTimeLimit(absl::Duration time_limit, GScipParameters* parameters);
+absl::Duration GScipTimeLimit(const GScipParameters& parameters);
+bool GScipTimeLimitSet(const GScipParameters& parameters);
 
 // CHECK fails if num_threads < 1.
-void SetMaxNumThreads(int num_threads, GScipParameters* parameters);
+void GScipSetMaxNumThreads(int num_threads, GScipParameters* parameters);
 
 // Returns 1 if the number of threads it not specified.
-int MaxNumThreads(const GScipParameters& parameters);
-bool MaxNumThreadsSet(const GScipParameters& parameters);
+int GScipMaxNumThreads(const GScipParameters& parameters);
+bool GScipMaxNumThreadsSet(const GScipParameters& parameters);
 
 // log_level must be in [0, 5], where 0 is none, 5 is most verbose, and the
 // default is 4. CHECK fails on bad log_level. Default level displays standard
 // search logs.
-void SetLogLevel(GScipParameters* parameters, int log_level);
-int LogLevel(const GScipParameters& parameters);
-bool LogLevelSet(const GScipParameters& parameters);
+void GScipSetLogLevel(GScipParameters* parameters, int log_level);
+int GScipLogLevel(const GScipParameters& parameters);
+bool GScipLogLevelSet(const GScipParameters& parameters);
 
 // Sets the log level to 4 if enabled, 0 if disabled (see above).
-void SetOutputEnabled(GScipParameters* parameters, bool output_enabled);
+void GScipSetOutputEnabled(GScipParameters* parameters, bool output_enabled);
 // Checks if the log level is equal to zero.
-bool OutputEnabled(const GScipParameters& parameters);
-bool OutputEnabledSet(const GScipParameters& parameters);
+bool GScipOutputEnabled(const GScipParameters& parameters);
+bool GScipOutputEnabledSet(const GScipParameters& parameters);
 
 // Sets an initial seed (shift) for all pseudo-random number generators used
 // within SCIP. Valid values are [0:INT_MAX] i.e. [0:2^31-1]. If an invalid
 // value is passed, 0 would be stored instead.
-void SetRandomSeed(GScipParameters* parameters, int random_seed);
+void GScipSetRandomSeed(GScipParameters* parameters, int random_seed);
 // Returns -1 if unset.
-int RandomSeed(const GScipParameters& parameters);
-bool RandomSeedSet(const GScipParameters& parameters);
+int GScipRandomSeed(const GScipParameters& parameters);
+bool GScipRandomSeedSet(const GScipParameters& parameters);
 
 }  // namespace operations_research
 

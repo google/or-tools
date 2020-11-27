@@ -319,6 +319,7 @@ class GScip {
   // be infinite. When querying gSCIP, if an absolute value exceeds ScipInf, it
   // is replaced by std::numeric_limits<double>::infinity().
   double ScipInf();
+  static constexpr double kDefaultScipInf = 1e20;
 
   // WARNING(rander): no synchronization is provided between InterruptSolve()
   // and ~GScip(). These methods require mutual exclusion, the user is

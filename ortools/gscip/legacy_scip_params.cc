@@ -19,6 +19,7 @@
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
+#include "ortools/base/logging.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "scip/scip.h"
 #include "scip/scip_numerics.h"
@@ -58,6 +59,7 @@ absl::Status LegacyScipSetSolverSpecificParameters(
         if (absl::SimpleAtob(value, &parsed_value)) {
           RETURN_IF_SCIP_ERROR(
               SCIPsetBoolParam(scip, name.c_str(), parsed_value));
+          VLOG(2) << absl::StrFormat("Set parameter %s to %s", name, value);
           continue;
         }
         break;
@@ -67,6 +69,7 @@ absl::Status LegacyScipSetSolverSpecificParameters(
         if (absl::SimpleAtoi(value, &parsed_value)) {
           RETURN_IF_SCIP_ERROR(
               SCIPsetIntParam(scip, name.c_str(), parsed_value));
+          VLOG(2) << absl::StrFormat("Set parameter %s to %s", name, value);
           continue;
         }
         break;
@@ -76,6 +79,7 @@ absl::Status LegacyScipSetSolverSpecificParameters(
         if (absl::SimpleAtoi(value, &parsed_value)) {
           RETURN_IF_SCIP_ERROR(SCIPsetLongintParam(
               scip, name.c_str(), static_cast<SCIP_Longint>(parsed_value)));
+          VLOG(2) << absl::StrFormat("Set parameter %s to %s", name, value);
           continue;
         }
         break;
@@ -86,6 +90,7 @@ absl::Status LegacyScipSetSolverSpecificParameters(
           if (parsed_value > infinity) parsed_value = infinity;
           RETURN_IF_SCIP_ERROR(
               SCIPsetRealParam(scip, name.c_str(), parsed_value));
+          VLOG(2) << absl::StrFormat("Set parameter %s to %s", name, value);
           continue;
         }
         break;
@@ -93,6 +98,7 @@ absl::Status LegacyScipSetSolverSpecificParameters(
       case SCIP_PARAMTYPE_CHAR: {
         if (value.size() == 1) {
           RETURN_IF_SCIP_ERROR(SCIPsetCharParam(scip, name.c_str(), value[0]));
+          VLOG(2) << absl::StrFormat("Set parameter %s to %s", name, value);
           continue;
         }
         break;
@@ -104,6 +110,7 @@ absl::Status LegacyScipSetSolverSpecificParameters(
         }
         RETURN_IF_SCIP_ERROR(
             SCIPsetStringParam(scip, name.c_str(), value.c_str()));
+        VLOG(2) << absl::StrFormat("Set parameter %s to %s", name, value);
         continue;
       }
     }
