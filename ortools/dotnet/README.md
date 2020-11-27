@@ -16,7 +16,7 @@ This project aim to explain how you build a .Net native (for win-x64, linux-x64 
     * [Building a Complete Google.OrTools Package](#building-complete-googleortools-package)
 * [Examples](#examples)
 * [Appendices](#appendices)
-  * [Ressources](#ressources)
+  * [Resources](#resources)
   * [Issues](#issues)
 * [Misc](#misc)
 
@@ -233,7 +233,7 @@ The F# example folder shows how to compile against the typical .NET Framework in
 # Appendices
 Few links on the subject...
 
-## Related Issues
+## Resources
 Some issue related to this process
 * [Nuget needs to support dependencies specific to target runtime #1660](https://github.com/NuGet/Home/issues/1660)
 * [Improve documentation on creating native packages #238](https://github.com/NuGet/docs.microsoft.com-nuget/issues/238)

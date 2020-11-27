@@ -31,7 +31,7 @@ set -x
 ./routing_svg.py --time-windows > vrp_time_windows.svg
 ./routing_svg.py --time-windows --solution > vrp_time_windows_solution.svg
 
-# Ressource Problem
+# Resource Problem
 ./routing_svg.py --resources > vrp_resources.svg
 ./routing_svg.py --resources --solution > vrp_resources_solution.svg
 

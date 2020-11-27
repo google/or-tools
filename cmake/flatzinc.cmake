@@ -133,7 +133,9 @@ target_link_libraries(fz PRIVATE ortools::flatzinc)
 add_executable(${PROJECT_NAME}::fz ALIAS fz)
 
 # MiniZinc solver configuration
-file(RELATIVE_PATH FZ_REL_INSTALL_BINARY ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/minizinc/solvers ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/fz)
+file(RELATIVE_PATH FZ_REL_INSTALL_BINARY
+  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/minizinc/solvers
+  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/fz)
 configure_file(ortools/flatzinc/ortools.msc.in ortools.msc)
 
 # Install rules
@@ -146,5 +148,8 @@ install(TARGETS flatzinc fz
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   )
 
-install(DIRECTORY ortools/flatzinc/mznlib/ DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/minizinc/ortools FILES_MATCHING PATTERN "*.mzn")
-install(FILES ${CMAKE_BINARY_DIR}/ortools.msc DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/minizinc/solvers)
+install(DIRECTORY ortools/flatzinc/mznlib/
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/minizinc/ortools
+  FILES_MATCHING PATTERN "*.mzn")
+install(FILES ${CMAKE_BINARY_DIR}/ortools.msc
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/minizinc/solvers)

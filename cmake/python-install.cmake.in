@@ -1,0 +1,19 @@
+if(DEFINED ENV{DESTDIR})
+  # If DESTDIR is not absolute path, make it relative to @PROJECT_BINARY_DIR@
+  # like any install() command.
+  if(IS_ABSOLUTE $ENV{DESTDIR})
+    set(ROOT "--root=$ENV{DESTDIR}")
+  else()
+    set(ROOT "--root=@PROJECT_BINARY_DIR@/$ENV{DESTDIR}")
+  endif()
+else()
+  set(ROOT "")
+endif()
+
+execute_process(
+  WORKING_DIRECTORY @PROJECT_BINARY_DIR@/python
+  COMMAND @Python_EXECUTABLE@ setup.py install
+    ${ROOT}
+    --prefix=@CMAKE_INSTALL_PREFIX@
+    @SETUPTOOLS_INSTALL_LAYOUT@
+)
