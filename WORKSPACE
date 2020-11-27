@@ -21,9 +21,9 @@ git_repository(
 # Python Rules
 http_archive(
     name = "rules_python",
-    url = "https://github.com/bazelbuild/rules_python/releases/download/0.0.2/rules_python-0.0.2.tar.gz",
-    strip_prefix = "rules_python-0.0.2",
     sha256 = "b5668cde8bb6e3515057ef465a35ad712214962f0b3a314e551204266c7be90c",
+    strip_prefix = "rules_python-0.0.2",
+    url = "https://github.com/bazelbuild/rules_python/releases/download/0.0.2/rules_python-0.0.2.tar.gz",
 )
 
 # Protobuf
@@ -34,6 +34,7 @@ git_repository(
 )
 
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+
 # Load common dependencies.
 protobuf_deps()
 
@@ -68,7 +69,7 @@ http_archive(
 http_archive(
     name = "scip",
     build_file = "//bazel:scip.BUILD",
-    patches = [ "//bazel:scip.patch" ],
+    patches = ["//bazel:scip.patch"],
     sha256 = "033bf240298d3a1c92e8ddb7b452190e0af15df2dad7d24d0572f10ae8eec5aa",
     url = "https://github.com/google/or-tools/releases/download/v7.7/scip-7.0.1.tgz",
 )
