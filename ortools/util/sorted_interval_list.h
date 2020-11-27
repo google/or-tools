@@ -238,6 +238,9 @@ class Domain {
    * coeff, the size of intervals.size() can become really large. If it is
    * larger than a fixed constant, exact will be set to false and the result
    * will be set to ContinuousMultiplicationBy(coeff).
+   *
+   * Note that if you multiply by a negative coeff, kint64min will be dropped
+   * from the result even if it was here due to how this is implemented.
    */
   Domain MultiplicationBy(int64 coeff, bool* exact = nullptr) const;
 
