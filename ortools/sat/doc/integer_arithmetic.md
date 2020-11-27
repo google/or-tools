@@ -682,7 +682,6 @@ The following samples output:
 ```python
 """Implements a step function."""
 
-
 from ortools.sat.python import cp_model
 
 
