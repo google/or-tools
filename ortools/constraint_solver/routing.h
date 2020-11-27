@@ -3373,6 +3373,10 @@ class GlobalCheapestInsertionFilteredHeuristic
                      ->PositionsSetAtLeastOnce();
   }
 
+  int64 NumNonStartEndNodes() const {
+    return model()->Size() - model()->vehicles();
+  }
+
   void ResetVehicleIndices() override {
     node_index_to_vehicle_.assign(node_index_to_vehicle_.size(), -1);
   }
