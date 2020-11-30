@@ -47,13 +47,13 @@ def main(_):
 
     # We expand the creation of the diff array to avoid a pylint warning.
     diffs = []
-    for i in range(0, size - 1):
+    for i in range(size - 1):
         for j in range(i + 1, size):
             diffs.append(marks[j] - marks[i])
     solver.Add(solver.AllDifferent(diffs))
 
     solver.Add(marks[size - 1] - marks[size - 2] > marks[1] - marks[0])
-    for i in range(0, size - 2):
+    for i in range(size - 2):
         solver.Add(marks[i + 1] > marks[i])
 
     solution = solver.Assignment()

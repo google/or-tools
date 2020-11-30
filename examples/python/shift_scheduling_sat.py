@@ -12,17 +12,18 @@
 # limitations under the License.
 """Creates a shift scheduling problem and solves it."""
 
-from ortools.sat.python import cp_model
-
-from google.protobuf import text_format
 from absl import app
 from absl import flags
+
+from ortools.sat.python import cp_model
+from google.protobuf import text_format
 
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('output_proto', '',
                     'Output file to write the cp_model proto to.')
-flags.DEFINE_string('params', '', 'Sat solver parameters.')
+flags.DEFINE_string('params', 'max_time_in_seconds:10.0',
+                    'Sat solver parameters.')
 
 
 def negated_bounded_span(works, start, length):
@@ -376,8 +377,6 @@ def solve_shift_scheduling(params, output_proto):
     solver = cp_model.CpSolver()
     if params:
         text_format.Parse(params, solver.parameters)
-    else:
-        text_format.Parse(r'max_time_in_seconds:10.0', solver.parameters)
     solution_printer = cp_model.ObjectiveSolutionPrinter()
     status = solver.SolveWithSolutionCallback(model, solution_printer)
 
