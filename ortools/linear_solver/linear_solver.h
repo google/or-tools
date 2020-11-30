@@ -157,6 +157,8 @@
 #include "ortools/linear_solver/linear_solver_callback.h"
 #include "ortools/port/proto_utils.h"
 
+ABSL_DECLARE_FLAG(bool, linear_solver_enable_verbose_output);
+
 namespace operations_research {
 
 constexpr double kDefaultPrimalTolerance = 1e-07;
