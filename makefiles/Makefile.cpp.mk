@@ -251,8 +251,16 @@ $(FLATZINC_LIBS): $(OR_TOOLS_LIBS) $(FLATZINC_OBJS) | $(LIB_DIR)
 
 .PHONY: fz # Build Flatzinc binaries.
 fz: \
+ $(BIN_DIR)/ortools.msc \
  $(BIN_DIR)/fz$E \
  $(BIN_DIR)/parser_main$E
+
+$(BIN_DIR)/ortools.msc: $(SRC_DIR)/ortools/flatzinc/ortools.msc.in | $(BIN_DIR)
+	$(SED) -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
+ ortools$Sflatzinc$Sortools.msc.in \
+ > $(BIN_DIR)$Sortools.msc
+	$(SED) -i -e "s/@FZ_REL_INSTALL_BINARY@/.\/fz$E/" \
+ $(BIN_DIR)$Sortools.msc
 
 $(BIN_DIR)/fz$E: $(OBJ_DIR)/flatzinc/fz.$O $(FLATZINC_LIBS) $(OR_TOOLS_LIBS) | $(BIN_DIR)
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc$Sfz.$O $(FLATZINC_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz$E
@@ -719,6 +727,7 @@ clean_cc:
 	-$(DEL) $(OBJ_DIR)$Sport$S*.$O
 	-$(DEL) $(OBJ_DIR)$Ssat$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sutil$S*.$O
+	-$(DEL) $(BIN_DIR)$Sortools.msc
 	-$(DEL) $(BIN_DIR)$Sfz$E
 	-$(DEL) $(BIN_DIR)$Sparser_main$E
 	-$(DEL) $(BIN_DIR)$Ssat_runner$E

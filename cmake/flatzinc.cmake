@@ -136,7 +136,10 @@ add_executable(${PROJECT_NAME}::fz ALIAS fz)
 file(RELATIVE_PATH FZ_REL_INSTALL_BINARY
   ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/minizinc/solvers
   ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/fz)
-configure_file(ortools/flatzinc/ortools.msc.in ortools.msc)
+configure_file(
+  ortools/flatzinc/ortools.msc.in
+  ortools.msc
+  @ONLY)
 
 # Install rules
 include(GNUInstallDirs)
