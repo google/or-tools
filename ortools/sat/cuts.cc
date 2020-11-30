@@ -1287,6 +1287,7 @@ bool CoverCutHelper::TrySimpleKnapsack(
   // cut * scaling + lift > b * scaling => original_sum + lift_sum > rhs.
   const IntegerValue slack = -rhs;
   const IntegerValue remainder = max_coeff - slack;
+  max_base_magnitude = std::max(max_base_magnitude, IntTypeAbs(cut_.ub));
   const IntegerValue max_scaling(std::min(
       IntegerValue(60), FloorRatio(kMaxIntegerValue, max_base_magnitude)));
   const auto f = GetSuperAdditiveRoundingFunction(remainder, max_coeff,

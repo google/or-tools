@@ -15,7 +15,6 @@
 
 # [START import]
 from ortools.sat.python import cp_model
-
 # [END import]
 
 
@@ -33,7 +32,6 @@ def create_data_model():
     data['num_bins'] = len(data['bin_capacities'])
     data['all_bins'] = range(data['num_bins'])
     return data
-
 
 # [END data_model]
 
@@ -59,7 +57,6 @@ def print_solutions(data, solver, x):
         total_value += bin_value
     print('Total packed weight:', total_weight)
     print('Total packed value:', total_value)
-
 
 # [END solution_printer]
 

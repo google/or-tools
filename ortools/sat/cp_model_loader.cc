@@ -1737,19 +1737,6 @@ void LoadRoutesConstraint(const ConstraintProto& ct, Model* m) {
                               /*multiple_subcircuit_through_zero=*/true));
 }
 
-void LoadCircuitCoveringConstraint(const ConstraintProto& ct, Model* m) {
-  auto* mapping = m->GetOrCreate<CpModelMapping>();
-  const std::vector<IntegerVariable> nexts =
-      mapping->Integers(ct.circuit_covering().nexts());
-  const std::vector<std::vector<Literal>> graph =
-      GetSquareMatrixFromIntegerVariables(nexts, m);
-  const std::vector<int> distinguished(
-      ct.circuit_covering().distinguished_nodes().begin(),
-      ct.circuit_covering().distinguished_nodes().end());
-  m->Add(ExactlyOnePerRowAndPerColumn(graph));
-  m->Add(CircuitCovering(graph, distinguished));
-}
-
 bool LoadConstraint(const ConstraintProto& ct, Model* m) {
   switch (ct.constraint_case()) {
     case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
@@ -1813,9 +1800,6 @@ bool LoadConstraint(const ConstraintProto& ct, Model* m) {
       return true;
     case ConstraintProto::ConstraintProto::kRoutes:
       LoadRoutesConstraint(ct, m);
-      return true;
-    case ConstraintProto::ConstraintProto::kCircuitCovering:
-      LoadCircuitCoveringConstraint(ct, m);
       return true;
     default:
       return false;

@@ -257,6 +257,18 @@ std::string ValidateNoOverlap2DConstraint(const CpModelProto& model,
   return "";
 }
 
+std::string ValidateAutomatonConstraint(const CpModelProto& model,
+                                        const ConstraintProto& ct) {
+  const int num_transistions = ct.automaton().transition_tail().size();
+  if (num_transistions != ct.automaton().transition_head().size() ||
+      num_transistions != ct.automaton().transition_label().size()) {
+    return absl::StrCat(
+        "The transitions repeated fields must have the same size: ",
+        ProtobufShortDebugString(ct));
+  }
+  return "";
+}
+
 std::string ValidateReservoirConstraint(const CpModelProto& model,
                                         const ConstraintProto& ct) {
   if (ct.enforcement_literal_size() > 0) {
@@ -291,18 +303,6 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
       ct.reservoir().demands_size() != ct.reservoir().times_size()) {
     return "Wrong array length of demands variables";
   }
-  return "";
-}
-
-std::string ValidateCircuitCoveringConstraint(const ConstraintProto& ct) {
-  const int num_nodes = ct.circuit_covering().nexts_size();
-  for (const int d : ct.circuit_covering().distinguished_nodes()) {
-    if (d < 0 || d >= num_nodes) {
-      return absl::StrCat("Distinguished node ", d, " not in [0, ", num_nodes,
-                          ").");
-    }
-  }
-
   return "";
 }
 
@@ -468,6 +468,9 @@ std::string ValidateCpModel(const CpModelProto& model) {
                               ProtobufShortDebugString(ct));
         }
         break;
+      case ConstraintProto::ConstraintCase::kAutomaton:
+        RETURN_IF_NOT_EMPTY(ValidateAutomatonConstraint(model, ct));
+        break;
       case ConstraintProto::ConstraintCase::kCircuit:
         RETURN_IF_NOT_EMPTY(ValidateCircuitConstraint(model, ct));
         break;
@@ -479,9 +482,6 @@ std::string ValidateCpModel(const CpModelProto& model) {
         break;
       case ConstraintProto::ConstraintCase::kReservoir:
         RETURN_IF_NOT_EMPTY(ValidateReservoirConstraint(model, ct));
-        break;
-      case ConstraintProto::ConstraintCase::kCircuitCovering:
-        RETURN_IF_NOT_EMPTY(ValidateCircuitCoveringConstraint(ct));
         break;
       default:
         break;
@@ -917,37 +917,6 @@ class ConstraintChecker {
     return true;
   }
 
-  bool CircuitCoveringConstraintIsFeasible(const ConstraintProto& ct) {
-    const int num_nodes = ct.circuit_covering().nexts_size();
-    std::vector<bool> distinguished(num_nodes, false);
-    std::vector<bool> visited(num_nodes, false);
-    for (const int node : ct.circuit_covering().distinguished_nodes()) {
-      distinguished[node] = true;
-    }
-
-    // By design, every node has exactly one neighbour.
-    // Check that distinguished nodes do not share a circuit,
-    // mark nodes visited during the process.
-    std::vector<int> next(num_nodes, -1);
-    for (const int d : ct.circuit_covering().distinguished_nodes()) {
-      visited[d] = true;
-      for (int node = Value(ct.circuit_covering().nexts(d)); node != d;
-           node = Value(ct.circuit_covering().nexts(node))) {
-        if (distinguished[node]) return false;
-        CHECK(!visited[node]);
-        visited[node] = true;
-      }
-    }
-
-    // Check that nodes that were not visited are all loops.
-    for (int node = 0; node < num_nodes; node++) {
-      if (!visited[node] && Value(ct.circuit_covering().nexts(node)) != node) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   bool InverseConstraintIsFeasible(const ConstraintProto& ct) {
     const int num_variables = ct.inverse().f_direct_size();
     if (num_variables != ct.inverse().f_inverse_size()) return false;
@@ -1090,9 +1059,6 @@ bool SolutionIsFeasible(const CpModelProto& model,
         break;
       case ConstraintProto::ConstraintCase::kRoutes:
         is_feasible = checker.RoutesConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kCircuitCovering:
-        is_feasible = checker.CircuitCoveringConstraintIsFeasible(ct);
         break;
       case ConstraintProto::ConstraintCase::kInverse:
         is_feasible = checker.InverseConstraintIsFeasible(ct);
