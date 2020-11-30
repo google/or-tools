@@ -3565,7 +3565,12 @@ void GlobalCheapestInsertionFilteredHeuristic::InsertNodesOnRoutes(
   std::vector<NodeEntries> position_to_node_entries;
   InitializePositions(nodes, &priority_queue, &position_to_node_entries,
                       vehicles);
-  const bool all_routes =
+  // The following boolean indicates whether or not all vehicles are being
+  // considered for insertion of the nodes simultaneously.
+  // In the sequential version of the heuristic, as well as when inserting
+  // single pickup or deliveries from pickup/delivery pairs, this will be false.
+  // In the general parallel version of the heuristic, all_vehicles is true.
+  const bool all_vehicles =
       vehicles.empty() || vehicles.size() == model()->vehicles();
 
   while (!priority_queue.IsEmpty()) {
@@ -3583,29 +3588,11 @@ void GlobalCheapestInsertionFilteredHeuristic::InsertNodesOnRoutes(
     }
 
     if (node_entry->vehicle() == -1) {
-      // Node is unperformed.
-      if (all_routes) {
-        // Make node unperformed.
-        SetValue(node_to_insert, node_to_insert);
-        if (!Commit()) {
-          DeleteNodeEntry(node_entry, &priority_queue,
-                          &position_to_node_entries);
-        }
-      } else {
-        DCHECK_EQ(node_entry->value(), 0);
-        // In this case, all routes are not being considered simultaneously,
-        // so we do not make nodes unperformed (they might be better performed
-        // on some other route later).
-        // Furthermore, since in this case the node penalty is necessarily
-        // taken into account in the NodeEntry, the values "cost - penalty"
-        // for all nodes are now positive for all remaining entries in the
-        // priority queue, so we can empty the priority queue.
+      DCHECK(all_vehicles);
+      // Make node unperformed.
+      SetValue(node_to_insert, node_to_insert);
+      if (!Commit()) {
         DeleteNodeEntry(node_entry, &priority_queue, &position_to_node_entries);
-        while (!priority_queue.IsEmpty()) {
-          NodeEntry* const to_delete = priority_queue.Top();
-          DeleteNodeEntry(to_delete, &priority_queue,
-                          &position_to_node_entries);
-        }
       }
       continue;
     }
@@ -3615,10 +3602,10 @@ void GlobalCheapestInsertionFilteredHeuristic::InsertNodesOnRoutes(
     InsertBetween(node_to_insert, insert_after, Value(insert_after));
     if (Commit()) {
       const int vehicle = node_entry->vehicle();
-      UpdatePositions(nodes, vehicle, node_to_insert, &priority_queue,
-                      &position_to_node_entries);
-      UpdatePositions(nodes, vehicle, insert_after, &priority_queue,
-                      &position_to_node_entries);
+      UpdatePositions(nodes, vehicle, node_to_insert, all_vehicles,
+                      &priority_queue, &position_to_node_entries);
+      UpdatePositions(nodes, vehicle, insert_after, all_vehicles,
+                      &priority_queue, &position_to_node_entries);
       SetVehicleIndex(node_to_insert, vehicle);
     } else {
       DeleteNodeEntry(node_entry, &priority_queue, &position_to_node_entries);
@@ -4163,22 +4150,27 @@ void GlobalCheapestInsertionFilteredHeuristic::InitializePositions(
 
   const int num_vehicles =
       vehicles.empty() ? model()->vehicles() : vehicles.size();
+  const bool all_vehicles = (num_vehicles == model()->vehicles());
 
   for (int node : nodes) {
     if (Contains(node)) {
       continue;
     }
     const int64 node_penalty = GetUnperformedValue(node);
-    // In the case where we're not considering all routes simultaneously,
-    // always shift insertion costs by penalty.
-    const bool shift_insertion_cost_by_penalty =
-        absl::GetFlag(FLAGS_routing_shift_insertion_cost_by_penalty) ||
-        num_vehicles < model()->vehicles();
-    const int64 penalty = shift_insertion_cost_by_penalty ? node_penalty : 0;
-    // Add insertion entry making node unperformed.
-    if (gci_params_.add_unperformed_entries && node_penalty != kint64max) {
+    const int64 penalty =
+        absl::GetFlag(FLAGS_routing_shift_insertion_cost_by_penalty)
+            ? node_penalty
+            : 0;
+    // Add insertion entry making node unperformed. In the case where we're
+    // not considering all routes simultaneously, we don't add insertion entries
+    // making nodes unperformed.
+    if (gci_params_.add_unperformed_entries && node_penalty != kint64max &&
+        all_vehicles) {
       NodeEntry* const node_entry = new NodeEntry(node, -1, -1);
-      node_entry->set_value(shift_insertion_cost_by_penalty ? 0 : node_penalty);
+      node_entry->set_value(
+          absl::GetFlag(FLAGS_routing_shift_insertion_cost_by_penalty)
+              ? 0
+              : node_penalty);
       priority_queue->Add(node_entry);
     }
     // Add all insertion entries making node performed.
@@ -4197,6 +4189,8 @@ void GlobalCheapestInsertionFilteredHeuristic::
             position_to_node_entries) {
   const int num_vehicles =
       vehicles.empty() ? model()->vehicles() : vehicles.size();
+  const bool all_vehicles = (num_vehicles == model()->vehicles());
+  const int64 unperformed_value = GetUnperformedValue(node);
   if (!gci_params_.use_neighbors_ratio_for_initialization) {
     auto vehicles_it = vehicles.begin();
     for (int v = 0; v < num_vehicles; v++) {
@@ -4207,6 +4201,12 @@ void GlobalCheapestInsertionFilteredHeuristic::
       AppendEvaluatedPositionsAfter(node, start, Value(start), vehicle,
                                     &valued_positions);
       for (const std::pair<int64, int64>& valued_position : valued_positions) {
+        if (!all_vehicles && valued_position.first > unperformed_value) {
+          // NOTE: When all vehicles aren't considered for insertion, we don't
+          // add entries making nodes unperformed, so we don't add insertions
+          // which cost more than the node penalty either.
+          continue;
+        }
         NodeEntry* const node_entry =
             new NodeEntry(node, valued_position.second, vehicle);
         node_entry->set_value(CapSub(valued_position.first, penalty));
@@ -4219,8 +4219,6 @@ void GlobalCheapestInsertionFilteredHeuristic::
 
   // We're only considering the closest neighbors as insertion positions for
   // the node.
-  absl::flat_hash_set<int> vehicles_to_consider;
-  const bool all_vehicles = (num_vehicles == model()->vehicles());
   const auto insert_on_vehicle_for_cost_class = [this, &vehicles, all_vehicles](
                                                     int v, int cost_class) {
     return (model()->GetCostClassIndexOfVehicle(v).value() == cost_class) &&
@@ -4238,11 +4236,16 @@ void GlobalCheapestInsertionFilteredHeuristic::
           !insert_on_vehicle_for_cost_class(vehicle, cost_class)) {
         continue;
       }
+      const int64 insertion_cost = GetInsertionCostForNodeAtPosition(
+          node, insert_after, Value(insert_after), vehicle);
+      if (!all_vehicles && insertion_cost > unperformed_value) {
+        // NOTE: When all vehicles aren't considered for insertion, we don't
+        // add entries making nodes unperformed, so we don't add insertions
+        // which cost more than the node penalty either.
+        continue;
+      }
       NodeEntry* const node_entry = new NodeEntry(node, insert_after, vehicle);
-      node_entry->set_value(
-          CapSub(GetInsertionCostForNodeAtPosition(
-                     node, insert_after, Value(insert_after), vehicle),
-                 penalty));
+      node_entry->set_value(CapSub(insertion_cost, penalty));
       position_to_node_entries->at(insert_after).insert(node_entry);
       priority_queue->Add(node_entry);
     }
@@ -4251,6 +4254,7 @@ void GlobalCheapestInsertionFilteredHeuristic::
 
 void GlobalCheapestInsertionFilteredHeuristic::UpdatePositions(
     const std::vector<int>& nodes, int vehicle, int64 insert_after,
+    bool all_vehicles,
     AdjustablePriorityQueue<
         GlobalCheapestInsertionFilteredHeuristic::NodeEntry>* priority_queue,
     std::vector<GlobalCheapestInsertionFilteredHeuristic::NodeEntries>*
@@ -4276,6 +4280,15 @@ void GlobalCheapestInsertionFilteredHeuristic::UpdatePositions(
     if (!Contains(node_to_insert) &&
         !existing_insertions.contains(node_to_insert) &&
         IsNeighborForCostClass(cost_class, insert_after, node_to_insert)) {
+      const int64 insertion_cost = GetInsertionCostForNodeAtPosition(
+          node_to_insert, insert_after, Value(insert_after), vehicle);
+      if (!all_vehicles &&
+          insertion_cost > GetUnperformedValue(node_to_insert)) {
+        // NOTE: When all vehicles aren't considered for insertion, we don't
+        // add entries making nodes unperformed, so we don't add insertions
+        // which cost more than the node penalty either.
+        continue;
+      }
       NodeEntry* const node_entry =
           new NodeEntry(node_to_insert, insert_after, vehicle);
       node_entries->at(insert_after).insert(node_entry);

@@ -3346,7 +3346,7 @@ class GlobalCheapestInsertionFilteredHeuristic
   /// Updates all node entries inserting a node after node "insert_after" and
   /// updates the priority queue accordingly.
   void UpdatePositions(const std::vector<int>& nodes, int vehicle,
-                       int64 insert_after,
+                       int64 insert_after, bool all_vehicles,
                        AdjustablePriorityQueue<NodeEntry>* priority_queue,
                        std::vector<NodeEntries>* node_entries);
   /// Deletes an entry, removing it from the priority queue and the appropriate
