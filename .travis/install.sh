@@ -51,7 +51,7 @@ if [ "${BUILDER}" == make ]; then
     if [ "${LANGUAGE}" == python3 ]; then
       echo 'travis_fold:start:python3'
       pyenv global system 3.7
-      python3.7 -m pip install -q virtualenv wheel absl-py
+      python3.7 -m pip install -q virtualenv wheel absl-py mypy-protobuf
       echo 'travis_fold:end:python3'
     elif [ "${LANGUAGE}" == dotnet ]; then
       echo 'travis_fold:start:dotnet'
@@ -71,7 +71,7 @@ if [ "${BUILDER}" == make ]; then
     if [ "${LANGUAGE}" == python3 ]; then
       echo 'travis_fold:start:python3'
       pyenv global system 3.7
-      python3.7 -m pip install -q virtualenv wheel absl-py
+      python3.7 -m pip install -q virtualenv wheel absl-py mypy-protobuf
       echo 'travis_fold:end:python3'
     elif [ "${LANGUAGE}" == dotnet ]; then
       echo 'travis_fold:start:dotnet'
@@ -93,7 +93,7 @@ if [ "${BUILDER}" == make ]; then
     if [ "${LANGUAGE}" == python3 ]; then
       echo 'travis_fold:start:python3'
       # brew upgrade python
-      python3 -m pip install -q virtualenv wheel absl-py
+      python3 -m pip install -q virtualenv wheel absl-py mypy-protobuf
       echo 'travis_fold:end:python3'
     elif [ "${LANGUAGE}" == dotnet ]; then
       echo 'travis_fold:start:dotnet'
@@ -116,13 +116,13 @@ if [ "${BUILDER}" == cmake ]; then
       echo 'travis_fold:start:python3'
       if [ "${ARCH}" == "amd64" ]; then
         pyenv global system 3.7
-        python3.7 -m pip install -q virtualenv wheel absl-py
+        python3.7 -m pip install -q virtualenv wheel absl-py mypy-protobuf
       elif [ "${ARCH}" == "ppc64le" ]; then
         sudo apt-get install python3-dev python3-pip
-        python3.5 -m pip install -q virtualenv wheel absl-py
+        python3.5 -m pip install -q virtualenv wheel absl-py mypy-protobuf
       elif [ "${ARCH}" == "amd64" ]; then
         sudo apt-get install python3-dev python3-pip pcre-dev
-        python3 -m pip install -q virtualenv wheel absl-py
+        python3 -m pip install -q virtualenv wheel absl-py mypy-protobuf
       fi
       echo 'travis_fold:end:python3'
     fi

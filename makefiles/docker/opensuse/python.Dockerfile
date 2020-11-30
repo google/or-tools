@@ -2,7 +2,7 @@ FROM ortools/make:opensuse_swig AS env
 RUN zypper update -y \
 && zypper install -y python3-devel python3-pip python3-wheel \
 && zypper clean -a
-RUN python3 -m pip install absl-py
+RUN python3 -m pip install absl-py mypy-protobuf
 
 FROM env AS devel
 WORKDIR /home/project

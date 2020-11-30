@@ -2,7 +2,7 @@ FROM ortools/make:fedora_swig AS env
 RUN dnf -y update \
 && dnf -y install python3-devel python3-pip python3-wheel \
 && dnf clean all
-RUN python3 -m pip install absl-py
+RUN python3 -m pip install absl-py mypy-protobuf
 
 FROM env AS devel
 WORKDIR /home/project

@@ -172,6 +172,7 @@ do
     # shellcheck source=/dev/null
     source "${BUILD_ROOT}/${PYTAG}/bin/activate"
     pip install -U pip setuptools wheel absl-py  # absl-py is needed by make test_python
+    pip install -U mypy-protobuf  # need to generate protobuf mypy files
     # Build artifact
     export PKG_CONFIG_PATH="${PYROOT}/lib/pkgconfig:${BASE_PKG_CONFIG}"
     echo "PKG_CONFIG_PATH: ${PKG_CONFIG_PATH}"

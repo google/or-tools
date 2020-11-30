@@ -31,7 +31,7 @@ for i in "${PY[@]}"; do
   command -v "python$i"
   command -v "python$i" | xargs echo "python$i: " | tee -a build.log
   "python$i" -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
-  "python$i" -m pip install --user wheel absl-py
+  "python$i" -m pip install --user wheel absl-py mypy-protobuf
 done
 
 # java

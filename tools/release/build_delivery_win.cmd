@@ -18,12 +18,20 @@ which.exe cmake | tee.exe -a build.log
 REM Python
 which.exe C:\python36-64\python.exe || exit 1
 echo C:\python36-64\python.exe: FOUND | tee.exe -a build.log
+C:\python36-64\python.exe -m pip install --user absl-py mypy-protobuf
+
 which.exe C:\python37-64\python.exe || exit 1
 echo C:\python37-64\python.exe: FOUND | tee.exe -a build.log
+C:\python37-64\python.exe -m pip install --user absl-py mypy-protobuf
+
 which.exe C:\python38-64\python.exe || exit 1
 echo C:\python38-64\python.exe: FOUND | tee.exe -a build.log
+C:\python38-64\python.exe -m pip install --user absl-py mypy-protobuf
+
 which.exe C:\python39-64\python.exe || exit 1
 echo C:\python39-64\python.exe: FOUND | tee.exe -a build.log
+C:\python39-64\python.exe -m pip install --user absl-py mypy-protobuf
+
 REM Java
 echo JAVA_HOME: %JAVA_HOME% | tee.exe -a build.log
 which.exe java || exit 1

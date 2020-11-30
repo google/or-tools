@@ -11,7 +11,7 @@ RUN apk add --no-cache swig
 
 # Python
 RUN apk add --no-cache python3-dev py3-pip py3-wheel
-RUN python3 -m pip install absl-py
+RUN python3 -m pip install absl-py mypy-protobuf
 
 # Java
 ENV JAVA_HOME=/usr/lib/jvm/java-1.8-openjdk

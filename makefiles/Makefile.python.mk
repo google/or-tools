@@ -21,11 +21,12 @@ else
 PYTHON_EXECUTABLE := $(shell $(WHICH) $(PYTHON_COMPILER) 2>nul)
 endif
 SET_PYTHONPATH = set PYTHONPATH=$(OR_TOOLS_PYTHONPATH) &&
+GEN_MYPY := $(shell $(WHICH) protoc-gen-mypy 2> NUL)
 else # UNIX
 PYTHON_COMPILER ?= python$(UNIX_PYTHON_VER)
 PYTHON_EXECUTABLE := $(shell which $(PYTHON_COMPILER))
 SET_PYTHONPATH = PYTHONPATH=$(OR_TOOLS_PYTHONPATH)
-GEN_MYPY := $(shell $(WHICH) protoc-gen-mypy)
+GEN_MYPY := $(shell command -v protoc-gen-mypy 2> /dev/null)
 ifneq ($(GEN_MYPY),)
 MYPY_OUT=--mypy_out=$(GEN_PATH)
 endif
