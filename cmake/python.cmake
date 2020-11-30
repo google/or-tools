@@ -29,7 +29,29 @@ if(Python_VERSION VERSION_GREATER_EQUAL 3)
   list(APPEND CMAKE_SWIG_FLAGS "-py3" "-DPY3")
 endif()
 
-# Generate Protobuf py sources
+# Find if python module MODULE_NAME is available,
+# if not install it to the Python user install directory.
+function(search_python_module MODULE_NAME)
+  execute_process(
+    COMMAND ${Python_EXECUTABLE} -c "import ${MODULE_NAME}; print(${MODULE_NAME}.__version__)"
+    RESULT_VARIABLE _RESULT
+    OUTPUT_VARIABLE MODULE_VERSION
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  if(${_RESULT} STREQUAL "0")
+    message(STATUS "Found python module: ${MODULE_NAME} (found version \"${MODULE_VERSION}\")")
+  else()
+    message(WARNING "Can't find python module \"${MODULE_NAME}\", install it using pip...")
+    execute_process(
+      COMMAND ${Python_EXECUTABLE} -m pip install --user ${MODULE_NAME}
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      )
+  endif()
+endfunction()
+
+# Generate Protobuf py sources with mypy support
+search_python_module(mypy-protobuf)
 set(PROTO_PYS)
 file(GLOB_RECURSE proto_py_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/constraint_solver/*.proto"
@@ -51,6 +73,7 @@ foreach(PROTO_FILE IN LISTS proto_py_files)
     "--proto_path=${PROJECT_SOURCE_DIR}"
     ${PROTO_DIRS}
     "--python_out=${PROJECT_BINARY_DIR}/python"
+    "--mypy_out=${PROJECT_BINARY_DIR}/python"
     ${PROTO_FILE}
     DEPENDS ${PROTO_FILE} protobuf::protoc
     COMMENT "Generate Python protocol buffer for ${PROTO_FILE}"
@@ -107,26 +130,10 @@ file(GENERATE
   OUTPUT ${PROJECT_BINARY_DIR}/python/$<CONFIG>/setup.py
   INPUT ${PROJECT_BINARY_DIR}/python/setup.py.in)
 
-# Find if python module MODULE_NAME is available,
-# if not install it to the Python user install directory.
-function(search_python_module MODULE_NAME)
-  execute_process(
-    COMMAND ${Python_EXECUTABLE} -c "import ${MODULE_NAME}; print(${MODULE_NAME}.__version__)"
-    RESULT_VARIABLE _RESULT
-    OUTPUT_VARIABLE MODULE_VERSION
-    ERROR_QUIET
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-  if(${_RESULT} STREQUAL "0")
-    message(STATUS "Found python module: ${MODULE_NAME} (found version \"${MODULE_VERSION}\")")
-  else()
-    message(WARNING "Can't find python module \"${MODULE_NAME}\", install it using pip...")
-    execute_process(
-      COMMAND ${Python_EXECUTABLE} -m pip install --user ${MODULE_NAME}
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-      )
-  endif()
-endfunction()
+configure_file(
+  ${PROJECT_SOURCE_DIR}/tools/README.pypi.txt
+  ${PROJECT_BINARY_DIR}/python/README.txt
+  COPYONLY)
 
 # Look for python module wheel
 search_python_module(setuptools)
@@ -159,16 +166,6 @@ add_custom_target(python_package ALL
 add_dependencies(python_package ortools::ortools Py${PROJECT_NAME}_proto)
 
 # Install rules
-# Check if we have system Python on Debian/Ubuntu, if so tell setuptools
-# to use the deb layout (dist-packages instead of site-packages).
-execute_process(
-  COMMAND ${Python_EXECUTABLE} -c "import sys; sys.stdout.write(sys.path[-1])"
-  OUTPUT_VARIABLE Python_STDLIB_DIR
-)
-if(Python_STDLIB_DIR MATCHES ".*/dist-packages$")
-  set(SETUPTOOLS_INSTALL_LAYOUT "--install-layout=deb")
-endif()
-
 configure_file(
   ${PROJECT_SOURCE_DIR}/cmake/python-install.cmake.in
   ${PROJECT_BINARY_DIR}/python/python-install.cmake
