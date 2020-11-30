@@ -454,7 +454,7 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
     std::vector<int> heads(ct.circuit().heads().begin(),
                            ct.circuit().heads().end());
     std::vector<Literal> literals = mapping->Literals(ct.circuit().literals());
-    const int num_nodes = ReindexArcs(&tails, &heads, &literals);
+    const int num_nodes = ReindexArcs(&tails, &heads);
 
     relaxation->cut_generators.push_back(
         CreateStronglyConnectedGraphCutGenerator(num_nodes, tails, heads,

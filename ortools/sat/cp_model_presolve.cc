@@ -37,6 +37,7 @@
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/sat/circuit.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_expand.h"
@@ -3031,6 +3032,10 @@ bool CpModelPresolver::PresolveCircuit(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
   CircuitConstraintProto& proto = *ct->mutable_circuit();
+
+  // The indexing might not be dense, so fix that first.
+  ReindexArcs(ct->mutable_circuit()->mutable_tails(),
+              ct->mutable_circuit()->mutable_heads());
 
   // Convert the flat structure to a graph, note that we includes all the arcs
   // here (even if they are at false).

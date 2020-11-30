@@ -468,33 +468,6 @@ std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
   };
 }
 
-int ReindexArcs(std::vector<int>* tails, std::vector<int>* heads,
-                std::vector<Literal>* literals) {
-  const int num_arcs = tails->size();
-  if (num_arcs == 0) return 0;
-
-  // Put all nodes in a set.
-  std::set<int> nodes;
-  for (int arc = 0; arc < num_arcs; ++arc) {
-    nodes.insert((*tails)[arc]);
-    nodes.insert((*heads)[arc]);
-  }
-
-  // Compute the new indices while keeping a stable order.
-  int new_index = 0;
-  std::vector<int> mapping(*--nodes.end() + 1);
-  for (const int node : nodes) {
-    mapping[node] = new_index++;
-  }
-
-  // Remap the arcs.
-  for (int arc = 0; arc < num_arcs; ++arc) {
-    (*tails)[arc] = mapping[(*tails)[arc]];
-    (*heads)[arc] = mapping[(*heads)[arc]];
-  }
-  return nodes.size();
-}
-
 std::function<void(Model*)> SubcircuitConstraint(
     int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
     const std::vector<Literal>& literals,

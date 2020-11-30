@@ -246,6 +246,17 @@ std::string ValidateRoutesConstraint(const CpModelProto& model,
   return "";
 }
 
+std::string ValidateNoOverlap2DConstraint(const CpModelProto& model,
+                                          const ConstraintProto& ct) {
+  const int size_x = ct.no_overlap_2d().x_intervals().size();
+  const int size_y = ct.no_overlap_2d().y_intervals().size();
+  if (size_x != size_y) {
+    return absl::StrCat("The two lists of intervals must have the same size: ",
+                        ProtobufShortDebugString(ct));
+  }
+  return "";
+}
+
 std::string ValidateReservoirConstraint(const CpModelProto& model,
                                         const ConstraintProto& ct) {
   if (ct.enforcement_literal_size() > 0) {
@@ -418,7 +429,7 @@ std::string ValidateCpModel(const CpModelProto& model) {
         break;
       case ConstraintProto::ConstraintCase::kLinMax: {
         const std::string target_error =
-            ValidateLinearExpression(model, ct.lin_min().target());
+            ValidateLinearExpression(model, ct.lin_max().target());
         if (!target_error.empty()) return target_error;
         for (int i = 0; i < ct.lin_max().exprs_size(); ++i) {
           const std::string expr_error =
@@ -462,6 +473,9 @@ std::string ValidateCpModel(const CpModelProto& model) {
         break;
       case ConstraintProto::ConstraintCase::kRoutes:
         RETURN_IF_NOT_EMPTY(ValidateRoutesConstraint(model, ct));
+        break;
+      case ConstraintProto::ConstraintCase::kNoOverlap2D:
+        RETURN_IF_NOT_EMPTY(ValidateNoOverlap2DConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kReservoir:
         RETURN_IF_NOT_EMPTY(ValidateReservoirConstraint(model, ct));
