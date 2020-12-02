@@ -77,12 +77,12 @@ def create_data_model():
            -_capacity,
            -_capacity,
            -_capacity,
-           1, 1, # 1, 2
+           2, 2, # 1, 2
            2, 4, # 3, 4
            2, 4, # 5, 6
            8, 8, # 7, 8
-           1, 2, # 9,10
-           1, 2, # 11,12
+           2, 2, # 9,10
+           2, 2, # 11,12
            4, 4, # 13, 14
            8, 8] # 15, 16
     data['time_per_demand_unit'] = 5  # 5 minutes/unit
@@ -93,14 +93,14 @@ def create_data_model():
            (0, 1000),
            (0, 1000),
            (0, 1000),
-           (75, 8500), (75, 8500), # 1, 2
-           (60, 7000), (45, 5500), # 3, 4
-           (0, 8000), (50, 6000), # 5, 6
-           (0, 1000), (10, 2000), # 7, 8
-           (0, 1000), (75, 8500), # 9, 10
-           (85, 9500), (5, 1500), # 11, 12
-           (15, 2500), (10, 2000), # 13, 14
-           (45, 5500), (30, 4000)] # 15, 16
+           (75, 850), (75, 850), # 1, 2
+           (60, 700), (45, 550), # 3, 4
+           (0, 800), (50, 600), # 5, 6
+           (0, 100), (10, 200), # 7, 8
+           (0, 100), (75, 850), # 9, 10
+           (85, 950), (5, 150), # 11, 12
+           (15, 250), (10, 200), # 13, 14
+           (45, 550), (30, 400)] # 15, 16
     data['num_vehicles'] = 3
     data['vehicle_capacity'] = _capacity
     data[
@@ -121,12 +121,15 @@ def manhattan_distance(position_1, position_2):
 def create_distance_evaluator(data):
     """Creates callback to return distance between points."""
     _distances = {}
+    BIG_DISTANCE=10000
     # precompute distance between location to have distance callback in O(1)
     for from_node in xrange(data['num_locations']):
         _distances[from_node] = {}
         for to_node in xrange(data['num_locations']):
             if from_node == to_node:
                 _distances[from_node][to_node] = 0
+            elif from_node in [0, 1, 2, 3, 4, 5] and to_node in [0, 1, 2, 3, 4, 5]:
+                _distances[from_node][to_node] = BIG_DISTANCE
             else:
                 _distances[from_node][to_node] = (manhattan_distance(
                     data['locations'][from_node], data['locations'][to_node]))
@@ -169,21 +172,26 @@ def add_capacity_constraints(routing, manager, data, demand_evaluator_index):
     """Adds capacity constraint"""
     vehicle_capacity = data['vehicle_capacity']
     capacity = 'Capacity'
+    # Non-zero slack for reseting to zero unload depot nodes.
+    # e.g. vehicle with load 10/15 arrives at node 1 (depot unload)
+    # so we have CumulVar = 10(current load) + -15(unload) + 5(slack) = 0.
     routing.AddDimension(
         demand_evaluator_index,
-        0,  # Null slack
+        vehicle_capacity,  # infinite slack
         vehicle_capacity,
         True,  # start cumul to zero
         capacity)
 
-    # Add Slack for reseting to zero unload depot nodes.
-    # e.g. vehicle with load 10/15 arrives at node 1 (depot unload)
-    # so we have CumulVar = 10(current load) + -15(unload) + 5(slack) = 0.
     capacity_dimension = routing.GetDimensionOrDie(capacity)
     for node_index in [1, 2, 3, 4, 5]:
         index = manager.NodeToIndex(node_index)
-        capacity_dimension.SlackVar(index).SetRange(0, vehicle_capacity)
         routing.AddDisjunction([node_index], 0)
+    # fix slack at non-reload nodes to zero
+    # so the exact amount desired gets picked up
+    for node_index in xrange(6, len(data['demands'])):
+        index = manager.NodeToIndex(node_index)
+        capacity_dimension.SlackVar(index).SetMax(0)
+        routing.AddDisjunction([node_index], 100000)
 
 
 def create_time_evaluator(data):
@@ -265,6 +273,9 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
     time_dimension = routing.GetDimensionOrDie('Time')
     dropped = []
     for order in xrange(0, routing.nodes()):
+        # ignore "reload" nodes
+        if data['demands'][order] < 0:
+            continue
         index = manager.NodeToIndex(order)
         if assignment.Value(routing.NextVar(index)) == index:
             dropped.append(order)
@@ -342,6 +353,10 @@ def main():
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
         routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)  # pylint: disable=no-member
+    search_parameters.local_search_metaheuristic = (routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
+    search_parameters.time_limit.seconds = 2
+    # search_parameters.log_search = False
+
     # Solve the problem.
     assignment = routing.SolveWithParameters(search_parameters)
     print_solution(data, manager, routing, assignment)
