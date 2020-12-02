@@ -128,7 +128,7 @@ def create_distance_evaluator(data):
             if from_node == to_node:
                 _distances[from_node][to_node] = 0
             # Forbid start/end/reload node to be consecutive.
-            if from_node in range(6) and to_node in range(6):
+            elif from_node in range(6) and to_node in range(6):
                 _distances[from_node][to_node] = data['vehicle_max_distance']
             else:
                 _distances[from_node][to_node] = (manhattan_distance(
@@ -207,8 +207,8 @@ def create_time_evaluator(data):
         if from_node == to_node:
             travel_time = 0
         else:
-            travel_time = manhattan_distance(data['locations'][
-                from_node], data['locations'][to_node]) / data['vehicle_speed']
+            travel_time = manhattan_distance(
+                    data['locations'][from_node], data['locations'][to_node]) / data['vehicle_speed']
         return travel_time
 
     _total_time = {}
