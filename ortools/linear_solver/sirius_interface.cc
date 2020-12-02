@@ -705,8 +705,9 @@ namespace operations_research {
 		else
 			mRstat = 0;
 
-		if (mRstat)
+		if (mRstat) {
 			return xformBasisStatus(mRstat[constraint_index]);
+		}
 		else {
 			LOG(FATAL) << "Row basis status not available";
 			return MPSolver::FREE;
@@ -732,8 +733,9 @@ namespace operations_research {
 		else
 			mCstat = 0;
 
-		if (mCstat)
+		if (mCstat) {
 			return xformBasisStatus(mCstat[variable_index]);
+		}
 		else {
 			LOG(FATAL) << "Column basis status not available";
 			return MPSolver::FREE;
