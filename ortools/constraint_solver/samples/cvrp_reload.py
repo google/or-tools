@@ -143,7 +143,7 @@ def add_distance_dimension(routing, distance_evaluator_index):
     routing.AddDimension(
         distance_evaluator_index,
         0,  # null slack
-        10000,  # maximum distance per vehicle
+        10_000,  # maximum distance per vehicle
         True,  # start cumul to zero
         distance)
     distance_dimension = routing.GetDimensionOrDie(distance)
@@ -169,7 +169,7 @@ def add_capacity_constraints(routing, manager, data, demand_evaluator_index):
     capacity = 'Capacity'
     routing.AddDimension(
         demand_evaluator_index,
-        0,  # Null slack
+        vehicle_capacity,
         vehicle_capacity,
         True,  # start cumul to zero
         capacity)
@@ -178,10 +178,16 @@ def add_capacity_constraints(routing, manager, data, demand_evaluator_index):
     # e.g. vehicle with load 10/15 arrives at node 1 (depot unload)
     # so we have CumulVar = 10(current load) + -15(unload) + 5(slack) = 0.
     capacity_dimension = routing.GetDimensionOrDie(capacity)
+    # Allow to drop reloading nodes with zero cost.
     for node_index in [1, 2, 3, 4, 5]:
         index = manager.NodeToIndex(node_index)
-        capacity_dimension.SlackVar(index).SetRange(0, vehicle_capacity)
         routing.AddDisjunction([node_index], 0)
+
+    # Allow to drop regular node with a cost.
+    for node_index in range(6, len(data['demands'])):
+        index = manager.NodeToIndex(node_index)
+        capacity_dimension.SlackVar(index).SetValue(0)
+        routing.AddDisjunction([node_index], 100_000)
 
 
 def create_time_evaluator(data):
@@ -340,9 +346,16 @@ def main():
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
         routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)  # pylint: disable=no-member
+    search_parameters.local_search_metaheuristic = (
+        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
+    search_parameters.time_limit.FromSeconds(3)
+
     # Solve the problem.
-    assignment = routing.SolveWithParameters(search_parameters)
-    print_solution(data, manager, routing, assignment)
+    solution = routing.SolveWithParameters(search_parameters)
+    if solution:
+        print_solution(data, manager, routing, solution)
+    else:
+        print("No solution found !")
 
 
 if __name__ == '__main__':
