@@ -75,12 +75,12 @@ def create_data_model():
            -_capacity,
            -_capacity,
            -_capacity,
-           1, 1, # 1, 2
-           2, 4, # 3, 4
-           2, 4, # 5, 6
+           3, 3, # 1, 2
+           3, 4, # 3, 4
+           3, 4, # 5, 6
            8, 8, # 7, 8
-           1, 2, # 9,10
-           1, 2, # 11,12
+           3, 3, # 9,10
+           3, 3, # 11,12
            4, 4, # 13, 14
            8, 8] # 15, 16
     data['time_per_demand_unit'] = 5  # 5 minutes/unit
@@ -91,16 +91,18 @@ def create_data_model():
            (0, 1000),
            (0, 1000),
            (0, 1000),
-           (75, 8500), (75, 8500), # 1, 2
-           (60, 7000), (45, 5500), # 3, 4
-           (0, 8000), (50, 6000), # 5, 6
-           (0, 1000), (10, 2000), # 7, 8
-           (0, 1000), (75, 8500), # 9, 10
-           (85, 9500), (5, 1500), # 11, 12
-           (15, 2500), (10, 2000), # 13, 14
-           (45, 5500), (30, 4000)] # 15, 16
+           (75, 850), (75, 850), # 1, 2
+           (60, 700), (45, 550), # 3, 4
+           (0, 800), (50, 600), # 5, 6
+           (0, 1000), (10, 200), # 7, 8
+           (0, 1000), (75, 850), # 9, 10
+           (85, 950), (5, 150), # 11, 12
+           (15, 250), (10, 200), # 13, 14
+           (45, 550), (30, 400)] # 15, 16
     data['num_vehicles'] = 3
     data['vehicle_capacity'] = _capacity
+    data['vehicle_max_distance'] = 10_000
+    data['vehicle_max_time'] = 1_500
     data[
         'vehicle_speed'] = 5 * 60 / 3.6  # Travel speed: 5km/h to convert in m/min
     data['depot'] = 0
@@ -125,6 +127,9 @@ def create_distance_evaluator(data):
         for to_node in range(data['num_locations']):
             if from_node == to_node:
                 _distances[from_node][to_node] = 0
+            # Forbid start/end/reload node to be consecutive.
+            if from_node in range(6) and to_node in range(6):
+                _distances[from_node][to_node] = data['vehicle_max_distance']
             else:
                 _distances[from_node][to_node] = (manhattan_distance(
                     data['locations'][from_node], data['locations'][to_node]))
@@ -137,13 +142,13 @@ def create_distance_evaluator(data):
     return distance_evaluator
 
 
-def add_distance_dimension(routing, distance_evaluator_index):
+def add_distance_dimension(routing, manager, data, distance_evaluator_index):
     """Add Global Span constraint"""
     distance = 'Distance'
     routing.AddDimension(
         distance_evaluator_index,
         0,  # null slack
-        10_000,  # maximum distance per vehicle
+        data['vehicle_max_distance'],  # maximum distance per vehicle
         True,  # start cumul to zero
         distance)
     distance_dimension = routing.GetDimensionOrDie(distance)
@@ -229,11 +234,11 @@ def create_time_evaluator(data):
 def add_time_window_constraints(routing, manager, data, time_evaluator):
     """Add Time windows constraint"""
     time = 'Time'
-    horizon = 1500
+    max_time = data['vehicle_max_time']
     routing.AddDimension(
         time_evaluator,
-        horizon,  # allow waiting time
-        horizon,  # maximum time per vehicle
+        max_time,  # allow waiting time
+        max_time,  # maximum time per vehicle
         False,  # don't force start cumul to zero since we are giving TW to start nodes
         time)
     time_dimension = routing.GetDimensionOrDie(time)
@@ -261,22 +266,27 @@ def add_time_window_constraints(routing, manager, data, time_evaluator):
 ###########
 def print_solution(data, manager, routing, assignment):  # pylint:disable=too-many-locals
     """Prints assignment on console"""
-    print('Objective: {}'.format(assignment.ObjectiveValue()))
+    print(f'Objective: {assignment.ObjectiveValue()}')
     total_distance = 0
     total_load = 0
     total_time = 0
     capacity_dimension = routing.GetDimensionOrDie('Capacity')
     time_dimension = routing.GetDimensionOrDie('Time')
     dropped = []
-    for order in range(0, routing.nodes()):
+    for order in range(6, routing.nodes()):
         index = manager.NodeToIndex(order)
         if assignment.Value(routing.NextVar(index)) == index:
             dropped.append(order)
-    print('dropped orders: {}'.format(dropped))
+    print(f'dropped orders: {dropped}')
+    for reload in range(1, 6):
+        index = manager.NodeToIndex(reload)
+        if assignment.Value(routing.NextVar(index)) == index:
+            dropped.append(reload)
+    print(f'dropped reload stations: {dropped}')
 
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
-        plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
+        plan_output = f'Route for vehicle {vehicle_id}:\n'
         distance = 0
         while not routing.IsEnd(index):
             load_var = capacity_dimension.CumulVar(index)
@@ -295,11 +305,9 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
             manager.IndexToNode(index),
             assignment.Value(load_var),
             assignment.Min(time_var), assignment.Max(time_var))
-        plan_output += 'Distance of the route: {}m\n'.format(distance)
-        plan_output += 'Load of the route: {}\n'.format(
-            assignment.Value(load_var))
-        plan_output += 'Time of the route: {}min\n'.format(
-            assignment.Value(time_var))
+        plan_output += f'Distance of the route: {distance}m\n'
+        plan_output += f'Load of the route: {assignment.Value(load_var)}\n'
+        plan_output += f'Time of the route: {assignment.Value(time_var)}min\n'
         print(plan_output)
         total_distance += distance
         total_load += assignment.Value(load_var)
@@ -330,7 +338,7 @@ def main():
     routing.SetArcCostEvaluatorOfAllVehicles(distance_evaluator_index)
 
     # Add Distance constraint to minimize the longuest route
-    add_distance_dimension(routing, distance_evaluator_index)
+    add_distance_dimension(routing, manager, data, distance_evaluator_index)
 
     # Add Capacity constraint
     demand_evaluator_index = routing.RegisterUnaryTransitCallback(
