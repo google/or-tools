@@ -2550,9 +2550,12 @@ class RoutingDimension {
   /// never we called on any (end, _). If pre_travel_evaluator or
   /// post_travel_evaluator is -1, it will be taken as a function that always
   /// returns 0.
+  // TODO(user): Remove if !defined when routing.i is repaired.
+#if !defined(SWIGPYTHON)
   void SetBreakIntervalsOfVehicle(std::vector<IntervalVar*> breaks, int vehicle,
                                   int pre_travel_evaluator,
                                   int post_travel_evaluator);
+#endif  // !defined(SWIGPYTHON)
 
   /// Deprecated, sets pre_travel(i, j) = node_visit_transit[i].
   void SetBreakIntervalsOfVehicle(std::vector<IntervalVar*> breaks, int vehicle,
