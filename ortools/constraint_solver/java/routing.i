@@ -98,6 +98,13 @@ import java.util.function.LongUnaryOperator;
 %ignore RoutingModel::PackCumulsOfOptimizerDimensionsFromAssignment;
 %ignore RoutingModel::RegisterStateDependentTransitCallback;
 %ignore RoutingModel::RemainingTime;
+%ignore RoutingModel::SolveWithParameters(
+    const RoutingSearchParameters& search_parameters,
+    std::vector<const Assignment*>* solutions);
+%ignore RoutingModel::SolveFromAssignmentWithParameters(
+      const Assignment* assignment,
+      const RoutingSearchParameters& search_parameters,
+      std::vector<const Assignment*>* solutions);
 %ignore RoutingModel::TransitCallback;
 %ignore RoutingModel::StateDependentTransitCallback;
 %ignore RoutingModel::UnaryTransitCallbackOrNull;

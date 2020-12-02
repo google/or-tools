@@ -2550,7 +2550,7 @@ class RoutingDimension {
   /// never we called on any (end, _). If pre_travel_evaluator or
   /// post_travel_evaluator is -1, it will be taken as a function that always
   /// returns 0.
-  void wSetBreakIntervalsOfVehicle(std::vector<IntervalVar*> breaks, int vehicle,
+  void SetBreakIntervalsOfVehicle(std::vector<IntervalVar*> breaks, int vehicle,
                                   int pre_travel_evaluator,
                                   int post_travel_evaluator);
 
