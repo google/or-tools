@@ -805,7 +805,7 @@ class RoutingModel {
       int type) const;
   const absl::flat_hash_set<int>& GetTemporalTypeIncompatibilitiesOfType(
       int type) const;
-  /// Returns true iff any hard (resp. temporal) type incompatibilities have
+  /// Returns true if any hard (resp. temporal) type incompatibilities have
   /// been added to the model.
   bool HasHardTypeIncompatibilities() const {
     return has_hard_type_incompatibilities_;
