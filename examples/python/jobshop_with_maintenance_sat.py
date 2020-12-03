@@ -12,10 +12,22 @@
 # limitations under the License.
 """Jobshop with maintenance tasks using the CP-SAT solver."""
 
-
 import collections
-
 from ortools.sat.python import cp_model
+
+
+class SolutionPrinter(cp_model.CpSolverSolutionCallback):
+    """Print intermediate solutions."""
+
+    def __init__(self):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.__solution_count = 0
+
+    def on_solution_callback(self):
+        """Called at each new solution."""
+        print('Solution %i, time = %f s, objective = %i' %
+              (self.__solution_count, self.WallTime(), self.ObjectiveValue()))
+        self.__solution_count += 1
 
 
 def jobshop_with_maintenance():
@@ -26,7 +38,7 @@ def jobshop_with_maintenance():
     jobs_data = [  # task = (machine_id, processing_time).
         [(0, 3), (1, 2), (2, 2)],  # Job0
         [(0, 2), (2, 1), (1, 4)],  # Job1
-        [(1, 4), (2, 3)]  # Job2
+        [(1, 4), (2, 3)],  # Job2
     ]
 
     machines_count = 1 + max(task[0] for job in jobs_data for task in job)
@@ -54,8 +66,9 @@ def jobshop_with_maintenance():
             end_var = model.NewIntVar(0, horizon, 'end' + suffix)
             interval_var = model.NewIntervalVar(start_var, duration, end_var,
                                                 'interval' + suffix)
-            all_tasks[job_id, task_id] = task_type(
-                start=start_var, end=end_var, interval=interval_var)
+            all_tasks[job_id, task_id] = task_type(start=start_var,
+                                                   end=end_var,
+                                                   interval=interval_var)
             machine_to_intervals[machine].append(interval_var)
 
     # Add maintenance interval (machine 0 is not available on time {4, 5, 6, 7}).
@@ -81,7 +94,9 @@ def jobshop_with_maintenance():
 
     # Solve model.
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    solution_printer = SolutionPrinter()
+    status = solver.SolveWithSolutionCallback(model, solution_printer)
+    #status = solver.Solve(model)
 
     # Output solution.
     if status == cp_model.OPTIMAL:
@@ -91,11 +106,11 @@ def jobshop_with_maintenance():
             for task_id, task in enumerate(job):
                 machine = task[0]
                 assigned_jobs[machine].append(
-                    assigned_task_type(
-                        start=solver.Value(all_tasks[job_id, task_id].start),
-                        job=job_id,
-                        index=task_id,
-                        duration=task[1]))
+                    assigned_task_type(start=solver.Value(
+                        all_tasks[job_id, task_id].start),
+                                       job=job_id,
+                                       index=task_id,
+                                       duration=task[1]))
 
         # Create per machine output lines.
         output = ''
@@ -124,6 +139,10 @@ def jobshop_with_maintenance():
         # Finally print the solution found.
         print('Optimal Schedule Length: %i' % solver.ObjectiveValue())
         print(output)
+        print('Statistics')
+        print('  - conflicts : %i' % solver.NumConflicts())
+        print('  - branches  : %i' % solver.NumBranches())
+        print('  - wall time : %f s' % solver.WallTime())
 
 
 jobshop_with_maintenance()
