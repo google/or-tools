@@ -63,7 +63,6 @@ import java.util.function.LongBinaryOperator;
 import java.util.function.LongUnaryOperator;
 %}
 %ignore RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
-%ignore RoutingModel::AddHardTypeIncompatibility;
 %ignore RoutingModel::AddMatrixDimension(
     std::vector<std::vector<int64> > values,
     int64 capacity,
@@ -119,6 +118,7 @@ import java.util.function.LongUnaryOperator;
 %rename (addDimensionWithVehicleTransitAndCapacity) RoutingModel::AddDimensionWithVehicleTransitAndCapacity;
 %rename (addDimensionWithVehicleTransits) RoutingModel::AddDimensionWithVehicleTransits;
 %rename (addDisjunction) RoutingModel::AddDisjunction;
+%rename (addHardTypeIncompatibility) RoutingModel::AddHardTypeIncompatibility;
 %rename (addIntervalToAssignment) RoutingModel::AddIntervalToAssignment;
 %rename (addLocalSearchFilter) RoutingModel::AddLocalSearchFilter;
 %rename (addLocalSearchOperator) RoutingModel::AddLocalSearchOperator;
