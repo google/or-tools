@@ -92,7 +92,7 @@ bool TimeTablingPerTask::Propagate() {
 }
 
 bool TimeTablingPerTask::BuildProfile() {
-  helper_->SetTimeDirection(true);  // forward
+  helper_->SynchronizeAndSetTimeDirection(true);  // forward
 
   // Update the set of tasks that contribute to the profile. Tasks that were
   // contributing are still part of the profile so we only need to check the
@@ -177,7 +177,7 @@ bool TimeTablingPerTask::BuildProfile() {
 }
 
 void TimeTablingPerTask::ReverseProfile() {
-  helper_->SetTimeDirection(false);  // backward
+  helper_->SynchronizeAndSetTimeDirection(false);  // backward
 
   // We keep the sentinels inchanged.
   for (int i = 1; i + 1 < profile_.size(); ++i) {

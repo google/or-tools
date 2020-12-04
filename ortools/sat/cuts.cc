@@ -1983,14 +1983,17 @@ CutGenerator CreateLinMaxCutGenerator(
 void AddIntegerVariableFromIntervals(SchedulingConstraintHelper* helper,
                                      Model* model,
                                      std::vector<IntegerVariable>* vars) {
-  vars->insert(vars->end(), helper->StartVars().begin(),
-               helper->StartVars().end());
-  vars->insert(vars->end(), helper->SizeVars().begin(),
-               helper->SizeVars().end());
-  vars->insert(vars->end(), helper->EndVars().begin(), helper->EndVars().end());
-
   IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
   for (int t = 0; t < helper->NumTasks(); ++t) {
+    if (helper->Starts()[t].var != kNoIntegerVariable) {
+      vars->push_back(helper->Starts()[t].var);
+    }
+    if (helper->Sizes()[t].var != kNoIntegerVariable) {
+      vars->push_back(helper->Sizes()[t].var);
+    }
+    if (helper->Ends()[t].var != kNoIntegerVariable) {
+      vars->push_back(helper->Ends()[t].var);
+    }
     if (helper->IsOptional(t) && !helper->IsAbsent(t) &&
         !helper->IsPresent(t)) {
       const Literal l = helper->PresenceLiteral(t);
@@ -2007,6 +2010,7 @@ void AddIntegerVariableFromIntervals(SchedulingConstraintHelper* helper,
       }
     }
   }
+  gtl::STLSortAndRemoveDuplicates(vars);
 }
 
 std::function<void(const absl::StrongVector<IntegerVariable, double>&,
@@ -2095,8 +2099,8 @@ GenerateCumulativeCut(const std::string& cut_name,
             if (helper->SizeIsFixed(t)) {
               energy_lp += ToDouble(helper->SizeMin(t) * demand_min(t));
             } else {
-              energy_lp +=
-                  ToDouble(demand_min(t)) * lp_values[helper->SizeVars()[t]];
+              energy_lp += ToDouble(demand_min(t)) *
+                           helper->Sizes()[t].LpValue(lp_values);
             }
           } else if (helper->SizeIsFixed(t)) {
             DCHECK(!demands.empty());
@@ -2104,7 +2108,7 @@ GenerateCumulativeCut(const std::string& cut_name,
           } else {  // demand and size are not fixed.
             DCHECK(!demands.empty());
             energy_lp +=
-                ToDouble(demand_min(t)) * lp_values[helper->SizeVars()[t]];
+                ToDouble(demand_min(t)) * helper->Sizes()[t].LpValue(lp_values);
             energy_lp += lp_values[demands[t]] * ToDouble(helper->SizeMin(t));
             energy_lp -= ToDouble(demand_min(t) * helper->SizeMin(t));
           }
@@ -2145,7 +2149,7 @@ GenerateCumulativeCut(const std::string& cut_name,
             if (helper->SizeIsFixed(t)) {
               cut.AddConstant(helper->SizeMin(t) * demand_min(t));
             } else {
-              cut.AddTerm(helper->SizeVars()[t], demand_min(t));
+              cut.AddTerm(helper->Sizes()[t], demand_min(t));
             }
           } else if (helper->SizeIsFixed(t)) {
             DCHECK(!demands.empty());
@@ -2160,7 +2164,7 @@ GenerateCumulativeCut(const std::string& cut_name,
             // which is >= (by ignoring the quatratic term)
             //     demand_min * size + min_size * demand - demand_min *
             //     min_size
-            cut.AddTerm(helper->SizeVars()[t], demand_min(t));
+            cut.AddTerm(helper->Sizes()[t], demand_min(t));
             cut.AddTerm(demands[t], helper->SizeMin(t));
             // Substract the energy counted twice.
             cut.AddConstant(-helper->SizeMin(t) * demand_min(t));
@@ -2386,15 +2390,15 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
               // interval1.end <= interval2.start
               LinearConstraintBuilder cut(model, kMinIntegerValue,
                                           IntegerValue(0));
-              cut.AddTerm(helper->EndVars()[index1], IntegerValue(1));
-              cut.AddTerm(helper->StartVars()[index2], IntegerValue(-1));
+              cut.AddTerm(helper->Ends()[index1], IntegerValue(1));
+              cut.AddTerm(helper->Starts()[index2], IntegerValue(-1));
               manager->AddCut(cut.Build(), "NoOverlapPrecedence", lp_values);
             } else if (interval_2_can_precede_1 && !interval_1_can_precede_2) {
               // interval2.end <= interval1.start
               LinearConstraintBuilder cut(model, kMinIntegerValue,
                                           IntegerValue(0));
-              cut.AddTerm(helper->EndVars()[index2], IntegerValue(1));
-              cut.AddTerm(helper->StartVars()[index1], IntegerValue(-1));
+              cut.AddTerm(helper->Ends()[index2], IntegerValue(1));
+              cut.AddTerm(helper->Starts()[index1], IntegerValue(-1));
               manager->AddCut(cut.Build(), "NoOverlapPrecedence", lp_values);
             }
           }

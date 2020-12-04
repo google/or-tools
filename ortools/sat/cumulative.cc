@@ -58,7 +58,7 @@ std::function<void(Model*)> Cumulative(
 
       std::vector<Literal> enforcement_literals;
       if (intervals->IsOptional(vars[i])) {
-        enforcement_literals.push_back(intervals->IsPresentLiteral(vars[i]));
+        enforcement_literals.push_back(intervals->PresenceLiteral(vars[i]));
       }
 
       // If the interval can be of size zero, it currently do not count towards
@@ -203,7 +203,7 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
 
         // Task t consumes the resource at time if it is present.
         if (intervals->IsOptional(vars[t])) {
-          consume_condition.push_back(intervals->IsPresentLiteral(vars[t]));
+          consume_condition.push_back(intervals->PresenceLiteral(vars[t]));
         }
 
         // Task t overlaps time.

@@ -24,21 +24,6 @@
 namespace operations_research {
 namespace sat {
 
-// var * coeff + constant >= bound.
-IntegerLiteral AffineExpression::GreaterOrEqual(IntegerValue bound) const {
-  CHECK_NE(var, kNoIntegerVariable);
-  CHECK_GT(coeff, 0);
-  return IntegerLiteral::GreaterOrEqual(var,
-                                        CeilRatio(bound - constant, coeff));
-}
-
-// var * coeff + constant <= bound.
-IntegerLiteral AffineExpression::LowerOrEqual(IntegerValue bound) const {
-  CHECK_NE(var, kNoIntegerVariable);
-  CHECK_GT(coeff, 0);
-  return IntegerLiteral::LowerOrEqual(var, FloorRatio(bound - constant, coeff));
-}
-
 std::vector<IntegerVariable> NegationOf(
     const std::vector<IntegerVariable>& vars) {
   std::vector<IntegerVariable> result(vars.size());
@@ -558,7 +543,6 @@ bool IntegerTrail::Propagate(Trail* trail) {
 void IntegerTrail::Untrail(const Trail& trail, int literal_trail_index) {
   ++num_untrails_;
   const int level = trail.CurrentDecisionLevel();
-  for (ReversibleInterface* rev : reversible_classes_) rev->SetLevel(level);
   var_to_current_lb_interval_index_.SetLevel(level);
   propagation_trail_index_ =
       std::min(propagation_trail_index_, literal_trail_index);
@@ -599,6 +583,10 @@ void IntegerTrail::Untrail(const Trail& trail, int literal_trail_index) {
     literals_reason_starts_.resize(old_size);
     bounds_reason_starts_.resize(old_size);
   }
+
+  // We notify the new level once all variables have been restored to their
+  // old value.
+  for (ReversibleInterface* rev : reversible_classes_) rev->SetLevel(level);
 }
 
 void IntegerTrail::ReserveSpaceForNumVariables(int num_vars) {

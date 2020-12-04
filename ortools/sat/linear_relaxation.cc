@@ -484,12 +484,16 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
   }
 }
 
+// TODO(user): Use affine demand.
 void AddCumulativeCut(const std::vector<IntervalVariable>& intervals,
                       const std::vector<IntegerVariable>& demands,
                       IntegerValue capacity_lower_bound, Model* model,
                       LinearRelaxation* relaxation) {
-  SchedulingConstraintHelper helper(intervals, model);
-  const int num_intervals = helper.NumTasks();
+  // TODO(user): Keep a map intervals -> helper, or ct_index->helper to avoid
+  // creating many helpers for the same constraint.
+  auto* helper = new SchedulingConstraintHelper(intervals, model);
+  model->TakeOwnership(helper);
+  const int num_intervals = helper->NumTasks();
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
@@ -500,14 +504,14 @@ void AddCumulativeCut(const std::vector<IntervalVariable>& intervals,
   int num_optionals = 0;
 
   for (int index = 0; index < num_intervals; ++index) {
-    min_of_starts = std::min(min_of_starts, helper.StartMin(index));
-    max_of_ends = std::max(max_of_ends, helper.EndMax(index));
+    min_of_starts = std::min(min_of_starts, helper->StartMin(index));
+    max_of_ends = std::max(max_of_ends, helper->EndMax(index));
 
-    if (helper.IsOptional(index)) {
+    if (helper->IsOptional(index)) {
       num_optionals++;
     }
 
-    if (!helper.SizeIsFixed(index) ||
+    if (!helper->SizeIsFixed(index) ||
         (!demands.empty() && !integer_trail->IsFixed(demands[index]))) {
       num_variable_sizes++;
     }
@@ -546,11 +550,11 @@ void AddCumulativeCut(const std::vector<IntervalVariable>& intervals,
                         : integer_trail->LowerBound(demands[i]);
     const bool demand_is_fixed =
         demands.empty() || integer_trail->IsFixed(demands[i]);
-    if (!helper.IsOptional(i)) {
-      if (helper.SizeIsFixed(i) && !demands.empty()) {
-        lc.AddTerm(demands[i], helper.SizeMin(i));
+    if (!helper->IsOptional(i)) {
+      if (helper->SizeIsFixed(i) && !demands.empty()) {
+        lc.AddTerm(demands[i], helper->SizeMin(i));
       } else if (demand_is_fixed) {
-        lc.AddTerm(helper.SizeVars()[i], demand_lower_bound);
+        lc.AddTerm(helper->Sizes()[i], demand_lower_bound);
       } else {  // demand and size are not fixed.
         DCHECK(!demands.empty());
         // We use McCormick equation.
@@ -559,13 +563,13 @@ void AddCumulativeCut(const std::vector<IntervalVariable>& intervals,
         //     delta_s * demand_min + delta_s * delta_d
         // which is >= (by ignoring the quatratic term)
         //     demand_min * size + size_min * demand - demand_min * size_min
-        lc.AddTerm(helper.SizeVars()[i], demand_lower_bound);
-        lc.AddTerm(demands[i], helper.SizeMin(i));
-        lc.AddConstant(-helper.SizeMin(i) * demand_lower_bound);
+        lc.AddTerm(helper->Sizes()[i], demand_lower_bound);
+        lc.AddTerm(demands[i], helper->SizeMin(i));
+        lc.AddConstant(-helper->SizeMin(i) * demand_lower_bound);
       }
     } else {
-      if (!lc.AddLiteralTerm(helper.PresenceLiteral(i),
-                             helper.SizeMin(i) * demand_lower_bound)) {
+      if (!lc.AddLiteralTerm(helper->PresenceLiteral(i),
+                             helper->SizeMin(i) * demand_lower_bound)) {
         return;
       }
     }

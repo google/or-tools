@@ -30,32 +30,69 @@
 namespace operations_research {
 namespace sat {
 
+namespace {
+
+// TODO(user): Use the faster variable only version if all expressions reduce
+// to a single variable?
+void AddIsEqualToMinOf(IntegerVariable min_var,
+                       const std::vector<AffineExpression>& exprs,
+                       Model* model) {
+  std::vector<LinearExpression> converted;
+  for (const AffineExpression& affine : exprs) {
+    LinearExpression e;
+    e.offset = affine.constant;
+    if (affine.var != kNoIntegerVariable) {
+      e.vars.push_back(affine.var);
+      e.coeffs.push_back(affine.coeff);
+    }
+    converted.push_back(e);
+  }
+  LinearExpression target;
+  target.vars.push_back(min_var);
+  target.coeffs.push_back(IntegerValue(1));
+  model->Add(IsEqualToMinOf(target, converted));
+}
+
+void AddIsEqualToMaxOf(IntegerVariable max_var,
+                       const std::vector<AffineExpression>& exprs,
+                       Model* model) {
+  std::vector<LinearExpression> converted;
+  for (const AffineExpression& affine : exprs) {
+    LinearExpression e;
+    e.offset = affine.constant;
+    if (affine.var != kNoIntegerVariable) {
+      e.vars.push_back(affine.var);
+      e.coeffs.push_back(affine.coeff);
+    }
+    converted.push_back(NegationOf(e));
+  }
+  LinearExpression target;
+  target.vars.push_back(NegationOf(max_var));
+  target.coeffs.push_back(IntegerValue(1));
+  model->Add(IsEqualToMinOf(target, converted));
+}
+
+}  // namespace
+
 void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x_intervals,
                              SchedulingConstraintHelper* x,
                              SchedulingConstraintHelper* y, Model* model) {
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  std::vector<AffineExpression> sizes;
-
   int64 min_starts = kint64max;
   int64 max_ends = kint64min;
+  std::vector<AffineExpression> sizes;
   for (int box = 0; box < y->NumTasks(); ++box) {
-    IntegerVariable s_var = y->SizeVars()[box];
-    if (s_var == kNoIntegerVariable || integer_trail->IsFixed(s_var)) {
-      sizes.push_back(AffineExpression(y->SizeMin(box)));
-    } else {
-      sizes.push_back(AffineExpression(s_var));
-    }
     min_starts = std::min(min_starts, y->StartMin(box).value());
     max_ends = std::max(max_ends, y->EndMax(box).value());
+    sizes.push_back(y->Sizes()[box]);
   }
 
   const IntegerVariable min_start_var =
       model->Add(NewIntegerVariable(min_starts, max_ends));
-  model->Add(IsEqualToMinOf(min_start_var, y->StartVars()));
+  AddIsEqualToMinOf(min_start_var, y->Starts(), model);
 
   const IntegerVariable max_end_var =
       model->Add(NewIntegerVariable(min_starts, max_ends));
-  model->Add(IsEqualToMaxOf(max_end_var, y->EndVars()));
+  AddIsEqualToMaxOf(max_end_var, y->Ends(), model);
 
   // (max_end - min_start) >= capacity.
   const AffineExpression capacity(
@@ -137,8 +174,8 @@ NonOverlappingRectanglesEnergyPropagator::
 
 bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
   const int num_boxes = x_.NumTasks();
-  x_.SetTimeDirection(true);
-  y_.SetTimeDirection(true);
+  x_.SynchronizeAndSetTimeDirection(true);
+  y_.SynchronizeAndSetTimeDirection(true);
 
   active_boxes_.clear();
   cached_areas_.resize(num_boxes);
@@ -415,8 +452,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
 }
 
 bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
-  global_x_.SetTimeDirection(true);
-  global_y_.SetTimeDirection(true);
+  global_x_.SynchronizeAndSetTimeDirection(true);
+  global_y_.SynchronizeAndSetTimeDirection(true);
 
   std::function<bool()> inner_propagate;
   if (watcher_->GetCurrentId() == fast_id_) {

@@ -3399,7 +3399,11 @@ void CpModelPresolver::Probe() {
 
   // Load the constraints in a local model.
   //
-  // TODO(user): remove code duplication with cp_mode_solver. Here we also do
+  // TODO(user): The model we load does not contain affine relations! But
+  // ideally we should be able to remove all of them once we allow more complex
+  // constraints to contains linear expression.
+  //
+  // TODO(user): remove code duplication with cp_model_solver. Here we also do
   // not run the heuristic to decide which variable to fully encode.
   //
   // TODO(user): Maybe do not load slow to propagate constraints? for instance
@@ -3480,9 +3484,6 @@ void CpModelPresolver::Probe() {
       CHECK_GE(r_var, 0);
       context_->StoreBooleanEqualityRelation(
           var, r.IsPositive() ? r_var : NegatedRef(r_var));
-
-      // The sat solver above is not unsat, so this shouldn't happen.
-      DCHECK(!context_->ModelIsUnsat());
     }
   }
 }

@@ -19,6 +19,7 @@
 #include "ortools/base/hash.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/presolve_context.h"
@@ -223,6 +224,15 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
 
   ct->Clear();
   context->UpdateRuleStats("reservoir: expanded");
+}
+
+// This is not an "expansion" per say, but just a mandatory presolve step to
+// satisfy preconditions assumed by the rest of the code.
+void ExpandIntDiv(ConstraintProto* ct, PresolveContext* context) {
+  const int divisor = ct->int_div().vars(1);
+  if (!context->IntersectDomainWith(divisor, Domain(0).Complement())) {
+    return (void)context->NotifyThatModelIsUnsat();
+  }
 }
 
 void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
@@ -1500,6 +1510,9 @@ void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
       case ConstraintProto::ConstraintCase::kIntMod:
         ExpandIntMod(ct, context);
         break;
+      case ConstraintProto::ConstraintCase::kIntDiv:
+        ExpandIntDiv(ct, context);
+        break;
       case ConstraintProto::ConstraintCase::kIntProd:
         ExpandIntProd(ct, context);
         break;
@@ -1543,7 +1556,13 @@ void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
     }
 
     // Early exit if the model is unsat.
-    if (context->ModelIsUnsat()) return;
+    if (context->ModelIsUnsat()) {
+      if (VLOG_IS_ON(1) || options.parameters.log_search_progress()) {
+        LOG(INFO) << "UNSAT after expansion of "
+                  << ProtobufShortDebugString(*ct);
+      }
+      return;
+    }
   }
 
   // Make sure the context is consistent.

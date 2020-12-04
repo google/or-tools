@@ -36,8 +36,8 @@ namespace sat {
 //
 // This constraint expects that enforcement_literal <==> bool_or(selectors).
 std::function<void(Model*)> EqualMinOfSelectedVariables(
-    Literal enforcement_literal, IntegerVariable target,
-    const std::vector<IntegerVariable>& vars,
+    Literal enforcement_literal, AffineExpression target,
+    const std::vector<AffineExpression>& vars,
     const std::vector<Literal>& selectors);
 
 // This propagator enforces that the target variable is equal to the max of the
@@ -46,8 +46,8 @@ std::function<void(Model*)> EqualMinOfSelectedVariables(
 //
 // This constraint expects that enforcement_literal <==> bool_or(selectors).u
 std::function<void(Model*)> EqualMaxOfSelectedVariables(
-    Literal enforcement_literal, IntegerVariable target,
-    const std::vector<IntegerVariable>& vars,
+    Literal enforcement_literal, AffineExpression target,
+    const std::vector<AffineExpression>& vars,
     const std::vector<Literal>& selectors);
 
 // This constraint enforces that the target interval is an exact cover of the

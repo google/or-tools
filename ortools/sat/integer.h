@@ -205,8 +205,10 @@ using InlinedIntegerLiteralVector = absl::InlinedVector<IntegerLiteral, 2>;
 struct AffineExpression {
   // Helper to construct an AffineExpression.
   AffineExpression() {}
-  explicit AffineExpression(IntegerValue cst) : constant(cst) {}
-  explicit AffineExpression(IntegerVariable v) : var(v), coeff(1) {}
+  AffineExpression(IntegerValue cst)  // NOLINT(runtime/explicit)
+      : constant(cst) {}
+  AffineExpression(IntegerVariable v)  // NOLINT(runtime/explicit)
+      : var(v), coeff(1) {}
   AffineExpression(IntegerVariable v, IntegerValue c)
       : var(c > 0 ? v : NegationOf(v)), coeff(IntTypeAbs(c)) {}
   AffineExpression(IntegerVariable v, IntegerValue c, IntegerValue cst)
@@ -219,8 +221,19 @@ struct AffineExpression {
   IntegerLiteral GreaterOrEqual(IntegerValue bound) const;
   IntegerLiteral LowerOrEqual(IntegerValue bound) const;
 
+  AffineExpression Negated() const {
+    return AffineExpression(NegationOf(var), coeff, -constant);
+  }
+
   bool operator==(AffineExpression o) const {
     return var == o.var && coeff == o.coeff && constant == o.constant;
+  }
+
+  // Returns the affine expression value under a given LP solution.
+  double LpValue(
+      const absl::StrongVector<IntegerVariable, double>& lp_values) const {
+    if (var == kNoIntegerVariable) return ToDouble(constant);
+    return ToDouble(coeff) * lp_values[var] + ToDouble(constant);
   }
 
   // The coefficient MUST be positive. Use NegationOf(var) if needed.
@@ -229,14 +242,14 @@ struct AffineExpression {
   IntegerValue constant = IntegerValue(0);
 };
 
-// A singleton that holds the INITIAL integer variable domains.
+// A model singleton that holds the INITIAL integer variable domains.
 struct IntegerDomains : public absl::StrongVector<IntegerVariable, Domain> {
   explicit IntegerDomains(Model* model) {}
 };
 
-// A singleton used for debugging. If this is set in the model, then we can
-// check that various derived constraint do not exclude this solution (if it is
-// a known optimal solution for instance).
+// A model singleton used for debugging. If this is set in the model, then we
+// can check that various derived constraint do not exclude this solution (if it
+// is a known optimal solution for instance).
 struct DebugSolution
     : public absl::StrongVector<IntegerVariable, IntegerValue> {
   explicit DebugSolution(Model* model) {}
@@ -1117,6 +1130,18 @@ class GenericLiteralWatcher : public SatPropagator {
   void WatchUpperBound(IntegerVariable var, int id, int watch_index = -1);
   void WatchIntegerVariable(IntegerVariable i, int id, int watch_index = -1);
 
+  // Because the coeff is always positive, whatching an affine expression is
+  // the same as watching its var.
+  void WatchLowerBound(AffineExpression e, int id) {
+    WatchLowerBound(e.var, id);
+  }
+  void WatchUpperBound(AffineExpression e, int id) {
+    WatchUpperBound(e.var, id);
+  }
+  void WatchAffineExpression(AffineExpression e, int id) {
+    WatchIntegerVariable(e.var, id);
+  }
+
   // No-op overload for "constant" IntegerVariable that are sometimes templated
   // as an IntegerValue.
   void WatchLowerBound(IntegerValue i, int id) {}
@@ -1179,6 +1204,9 @@ class GenericLiteralWatcher : public SatPropagator {
   struct WatchData {
     int id;
     int watch_index;
+    bool operator==(const WatchData& o) const {
+      return id == o.id && watch_index == o.watch_index;
+    }
   };
   absl::StrongVector<LiteralIndex, std::vector<WatchData>> literal_to_watcher_;
   absl::StrongVector<IntegerVariable, std::vector<WatchData>> var_to_watcher_;
@@ -1234,6 +1262,22 @@ inline IntegerLiteral IntegerLiteral::Negated() const {
   return IntegerLiteral(
       NegationOf(IntegerVariable(var)),
       bound > kMaxIntegerValue ? kMinIntegerValue : -bound + 1);
+}
+
+// var * coeff + constant >= bound.
+inline IntegerLiteral AffineExpression::GreaterOrEqual(
+    IntegerValue bound) const {
+  DCHECK_NE(var, kNoIntegerVariable);
+  DCHECK_GT(coeff, 0);
+  return IntegerLiteral::GreaterOrEqual(var,
+                                        CeilRatio(bound - constant, coeff));
+}
+
+// var * coeff + constant <= bound.
+inline IntegerLiteral AffineExpression::LowerOrEqual(IntegerValue bound) const {
+  DCHECK_NE(var, kNoIntegerVariable);
+  DCHECK_GT(coeff, 0);
+  return IntegerLiteral::LowerOrEqual(var, FloorRatio(bound - constant, coeff));
 }
 
 inline IntegerValue IntegerTrail::LowerBound(IntegerVariable i) const {
@@ -1315,7 +1359,16 @@ inline void GenericLiteralWatcher::WatchLowerBound(IntegerVariable var, int id,
   if (var.value() >= var_to_watcher_.size()) {
     var_to_watcher_.resize(var.value() + 1);
   }
-  var_to_watcher_[var].push_back({id, watch_index});
+
+  // Minor optim, so that we don't watch the same variable twice. Propagator
+  // code is easier this way since for example when one wants to watch both
+  // an interval start and interval end, both might have the same underlying
+  // variable.
+  const WatchData data = {id, watch_index};
+  if (!var_to_watcher_[var].empty() && var_to_watcher_[var].back() == data) {
+    return;
+  }
+  var_to_watcher_[var].push_back(data);
 }
 
 inline void GenericLiteralWatcher::WatchUpperBound(IntegerVariable var, int id,

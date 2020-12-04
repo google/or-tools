@@ -157,6 +157,7 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
     const auto& var_proto = model.variables(PositiveRef(ref));
     const int64 min_domain = var_proto.domain(0);
     const int64 max_domain = var_proto.domain(var_proto.domain_size() - 1);
+    if (proto.coeffs(i) == kint64min) return true;
     const int64 coeff = RefIsPositive(ref) ? proto.coeffs(i) : -proto.coeffs(i);
     const int64 prod1 = CapProd(min_domain, coeff);
     const int64 prod2 = CapProd(max_domain, coeff);
@@ -207,6 +208,19 @@ std::string ValidateLinearConstraint(const CpModelProto& model,
   if (PossibleIntegerOverflow(model, arg)) {
     return "Possible integer overflow in constraint: " +
            ProtobufDebugString(ct);
+  }
+  return "";
+}
+
+std::string ValidateTableConstraint(const CpModelProto& model,
+                                    const ConstraintProto& ct) {
+  const TableConstraintProto& arg = ct.table();
+  if (arg.vars().empty()) return "";
+  if (arg.values().size() % arg.vars().size() != 0) {
+    return absl::StrCat(
+        "The flat encoding of a table constraint must be a multiple of the "
+        "number of variable: ",
+        ProtobufDebugString(ct));
   }
   return "";
 }
@@ -321,6 +335,15 @@ std::string ValidateIntModConstraint(const CpModelProto& model,
   return "";
 }
 
+std::string ValidateIntDivConstraint(const CpModelProto& model,
+                                     const ConstraintProto& ct) {
+  if (ct.int_div().vars().size() != 2) {
+    return absl::StrCat("An int_div constraint should have exactly 2 terms: ",
+                        ProtobufShortDebugString(ct));
+  }
+  return "";
+}
+
 std::string ValidateObjective(const CpModelProto& model,
                               const CpObjectiveProto& obj) {
   if (!DomainInProtoIsValid(obj)) {
@@ -400,14 +423,13 @@ std::string ValidateCpModel(const CpModelProto& model) {
     const ConstraintProto::ConstraintCase type = ct.constraint_case();
     switch (type) {
       case ConstraintProto::ConstraintCase::kIntDiv:
-        if (ct.int_div().vars().size() != 2) {
-          return absl::StrCat(
-              "An int_div constraint should have exactly 2 terms: ",
-              ProtobufShortDebugString(ct));
-        }
+        RETURN_IF_NOT_EMPTY(ValidateIntDivConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kIntMod:
         RETURN_IF_NOT_EMPTY(ValidateIntModConstraint(model, ct));
+        break;
+      case ConstraintProto::ConstraintCase::kTable:
+        RETURN_IF_NOT_EMPTY(ValidateTableConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kBoolOr:
         support_enforcement = true;

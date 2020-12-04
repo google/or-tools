@@ -48,12 +48,7 @@ void AddCumulativeOverloadChecker(const std::vector<AffineExpression>& demands,
   const int num_tasks = helper->NumTasks();
   CHECK_EQ(demands.size(), num_tasks);
   for (int t = 0; t < num_tasks; ++t) {
-    // TODO(user): Remove once helper->Sizes()[t] is an expression.
-    const AffineExpression size =
-        helper->SizeVars()[t] == kNoIntegerVariable ||
-                integer_trail->IsFixed(helper->SizeVars()[t])
-            ? AffineExpression(helper->SizeMin(t))
-            : AffineExpression(helper->SizeVars()[t]);
+    const AffineExpression size = helper->Sizes()[t];
     const AffineExpression demand = demands[t];
 
     if (demand.var == kNoIntegerVariable && size.var == kNoIntegerVariable) {
@@ -110,7 +105,7 @@ void CumulativeEnergyConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
 bool CumulativeEnergyConstraint::Propagate() {
   // This only uses one time direction, but the helper might be used elsewhere.
   // TODO(user): just keep the current direction?
-  helper_->SetTimeDirection(true);
+  helper_->SynchronizeAndSetTimeDirection(true);
 
   const IntegerValue capacity_max = integer_trail_->UpperBound(capacity_);
   // TODO(user): force capacity_max >= 0, fail/remove optionals when 0.
