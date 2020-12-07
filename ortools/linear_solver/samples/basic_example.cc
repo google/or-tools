@@ -21,7 +21,7 @@ namespace operations_research {
 void BasicExample() {
   // [START solver]
   // Create the linear solver with the GLOP backend.
-  MPSolver* solver = MPSolver.CreateSolver("GLOP");
+  MPSolver* solver = MPSolver::CreateSolver("GLOP");
   // [END solver]
 
   // [START variables]

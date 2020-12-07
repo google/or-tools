@@ -23,7 +23,7 @@ import com.google.ortools.linearsolver.MPVariable;
 // [END import]
 
 /** Minimal Linear Programming example to showcase calling the solver.*/
-public class SimpleLpProgram {
+public class BasicExample {
   public static void main(String[] args) throws Exception {
     Loader.loadNativeLibraries();
     // [START solver]
