@@ -50,6 +50,22 @@ function(search_python_module MODULE_NAME)
   endif()
 endfunction()
 
+# Find if python builtin module MODULE_NAME is available.
+function(search_python_internal_module MODULE_NAME)
+  execute_process(
+    COMMAND ${Python_EXECUTABLE} -c "import ${MODULE_NAME}"
+    RESULT_VARIABLE _RESULT
+    OUTPUT_VARIABLE MODULE_VERSION
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  if(${_RESULT} STREQUAL "0")
+    message(STATUS "Found python internal module: ${MODULE_NAME}")
+  else()
+    message(FATAL_ERROR "Can't find python internal module \"${MODULE_NAME}\", please install it using your system package manger")
+  endif()
+endfunction()
+
 # Generate Protobuf py sources with mypy support
 search_python_module(mypy-protobuf)
 set(PROTO_PYS)
@@ -176,7 +192,7 @@ install(SCRIPT ${PROJECT_BINARY_DIR}/python/python-install.cmake)
 if(BUILD_TESTING)
   # Look for python module venv
   search_python_module(absl-py)
-  search_python_module(venv)
+  search_python_internal_module(venv)
   # Testing using a vitual environment
   set(VENV_EXECUTABLE ${Python_EXECUTABLE} -m venv)
   set(VENV_DIR ${PROJECT_BINARY_DIR}/python/venv)
