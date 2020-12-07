@@ -2,6 +2,8 @@ load(":code_samples.bzl", "code_sample_cc")
 
 code_sample_cc(sample = "assignment_mip")
 
+code_sample_cc(sample = "basic_example")
+
 code_sample_cc(sample = "bin_packing_mip")
 
 code_sample_cc(sample = "integer_programming_example")
