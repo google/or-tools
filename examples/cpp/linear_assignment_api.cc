@@ -46,7 +46,7 @@ void AssignmentOn4x4Matrix() {
 
 void AnotherAssignment() {
   LOG(INFO) << "Another assignment on 4x4 matrix";
-  std::vector<std::vector<int>> matrice(
+  std::vector<std::vector<int> > matrice(
       {{8, 7, 9, 9}, {5, 2, 7, 8}, {6, 1, 4, 9}, {2, 3, 2, 6}});
   const int kSize = matrice.size();
   ForwardStarGraph graph(2 * kSize, kSize * kSize);
@@ -66,7 +66,7 @@ void AnotherAssignment() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   operations_research::AssignmentOn4x4Matrix();
   operations_research::AnotherAssignment();
   return EXIT_SUCCESS;

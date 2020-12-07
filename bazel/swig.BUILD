@@ -88,7 +88,7 @@ cc_binary(
     ],
     output_licenses = ["unencumbered"],
     visibility = ["//visibility:public"],
-    deps = ["@pcre//:pcre"],
+    deps = ["@pcre"],
 )
 
 filegroup(
@@ -334,3 +334,4 @@ config_setting(
     name = "x64_windows_msvc",
     values = {"cpu": "x64_windows_msvc"},
 )
+

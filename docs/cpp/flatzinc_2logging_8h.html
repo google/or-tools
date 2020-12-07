@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -99,23 +99,23 @@ $(document).ready(function(){initNavTree('flatzinc_2logging_8h.html',''); initRe
 Macros</h2></td></tr>
 <tr class="memitem:adc350c8237bee92b4b5e410678df3978"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="flatzinc_2logging_8h.html#adc350c8237bee92b4b5e410678df3978">FZENDL</a>&#160;&#160;&#160;std::endl</td></tr>
 <tr class="separator:adc350c8237bee92b4b5e410678df3978"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab1fa82e412c7f32f931c6a25404c4fb0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="flatzinc_2logging_8h.html#ab1fa82e412c7f32f931c6a25404c4fb0">FZLOG</a>&#160;&#160;&#160;  <a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> (FLAGS_fz_logging) std::cout &lt;&lt; &quot;%% &quot;</td></tr>
+<tr class="memitem:ab1fa82e412c7f32f931c6a25404c4fb0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="flatzinc_2logging_8h.html#ab1fa82e412c7f32f931c6a25404c4fb0">FZLOG</a>&#160;&#160;&#160;  <a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> (absl::GetFlag(FLAGS_fz_logging)) std::cout &lt;&lt; &quot;%% &quot;</td></tr>
 <tr class="separator:ab1fa82e412c7f32f931c6a25404c4fb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a50080aa8abd2b90459a451c319c89aba"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="flatzinc_2logging_8h.html#a50080aa8abd2b90459a451c319c89aba">FZVLOG</a>&#160;&#160;&#160;  <a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> (FLAGS_fz_verbose) std::cout &lt;&lt; &quot;%%%% &quot;</td></tr>
+<tr class="memitem:a50080aa8abd2b90459a451c319c89aba"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="flatzinc_2logging_8h.html#a50080aa8abd2b90459a451c319c89aba">FZVLOG</a>&#160;&#160;&#160;  <a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> (absl::GetFlag(FLAGS_fz_verbose)) std::cout &lt;&lt; &quot;%%%% &quot;</td></tr>
 <tr class="separator:a50080aa8abd2b90459a451c319c89aba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6f715b7705869f79dc01ed1627f29398"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="flatzinc_2logging_8h.html#a6f715b7705869f79dc01ed1627f29398">FZDLOG</a>&#160;&#160;&#160;  <a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> (FLAGS_fz_debug) std::cout &lt;&lt; &quot;%%%%%% &quot;</td></tr>
+<tr class="memitem:a6f715b7705869f79dc01ed1627f29398"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="flatzinc_2logging_8h.html#a6f715b7705869f79dc01ed1627f29398">FZDLOG</a>&#160;&#160;&#160;  <a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> (absl::GetFlag(FLAGS_fz_debug)) std::cout &lt;&lt; &quot;%%%%%% &quot;</td></tr>
 <tr class="separator:a6f715b7705869f79dc01ed1627f29398"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aea18a62de563199554fecf1573c0dfca"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="flatzinc_2logging_8h.html#aea18a62de563199554fecf1573c0dfca">HASVLOG</a>&#160;&#160;&#160;FLAGS_fz_verbose</td></tr>
+<tr class="memitem:aea18a62de563199554fecf1573c0dfca"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="flatzinc_2logging_8h.html#aea18a62de563199554fecf1573c0dfca">HASVLOG</a>&#160;&#160;&#160;absl::GetFlag(FLAGS_fz_verbose)</td></tr>
 <tr class="separator:aea18a62de563199554fecf1573c0dfca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:aa1ab0a4f731f39172eb3b16d6accc26c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="flatzinc_2logging_8h.html#aa1ab0a4f731f39172eb3b16d6accc26c">DECLARE_bool</a> (fz_logging)</td></tr>
-<tr class="separator:aa1ab0a4f731f39172eb3b16d6accc26c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a89b50b18713867457d20314e8fcafe71"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="flatzinc_2logging_8h.html#a89b50b18713867457d20314e8fcafe71">DECLARE_bool</a> (fz_verbose)</td></tr>
-<tr class="separator:a89b50b18713867457d20314e8fcafe71"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4724ce0189caa8bc9436465bd394d873"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="flatzinc_2logging_8h.html#a4724ce0189caa8bc9436465bd394d873">DECLARE_bool</a> (fz_debug)</td></tr>
-<tr class="separator:a4724ce0189caa8bc9436465bd394d873"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4ab299c128101b6f1350501d6a6cc01"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="flatzinc_2logging_8h.html#af4ab299c128101b6f1350501d6a6cc01">ABSL_DECLARE_FLAG</a> (bool, fz_logging)</td></tr>
+<tr class="separator:af4ab299c128101b6f1350501d6a6cc01"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae9bd4fd5ed574b8c20699452aa18a9b7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="flatzinc_2logging_8h.html#ae9bd4fd5ed574b8c20699452aa18a9b7">ABSL_DECLARE_FLAG</a> (bool, fz_verbose)</td></tr>
+<tr class="separator:ae9bd4fd5ed574b8c20699452aa18a9b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac8b1b15b3f14786c7573d9b73230b87d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="flatzinc_2logging_8h.html#ac8b1b15b3f14786c7573d9b73230b87d">ABSL_DECLARE_FLAG</a> (bool, fz_debug)</td></tr>
+<tr class="separator:ac8b1b15b3f14786c7573d9b73230b87d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="a6f715b7705869f79dc01ed1627f29398"></a>
@@ -125,7 +125,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define FZDLOG&#160;&#160;&#160;  <a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> (FLAGS_fz_debug) std::cout &lt;&lt; &quot;%%%%%% &quot;</td>
+          <td class="memname">#define FZDLOG&#160;&#160;&#160;  <a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> (absl::GetFlag(FLAGS_fz_debug)) std::cout &lt;&lt; &quot;%%%%%% &quot;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -157,7 +157,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define FZLOG&#160;&#160;&#160;  <a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> (FLAGS_fz_logging) std::cout &lt;&lt; &quot;%% &quot;</td>
+          <td class="memname">#define FZLOG&#160;&#160;&#160;  <a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> (absl::GetFlag(FLAGS_fz_logging)) std::cout &lt;&lt; &quot;%% &quot;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -173,7 +173,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define FZVLOG&#160;&#160;&#160;  <a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> (FLAGS_fz_verbose) std::cout &lt;&lt; &quot;%%%% &quot;</td>
+          <td class="memname">#define FZVLOG&#160;&#160;&#160;  <a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> (absl::GetFlag(FLAGS_fz_verbose)) std::cout &lt;&lt; &quot;%%%% &quot;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -189,7 +189,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define HASVLOG&#160;&#160;&#160;FLAGS_fz_verbose</td>
+          <td class="memname">#define HASVLOG&#160;&#160;&#160;absl::GetFlag(FLAGS_fz_verbose)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -199,54 +199,84 @@ Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="a4724ce0189caa8bc9436465bd394d873"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4724ce0189caa8bc9436465bd394d873">&#9670;&nbsp;</a></span>DECLARE_bool() <span class="overload">[1/3]</span></h2>
+<a id="ac8b1b15b3f14786c7573d9b73230b87d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac8b1b15b3f14786c7573d9b73230b87d">&#9670;&nbsp;</a></span>ABSL_DECLARE_FLAG() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DECLARE_bool </td>
+          <td class="memname">ABSL_DECLARE_FLAG </td>
           <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">fz_debug&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
           <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="aa1ab0a4f731f39172eb3b16d6accc26c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa1ab0a4f731f39172eb3b16d6accc26c">&#9670;&nbsp;</a></span>DECLARE_bool() <span class="overload">[2/3]</span></h2>
+<a id="af4ab299c128101b6f1350501d6a6cc01"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4ab299c128101b6f1350501d6a6cc01">&#9670;&nbsp;</a></span>ABSL_DECLARE_FLAG() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DECLARE_bool </td>
+          <td class="memname">ABSL_DECLARE_FLAG </td>
           <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">fz_logging&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
           <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a89b50b18713867457d20314e8fcafe71"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a89b50b18713867457d20314e8fcafe71">&#9670;&nbsp;</a></span>DECLARE_bool() <span class="overload">[3/3]</span></h2>
+<a id="ae9bd4fd5ed574b8c20699452aa18a9b7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae9bd4fd5ed574b8c20699452aa18a9b7">&#9670;&nbsp;</a></span>ABSL_DECLARE_FLAG() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DECLARE_bool </td>
+          <td class="memname">ABSL_DECLARE_FLAG </td>
           <td>(</td>
-          <td class="paramtype">fz_verbose&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">fz_verbose&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">

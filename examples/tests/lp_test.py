@@ -11,9 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for ortools.linear_solver.pywraplp."""
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import unittest
 from ortools.linear_solver import linear_solver_pb2

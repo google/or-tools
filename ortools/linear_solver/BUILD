@@ -65,6 +65,7 @@ cc_library(
         "sat_interface.cc",
         "sat_proto_solver.cc",
         "sat_solver_utils.cc",
+        "scip_callback.cc",
         "scip_interface.cc",
         "scip_proto_solver.cc",
     ] + select({
@@ -95,6 +96,7 @@ cc_library(
         "model_validator.h",
         "sat_proto_solver.h",
         "sat_solver_utils.h",
+        "scip_callback.h",
         "scip_helper_macros.h",
         "scip_proto_solver.h",
     ],
@@ -118,6 +120,7 @@ cc_library(
         "//ortools/bop:integral_solver",
         "//ortools/glop:lp_solver",
         "//ortools/glop:parameters_cc_proto",
+        "//ortools/gscip:legacy_scip_params",
         "//ortools/port:file",
         "//ortools/port:proto_utils",
         "//ortools/sat:cp_model_cc_proto",
@@ -131,10 +134,18 @@ cc_library(
     }),
 )
 
-
 copy_file(
     name = "lpi_glop",
     src = "@scip//:scip-7.0.1/src/lpi/lpi_glop.cpp",
     out = "lpi_glop.cpp",
 )
 
+cc_library(
+    name = "scip_helper_macros",
+    hdrs = ["scip_helper_macros.h"],
+    deps = [
+        "//ortools/base:status_macros",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)

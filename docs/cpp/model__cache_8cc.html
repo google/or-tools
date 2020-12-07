@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -103,41 +103,57 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a3377b673c5a80ecbf7ad1893ed572d08"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model__cache_8cc.html#a3377b673c5a80ecbf7ad1893ed572d08">DECLARE_int32</a> (cache_initial_size)</td></tr>
-<tr class="separator:a3377b673c5a80ecbf7ad1893ed572d08"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1f8d66a8e5003e6b1a23ce7144636986"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model__cache_8cc.html#a1f8d66a8e5003e6b1a23ce7144636986">DEFINE_bool</a> (cp_disable_cache, false, &quot;Disable caching of <a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a> objects&quot;)</td></tr>
-<tr class="separator:a1f8d66a8e5003e6b1a23ce7144636986"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3bc938f4689cc9233a787b238aa087a5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model__cache_8cc.html#a3bc938f4689cc9233a787b238aa087a5">ABSL_DECLARE_FLAG</a> (int, cache_initial_size)</td></tr>
+<tr class="separator:a3bc938f4689cc9233a787b238aa087a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad937eb1cf92b0fb1e805490a6068d4fe"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model__cache_8cc.html#ad937eb1cf92b0fb1e805490a6068d4fe">ABSL_FLAG</a> (bool, cp_disable_cache, false, &quot;Disable caching of <a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a> objects&quot;)</td></tr>
+<tr class="separator:ad937eb1cf92b0fb1e805490a6068d4fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a361a9208d4526ad684cd218aa429676d"><td class="memItemLeft" align="right" valign="top">ModelCache *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a361a9208d4526ad684cd218aa429676d">BuildModelCache</a> (Solver *const solver)</td></tr>
 <tr class="separator:a361a9208d4526ad684cd218aa429676d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="a3377b673c5a80ecbf7ad1893ed572d08"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3377b673c5a80ecbf7ad1893ed572d08">&#9670;&nbsp;</a></span>DECLARE_int32()</h2>
+<a id="a3bc938f4689cc9233a787b238aa087a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3bc938f4689cc9233a787b238aa087a5">&#9670;&nbsp;</a></span>ABSL_DECLARE_FLAG()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DECLARE_int32 </td>
+          <td class="memname">ABSL_DECLARE_FLAG </td>
           <td>(</td>
-          <td class="paramtype">cache_initial_size&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">cache_initial_size&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a1f8d66a8e5003e6b1a23ce7144636986"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1f8d66a8e5003e6b1a23ce7144636986">&#9670;&nbsp;</a></span>DEFINE_bool()</h2>
+<a id="ad937eb1cf92b0fb1e805490a6068d4fe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad937eb1cf92b0fb1e805490a6068d4fe">&#9670;&nbsp;</a></span>ABSL_FLAG()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_bool </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">cp_disable_cache&#160;</td>
           <td class="paramname">, </td>
         </tr>

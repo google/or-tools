@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.0</span>
+                <span id="sfml">Google OR-Tools 8.1</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -152,7 +152,7 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_vehicle_type_curator.html">VehicleTypeCurator</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_decision_builder.html">IntVarFilteredDecisionBuilder</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decision builder building a solution using heuristics with local search filters to evaluate its feasibility.  <a href="classoperations__research_1_1_int_var_filtered_decision_builder.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classoperations__research_1_1_decision.html" title="A Decision represents a choice point in the search tree.">Decision</a> builder building a solution using heuristics with local search filters to evaluate its feasibility.  <a href="classoperations__research_1_1_int_var_filtered_decision_builder.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_heuristic.html">IntVarFilteredHeuristic</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generic filter-based heuristic applied to IntVars.  <a href="classoperations__research_1_1_int_var_filtered_heuristic.html#details">More...</a><br /></td></tr>
@@ -197,7 +197,7 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generic path-based filter class.  <a href="classoperations__research_1_1_base_path_filter.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_c_p_feasibility_filter.html">CPFeasibilityFilter</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This filter accepts deltas for which the assignment satisfies the constraints of the Solver.  <a href="classoperations__research_1_1_c_p_feasibility_filter.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This filter accepts deltas for which the assignment satisfies the constraints of the <a class="el" href="classoperations__research_1_1_solver.html" title="Solver Class.">Solver</a>.  <a href="classoperations__research_1_1_c_p_feasibility_filter.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
@@ -230,8 +230,10 @@ Functions</h2></td></tr>
 <tr class="separator:ab6379327d3431a9fe8f7434651eece59"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3de43a015d4ee3ce53eb030e1d7232de"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a3de43a015d4ee3ce53eb030e1d7232de">MakeTypeRegulationsFilter</a> (const RoutingModel &amp;routing_model)</td></tr>
 <tr class="separator:a3de43a015d4ee3ce53eb030e1d7232de"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab8e67e2bfb62d98317d2dbdeb4318876"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ab8e67e2bfb62d98317d2dbdeb4318876">AppendDimensionCumulFilters</a> (const std::vector&lt; RoutingDimension * &gt; &amp;dimensions, const RoutingSearchParameters &amp;parameters, bool filter_objective_cost, std::vector&lt; LocalSearchFilter * &gt; *filters)</td></tr>
-<tr class="separator:ab8e67e2bfb62d98317d2dbdeb4318876"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abfa47a7ce83aebfb2bba4215bfb04282"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#abfa47a7ce83aebfb2bba4215bfb04282">AppendDimensionCumulFilters</a> (const std::vector&lt; RoutingDimension * &gt; &amp;dimensions, const RoutingSearchParameters &amp;parameters, bool filter_objective_cost, std::vector&lt; LocalSearchFilterManager::FilterEvent &gt; *filters)</td></tr>
+<tr class="separator:abfa47a7ce83aebfb2bba4215bfb04282"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2de52d6625b60cdc32d493e175cc7bff"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a2de52d6625b60cdc32d493e175cc7bff">AppendLightWeightDimensionFilters</a> (const PathState *path_state, const std::vector&lt; RoutingDimension * &gt; &amp;dimensions, std::vector&lt; LocalSearchFilterManager::FilterEvent &gt; *filters)</td></tr>
+<tr class="separator:a2de52d6625b60cdc32d493e175cc7bff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a50f814689e39c6a1261f38f347466257"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a50f814689e39c6a1261f38f347466257">MakePathCumulFilter</a> (const RoutingDimension &amp;dimension, const RoutingSearchParameters &amp;parameters, bool propagate_own_objective_value, bool filter_objective_cost, bool can_use_lp=true)</td></tr>
 <tr class="separator:a50f814689e39c6a1261f38f347466257"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6956143fbdacf5edd7e4372394c29e2c"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a6956143fbdacf5edd7e4372394c29e2c">MakeCumulBoundsPropagatorFilter</a> (const RoutingDimension &amp;dimension)</td></tr>
@@ -244,8 +246,8 @@ Functions</h2></td></tr>
 <tr class="separator:a67f4b4b64a6c11717020eaa963b98c51"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae9a33af72abb5c2332a1f7ca71ab8215"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ae9a33af72abb5c2332a1f7ca71ab8215">MakeVehicleBreaksFilter</a> (const RoutingModel &amp;routing_model, const RoutingDimension &amp;dimension)</td></tr>
 <tr class="separator:ae9a33af72abb5c2332a1f7ca71ab8215"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaa5f7d59af23f5e10fc43a3989fa0b68"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aaa5f7d59af23f5e10fc43a3989fa0b68">MakeCPFeasibilityFilter</a> (const RoutingModel *routing_model)</td></tr>
-<tr class="separator:aaa5f7d59af23f5e10fc43a3989fa0b68"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a71c94647d1b8776e1232b4dedf35b8fb"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a71c94647d1b8776e1232b4dedf35b8fb">MakeCPFeasibilityFilter</a> (RoutingModel *routing_model)</td></tr>
+<tr class="separator:a71c94647d1b8776e1232b4dedf35b8fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

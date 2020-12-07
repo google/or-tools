@@ -18,74 +18,70 @@ using Google.OrTools.Sat;
 // [START print_solution]
 public class VarArraySolutionPrinter : CpSolverSolutionCallback
 {
-  public VarArraySolutionPrinter(IntVar[] variables)
-  {
-    variables_ = variables;
-  }
-
-  public override void OnSolutionCallback()
-  {
+    public VarArraySolutionPrinter(IntVar[] variables)
     {
-      Console.WriteLine(String.Format("Solution #{0}: time = {1:F2} s",
-                                      solution_count_, WallTime()));
-      foreach (IntVar v in variables_)
-      {
-        Console.WriteLine(
-            String.Format("  {0} = {1}", v.ShortString(), Value(v)));
-      }
-      solution_count_++;
+        variables_ = variables;
     }
-  }
 
-  public int SolutionCount()
-  {
-    return solution_count_;
-  }
+    public override void OnSolutionCallback()
+    {
+        {
+            Console.WriteLine(String.Format("Solution #{0}: time = {1:F2} s", solution_count_, WallTime()));
+            foreach (IntVar v in variables_)
+            {
+                Console.WriteLine(String.Format("  {0} = {1}", v.ShortString(), Value(v)));
+            }
+            solution_count_++;
+        }
+    }
 
-  private int solution_count_;
-  private IntVar[] variables_;
+    public int SolutionCount()
+    {
+        return solution_count_;
+    }
+
+    private int solution_count_;
+    private IntVar[] variables_;
 }
 // [END print_solution]
 
 public class SolutionHintingSampleSat
 {
-  static void Main()
-  {
-    // Creates the model.
-    // [START model]
-    CpModel model = new CpModel();
-    // [END model]
+    static void Main()
+    {
+        // Creates the model.
+        // [START model]
+        CpModel model = new CpModel();
+        // [END model]
 
-    // Creates the variables.
-    // [START variables]
-    int num_vals = 3;
+        // Creates the variables.
+        // [START variables]
+        int num_vals = 3;
 
-    IntVar x = model.NewIntVar(0, num_vals - 1, "x");
-    IntVar y = model.NewIntVar(0, num_vals - 1, "y");
-    IntVar z = model.NewIntVar(0, num_vals - 1, "z");
-    // [END variables]
+        IntVar x = model.NewIntVar(0, num_vals - 1, "x");
+        IntVar y = model.NewIntVar(0, num_vals - 1, "y");
+        IntVar z = model.NewIntVar(0, num_vals - 1, "z");
+        // [END variables]
 
-    // Creates the constraints.
-    // [START constraints]
-    model.Add(x != y);
-    // [END constraints]
+        // Creates the constraints.
+        // [START constraints]
+        model.Add(x != y);
+        // [END constraints]
 
-    // Solution hinting: x <- 1, y <- 2
-    model.AddHint(x, 1);
-    model.AddHint(y, 2);
+        // Solution hinting: x <- 1, y <- 2
+        model.AddHint(x, 1);
+        model.AddHint(y, 2);
 
-    // [START objective]
-    model.Maximize(LinearExpr.ScalProd(new IntVar[] {x, y, z}, new int[] {1, 2, 3}));
-    // [END objective]
+        // [START objective]
+        model.Maximize(LinearExpr.ScalProd(new IntVar[] { x, y, z }, new int[] { 1, 2, 3 }));
+        // [END objective]
 
-    // Creates a solver and solves the model.
-    // [START solve]
-    CpSolver solver = new CpSolver();
-    VarArraySolutionPrinter cb =
-        new VarArraySolutionPrinter(new IntVar[] { x, y, z });
-    CpSolverStatus status = solver.SolveWithSolutionCallback(model, cb);
-    // [END solve]
-
-  }
+        // Creates a solver and solves the model.
+        // [START solve]
+        CpSolver solver = new CpSolver();
+        VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, y, z });
+        CpSolverStatus status = solver.SolveWithSolutionCallback(model, cb);
+        // [END solve]
+    }
 }
 // [END program]

@@ -30,9 +30,9 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
-DEFINE_int32(cache_initial_size, 1024,
-             "Initial size of the array of the hash "
-             "table of caches for objects of type Var(x == 3)");
+ABSL_FLAG(int, cache_initial_size, 1024,
+          "Initial size of the array of the hash "
+          "table of caches for objects of type Var(x == 3)");
 
 namespace operations_research {
 

@@ -8,10 +8,6 @@ help_third_party:
 WINDOWS_ZLIB_DIR ?= $(OR_ROOT)dependencies/install
 WINDOWS_ZLIB_PATH = $(subst /,$S,$(WINDOWS_ZLIB_DIR))
 WINDOWS_ZLIB_NAME ?= zlib.lib
-WINDOWS_GFLAGS_DIR ?= $(OR_ROOT)dependencies/install
-WINDOWS_GFLAGS_PATH = $(subst /,$S,$(WINDOWS_GFLAGS_DIR))
-WINDOWS_GLOG_DIR ?= $(OR_ROOT)dependencies/install
-WINDOWS_GLOG_PATH = $(subst /,$S,$(WINDOWS_GLOG_DIR))
 WINDOWS_PROTOBUF_DIR ?= $(OR_ROOT)dependencies/install
 WINDOWS_PROTOBUF_PATH = $(subst /,$S,$(WINDOWS_PROTOBUF_DIR))
 WINDOWS_ABSL_DIR ?= $(OR_ROOT)dependencies/install
@@ -39,10 +35,8 @@ SWIG_BINARY = $(WINDOWS_SWIG_BINARY)
 # tags of dependencies to checkout.
 ZLIB_TAG = 1.2.11
 ZLIB_ARCHIVE_TAG = 1211
-GFLAGS_TAG = 2.2.2
-GLOG_TAG = 0.4.0
-PROTOBUF_TAG = v3.13.0
-ABSL_TAG = 20200923
+PROTOBUF_TAG = v3.14.0
+ABSL_TAG = 20200923.2
 # We are using a CBC archive containing all coin-or project
 # since Clp 2.17.5+ is broken we need to stick with Cbc 2.10.4
 # which is shipped with Clp 1.17.4
@@ -69,16 +63,6 @@ ifeq ($(wildcard $(WINDOWS_ZLIB_DIR)/include/zlib.h),)
 	$(error Third party ZLIB files was not found! did you run 'make third_party' or set WINDOWS_ZLIB_DIR ?)
 else
 	@echo ZLIB: found
-endif
-ifeq ($(wildcard $(WINDOWS_GFLAGS_DIR)/include/gflags/gflags.h),)
-	$(error Third party GFlags files was not found! did you run 'make third_party' or set WINDOWS_GFLAGS_DIR ?)
-else
-	@echo GFLAGS: found
-endif
-ifeq ($(wildcard $(WINDOWS_GLOG_DIR)/include/glog/logging.h),)
-	$(error Third party GLog files was not found! did you run 'make third_party' or set WINDOWS_GLOG_DIR ?)
-else
-	@echo GLOG: found
 endif
 ifeq ($(wildcard $(WINDOWS_PROTOBUF_DIR)/include/google/protobuf/descriptor.h),)
 	$(error Third party Protobuf files was not found! did you run 'make third_party' or set WINDOWS_PROTOBUF_DIR ?)
@@ -146,8 +130,6 @@ build_third_party: \
  Makefile.local \
  install_deps_directories \
  install_zlib \
- install_gflags \
- install_glog \
  install_protobuf \
  install_absl \
  install_swig \
@@ -156,7 +138,6 @@ build_third_party: \
 
 download_third_party: \
  dependencies/archives/zlib$(ZLIB_ARCHIVE_TAG).zip \
- dependencies/sources/gflags/autogen.sh \
  dependencies/sources/protobuf/autogen.sh \
  dependencies/archives/swigwin-$(SWIG_TAG).zip \
  dependencies/sources/Cbc-$(CBC_TAG)
@@ -222,12 +203,6 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # >> Makefile.local
 	@echo ## REQUIRED DEPENDENCIES ## >> Makefile.local
 	@echo # By default they will be automatically built -> nothing to define >> Makefile.local
-	@echo # Define WINDOWS_GFLAGS_DIR to depend on external Gflags library >> Makefile.local
-	@echo #   e.g.: WINDOWS_GFLAGS_DIR = C:\Progra~1\Gflags >> Makefile.local
-	@echo # >> Makefile.local
-	@echo # Define WINDOWS_GLOG_DIR to depend on external Glog library >> Makefile.local
-	@echo #   e.g.: WINDOWS_GLOG_DIR = C:\Progra~1\Glog >> Makefile.local
-	@echo # >> Makefile.local
 	@echo # Define WINDOWS_PROTOBUF_DIR to depend on external Protobuf library >> Makefile.local
 	@echo #   e.g.: WINDOWS_PROTOBUF_DIR = C:\Progra~1\Protobuf >> Makefile.local
 	@echo # >> Makefile.local
@@ -274,79 +249,6 @@ DEPENDENCIES_INC += $(ZLIB_INC)
 SWIG_INC += $(ZLIB_SWIG)
 DEPENDENCIES_LNK += $(ZLIB_LNK)
 
-##############
-##  GFLAGS  ##
-##############
-# This uses gflags cmake-based build.
-install_gflags: dependencies/install/lib/gflags.lib
-
-dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)
-	cd dependencies\sources\gflags-$(GFLAGS_TAG) && \
-  set MAKEFLAGS= && \
-  "$(CMAKE)" -H. -Bbuild_cmake \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DBUILD_TESTING=OFF \
-    -DCMAKE_INSTALL_PREFIX=..\..\install \
-    -G "NMake Makefiles" && \
-  "$(CMAKE)" --build build_cmake && \
-  "$(CMAKE)" --build build_cmake --target install
-
-dependencies/sources/gflags-$(GFLAGS_TAG): dependencies/archives/gflags-$(GFLAGS_TAG).zip | dependencies/sources
-	$(UNZIP) -q -d dependencies/sources dependencies\archives\gflags-$(GFLAGS_TAG).zip
-	-$(TOUCH) dependencies\sources\gflags-$(GFLAGS_TAG)\INSTALL.md
-
-dependencies/archives/gflags-$(GFLAGS_TAG).zip:
-	$(WGET) --quiet -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/v$(GFLAGS_TAG).zip
-	cd dependencies/archives && rename v$(GFLAGS_TAG).zip gflags-$(GFLAGS_TAG).zip
-
-GFLAGS_INC = /I"$(WINDOWS_GFLAGS_PATH)\\include" /DGFLAGS_DLL_DECL= /DGFLAGS_DLL_DECLARE_FLAG= /DGFLAGS_DLL_DEFINE_FLAG=
-GFLAGS_SWIG = -I"$(WINDOWS_GFLAGS_DIR)/include" -DGFLAGS_DLL_DECL= -DGFLAGS_DLL_DECLARE_FLAG= -DGFLAGS_DLL_DEFINE_FLAG=
-DYNAMIC_GFLAGS_LNK = "$(WINDOWS_GFLAGS_PATH)\lib\gflags_static.lib"
-STATIC_GFLAGS_LNK = "$(WINDOWS_GFLAGS_PATH)\lib\gflags_static.lib"
-
-GFLAGS_LNK = $(STATIC_GFLAGS_LNK)
-
-DEPENDENCIES_INC += $(GFLAGS_INC)
-SWIG_INC += $(GFLAGS_SWIG)
-DEPENDENCIES_LNK += $(GFLAGS_LNK)
-
-############
-##  GLOG  ##
-############
-# This uses glog cmake-based build.
-install_glog: dependencies/install/lib/glog.lib
-
-dependencies/install/lib/glog.lib: dependencies/sources/glog-$(GLOG_TAG) install_gflags
-	cd dependencies\sources\glog-$(GLOG_TAG) && \
-  set MAKEFLAGS= && \
-  "$(CMAKE)" -H. -Bbuild_cmake \
-    -DCMAKE_PREFIX_PATH=..\..\install \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DBUILD_TESTING=OFF \
-    -DCMAKE_INSTALL_PREFIX=..\..\install \
-    -G "NMake Makefiles" && \
-  "$(CMAKE)" --build build_cmake && \
-  "$(CMAKE)" --build build_cmake --target install
-
-dependencies/sources/glog-$(GLOG_TAG): dependencies/archives/glog-$(GLOG_TAG).zip | dependencies/sources
-	$(UNZIP) -q -d dependencies/sources dependencies\archives\glog-$(GLOG_TAG).zip
-	-$(TOUCH) dependencies\sources\glog-$(GLOG_TAG)\CMakeLists.txt
-
-dependencies/archives/glog-$(GLOG_TAG).zip:
-	$(WGET) --quiet -P dependencies\archives --no-check-certificate https://github.com/google/glog/archive/v$(GLOG_TAG).zip
-	cd dependencies/archives && rename v$(GLOG_TAG).zip glog-$(GLOG_TAG).zip
-
-GLOG_INC = /I"$(WINDOWS_GLOG_PATH)\\include" /DGOOGLE_GLOG_DLL_DECL=
-GLOG_SWIG = -I"$(WINDOWS_GLOG_DIR)/include" -DGOOGLE_GLOG_DLL_DECL=
-DYNAMIC_GLOG_LNK = "$(WINDOWS_GLOG_PATH)\lib\glog.lib"
-STATIC_GLOG_LNK = "$(WINDOWS_GLOG_PATH)\lib\glog.lib"
-
-GLOG_LNK = $(STATIC_GLOG_LNK)
-
-DEPENDENCIES_INC += $(GLOG_INC)
-SWIG_INC += $(GLOG_SWIG)
-DEPENDENCIES_LNK += $(GLOG_LNK)
-
 ################
 ##  Protobuf  ##
 ################
@@ -364,8 +266,8 @@ dependencies/install/lib/libprotobuf.lib: dependencies/sources/protobuf-$(PROTOB
     -DZLIB_ROOT=..\..\install \
     -DCMAKE_INSTALL_PREFIX=..\..\install \
     -G "NMake Makefiles" && \
-  "$(CMAKE)" --build build_cmake && \
-  "$(CMAKE)" --build build_cmake --target install
+  "$(CMAKE)" --build build_cmake --config Release && \
+  "$(CMAKE)" --build build_cmake --config Release --target install
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG): | dependencies/sources
 	-$(DELREC) dependencies/sources/protobuf-$(PROTOBUF_TAG)
@@ -416,8 +318,8 @@ dependencies/install/lib/absl.lib: dependencies/sources/abseil-cpp-$(ABSL_TAG) |
     -DBUILD_TESTING=OFF \
     -DCMAKE_INSTALL_PREFIX=..\..\install \
     -G "NMake Makefiles" && \
-  "$(CMAKE)" --build build_cmake && \
-  "$(CMAKE)" --build build_cmake --target install
+  "$(CMAKE)" --build build_cmake --config Release && \
+  "$(CMAKE)" --build build_cmake --config Release --target install
 
 dependencies/sources/abseil-cpp-$(ABSL_TAG): | dependencies/sources
 	-$(DELREC) dependencies/sources/abseil-cpp-$(ABSL_TAG)
@@ -577,8 +479,8 @@ dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)
     -DLPS="none" \
     -DSYM="none" \
     -G "NMake Makefiles" && \
-  "$(CMAKE)" --build build_cmake && \
-  "$(CMAKE)" --build build_cmake --target install
+  "$(CMAKE)" --build build_cmake --config Release && \
+  "$(CMAKE)" --build build_cmake --config Release --target install
 	lib /REMOVE:CMakeFiles\libscip.dir\lpi\lpi_none.c.obj $(OR_TOOLS_TOP)\dependencies\install\lib\libscip.lib
 
 $(SCIP_SRCDIR): | dependencies/sources
@@ -626,14 +528,11 @@ clean_third_party: remove_readonly_svn_attribs
 	-$(DEL) Makefile.local
 	-$(DEL) dependencies\check.log
 	-$(DEL) dependencies\archives\swigwin*.zip
-	-$(DEL) dependencies\archives\gflags*.zip
 	-$(DEL) dependencies\archives\sparsehash*.zip
 	-$(DEL) dependencies\archives\zlib*.zip
 	-$(DEL) dependencies\archives\v*.zip
 	-$(DEL) dependencies\archives\win_flex_bison*.zip
 	-$(DELREC) dependencies\sources\zlib*
-	-$(DELREC) dependencies\sources\gflags*
-	-$(DELREC) dependencies\sources\glog*
 	-$(DELREC) dependencies\sources\protobuf*
 	-$(DELREC) dependencies\sources\abseil-cpp*
 	-$(DELREC) dependencies\sources\Cbc-*
@@ -649,12 +548,6 @@ detect_third_party:
 	@echo WINDOWS_ZLIB_DIR = $(WINDOWS_ZLIB_DIR)
 	@echo ZLIB_INC = $(ZLIB_INC)
 	@echo ZLIB_LNK = $(ZLIB_LNK)
-	@echo WINDOWS_GFLAGS_DIR = $(WINDOWS_GFLAGS_DIR)
-	@echo GFLAGS_INC = $(GFLAGS_INC)
-	@echo GFLAGS_LNK = $(GFLAGS_LNK)
-	@echo WINDOWS_GLOG_DIR = $(WINDOWS_GLOG_DIR)
-	@echo GLOG_INC = $(GLOG_INC)
-	@echo GLOG_LNK = $(GLOG_LNK)
 	@echo WINDOWS_PROTOBUF_DIR = $(WINDOWS_PROTOBUF_DIR)
 	@echo PROTOBUF_INC = $(PROTOBUF_INC)
 	@echo PROTOBUF_LNK = $(PROTOBUF_LNK)

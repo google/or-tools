@@ -704,7 +704,8 @@ namespace operations_research {
 %ignore SearchLog::SearchLog(
     Solver* const s, OptimizeVar* const obj, IntVar* const var,
     double scaling_factor, double offset,
-    std::function<std::string()> display_callback, int period);
+    std::function<std::string()> display_callback,
+    bool display_on_new_solutions_only, int period);
 // Methods:
 %unignore SearchLog::Maintain;
 %unignore SearchLog::OutputDecision;

@@ -30,10 +30,10 @@
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_proof_handler.h"
@@ -367,6 +367,11 @@ class SatSolver {
   int64 num_failures() const;
   int64 num_propagations() const;
 
+  // Note that we count the number of backtrack to level zero from a positive
+  // level. Those can corresponds to actual restarts, or conflicts that learn
+  // unit clauses or any other reason that trigger such backtrack.
+  int64 num_restarts() const;
+
   // A deterministic number that should be correlated with the time spent in
   // the Solve() function. The order of magnitude should be close to the time
   // in seconds.
@@ -424,6 +429,12 @@ class SatSolver {
 
   // Simplifies the problem when new variables are assigned at level 0.
   void ProcessNewlyFixedVariables();
+
+  int64 NumFixedVariables() const {
+    if (!decisions_.empty()) return decisions_[0].trail_index;
+    CHECK_EQ(CurrentDecisionLevel(), 0);
+    return trail_->Index();
+  }
 
  private:
   // Calls Propagate() and returns true if no conflict occurred. Otherwise,
@@ -730,6 +741,7 @@ class SatSolver {
   struct Counters {
     int64 num_branches = 0;
     int64 num_failures = 0;
+    int64 num_restarts = 0;
 
     // Minimization stats.
     int64 num_minimizations = 0;

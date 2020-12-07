@@ -22,7 +22,7 @@ syntax = "proto2";
 
 package operations_research.glop;
 
-// next id = 60
+// next id = 61
 message GlopParameters {
 
   // Supported algorithms for scaling:
@@ -191,6 +191,29 @@ message GlopParameters {
   // Whether or not we scale the matrix A so that the maximum coefficient on
   // each line and each column is 1.0.
   optional bool use_scaling = 16 [default = true];
+
+  // This is only used if use_scaling is true. After the scaling is done, we
+  // also scale the objective by a constant factor. This is important because
+  // scaling the cost has a direct influence on the meaning of the
+  // dual_feasibility_tolerance. Because we usually use a fixed tolerance, the
+  // objective must be well scaled to make sense.
+  enum CostScalingAlgorithm {
+    // Leave the cost as is.
+    NO_COST_SCALING = 0;
+
+    // This is the most defensive option. It makes sure that
+    // [min_cost_magnitude, max_cost_magnitude] contains 1.0, and if not, it
+    // makes the closest magnitude bound equal to one.
+    CONTAIN_ONE_COST_SCALING = 1;
+
+    // Make the mean of the non-zero costs equals to one.
+    MEAN_COST_SCALING = 2;
+
+    // Make the median of the non-zero costs equals to one.
+    MEDIAN_COST_SCALING = 3;
+  }
+  optional CostScalingAlgorithm cost_scaling = 60
+      [default = CONTAIN_ONE_COST_SCALING];
 
   // What heuristic is used to try to replace the fixed slack columns in the
   // initial basis of the primal simplex.

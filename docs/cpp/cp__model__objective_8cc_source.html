@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -123,7 +123,7 @@ $(document).ready(function(){initNavTree('cp__model__objective_8cc_source.html',
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    }</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keywordflow">if</span> (muliplier != 1.0) {</div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;      <span class="comment">// TODO(user): deal with this case.</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;      CHECK(cp_model-&gt;objective().domain().empty());</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;      <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(cp_model-&gt;objective().domain().empty());</div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;      <span class="keywordtype">double</span> old_factor = cp_model-&gt;objective().scaling_factor();</div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;      <span class="keywordflow">if</span> (old_factor == 0.0) old_factor = 1.0;</div>
@@ -202,6 +202,7 @@ $(document).ready(function(){initNavTree('cp__model__objective_8cc_source.html',
 <div class="ttc" id="anamespaceoperations__research_1_1sat_html_a217338425de4389014563f1f24331713"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a217338425de4389014563f1f24331713">operations_research::sat::RefIsPositive</a></div><div class="ttdeci">bool RefIsPositive(int ref)</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__utils_8h_source.html#l00034">cp_model_utils.h:34</a></div></div>
 <div class="ttc" id="acp__model__objective_8h_html"><div class="ttname"><a href="cp__model__objective_8h.html">cp_model_objective.h</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1sat_html_ab1240060466ba48a36a4b36379bce26a"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#ab1240060466ba48a36a4b36379bce26a">operations_research::sat::ReadDomainFromProto</a></div><div class="ttdeci">Domain ReadDomainFromProto(const ProtoWithDomain &amp;proto)</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__utils_8h_source.html#l00102">cp_model_utils.h:102</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a3e1cfef60e774a81f30eaddf26a3a274"><div class="ttname"><a href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a></div><div class="ttdeci">#define CHECK(condition)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00495">base/logging.h:495</a></div></div>
 <div class="ttc" id="acp__model__utils_8h_html"><div class="ttname"><a href="cp__model__utils_8h.html">cp_model_utils.h</a></div></div>
 <!-- HTML footer for doxygen 1.8.18-->
 <!-- start footer part -->

@@ -17,18 +17,18 @@ cc_proto_library(
 )
 
 proto_library(
-    name = "local_search_stats_proto",
-    srcs = ["local_search_stats.proto"],
+    name = "search_stats_proto",
+    srcs = ["search_stats.proto"],
 )
 
 cc_proto_library(
-    name = "local_search_stats_cc_proto",
-    deps = [":local_search_stats_proto"],
+    name = "search_stats_cc_proto",
+    deps = [":search_stats_proto"],
 )
 
 java_proto_library(
-    name = "local_search_stats_java_proto",
-    deps = [":local_search_stats_proto"],
+    name = "search_stats_java_proto",
+    deps = [":search_stats_proto"],
 )
 
 proto_library(
@@ -135,9 +135,10 @@ cc_library(
     deps = [
         ":assignment_cc_proto",
         ":demon_profiler_cc_proto",
-        ":local_search_stats_cc_proto",
+        ":search_stats_cc_proto",
         ":search_limit_cc_proto",
         ":solver_parameters_cc_proto",
+        ":routing_parameters_cc_proto",
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:recordio",
@@ -148,17 +149,17 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/time",
-#        "//third_party/zlib:zlibonly",
+        #        "//zlib:zlibonly",
         "//ortools/base:bitmap",
         "//ortools/base:int_type",
-        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:strong_vector",
         "//ortools/base:iterator_adaptors",
         "//ortools/base:map_util",
         "//ortools/base:stl_util",
-#        "//util/gzip:gzipstring",
+        #        "//util/gzip:gzipstring",
         "//ortools/base:hash",
-#        "//util/hash:jenkins",
-#        "//util/math:fastmath",
+        #        "//util/hash:jenkins",
+        #        "//util/math:fastmath",
         "//ortools/base:mathutil",
         "//ortools/graph:hamiltonian_path",
         "//ortools/util:bitset",
@@ -172,11 +173,11 @@ cc_library(
         "//ortools/util:tuple_set",
         "//ortools/util:vector_map",
         "//ortools/base:random",
-#        "//util/regexp/re2",
+        #        "//util/regexp/re2",
         "@com_google_absl//absl/status",
-#        "//util/textprogressbar",
+        #        "//util/textprogressbar",
         "//ortools/base:timer",
-#        "//util/zippy",
+        #        "//util/zippy",
     ],
 )
 
@@ -236,8 +237,8 @@ cc_library(
         ":solver_parameters_cc_proto",
         "//ortools/base",
         "//ortools/base:protoutil",
-        "//ortools/base:statusor",
         "//ortools/util:optional_boolean_cc_proto",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
         "@com_google_protobuf//:protobuf",
@@ -283,7 +284,7 @@ cc_library(
     deps = [
         ":routing_types",
         "//ortools/base",
-        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:strong_vector",
         "//ortools/base:map_util",
         "@com_google_absl//absl/container:flat_hash_set",
     ],
@@ -317,14 +318,15 @@ cc_library(
         "@com_google_protobuf//:protobuf",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/functional:bind_front",
         "@com_google_absl//absl/hash",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/time",
-#        "//third_party/kdtree",
+        #        "//kdtree",
         "//ortools/graph",
-        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:strong_vector",
         "//ortools/base:map_util",
         "//ortools/base:small_map",
         "//ortools/base:small_ordered_set",
@@ -333,7 +335,7 @@ cc_library(
         "//ortools/base:murmur",
         "//ortools/glop:lp_solver",
         "//ortools/graph:christofides",
-        "//ortools/graph:connectivity",
+        "//ortools/graph:connected_components",
         "//ortools/graph:linear_assignment",
         "//ortools/graph:min_cost_flow",
         "//ortools/graph:topologicalsorter",

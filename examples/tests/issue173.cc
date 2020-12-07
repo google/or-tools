@@ -26,7 +26,7 @@ void BreakLoop() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   operations_research::BreakLoop();
   return 0;
 }

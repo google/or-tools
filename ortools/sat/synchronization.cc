@@ -25,16 +25,17 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/time_limit.h"
 
-DEFINE_bool(
-    cp_model_dump_solutions, false,
-    "DEBUG ONLY. If true, all the intermediate solution will be dumped "
-    "under '\"FLAGS_cp_model_dump_prefix\" + \"solution_xxx.pb.txt\"'.");
-DEFINE_string(
-    cp_model_load_debug_solution, "",
+ABSL_FLAG(bool, cp_model_dump_solutions, false,
+          "DEBUG ONLY. If true, all the intermediate solution will be dumped "
+          "under '\"FLAGS_cp_model_dump_prefix\" + \"solution_xxx.pb.txt\"'.");
+
+ABSL_FLAG(
+    std::string, cp_model_load_debug_solution, "",
     "DEBUG ONLY. When this is set to a non-empty file name, "
     "we will interpret this as an internal solution which can be used for "
     "debugging. For instance we use it to identify wrong cuts/reasons.");
@@ -46,7 +47,6 @@ void SharedRelaxationSolutionRepository::NewRelaxationSolution(
     const CpSolverResponse& response) {
   // Note that the Add() method already applies mutex lock. So we don't need it
   // here.
-
   if (response.solution().empty()) return;
 
   // Add this solution to the pool.
@@ -64,20 +64,16 @@ void SharedRelaxationSolutionRepository::NewRelaxationSolution(
 }
 
 void SharedLPSolutionRepository::NewLPSolution(
-    const std::vector<double>& lp_solution) {
-  // Note that the Add() method already applies mutex lock. So we don't need it
-  // here.
-
+    std::vector<double> lp_solution) {
   if (lp_solution.empty()) return;
 
   // Add this solution to the pool.
   SharedSolutionRepository<double>::Solution solution;
-  solution.variable_values.assign(lp_solution.begin(), lp_solution.end());
+  solution.variable_values = std::move(lp_solution);
 
   // We always prefer to keep the solution from the last synchronize batch.
   absl::MutexLock mutex_lock(&mutex_);
   solution.rank = -num_synchronization_;
-
   AddInternal(solution);
 }
 
@@ -433,8 +429,10 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
   if (log_updates_) {
     std::string solution_info = response.solution_info();
     if (model != nullptr) {
-      absl::StrAppend(&solution_info,
-                      " num_bool:", model->Get<Trail>()->NumVariables());
+      const int64 num_bool = model->Get<Trail>()->NumVariables();
+      const int64 num_fixed = model->Get<SatSolver>()->NumFixedVariables();
+      absl::StrAppend(&solution_info, " fixed_bools:", num_fixed, "/",
+                      num_bool);
     }
 
     if (model_proto_.has_objective()) {
@@ -468,7 +466,7 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
 #if !defined(__PORTABLE_PLATFORM__)
   // We protect solution dumping with log_updates as LNS subsolvers share
   // another solution manager, and we do not want to dump those.
-  if (FLAGS_cp_model_dump_solutions && log_updates_) {
+  if (absl::GetFlag(FLAGS_cp_model_dump_solutions) && log_updates_) {
     const std::string file =
         absl::StrCat(dump_prefix_, "solution_", num_solutions_, ".pbtxt");
     LOG(INFO) << "Dumping solution to '" << file << "'.";
@@ -479,14 +477,14 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
 
 void SharedResponseManager::LoadDebugSolution(Model* model) {
 #if !defined(__PORTABLE_PLATFORM__)
-  if (FLAGS_cp_model_load_debug_solution.empty()) return;
+  if (absl::GetFlag(FLAGS_cp_model_load_debug_solution).empty()) return;
   if (model->Get<DebugSolution>() != nullptr) return;  // Already loaded.
 
   CpSolverResponse response;
-  LOG(INFO) << "Reading solution from '" << FLAGS_cp_model_load_debug_solution
-            << "'.";
-  CHECK_OK(file::GetTextProto(FLAGS_cp_model_load_debug_solution, &response,
-                              file::Defaults()));
+  LOG(INFO) << "Reading solution from '"
+            << absl::GetFlag(FLAGS_cp_model_load_debug_solution) << "'.";
+  CHECK_OK(file::GetTextProto(absl::GetFlag(FLAGS_cp_model_load_debug_solution),
+                              &response, file::Defaults()));
 
   const auto& mapping = *model->GetOrCreate<CpModelMapping>();
   auto& debug_solution = *model->GetOrCreate<DebugSolution>();
@@ -525,12 +523,20 @@ void SharedResponseManager::SetStatsFromModelInternal(Model* model) {
   best_response_.set_num_branches(sat_solver->num_branches());
   best_response_.set_num_conflicts(sat_solver->num_failures());
   best_response_.set_num_binary_propagations(sat_solver->num_propagations());
+  best_response_.set_num_restarts(sat_solver->num_restarts());
   best_response_.set_num_integer_propagations(
       integer_trail == nullptr ? 0 : integer_trail->num_enqueues());
   auto* time_limit = model->Get<TimeLimit>();
   best_response_.set_wall_time(time_limit->GetElapsedTime());
   best_response_.set_deterministic_time(
       time_limit->GetElapsedDeterministicTime());
+
+  int64 num_lp_iters = 0;
+  for (const LinearProgrammingConstraint* lp :
+       *model->GetOrCreate<LinearProgrammingConstraintCollection>()) {
+    num_lp_iters += lp->total_num_simplex_iterations();
+  }
+  best_response_.set_num_lp_iterations(num_lp_iters);
 }
 
 bool SharedResponseManager::ProblemIsSolved() const {
@@ -563,6 +569,7 @@ void SharedBoundsManager::ReportPotentialNewBounds(
     const std::vector<int64>& new_upper_bounds) {
   CHECK_EQ(variables.size(), new_lower_bounds.size());
   CHECK_EQ(variables.size(), new_upper_bounds.size());
+  int num_improvements = 0;
 
   absl::MutexLock mutex_lock(&mutex_);
   for (int i = 0; i < variables.size(); ++i) {
@@ -584,16 +591,13 @@ void SharedBoundsManager::ReportPotentialNewBounds(
       upper_bounds_[var] = new_ub;
     }
     changed_variables_since_last_synchronize_.Set(var);
-
-    if (VLOG_IS_ON(3)) {
-      const IntegerVariableProto& var_proto = model_proto.variables(var);
-      const std::string& var_name =
-          var_proto.name().empty() ? absl::StrCat("anonymous_var(", var, ")")
-                                   : var_proto.name();
-      LOG(INFO) << "  '" << worker_name << "' exports new bounds for "
-                << var_name << ": from [" << old_lb << ", " << old_ub
-                << "] to [" << new_lb << ", " << new_ub << "]";
-    }
+    num_improvements++;
+  }
+  // TODO(user): Display number of bound improvements cumulatively per
+  // workers at the end of the search.
+  if (num_improvements > 0) {
+    VLOG(2) << worker_name << " exports " << num_improvements
+            << " modifications";
   }
 }
 

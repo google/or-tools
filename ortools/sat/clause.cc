@@ -1015,8 +1015,9 @@ void BinaryImplicationGraph::RemoveFixedVariables() {
 class SccGraph {
  public:
   using Implication =
-      gtl::ITIVector<LiteralIndex, absl::InlinedVector<Literal, 6>>;
-  using AtMostOne = gtl::ITIVector<LiteralIndex, absl::InlinedVector<int32, 6>>;
+      absl::StrongVector<LiteralIndex, absl::InlinedVector<Literal, 6>>;
+  using AtMostOne =
+      absl::StrongVector<LiteralIndex, absl::InlinedVector<int32, 6>>;
   using SccFinder =
       StronglyConnectedComponentsFinder<int32, SccGraph,
                                         std::vector<std::vector<int32>>>;
@@ -1507,7 +1508,7 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
   int num_added = 0;
 
   absl::flat_hash_set<std::vector<Literal>, VectorHash> max_cliques;
-  gtl::ITIVector<LiteralIndex, std::vector<int>> max_cliques_containing(
+  absl::StrongVector<LiteralIndex, std::vector<int>> max_cliques_containing(
       implications_.size());
 
   // We starts by processing larger constraints first.
@@ -1575,13 +1576,17 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
 
 std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
     const absl::Span<const Literal> at_most_one,
-    const gtl::ITIVector<LiteralIndex, bool>& can_be_included,
-    const gtl::ITIVector<LiteralIndex, double>& expanded_lp_values) {
+    const absl::StrongVector<LiteralIndex, bool>& can_be_included,
+    const absl::StrongVector<LiteralIndex, double>& expanded_lp_values) {
   std::vector<Literal> clique(at_most_one.begin(), at_most_one.end());
   std::vector<LiteralIndex> intersection;
   double clique_weight = 0.0;
+  const int64 old_work = work_done_in_mark_descendants_;
   for (const Literal l : clique) clique_weight += expanded_lp_values[l.Index()];
   for (int i = 0; i < clique.size(); ++i) {
+    // Do not spend too much time here.
+    if (work_done_in_mark_descendants_ - old_work > 1e8) break;
+
     is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
     MarkDescendants(clique[i]);
     if (i == 0) {
@@ -1641,8 +1646,9 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
     const std::vector<double>& lp_values) {
   // We only want to generate a cut with literals from the LP, not extra ones.
   const int num_literals = implications_.size();
-  gtl::ITIVector<LiteralIndex, bool> can_be_included(num_literals, false);
-  gtl::ITIVector<LiteralIndex, double> expanded_lp_values(num_literals, 0.0);
+  absl::StrongVector<LiteralIndex, bool> can_be_included(num_literals, false);
+  absl::StrongVector<LiteralIndex, double> expanded_lp_values(num_literals,
+                                                              0.0);
   const int size = literals.size();
   for (int i = 0; i < size; ++i) {
     const Literal l = literals[i];

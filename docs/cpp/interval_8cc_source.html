@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -135,8 +135,8 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="comment">// It&#39;s good to have the two extreme values being symmetrical around zero: it</span></div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="comment">// makes mirroring easier.</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="keyword">const</span> <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> IntervalVar::kMaxValidValue = <a class="code" href="integral__types_8h.html#a74ea76ea27f48fb1b6e148e1577b3719">kint64max</a> &gt;&gt; 2;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="keyword">const</span> <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> IntervalVar::kMinValidValue = -kMaxValidValue;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="keyword">const</span> <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="classoperations__research_1_1_interval_var.html#a25367402bed36b599e0269f2612cfa29">IntervalVar::kMaxValidValue</a> = <a class="code" href="integral__types_8h.html#a74ea76ea27f48fb1b6e148e1577b3719">kint64max</a> &gt;&gt; 2;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="keyword">const</span> <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="classoperations__research_1_1_interval_var.html#a754f63f0839f2851475307283b575584">IntervalVar::kMinValidValue</a> = -kMaxValidValue;</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="keyword">namespace </span>{</div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="keyword">enum</span> IntervalField { START, DURATION, END };</div>
@@ -197,7 +197,7 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;  }</div>
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
 <div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;  <span class="keywordtype">void</span> Accept(ModelVisitor* <span class="keyword">const</span> visitor)<span class="keyword"> const override </span>{</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    visitor-&gt;VisitIntervalVariable(<span class="keyword">this</span>, ModelVisitor::kMirrorOperation, 0, t_);</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    visitor-&gt;VisitIntervalVariable(<span class="keyword">this</span>, <a class="code" href="classoperations__research_1_1_model_visitor.html#a1e2bbcc9d6a01ced94c2b62ad671b805">ModelVisitor::kMirrorOperation</a>, 0, t_);</div>
 <div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;  }</div>
 <div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
 <div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;  std::string DebugString()<span class="keyword"> const override </span>{</div>
@@ -393,7 +393,7 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;                                           : (kMaxValidValue - DurationMin());</div>
 <div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;  }</div>
 <div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;  <span class="keywordtype">void</span> SetStartMax(<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> m)<span class="keyword"> override </span>{</div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    LOG(FATAL)</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a>)</div>
 <div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;        &lt;&lt; <span class="stringliteral">&quot;Calling SetStartMax on a IntervalVarRelaxedMax is not supported, &quot;</span></div>
 <div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;        &lt;&lt; <span class="stringliteral">&quot;as it seems there is no legitimate use case.&quot;</span>;</div>
 <div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;  }</div>
@@ -402,13 +402,13 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;                                           : kMaxValidValue;</div>
 <div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;  }</div>
 <div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;  <span class="keywordtype">void</span> SetEndMax(<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> m)<span class="keyword"> override </span>{</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;    LOG(FATAL)</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;    <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a>)</div>
 <div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;        &lt;&lt; <span class="stringliteral">&quot;Calling SetEndMax on a IntervalVarRelaxedMax is not supported, &quot;</span></div>
 <div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;        &lt;&lt; <span class="stringliteral">&quot;as it seems there is no legitimate use case.&quot;</span>;</div>
 <div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;  }</div>
 <div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160; </div>
 <div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;  <span class="keywordtype">void</span> Accept(ModelVisitor* <span class="keyword">const</span> visitor)<span class="keyword"> const override </span>{</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;    visitor-&gt;VisitIntervalVariable(<span class="keyword">this</span>, ModelVisitor::kRelaxedMaxOperation, 0,</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;    visitor-&gt;VisitIntervalVariable(<span class="keyword">this</span>, <a class="code" href="classoperations__research_1_1_model_visitor.html#a4b0b25913da1bcc992216b01f52c396c">ModelVisitor::kRelaxedMaxOperation</a>, 0,</div>
 <div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;                                   underlying());</div>
 <div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;  }</div>
 <div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160; </div>
@@ -442,7 +442,7 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;                                           : kMinValidValue;</div>
 <div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;  }</div>
 <div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;  <span class="keywordtype">void</span> SetStartMin(<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> m)<span class="keyword"> override </span>{</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;    LOG(FATAL)</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;    <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a>)</div>
 <div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;        &lt;&lt; <span class="stringliteral">&quot;Calling SetStartMin on a IntervalVarRelaxedMin is not supported, &quot;</span></div>
 <div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;        &lt;&lt; <span class="stringliteral">&quot;as it seems there is no legitimate use case.&quot;</span>;</div>
 <div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;  }</div>
@@ -452,13 +452,13 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;                                           : (kMinValidValue + DurationMin());</div>
 <div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;  }</div>
 <div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;  <span class="keywordtype">void</span> SetEndMin(<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> m)<span class="keyword"> override </span>{</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    LOG(FATAL)</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a>)</div>
 <div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;        &lt;&lt; <span class="stringliteral">&quot;Calling SetEndMin on a IntervalVarRelaxedMin is not supported, &quot;</span></div>
 <div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;        &lt;&lt; <span class="stringliteral">&quot;as it seems there is no legitimate use case.&quot;</span>;</div>
 <div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;  }</div>
 <div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160; </div>
 <div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;  <span class="keywordtype">void</span> Accept(ModelVisitor* <span class="keyword">const</span> visitor)<span class="keyword"> const override </span>{</div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;    visitor-&gt;VisitIntervalVariable(<span class="keyword">this</span>, ModelVisitor::kRelaxedMinOperation, 0,</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;    visitor-&gt;VisitIntervalVariable(<span class="keyword">this</span>, <a class="code" href="classoperations__research_1_1_model_visitor.html#a736a6cd34629611b87ece3ded824d2e4">ModelVisitor::kRelaxedMinOperation</a>, 0,</div>
 <div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;                                   underlying());</div>
 <div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;  }</div>
 <div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160; </div>
@@ -477,8 +477,8 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;    <span class="keyword">explicit</span> Handler(BaseIntervalVar* <span class="keyword">const</span> <a class="code" href="expr__array_8cc.html#a472a99923cbe11ae7b5a5d157d9ad465">var</a>) : var_(<a class="code" href="expr__array_8cc.html#a472a99923cbe11ae7b5a5d157d9ad465">var</a>) {}</div>
 <div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;    ~Handler()<span class="keyword"> override </span>{}</div>
 <div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;    <span class="keywordtype">void</span> Run(Solver* <span class="keyword">const</span> s)<span class="keyword"> override </span>{ var_-&gt;Process(); }</div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;    Solver::DemonPriority priority()<span class="keyword"> const override </span>{</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;      <span class="keywordflow">return</span> Solver::VAR_PRIORITY;</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;    <a class="code" href="classoperations__research_1_1_solver.html#a293233c46e5eaa308f65c7c2350553f7">Solver::DemonPriority</a> priority()<span class="keyword"> const override </span>{</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;      <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1_solver.html#a293233c46e5eaa308f65c7c2350553f7a29446873dacaf3696a89dfb1e617a5f5">Solver::VAR_PRIORITY</a>;</div>
 <div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;    }</div>
 <div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;    std::string DebugString()<span class="keyword"> const override </span>{</div>
 <div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;      <span class="keywordflow">return</span> absl::StrFormat(<span class="stringliteral">&quot;Handler(%s)&quot;</span>, var_-&gt;DebugString());</div>
@@ -509,7 +509,7 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160; <span class="keyword">protected</span>:</div>
 <div class="line"><a name="l00419"></a><span class="lineno"><a class="line" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">  419</a></span>&#160;  <span class="keywordtype">bool</span> <a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>;</div>
 <div class="line"><a name="l00420"></a><span class="lineno"><a class="line" href="interval_8cc.html#addaf89e29c8752c2df3ca372153236fc">  420</a></span>&#160;  Handler <a class="code" href="interval_8cc.html#addaf89e29c8752c2df3ca372153236fc">handler_</a>;</div>
-<div class="line"><a name="l00421"></a><span class="lineno"><a class="line" href="interval_8cc.html#adc5ea4d589f3b0c548997680148376e9">  421</a></span>&#160;  Solver::Action <a class="code" href="interval_8cc.html#adc5ea4d589f3b0c548997680148376e9">cleaner_</a>;</div>
+<div class="line"><a name="l00421"></a><span class="lineno"><a class="line" href="interval_8cc.html#adc5ea4d589f3b0c548997680148376e9">  421</a></span>&#160;  <a class="code" href="classoperations__research_1_1_solver.html#ad7946514ee3dd6cb3ab993dc9e98b33b">Solver::Action</a> <a class="code" href="interval_8cc.html#adc5ea4d589f3b0c548997680148376e9">cleaner_</a>;</div>
 <div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;};</div>
 <div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160; </div>
 <div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;<span class="keyword">class </span>RangeVar : <span class="keyword">public</span> IntExpr {</div>
@@ -560,7 +560,7 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l00469"></a><span class="lineno">  469</span>&#160;  }</div>
 <div class="line"><a name="l00470"></a><span class="lineno">  470</span>&#160; </div>
 <div class="line"><a name="l00471"></a><span class="lineno">  471</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> OldMin()<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;    DCHECK(var_-&gt;InProcess());</div>
+<div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;    <a class="code" href="base_2logging_8h.html#ae17f8119c108cf3070bad3449c7e0006">DCHECK</a>(var_-&gt;InProcess());</div>
 <div class="line"><a name="l00473"></a><span class="lineno">  473</span>&#160;    <span class="keywordflow">return</span> previous_min_;</div>
 <div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160;  }</div>
 <div class="line"><a name="l00475"></a><span class="lineno">  475</span>&#160; </div>
@@ -623,22 +623,22 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160; </div>
 <div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;  <span class="keywordtype">void</span> WhenRange(Demon* <span class="keyword">const</span> demon)<span class="keyword"> override </span>{</div>
 <div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160;    <span class="keywordflow">if</span> (!Bound()) {</div>
-<div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160;      <span class="keywordflow">if</span> (demon-&gt;priority() == Solver::DELAYED_PRIORITY) {</div>
-<div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160;        delayed_range_demons_.<a class="code" href="classoperations__research_1_1_simple_rev_f_i_f_o.html#abc8f4bc09139f8f3951cc8280823a0f3">PushIfNotTop</a>(solver(),</div>
+<div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160;      <span class="keywordflow">if</span> (demon-&gt;priority() == <a class="code" href="classoperations__research_1_1_solver.html#a293233c46e5eaa308f65c7c2350553f7ad38fb80cf0d5468a2b5efdb0f4cd6068">Solver::DELAYED_PRIORITY</a>) {</div>
+<div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160;        delayed_range_demons_.PushIfNotTop(solver(),</div>
 <div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;                                           solver()-&gt;<a class="code" href="namespaceoperations__research.html#a9844237a85ad9809bc8b4647b79bc5be">RegisterDemon</a>(demon));</div>
 <div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160;      } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;        range_demons_.<a class="code" href="classoperations__research_1_1_simple_rev_f_i_f_o.html#abc8f4bc09139f8f3951cc8280823a0f3">PushIfNotTop</a>(solver(), solver()-&gt;<a class="code" href="namespaceoperations__research.html#a9844237a85ad9809bc8b4647b79bc5be">RegisterDemon</a>(demon));</div>
+<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;        range_demons_.PushIfNotTop(solver(), solver()-&gt;<a class="code" href="namespaceoperations__research.html#a9844237a85ad9809bc8b4647b79bc5be">RegisterDemon</a>(demon));</div>
 <div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160;      }</div>
 <div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;    }</div>
 <div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;  }</div>
 <div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160; </div>
 <div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;  <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenBound(Demon* <span class="keyword">const</span> demon) {</div>
 <div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;    <span class="keywordflow">if</span> (!Bound()) {</div>
-<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;      <span class="keywordflow">if</span> (demon-&gt;priority() == Solver::DELAYED_PRIORITY) {</div>
-<div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;        delayed_bound_demons_.<a class="code" href="classoperations__research_1_1_simple_rev_f_i_f_o.html#abc8f4bc09139f8f3951cc8280823a0f3">PushIfNotTop</a>(solver(),</div>
+<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;      <span class="keywordflow">if</span> (demon-&gt;priority() == <a class="code" href="classoperations__research_1_1_solver.html#a293233c46e5eaa308f65c7c2350553f7ad38fb80cf0d5468a2b5efdb0f4cd6068">Solver::DELAYED_PRIORITY</a>) {</div>
+<div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;        delayed_bound_demons_.PushIfNotTop(solver(),</div>
 <div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;                                           solver()-&gt;<a class="code" href="namespaceoperations__research.html#a9844237a85ad9809bc8b4647b79bc5be">RegisterDemon</a>(demon));</div>
 <div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160;      } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160;        bound_demons_.<a class="code" href="classoperations__research_1_1_simple_rev_f_i_f_o.html#abc8f4bc09139f8f3951cc8280823a0f3">PushIfNotTop</a>(solver(), solver()-&gt;<a class="code" href="namespaceoperations__research.html#a9844237a85ad9809bc8b4647b79bc5be">RegisterDemon</a>(demon));</div>
+<div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160;        bound_demons_.PushIfNotTop(solver(), solver()-&gt;<a class="code" href="namespaceoperations__research.html#a9844237a85ad9809bc8b4647b79bc5be">RegisterDemon</a>(demon));</div>
 <div class="line"><a name="l00551"></a><span class="lineno">  551</span>&#160;      }</div>
 <div class="line"><a name="l00552"></a><span class="lineno">  552</span>&#160;    }</div>
 <div class="line"><a name="l00553"></a><span class="lineno">  553</span>&#160;  }</div>
@@ -802,7 +802,7 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;  <span class="keywordtype">void</span> UpdatePreviousValueAndApplyPostponedValue() {</div>
 <div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;    previous_value_ = value_;</div>
 <div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;    <span class="keywordflow">if</span> (value_ != postponed_value_) {</div>
-<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;      DCHECK_NE(kUnboundBooleanVarValue, postponed_value_);</div>
+<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;      <a class="code" href="base_2logging_8h.html#a46e69120fbd3b36e6960e096d23b66f0">DCHECK_NE</a>(kUnboundBooleanVarValue, postponed_value_);</div>
 <div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;      SetValue(postponed_value_);</div>
 <div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;    }</div>
 <div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;  }</div>
@@ -927,7 +927,7 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l00836"></a><span class="lineno">  836</span>&#160;      performed_(s, this) {}</div>
 <div class="line"><a name="l00837"></a><span class="lineno">  837</span>&#160; </div>
 <div class="line"><a name="l00838"></a><span class="lineno">  838</span>&#160;<span class="keywordtype">void</span> FixedDurationIntervalVar::Process() {</div>
-<div class="line"><a name="l00839"></a><span class="lineno">  839</span>&#160;  CHECK(!<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
+<div class="line"><a name="l00839"></a><span class="lineno">  839</span>&#160;  <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(!<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
 <div class="line"><a name="l00840"></a><span class="lineno">  840</span>&#160;  <a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a> = <span class="keyword">true</span>;</div>
 <div class="line"><a name="l00841"></a><span class="lineno">  841</span>&#160;  start_.UpdatePostponedBounds();</div>
 <div class="line"><a name="l00842"></a><span class="lineno">  842</span>&#160;  performed_.UpdatePostponedValue();</div>
@@ -944,12 +944,12 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l00853"></a><span class="lineno">  853</span>&#160;}</div>
 <div class="line"><a name="l00854"></a><span class="lineno">  854</span>&#160; </div>
 <div class="line"><a name="l00855"></a><span class="lineno">  855</span>&#160;<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> FixedDurationIntervalVar::StartMin()<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l00856"></a><span class="lineno">  856</span>&#160;  CHECK_EQ(performed_.Max(), 1);</div>
+<div class="line"><a name="l00856"></a><span class="lineno">  856</span>&#160;  <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(performed_.Max(), 1);</div>
 <div class="line"><a name="l00857"></a><span class="lineno">  857</span>&#160;  <span class="keywordflow">return</span> start_.Min();</div>
 <div class="line"><a name="l00858"></a><span class="lineno">  858</span>&#160;}</div>
 <div class="line"><a name="l00859"></a><span class="lineno">  859</span>&#160; </div>
 <div class="line"><a name="l00860"></a><span class="lineno">  860</span>&#160;<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> FixedDurationIntervalVar::StartMax()<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l00861"></a><span class="lineno">  861</span>&#160;  CHECK_EQ(performed_.Max(), 1);</div>
+<div class="line"><a name="l00861"></a><span class="lineno">  861</span>&#160;  <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(performed_.Max(), 1);</div>
 <div class="line"><a name="l00862"></a><span class="lineno">  862</span>&#160;  <span class="keywordflow">return</span> start_.Max();</div>
 <div class="line"><a name="l00863"></a><span class="lineno">  863</span>&#160;}</div>
 <div class="line"><a name="l00864"></a><span class="lineno">  864</span>&#160; </div>
@@ -972,12 +972,12 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l00881"></a><span class="lineno">  881</span>&#160;}</div>
 <div class="line"><a name="l00882"></a><span class="lineno">  882</span>&#160; </div>
 <div class="line"><a name="l00883"></a><span class="lineno">  883</span>&#160;<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> FixedDurationIntervalVar::DurationMin()<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l00884"></a><span class="lineno">  884</span>&#160;  CHECK_EQ(performed_.Max(), 1);</div>
+<div class="line"><a name="l00884"></a><span class="lineno">  884</span>&#160;  <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(performed_.Max(), 1);</div>
 <div class="line"><a name="l00885"></a><span class="lineno">  885</span>&#160;  <span class="keywordflow">return</span> duration_;</div>
 <div class="line"><a name="l00886"></a><span class="lineno">  886</span>&#160;}</div>
 <div class="line"><a name="l00887"></a><span class="lineno">  887</span>&#160; </div>
 <div class="line"><a name="l00888"></a><span class="lineno">  888</span>&#160;<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> FixedDurationIntervalVar::DurationMax()<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l00889"></a><span class="lineno">  889</span>&#160;  CHECK_EQ(performed_.Max(), 1);</div>
+<div class="line"><a name="l00889"></a><span class="lineno">  889</span>&#160;  <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(performed_.Max(), 1);</div>
 <div class="line"><a name="l00890"></a><span class="lineno">  890</span>&#160;  <span class="keywordflow">return</span> duration_;</div>
 <div class="line"><a name="l00891"></a><span class="lineno">  891</span>&#160;}</div>
 <div class="line"><a name="l00892"></a><span class="lineno">  892</span>&#160; </div>
@@ -1000,12 +1000,12 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l00909"></a><span class="lineno">  909</span>&#160;}</div>
 <div class="line"><a name="l00910"></a><span class="lineno">  910</span>&#160; </div>
 <div class="line"><a name="l00911"></a><span class="lineno">  911</span>&#160;<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> FixedDurationIntervalVar::EndMin()<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l00912"></a><span class="lineno">  912</span>&#160;  CHECK_EQ(performed_.Max(), 1);</div>
+<div class="line"><a name="l00912"></a><span class="lineno">  912</span>&#160;  <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(performed_.Max(), 1);</div>
 <div class="line"><a name="l00913"></a><span class="lineno">  913</span>&#160;  <span class="keywordflow">return</span> start_.Min() + duration_;</div>
 <div class="line"><a name="l00914"></a><span class="lineno">  914</span>&#160;}</div>
 <div class="line"><a name="l00915"></a><span class="lineno">  915</span>&#160; </div>
 <div class="line"><a name="l00916"></a><span class="lineno">  916</span>&#160;<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> FixedDurationIntervalVar::EndMax()<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l00917"></a><span class="lineno">  917</span>&#160;  CHECK_EQ(performed_.Max(), 1);</div>
+<div class="line"><a name="l00917"></a><span class="lineno">  917</span>&#160;  <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(performed_.Max(), 1);</div>
 <div class="line"><a name="l00918"></a><span class="lineno">  918</span>&#160;  <span class="keywordflow">return</span> <a class="code" href="namespaceoperations__research.html#a99264812cf177270e521f226a5c012c3">CapAdd</a>(start_.Max(), duration_);</div>
 <div class="line"><a name="l00919"></a><span class="lineno">  919</span>&#160;}</div>
 <div class="line"><a name="l00920"></a><span class="lineno">  920</span>&#160; </div>
@@ -1034,9 +1034,9 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l00943"></a><span class="lineno">  943</span>&#160;}</div>
 <div class="line"><a name="l00944"></a><span class="lineno">  944</span>&#160; </div>
 <div class="line"><a name="l00945"></a><span class="lineno">  945</span>&#160;<span class="keywordtype">void</span> FixedDurationIntervalVar::Push() {</div>
-<div class="line"><a name="l00946"></a><span class="lineno">  946</span>&#160;  DCHECK(!<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
+<div class="line"><a name="l00946"></a><span class="lineno">  946</span>&#160;  <a class="code" href="base_2logging_8h.html#ae17f8119c108cf3070bad3449c7e0006">DCHECK</a>(!<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
 <div class="line"><a name="l00947"></a><span class="lineno">  947</span>&#160;  EnqueueVar(&amp;<a class="code" href="interval_8cc.html#addaf89e29c8752c2df3ca372153236fc">handler_</a>);</div>
-<div class="line"><a name="l00948"></a><span class="lineno">  948</span>&#160;  DCHECK(!<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
+<div class="line"><a name="l00948"></a><span class="lineno">  948</span>&#160;  <a class="code" href="base_2logging_8h.html#ae17f8119c108cf3070bad3449c7e0006">DCHECK</a>(!<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
 <div class="line"><a name="l00949"></a><span class="lineno">  949</span>&#160;}</div>
 <div class="line"><a name="l00950"></a><span class="lineno">  950</span>&#160; </div>
 <div class="line"><a name="l00951"></a><span class="lineno">  951</span>&#160;std::string FixedDurationIntervalVar::DebugString()<span class="keyword"> const </span>{</div>
@@ -1148,7 +1148,7 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l01057"></a><span class="lineno"> 1057</span>&#160;    : BaseIntervalVar(s, <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>), start_(s, this, 0, 0), duration_(0) {}</div>
 <div class="line"><a name="l01058"></a><span class="lineno"> 1058</span>&#160; </div>
 <div class="line"><a name="l01059"></a><span class="lineno"> 1059</span>&#160;<span class="keywordtype">void</span> FixedDurationPerformedIntervalVar::Process() {</div>
-<div class="line"><a name="l01060"></a><span class="lineno"> 1060</span>&#160;  CHECK(!<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
+<div class="line"><a name="l01060"></a><span class="lineno"> 1060</span>&#160;  <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(!<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
 <div class="line"><a name="l01061"></a><span class="lineno"> 1061</span>&#160;  <a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a> = <span class="keyword">true</span>;</div>
 <div class="line"><a name="l01062"></a><span class="lineno"> 1062</span>&#160;  start_.UpdatePostponedBounds();</div>
 <div class="line"><a name="l01063"></a><span class="lineno"> 1063</span>&#160;  set_action_on_fail(<a class="code" href="interval_8cc.html#adc5ea4d589f3b0c548997680148376e9">cleaner_</a>);</div>
@@ -1235,9 +1235,9 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l01144"></a><span class="lineno"> 1144</span>&#160;}</div>
 <div class="line"><a name="l01145"></a><span class="lineno"> 1145</span>&#160; </div>
 <div class="line"><a name="l01146"></a><span class="lineno"> 1146</span>&#160;<span class="keywordtype">void</span> FixedDurationPerformedIntervalVar::Push() {</div>
-<div class="line"><a name="l01147"></a><span class="lineno"> 1147</span>&#160;  DCHECK(!<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
+<div class="line"><a name="l01147"></a><span class="lineno"> 1147</span>&#160;  <a class="code" href="base_2logging_8h.html#ae17f8119c108cf3070bad3449c7e0006">DCHECK</a>(!<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
 <div class="line"><a name="l01148"></a><span class="lineno"> 1148</span>&#160;  EnqueueVar(&amp;<a class="code" href="interval_8cc.html#addaf89e29c8752c2df3ca372153236fc">handler_</a>);</div>
-<div class="line"><a name="l01149"></a><span class="lineno"> 1149</span>&#160;  DCHECK(!<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
+<div class="line"><a name="l01149"></a><span class="lineno"> 1149</span>&#160;  <a class="code" href="base_2logging_8h.html#ae17f8119c108cf3070bad3449c7e0006">DCHECK</a>(!<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
 <div class="line"><a name="l01150"></a><span class="lineno"> 1150</span>&#160;}</div>
 <div class="line"><a name="l01151"></a><span class="lineno"> 1151</span>&#160; </div>
 <div class="line"><a name="l01152"></a><span class="lineno"> 1152</span>&#160;std::string FixedDurationPerformedIntervalVar::DebugString()<span class="keyword"> const </span>{</div>
@@ -1489,9 +1489,9 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l01398"></a><span class="lineno"> 1398</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceoperations__research.html#a328c7f61f7f45aa548cadf5353a1cde7">BuildSafeEndExpr</a>(<span class="keyword">this</span>, unperformed_value);</div>
 <div class="line"><a name="l01399"></a><span class="lineno"> 1399</span>&#160;  }</div>
 <div class="line"><a name="l01400"></a><span class="lineno"> 1400</span>&#160; </div>
-<div class="line"><a name="l01401"></a><span class="lineno"> 1401</span>&#160;  <span class="keywordtype">void</span> Process()<span class="keyword"> override </span>{ LOG(FATAL) &lt;&lt; <span class="stringliteral">&quot;Should not be here&quot;</span>; }</div>
+<div class="line"><a name="l01401"></a><span class="lineno"> 1401</span>&#160;  <span class="keywordtype">void</span> Process()<span class="keyword"> override </span>{ <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a>) &lt;&lt; <span class="stringliteral">&quot;Should not be here&quot;</span>; }</div>
 <div class="line"><a name="l01402"></a><span class="lineno"> 1402</span>&#160; </div>
-<div class="line"><a name="l01403"></a><span class="lineno"> 1403</span>&#160;  <span class="keywordtype">void</span> Push()<span class="keyword"> override </span>{ LOG(FATAL) &lt;&lt; <span class="stringliteral">&quot;Should not be here&quot;</span>; }</div>
+<div class="line"><a name="l01403"></a><span class="lineno"> 1403</span>&#160;  <span class="keywordtype">void</span> Push()<span class="keyword"> override </span>{ <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a>) &lt;&lt; <span class="stringliteral">&quot;Should not be here&quot;</span>; }</div>
 <div class="line"><a name="l01404"></a><span class="lineno"> 1404</span>&#160; </div>
 <div class="line"><a name="l01405"></a><span class="lineno"> 1405</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> StoredMin()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> start_min_.Value(); }</div>
 <div class="line"><a name="l01406"></a><span class="lineno"> 1406</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> StoredMax()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> start_max_.Value(); }</div>
@@ -1516,12 +1516,12 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l01425"></a><span class="lineno"> 1425</span>&#160;      start_max_(start-&gt;Max()) {}</div>
 <div class="line"><a name="l01426"></a><span class="lineno"> 1426</span>&#160; </div>
 <div class="line"><a name="l01427"></a><span class="lineno"> 1427</span>&#160;<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> StartVarIntervalVar::StartMin()<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l01428"></a><span class="lineno"> 1428</span>&#160;  DCHECK_EQ(performed_-&gt;Max(), 1);</div>
+<div class="line"><a name="l01428"></a><span class="lineno"> 1428</span>&#160;  <a class="code" href="base_2logging_8h.html#ae89df3243bbb8341130c7b3f44145ea0">DCHECK_EQ</a>(performed_-&gt;Max(), 1);</div>
 <div class="line"><a name="l01429"></a><span class="lineno"> 1429</span>&#160;  <span class="keywordflow">return</span> <a class="code" href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">std::max</a>(start_-&gt;Min(), start_min_.Value());</div>
 <div class="line"><a name="l01430"></a><span class="lineno"> 1430</span>&#160;}</div>
 <div class="line"><a name="l01431"></a><span class="lineno"> 1431</span>&#160; </div>
 <div class="line"><a name="l01432"></a><span class="lineno"> 1432</span>&#160;<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> StartVarIntervalVar::StartMax()<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l01433"></a><span class="lineno"> 1433</span>&#160;  DCHECK_EQ(performed_-&gt;Max(), 1);</div>
+<div class="line"><a name="l01433"></a><span class="lineno"> 1433</span>&#160;  <a class="code" href="base_2logging_8h.html#ae89df3243bbb8341130c7b3f44145ea0">DCHECK_EQ</a>(performed_-&gt;Max(), 1);</div>
 <div class="line"><a name="l01434"></a><span class="lineno"> 1434</span>&#160;  <span class="keywordflow">return</span> <a class="code" href="alldiff__cst_8cc.html#a021e695f54a13bd809c34b2f4ca87c37">std::min</a>(start_-&gt;Max(), start_max_.Value());</div>
 <div class="line"><a name="l01435"></a><span class="lineno"> 1435</span>&#160;}</div>
 <div class="line"><a name="l01436"></a><span class="lineno"> 1436</span>&#160; </div>
@@ -1561,12 +1561,12 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l01470"></a><span class="lineno"> 1470</span>&#160;}</div>
 <div class="line"><a name="l01471"></a><span class="lineno"> 1471</span>&#160; </div>
 <div class="line"><a name="l01472"></a><span class="lineno"> 1472</span>&#160;<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> StartVarIntervalVar::DurationMin()<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l01473"></a><span class="lineno"> 1473</span>&#160;  DCHECK_EQ(performed_-&gt;Max(), 1);</div>
+<div class="line"><a name="l01473"></a><span class="lineno"> 1473</span>&#160;  <a class="code" href="base_2logging_8h.html#ae89df3243bbb8341130c7b3f44145ea0">DCHECK_EQ</a>(performed_-&gt;Max(), 1);</div>
 <div class="line"><a name="l01474"></a><span class="lineno"> 1474</span>&#160;  <span class="keywordflow">return</span> duration_;</div>
 <div class="line"><a name="l01475"></a><span class="lineno"> 1475</span>&#160;}</div>
 <div class="line"><a name="l01476"></a><span class="lineno"> 1476</span>&#160; </div>
 <div class="line"><a name="l01477"></a><span class="lineno"> 1477</span>&#160;<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> StartVarIntervalVar::DurationMax()<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l01478"></a><span class="lineno"> 1478</span>&#160;  DCHECK_EQ(performed_-&gt;Max(), 1);</div>
+<div class="line"><a name="l01478"></a><span class="lineno"> 1478</span>&#160;  <a class="code" href="base_2logging_8h.html#ae89df3243bbb8341130c7b3f44145ea0">DCHECK_EQ</a>(performed_-&gt;Max(), 1);</div>
 <div class="line"><a name="l01479"></a><span class="lineno"> 1479</span>&#160;  <span class="keywordflow">return</span> duration_;</div>
 <div class="line"><a name="l01480"></a><span class="lineno"> 1480</span>&#160;}</div>
 <div class="line"><a name="l01481"></a><span class="lineno"> 1481</span>&#160; </div>
@@ -1589,12 +1589,12 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l01498"></a><span class="lineno"> 1498</span>&#160;}</div>
 <div class="line"><a name="l01499"></a><span class="lineno"> 1499</span>&#160; </div>
 <div class="line"><a name="l01500"></a><span class="lineno"> 1500</span>&#160;<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> StartVarIntervalVar::EndMin()<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l01501"></a><span class="lineno"> 1501</span>&#160;  DCHECK_EQ(performed_-&gt;Max(), 1);</div>
+<div class="line"><a name="l01501"></a><span class="lineno"> 1501</span>&#160;  <a class="code" href="base_2logging_8h.html#ae89df3243bbb8341130c7b3f44145ea0">DCHECK_EQ</a>(performed_-&gt;Max(), 1);</div>
 <div class="line"><a name="l01502"></a><span class="lineno"> 1502</span>&#160;  <span class="keywordflow">return</span> <a class="code" href="namespaceoperations__research.html#a99264812cf177270e521f226a5c012c3">CapAdd</a>(StartMin(), duration_);</div>
 <div class="line"><a name="l01503"></a><span class="lineno"> 1503</span>&#160;}</div>
 <div class="line"><a name="l01504"></a><span class="lineno"> 1504</span>&#160; </div>
 <div class="line"><a name="l01505"></a><span class="lineno"> 1505</span>&#160;<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> StartVarIntervalVar::EndMax()<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l01506"></a><span class="lineno"> 1506</span>&#160;  DCHECK_EQ(performed_-&gt;Max(), 1);</div>
+<div class="line"><a name="l01506"></a><span class="lineno"> 1506</span>&#160;  <a class="code" href="base_2logging_8h.html#ae89df3243bbb8341130c7b3f44145ea0">DCHECK_EQ</a>(performed_-&gt;Max(), 1);</div>
 <div class="line"><a name="l01507"></a><span class="lineno"> 1507</span>&#160;  <span class="keywordflow">return</span> <a class="code" href="namespaceoperations__research.html#a99264812cf177270e521f226a5c012c3">CapAdd</a>(StartMax(), duration_);</div>
 <div class="line"><a name="l01508"></a><span class="lineno"> 1508</span>&#160;}</div>
 <div class="line"><a name="l01509"></a><span class="lineno"> 1509</span>&#160; </div>
@@ -1850,12 +1850,12 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l01759"></a><span class="lineno"> 1759</span>&#160;  ~VariableDurationIntervalVar()<span class="keyword"> override </span>{}</div>
 <div class="line"><a name="l01760"></a><span class="lineno"> 1760</span>&#160; </div>
 <div class="line"><a name="l01761"></a><span class="lineno"> 1761</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> StartMin()<span class="keyword"> const override </span>{</div>
-<div class="line"><a name="l01762"></a><span class="lineno"> 1762</span>&#160;    CHECK_EQ(performed_.Max(), 1);</div>
+<div class="line"><a name="l01762"></a><span class="lineno"> 1762</span>&#160;    <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(performed_.Max(), 1);</div>
 <div class="line"><a name="l01763"></a><span class="lineno"> 1763</span>&#160;    <span class="keywordflow">return</span> start_.Min();</div>
 <div class="line"><a name="l01764"></a><span class="lineno"> 1764</span>&#160;  }</div>
 <div class="line"><a name="l01765"></a><span class="lineno"> 1765</span>&#160; </div>
 <div class="line"><a name="l01766"></a><span class="lineno"> 1766</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> StartMax()<span class="keyword"> const override </span>{</div>
-<div class="line"><a name="l01767"></a><span class="lineno"> 1767</span>&#160;    CHECK_EQ(performed_.Max(), 1);</div>
+<div class="line"><a name="l01767"></a><span class="lineno"> 1767</span>&#160;    <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(performed_.Max(), 1);</div>
 <div class="line"><a name="l01768"></a><span class="lineno"> 1768</span>&#160;    <span class="keywordflow">return</span> start_.Max();</div>
 <div class="line"><a name="l01769"></a><span class="lineno"> 1769</span>&#160;  }</div>
 <div class="line"><a name="l01770"></a><span class="lineno"> 1770</span>&#160; </div>
@@ -1878,14 +1878,14 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l01787"></a><span class="lineno"> 1787</span>&#160;  }</div>
 <div class="line"><a name="l01788"></a><span class="lineno"> 1788</span>&#160; </div>
 <div class="line"><a name="l01789"></a><span class="lineno"> 1789</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> OldStartMin()<span class="keyword"> const override </span>{</div>
-<div class="line"><a name="l01790"></a><span class="lineno"> 1790</span>&#160;    CHECK_EQ(performed_.Max(), 1);</div>
-<div class="line"><a name="l01791"></a><span class="lineno"> 1791</span>&#160;    CHECK(<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
+<div class="line"><a name="l01790"></a><span class="lineno"> 1790</span>&#160;    <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(performed_.Max(), 1);</div>
+<div class="line"><a name="l01791"></a><span class="lineno"> 1791</span>&#160;    <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
 <div class="line"><a name="l01792"></a><span class="lineno"> 1792</span>&#160;    <span class="keywordflow">return</span> start_.OldMin();</div>
 <div class="line"><a name="l01793"></a><span class="lineno"> 1793</span>&#160;  }</div>
 <div class="line"><a name="l01794"></a><span class="lineno"> 1794</span>&#160; </div>
 <div class="line"><a name="l01795"></a><span class="lineno"> 1795</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> OldStartMax()<span class="keyword"> const override </span>{</div>
-<div class="line"><a name="l01796"></a><span class="lineno"> 1796</span>&#160;    CHECK_EQ(performed_.Max(), 1);</div>
-<div class="line"><a name="l01797"></a><span class="lineno"> 1797</span>&#160;    CHECK(<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
+<div class="line"><a name="l01796"></a><span class="lineno"> 1796</span>&#160;    <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(performed_.Max(), 1);</div>
+<div class="line"><a name="l01797"></a><span class="lineno"> 1797</span>&#160;    <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
 <div class="line"><a name="l01798"></a><span class="lineno"> 1798</span>&#160;    <span class="keywordflow">return</span> start_.OldMax();</div>
 <div class="line"><a name="l01799"></a><span class="lineno"> 1799</span>&#160;  }</div>
 <div class="line"><a name="l01800"></a><span class="lineno"> 1800</span>&#160; </div>
@@ -1902,12 +1902,12 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l01811"></a><span class="lineno"> 1811</span>&#160;  }</div>
 <div class="line"><a name="l01812"></a><span class="lineno"> 1812</span>&#160; </div>
 <div class="line"><a name="l01813"></a><span class="lineno"> 1813</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> DurationMin()<span class="keyword"> const override </span>{</div>
-<div class="line"><a name="l01814"></a><span class="lineno"> 1814</span>&#160;    CHECK_EQ(performed_.Max(), 1);</div>
+<div class="line"><a name="l01814"></a><span class="lineno"> 1814</span>&#160;    <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(performed_.Max(), 1);</div>
 <div class="line"><a name="l01815"></a><span class="lineno"> 1815</span>&#160;    <span class="keywordflow">return</span> duration_.Min();</div>
 <div class="line"><a name="l01816"></a><span class="lineno"> 1816</span>&#160;  }</div>
 <div class="line"><a name="l01817"></a><span class="lineno"> 1817</span>&#160; </div>
 <div class="line"><a name="l01818"></a><span class="lineno"> 1818</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> DurationMax()<span class="keyword"> const override </span>{</div>
-<div class="line"><a name="l01819"></a><span class="lineno"> 1819</span>&#160;    CHECK_EQ(performed_.Max(), 1);</div>
+<div class="line"><a name="l01819"></a><span class="lineno"> 1819</span>&#160;    <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(performed_.Max(), 1);</div>
 <div class="line"><a name="l01820"></a><span class="lineno"> 1820</span>&#160;    <span class="keywordflow">return</span> duration_.Max();</div>
 <div class="line"><a name="l01821"></a><span class="lineno"> 1821</span>&#160;  }</div>
 <div class="line"><a name="l01822"></a><span class="lineno"> 1822</span>&#160; </div>
@@ -1930,14 +1930,14 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l01839"></a><span class="lineno"> 1839</span>&#160;  }</div>
 <div class="line"><a name="l01840"></a><span class="lineno"> 1840</span>&#160; </div>
 <div class="line"><a name="l01841"></a><span class="lineno"> 1841</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> OldDurationMin()<span class="keyword"> const override </span>{</div>
-<div class="line"><a name="l01842"></a><span class="lineno"> 1842</span>&#160;    CHECK_EQ(performed_.Max(), 1);</div>
-<div class="line"><a name="l01843"></a><span class="lineno"> 1843</span>&#160;    CHECK(<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
+<div class="line"><a name="l01842"></a><span class="lineno"> 1842</span>&#160;    <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(performed_.Max(), 1);</div>
+<div class="line"><a name="l01843"></a><span class="lineno"> 1843</span>&#160;    <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
 <div class="line"><a name="l01844"></a><span class="lineno"> 1844</span>&#160;    <span class="keywordflow">return</span> duration_.OldMin();</div>
 <div class="line"><a name="l01845"></a><span class="lineno"> 1845</span>&#160;  }</div>
 <div class="line"><a name="l01846"></a><span class="lineno"> 1846</span>&#160; </div>
 <div class="line"><a name="l01847"></a><span class="lineno"> 1847</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> OldDurationMax()<span class="keyword"> const override </span>{</div>
-<div class="line"><a name="l01848"></a><span class="lineno"> 1848</span>&#160;    CHECK_EQ(performed_.Max(), 1);</div>
-<div class="line"><a name="l01849"></a><span class="lineno"> 1849</span>&#160;    CHECK(<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
+<div class="line"><a name="l01848"></a><span class="lineno"> 1848</span>&#160;    <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(performed_.Max(), 1);</div>
+<div class="line"><a name="l01849"></a><span class="lineno"> 1849</span>&#160;    <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
 <div class="line"><a name="l01850"></a><span class="lineno"> 1850</span>&#160;    <span class="keywordflow">return</span> duration_.OldMax();</div>
 <div class="line"><a name="l01851"></a><span class="lineno"> 1851</span>&#160;  }</div>
 <div class="line"><a name="l01852"></a><span class="lineno"> 1852</span>&#160; </div>
@@ -1954,12 +1954,12 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l01863"></a><span class="lineno"> 1863</span>&#160;  }</div>
 <div class="line"><a name="l01864"></a><span class="lineno"> 1864</span>&#160; </div>
 <div class="line"><a name="l01865"></a><span class="lineno"> 1865</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> EndMin()<span class="keyword"> const override </span>{</div>
-<div class="line"><a name="l01866"></a><span class="lineno"> 1866</span>&#160;    CHECK_EQ(performed_.Max(), 1);</div>
+<div class="line"><a name="l01866"></a><span class="lineno"> 1866</span>&#160;    <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(performed_.Max(), 1);</div>
 <div class="line"><a name="l01867"></a><span class="lineno"> 1867</span>&#160;    <span class="keywordflow">return</span> end_.Min();</div>
 <div class="line"><a name="l01868"></a><span class="lineno"> 1868</span>&#160;  }</div>
 <div class="line"><a name="l01869"></a><span class="lineno"> 1869</span>&#160; </div>
 <div class="line"><a name="l01870"></a><span class="lineno"> 1870</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> EndMax()<span class="keyword"> const override </span>{</div>
-<div class="line"><a name="l01871"></a><span class="lineno"> 1871</span>&#160;    CHECK_EQ(performed_.Max(), 1);</div>
+<div class="line"><a name="l01871"></a><span class="lineno"> 1871</span>&#160;    <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(performed_.Max(), 1);</div>
 <div class="line"><a name="l01872"></a><span class="lineno"> 1872</span>&#160;    <span class="keywordflow">return</span> end_.Max();</div>
 <div class="line"><a name="l01873"></a><span class="lineno"> 1873</span>&#160;  }</div>
 <div class="line"><a name="l01874"></a><span class="lineno"> 1874</span>&#160; </div>
@@ -1982,14 +1982,14 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l01891"></a><span class="lineno"> 1891</span>&#160;  }</div>
 <div class="line"><a name="l01892"></a><span class="lineno"> 1892</span>&#160; </div>
 <div class="line"><a name="l01893"></a><span class="lineno"> 1893</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> OldEndMin()<span class="keyword"> const override </span>{</div>
-<div class="line"><a name="l01894"></a><span class="lineno"> 1894</span>&#160;    CHECK_EQ(performed_.Max(), 1);</div>
-<div class="line"><a name="l01895"></a><span class="lineno"> 1895</span>&#160;    DCHECK(<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
+<div class="line"><a name="l01894"></a><span class="lineno"> 1894</span>&#160;    <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(performed_.Max(), 1);</div>
+<div class="line"><a name="l01895"></a><span class="lineno"> 1895</span>&#160;    <a class="code" href="base_2logging_8h.html#ae17f8119c108cf3070bad3449c7e0006">DCHECK</a>(<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
 <div class="line"><a name="l01896"></a><span class="lineno"> 1896</span>&#160;    <span class="keywordflow">return</span> end_.OldMin();</div>
 <div class="line"><a name="l01897"></a><span class="lineno"> 1897</span>&#160;  }</div>
 <div class="line"><a name="l01898"></a><span class="lineno"> 1898</span>&#160; </div>
 <div class="line"><a name="l01899"></a><span class="lineno"> 1899</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> OldEndMax()<span class="keyword"> const override </span>{</div>
-<div class="line"><a name="l01900"></a><span class="lineno"> 1900</span>&#160;    CHECK_EQ(performed_.Max(), 1);</div>
-<div class="line"><a name="l01901"></a><span class="lineno"> 1901</span>&#160;    DCHECK(<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
+<div class="line"><a name="l01900"></a><span class="lineno"> 1900</span>&#160;    <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(performed_.Max(), 1);</div>
+<div class="line"><a name="l01901"></a><span class="lineno"> 1901</span>&#160;    <a class="code" href="base_2logging_8h.html#ae17f8119c108cf3070bad3449c7e0006">DCHECK</a>(<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
 <div class="line"><a name="l01902"></a><span class="lineno"> 1902</span>&#160;    <span class="keywordflow">return</span> end_.OldMax();</div>
 <div class="line"><a name="l01903"></a><span class="lineno"> 1903</span>&#160;  }</div>
 <div class="line"><a name="l01904"></a><span class="lineno"> 1904</span>&#160; </div>
@@ -2012,14 +2012,14 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l01921"></a><span class="lineno"> 1921</span>&#160;  <span class="keywordtype">void</span> SetPerformed(<span class="keywordtype">bool</span> val)<span class="keyword"> override </span>{ performed_.SetValue(val); }</div>
 <div class="line"><a name="l01922"></a><span class="lineno"> 1922</span>&#160; </div>
 <div class="line"><a name="l01923"></a><span class="lineno"> 1923</span>&#160;  <span class="keywordtype">bool</span> WasPerformedBound()<span class="keyword"> const override </span>{</div>
-<div class="line"><a name="l01924"></a><span class="lineno"> 1924</span>&#160;    CHECK(<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
+<div class="line"><a name="l01924"></a><span class="lineno"> 1924</span>&#160;    <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
 <div class="line"><a name="l01925"></a><span class="lineno"> 1925</span>&#160;    <span class="keywordflow">return</span> performed_.OldMin() == performed_.OldMax();</div>
 <div class="line"><a name="l01926"></a><span class="lineno"> 1926</span>&#160;  }</div>
 <div class="line"><a name="l01927"></a><span class="lineno"> 1927</span>&#160; </div>
 <div class="line"><a name="l01928"></a><span class="lineno"> 1928</span>&#160;  <span class="keywordtype">void</span> WhenPerformedBound(Demon* <span class="keyword">const</span> d)<span class="keyword"> override </span>{ performed_.WhenBound(d); }</div>
 <div class="line"><a name="l01929"></a><span class="lineno"> 1929</span>&#160; </div>
 <div class="line"><a name="l01930"></a><span class="lineno"> 1930</span>&#160;  <span class="keywordtype">void</span> Process()<span class="keyword"> override </span>{</div>
-<div class="line"><a name="l01931"></a><span class="lineno"> 1931</span>&#160;    CHECK(!<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
+<div class="line"><a name="l01931"></a><span class="lineno"> 1931</span>&#160;    <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(!<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
 <div class="line"><a name="l01932"></a><span class="lineno"> 1932</span>&#160;    <a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a> = <span class="keyword">true</span>;</div>
 <div class="line"><a name="l01933"></a><span class="lineno"> 1933</span>&#160;    start_.UpdatePostponedBounds();</div>
 <div class="line"><a name="l01934"></a><span class="lineno"> 1934</span>&#160;    duration_.UpdatePostponedBounds();</div>
@@ -2088,7 +2088,7 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l01997"></a><span class="lineno"> 1997</span>&#160; </div>
 <div class="line"><a name="l01998"></a><span class="lineno"> 1998</span>&#160; <span class="keyword">private</span>:</div>
 <div class="line"><a name="l01999"></a><span class="lineno"> 1999</span>&#160;  <span class="keywordtype">void</span> Push()<span class="keyword"> override </span>{</div>
-<div class="line"><a name="l02000"></a><span class="lineno"> 2000</span>&#160;    DCHECK(!<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
+<div class="line"><a name="l02000"></a><span class="lineno"> 2000</span>&#160;    <a class="code" href="base_2logging_8h.html#ae17f8119c108cf3070bad3449c7e0006">DCHECK</a>(!<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
 <div class="line"><a name="l02001"></a><span class="lineno"> 2001</span>&#160;    <span class="keywordflow">if</span> (performed_.Max() == 1) {</div>
 <div class="line"><a name="l02002"></a><span class="lineno"> 2002</span>&#160;      <span class="comment">// Performs the intersection on all intervals before pushing the</span></div>
 <div class="line"><a name="l02003"></a><span class="lineno"> 2003</span>&#160;      <span class="comment">// variable onto the queue. This way, we make sure the interval variable</span></div>
@@ -2101,7 +2101,7 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l02010"></a><span class="lineno"> 2010</span>&#160;                    <a class="code" href="namespaceoperations__research.html#a99264812cf177270e521f226a5c012c3">CapAdd</a>(start_.Max(), duration_.Max()));</div>
 <div class="line"><a name="l02011"></a><span class="lineno"> 2011</span>&#160;    }</div>
 <div class="line"><a name="l02012"></a><span class="lineno"> 2012</span>&#160;    EnqueueVar(&amp;<a class="code" href="interval_8cc.html#addaf89e29c8752c2df3ca372153236fc">handler_</a>);</div>
-<div class="line"><a name="l02013"></a><span class="lineno"> 2013</span>&#160;    DCHECK(!<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
+<div class="line"><a name="l02013"></a><span class="lineno"> 2013</span>&#160;    <a class="code" href="base_2logging_8h.html#ae17f8119c108cf3070bad3449c7e0006">DCHECK</a>(!<a class="code" href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a>);</div>
 <div class="line"><a name="l02014"></a><span class="lineno"> 2014</span>&#160;  }</div>
 <div class="line"><a name="l02015"></a><span class="lineno"> 2015</span>&#160; </div>
 <div class="line"><a name="l02016"></a><span class="lineno"> 2016</span>&#160;  RangeVar start_;</div>
@@ -2292,13 +2292,13 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l02201"></a><span class="lineno"> 2201</span>&#160; </div>
 <div class="line"><a name="l02202"></a><span class="lineno"> 2202</span>&#160;<span class="comment">// ----- API -----</span></div>
 <div class="line"><a name="l02203"></a><span class="lineno"> 2203</span>&#160; </div>
-<div class="line"><a name="l02204"></a><span class="lineno"> 2204</span>&#160;IntervalVar* Solver::MakeMirrorInterval(IntervalVar* <span class="keyword">const</span> interval_var) {</div>
+<div class="line"><a name="l02204"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#ad10da04717f2923d609f093f9cb372c7"> 2204</a></span>&#160;<a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* Solver::MakeMirrorInterval(<a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* <span class="keyword">const</span> interval_var) {</div>
 <div class="line"><a name="l02205"></a><span class="lineno"> 2205</span>&#160;  <span class="keywordflow">return</span> RegisterIntervalVar(</div>
 <div class="line"><a name="l02206"></a><span class="lineno"> 2206</span>&#160;      RevAlloc(<span class="keyword">new</span> MirrorIntervalVar(<span class="keyword">this</span>, interval_var)));</div>
 <div class="line"><a name="l02207"></a><span class="lineno"> 2207</span>&#160;}</div>
 <div class="line"><a name="l02208"></a><span class="lineno"> 2208</span>&#160; </div>
-<div class="line"><a name="l02209"></a><span class="lineno"> 2209</span>&#160;IntervalVar* Solver::MakeIntervalRelaxedMax(IntervalVar* <span class="keyword">const</span> interval_var) {</div>
-<div class="line"><a name="l02210"></a><span class="lineno"> 2210</span>&#160;  <span class="keywordflow">if</span> (interval_var-&gt;MustBePerformed()) {</div>
+<div class="line"><a name="l02209"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#a7e4d98b8a01fda7eb776fbc559096f5f"> 2209</a></span>&#160;<a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* Solver::MakeIntervalRelaxedMax(<a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* <span class="keyword">const</span> interval_var) {</div>
+<div class="line"><a name="l02210"></a><span class="lineno"> 2210</span>&#160;  <span class="keywordflow">if</span> (interval_var-&gt;<a class="code" href="classoperations__research_1_1_interval_var.html#a7f7f661e9b94f25f706732924e0f01e9">MustBePerformed</a>()) {</div>
 <div class="line"><a name="l02211"></a><span class="lineno"> 2211</span>&#160;    <span class="keywordflow">return</span> interval_var;</div>
 <div class="line"><a name="l02212"></a><span class="lineno"> 2212</span>&#160;  } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l02213"></a><span class="lineno"> 2213</span>&#160;    <span class="keywordflow">return</span> RegisterIntervalVar(</div>
@@ -2306,8 +2306,8 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l02215"></a><span class="lineno"> 2215</span>&#160;  }</div>
 <div class="line"><a name="l02216"></a><span class="lineno"> 2216</span>&#160;}</div>
 <div class="line"><a name="l02217"></a><span class="lineno"> 2217</span>&#160; </div>
-<div class="line"><a name="l02218"></a><span class="lineno"> 2218</span>&#160;IntervalVar* Solver::MakeIntervalRelaxedMin(IntervalVar* <span class="keyword">const</span> interval_var) {</div>
-<div class="line"><a name="l02219"></a><span class="lineno"> 2219</span>&#160;  <span class="keywordflow">if</span> (interval_var-&gt;MustBePerformed()) {</div>
+<div class="line"><a name="l02218"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#a56e2e5cebd866f391c08575b1e68bfa9"> 2218</a></span>&#160;<a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* Solver::MakeIntervalRelaxedMin(<a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* <span class="keyword">const</span> interval_var) {</div>
+<div class="line"><a name="l02219"></a><span class="lineno"> 2219</span>&#160;  <span class="keywordflow">if</span> (interval_var-&gt;<a class="code" href="classoperations__research_1_1_interval_var.html#a7f7f661e9b94f25f706732924e0f01e9">MustBePerformed</a>()) {</div>
 <div class="line"><a name="l02220"></a><span class="lineno"> 2220</span>&#160;    <span class="keywordflow">return</span> interval_var;</div>
 <div class="line"><a name="l02221"></a><span class="lineno"> 2221</span>&#160;  } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l02222"></a><span class="lineno"> 2222</span>&#160;    <span class="keywordflow">return</span> RegisterIntervalVar(</div>
@@ -2315,19 +2315,19 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l02224"></a><span class="lineno"> 2224</span>&#160;  }</div>
 <div class="line"><a name="l02225"></a><span class="lineno"> 2225</span>&#160;}</div>
 <div class="line"><a name="l02226"></a><span class="lineno"> 2226</span>&#160; </div>
-<div class="line"><a name="l02227"></a><span class="lineno"> 2227</span>&#160;<span class="keywordtype">void</span> IntervalVar::WhenAnything(Demon* <span class="keyword">const</span> d) {</div>
+<div class="line"><a name="l02227"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_interval_var.html#a3b0638c92ea73b5666d6b667c44896f8"> 2227</a></span>&#160;<span class="keywordtype">void</span> IntervalVar::WhenAnything(<a class="code" href="classoperations__research_1_1_demon.html">Demon</a>* <span class="keyword">const</span> d) {</div>
 <div class="line"><a name="l02228"></a><span class="lineno"> 2228</span>&#160;  WhenStartRange(d);</div>
 <div class="line"><a name="l02229"></a><span class="lineno"> 2229</span>&#160;  WhenDurationRange(d);</div>
 <div class="line"><a name="l02230"></a><span class="lineno"> 2230</span>&#160;  WhenEndRange(d);</div>
 <div class="line"><a name="l02231"></a><span class="lineno"> 2231</span>&#160;  WhenPerformedBound(d);</div>
 <div class="line"><a name="l02232"></a><span class="lineno"> 2232</span>&#160;}</div>
 <div class="line"><a name="l02233"></a><span class="lineno"> 2233</span>&#160; </div>
-<div class="line"><a name="l02234"></a><span class="lineno"> 2234</span>&#160;IntervalVar* Solver::MakeFixedInterval(<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> start, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration,</div>
+<div class="line"><a name="l02234"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#a5b8f7ad95ea286922f2ef70a4fd84769"> 2234</a></span>&#160;<a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* Solver::MakeFixedInterval(<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> start, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration,</div>
 <div class="line"><a name="l02235"></a><span class="lineno"> 2235</span>&#160;                                       <span class="keyword">const</span> std::string&amp; <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>) {</div>
 <div class="line"><a name="l02236"></a><span class="lineno"> 2236</span>&#160;  <span class="keywordflow">return</span> RevAlloc(<span class="keyword">new</span> FixedInterval(<span class="keyword">this</span>, start, duration, <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>));</div>
 <div class="line"><a name="l02237"></a><span class="lineno"> 2237</span>&#160;}</div>
 <div class="line"><a name="l02238"></a><span class="lineno"> 2238</span>&#160; </div>
-<div class="line"><a name="l02239"></a><span class="lineno"> 2239</span>&#160;IntervalVar* Solver::MakeFixedDurationIntervalVar(<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="sched__constraints_8cc.html#ab2188791e61e013dc8b28e66b31041cd">start_min</a>,</div>
+<div class="line"><a name="l02239"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#ab6d375a617d535e63ae45710d8e455b2"> 2239</a></span>&#160;<a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* Solver::MakeFixedDurationIntervalVar(<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="sched__constraints_8cc.html#ab2188791e61e013dc8b28e66b31041cd">start_min</a>,</div>
 <div class="line"><a name="l02240"></a><span class="lineno"> 2240</span>&#160;                                                  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="sched__constraints_8cc.html#a7c8133c50ba59755e2162ad1a9478da7">start_max</a>,</div>
 <div class="line"><a name="l02241"></a><span class="lineno"> 2241</span>&#160;                                                  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration, <span class="keywordtype">bool</span> optional,</div>
 <div class="line"><a name="l02242"></a><span class="lineno"> 2242</span>&#160;                                                  <span class="keyword">const</span> std::string&amp; <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>) {</div>
@@ -2341,11 +2341,11 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l02250"></a><span class="lineno"> 2250</span>&#160;      <span class="keyword">this</span>, <a class="code" href="sched__constraints_8cc.html#ab2188791e61e013dc8b28e66b31041cd">start_min</a>, <a class="code" href="sched__constraints_8cc.html#a7c8133c50ba59755e2162ad1a9478da7">start_max</a>, duration, optional, <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>)));</div>
 <div class="line"><a name="l02251"></a><span class="lineno"> 2251</span>&#160;}</div>
 <div class="line"><a name="l02252"></a><span class="lineno"> 2252</span>&#160; </div>
-<div class="line"><a name="l02253"></a><span class="lineno"> 2253</span>&#160;<span class="keywordtype">void</span> Solver::MakeFixedDurationIntervalVarArray(</div>
+<div class="line"><a name="l02253"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#a8ae40872f6abd544d1c191ac370b7e22"> 2253</a></span>&#160;<span class="keywordtype">void</span> Solver::MakeFixedDurationIntervalVarArray(</div>
 <div class="line"><a name="l02254"></a><span class="lineno"> 2254</span>&#160;    <span class="keywordtype">int</span> count, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="sched__constraints_8cc.html#ab2188791e61e013dc8b28e66b31041cd">start_min</a>, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="sched__constraints_8cc.html#a7c8133c50ba59755e2162ad1a9478da7">start_max</a>, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration, <span class="keywordtype">bool</span> optional,</div>
 <div class="line"><a name="l02255"></a><span class="lineno"> 2255</span>&#160;    <span class="keyword">const</span> std::string&amp; <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>, std::vector&lt;IntervalVar*&gt;* array) {</div>
-<div class="line"><a name="l02256"></a><span class="lineno"> 2256</span>&#160;  CHECK_GT(count, 0);</div>
-<div class="line"><a name="l02257"></a><span class="lineno"> 2257</span>&#160;  CHECK(array != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l02256"></a><span class="lineno"> 2256</span>&#160;  <a class="code" href="base_2logging_8h.html#a7e03ec13560fa94a8fea569960d7efc6">CHECK_GT</a>(count, 0);</div>
+<div class="line"><a name="l02257"></a><span class="lineno"> 2257</span>&#160;  <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(array != <span class="keyword">nullptr</span>);</div>
 <div class="line"><a name="l02258"></a><span class="lineno"> 2258</span>&#160;  array-&gt;clear();</div>
 <div class="line"><a name="l02259"></a><span class="lineno"> 2259</span>&#160;  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; count; ++i) {</div>
 <div class="line"><a name="l02260"></a><span class="lineno"> 2260</span>&#160;    <span class="keyword">const</span> std::string var_name = absl::StrCat(<a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>, i);</div>
@@ -2354,24 +2354,24 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l02263"></a><span class="lineno"> 2263</span>&#160;  }</div>
 <div class="line"><a name="l02264"></a><span class="lineno"> 2264</span>&#160;}</div>
 <div class="line"><a name="l02265"></a><span class="lineno"> 2265</span>&#160; </div>
-<div class="line"><a name="l02266"></a><span class="lineno"> 2266</span>&#160;IntervalVar* Solver::MakeFixedDurationIntervalVar(IntVar* <span class="keyword">const</span> start_variable,</div>
+<div class="line"><a name="l02266"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#aaeb553b69010592a6b2235fc1f8d830f"> 2266</a></span>&#160;<a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* Solver::MakeFixedDurationIntervalVar(<a class="code" href="classoperations__research_1_1_int_var.html">IntVar</a>* <span class="keyword">const</span> start_variable,</div>
 <div class="line"><a name="l02267"></a><span class="lineno"> 2267</span>&#160;                                                  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration,</div>
 <div class="line"><a name="l02268"></a><span class="lineno"> 2268</span>&#160;                                                  <span class="keyword">const</span> std::string&amp; <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>) {</div>
-<div class="line"><a name="l02269"></a><span class="lineno"> 2269</span>&#160;  CHECK(start_variable != <span class="keyword">nullptr</span>);</div>
-<div class="line"><a name="l02270"></a><span class="lineno"> 2270</span>&#160;  CHECK_GE(duration, 0);</div>
+<div class="line"><a name="l02269"></a><span class="lineno"> 2269</span>&#160;  <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(start_variable != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l02270"></a><span class="lineno"> 2270</span>&#160;  <a class="code" href="base_2logging_8h.html#a7cc25402ecd7591b4c39934dd656b1f9">CHECK_GE</a>(duration, 0);</div>
 <div class="line"><a name="l02271"></a><span class="lineno"> 2271</span>&#160;  <span class="keywordflow">return</span> RegisterIntervalVar(RevAlloc(</div>
 <div class="line"><a name="l02272"></a><span class="lineno"> 2272</span>&#160;      <span class="keyword">new</span> StartVarPerformedIntervalVar(<span class="keyword">this</span>, start_variable, duration, <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>)));</div>
 <div class="line"><a name="l02273"></a><span class="lineno"> 2273</span>&#160;}</div>
 <div class="line"><a name="l02274"></a><span class="lineno"> 2274</span>&#160; </div>
 <div class="line"><a name="l02275"></a><span class="lineno"> 2275</span>&#160;<span class="comment">// Creates an interval var with a fixed duration, and performed var.</span></div>
 <div class="line"><a name="l02276"></a><span class="lineno"> 2276</span>&#160;<span class="comment">// The duration must be greater than 0.</span></div>
-<div class="line"><a name="l02277"></a><span class="lineno"> 2277</span>&#160;IntervalVar* Solver::MakeFixedDurationIntervalVar(</div>
-<div class="line"><a name="l02278"></a><span class="lineno"> 2278</span>&#160;    IntVar* <span class="keyword">const</span> start_variable, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration,</div>
-<div class="line"><a name="l02279"></a><span class="lineno"> 2279</span>&#160;    IntVar* <span class="keyword">const</span> performed_variable, <span class="keyword">const</span> std::string&amp; <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>) {</div>
-<div class="line"><a name="l02280"></a><span class="lineno"> 2280</span>&#160;  CHECK(start_variable != <span class="keyword">nullptr</span>);</div>
-<div class="line"><a name="l02281"></a><span class="lineno"> 2281</span>&#160;  CHECK(performed_variable != <span class="keyword">nullptr</span>);</div>
-<div class="line"><a name="l02282"></a><span class="lineno"> 2282</span>&#160;  CHECK_GE(duration, 0);</div>
-<div class="line"><a name="l02283"></a><span class="lineno"> 2283</span>&#160;  <span class="keywordflow">if</span> (!performed_variable-&gt;Bound()) {</div>
+<div class="line"><a name="l02277"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#a53d54d9e50487546e611be40f9cad491"> 2277</a></span>&#160;<a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* Solver::MakeFixedDurationIntervalVar(</div>
+<div class="line"><a name="l02278"></a><span class="lineno"> 2278</span>&#160;    <a class="code" href="classoperations__research_1_1_int_var.html">IntVar</a>* <span class="keyword">const</span> start_variable, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration,</div>
+<div class="line"><a name="l02279"></a><span class="lineno"> 2279</span>&#160;    <a class="code" href="classoperations__research_1_1_int_var.html">IntVar</a>* <span class="keyword">const</span> performed_variable, <span class="keyword">const</span> std::string&amp; <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>) {</div>
+<div class="line"><a name="l02280"></a><span class="lineno"> 2280</span>&#160;  <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(start_variable != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l02281"></a><span class="lineno"> 2281</span>&#160;  <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(performed_variable != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l02282"></a><span class="lineno"> 2282</span>&#160;  <a class="code" href="base_2logging_8h.html#a7cc25402ecd7591b4c39934dd656b1f9">CHECK_GE</a>(duration, 0);</div>
+<div class="line"><a name="l02283"></a><span class="lineno"> 2283</span>&#160;  <span class="keywordflow">if</span> (!performed_variable-&gt;<a class="code" href="classoperations__research_1_1_int_expr.html#a1d04569b37cb7fe6ed0956ab71e08bc9">Bound</a>()) {</div>
 <div class="line"><a name="l02284"></a><span class="lineno"> 2284</span>&#160;    StartVarIntervalVar* <span class="keyword">const</span> <a class="code" href="resource_8cc.html#af92a8383a05fdf586a52263d358f5ada">interval</a> =</div>
 <div class="line"><a name="l02285"></a><span class="lineno"> 2285</span>&#160;        <span class="keyword">reinterpret_cast&lt;</span>StartVarIntervalVar*<span class="keyword">&gt;</span>(</div>
 <div class="line"><a name="l02286"></a><span class="lineno"> 2286</span>&#160;            RegisterIntervalVar(RevAlloc(<span class="keyword">new</span> StartVarIntervalVar(</div>
@@ -2379,17 +2379,17 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l02288"></a><span class="lineno"> 2288</span>&#160;    AddConstraint(RevAlloc(<span class="keyword">new</span> LinkStartVarIntervalVar(</div>
 <div class="line"><a name="l02289"></a><span class="lineno"> 2289</span>&#160;        <span class="keyword">this</span>, <a class="code" href="resource_8cc.html#af92a8383a05fdf586a52263d358f5ada">interval</a>, start_variable, performed_variable)));</div>
 <div class="line"><a name="l02290"></a><span class="lineno"> 2290</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="resource_8cc.html#af92a8383a05fdf586a52263d358f5ada">interval</a>;</div>
-<div class="line"><a name="l02291"></a><span class="lineno"> 2291</span>&#160;  } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (performed_variable-&gt;Min() == 1) {</div>
+<div class="line"><a name="l02291"></a><span class="lineno"> 2291</span>&#160;  } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (performed_variable-&gt;<a class="code" href="classoperations__research_1_1_int_expr.html#ac4a4f30badcd311075302a4efcfaee0a">Min</a>() == 1) {</div>
 <div class="line"><a name="l02292"></a><span class="lineno"> 2292</span>&#160;    <span class="keywordflow">return</span> RegisterIntervalVar(RevAlloc(<span class="keyword">new</span> StartVarPerformedIntervalVar(</div>
 <div class="line"><a name="l02293"></a><span class="lineno"> 2293</span>&#160;        <span class="keyword">this</span>, start_variable, duration, <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>)));</div>
 <div class="line"><a name="l02294"></a><span class="lineno"> 2294</span>&#160;  }</div>
 <div class="line"><a name="l02295"></a><span class="lineno"> 2295</span>&#160;  <span class="keywordflow">return</span> <span class="keyword">nullptr</span>;</div>
 <div class="line"><a name="l02296"></a><span class="lineno"> 2296</span>&#160;}</div>
 <div class="line"><a name="l02297"></a><span class="lineno"> 2297</span>&#160; </div>
-<div class="line"><a name="l02298"></a><span class="lineno"> 2298</span>&#160;<span class="keywordtype">void</span> Solver::MakeFixedDurationIntervalVarArray(</div>
+<div class="line"><a name="l02298"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#af07acb0b686d40e056a7b2a127eb5ba6"> 2298</a></span>&#160;<span class="keywordtype">void</span> Solver::MakeFixedDurationIntervalVarArray(</div>
 <div class="line"><a name="l02299"></a><span class="lineno"> 2299</span>&#160;    <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; start_variables, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration,</div>
 <div class="line"><a name="l02300"></a><span class="lineno"> 2300</span>&#160;    <span class="keyword">const</span> std::string&amp; <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>, std::vector&lt;IntervalVar*&gt;* array) {</div>
-<div class="line"><a name="l02301"></a><span class="lineno"> 2301</span>&#160;  CHECK(array != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l02301"></a><span class="lineno"> 2301</span>&#160;  <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(array != <span class="keyword">nullptr</span>);</div>
 <div class="line"><a name="l02302"></a><span class="lineno"> 2302</span>&#160;  array-&gt;clear();</div>
 <div class="line"><a name="l02303"></a><span class="lineno"> 2303</span>&#160;  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; start_variables.size(); ++i) {</div>
 <div class="line"><a name="l02304"></a><span class="lineno"> 2304</span>&#160;    <span class="keyword">const</span> std::string var_name = absl::StrCat(<a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>, i);</div>
@@ -2400,12 +2400,12 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l02309"></a><span class="lineno"> 2309</span>&#160; </div>
 <div class="line"><a name="l02310"></a><span class="lineno"> 2310</span>&#160;<span class="comment">// This method fills the vector with interval variables built with</span></div>
 <div class="line"><a name="l02311"></a><span class="lineno"> 2311</span>&#160;<span class="comment">// the corresponding start variables.</span></div>
-<div class="line"><a name="l02312"></a><span class="lineno"> 2312</span>&#160;<span class="keywordtype">void</span> Solver::MakeFixedDurationIntervalVarArray(</div>
+<div class="line"><a name="l02312"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#afe0f1bbaab72ae2ac9f6b483064e19f8"> 2312</a></span>&#160;<span class="keywordtype">void</span> Solver::MakeFixedDurationIntervalVarArray(</div>
 <div class="line"><a name="l02313"></a><span class="lineno"> 2313</span>&#160;    <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; start_variables,</div>
 <div class="line"><a name="l02314"></a><span class="lineno"> 2314</span>&#160;    <span class="keyword">const</span> std::vector&lt;int64&gt;&amp; durations, <span class="keyword">const</span> std::string&amp; <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>,</div>
 <div class="line"><a name="l02315"></a><span class="lineno"> 2315</span>&#160;    std::vector&lt;IntervalVar*&gt;* array) {</div>
-<div class="line"><a name="l02316"></a><span class="lineno"> 2316</span>&#160;  CHECK(array != <span class="keyword">nullptr</span>);</div>
-<div class="line"><a name="l02317"></a><span class="lineno"> 2317</span>&#160;  CHECK_EQ(start_variables.size(), durations.size());</div>
+<div class="line"><a name="l02316"></a><span class="lineno"> 2316</span>&#160;  <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(array != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l02317"></a><span class="lineno"> 2317</span>&#160;  <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(start_variables.size(), durations.size());</div>
 <div class="line"><a name="l02318"></a><span class="lineno"> 2318</span>&#160;  array-&gt;clear();</div>
 <div class="line"><a name="l02319"></a><span class="lineno"> 2319</span>&#160;  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; start_variables.size(); ++i) {</div>
 <div class="line"><a name="l02320"></a><span class="lineno"> 2320</span>&#160;    <span class="keyword">const</span> std::string var_name = absl::StrCat(<a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>, i);</div>
@@ -2414,12 +2414,12 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l02323"></a><span class="lineno"> 2323</span>&#160;  }</div>
 <div class="line"><a name="l02324"></a><span class="lineno"> 2324</span>&#160;}</div>
 <div class="line"><a name="l02325"></a><span class="lineno"> 2325</span>&#160; </div>
-<div class="line"><a name="l02326"></a><span class="lineno"> 2326</span>&#160;<span class="keywordtype">void</span> Solver::MakeFixedDurationIntervalVarArray(</div>
+<div class="line"><a name="l02326"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#ae003f9e6fbeec988e9e3ba456d1f2808"> 2326</a></span>&#160;<span class="keywordtype">void</span> Solver::MakeFixedDurationIntervalVarArray(</div>
 <div class="line"><a name="l02327"></a><span class="lineno"> 2327</span>&#160;    <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; start_variables,</div>
 <div class="line"><a name="l02328"></a><span class="lineno"> 2328</span>&#160;    <span class="keyword">const</span> std::vector&lt;int&gt;&amp; durations, <span class="keyword">const</span> std::string&amp; <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>,</div>
 <div class="line"><a name="l02329"></a><span class="lineno"> 2329</span>&#160;    std::vector&lt;IntervalVar*&gt;* array) {</div>
-<div class="line"><a name="l02330"></a><span class="lineno"> 2330</span>&#160;  CHECK(array != <span class="keyword">nullptr</span>);</div>
-<div class="line"><a name="l02331"></a><span class="lineno"> 2331</span>&#160;  CHECK_EQ(start_variables.size(), durations.size());</div>
+<div class="line"><a name="l02330"></a><span class="lineno"> 2330</span>&#160;  <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(array != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l02331"></a><span class="lineno"> 2331</span>&#160;  <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(start_variables.size(), durations.size());</div>
 <div class="line"><a name="l02332"></a><span class="lineno"> 2332</span>&#160;  array-&gt;clear();</div>
 <div class="line"><a name="l02333"></a><span class="lineno"> 2333</span>&#160;  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; start_variables.size(); ++i) {</div>
 <div class="line"><a name="l02334"></a><span class="lineno"> 2334</span>&#160;    <span class="keyword">const</span> std::string var_name = absl::StrCat(<a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>, i);</div>
@@ -2428,12 +2428,12 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l02337"></a><span class="lineno"> 2337</span>&#160;  }</div>
 <div class="line"><a name="l02338"></a><span class="lineno"> 2338</span>&#160;}</div>
 <div class="line"><a name="l02339"></a><span class="lineno"> 2339</span>&#160; </div>
-<div class="line"><a name="l02340"></a><span class="lineno"> 2340</span>&#160;<span class="keywordtype">void</span> Solver::MakeFixedDurationIntervalVarArray(</div>
+<div class="line"><a name="l02340"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#a4fed63f576ec3fe7a25a5a0341537480"> 2340</a></span>&#160;<span class="keywordtype">void</span> Solver::MakeFixedDurationIntervalVarArray(</div>
 <div class="line"><a name="l02341"></a><span class="lineno"> 2341</span>&#160;    <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; start_variables,</div>
 <div class="line"><a name="l02342"></a><span class="lineno"> 2342</span>&#160;    <span class="keyword">const</span> std::vector&lt;int&gt;&amp; durations,</div>
 <div class="line"><a name="l02343"></a><span class="lineno"> 2343</span>&#160;    <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; performed_variables, <span class="keyword">const</span> std::string&amp; <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>,</div>
 <div class="line"><a name="l02344"></a><span class="lineno"> 2344</span>&#160;    std::vector&lt;IntervalVar*&gt;* array) {</div>
-<div class="line"><a name="l02345"></a><span class="lineno"> 2345</span>&#160;  CHECK(array != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l02345"></a><span class="lineno"> 2345</span>&#160;  <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(array != <span class="keyword">nullptr</span>);</div>
 <div class="line"><a name="l02346"></a><span class="lineno"> 2346</span>&#160;  array-&gt;clear();</div>
 <div class="line"><a name="l02347"></a><span class="lineno"> 2347</span>&#160;  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; start_variables.size(); ++i) {</div>
 <div class="line"><a name="l02348"></a><span class="lineno"> 2348</span>&#160;    <span class="keyword">const</span> std::string var_name = absl::StrCat(<a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>, i);</div>
@@ -2442,12 +2442,12 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l02351"></a><span class="lineno"> 2351</span>&#160;  }</div>
 <div class="line"><a name="l02352"></a><span class="lineno"> 2352</span>&#160;}</div>
 <div class="line"><a name="l02353"></a><span class="lineno"> 2353</span>&#160; </div>
-<div class="line"><a name="l02354"></a><span class="lineno"> 2354</span>&#160;<span class="keywordtype">void</span> Solver::MakeFixedDurationIntervalVarArray(</div>
+<div class="line"><a name="l02354"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#a5d9ecf928f4a534fda1be370eae4efea"> 2354</a></span>&#160;<span class="keywordtype">void</span> Solver::MakeFixedDurationIntervalVarArray(</div>
 <div class="line"><a name="l02355"></a><span class="lineno"> 2355</span>&#160;    <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; start_variables,</div>
 <div class="line"><a name="l02356"></a><span class="lineno"> 2356</span>&#160;    <span class="keyword">const</span> std::vector&lt;int64&gt;&amp; durations,</div>
 <div class="line"><a name="l02357"></a><span class="lineno"> 2357</span>&#160;    <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; performed_variables, <span class="keyword">const</span> std::string&amp; <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>,</div>
 <div class="line"><a name="l02358"></a><span class="lineno"> 2358</span>&#160;    std::vector&lt;IntervalVar*&gt;* array) {</div>
-<div class="line"><a name="l02359"></a><span class="lineno"> 2359</span>&#160;  CHECK(array != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l02359"></a><span class="lineno"> 2359</span>&#160;  <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(array != <span class="keyword">nullptr</span>);</div>
 <div class="line"><a name="l02360"></a><span class="lineno"> 2360</span>&#160;  array-&gt;clear();</div>
 <div class="line"><a name="l02361"></a><span class="lineno"> 2361</span>&#160;  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; start_variables.size(); ++i) {</div>
 <div class="line"><a name="l02362"></a><span class="lineno"> 2362</span>&#160;    <span class="keyword">const</span> std::string var_name = absl::StrCat(<a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>, i);</div>
@@ -2458,7 +2458,7 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l02367"></a><span class="lineno"> 2367</span>&#160; </div>
 <div class="line"><a name="l02368"></a><span class="lineno"> 2368</span>&#160;<span class="comment">// Variable Duration Interval Var</span></div>
 <div class="line"><a name="l02369"></a><span class="lineno"> 2369</span>&#160; </div>
-<div class="line"><a name="l02370"></a><span class="lineno"> 2370</span>&#160;IntervalVar* Solver::MakeIntervalVar(<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="sched__constraints_8cc.html#ab2188791e61e013dc8b28e66b31041cd">start_min</a>, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="sched__constraints_8cc.html#a7c8133c50ba59755e2162ad1a9478da7">start_max</a>,</div>
+<div class="line"><a name="l02370"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#ae30cfd81898c56d3414b87d3aab51bf2"> 2370</a></span>&#160;<a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* Solver::MakeIntervalVar(<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="sched__constraints_8cc.html#ab2188791e61e013dc8b28e66b31041cd">start_min</a>, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="sched__constraints_8cc.html#a7c8133c50ba59755e2162ad1a9478da7">start_max</a>,</div>
 <div class="line"><a name="l02371"></a><span class="lineno"> 2371</span>&#160;                                     <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration_min, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration_max,</div>
 <div class="line"><a name="l02372"></a><span class="lineno"> 2372</span>&#160;                                     <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="sched__constraints_8cc.html#a16edac3fa04d9ba10ff012b5fb8add05">end_min</a>, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="sched__constraints_8cc.html#a3db7a45809ea7c6000b10a58f003b331">end_max</a>,</div>
 <div class="line"><a name="l02373"></a><span class="lineno"> 2373</span>&#160;                                     <span class="keywordtype">bool</span> optional, <span class="keyword">const</span> std::string&amp; <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>) {</div>
@@ -2467,13 +2467,13 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l02376"></a><span class="lineno"> 2376</span>&#160;      optional, <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>)));</div>
 <div class="line"><a name="l02377"></a><span class="lineno"> 2377</span>&#160;}</div>
 <div class="line"><a name="l02378"></a><span class="lineno"> 2378</span>&#160; </div>
-<div class="line"><a name="l02379"></a><span class="lineno"> 2379</span>&#160;<span class="keywordtype">void</span> Solver::MakeIntervalVarArray(<span class="keywordtype">int</span> count, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="sched__constraints_8cc.html#ab2188791e61e013dc8b28e66b31041cd">start_min</a>, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="sched__constraints_8cc.html#a7c8133c50ba59755e2162ad1a9478da7">start_max</a>,</div>
+<div class="line"><a name="l02379"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#aaf3f40bd93fd979cdd7d089447e52326"> 2379</a></span>&#160;<span class="keywordtype">void</span> Solver::MakeIntervalVarArray(<span class="keywordtype">int</span> count, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="sched__constraints_8cc.html#ab2188791e61e013dc8b28e66b31041cd">start_min</a>, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="sched__constraints_8cc.html#a7c8133c50ba59755e2162ad1a9478da7">start_max</a>,</div>
 <div class="line"><a name="l02380"></a><span class="lineno"> 2380</span>&#160;                                  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration_min, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration_max,</div>
 <div class="line"><a name="l02381"></a><span class="lineno"> 2381</span>&#160;                                  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="sched__constraints_8cc.html#a16edac3fa04d9ba10ff012b5fb8add05">end_min</a>, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="code" href="sched__constraints_8cc.html#a3db7a45809ea7c6000b10a58f003b331">end_max</a>, <span class="keywordtype">bool</span> optional,</div>
 <div class="line"><a name="l02382"></a><span class="lineno"> 2382</span>&#160;                                  <span class="keyword">const</span> std::string&amp; <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>,</div>
 <div class="line"><a name="l02383"></a><span class="lineno"> 2383</span>&#160;                                  std::vector&lt;IntervalVar*&gt;* <span class="keyword">const</span> array) {</div>
-<div class="line"><a name="l02384"></a><span class="lineno"> 2384</span>&#160;  CHECK_GT(count, 0);</div>
-<div class="line"><a name="l02385"></a><span class="lineno"> 2385</span>&#160;  CHECK(array != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l02384"></a><span class="lineno"> 2384</span>&#160;  <a class="code" href="base_2logging_8h.html#a7e03ec13560fa94a8fea569960d7efc6">CHECK_GT</a>(count, 0);</div>
+<div class="line"><a name="l02385"></a><span class="lineno"> 2385</span>&#160;  <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(array != <span class="keyword">nullptr</span>);</div>
 <div class="line"><a name="l02386"></a><span class="lineno"> 2386</span>&#160;  array-&gt;clear();</div>
 <div class="line"><a name="l02387"></a><span class="lineno"> 2387</span>&#160;  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; count; ++i) {</div>
 <div class="line"><a name="l02388"></a><span class="lineno"> 2388</span>&#160;    <span class="keyword">const</span> std::string var_name = absl::StrCat(<a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>, i);</div>
@@ -2484,29 +2484,29 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l02393"></a><span class="lineno"> 2393</span>&#160;}</div>
 <div class="line"><a name="l02394"></a><span class="lineno"> 2394</span>&#160; </div>
 <div class="line"><a name="l02395"></a><span class="lineno"> 2395</span>&#160;<span class="comment">// Synced Interval Vars</span></div>
-<div class="line"><a name="l02396"></a><span class="lineno"> 2396</span>&#160;IntervalVar* Solver::MakeFixedDurationStartSyncedOnStartIntervalVar(</div>
-<div class="line"><a name="l02397"></a><span class="lineno"> 2397</span>&#160;    IntervalVar* <span class="keyword">const</span> interval_var, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> offset) {</div>
+<div class="line"><a name="l02396"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#acef49cc8d3ff13b0a4ca8a1c58be7a54"> 2396</a></span>&#160;<a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* Solver::MakeFixedDurationStartSyncedOnStartIntervalVar(</div>
+<div class="line"><a name="l02397"></a><span class="lineno"> 2397</span>&#160;    <a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* <span class="keyword">const</span> interval_var, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> offset) {</div>
 <div class="line"><a name="l02398"></a><span class="lineno"> 2398</span>&#160;  <span class="keywordflow">return</span> RegisterIntervalVar(</div>
 <div class="line"><a name="l02399"></a><span class="lineno"> 2399</span>&#160;      RevAlloc(<span class="keyword">new</span> FixedDurationIntervalVarStartSyncedOnStart(</div>
 <div class="line"><a name="l02400"></a><span class="lineno"> 2400</span>&#160;          interval_var, duration, offset)));</div>
 <div class="line"><a name="l02401"></a><span class="lineno"> 2401</span>&#160;}</div>
 <div class="line"><a name="l02402"></a><span class="lineno"> 2402</span>&#160; </div>
-<div class="line"><a name="l02403"></a><span class="lineno"> 2403</span>&#160;IntervalVar* Solver::MakeFixedDurationStartSyncedOnEndIntervalVar(</div>
-<div class="line"><a name="l02404"></a><span class="lineno"> 2404</span>&#160;    IntervalVar* <span class="keyword">const</span> interval_var, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> offset) {</div>
+<div class="line"><a name="l02403"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#abe56a667003808b938d63f858c1c2836"> 2403</a></span>&#160;<a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* Solver::MakeFixedDurationStartSyncedOnEndIntervalVar(</div>
+<div class="line"><a name="l02404"></a><span class="lineno"> 2404</span>&#160;    <a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* <span class="keyword">const</span> interval_var, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> offset) {</div>
 <div class="line"><a name="l02405"></a><span class="lineno"> 2405</span>&#160;  <span class="keywordflow">return</span> RegisterIntervalVar(</div>
 <div class="line"><a name="l02406"></a><span class="lineno"> 2406</span>&#160;      RevAlloc(<span class="keyword">new</span> FixedDurationIntervalVarStartSyncedOnEnd(interval_var,</div>
 <div class="line"><a name="l02407"></a><span class="lineno"> 2407</span>&#160;                                                            duration, offset)));</div>
 <div class="line"><a name="l02408"></a><span class="lineno"> 2408</span>&#160;}</div>
 <div class="line"><a name="l02409"></a><span class="lineno"> 2409</span>&#160; </div>
-<div class="line"><a name="l02410"></a><span class="lineno"> 2410</span>&#160;IntervalVar* Solver::MakeFixedDurationEndSyncedOnStartIntervalVar(</div>
-<div class="line"><a name="l02411"></a><span class="lineno"> 2411</span>&#160;    IntervalVar* <span class="keyword">const</span> interval_var, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> offset) {</div>
+<div class="line"><a name="l02410"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#a79815eab79172e06f6748cca96714b3a"> 2410</a></span>&#160;<a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* Solver::MakeFixedDurationEndSyncedOnStartIntervalVar(</div>
+<div class="line"><a name="l02411"></a><span class="lineno"> 2411</span>&#160;    <a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* <span class="keyword">const</span> interval_var, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> offset) {</div>
 <div class="line"><a name="l02412"></a><span class="lineno"> 2412</span>&#160;  <span class="keywordflow">return</span> RegisterIntervalVar(</div>
 <div class="line"><a name="l02413"></a><span class="lineno"> 2413</span>&#160;      RevAlloc(<span class="keyword">new</span> FixedDurationIntervalVarStartSyncedOnStart(</div>
 <div class="line"><a name="l02414"></a><span class="lineno"> 2414</span>&#160;          interval_var, duration, <a class="code" href="namespaceoperations__research.html#a228fe84d99348c2b62bb4f70a6371d9b">CapSub</a>(offset, duration))));</div>
 <div class="line"><a name="l02415"></a><span class="lineno"> 2415</span>&#160;}</div>
 <div class="line"><a name="l02416"></a><span class="lineno"> 2416</span>&#160; </div>
-<div class="line"><a name="l02417"></a><span class="lineno"> 2417</span>&#160;IntervalVar* Solver::MakeFixedDurationEndSyncedOnEndIntervalVar(</div>
-<div class="line"><a name="l02418"></a><span class="lineno"> 2418</span>&#160;    IntervalVar* <span class="keyword">const</span> interval_var, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> offset) {</div>
+<div class="line"><a name="l02417"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_solver.html#a571d6bd2cab9d27f4a2879f262776cb8"> 2417</a></span>&#160;<a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* Solver::MakeFixedDurationEndSyncedOnEndIntervalVar(</div>
+<div class="line"><a name="l02418"></a><span class="lineno"> 2418</span>&#160;    <a class="code" href="classoperations__research_1_1_interval_var.html">IntervalVar</a>* <span class="keyword">const</span> interval_var, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> duration, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> offset) {</div>
 <div class="line"><a name="l02419"></a><span class="lineno"> 2419</span>&#160;  <span class="keywordflow">return</span> RegisterIntervalVar(</div>
 <div class="line"><a name="l02420"></a><span class="lineno"> 2420</span>&#160;      RevAlloc(<span class="keyword">new</span> FixedDurationIntervalVarStartSyncedOnEnd(</div>
 <div class="line"><a name="l02421"></a><span class="lineno"> 2421</span>&#160;          interval_var, duration, <a class="code" href="namespaceoperations__research.html#a228fe84d99348c2b62bb4f70a6371d9b">CapSub</a>(offset, duration))));</div>
@@ -2514,43 +2514,66 @@ $(document).ready(function(){initNavTree('interval_8cc_source.html',''); initRes
 <div class="line"><a name="l02423"></a><span class="lineno"> 2423</span>&#160;}  <span class="comment">// namespace operations_research</span></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
+<div class="ttc" id="aclassoperations__research_1_1_int_var_html"><div class="ttname"><a href="classoperations__research_1_1_int_var.html">operations_research::IntVar</a></div><div class="ttdoc">The class IntVar is a subset of IntExpr.</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l03992">constraint_solver.h:3992</a></div></div>
 <div class="ttc" id="aexpr__array_8cc_html_a472a99923cbe11ae7b5a5d157d9ad465"><div class="ttname"><a href="expr__array_8cc.html#a472a99923cbe11ae7b5a5d157d9ad465">var</a></div><div class="ttdeci">IntVar * var</div><div class="ttdef"><b>Definition:</b> <a href="expr__array_8cc_source.html#l01858">expr_array.cc:1858</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a2174872e952aff88b8cf8afeb7479f89"><div class="ttname"><a href="namespaceoperations__research.html#a2174872e952aff88b8cf8afeb7479f89">operations_research::BuildEndExpr</a></div><div class="ttdeci">IntExpr * BuildEndExpr(IntervalVar *var)</div><div class="ttdef"><b>Definition:</b> <a href="sched__expr_8cc_source.html#l00172">sched_expr.cc:172</a></div></div>
 <div class="ttc" id="aalldiff__cst_8cc_html_a021e695f54a13bd809c34b2f4ca87c37"><div class="ttname"><a href="alldiff__cst_8cc.html#a021e695f54a13bd809c34b2f4ca87c37">min</a></div><div class="ttdeci">int64 min</div><div class="ttdef"><b>Definition:</b> <a href="alldiff__cst_8cc_source.html#l00138">alldiff_cst.cc:138</a></div></div>
 <div class="ttc" id="aintegral__types_8h_html"><div class="ttname"><a href="integral__types_8h.html">integral_types.h</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a228fe84d99348c2b62bb4f70a6371d9b"><div class="ttname"><a href="namespaceoperations__research.html#a228fe84d99348c2b62bb4f70a6371d9b">operations_research::CapSub</a></div><div class="ttdeci">int64 CapSub(int64 x, int64 y)</div><div class="ttdef"><b>Definition:</b> <a href="saturated__arithmetic_8h_source.html#l00154">saturated_arithmetic.h:154</a></div></div>
 <div class="ttc" id="aalldiff__cst_8cc_html_a9d0c202d5fdd62f4fa2c613339ff168a"><div class="ttname"><a href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">max</a></div><div class="ttdeci">int64 max</div><div class="ttdef"><b>Definition:</b> <a href="alldiff__cst_8cc_source.html#l00139">alldiff_cst.cc:139</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_html_ac14e5bdd8a27f1b2089a783f842dce2f"><div class="ttname"><a href="namespaceoperations__research.html#ac14e5bdd8a27f1b2089a783f842dce2f">operations_research::LinkVarExpr</a></div><div class="ttdeci">void LinkVarExpr(Solver *const s, IntExpr *const expr, IntVar *const var)</div><div class="ttdef"><b>Definition:</b> <a href="expressions_8cc_source.html#l07394">expressions.cc:7394</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_html_ac14e5bdd8a27f1b2089a783f842dce2f"><div class="ttname"><a href="namespaceoperations__research.html#ac14e5bdd8a27f1b2089a783f842dce2f">operations_research::LinkVarExpr</a></div><div class="ttdeci">void LinkVarExpr(Solver *const s, IntExpr *const expr, IntVar *const var)</div><div class="ttdef"><b>Definition:</b> <a href="expressions_8cc_source.html#l07396">expressions.cc:7396</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_interval_var_html_a25367402bed36b599e0269f2612cfa29"><div class="ttname"><a href="classoperations__research_1_1_interval_var.html#a25367402bed36b599e0269f2612cfa29">operations_research::IntervalVar::kMaxValidValue</a></div><div class="ttdeci">static const int64 kMaxValidValue</div><div class="ttdoc">The largest acceptable value to be returned by EndMax()</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l04394">constraint_solver.h:4394</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a7f02a670f5a10edc1454b5ca7232892b"><div class="ttname"><a href="namespaceoperations__research.html#a7f02a670f5a10edc1454b5ca7232892b">operations_research::BuildSafeStartExpr</a></div><div class="ttdeci">IntExpr * BuildSafeStartExpr(IntervalVar *var, int64 unperformed_value)</div><div class="ttdef"><b>Definition:</b> <a href="sched__expr_8cc_source.html#l00182">sched_expr.cc:182</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_accad43a85d781d53381cd53a9894b6ae"><div class="ttname"><a href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a></div><div class="ttdeci">#define LOG(severity)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00420">base/logging.h:420</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_solver_html_a293233c46e5eaa308f65c7c2350553f7ad38fb80cf0d5468a2b5efdb0f4cd6068"><div class="ttname"><a href="classoperations__research_1_1_solver.html#a293233c46e5eaa308f65c7c2350553f7ad38fb80cf0d5468a2b5efdb0f4cd6068">operations_research::Solver::DELAYED_PRIORITY</a></div><div class="ttdeci">@ DELAYED_PRIORITY</div><div class="ttdoc">DELAYED_PRIORITY is the lowest priority: Demons will be processed after VAR_PRIORITY and NORMAL_PRIOR...</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l00611">constraint_solver.h:611</a></div></div>
 <div class="ttc" id="asched__constraints_8cc_html_a3db7a45809ea7c6000b10a58f003b331"><div class="ttname"><a href="sched__constraints_8cc.html#a3db7a45809ea7c6000b10a58f003b331">end_max</a></div><div class="ttdeci">Rev&lt; int64 &gt; end_max</div><div class="ttdef"><b>Definition:</b> <a href="sched__constraints_8cc_source.html#l00244">sched_constraints.cc:244</a></div></div>
+<div class="ttc" id="alog__severity_8h_html_acdd38e3c9f22f127d7776920e3079eda"><div class="ttname"><a href="log__severity_8h.html#acdd38e3c9f22f127d7776920e3079eda">FATAL</a></div><div class="ttdeci">const int FATAL</div><div class="ttdef"><b>Definition:</b> <a href="log__severity_8h_source.html#l00032">log_severity.h:32</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a7cc25402ecd7591b4c39934dd656b1f9"><div class="ttname"><a href="base_2logging_8h.html#a7cc25402ecd7591b4c39934dd656b1f9">CHECK_GE</a></div><div class="ttdeci">#define CHECK_GE(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00701">base/logging.h:701</a></div></div>
 <div class="ttc" id="asched__constraints_8cc_html_ab2188791e61e013dc8b28e66b31041cd"><div class="ttname"><a href="sched__constraints_8cc.html#ab2188791e61e013dc8b28e66b31041cd">start_min</a></div><div class="ttdeci">Rev&lt; int64 &gt; start_min</div><div class="ttdef"><b>Definition:</b> <a href="sched__constraints_8cc_source.html#l00241">sched_constraints.cc:241</a></div></div>
 <div class="ttc" id="abase_2logging_8h_html"><div class="ttname"><a href="base_2logging_8h.html">logging.h</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a8c1c5e89e441619628afaf4526a72ef0"><div class="ttname"><a href="namespaceoperations__research.html#a8c1c5e89e441619628afaf4526a72ef0">operations_research::BuildSafeDurationExpr</a></div><div class="ttdeci">IntExpr * BuildSafeDurationExpr(IntervalVar *var, int64 unperformed_value)</div><div class="ttdef"><b>Definition:</b> <a href="sched__expr_8cc_source.html#l00187">sched_expr.cc:187</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_int_expr_html_ac4a4f30badcd311075302a4efcfaee0a"><div class="ttname"><a href="classoperations__research_1_1_int_expr.html#ac4a4f30badcd311075302a4efcfaee0a">operations_research::IntExpr::Min</a></div><div class="ttdeci">virtual int64 Min() const =0</div></div>
+<div class="ttc" id="abase_2logging_8h_html_a7e03ec13560fa94a8fea569960d7efc6"><div class="ttname"><a href="base_2logging_8h.html#a7e03ec13560fa94a8fea569960d7efc6">CHECK_GT</a></div><div class="ttdeci">#define CHECK_GT(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00702">base/logging.h:702</a></div></div>
 <div class="ttc" id="amacros_8h_html"><div class="ttname"><a href="macros_8h.html">macros.h</a></div></div>
 <div class="ttc" id="asaturated__arithmetic_8h_html"><div class="ttname"><a href="saturated__arithmetic_8h.html">saturated_arithmetic.h</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdoc">The vehicle routing library lets one model and solve generic vehicle routing problems ranging from th...</div><div class="ttdef"><b>Definition:</b> <a href="dense__doubly__linked__list_8h_source.html#l00021">dense_doubly_linked_list.h:21</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_html_a0e9621c9c2973131800432eaa57818d5"><div class="ttname"><a href="namespaceoperations__research.html#a0e9621c9c2973131800432eaa57818d5">operations_research::InternalSaveBooleanVarValue</a></div><div class="ttdeci">void InternalSaveBooleanVarValue(Solver *const solver, IntVar *const var)</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8cc_source.html#l00940">constraint_solver.cc:940</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_html_a0e9621c9c2973131800432eaa57818d5"><div class="ttname"><a href="namespaceoperations__research.html#a0e9621c9c2973131800432eaa57818d5">operations_research::InternalSaveBooleanVarValue</a></div><div class="ttdeci">void InternalSaveBooleanVarValue(Solver *const solver, IntVar *const var)</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8cc_source.html#l00947">constraint_solver.cc:947</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a2e245a0fc785ca7395292e5f27abaa82"><div class="ttname"><a href="namespaceoperations__research.html#a2e245a0fc785ca7395292e5f27abaa82">operations_research::BuildStartExpr</a></div><div class="ttdeci">IntExpr * BuildStartExpr(IntervalVar *var)</div><div class="ttdef"><b>Definition:</b> <a href="sched__expr_8cc_source.html#l00152">sched_expr.cc:152</a></div></div>
 <div class="ttc" id="aintegral__types_8h_html_a7cde0074dfd288f2d70c0e035dacb28a"><div class="ttname"><a href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a></div><div class="ttdeci">int64_t int64</div><div class="ttdef"><b>Definition:</b> <a href="integral__types_8h_source.html#l00034">integral_types.h:34</a></div></div>
 <div class="ttc" id="aconstraint__solveri_8h_html"><div class="ttname"><a href="constraint__solveri_8h.html">constraint_solveri.h</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a9844237a85ad9809bc8b4647b79bc5be"><div class="ttname"><a href="namespaceoperations__research.html#a9844237a85ad9809bc8b4647b79bc5be">operations_research::RegisterDemon</a></div><div class="ttdeci">void RegisterDemon(Solver *const solver, Demon *const demon, DemonProfiler *const monitor)</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8cc_source.html#l00460">demon_profiler.cc:460</a></div></div>
 <div class="ttc" id="ainterval_8cc_html_a1e6e18599bc7057307916e1f810f83a8"><div class="ttname"><a href="interval_8cc.html#a1e6e18599bc7057307916e1f810f83a8">offset_</a></div><div class="ttdeci">const int64 offset_</div><div class="ttdef"><b>Definition:</b> <a href="interval_8cc_source.html#l02076">interval.cc:2076</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_int_expr_html_a1d04569b37cb7fe6ed0956ab71e08bc9"><div class="ttname"><a href="classoperations__research_1_1_int_expr.html#a1d04569b37cb7fe6ed0956ab71e08bc9">operations_research::IntExpr::Bound</a></div><div class="ttdeci">virtual bool Bound() const</div><div class="ttdoc">Returns true if the min and the max of the expression are equal.</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l03857">constraint_solver.h:3857</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a46e69120fbd3b36e6960e096d23b66f0"><div class="ttname"><a href="base_2logging_8h.html#a46e69120fbd3b36e6960e096d23b66f0">DCHECK_NE</a></div><div class="ttdeci">#define DCHECK_NE(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00886">base/logging.h:886</a></div></div>
 <div class="ttc" id="aconstraint__solver_8h_html"><div class="ttname"><a href="constraint__solver_8h.html">constraint_solver.h</a></div></div>
 <div class="ttc" id="ainterval_8cc_html_addaf89e29c8752c2df3ca372153236fc"><div class="ttname"><a href="interval_8cc.html#addaf89e29c8752c2df3ca372153236fc">handler_</a></div><div class="ttdeci">Handler handler_</div><div class="ttdef"><b>Definition:</b> <a href="interval_8cc_source.html#l00420">interval.cc:420</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a99264812cf177270e521f226a5c012c3"><div class="ttname"><a href="namespaceoperations__research.html#a99264812cf177270e521f226a5c012c3">operations_research::CapAdd</a></div><div class="ttdeci">int64 CapAdd(int64 x, int64 y)</div><div class="ttdef"><b>Definition:</b> <a href="saturated__arithmetic_8h_source.html#l00124">saturated_arithmetic.h:124</a></div></div>
 <div class="ttc" id="ainterval_8cc_html_adc5ea4d589f3b0c548997680148376e9"><div class="ttname"><a href="interval_8cc.html#adc5ea4d589f3b0c548997680148376e9">cleaner_</a></div><div class="ttdeci">Solver::Action cleaner_</div><div class="ttdef"><b>Definition:</b> <a href="interval_8cc_source.html#l00421">interval.cc:421</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a7c0ce053b28d53aa4eaf3eb7fb71663b"><div class="ttname"><a href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a></div><div class="ttdeci">#define CHECK_EQ(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00697">base/logging.h:697</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_model_visitor_html_a736a6cd34629611b87ece3ded824d2e4"><div class="ttname"><a href="classoperations__research_1_1_model_visitor.html#a736a6cd34629611b87ece3ded824d2e4">operations_research::ModelVisitor::kRelaxedMinOperation</a></div><div class="ttdeci">static const char kRelaxedMinOperation[]</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l03495">constraint_solver.h:3495</a></div></div>
 <div class="ttc" id="asched__constraints_8cc_html_a7c8133c50ba59755e2162ad1a9478da7"><div class="ttname"><a href="sched__constraints_8cc.html#a7c8133c50ba59755e2162ad1a9478da7">start_max</a></div><div class="ttdeci">Rev&lt; int64 &gt; start_max</div><div class="ttdef"><b>Definition:</b> <a href="sched__constraints_8cc_source.html#l00242">sched_constraints.cc:242</a></div></div>
-<div class="ttc" id="aclassoperations__research_1_1_simple_rev_f_i_f_o_html_abc8f4bc09139f8f3951cc8280823a0f3"><div class="ttname"><a href="classoperations__research_1_1_simple_rev_f_i_f_o.html#abc8f4bc09139f8f3951cc8280823a0f3">operations_research::SimpleRevFIFO::PushIfNotTop</a></div><div class="ttdeci">void PushIfNotTop(Solver *const s, T val)</div><div class="ttdoc">Pushes the var on top if is not a duplicate of the current top object.</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solveri_8h_source.html#l00190">constraint_solveri.h:190</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_solver_html_ad7946514ee3dd6cb3ab993dc9e98b33b"><div class="ttname"><a href="classoperations__research_1_1_solver.html#ad7946514ee3dd6cb3ab993dc9e98b33b">operations_research::Solver::Action</a></div><div class="ttdeci">std::function&lt; void(Solver *)&gt; Action</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l00754">constraint_solver.h:754</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_ae17f8119c108cf3070bad3449c7e0006"><div class="ttname"><a href="base_2logging_8h.html#ae17f8119c108cf3070bad3449c7e0006">DCHECK</a></div><div class="ttdeci">#define DCHECK(condition)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00884">base/logging.h:884</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_interval_var_html"><div class="ttname"><a href="classoperations__research_1_1_interval_var.html">operations_research::IntervalVar</a></div><div class="ttdoc">Interval variables are often used in scheduling.</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l04389">constraint_solver.h:4389</a></div></div>
 <div class="ttc" id="asched__constraints_8cc_html_a57ac40de3cbc6dab5c737cc16b672814"><div class="ttname"><a href="sched__constraints_8cc.html#a57ac40de3cbc6dab5c737cc16b672814">performed</a></div><div class="ttdeci">Rev&lt; int &gt; performed</div><div class="ttdef"><b>Definition:</b> <a href="sched__constraints_8cc_source.html#l00245">sched_constraints.cc:245</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_interval_var_html_a754f63f0839f2851475307283b575584"><div class="ttname"><a href="classoperations__research_1_1_interval_var.html#a754f63f0839f2851475307283b575584">operations_research::IntervalVar::kMinValidValue</a></div><div class="ttdeci">static const int64 kMinValidValue</div><div class="ttdoc">The smallest acceptable value to be returned by StartMin()</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l04392">constraint_solver.h:4392</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_interval_var_html_a7f7f661e9b94f25f706732924e0f01e9"><div class="ttname"><a href="classoperations__research_1_1_interval_var.html#a7f7f661e9b94f25f706732924e0f01e9">operations_research::IntervalVar::MustBePerformed</a></div><div class="ttdeci">virtual bool MustBePerformed() const =0</div><div class="ttdoc">These methods query, set, and watch the performed status of the interval var.</div></div>
+<div class="ttc" id="aclassoperations__research_1_1_demon_html"><div class="ttname"><a href="classoperations__research_1_1_demon.html">operations_research::Demon</a></div><div class="ttdoc">A Demon is the base element of a propagation queue.</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l03296">constraint_solver.h:3296</a></div></div>
 <div class="ttc" id="asched__constraints_8cc_html_a16edac3fa04d9ba10ff012b5fb8add05"><div class="ttname"><a href="sched__constraints_8cc.html#a16edac3fa04d9ba10ff012b5fb8add05">end_min</a></div><div class="ttdeci">Rev&lt; int64 &gt; end_min</div><div class="ttdef"><b>Definition:</b> <a href="sched__constraints_8cc_source.html#l00243">sched_constraints.cc:243</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a328c7f61f7f45aa548cadf5353a1cde7"><div class="ttname"><a href="namespaceoperations__research.html#a328c7f61f7f45aa548cadf5353a1cde7">operations_research::BuildSafeEndExpr</a></div><div class="ttdeci">IntExpr * BuildSafeEndExpr(IntervalVar *var, int64 unperformed_value)</div><div class="ttdef"><b>Definition:</b> <a href="sched__expr_8cc_source.html#l00192">sched_expr.cc:192</a></div></div>
 <div class="ttc" id="ainterval_8cc_html_af759f7509b83ae2a6541a890efdf1ade"><div class="ttname"><a href="interval_8cc.html#af759f7509b83ae2a6541a890efdf1ade">in_process_</a></div><div class="ttdeci">bool in_process_</div><div class="ttdef"><b>Definition:</b> <a href="interval_8cc_source.html#l00419">interval.cc:419</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_solver_html_a293233c46e5eaa308f65c7c2350553f7a29446873dacaf3696a89dfb1e617a5f5"><div class="ttname"><a href="classoperations__research_1_1_solver.html#a293233c46e5eaa308f65c7c2350553f7a29446873dacaf3696a89dfb1e617a5f5">operations_research::Solver::VAR_PRIORITY</a></div><div class="ttdeci">@ VAR_PRIORITY</div><div class="ttdoc">VAR_PRIORITY is between DELAYED_PRIORITY and NORMAL_PRIORITY.</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l00614">constraint_solver.h:614</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_ae89df3243bbb8341130c7b3f44145ea0"><div class="ttname"><a href="base_2logging_8h.html#ae89df3243bbb8341130c7b3f44145ea0">DCHECK_EQ</a></div><div class="ttdeci">#define DCHECK_EQ(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00885">base/logging.h:885</a></div></div>
 <div class="ttc" id="amacros_8h_html_af8df3547bfde53a5acb93e2607b0034a"><div class="ttname"><a href="macros_8h.html#af8df3547bfde53a5acb93e2607b0034a">DISALLOW_COPY_AND_ASSIGN</a></div><div class="ttdeci">#define DISALLOW_COPY_AND_ASSIGN(TypeName)</div><div class="ttdef"><b>Definition:</b> <a href="macros_8h_source.html#l00029">macros.h:29</a></div></div>
 <div class="ttc" id="aresource_8cc_html_af92a8383a05fdf586a52263d358f5ada"><div class="ttname"><a href="resource_8cc.html#af92a8383a05fdf586a52263d358f5ada">interval</a></div><div class="ttdeci">IntervalVar * interval</div><div class="ttdef"><b>Definition:</b> <a href="resource_8cc_source.html#l00098">resource.cc:98</a></div></div>
 <div class="ttc" id="anamespaceabsl_html"><div class="ttname"><a href="namespaceabsl.html">absl</a></div><div class="ttdef"><b>Definition:</b> <a href="cleanup_8h_source.html#l00022">cleanup.h:22</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_aebd01080f2d18a8baf1b2bf540d5c174"><div class="ttname"><a href="namespaceoperations__research.html#aebd01080f2d18a8baf1b2bf540d5c174">operations_research::BuildDurationExpr</a></div><div class="ttdeci">IntExpr * BuildDurationExpr(IntervalVar *var)</div><div class="ttdef"><b>Definition:</b> <a href="sched__expr_8cc_source.html#l00162">sched_expr.cc:162</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_html_a3ea6af6581e6922832918c97753146a7"><div class="ttname"><a href="namespaceoperations__research.html#a3ea6af6581e6922832918c97753146a7">operations_research::MakeConstraintDemon0</a></div><div class="ttdeci">Demon * MakeConstraintDemon0(Solver *const s, T *const ct, void(T::*method)(), const std::string &amp;name)</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solveri_8h_source.html#l00533">constraint_solveri.h:533</a></div></div>
-<div class="ttc" id="adefault__search_8cc_html_ac673bc430bdc3fdaa09f7becf98ef267"><div class="ttname"><a href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a></div><div class="ttdeci">const std::string name</div><div class="ttdef"><b>Definition:</b> <a href="default__search_8cc_source.html#l00807">default_search.cc:807</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_html_a3ea6af6581e6922832918c97753146a7"><div class="ttname"><a href="namespaceoperations__research.html#a3ea6af6581e6922832918c97753146a7">operations_research::MakeConstraintDemon0</a></div><div class="ttdeci">Demon * MakeConstraintDemon0(Solver *const s, T *const ct, void(T::*method)(), const std::string &amp;name)</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solveri_8h_source.html#l00525">constraint_solveri.h:525</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_model_visitor_html_a1e2bbcc9d6a01ced94c2b62ad671b805"><div class="ttname"><a href="classoperations__research_1_1_model_visitor.html#a1e2bbcc9d6a01ced94c2b62ad671b805">operations_research::ModelVisitor::kMirrorOperation</a></div><div class="ttdeci">static const char kMirrorOperation[]</div><div class="ttdoc">Operations.</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l03493">constraint_solver.h:3493</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_solver_html_a293233c46e5eaa308f65c7c2350553f7"><div class="ttname"><a href="classoperations__research_1_1_solver.html#a293233c46e5eaa308f65c7c2350553f7">operations_research::Solver::DemonPriority</a></div><div class="ttdeci">DemonPriority</div><div class="ttdoc">This enum represents the three possible priorities for a demon in the Solver queue.</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l00608">constraint_solver.h:608</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a3e1cfef60e774a81f30eaddf26a3a274"><div class="ttname"><a href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a></div><div class="ttdeci">#define CHECK(condition)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00495">base/logging.h:495</a></div></div>
+<div class="ttc" id="adefault__search_8cc_html_ac673bc430bdc3fdaa09f7becf98ef267"><div class="ttname"><a href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a></div><div class="ttdeci">const std::string name</div><div class="ttdef"><b>Definition:</b> <a href="default__search_8cc_source.html#l00808">default_search.cc:808</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_model_visitor_html_a4b0b25913da1bcc992216b01f52c396c"><div class="ttname"><a href="classoperations__research_1_1_model_visitor.html#a4b0b25913da1bcc992216b01f52c396c">operations_research::ModelVisitor::kRelaxedMaxOperation</a></div><div class="ttdeci">static const char kRelaxedMaxOperation[]</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_8h_source.html#l03494">constraint_solver.h:3494</a></div></div>
 <div class="ttc" id="aintegral__types_8h_html_a74ea76ea27f48fb1b6e148e1577b3719"><div class="ttname"><a href="integral__types_8h.html#a74ea76ea27f48fb1b6e148e1577b3719">kint64max</a></div><div class="ttdeci">static const int64 kint64max</div><div class="ttdef"><b>Definition:</b> <a href="integral__types_8h_source.html#l00062">integral_types.h:62</a></div></div>
 <!-- HTML footer for doxygen 1.8.18-->
 <!-- start footer part -->

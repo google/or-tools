@@ -371,12 +371,20 @@ Domain Domain::MultiplicationBy(int64 coeff, bool* exact) const {
 
   Domain result;
   if (abs_coeff > 1) {
+    const int64 max_value = kint64max / abs_coeff;
+    const int64 min_value = kint64min / abs_coeff;
     result.intervals_.reserve(size_if_non_trivial);
     for (const ClosedInterval& i : intervals_) {
-      for (int v = i.start; v <= i.end; ++v) {
-        // Because abs_coeff > 1, all new values are disjoint.
-        const int64 new_value = CapProd(v, abs_coeff);
-        result.intervals_.push_back({new_value, new_value});
+      for (int64 v = i.start;; ++v) {
+        // We ignore anything that overflow.
+        if (v >= min_value && v <= max_value) {
+          // Because abs_coeff > 1, all new values are disjoint.
+          const int64 new_value = v * abs_coeff;
+          result.intervals_.push_back({new_value, new_value});
+        }
+
+        // This is to avoid doing ++v when v is kint64max!
+        if (v == i.end) break;
       }
     }
   } else {

@@ -81,7 +81,7 @@ void MaxFeasibleFlow() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   operations_research::MinCostFlowOn4x4Matrix();
   operations_research::MaxFeasibleFlow();
   return EXIT_SUCCESS;

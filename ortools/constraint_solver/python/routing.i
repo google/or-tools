@@ -64,6 +64,7 @@ DEFINE_INDEX_TYPE_TYPEDEF(
     const std::string& name) {
     $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
   }
+
 }
 
 %ignore operations_research::RoutingModel::RegisterStateDependentTransitCallback;

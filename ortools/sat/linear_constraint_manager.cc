@@ -205,7 +205,7 @@ void LinearConstraintManager::ComputeObjectiveParallelism(
 // Cuts are also handled slightly differently than normal constraints.
 bool LinearConstraintManager::AddCut(
     LinearConstraint ct, std::string type_name,
-    const gtl::ITIVector<IntegerVariable, double>& lp_solution,
+    const absl::StrongVector<IntegerVariable, double>& lp_solution,
     std::string extra_info) {
   ++num_add_cut_calls_;
   if (ct.vars.empty()) return false;
@@ -264,7 +264,7 @@ void LinearConstraintManager::PermanentlyRemoveSomeConstraints() {
 
   ConstraintIndex new_size(0);
   equiv_constraints_.clear();
-  gtl::ITIVector<ConstraintIndex, ConstraintIndex> index_mapping(
+  absl::StrongVector<ConstraintIndex, ConstraintIndex> index_mapping(
       constraint_infos_.size());
   int num_deleted_constraints = 0;
   for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
@@ -438,7 +438,7 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
 }
 
 bool LinearConstraintManager::ChangeLp(
-    const gtl::ITIVector<IntegerVariable, double>& lp_solution,
+    const absl::StrongVector<IntegerVariable, double>& lp_solution,
     glop::BasisState* solution_state) {
   VLOG(3) << "Enter ChangeLP, scan " << constraint_infos_.size()
           << " constraints";
@@ -709,7 +709,7 @@ bool LinearConstraintManager::DebugCheckConstraint(
 
 void TopNCuts::AddCut(
     LinearConstraint ct, const std::string& name,
-    const gtl::ITIVector<IntegerVariable, double>& lp_solution) {
+    const absl::StrongVector<IntegerVariable, double>& lp_solution) {
   if (ct.vars.empty()) return;
   const double activity = ComputeActivity(ct, lp_solution);
   const double violation =
@@ -719,7 +719,7 @@ void TopNCuts::AddCut(
 }
 
 void TopNCuts::TransferToManager(
-    const gtl::ITIVector<IntegerVariable, double>& lp_solution,
+    const absl::StrongVector<IntegerVariable, double>& lp_solution,
     LinearConstraintManager* manager) {
   for (const CutCandidate& candidate : cuts_.UnorderedElements()) {
     manager->AddCut(candidate.cut, candidate.name, lp_solution);

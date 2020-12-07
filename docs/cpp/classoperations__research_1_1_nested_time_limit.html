@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -96,7 +96,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_nested_t
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Provides a way to nest time limits for algorithms where a certain part of the computation is bounded not just by the overall time limit, but also by a stricter time limit specific just for this particular part. </p>
 <p>This class takes a base time limit object (the overall time limit) and the part-specific time limit, and creates a new time limit object for the part. This new time limit object will expire when either the overall time limit expires or when the part-specific time limit expires.</p>
-<p>Example usage: </p><div class="fragment"><div class="line">TimeLimit overall_time_limit(...);</div>
+<p>Example usage: </p><div class="fragment"><div class="line"><a class="code" href="namespaceoperations__research.html#a6aa44ddda7b86c423617388fdf91a40e">TimeLimit</a> overall_time_limit(...);</div>
 <div class="line"><a class="code" href="classoperations__research_1_1_nested_time_limit.html#af23d2dc1b291081b642a728cf0033987">NestedTimeLimit</a> subalgorith_time_limit(&amp;overall_time_limit,</div>
 <div class="line">                                       subalgorithm_limit_in_seconds,</div>
 <div class="line">                                       subalgorithm_deterministic_limit);</div>
@@ -264,6 +264,7 @@ Static Public Member Functions</h2></td></tr>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->
+<div class="ttc" id="anamespaceoperations__research_html_a6aa44ddda7b86c423617388fdf91a40e"><div class="ttname"><a href="namespaceoperations__research.html#a6aa44ddda7b86c423617388fdf91a40e">operations_research::TimeLimit</a></div><div class="ttdeci">absl::Duration TimeLimit(const GScipParameters &amp;parameters)</div><div class="ttdef"><b>Definition:</b> <a href="gscip__parameters_8cc_source.html#l00040">gscip_parameters.cc:40</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_nested_time_limit_html_af23d2dc1b291081b642a728cf0033987"><div class="ttname"><a href="classoperations__research_1_1_nested_time_limit.html#af23d2dc1b291081b642a728cf0033987">operations_research::NestedTimeLimit::NestedTimeLimit</a></div><div class="ttdeci">NestedTimeLimit(TimeLimit *base_time_limit, double limit_in_seconds, double deterministic_limit)</div><div class="ttdoc">Creates the nested time limit.</div><div class="ttdef"><b>Definition:</b> <a href="time__limit_8cc_source.html#l00047">time_limit.cc:47</a></div></div>
 <!-- HTML footer for doxygen 1.8.18-->
 <!-- start footer part -->

@@ -126,8 +126,6 @@ namespace operations_research {
 		virtual int64 iterations() const;
 		// Number of branch-and-bound nodes. Only available for discrete problems.
 		virtual int64 nodes() const;
-		// Best objective bound. Only available for discrete problems.
-		virtual double best_objective_bound() const;
 
 		// Returns the basis status of a row.
 		virtual MPSolver::BasisStatus row_status(int constraint_index) const;
@@ -640,29 +638,6 @@ namespace operations_research {
 		else {
 			LOG(DFATAL) << "Number of nodes only available for discrete problems";
 			return kUnknownNumberOfNodes;
-		}
-	}
-
-	// Returns the best objective bound. Only available for discrete problems.
-	double SiriusInterface::best_objective_bound() const {
-		if (mMip) {
-			if (!CheckSolutionIsSynchronized() || !CheckBestObjectiveBoundExists())
-				// trivial_worst_objective_bound() returns sense*infinity,
-				// that is meaningful even for infeasible problems
-				return trivial_worst_objective_bound();
-			if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
-				// For an empty model the best objective bound is just the offset.
-				return solver_->Objective().offset();
-			}
-			else {
-				double value = SRS_NAN;
-				//FIXME CHECK_STATUS(SRSgetdblattrib(mLp, SRS_BESTBOUND, &value));
-				return value;
-			}
-		}
-		else {
-			LOG(DFATAL) << "Best objective bound only available for discrete problems";
-			return trivial_worst_objective_bound();
 		}
 	}
 

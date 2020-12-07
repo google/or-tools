@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -115,10 +115,10 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:aa04c58bec4c7be9d656469aab6122ffd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="expressions_8cc.html#aa04c58bec4c7be9d656469aab6122ffd">DEFINE_bool</a> (cp_disable_expression_optimization, false, &quot;Disable special optimization when creating expressions.&quot;)</td></tr>
-<tr class="separator:aa04c58bec4c7be9d656469aab6122ffd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a907019d4631fea2713e16874ab62b52a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="expressions_8cc.html#a907019d4631fea2713e16874ab62b52a">DEFINE_bool</a> (cp_share_int_consts, true, &quot;Share IntConst's with the same value.&quot;)</td></tr>
-<tr class="separator:a907019d4631fea2713e16874ab62b52a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adcdbb5c47cd5f37cfe3cd19de17795e0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="expressions_8cc.html#adcdbb5c47cd5f37cfe3cd19de17795e0">ABSL_FLAG</a> (bool, cp_disable_expression_optimization, false, &quot;Disable special optimization when creating expressions.&quot;)</td></tr>
+<tr class="separator:adcdbb5c47cd5f37cfe3cd19de17795e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab247cebee013a5e404c3b05f54732065"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="expressions_8cc.html#ab247cebee013a5e404c3b05f54732065">ABSL_FLAG</a> (bool, cp_share_int_consts, true, &quot;Share IntConst's with the same value.&quot;)</td></tr>
+<tr class="separator:ab247cebee013a5e404c3b05f54732065"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2d93e6c7c6b355e59b3305d51ad28ea4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a2d93e6c7c6b355e59b3305d51ad28ea4">CleanVariableOnFail</a> (IntVar *const <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>)</td></tr>
 <tr class="separator:a2d93e6c7c6b355e59b3305d51ad28ea4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aae6365fa2999ebeadb36eef8a5ec92d7"><td class="memItemLeft" align="right" valign="top">Constraint *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aae6365fa2999ebeadb36eef8a5ec92d7">SetIsEqual</a> (IntVar *const <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, const std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt; &amp;values, const std::vector&lt; IntVar * &gt; &amp;vars)</td></tr>
@@ -157,20 +157,26 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="expressions_8cc_source.html#l02460">2460</a> of file <a class="el" href="expressions_8cc_source.html">expressions.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="expressions_8cc_source.html#l02461">2461</a> of file <a class="el" href="expressions_8cc_source.html">expressions.cc</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="aa04c58bec4c7be9d656469aab6122ffd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa04c58bec4c7be9d656469aab6122ffd">&#9670;&nbsp;</a></span>DEFINE_bool() <span class="overload">[1/2]</span></h2>
+<a id="adcdbb5c47cd5f37cfe3cd19de17795e0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adcdbb5c47cd5f37cfe3cd19de17795e0">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_bool </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">cp_disable_expression_optimization&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -196,15 +202,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a907019d4631fea2713e16874ab62b52a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a907019d4631fea2713e16874ab62b52a">&#9670;&nbsp;</a></span>DEFINE_bool() <span class="overload">[2/2]</span></h2>
+<a id="ab247cebee013a5e404c3b05f54732065"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab247cebee013a5e404c3b05f54732065">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_bool </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">cp_share_int_consts&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -251,7 +263,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="expressions_8cc_source.html#l02711">2711</a> of file <a class="el" href="expressions_8cc_source.html">expressions.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="expressions_8cc_source.html#l02712">2712</a> of file <a class="el" href="expressions_8cc_source.html">expressions.cc</a>.</p>
 
 </div>
 </div>
@@ -275,7 +287,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="expressions_8cc_source.html#l02180">2180</a> of file <a class="el" href="expressions_8cc_source.html">expressions.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="expressions_8cc_source.html#l02181">2181</a> of file <a class="el" href="expressions_8cc_source.html">expressions.cc</a>.</p>
 
 </div>
 </div>
@@ -299,7 +311,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="expressions_8cc_source.html#l05446">5446</a> of file <a class="el" href="expressions_8cc_source.html">expressions.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="expressions_8cc_source.html#l05447">5447</a> of file <a class="el" href="expressions_8cc_source.html">expressions.cc</a>.</p>
 
 </div>
 </div>
@@ -323,7 +335,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="expressions_8cc_source.html#l05445">5445</a> of file <a class="el" href="expressions_8cc_source.html">expressions.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="expressions_8cc_source.html#l05446">5446</a> of file <a class="el" href="expressions_8cc_source.html">expressions.cc</a>.</p>
 
 </div>
 </div>
@@ -347,7 +359,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="expressions_8cc_source.html#l00273">273</a> of file <a class="el" href="expressions_8cc_source.html">expressions.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="expressions_8cc_source.html#l00274">274</a> of file <a class="el" href="expressions_8cc_source.html">expressions.cc</a>.</p>
 
 </div>
 </div>

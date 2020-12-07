@@ -15,7 +15,6 @@ see
 http://yetanothermathprogrammingconsultant.blogspot.com/2018/09/minizinc-cpsat-vs-mip.html
 """
 
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 

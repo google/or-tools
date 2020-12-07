@@ -81,16 +81,12 @@ namespace operations_research {
 %}
 // Ignored:
 %ignore RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
-%ignore RoutingModel::AddHardTypeIncompatibility;
 %ignore RoutingModel::AddMatrixDimension(
     std::vector<std::vector<int64> > values,
     int64 capacity,
     bool fix_start_cumul_to_zero,
     const std::string& name);
 %ignore RoutingModel::AddSameVehicleRequiredTypeAlternatives;
-%ignore RoutingModel::AddTemporalRequiredTypeAlternatives;
-%ignore RoutingModel::AddTemporalTypeIncompatibility;
-%ignore RoutingModel::CloseVisitTypes;
 %ignore RoutingModel::GetAllDimensionNames;
 %ignore RoutingModel::GetAutomaticFirstSolutionStrategy;
 %ignore RoutingModel::GetDeliveryIndexPairs;
@@ -106,13 +102,6 @@ namespace operations_research {
 %ignore RoutingModel::GetMutableLocalCumulMPOptimizer;
 %ignore RoutingModel::GetPerfectBinaryDisjunctions;
 %ignore RoutingModel::GetPickupIndexPairs;
-%ignore RoutingModel::GetSameVehicleRequiredTypeAlternativesOfType;
-%ignore RoutingModel::GetTemporalRequiredTypeAlternativesOfType;
-%ignore RoutingModel::GetTemporalTypeIncompatibilitiesOfType;
-%ignore RoutingModel::HasHardTypeIncompatibilities;
-%ignore RoutingModel::HasSameVehicleTypeRequirements;
-%ignore RoutingModel::HasTemporalTypeIncompatibilities;
-%ignore RoutingModel::HasTemporalTypeRequirements;
 %ignore RoutingModel::HasTypeRegulations;
 %ignore RoutingModel::MakeStateDependentTransit;
 %ignore RoutingModel::PackCumulsOfOptimizerDimensionsFromAssignment;

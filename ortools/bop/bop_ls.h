@@ -231,7 +231,7 @@ class NonOrderedSetHasher {
 
  private:
   MTRandom random_;
-  gtl::ITIVector<IntType, uint64> hashes_;
+  absl::StrongVector<IntType, uint64> hashes_;
 };
 
 // This class is used to incrementally maintain an assignment and the
@@ -388,15 +388,16 @@ class AssignmentAndConstraintFeasibilityMaintainer {
     int64 weight;
   };
 
-  gtl::ITIVector<VariableIndex, gtl::ITIVector<EntryIndex, ConstraintEntry>>
+  absl::StrongVector<VariableIndex,
+                     absl::StrongVector<EntryIndex, ConstraintEntry>>
       by_variable_matrix_;
-  gtl::ITIVector<ConstraintIndex, int64> constraint_lower_bounds_;
-  gtl::ITIVector<ConstraintIndex, int64> constraint_upper_bounds_;
+  absl::StrongVector<ConstraintIndex, int64> constraint_lower_bounds_;
+  absl::StrongVector<ConstraintIndex, int64> constraint_upper_bounds_;
 
   BopSolution assignment_;
   BopSolution reference_;
 
-  gtl::ITIVector<ConstraintIndex, int64> constraint_values_;
+  absl::StrongVector<ConstraintIndex, int64> constraint_values_;
   BacktrackableIntegerSet<ConstraintIndex> infeasible_constraint_set_;
 
   // This contains the list of variable flipped in assignment_.
@@ -485,7 +486,8 @@ class OneFlipConstraintRepairer {
   // on most promising variables first.
   void SortTermsOfEachConstraints(int num_variables);
 
-  gtl::ITIVector<ConstraintIndex, gtl::ITIVector<TermIndex, ConstraintTerm>>
+  absl::StrongVector<ConstraintIndex,
+                     absl::StrongVector<TermIndex, ConstraintTerm>>
       by_constraint_matrix_;
   const AssignmentAndConstraintFeasibilityMaintainer& maintainer_;
   const sat::VariablesAssignment& sat_assignment_;
@@ -597,7 +599,7 @@ class LocalSearchAssignmentIterator {
   SatWrapper* const sat_wrapper_;
   OneFlipConstraintRepairer repairer_;
   std::vector<SearchNode> search_nodes_;
-  gtl::ITIVector<ConstraintIndex, TermIndex> initial_term_index_;
+  absl::StrongVector<ConstraintIndex, TermIndex> initial_term_index_;
 
   // Temporary vector used by ApplyDecision().
   std::vector<sat::Literal> tmp_propagated_literals_;

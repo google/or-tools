@@ -1115,6 +1115,13 @@ using CallMap = absl::flat_hash_map<
     std::string, std::function<bool(const Constraint& ct,
                                     std::function<int64(IntegerVariable*)>)>>;
 
+// Creates a map between flatzinc predicates and CP-SAT builders.
+//
+// Predicates starting with fzn_ are predicates with the same name in flatzinc
+// and in minizinc. The fzn_ prefix is added to differentiate them.
+//
+// Predicates starting with ortools_ are predicates defined only in or-tools.
+// They are created at compilation time when using the or-tools mzn library.
 CallMap CreateCallMap() {
   CallMap m;
   m["fzn_all_different_int"] = CheckAllDifferentInt;

@@ -68,7 +68,7 @@ class LocationContainer {
 
   MTRandom randomizer_;
   const int64 speed_;
-  gtl::ITIVector<RoutingIndexManager::NodeIndex, Location> locations_;
+  absl::StrongVector<RoutingIndexManager::NodeIndex, Location> locations_;
 };
 
 // Random demand.

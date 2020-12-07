@@ -43,9 +43,9 @@ void MultipleKnapsackMip() {
   // [END program_part1]
 
   // [START solver]
-  // Create the mip solver with the CBC backend.
+  // Create the mip solver with the SCIP backend.
   MPSolver solver("multiple_knapsack_mip",
-                  MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
+                  MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
   // [END solver]
 
   // [START program_part2]

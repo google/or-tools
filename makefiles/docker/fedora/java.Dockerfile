@@ -1,7 +1,8 @@
 FROM ortools/make:fedora_swig AS env
 RUN dnf -y update \
-&& dnf -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel maven \
+&& dnf -y install java-11-openjdk java-11-openjdk-devel maven \
 && dnf clean all
+ENV JAVA_HOME=/usr/lib/jvm/java-openjdk
 
 FROM env AS devel
 WORKDIR /home/project

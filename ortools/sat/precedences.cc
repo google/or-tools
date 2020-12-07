@@ -385,7 +385,8 @@ void PrecedencesPropagator::AddArc(
 // horizon. Find an even sparser algorithm?
 void PrecedencesPropagator::PropagateOptionalArcs(Trail* trail) {
   for (const IntegerVariable var : modified_vars_.PositionsSetAtLeastOnce()) {
-    if (var >= impacted_potential_arcs_.size()) break;
+    // The variables are not in increasing order, so we need to continue.
+    if (var >= impacted_potential_arcs_.size()) continue;
 
     // Note that we can currently check the same ArcInfo up to 3 times, one for
     // each of the arc variables: tail, NegationOf(head) and offset_var.
@@ -817,7 +818,7 @@ int PrecedencesPropagator::
   auto* solver = model->GetOrCreate<SatSolver>();
 
   // Fill the set of incoming conditional arcs for each variables.
-  gtl::ITIVector<IntegerVariable, std::vector<ArcIndex>> incoming_arcs_;
+  absl::StrongVector<IntegerVariable, std::vector<ArcIndex>> incoming_arcs_;
   for (ArcIndex arc_index(0); arc_index < arcs_.size(); ++arc_index) {
     const ArcInfo& arc = arcs_[arc_index];
 

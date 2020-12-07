@@ -25,8 +25,8 @@
 #include "ortools/base/logging.h"
 #include "ortools/data/jobshop_scheduling.pb.h"
 
-DEFINE_int64(jssp_scaling_up_factor, 100000L,
-             "Scaling factor for floating point penalties.");
+ABSL_FLAG(int64, jssp_scaling_up_factor, 100000L,
+          "Scaling factor for floating point penalties.");
 
 namespace operations_research {
 namespace data {
@@ -356,9 +356,9 @@ void JsspParser::ProcessTardinessLine(const std::string& line) {
         job->mutable_earliest_start()->set_value(est);
       }
       job->set_late_due_date(strtoint64(words[1]));
-      const double weight = stod(words[2]);
-      const int64 tardiness =
-          static_cast<int64>(round(weight * FLAGS_jssp_scaling_up_factor));
+      const double weight = std::stod(words[2]);
+      const int64 tardiness = static_cast<int64>(
+          round(weight * absl::GetFlag(FLAGS_jssp_scaling_up_factor)));
       job->set_lateness_cost_per_time_unit(tardiness);
       const int num_operations = strtoint32(words[3]);
       for (int i = 0; i < num_operations; ++i) {
@@ -374,7 +374,7 @@ void JsspParser::ProcessTardinessLine(const std::string& line) {
         bool all_integral = true;
         for (const Job& job : problem_.jobs()) {
           if (job.lateness_cost_per_time_unit() %
-                  FLAGS_jssp_scaling_up_factor !=
+                  absl::GetFlag(FLAGS_jssp_scaling_up_factor) !=
               0) {
             all_integral = false;
             break;
@@ -384,11 +384,11 @@ void JsspParser::ProcessTardinessLine(const std::string& line) {
           for (Job& job : *problem_.mutable_jobs()) {
             job.set_lateness_cost_per_time_unit(
                 job.lateness_cost_per_time_unit() /
-                FLAGS_jssp_scaling_up_factor);
+                absl::GetFlag(FLAGS_jssp_scaling_up_factor));
           }
         } else {
           problem_.mutable_scaling_factor()->set_value(
-              1.0L / FLAGS_jssp_scaling_up_factor);
+              1.0L / absl::GetFlag(FLAGS_jssp_scaling_up_factor));
         }
         parser_state_ = DONE;
       }

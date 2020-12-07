@@ -16,10 +16,10 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/statusor.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/sat_proto_solver.h"
@@ -69,7 +69,6 @@ class SatInterface : public MPSolverInterface {
   // ------ Query statistics on the solution and the solve ------
   int64 iterations() const override;
   int64 nodes() const override;
-  double best_objective_bound() const override;
   MPSolver::BasisStatus row_status(int constraint_index) const override;
   MPSolver::BasisStatus column_status(int variable_index) const override;
 
@@ -102,7 +101,6 @@ class SatInterface : public MPSolverInterface {
   std::atomic<bool> interrupt_solve_;
   sat::SatParameters parameters_;
   int num_threads_ = 8;
-  double best_objective_bound_ = 0.0;
 };
 
 SatInterface::SatInterface(MPSolver* const solver)
@@ -138,15 +136,8 @@ MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters& param) {
 
   MPModelRequest request;
   solver_->ExportModelToProto(request.mutable_model());
-  // If sat::SatParameters is compiled with proto-lite (go/mobile-cpp-protos),
-  // then serialize as non-human readable string. This is because proto-lite
-  // does not support reflection mechanism, which is a prerequisite for method
-  // like `ShortDebugString`.
-  if (!std::is_base_of<Message, sat::SatParameters>::value) {
-    request.set_solver_specific_parameters(parameters_.SerializeAsString());
-  } else {
-    request.set_solver_specific_parameters(parameters_.ShortDebugString());
-  }
+  request.set_solver_specific_parameters(
+      EncodeSatParametersAsString(parameters_));
   request.set_enable_internal_solver_output(!quiet_);
   const absl::StatusOr<MPSolutionResponse> status_or =
       SatSolveProto(std::move(request), &interrupt_solve_);
@@ -245,13 +236,6 @@ int64 SatInterface::iterations() const {
 }
 
 int64 SatInterface::nodes() const { return 0; }
-
-double SatInterface::best_objective_bound() const {
-  if (!CheckSolutionIsSynchronized() || !CheckBestObjectiveBoundExists()) {
-    return trivial_worst_objective_bound();
-  }
-  return best_objective_bound_;
-}
 
 MPSolver::BasisStatus SatInterface::row_status(int constraint_index) const {
   return MPSolver::BasisStatus::FREE;  // FIXME

@@ -24,7 +24,9 @@
 #include <utility>
 
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_replace.h"
@@ -35,7 +37,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/base/statusor.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
@@ -43,21 +44,21 @@
 #include "ortools/port/file.h"
 #include "ortools/util/fp_utils.h"
 
-DEFINE_bool(verify_solution, false,
-            "Systematically verify the solution when calling Solve()"
-            ", and change the return value of Solve() to ABNORMAL if"
-            " an error was detected.");
-DEFINE_bool(log_verification_errors, true,
-            "If --verify_solution is set: LOG(ERROR) all errors detected"
-            " during the verification of the solution.");
-DEFINE_bool(linear_solver_enable_verbose_output, false,
-            "If set, enables verbose output for the solver. Setting this flag"
-            " is the same as calling MPSolver::EnableOutput().");
+ABSL_FLAG(bool, verify_solution, false,
+          "Systematically verify the solution when calling Solve()"
+          ", and change the return value of Solve() to ABNORMAL if"
+          " an error was detected.");
+ABSL_FLAG(bool, log_verification_errors, true,
+          "If --verify_solution is set: LOG(ERROR) all errors detected"
+          " during the verification of the solution.");
+ABSL_FLAG(bool, linear_solver_enable_verbose_output, false,
+          "If set, enables verbose output for the solver. Setting this flag"
+          " is the same as calling MPSolver::EnableOutput().");
 
-DEFINE_bool(mpsolver_bypass_model_validation, false,
-            "If set, the user-provided Model won't be verified before Solve()."
-            " Invalid models will typically trigger various error responses"
-            " from the underlying solvers; sometimes crashes.");
+ABSL_FLAG(bool, mpsolver_bypass_model_validation, false,
+          "If set, the user-provided Model won't be verified before Solve()."
+          " Invalid models will typically trigger various error responses"
+          " from the underlying solvers; sometimes crashes.");
 
 namespace operations_research {
 
@@ -456,7 +457,7 @@ MPSolver::MPSolver(const std::string& name,
       problem_type_(problem_type),
       construction_time_(absl::Now()) {
   interface_.reset(BuildSolverInterface(this));
-  if (FLAGS_linear_solver_enable_verbose_output) {
+  if (absl::GetFlag(FLAGS_linear_solver_enable_verbose_output)) {
     EnableOutput();
   }
   objective_.reset(new MPObjective(interface_.get()));
@@ -677,14 +678,13 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
       *error_message = error;
       LOG_IF(INFO, OutputIsEnabled())
           << "Invalid model given to LoadModelFromProto(): " << error;
-      if (FLAGS_mpsolver_bypass_model_validation) {
+      if (absl::GetFlag(FLAGS_mpsolver_bypass_model_validation)) {
         LOG_IF(INFO, OutputIsEnabled())
             << "Ignoring the model error(s) because of"
             << " --mpsolver_bypass_model_validation.";
       } else {
-        return error.find("Infeasible") == std::string::npos
-                   ? MPSOLVER_MODEL_INVALID
-                   : MPSOLVER_INFEASIBLE;
+        return absl::StrContains(error, "Infeasible") ? MPSOLVER_INFEASIBLE
+                                                      : MPSOLVER_MODEL_INVALID;
       }
     }
   }
@@ -888,10 +888,28 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
     solver.SetTimeLimit(
         absl::Seconds(model_request.solver_time_limit_seconds()));
   }
-  solver.SetSolverSpecificParametersAsString(
-      model_request.solver_specific_parameters());
+  std::string warning_message;
+  if (model_request.has_solver_specific_parameters()) {
+    if (!solver.SetSolverSpecificParametersAsString(
+            model_request.solver_specific_parameters())) {
+      if (model_request.ignore_solver_specific_parameters_failure()) {
+        // We'll add a warning message in status_str after the solve.
+        warning_message =
+            "Warning: the solver specific parameters were not successfully "
+            "applied";
+      } else {
+        response->set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
+        return;
+      }
+    }
+  }
   solver.Solve();
   solver.FillSolutionResponseProto(response);
+  if (!warning_message.empty()) {
+    response->set_status_str(absl::StrCat(
+        response->status_str(), (response->status_str().empty() ? "" : "\n"),
+        warning_message));
+  }
 }
 
 void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
@@ -1032,6 +1050,7 @@ absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
           "'"));
     }
   }
+  // TODO(user): Load the reduced costs too, if available.
   for (int i = 0; i < response.variable_value_size(); ++i) {
     variables_[i]->set_solution_value(response.variable_value(i));
   }
@@ -1039,6 +1058,9 @@ absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
   // NOTE(user): We do not verify the objective, even though we could!
   if (response.has_objective_value()) {
     interface_->objective_value_ = response.objective_value();
+  }
+  if (response.has_best_objective_bound()) {
+    interface_->best_objective_bound_ = response.best_objective_bound();
   }
   // Mark the status as SOLUTION_SYNCHRONIZED, so that users may inspect the
   // solution normally.
@@ -1230,13 +1252,13 @@ MPSolver::ResultStatus MPSolver::Solve(const MPSolverParameters& param) {
   }
 
   MPSolver::ResultStatus status = interface_->Solve(param);
-  if (FLAGS_verify_solution) {
+  if (absl::GetFlag(FLAGS_verify_solution)) {
     if (status != MPSolver::OPTIMAL && status != MPSolver::FEASIBLE) {
       VLOG(1) << "--verify_solution enabled, but the solver did not find a"
               << " solution: skipping the verification.";
     } else if (!VerifySolution(
                    param.GetDoubleParam(MPSolverParameters::PRIMAL_TOLERANCE),
-                   FLAGS_log_verification_errors)) {
+                   absl::GetFlag(FLAGS_log_verification_errors))) {
       status = MPSolver::ABNORMAL;
       interface_->result_status_ = status;
     }
@@ -1608,6 +1630,8 @@ bool MPSolverResponseStatusIsRpcError(MPSolverResponseStatus status) {
 
 const int MPSolverInterface::kDummyVariableIndex = 0;
 
+// TODO(user): Initialize objective value and bound to +/- inf (depending on
+// optimization direction).
 MPSolverInterface::MPSolverInterface(MPSolver* const solver)
     : solver_(solver),
       sync_status_(MODEL_SYNCHRONIZED),
@@ -1616,6 +1640,7 @@ MPSolverInterface::MPSolverInterface(MPSolver* const solver)
       last_constraint_index_(0),
       last_variable_index_(0),
       objective_value_(0.0),
+      best_objective_bound_(0.0),
       quiet_(true) {}
 
 MPSolverInterface::~MPSolverInterface() {}
@@ -1682,26 +1707,27 @@ bool MPSolverInterface::CheckSolutionExists() const {
   return true;
 }
 
-// Default version that can be overwritten by a solver-specific
-// version to accommodate for the quirks of each solver.
-bool MPSolverInterface::CheckBestObjectiveBoundExists() const {
-  if (result_status_ != MPSolver::OPTIMAL &&
-      result_status_ != MPSolver::FEASIBLE) {
-    LOG(DFATAL) << "No information is available for the best objective bound."
-                << " MPSolverInterface::result_status_ = " << result_status_;
-    return false;
-  }
-  return true;
-}
-
-double MPSolverInterface::trivial_worst_objective_bound() const {
-  return maximize_ ? -std::numeric_limits<double>::infinity()
-                   : std::numeric_limits<double>::infinity();
-}
-
 double MPSolverInterface::objective_value() const {
   if (!CheckSolutionIsSynchronizedAndExists()) return 0;
   return objective_value_;
+}
+
+double MPSolverInterface::best_objective_bound() const {
+  const double trivial_worst_bound =
+      maximize_ ? -std::numeric_limits<double>::infinity()
+                : std::numeric_limits<double>::infinity();
+  if (!IsMIP()) {
+    LOG(DFATAL) << "Best objective bound only available for discrete problems.";
+    return trivial_worst_bound;
+  }
+  if (!CheckSolutionIsSynchronized()) {
+    return trivial_worst_bound;
+  }
+  // Special case for empty model.
+  if (solver_->variables_.empty() && solver_->constraints_.empty()) {
+    return solver_->Objective().offset();
+  }
+  return best_objective_bound_;
 }
 
 void MPSolverInterface::InvalidateSolutionSynchronization() {

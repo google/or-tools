@@ -1,6 +1,7 @@
 var searchData=
 [
-  ['trailcompression_3697',['TrailCompression',['../classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a81d641d769fd303cd83ef13ffd547e41',1,'operations_research::PROTOBUF_FINAL']]],
-  ['transitcallback1_3698',['TransitCallback1',['../classoperations__research_1_1_routing_model.html#a204041e5264282d54dfd198011e776d3',1,'operations_research::RoutingModel']]],
-  ['transitcallback2_3699',['TransitCallback2',['../classoperations__research_1_1_routing_model.html#a5fa8aee5b0c67072dbbb03f1899ec60a',1,'operations_research::RoutingModel']]]
+  ['routingindexpair_5468',['RoutingIndexPair',['../namespaceoperations__research.html#a1a7c1221ae29f298e0879e516d086f8b',1,'operations_research']]],
+  ['routingindexpairs_5469',['RoutingIndexPairs',['../namespaceoperations__research.html#aef7db0bee0a22d1791d040fd3853f3b7',1,'operations_research']]],
+  ['routingtransitcallback1_5470',['RoutingTransitCallback1',['../namespaceoperations__research.html#abec0698c301a7fe57265985e2d30e7c7',1,'operations_research']]],
+  ['routingtransitcallback2_5471',['RoutingTransitCallback2',['../namespaceoperations__research.html#ab35e9f27307e9c5273c9d77fcf30de0e',1,'operations_research']]]
 ];

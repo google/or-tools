@@ -770,7 +770,6 @@ WeightedRandomRelaxationNeighborhoodGenerator::
       case ConstraintProto::kElement:
       case ConstraintProto::kRoutes:
       case ConstraintProto::kCircuit:
-      case ConstraintProto::kCircuitCovering:
         constraint_weights_.push_back(3.0);
         num_removable_constraints_++;
         break;

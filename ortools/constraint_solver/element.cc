@@ -27,8 +27,8 @@
 #include "ortools/util/range_minimum_query.h"
 #include "ortools/util/string_array.h"
 
-DEFINE_bool(cp_disable_element_cache, true,
-            "If true, caching for IntElement is disabled.");
+ABSL_FLAG(bool, cp_disable_element_cache, true,
+          "If true, caching for IntElement is disabled.");
 
 namespace operations_research {
 
@@ -606,7 +606,7 @@ IntExpr* BuildElement(Solver* const solver, const std::vector<int64>& values,
     }
   }
   IntExpr* cache = nullptr;
-  if (!FLAGS_cp_disable_element_cache) {
+  if (!absl::GetFlag(FLAGS_cp_disable_element_cache)) {
     cache = solver->Cache()->FindVarConstantArrayExpression(
         index, values, ModelCache::VAR_CONSTANT_ARRAY_ELEMENT);
   }
@@ -635,7 +635,7 @@ IntExpr* BuildElement(Solver* const solver, const std::vector<int64>& values,
             solver->RevAlloc(new IntExprElement(solver, values, index)));
       }
     }
-    if (!FLAGS_cp_disable_element_cache) {
+    if (!absl::GetFlag(FLAGS_cp_disable_element_cache)) {
       solver->Cache()->InsertVarConstantArrayExpression(
           result, index, values, ModelCache::VAR_CONSTANT_ARRAY_ELEMENT);
     }

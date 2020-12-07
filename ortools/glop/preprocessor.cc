@@ -1327,8 +1327,10 @@ bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
   const int size = num_rows.value();
   // TODO(user) : Replace SumWithNegativeInfiniteAndOneMissing and
   // SumWithPositiveInfiniteAndOneMissing with IntervalSumWithOneMissing.
-  gtl::ITIVector<RowIndex, SumWithNegativeInfiniteAndOneMissing> lb_sums(size);
-  gtl::ITIVector<RowIndex, SumWithPositiveInfiniteAndOneMissing> ub_sums(size);
+  absl::StrongVector<RowIndex, SumWithNegativeInfiniteAndOneMissing> lb_sums(
+      size);
+  absl::StrongVector<RowIndex, SumWithPositiveInfiniteAndOneMissing> ub_sums(
+      size);
 
   // Initialize the sums by adding all the bounds of the variables.
   for (ColIndex col(0); col < num_cols; ++col) {
@@ -3503,7 +3505,7 @@ bool ShiftVariableBoundsPreprocessor::Run(LinearProgram* lp) {
   int num_bound_shifts = 0;
   const RowIndex num_rows = lp->num_constraints();
   KahanSum objective_offset;
-  gtl::ITIVector<RowIndex, KahanSum> row_offsets(num_rows.value());
+  absl::StrongVector<RowIndex, KahanSum> row_offsets(num_rows.value());
   offsets_.assign(num_cols, 0.0);
   for (ColIndex col(0); col < num_cols; ++col) {
     if (0.0 < variable_initial_lbs_[col] || 0.0 > variable_initial_ubs_[col]) {
@@ -3593,7 +3595,7 @@ bool ScalingPreprocessor::Run(LinearProgram* lp) {
   // See the doc of these functions for more details.
   // It is important to call Scale() before the other two.
   Scale(lp, &scaler_, parameters_.scaling_method());
-  cost_scaling_factor_ = lp->ScaleObjective();
+  cost_scaling_factor_ = lp->ScaleObjective(parameters_.cost_scaling());
   bound_scaling_factor_ = lp->ScaleBounds();
 
   return true;

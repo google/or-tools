@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -104,13 +104,15 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:ac5f01f1e9f546b42965203c09364900f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gurobi__proto__solver_8cc.html#ac5f01f1e9f546b42965203c09364900f">RETURN_IF_GUROBI_ERROR</a>(x)&#160;&#160;&#160;  <a class="el" href="status__macros_8h.html#acdc223d8c59d5c591dc6b4e88257627b">RETURN_IF_ERROR</a>(GurobiCodeToUtilStatus(x, __FILE__, __LINE__, #x, gurobi));</td></tr>
+<tr class="memitem:ac5f01f1e9f546b42965203c09364900f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gurobi__proto__solver_8cc.html#ac5f01f1e9f546b42965203c09364900f">RETURN_IF_GUROBI_ERROR</a>(x)</td></tr>
 <tr class="separator:ac5f01f1e9f546b42965203c09364900f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a910aa3ca0c38e8d81e59054827aee7fd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structabsl_1_1_status_or.html">absl::StatusOr</a>&lt; MPSolutionResponse &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a910aa3ca0c38e8d81e59054827aee7fd">GurobiSolveProto</a> (const MPModelRequest &amp;request)</td></tr>
-<tr class="separator:a910aa3ca0c38e8d81e59054827aee7fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a957fc4194ee4e7d712bca3d64332041c"><td class="memItemLeft" align="right" valign="top">absl::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a957fc4194ee4e7d712bca3d64332041c">SetSolverSpecificParameters</a> (const std::string &amp;<a class="el" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>, <a class="el" href="gurobi__environment_8h.html#a2963ba0c46b86ac4680fb3bb4ca8b2f3">GRBenv</a> *gurobi)</td></tr>
+<tr class="separator:a957fc4194ee4e7d712bca3d64332041c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a99a2d4781f0758d43de829c610a1a33b"><td class="memItemLeft" align="right" valign="top">absl::StatusOr&lt; MPSolutionResponse &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a99a2d4781f0758d43de829c610a1a33b">GurobiSolveProto</a> (const MPModelRequest &amp;request, <a class="el" href="gurobi__environment_8h.html#a2963ba0c46b86ac4680fb3bb4ca8b2f3">GRBenv</a> *gurobi_env)</td></tr>
+<tr class="separator:a99a2d4781f0758d43de829c610a1a33b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="ac5f01f1e9f546b42965203c09364900f"></a>
@@ -124,15 +126,18 @@ Functions</h2></td></tr>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname">x</td><td>)</td>
-          <td>&#160;&#160;&#160;  <a class="el" href="status__macros_8h.html#acdc223d8c59d5c591dc6b4e88257627b">RETURN_IF_ERROR</a>(GurobiCodeToUtilStatus(x, __FILE__, __LINE__, #x, gurobi));</td>
+          <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
-
+<b>Value:</b><div class="fragment"><div class="line">  <a class="code" href="status__macros_8h.html#acdc223d8c59d5c591dc6b4e88257627b">RETURN_IF_ERROR</a>(                \</div>
+<div class="line">      GurobiCodeToUtilStatus(x, __FILE__, __LINE__, #x, gurobi_env));</div>
+</div><!-- fragment -->
 </div>
 </div>
 </div><!-- contents -->
 </div><!-- doc-content -->
+<div class="ttc" id="astatus__macros_8h_html_acdc223d8c59d5c591dc6b4e88257627b"><div class="ttname"><a href="status__macros_8h.html#acdc223d8c59d5c591dc6b4e88257627b">RETURN_IF_ERROR</a></div><div class="ttdeci">#define RETURN_IF_ERROR(expr)</div><div class="ttdef"><b>Definition:</b> <a href="status__macros_8h_source.html#l00027">status_macros.h:27</a></div></div>
 <!-- HTML footer for doxygen 1.8.18-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

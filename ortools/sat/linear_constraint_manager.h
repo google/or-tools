@@ -83,7 +83,7 @@ class LinearConstraintManager {
   // Returns true if a new cut was added and false if this cut is not
   // efficacious or if it is a duplicate of an already existing one.
   bool AddCut(LinearConstraint ct, std::string type_name,
-              const gtl::ITIVector<IntegerVariable, double>& lp_solution,
+              const absl::StrongVector<IntegerVariable, double>& lp_solution,
               std::string extra_info = "");
 
   // The objective is used as one of the criterion to score cuts.
@@ -99,7 +99,7 @@ class LinearConstraintManager {
   // simplex can be fully iterative on restart by loading this modified state.
   //
   // Returns true iff LpConstraints() will return a different LP than before.
-  bool ChangeLp(const gtl::ITIVector<IntegerVariable, double>& lp_solution,
+  bool ChangeLp(const absl::StrongVector<IntegerVariable, double>& lp_solution,
                 glop::BasisState* solution_state);
 
   // This can be called initially to add all the current constraint to the LP
@@ -107,7 +107,7 @@ class LinearConstraintManager {
   void AddAllConstraintsToLp();
 
   // All the constraints managed by this class.
-  const gtl::ITIVector<ConstraintIndex, ConstraintInfo>& AllConstraints()
+  const absl::StrongVector<ConstraintIndex, ConstraintInfo>& AllConstraints()
       const {
     return constraint_infos_;
   }
@@ -168,7 +168,7 @@ class LinearConstraintManager {
   // Optimization to avoid calling SimplifyConstraint() when not needed.
   int64 last_simplification_timestamp_ = 0;
 
-  gtl::ITIVector<ConstraintIndex, ConstraintInfo> constraint_infos_;
+  absl::StrongVector<ConstraintIndex, ConstraintInfo> constraint_infos_;
 
   // The subset of constraints currently in the lp.
   std::vector<ConstraintIndex> lp_constraints_;
@@ -200,7 +200,7 @@ class LinearConstraintManager {
   // Dense representation of the objective coeffs indexed by positive variables
   // indices. It contains 0.0 where the variables does not appear in the
   // objective.
-  gtl::ITIVector<IntegerVariable, double> dense_objective_coeffs_;
+  absl::StrongVector<IntegerVariable, double> dense_objective_coeffs_;
 
   TimeLimit* time_limit_;
   Model* model_;
@@ -283,11 +283,11 @@ class TopNCuts {
 
   // Add a cut to the local pool
   void AddCut(LinearConstraint ct, const std::string& name,
-              const gtl::ITIVector<IntegerVariable, double>& lp_solution);
+              const absl::StrongVector<IntegerVariable, double>& lp_solution);
 
   // Empty the local pool and add all its content to the manager.
   void TransferToManager(
-      const gtl::ITIVector<IntegerVariable, double>& lp_solution,
+      const absl::StrongVector<IntegerVariable, double>& lp_solution,
       LinearConstraintManager* manager);
 
  private:

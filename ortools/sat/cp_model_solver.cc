@@ -42,15 +42,15 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/synchronization/mutex.h"
-#include "glog/vlog_is_on.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/vlog_is_on.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/circuit.h"
@@ -86,49 +86,48 @@
 #include "ortools/util/time_limit.h"
 
 #if defined(_MSC_VER)
-DEFINE_string(cp_model_dump_prefix, ".\\",
-              "Prefix filename for all dumped files");
+ABSL_FLAG(std::string, cp_model_dump_prefix, ".\\",
+          "Prefix filename for all dumped files");
 #else
-DEFINE_string(cp_model_dump_prefix, "/tmp/",
-              "Prefix filename for all dumped files");
+ABSL_FLAG(std::string, cp_model_dump_prefix, "/tmp/",
+          "Prefix filename for all dumped files");
 #endif
-DEFINE_bool(
-    cp_model_dump_models, false,
-    "DEBUG ONLY. When set to true, SolveCpModel() will dump its model "
-    "protos (original model, presolved model, mapping model) in text "
-    "format to "
-    "'FLAGS_cp_model_dump_prefix'{model|presolved_model|mapping_model}.pbtxt.");
+ABSL_FLAG(bool, cp_model_dump_models, false,
+          "DEBUG ONLY. When set to true, SolveCpModel() will dump its model "
+          "protos (original model, presolved model, mapping model) in text "
+          "format to 'FLAGS_cp_model_dump_prefix'{model|presolved_model|"
+          "mapping_model}.pbtxt.");
 
-DEFINE_bool(cp_model_dump_lns, false,
-            "DEBUG ONLY. When set to true, solve will dump all "
-            "lns models proto in text format to "
-            "'FLAGS_cp_model_dump_prefix'lns_xxx.pbtxt.");
+ABSL_FLAG(bool, cp_model_dump_lns, false,
+          "DEBUG ONLY. When set to true, solve will dump all "
+          "lns models proto in text format to "
+          "'FLAGS_cp_model_dump_prefix'lns_xxx.pbtxt.");
 
-DEFINE_bool(cp_model_dump_response, false,
-            "DEBUG ONLY. If true, the final response of each solve will be "
-            "dumped to 'FLAGS_cp_model_dump_prefix'response.pbtxt");
+ABSL_FLAG(bool, cp_model_dump_response, false,
+          "DEBUG ONLY. If true, the final response of each solve will be "
+          "dumped to 'FLAGS_cp_model_dump_prefix'response.pbtxt");
 
-DEFINE_string(cp_model_params, "",
-              "This is interpreted as a text SatParameters proto. The "
-              "specified fields will override the normal ones for all solves.");
+ABSL_FLAG(std::string, cp_model_params, "",
+          "This is interpreted as a text SatParameters proto. The "
+          "specified fields will override the normal ones for all solves.");
 
-DEFINE_string(
-    drat_output, "",
-    "If non-empty, a proof in DRAT format will be written to this file. "
-    "This will only be used for pure-SAT problems.");
+ABSL_FLAG(std::string, drat_output, "",
+          "If non-empty, a proof in DRAT format will be written to this file. "
+          "This will only be used for pure-SAT problems.");
 
-DEFINE_bool(drat_check, false,
-            "If true, a proof in DRAT format will be stored in memory and "
-            "checked if the problem is UNSAT. This will only be used for "
-            "pure-SAT problems.");
+ABSL_FLAG(bool, drat_check, false,
+          "If true, a proof in DRAT format will be stored in memory and "
+          "checked if the problem is UNSAT. This will only be used for "
+          "pure-SAT problems.");
 
-DEFINE_double(max_drat_time_in_seconds, std::numeric_limits<double>::infinity(),
-              "Maximum time in seconds to check the DRAT proof. This will only "
-              "be used is the drat_check flag is enabled.");
+ABSL_FLAG(double, max_drat_time_in_seconds,
+          std::numeric_limits<double>::infinity(),
+          "Maximum time in seconds to check the DRAT proof. This will only "
+          "be used is the drat_check flag is enabled.");
 
-DEFINE_bool(cp_model_check_intermediate_solutions, false,
-            "When true, all intermediate solutions found by the solver will be "
-            "checked. This can be expensive, therefore it is off by default.");
+ABSL_FLAG(bool, cp_model_check_intermediate_solutions, false,
+          "When true, all intermediate solutions found by the solver will be "
+          "checked. This can be expensive, therefore it is off by default.");
 
 namespace operations_research {
 namespace sat {
@@ -153,6 +152,7 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   std::map<std::string, int> num_constraints_by_name;
   std::map<std::string, int> num_reif_constraints_by_name;
   std::map<std::string, int> name_to_num_literals;
+  std::map<std::string, int> name_to_num_terms;
   for (const ConstraintProto& ct : model_proto.constraints()) {
     std::string name = ConstraintCaseName(ct.constraint_case());
 
@@ -180,6 +180,11 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     } else if (ct.constraint_case() ==
                ConstraintProto::ConstraintCase::kAtMostOne) {
       name_to_num_literals[name] += ct.at_most_one().literals().size();
+    }
+
+    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear &&
+        ct.linear().vars_size() > 3) {
+      name_to_num_terms[name] += ct.linear().vars_size();
     }
   }
 
@@ -264,6 +269,10 @@ std::string CpModelStats(const CpModelProto& model_proto) {
       absl::StrAppend(&constraints.back(),
                       " (#literals: ", name_to_num_literals[name], ")");
     }
+    if (gtl::ContainsKey(name_to_num_terms, name)) {
+      absl::StrAppend(&constraints.back(),
+                      " (#terms: ", name_to_num_terms[name], ")");
+    }
   }
   std::sort(constraints.begin(), constraints.end());
   absl::StrAppend(&result, absl::StrJoin(constraints, "\n"));
@@ -279,9 +288,9 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
                   ProtoEnumToString<CpSolverStatus>(response.status()));
 
   if (has_objective && response.status() != CpSolverStatus::INFEASIBLE) {
-    absl::StrAppendFormat(&result, "\nobjective: %.9g",
+    absl::StrAppendFormat(&result, "\nobjective: %.16g",
                           response.objective_value());
-    absl::StrAppendFormat(&result, "\nbest_bound: %.9g",
+    absl::StrAppendFormat(&result, "\nbest_bound: %.16g",
                           response.best_objective_bound());
   } else {
     absl::StrAppend(&result, "\nobjective: NA");
@@ -298,6 +307,9 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
                   "\npropagations: ", response.num_binary_propagations());
   absl::StrAppend(
       &result, "\ninteger_propagations: ", response.num_integer_propagations());
+
+  absl::StrAppend(&result, "\nrestarts: ", response.num_restarts());
+  absl::StrAppend(&result, "\nlp_iterations: ", response.num_lp_iterations());
   absl::StrAppend(&result, "\nwalltime: ", response.wall_time());
   absl::StrAppend(&result, "\nusertime: ", response.user_time());
   absl::StrAppend(&result,
@@ -348,7 +360,8 @@ void FillSolutionInResponse(const CpModelProto& model_proto, const Model& model,
   }
 
   if (!solution.empty()) {
-    if (DEBUG_MODE || FLAGS_cp_model_check_intermediate_solutions) {
+    if (DEBUG_MODE ||
+        absl::GetFlag(FLAGS_cp_model_check_intermediate_solutions)) {
       // TODO(user): Checks against initial model.
       CHECK(SolutionIsFeasible(model_proto, solution));
     }
@@ -441,7 +454,7 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
     std::vector<int> heads(ct.circuit().heads().begin(),
                            ct.circuit().heads().end());
     std::vector<Literal> literals = mapping->Literals(ct.circuit().literals());
-    const int num_nodes = ReindexArcs(&tails, &heads, &literals);
+    const int num_nodes = ReindexArcs(&tails, &heads);
 
     relaxation->cut_generators.push_back(
         CreateStronglyConnectedGraphCutGenerator(num_nodes, tails, heads,
@@ -1230,7 +1243,7 @@ void LoadBaseModel(const CpModelProto& model_proto,
     VLOG(3) << num_ignored_constraints << " constraints were skipped.";
   }
   if (!unsupported_types.empty()) {
-    VLOG(1) << "There is unsuported constraints types in this model: ";
+    VLOG(1) << "There is unsupported constraints types in this model: ";
     for (const std::string& type : unsupported_types) {
       VLOG(1) << " - " << type;
     }
@@ -1309,7 +1322,8 @@ void LoadCpModel(const CpModelProto& model_proto,
   // TODO(user): We don't have a good deterministic time on all constraints,
   // so this might take more time than wanted.
   if (parameters.cp_model_probing_level() > 1) {
-    ProbeBooleanVariables(/*deterministic_time_limit=*/1.0, model);
+    Prober* prober = model->GetOrCreate<Prober>();
+    prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0);
     if (model->GetOrCreate<SatSolver>()->IsModelUnsat()) {
       return unsat();
     }
@@ -1371,6 +1385,11 @@ void LoadCpModel(const CpModelProto& model_proto,
             objective_proto.coeffs(i) > 0 ? var : NegationOf(var));
       }
     }
+
+    // Register an objective special propagator.
+    model->TakeOwnership(
+        new LevelZeroEquality(objective_var, objective_definition->vars,
+                              objective_definition->coeffs, model));
   }
 
   // Intersect the objective domain with the given one if any.
@@ -1531,7 +1550,26 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
   const auto& mapping = *model->GetOrCreate<CpModelMapping>();
   SatSolver::Status status;
   const SatParameters& parameters = *model->GetOrCreate<SatParameters>();
-  if (!model_proto.has_objective()) {
+  if (parameters.use_probing_search()) {
+    std::vector<BooleanVariable> bool_vars;
+    std::vector<IntegerVariable> int_vars;
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    absl::flat_hash_set<BooleanVariable> visited;
+    for (int v = 0; v < model_proto.variables_size(); ++v) {
+      if (mapping.IsBoolean(v)) {
+        const BooleanVariable bool_var = mapping.Literal(v).Variable();
+        if (!visited.contains(bool_var)) {
+          visited.insert(bool_var);
+          bool_vars.push_back(bool_var);
+        }
+      } else {
+        IntegerVariable var = mapping.Integer(v);
+        if (integer_trail->IsFixed(var)) continue;
+        int_vars.push_back(var);
+      }
+    }
+    status = ContinuousProbing(bool_vars, int_vars, solution_observer, model);
+  } else if (!model_proto.has_objective()) {
     while (true) {
       status = ResetAndSolveIntegerProblem(
           mapping.Literals(model_proto.assumptions()), model);
@@ -1863,12 +1901,14 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
   // Create a DratProofHandler?
   std::unique_ptr<DratProofHandler> drat_proof_handler;
 #if !defined(__PORTABLE_PLATFORM__)
-  if (!FLAGS_drat_output.empty() || FLAGS_drat_check) {
-    if (!FLAGS_drat_output.empty()) {
+  if (!absl::GetFlag(FLAGS_drat_output).empty() ||
+      absl::GetFlag(FLAGS_drat_check)) {
+    if (!absl::GetFlag(FLAGS_drat_output).empty()) {
       File* output;
-      CHECK_OK(file::Open(FLAGS_drat_output, "w", &output, file::Defaults()));
+      CHECK_OK(file::Open(absl::GetFlag(FLAGS_drat_output), "w", &output,
+                          file::Defaults()));
       drat_proof_handler = absl::make_unique<DratProofHandler>(
-          /*in_binary_format=*/false, output, FLAGS_drat_check);
+          /*in_binary_format=*/false, output, absl::GetFlag(FLAGS_drat_check));
     } else {
       drat_proof_handler = absl::make_unique<DratProofHandler>();
     }
@@ -2027,8 +2067,8 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
   if (status == SatSolver::INFEASIBLE && drat_proof_handler != nullptr) {
     WallTimer drat_timer;
     drat_timer.Start();
-    DratChecker::Status drat_status =
-        drat_proof_handler->Check(FLAGS_max_drat_time_in_seconds);
+    DratChecker::Status drat_status = drat_proof_handler->Check(
+        absl::GetFlag(FLAGS_max_drat_time_in_seconds));
     switch (drat_status) {
       case DratChecker::UNKNOWN:
         LOG(INFO) << "DRAT status: UNKNOWN";
@@ -2420,9 +2460,10 @@ class LnsSolver : public SubSolver {
       local_params.set_log_search_progress(false);
       local_params.set_cp_model_probing_level(0);
 
-      if (FLAGS_cp_model_dump_lns) {
-        const std::string name = absl::StrCat(
-            FLAGS_cp_model_dump_prefix, neighborhood.cp_model.name(), ".pbtxt");
+      if (absl::GetFlag(FLAGS_cp_model_dump_lns)) {
+        const std::string name =
+            absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
+                         neighborhood.cp_model.name(), ".pbtxt");
         LOG(INFO) << "Dumping LNS model to '" << name << "'.";
         CHECK_OK(
             file::SetTextProto(name, neighborhood.cp_model, file::Defaults()));
@@ -2705,9 +2746,13 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   NeighborhoodGeneratorHelper* helper = unique_helper.get();
   subsolvers.push_back(std::move(unique_helper));
 
-  const int num_lns_strategies = parameters.diversify_lns_params() ? 6 : 1;
-  const std::vector<SatParameters>& lns_params =
-      GetDiverseSetOfParameters(parameters, model_proto, num_lns_strategies);
+  // By default we use the user provided parameters.
+  std::vector<SatParameters> lns_params = {parameters};
+  lns_params.back().set_name("default");
+  if (parameters.diversify_lns_params()) {
+    std::vector<SatParameters> lns_params =
+        GetDiverseSetOfParameters(parameters, model_proto, 6);
+  }
   for (const SatParameters& local_params : lns_params) {
     // Only register following LNS SubSolver if there is an objective.
     if (model_proto.has_objective()) {
@@ -2840,29 +2885,28 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
 #if !defined(__PORTABLE_PLATFORM__)
   // Dump?
-  if (FLAGS_cp_model_dump_models) {
+  if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
     const std::string file =
-        absl::StrCat(FLAGS_cp_model_dump_prefix, "model.pbtxt");
+        absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix), "model.pbtxt");
     LOG(INFO) << "Dumping cp model proto to '" << file << "'.";
     CHECK_OK(file::SetTextProto(file, model_proto, file::Defaults()));
   }
 
-  absl::Cleanup<std::function<void()>> dump_response_cleanup;
-  if (FLAGS_cp_model_dump_response) {
-    dump_response_cleanup = absl::MakeCleanup([&final_response] {
-      const std::string file =
-          absl::StrCat(FLAGS_cp_model_dump_prefix, "response.pbtxt");
+  auto dump_response_cleanup = absl::MakeCleanup([&final_response] {
+    if (absl::GetFlag(FLAGS_cp_model_dump_response)) {
+      const std::string file = absl::StrCat(
+          absl::GetFlag(FLAGS_cp_model_dump_prefix), "response.pbtxt");
       LOG(INFO) << "Dumping response proto to '" << file << "'.";
       CHECK_OK(file::SetTextProto(file, final_response, file::Defaults()));
-    });
-  }
+    }
+  });
 
   // Override parameters?
-  if (!FLAGS_cp_model_params.empty()) {
+  if (!absl::GetFlag(FLAGS_cp_model_params).empty()) {
     SatParameters params = *model->GetOrCreate<SatParameters>();
     SatParameters flag_params;
-    CHECK(google::protobuf::TextFormat::ParseFromString(FLAGS_cp_model_params,
-                                                        &flag_params));
+    CHECK(google::protobuf::TextFormat::ParseFromString(
+        absl::GetFlag(FLAGS_cp_model_params), &flag_params));
     params.MergeFrom(flag_params);
     model->Add(NewSatParameters(params));
   }
@@ -2879,14 +2923,13 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   LOG_IF(INFO, log_search) << "Parameters: " << params.ShortDebugString();
 
   // Always display the final response stats if requested.
-  absl::Cleanup<std::function<void()>> display_response_cleanup;
-  if (log_search) {
-    display_response_cleanup =
-        absl::MakeCleanup([&final_response, &model_proto] {
+  auto display_response_cleanup =
+      absl::MakeCleanup([&final_response, &model_proto, log_search] {
+        if (log_search) {
           LOG(INFO) << CpSolverResponseStats(final_response,
                                              model_proto.has_objective());
-        });
-  }
+        }
+      });
 
   // Validate model_proto.
   // TODO(user): provide an option to skip this step for speed?
@@ -3043,7 +3086,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   SharedResponseManager shared_response_manager(
       log_search, params.enumerate_all_solutions(), &new_cp_model_proto,
       &wall_timer, &shared_time_limit);
-  shared_response_manager.set_dump_prefix(FLAGS_cp_model_dump_prefix);
+  shared_response_manager.set_dump_prefix(
+      absl::GetFlag(FLAGS_cp_model_dump_prefix));
   shared_response_manager.SetGapLimitsFromParameters(params);
   model->Register<SharedResponseManager>(&shared_response_manager);
   const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
@@ -3055,7 +3099,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
           CpSolverResponse response = response_of_presolved_problem;
           postprocess_solution(&response);
           if (!response.solution().empty()) {
-            if (DEBUG_MODE || FLAGS_cp_model_check_intermediate_solutions) {
+            if (DEBUG_MODE ||
+                absl::GetFlag(FLAGS_cp_model_check_intermediate_solutions)) {
               CHECK(SolutionIsFeasible(
                   model_proto, std::vector<int64>(response.solution().begin(),
                                                   response.solution().end())));
@@ -3069,16 +3114,16 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
 
 #if !defined(__PORTABLE_PLATFORM__)
-  if (FLAGS_cp_model_dump_models) {
-    const std::string presolved_file =
-        absl::StrCat(FLAGS_cp_model_dump_prefix, "presolved_model.pbtxt");
+  if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
+    const std::string presolved_file = absl::StrCat(
+        absl::GetFlag(FLAGS_cp_model_dump_prefix), "presolved_model.pbtxt");
     LOG(INFO) << "Dumping presolved cp model proto to '" << presolved_file
               << "'.";
     CHECK_OK(file::SetTextProto(presolved_file, new_cp_model_proto,
                                 file::Defaults()));
 
-    const std::string mapping_file =
-        absl::StrCat(FLAGS_cp_model_dump_prefix, "mapping_model.pbtxt");
+    const std::string mapping_file = absl::StrCat(
+        absl::GetFlag(FLAGS_cp_model_dump_prefix), "mapping_model.pbtxt");
     LOG(INFO) << "Dumping mapping cp model proto to '" << mapping_file << "'.";
     CHECK_OK(file::SetTextProto(mapping_file, mapping_proto, file::Defaults()));
   }
@@ -3115,7 +3160,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 #if defined(__PORTABLE_PLATFORM__)
   if (/* DISABLES CODE */ (false)) {
     // We ignore the multithreading parameter in this case.
-#else  // __PORTABLE_PLATFORM__
+#else   // __PORTABLE_PLATFORM__
   if (params.num_search_workers() > 1 || params.interleave_search()) {
     SolveCpModelParallel(new_cp_model_proto, &shared_response_manager,
                          &shared_time_limit, &wall_timer, model);

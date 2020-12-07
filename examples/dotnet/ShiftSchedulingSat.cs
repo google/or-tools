@@ -16,7 +16,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.Sat;
 
-
 /// <summary>
 /// Creates a shift scheduling problem and solves it
 /// </summary>
@@ -35,65 +34,48 @@ public class ShiftSchedulingSat
 
         // Fixed assignment: (employee, shift, day).
         // This fixes the first 2 days of the schedule.
-        var fixedAssignments = new (int Employee, int Shift, int Day)[]
-        {
-            (0, 0, 0),
-            (1, 0, 0),
-            (2, 1, 0),
-            (3, 1, 0),
-            (4, 2, 0),
-            (5, 2, 0),
-            (6, 2, 3),
-            (7, 3, 0),
-            (0, 1, 1),
-            (1, 1, 1),
-            (2, 2, 1),
-            (3, 2, 1),
-            (4, 2, 1),
-            (5, 0, 1),
-            (6, 0, 1),
-            (7, 3, 1),
+        var fixedAssignments = new(int Employee, int Shift, int Day)[] {
+            (0, 0, 0), (1, 0, 0), (2, 1, 0), (3, 1, 0), (4, 2, 0), (5, 2, 0), (6, 2, 3), (7, 3, 0),
+            (0, 1, 1), (1, 1, 1), (2, 2, 1), (3, 2, 1), (4, 2, 1), (5, 0, 1), (6, 0, 1), (7, 3, 1),
         };
 
         // Request: (employee, shift, day, weight)
         // A negative weight indicates that the employee desire this assignment.
-        var requests = new (int Employee, int Shift, int Day, int Weight)[]
-        {
-            // Employee 3 wants the first Saturday off.
-            (3, 0, 5, -2),
-            // Employee 5 wants a night shift on the second Thursday.
-            (5, 3, 10, -2),
-            // Employee 2 does not want a night shift on the third Friday.
-            (2, 3, 4, 4)
+        var requests = new(int Employee, int Shift, int Day,
+                           int Weight)[] {// Employee 3 wants the first Saturday off.
+                                          (3, 0, 5, -2),
+                                          // Employee 5 wants a night shift on the second Thursday.
+                                          (5, 3, 10, -2),
+                                          // Employee 2 does not want a night shift on the third Friday.
+                                          (2, 3, 4, 4)
         };
 
         // Shift constraints on continuous sequence :
         //     (shift, hard_min, soft_min, min_penalty,
         // soft_max, hard_max, max_penalty)
-        var shiftConstraints = new (int Shift, int HardMin, int SoftMin, int MinPenalty, int SoftMax, int HardMax, int MaxPenalty)[]
-        {
-            // One or two consecutive days of rest, this is a hard constraint.
-            (0, 1, 1, 0, 2, 2, 0),
-            // Between 2 and 3 consecutive days of night shifts, 1 and 4 are
-            // possible but penalized.
-            (3, 1, 2, 20, 3, 4, 5),
-        };
+        var shiftConstraints =
+            new(int Shift, int HardMin, int SoftMin, int MinPenalty, int SoftMax, int HardMax, int MaxPenalty)[] {
+                // One or two consecutive days of rest, this is a hard constraint.
+                (0, 1, 1, 0, 2, 2, 0),
+                // Between 2 and 3 consecutive days of night shifts, 1 and 4 are
+                // possible but penalized.
+                (3, 1, 2, 20, 3, 4, 5),
+            };
 
         // Weekly sum constraints on shifts days:
         //     (shift, hardMin, softMin, minPenalty,
         // softMax, hardMax, maxPenalty)
-        var weeklySumConstraints = new (int Shift, int HardMin, int SoftMin, int MinPenalty, int SoftMax, int HardMax, int MaxPenalty)[]
-        {
-            // Constraints on rests per week.
-            (0, 1, 2, 7, 2, 3, 4),
-            // At least 1 night shift per week (penalized). At most 4 (hard).
-            (3, 0, 1, 3, 4, 4, 0),
-        };
+        var weeklySumConstraints =
+            new(int Shift, int HardMin, int SoftMin, int MinPenalty, int SoftMax, int HardMax, int MaxPenalty)[] {
+                // Constraints on rests per week.
+                (0, 1, 2, 7, 2, 3, 4),
+                // At least 1 night shift per week (penalized). At most 4 (hard).
+                (3, 0, 1, 3, 4, 4, 0),
+            };
 
         // Penalized transitions:
         //     (previous_shift, next_shift, penalty (0 means forbidden))
-        var penalizedTransitions = new (int PreviousShift, int NextShift, int Penalty)[]
-        {
+        var penalizedTransitions = new(int PreviousShift, int NextShift, int Penalty)[] {
             // Afternoon to night has a penalty of 4.
             (2, 3, 4),
             // Night to morning is forbidden.
@@ -102,15 +84,14 @@ public class ShiftSchedulingSat
 
         // daily demands for work shifts (morning, afternon, night) for each day
         // of the week starting on Monday.
-        var weeklyCoverDemands = new int[][]
-        {
-            new [] {2, 3, 1}, // Monday
-            new [] {2, 3, 1}, // Tuesday
-            new [] {2, 2, 2}, // Wednesday
-            new [] {2, 3, 1}, // Thursday
-            new [] {2, 2, 2}, // Friday
-            new [] {1, 2, 3}, // Saturday
-            new [] {1, 3, 1}, // Sunday
+        var weeklyCoverDemands = new int[][] {
+            new[] { 2, 3, 1 }, // Monday
+            new[] { 2, 3, 1 }, // Tuesday
+            new[] { 2, 2, 2 }, // Wednesday
+            new[] { 2, 3, 1 }, // Thursday
+            new[] { 2, 2, 2 }, // Friday
+            new[] { 1, 2, 3 }, // Saturday
+            new[] { 1, 3, 1 }, // Sunday
         };
 
         // Penalty for exceeding the cover constraint per shift type.
@@ -180,9 +161,8 @@ public class ShiftSchedulingSat
                 }
 
                 var (variables, coeffs) = AddSoftSequenceConstraint(
-                    model, works,
-                    constraint.HardMin, constraint.SoftMin, constraint.MinPenalty,
-                    constraint.SoftMax, constraint.HardMax, constraint.MaxPenalty,
+                    model, works, constraint.HardMin, constraint.SoftMin, constraint.MinPenalty, constraint.SoftMax,
+                    constraint.HardMax, constraint.MaxPenalty,
                     $"shift_constraint(employee {e}, shift {constraint.Shift}");
 
                 objBoolVars.AddRange(variables);
@@ -205,9 +185,8 @@ public class ShiftSchedulingSat
                     }
 
                     var (variables, coeffs) = AddSoftSumConstraint(
-                        model, works,
-                        constraint.HardMin, constraint.SoftMin, constraint.MinPenalty,
-                        constraint.SoftMax, constraint.HardMax, constraint.MaxPenalty,
+                        model, works, constraint.HardMin, constraint.SoftMin, constraint.MinPenalty, constraint.SoftMax,
+                        constraint.HardMax, constraint.MaxPenalty,
                         $"weekly_sum_constraint(employee {e}, shift {constraint.Shift}, week {w}");
 
                     objBoolVars.AddRange(variables);
@@ -223,11 +202,8 @@ public class ShiftSchedulingSat
             {
                 foreach (int d in Range(numDays - 1))
                 {
-                    var transition = new List<ILiteral>()
-                    {
-                        work[e, penalizedTransition.PreviousShift, d].Not(),
-                        work[e, penalizedTransition.NextShift, d + 1].Not()
-                    };
+                    var transition = new List<ILiteral>() { work[e, penalizedTransition.PreviousShift, d].Not(),
+                                                            work[e, penalizedTransition.NextShift, d + 1].Not() };
 
                     if (penalizedTransition.Penalty == 0)
                     {
@@ -284,8 +260,7 @@ public class ShiftSchedulingSat
 
         // Solve model
         var solver = new CpSolver();
-	    solver.StringParameters = 
-            "num_search_workers:8, log_search_progress: true, max_time_in_seconds:30";
+        solver.StringParameters = "num_search_workers:8, log_search_progress: true, max_time_in_seconds:30";
 
         var status = solver.Solve(model);
 
@@ -341,7 +316,8 @@ public class ShiftSchedulingSat
             {
                 if (solver.Value(var) > 0)
                 {
-                    Console.WriteLine($"  {var.Name()} violated by {solver.Value(var)}, linear penalty={objIntCoeffs[i]}");
+                    Console.WriteLine(
+                        $"  {var.Name()} violated by {solver.Value(var)}, linear penalty={objIntCoeffs[i]}");
                 }
             }
 
@@ -357,15 +333,15 @@ public class ShiftSchedulingSat
     /// <summary>
     /// Filters an isolated sub-sequence of variables assigned to True.
     /// Extract the span of Boolean variables[start, start + length), negate them,
-    /// and if there is variables to the left / right of this span, surround the span by
-    /// them in non negated form.
+    /// and if there is variables to the left / right of this span, surround the
+    /// span by them in non negated form.
     /// </summary>
     /// <param name="works">A list of variables to extract the span from.</param>
     /// <param name="start">The start to the span.</param>
     /// <param name="length">The length of the span.</param>
-    /// <returns>An array of variables which conjunction will be false if the sub-list is
-    /// assigned to True, and correctly bounded by variables assigned to False,
-    /// or by the start or end of works.</returns>
+    /// <returns>An array of variables which conjunction will be false if the
+    /// sub-list is assigned to True, and correctly bounded by variables assigned
+    /// to False, or by the start or end of works.</returns>
     static ILiteral[] NegatedBoundedSpan(IntVar[] works, int start, int length)
     {
         var sequence = new List<ILiteral>();
@@ -385,21 +361,28 @@ public class ShiftSchedulingSat
     /// <summary>
     /// Sequence constraint on true variables with soft and hard bounds.
     /// This constraint look at every maximal contiguous sequence of variables
-    /// assigned to true. If forbids sequence of length &lt; hardMin or &gt; hardMax.
-    /// Then it creates penalty terms if the length is &lt; softMin or &gt; softMax.
+    /// assigned to true. If forbids sequence of length &lt; hardMin or &gt;
+    /// hardMax. Then it creates penalty terms if the length is &lt; softMin or
+    /// &gt; softMax.
     /// </summary>
-    /// <param name="model">The sequence constraint is built on this model.</param>
-    /// <param name="works">A list of Boolean variables.</param>
-    /// <param name="hardMin">Any sequence of true variables must have a length of at least hardMin.</param>
-    /// <param name="softMin">Any sequence should have a length of at least softMin, or a linear penalty on the delta will be added to the objective.</param>
-    /// <param name="minCost">The coefficient of the linear penalty if the length is less than softMin.</param>
-    /// <param name="softMax">Any sequence should have a length of at most softMax, or a linear penalty on the delta will be added to the objective.</param>
-    /// <param name="hardMax">Any sequence of true variables must have a length of at most hardMax.</param>
-    /// <param name="maxCost">The coefficient of the linear penalty if the length is more than softMax.</param>
-    /// <param name="prefix">A base name for penalty literals.</param>
-    /// <returns>A tuple (costLiterals, costCoefficients) containing the different penalties created by the sequence constraint.</returns>
-    static (IntVar[] costLiterals, int[] costCoefficients) AddSoftSequenceConstraint(CpModel model, IntVar[] works, int hardMin, int softMin, int minCost,
-        int softMax, int hardMax, int maxCost, string prefix)
+    /// <param name="model">The sequence constraint is built on this
+    /// model.</param> <param name="works">A list of Boolean variables.</param>
+    /// <param name="hardMin">Any sequence of true variables must have a length of
+    /// at least hardMin.</param> <param name="softMin">Any sequence should have a
+    /// length of at least softMin, or a linear penalty on the delta will be added
+    /// to the objective.</param> <param name="minCost">The coefficient of the
+    /// linear penalty if the length is less than softMin.</param> <param
+    /// name="softMax">Any sequence should have a length of at most softMax, or a
+    /// linear penalty on the delta will be added to the objective.</param> <param
+    /// name="hardMax">Any sequence of true variables must have a length of at
+    /// most hardMax.</param> <param name="maxCost">The coefficient of the linear
+    /// penalty if the length is more than softMax.</param> <param name="prefix">A
+    /// base name for penalty literals.</param> <returns>A tuple (costLiterals,
+    /// costCoefficients) containing the different penalties created by the
+    /// sequence constraint.</returns>
+    static (IntVar[] costLiterals, int[] costCoefficients)
+        AddSoftSequenceConstraint(CpModel model, IntVar[] works, int hardMin, int softMin, int minCost, int softMax,
+                                  int hardMax, int maxCost, string prefix)
     {
         var costLiterals = new List<IntVar>();
         var costCoefficients = new List<int>();
@@ -475,20 +458,24 @@ public class ShiftSchedulingSat
     /// If forbids sum &lt; hardMin or &gt; hardMax.
     /// Then it creates penalty terms if the sum is &lt; softMin or &gt; softMax.
     /// </summary>
-    /// <param name="model">The sequence constraint is built on this model.</param>
-    /// <param name="works">A list of Boolean variables.</param>
-    /// <param name="hardMin">Any sequence of true variables must have a length of at least hardMin.</param>
-    /// <param name="softMin">Any sequence should have a length of at least softMin, or a linear penalty on the delta will be added to the objective.</param>
-    /// <param name="minCost">The coefficient of the linear penalty if the length is less than softMin.</param>
-    /// <param name="softMax">Any sequence should have a length of at most softMax, or a linear penalty on the delta will be added to the objective.</param>
-    /// <param name="hardMax">Any sequence of true variables must have a length of at most hardMax.</param>
-    /// <param name="maxCost">The coefficient of the linear penalty if the length is more than softMax.</param>
-    /// <param name="prefix">A base name for penalty literals.</param>
-    /// <returns>A tuple (costVariables, costCoefficients) containing the different
-    /// penalties created by the sequence constraint.</returns>
-    static (IntVar[] costVariables, int[] costCoefficients) AddSoftSumConstraint(CpModel model, IntVar[] works,
-        int hardMin, int softMin, int minCost,
-        int softMax, int hardMax, int maxCost, string prefix)
+    /// <param name="model">The sequence constraint is built on this
+    /// model.</param> <param name="works">A list of Boolean variables.</param>
+    /// <param name="hardMin">Any sequence of true variables must have a length of
+    /// at least hardMin.</param> <param name="softMin">Any sequence should have a
+    /// length of at least softMin, or a linear penalty on the delta will be added
+    /// to the objective.</param> <param name="minCost">The coefficient of the
+    /// linear penalty if the length is less than softMin.</param> <param
+    /// name="softMax">Any sequence should have a length of at most softMax, or a
+    /// linear penalty on the delta will be added to the objective.</param> <param
+    /// name="hardMax">Any sequence of true variables must have a length of at
+    /// most hardMax.</param> <param name="maxCost">The coefficient of the linear
+    /// penalty if the length is more than softMax.</param> <param name="prefix">A
+    /// base name for penalty literals.</param> <returns>A tuple (costVariables,
+    /// costCoefficients) containing the different penalties created by the
+    /// sequence constraint.</returns>
+    static (IntVar[] costVariables, int[] costCoefficients)
+        AddSoftSumConstraint(CpModel model, IntVar[] works, int hardMin, int softMin, int minCost, int softMax,
+                             int hardMax, int maxCost, string prefix)
     {
         var costVariables = new List<IntVar>();
         var costCoefficients = new List<int>();

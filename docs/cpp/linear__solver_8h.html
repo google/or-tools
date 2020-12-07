@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -119,7 +119,7 @@ $(document).ready(function(){initNavTree('linear__solver_8h.html',''); initResiz
 <dl class="section see"><dt>See also</dt><dd>../examples/linear_programming.cc for <a class="el" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a> simple LP example.</dd>
 <dd>
 ../examples/integer_programming.cc for <a class="el" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a> simple MIP example.</dd></dl>
-<p>All methods cannot be called successfully in all cases. For example: you cannot query a solution when no solution exists, you cannot query a reduced cost value (which makes sense only on continuous problems) on a discrete problem. When a method is called in an unsuitable context, it aborts with a LOG(FATAL). TODO(user): handle failures gracefully.</p>
+<p>All methods cannot be called successfully in all cases. For example: you cannot query a solution when no solution exists, you cannot query a reduced cost value (which makes sense only on continuous problems) on a discrete problem. When a method is called in an unsuitable context, it aborts with a <a class="el" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG(FATAL)</a>. TODO(user): handle failures gracefully.</p>
 <hr  />
 <p>For developers: How the wrapper works</p>
 <p>MPSolver stores a representation of the model (variables, constraints and objective) in its own data structures and a pointer to a MPSolverInterface that wraps the underlying solver (GLOP, CBC, CLP, GLPK, or SCIP) that does the actual work. The underlying solver also keeps a representation of the model in its own data structures. The model representations in MPSolver and in the underlying solver are kept in sync by the 'extraction' mechanism: synchronously for some changes and asynchronously (when MPSolver::Solve is called) for others. Synchronicity depends on the modification applied and on the underlying solver. </p>

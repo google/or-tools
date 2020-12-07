@@ -66,7 +66,6 @@ int main(int argc, char** argv) {
 ```python
 """Simple Constraint optimization example."""
 
-from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
@@ -113,6 +112,7 @@ if __name__ == '__main__':
 
 ```java
 package com.google.ortools.constraintsolver.samples;
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
@@ -120,12 +120,12 @@ import java.util.logging.Logger;
 
 /** Simple CP Program.*/
 public class SimpleCpProgram {
-  static { System.loadLibrary("jniortools"); }
   private SimpleCpProgram() {}
 
   private static final Logger logger = Logger.getLogger(SimpleCpProgram.class.getName());
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Instantiate the solver.
     Solver solver = new Solver("CpSimple");
 
@@ -176,40 +176,41 @@ using Google.OrTools.ConstraintSolver;
 /// <summary>
 ///   This is a simple CP program.
 /// </summary>
-public class SimpleCpProgram {
-  public static void Main(String[] args) {
-    // Instantiate the solver.
-    Solver solver = new Solver("CpSimple");
+public class SimpleCpProgram
+{
+    public static void Main(String[] args)
+    {
+        // Instantiate the solver.
+        Solver solver = new Solver("CpSimple");
 
-    // Create the variables.
-    const long numVals = 3;
-    IntVar x = solver.MakeIntVar(0, numVals - 1, "x");
-    IntVar y = solver.MakeIntVar(0, numVals - 1, "y");
-    IntVar z = solver.MakeIntVar(0, numVals - 1, "z");
+        // Create the variables.
+        const long numVals = 3;
+        IntVar x = solver.MakeIntVar(0, numVals - 1, "x");
+        IntVar y = solver.MakeIntVar(0, numVals - 1, "y");
+        IntVar z = solver.MakeIntVar(0, numVals - 1, "z");
 
-    // Constraint 0: x != y..
-    solver.Add(solver.MakeAllDifferent(new IntVar[]{x, y}));
-    Console.WriteLine($"Number of constraints: {solver.Constraints()}");
+        // Constraint 0: x != y..
+        solver.Add(solver.MakeAllDifferent(new IntVar[] { x, y }));
+        Console.WriteLine($"Number of constraints: {solver.Constraints()}");
 
-    // Solve the problem.
-    DecisionBuilder db = solver.MakePhase(
-        new IntVar[]{x, y, z},
-        Solver.CHOOSE_FIRST_UNBOUND,
-        Solver.ASSIGN_MIN_VALUE);
+        // Solve the problem.
+        DecisionBuilder db =
+            solver.MakePhase(new IntVar[] { x, y, z }, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
-    // Print solution on console.
-    int count = 0;
-    solver.NewSearch(db);
-    while (solver.NextSolution()) {
-      ++count;
-      Console.WriteLine($"Solution: {count}\n x={x.Value()} y={y.Value()} z={z.Value()}");
+        // Print solution on console.
+        int count = 0;
+        solver.NewSearch(db);
+        while (solver.NextSolution())
+        {
+            ++count;
+            Console.WriteLine($"Solution: {count}\n x={x.Value()} y={y.Value()} z={z.Value()}");
+        }
+        solver.EndSearch();
+        Console.WriteLine($"Number of solutions found: {solver.Solutions()}");
+
+        Console.WriteLine("Advanced usage:");
+        Console.WriteLine($"Problem solved in {solver.WallTime()}ms");
+        Console.WriteLine($"Memory usage: {Solver.MemoryUsage()}bytes");
     }
-    solver.EndSearch();
-    Console.WriteLine($"Number of solutions found: {solver.Solutions()}");
-
-    Console.WriteLine("Advanced usage:");
-    Console.WriteLine($"Problem solved in {solver.WallTime()}ms");
-    Console.WriteLine($"Memory usage: {Solver.MemoryUsage()}bytes");
-  }
 }
 ```

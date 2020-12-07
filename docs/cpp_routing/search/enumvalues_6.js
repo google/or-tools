@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['infeasible_3790',['INFEASIBLE',['../namespaceoperations__research.html#aa0787bf78fb09d1e30f2451b5a68d4b8a6faaca695f728b47f47dd389f31e4a93',1,'operations_research']]]
+  ['ge_5632',['GE',['../classoperations__research_1_1_solver.html#afd2d924f019d44bc99930a1e931a735fa558711b4a2a25070b970d85f5926d5ce',1,'operations_research::Solver']]]
 ];

@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -145,7 +145,7 @@ $(document).ready(function(){initNavTree('eulerian__path_8h_source.html',''); in
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> NodeIndex, <span class="keyword">typename</span> Graph&gt;</div>
 <div class="line"><a name="l00055"></a><span class="lineno"><a class="line" href="namespaceoperations__research.html#a6b312dd19c90b2af099e6f159869f7ee">   55</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespaceoperations__research.html#a6b312dd19c90b2af099e6f159869f7ee">IsSemiEulerianGraph</a>(<span class="keyword">const</span> <a class="code" href="namespaceutil.html#a2f76166dbe0c4055a1f256235ad00478">Graph</a>&amp; graph,</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;                         std::vector&lt;NodeIndex&gt;* odd_nodes) {</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;  CHECK(odd_nodes != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;  <a class="code" href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a>(odd_nodes != <span class="keyword">nullptr</span>);</div>
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;  <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#a7ae31ba4c3b4899478e53ca13df35dfc">NodeIndex</a> node : graph.AllNodes()) {</div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">int</span> degree = graph.OutDegree(node) + graph.InDegree(node);</div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keywordflow">if</span> (degree % 2 != 0) {</div>
@@ -252,6 +252,7 @@ $(document).ready(function(){initNavTree('eulerian__path_8h_source.html',''); in
 <div class="ttc" id="anamespaceoperations__research_html_aa63055860fc53f8eed56d23d2571c180"><div class="ttname"><a href="namespaceoperations__research.html#aa63055860fc53f8eed56d23d2571c180">operations_research::BuildEulerianTourFromNode</a></div><div class="ttdeci">std::vector&lt; NodeIndex &gt; BuildEulerianTourFromNode(const Graph &amp;graph, NodeIndex root)</div><div class="ttdef"><b>Definition:</b> <a href="eulerian__path_8h_source.html#l00116">eulerian_path.h:116</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a743d8c9d6f64531bdeb7bbf18023e9d4"><div class="ttname"><a href="namespaceoperations__research.html#a743d8c9d6f64531bdeb7bbf18023e9d4">operations_research::BuildEulerianPathFromNode</a></div><div class="ttdeci">std::vector&lt; NodeIndex &gt; BuildEulerianPathFromNode(const Graph &amp;graph, NodeIndex root)</div><div class="ttdef"><b>Definition:</b> <a href="eulerian__path_8h_source.html#l00074">eulerian_path.h:74</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a49b170b2d03863c465331e67b21f0c33"><div class="ttname"><a href="namespaceoperations__research.html#a49b170b2d03863c465331e67b21f0c33">operations_research::BuildEulerianPath</a></div><div class="ttdeci">std::vector&lt; typename Graph::NodeIndex &gt; BuildEulerianPath(const Graph &amp;graph)</div><div class="ttdef"><b>Definition:</b> <a href="eulerian__path_8h_source.html#l00138">eulerian_path.h:138</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a3e1cfef60e774a81f30eaddf26a3a274"><div class="ttname"><a href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a></div><div class="ttdeci">#define CHECK(condition)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00495">base/logging.h:495</a></div></div>
 <!-- HTML footer for doxygen 1.8.18-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

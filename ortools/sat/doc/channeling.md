@@ -17,7 +17,7 @@
          * [Java code](#java-code-1)
          * [C# code](#c-code-3)
 
-<!-- Added by: lperron, at: Thu Nov 14 21:15:54 CET 2019 -->
+<!-- Added by: lperron, at: Tue Nov  3 17:33:07 CET 2020 -->
 
 <!--te-->
 
@@ -48,9 +48,6 @@ These are implemented using the `OnlyEnforceIf` method as shown below.
 ```python
 """Link integer constraints together."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
@@ -178,6 +175,7 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.SatParameters;
 import com.google.ortools.sat.CpModel;
@@ -188,10 +186,8 @@ import com.google.ortools.sat.LinearExpr;
 
 /** Link integer constraints together. */
 public class ChannelingSampleSat {
-
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Create the CP-SAT model.
     CpModel model = new CpModel();
 
@@ -256,65 +252,62 @@ using Google.OrTools.Util;
 
 public class VarArraySolutionPrinter : CpSolverSolutionCallback
 {
-  public VarArraySolutionPrinter(IntVar[] variables)
-  {
-    variables_ = variables;
-  }
-
-  public override void OnSolutionCallback()
-  {
+    public VarArraySolutionPrinter(IntVar[] variables)
     {
-      foreach (IntVar v in variables_)
-      {
-        Console.Write(String.Format("{0}={1} ", v.ShortString(), Value(v)));
-      }
-      Console.WriteLine();
+        variables_ = variables;
     }
-  }
 
-  private IntVar[] variables_;
+    public override void OnSolutionCallback()
+    {
+        {
+            foreach (IntVar v in variables_)
+            {
+                Console.Write(String.Format("{0}={1} ", v.ShortString(), Value(v)));
+            }
+            Console.WriteLine();
+        }
+    }
+
+    private IntVar[] variables_;
 }
 
 public class ChannelingSampleSat
 {
-  static void Main()
-  {
-    // Create the CP-SAT model.
-    CpModel model = new CpModel();
+    static void Main()
+    {
+        // Create the CP-SAT model.
+        CpModel model = new CpModel();
 
-    // Declare our two primary variables.
-    IntVar x = model.NewIntVar(0, 10, "x");
-    IntVar y = model.NewIntVar(0, 10, "y");
+        // Declare our two primary variables.
+        IntVar x = model.NewIntVar(0, 10, "x");
+        IntVar y = model.NewIntVar(0, 10, "y");
 
-    // Declare our intermediate boolean variable.
-    IntVar b = model.NewBoolVar("b");
+        // Declare our intermediate boolean variable.
+        IntVar b = model.NewBoolVar("b");
 
-    // Implement b == (x >= 5).
-    model.Add(x >= 5).OnlyEnforceIf(b);
-    model.Add(x < 5).OnlyEnforceIf(b.Not());
+        // Implement b == (x >= 5).
+        model.Add(x >= 5).OnlyEnforceIf(b);
+        model.Add(x < 5).OnlyEnforceIf(b.Not());
 
-    // Create our two half-reified constraints.
-    // First, b implies (y == 10 - x).
-    model.Add(y == 10 - x).OnlyEnforceIf(b);
-    // Second, not(b) implies y == 0.
-    model.Add(y == 0).OnlyEnforceIf(b.Not());
+        // Create our two half-reified constraints.
+        // First, b implies (y == 10 - x).
+        model.Add(y == 10 - x).OnlyEnforceIf(b);
+        // Second, not(b) implies y == 0.
+        model.Add(y == 0).OnlyEnforceIf(b.Not());
 
-    // Search for x values in increasing order.
-    model.AddDecisionStrategy(
-        new IntVar[] {x},
-        DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
-        DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
+        // Search for x values in increasing order.
+        model.AddDecisionStrategy(new IntVar[] { x }, DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
+                                  DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
 
-    // Create the solver.
-    CpSolver solver = new CpSolver();
+        // Create the solver.
+        CpSolver solver = new CpSolver();
 
-    // Force solver to follow the decision strategy exactly.
-    solver.StringParameters = "search_branching:FIXED_SEARCH";
+        // Force solver to follow the decision strategy exactly.
+        solver.StringParameters = "search_branching:FIXED_SEARCH";
 
-    VarArraySolutionPrinter cb =
-        new VarArraySolutionPrinter(new IntVar[] {x, y, b});
-    solver.SearchAllSolutions(model, cb);
-  }
+        VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, y, b });
+        solver.SearchAllSolutions(model, cb);
+    }
 }
 ```
 
@@ -356,7 +349,6 @@ variables together:
 ```python
 """Solves a binpacking problem using the CP-SAT solver."""
 
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
@@ -511,6 +503,9 @@ int main() {
 ### Java code
 
 ```java
+package com.google.ortools.sat.samples;
+
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
@@ -519,10 +514,8 @@ import com.google.ortools.sat.LinearExpr;
 
 /** Solves a bin packing problem with the CP-SAT solver. */
 public class BinPackingProblemSat {
-
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Data.
     int binCapacity = 100;
     int slackCapacity = 20;
@@ -618,109 +611,104 @@ using Google.OrTools.Sat;
 
 public class BinPackingProblemSat
 {
-  static void Main()
-  {
-    // Data.
-    int bin_capacity = 100;
-    int slack_capacity = 20;
-    int num_bins = 5;
-
-    int[,] items = new int[,] { { 20, 6 }, { 15, 6 }, { 30, 4 }, { 45, 3 } };
-    int num_items = items.GetLength(0);
-
-    // Model.
-    CpModel model = new CpModel();
-
-    // Main variables.
-    IntVar[,] x = new IntVar[num_items, num_bins];
-    for (int i = 0; i < num_items; ++i)
+    static void Main()
     {
-      int num_copies = items[i, 1];
-      for (int b = 0; b < num_bins; ++b)
-      {
-        x[i, b] = model.NewIntVar(0, num_copies, String.Format("x_{0}_{1}", i, b));
-      }
-    }
+        // Data.
+        int bin_capacity = 100;
+        int slack_capacity = 20;
+        int num_bins = 5;
 
-    // Load variables.
-    IntVar[] load = new IntVar[num_bins];
-    for (int b = 0; b < num_bins; ++b)
-    {
-      load[b] = model.NewIntVar(0, bin_capacity, String.Format("load_{0}", b));
-    }
+        int[,] items = new int[,] { { 20, 6 }, { 15, 6 }, { 30, 4 }, { 45, 3 } };
+        int num_items = items.GetLength(0);
 
-    // Slack variables.
-    IntVar[] slacks = new IntVar[num_bins];
-    for (int b = 0; b < num_bins; ++b)
-    {
-      slacks[b] = model.NewBoolVar(String.Format("slack_{0}", b));
-    }
+        // Model.
+        CpModel model = new CpModel();
 
-    // Links load and x.
-    int[] sizes = new int[num_items];
-    for (int i = 0; i < num_items; ++i)
-    {
-      sizes[i] = items[i, 0];
-    }
-    for (int b = 0; b < num_bins; ++b)
-    {
-      IntVar[] tmp = new IntVar[num_items];
-      for (int i = 0; i < num_items; ++i)
-      {
-        tmp[i] = x[i, b];
-      }
-      model.Add(load[b] == tmp.ScalProd(sizes));
-    }
-
-    // Place all items.
-    for (int i = 0; i < num_items; ++i)
-    {
-      IntVar[] tmp = new IntVar[num_bins];
-      for (int b = 0; b < num_bins; ++b)
-      {
-        tmp[b] = x[i, b];
-      }
-      model.Add(LinearExpr.Sum(tmp) == items[i, 1]);
-    }
-
-    // Links load and slack.
-    int safe_capacity = bin_capacity - slack_capacity;
-    for (int b = 0; b < num_bins; ++b)
-    {
-      //  slack[b] => load[b] <= safe_capacity.
-      model.Add(load[b] <= safe_capacity).OnlyEnforceIf(slacks[b]);
-      // not(slack[b]) => load[b] > safe_capacity.
-      model.Add(load[b] > safe_capacity).OnlyEnforceIf(slacks[b].Not());
-    }
-
-    // Maximize sum of slacks.
-    model.Maximize(LinearExpr.Sum(slacks));
-
-    // Solves and prints out the solution.
-    CpSolver solver = new CpSolver();
-    CpSolverStatus status = solver.Solve(model);
-    Console.WriteLine(String.Format("Solve status: {0}", status));
-    if (status == CpSolverStatus.Optimal) {
-      Console.WriteLine(String.Format("Optimal objective value: {0}",
-                                      solver.ObjectiveValue));
-      for (int b = 0; b < num_bins; ++b)
-      {
-        Console.WriteLine(String.Format("load_{0} = {1}",
-                                        b, solver.Value(load[b])));
+        // Main variables.
+        IntVar[,] x = new IntVar[num_items, num_bins];
         for (int i = 0; i < num_items; ++i)
         {
-          Console.WriteLine(string.Format("  item_{0}_{1} = {2}",
-                                          i, b, solver.Value(x[i, b])));
+            int num_copies = items[i, 1];
+            for (int b = 0; b < num_bins; ++b)
+            {
+                x[i, b] = model.NewIntVar(0, num_copies, String.Format("x_{0}_{1}", i, b));
+            }
         }
-      }
+
+        // Load variables.
+        IntVar[] load = new IntVar[num_bins];
+        for (int b = 0; b < num_bins; ++b)
+        {
+            load[b] = model.NewIntVar(0, bin_capacity, String.Format("load_{0}", b));
+        }
+
+        // Slack variables.
+        IntVar[] slacks = new IntVar[num_bins];
+        for (int b = 0; b < num_bins; ++b)
+        {
+            slacks[b] = model.NewBoolVar(String.Format("slack_{0}", b));
+        }
+
+        // Links load and x.
+        int[] sizes = new int[num_items];
+        for (int i = 0; i < num_items; ++i)
+        {
+            sizes[i] = items[i, 0];
+        }
+        for (int b = 0; b < num_bins; ++b)
+        {
+            IntVar[] tmp = new IntVar[num_items];
+            for (int i = 0; i < num_items; ++i)
+            {
+                tmp[i] = x[i, b];
+            }
+            model.Add(load[b] == LinearExpr.ScalProd(tmp, sizes));
+        }
+
+        // Place all items.
+        for (int i = 0; i < num_items; ++i)
+        {
+            IntVar[] tmp = new IntVar[num_bins];
+            for (int b = 0; b < num_bins; ++b)
+            {
+                tmp[b] = x[i, b];
+            }
+            model.Add(LinearExpr.Sum(tmp) == items[i, 1]);
+        }
+
+        // Links load and slack.
+        int safe_capacity = bin_capacity - slack_capacity;
+        for (int b = 0; b < num_bins; ++b)
+        {
+            //  slack[b] => load[b] <= safe_capacity.
+            model.Add(load[b] <= safe_capacity).OnlyEnforceIf(slacks[b]);
+            // not(slack[b]) => load[b] > safe_capacity.
+            model.Add(load[b] > safe_capacity).OnlyEnforceIf(slacks[b].Not());
+        }
+
+        // Maximize sum of slacks.
+        model.Maximize(LinearExpr.Sum(slacks));
+
+        // Solves and prints out the solution.
+        CpSolver solver = new CpSolver();
+        CpSolverStatus status = solver.Solve(model);
+        Console.WriteLine(String.Format("Solve status: {0}", status));
+        if (status == CpSolverStatus.Optimal)
+        {
+            Console.WriteLine(String.Format("Optimal objective value: {0}", solver.ObjectiveValue));
+            for (int b = 0; b < num_bins; ++b)
+            {
+                Console.WriteLine(String.Format("load_{0} = {1}", b, solver.Value(load[b])));
+                for (int i = 0; i < num_items; ++i)
+                {
+                    Console.WriteLine(string.Format("  item_{0}_{1} = {2}", i, b, solver.Value(x[i, b])));
+                }
+            }
+        }
+        Console.WriteLine("Statistics");
+        Console.WriteLine(String.Format("  - conflicts : {0}", solver.NumConflicts()));
+        Console.WriteLine(String.Format("  - branches  : {0}", solver.NumBranches()));
+        Console.WriteLine(String.Format("  - wall time : {0} s", solver.WallTime()));
     }
-    Console.WriteLine("Statistics");
-    Console.WriteLine(String.Format("  - conflicts : {0}",
-                                    solver.NumConflicts()));
-    Console.WriteLine(String.Format("  - branches  : {0}",
-                                    solver.NumBranches()));
-    Console.WriteLine(String.Format("  - wall time : {0} s",
-                                    solver.WallTime()));
-  }
 }
 ```

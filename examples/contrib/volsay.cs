@@ -18,60 +18,55 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.LinearSolver;
 
-public class Volsay {
-  /**
-   * Volsay problem.
-   *
-   * From the OPL model volsay.mod.
-   *
-   * Also see http://www.hakank.org/or-tools/volsay.py
-   */
-  private static void Solve() {
-    Solver solver = new Solver(
-    	   "Volsay", Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
+public class Volsay
+{
+    /**
+     * Volsay problem.
+     *
+     * From the OPL model volsay.mod.
+     *
+     * Also see http://www.hakank.org/or-tools/volsay.py
+     */
+    private static void Solve()
+    {
+        Solver solver = new Solver("Volsay", Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
 
-    //
-    // Variables
-    //
-    Variable Gas = solver.MakeNumVar(0, 100000, "Gas");
-    Variable Chloride = solver.MakeNumVar(0, 100000, "Cloride");
+        //
+        // Variables
+        //
+        Variable Gas = solver.MakeNumVar(0, 100000, "Gas");
+        Variable Chloride = solver.MakeNumVar(0, 100000, "Cloride");
 
-    Constraint c1 = solver.Add(Gas + Chloride <= 50);
-    Constraint c2 = solver.Add(3 * Gas + 4 * Chloride <= 180);
+        Constraint c1 = solver.Add(Gas + Chloride <= 50);
+        Constraint c2 = solver.Add(3 * Gas + 4 * Chloride <= 180);
 
-    solver.Maximize(40 * Gas + 50 * Chloride);
+        solver.Maximize(40 * Gas + 50 * Chloride);
 
-    Solver.ResultStatus resultStatus = solver.Solve();
+        Solver.ResultStatus resultStatus = solver.Solve();
 
-    if (resultStatus != Solver.ResultStatus.OPTIMAL) {
-      Console.WriteLine("The problem don't have an optimal solution.");
-      return;
+        if (resultStatus != Solver.ResultStatus.OPTIMAL)
+        {
+            Console.WriteLine("The problem don't have an optimal solution.");
+            return;
+        }
+
+        Console.WriteLine("Objective: {0}", solver.Objective().Value());
+
+        Console.WriteLine("Gas      : {0} ReducedCost: {1}", Gas.SolutionValue(), Gas.ReducedCost());
+
+        Console.WriteLine("Chloride : {0} ReducedCost: {1}", Chloride.SolutionValue(), Chloride.ReducedCost());
+
+        double[] activities = solver.ComputeConstraintActivities();
+        Console.WriteLine("c1       : DualValue: {0} Activity: {1}", c1.DualValue(), activities[c1.Index()]);
+
+        Console.WriteLine("c2       : DualValue: {0} Activity: {1}", c2.DualValue(), activities[c2.Index()]);
+
+        Console.WriteLine("\nWallTime: " + solver.WallTime());
+        Console.WriteLine("Iterations: " + solver.Iterations());
     }
 
-    Console.WriteLine("Objective: {0}", solver.Objective().Value());
-
-    Console.WriteLine("Gas      : {0} ReducedCost: {1}",
-                      Gas.SolutionValue(),
-                      Gas.ReducedCost());
-
-    Console.WriteLine("Chloride : {0} ReducedCost: {1}",
-                      Chloride.SolutionValue(),
-                      Chloride.ReducedCost());
-
-    double[] activities = solver.ComputeConstraintActivities();
-    Console.WriteLine("c1       : DualValue: {0} Activity: {1}",
-                      c1.DualValue(),
-                      activities[c1.Index()]);
-
-    Console.WriteLine("c2       : DualValue: {0} Activity: {1}",
-                      c2.DualValue(),
-                      activities[c2.Index()]);
-
-    Console.WriteLine("\nWallTime: " + solver.WallTime());
-    Console.WriteLine("Iterations: " + solver.Iterations());
-  }
-
-  public static void Main(String[] args) {
-    Solve();
-  }
+    public static void Main(String[] args)
+    {
+        Solve();
+    }
 }

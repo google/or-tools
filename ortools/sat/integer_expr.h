@@ -21,6 +21,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
@@ -64,6 +65,11 @@ class IntegerSumLE : public PropagatorInterface {
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
+  // Same as Propagate() but only consider current root level bounds. This is
+  // mainly useful for the LP propagator since it can find relevant optimal
+  // really late in the search tree.
+  bool PropagateAtLevelZero();
+
  private:
   // Fills integer_reason_ with all the current lower_bounds. The real
   // explanation may require removing one of them, but as an optimization, we
@@ -100,6 +106,33 @@ class IntegerSumLE : public PropagatorInterface {
   std::vector<IntegerValue> reason_coeffs_;
 
   DISALLOW_COPY_AND_ASSIGN(IntegerSumLE);
+};
+
+// This assumes target = SUM_i coeffs[i] * vars[i], and detects that the target
+// must be of the form (a*X + b).
+//
+// This propagator is quite specific and runs only at level zero. For now, this
+// is mainly used for the objective variable. As we fix terms with high
+// objective coefficient, it is possible the only terms left have a common
+// divisor. This close app2-2.mps in less than a second instead of running
+// forever to prove the optimal (in single thread).
+class LevelZeroEquality : PropagatorInterface {
+ public:
+  LevelZeroEquality(IntegerVariable target,
+                    const std::vector<IntegerVariable>& vars,
+                    const std::vector<IntegerValue>& coeffs, Model* model);
+
+  bool Propagate() final;
+
+ private:
+  const IntegerVariable target_;
+  const std::vector<IntegerVariable> vars_;
+  const std::vector<IntegerValue> coeffs_;
+
+  IntegerValue gcd_ = IntegerValue(1);
+
+  Trail* trail_;
+  IntegerTrail* integer_trail_;
 };
 
 // A min (resp max) contraint of the form min == MIN(vars) can be decomposed
@@ -441,18 +474,29 @@ inline std::function<void(Model*)> ConditionalWeightedSumLowerOrEqual(
                                  : integer_trail->UpperBound(vars[i]));
     }
     if (expression_min == upper_bound) {
+      // Tricky: as we create integer literal, we might propagate stuff and
+      // the bounds might change, so if the expression_min increase with the
+      // bound we use, then the literal must be false.
+      IntegerValue non_cached_min;
       for (int i = 0; i < vars.size(); ++i) {
         if (coefficients[i] > 0) {
-          model->Add(
-              Implication(enforcement_literals,
-                          IntegerLiteral::LowerOrEqual(
-                              vars[i], integer_trail->LowerBound(vars[i]))));
+          const IntegerValue lb = integer_trail->LowerBound(vars[i]);
+          non_cached_min += coefficients[i] * lb;
+          model->Add(Implication(enforcement_literals,
+                                 IntegerLiteral::LowerOrEqual(vars[i], lb)));
         } else if (coefficients[i] < 0) {
-          model->Add(
-              Implication(enforcement_literals,
-                          IntegerLiteral::GreaterOrEqual(
-                              vars[i], integer_trail->UpperBound(vars[i]))));
+          const IntegerValue ub = integer_trail->UpperBound(vars[i]);
+          non_cached_min += coefficients[i] * ub;
+          model->Add(Implication(enforcement_literals,
+                                 IntegerLiteral::GreaterOrEqual(vars[i], ub)));
         }
+      }
+      if (non_cached_min > expression_min) {
+        std::vector<Literal> clause;
+        for (const Literal l : enforcement_literals) {
+          clause.push_back(l.Negated());
+        }
+        model->Add(ClauseConstraint(clause));
       }
     } else {
       IntegerSumLE* constraint = new IntegerSumLE(

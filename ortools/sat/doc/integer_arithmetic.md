@@ -33,7 +33,7 @@
          * [Java code](#java-code-2)
          * [C# code](#c-code-5)
 
-<!-- Added by: lperron, at: Thu Nov 14 21:15:55 CET 2019 -->
+<!-- Added by: lperron, at: Tue Nov  3 17:33:08 CET 2020 -->
 
 <!--te-->
 
@@ -149,10 +149,6 @@ rabbits and pheasants are there?
 ```python
 """Rabbits and Pheasants quizz."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from ortools.sat.python import cp_model
 
 
@@ -172,7 +168,7 @@ def RabbitsAndPheasantsSat():
   solver = cp_model.CpSolver()
   status = solver.Solve(model)
 
-  if status == cp_model.FEASIBLE:
+  if status == cp_model.OPTIMAL:
     print('%i rabbits and %i pheasants' % (solver.Value(r), solver.Value(p)))
 
 
@@ -200,7 +196,7 @@ void RabbitsAndPheasantsSat() {
 
   const CpSolverResponse response = Solve(cp_model.Build());
 
-  if (response.status() == CpSolverStatus::FEASIBLE) {
+  if (response.status() == CpSolverStatus::OPTIMAL) {
     // Get the value of x in the solution.
     LOG(INFO) << SolutionIntegerValue(response, rabbits) << " rabbits, and "
               << SolutionIntegerValue(response, pheasants) << " pheasants";
@@ -222,6 +218,7 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
@@ -233,10 +230,8 @@ import com.google.ortools.sat.LinearExpr;
  * pheasants are there?
  */
 public class RabbitsAndPheasantsSat {
-
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the variables.
@@ -251,7 +246,7 @@ public class RabbitsAndPheasantsSat {
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.solve(model);
 
-    if (status == CpSolverStatus.FEASIBLE) {
+    if (status == CpSolverStatus.OPTIMAL) {
       System.out.println(solver.value(r) + " rabbits, and " + solver.value(p) + " pheasants");
     }
   }
@@ -266,28 +261,27 @@ using Google.OrTools.Sat;
 
 public class RabbitsAndPheasantsSat
 {
-  static void Main()
-  {
-    // Creates the model.
-    CpModel model = new CpModel();
-    // Creates the variables.
-    IntVar r = model.NewIntVar(0, 100, "r");
-    IntVar p = model.NewIntVar(0, 100, "p");
-    // 20 heads.
-    model.Add(r + p == 20);
-    // 56 legs.
-    model.Add(4 * r + 2 * p == 56);
-
-    // Creates a solver and solves the model.
-    CpSolver solver = new CpSolver();
-    CpSolverStatus status = solver.Solve(model);
-
-    if (status == CpSolverStatus.Feasible)
+    static void Main()
     {
-      Console.WriteLine(solver.Value(r) + " rabbits, and " +
-                        solver.Value(p) + " pheasants");
+        // Creates the model.
+        CpModel model = new CpModel();
+        // Creates the variables.
+        IntVar r = model.NewIntVar(0, 100, "r");
+        IntVar p = model.NewIntVar(0, 100, "p");
+        // 20 heads.
+        model.Add(r + p == 20);
+        // 56 legs.
+        model.Add(4 * r + 2 * p == 56);
+
+        // Creates a solver and solves the model.
+        CpSolver solver = new CpSolver();
+        CpSolverStatus status = solver.Solve(model);
+
+        if (status == CpSolverStatus.Optimal)
+        {
+            Console.WriteLine(solver.Value(r) + " rabbits, and " + solver.Value(p) + " pheasants");
+        }
     }
-  }
 }
 ```
 
@@ -330,9 +324,6 @@ The following samples output:
 ```python
 """Encodes an convex piecewise linear function."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
@@ -489,6 +480,7 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.SatParameters;
 import com.google.ortools.sat.CpModel;
@@ -499,9 +491,8 @@ import com.google.ortools.sat.LinearExpr;
 
 /** Encode the piecewise linear expression. */
 public class EarlinessTardinessCostSampleSat {
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     long earlinessDate = 5;
     long earlinessCost = 8;
     long latenessDate = 15;
@@ -584,80 +575,77 @@ using Google.OrTools.Util;
 
 public class VarArraySolutionPrinter : CpSolverSolutionCallback
 {
-  public VarArraySolutionPrinter(IntVar[] variables)
-  {
-    variables_ = variables;
-  }
-
-  public override void OnSolutionCallback()
-  {
+    public VarArraySolutionPrinter(IntVar[] variables)
     {
-      foreach (IntVar v in variables_)
-      {
-        Console.Write(String.Format("{0}={1} ", v.ShortString(), Value(v)));
-      }
-      Console.WriteLine();
+        variables_ = variables;
     }
-  }
 
-  private IntVar[] variables_;
+    public override void OnSolutionCallback()
+    {
+        {
+            foreach (IntVar v in variables_)
+            {
+                Console.Write(String.Format("{0}={1} ", v.ShortString(), Value(v)));
+            }
+            Console.WriteLine();
+        }
+    }
+
+    private IntVar[] variables_;
 }
 
 public class EarlinessTardinessCostSampleSat
 {
-  static void Main()
-  {
-    long earliness_date = 5;
-    long earliness_cost = 8;
-    long lateness_date = 15;
-    long lateness_cost = 12;
+    static void Main()
+    {
+        long earliness_date = 5;
+        long earliness_cost = 8;
+        long lateness_date = 15;
+        long lateness_cost = 12;
 
-    // Create the CP-SAT model.
-    CpModel model = new CpModel();
+        // Create the CP-SAT model.
+        CpModel model = new CpModel();
 
-    // Declare our primary variable.
-    IntVar x = model.NewIntVar(0, 20, "x");
+        // Declare our primary variable.
+        IntVar x = model.NewIntVar(0, 20, "x");
 
-    // Create the expression variable and implement the piecewise linear
-    // function.
-    //
-    //  \        /
-    //   \______/
-    //   ed    ld
-    //
-    long large_constant = 1000;
-    IntVar expr = model.NewIntVar(0, large_constant, "expr");
+        // Create the expression variable and implement the piecewise linear
+        // function.
+        //
+        //  \        /
+        //   \______/
+        //   ed    ld
+        //
+        long large_constant = 1000;
+        IntVar expr = model.NewIntVar(0, large_constant, "expr");
 
-    // First segment.
-    IntVar s1 = model.NewIntVar(-large_constant, large_constant, "s1");
-    model.Add(s1 == earliness_cost * (earliness_date - x));
+        // First segment.
+        IntVar s1 = model.NewIntVar(-large_constant, large_constant, "s1");
+        model.Add(s1 == earliness_cost * (earliness_date - x));
 
-    // Second segment.
-    IntVar s2 = model.NewConstant(0);
+        // Second segment.
+        IntVar s2 = model.NewConstant(0);
 
-    // Third segment.
-    IntVar s3 = model.NewIntVar(-large_constant, large_constant, "s3");
-    model.Add(s3 == lateness_cost * (x - lateness_date));
+        // Third segment.
+        IntVar s3 = model.NewIntVar(-large_constant, large_constant, "s3");
+        model.Add(s3 == lateness_cost * (x - lateness_date));
 
-    // Link together expr and x through s1, s2, and s3.
-    model.AddMaxEquality(expr, new IntVar[] {s1, s2, s3});
+        // Link together expr and x through s1, s2, and s3.
+        model.AddMaxEquality(expr, new IntVar[] { s1, s2, s3 });
 
-    // Search for x values in increasing order.
-    model.AddDecisionStrategy(
-        new IntVar[] {x},
-        DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
-        DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
+        // Search for x values in increasing order.
+        model.AddDecisionStrategy(new IntVar[] { x }, DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
+                                  DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
 
-    // Create the solver.
-    CpSolver solver = new CpSolver();
+        // Create the solver.
+        CpSolver solver = new CpSolver();
 
-    // Force solver to follow the decision strategy exactly.
-    solver.StringParameters = "search_branching:FIXED_SEARCH";
+        // Force solver to follow the decision strategy exactly.
+        solver.StringParameters = "search_branching:FIXED_SEARCH";
 
-    VarArraySolutionPrinter cb =
-        new VarArraySolutionPrinter(new IntVar[] {x, expr});
-    solver.SearchAllSolutions(model, cb);
-  }
+        VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, expr });
+        solver.SearchAllSolutions(model, cb);
+    }
 }
 ```
 
@@ -693,10 +681,6 @@ The following samples output:
 
 ```python
 """Implements a step function."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
@@ -859,6 +843,7 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.SatParameters;
 import com.google.ortools.sat.CpModel;
@@ -870,10 +855,8 @@ import com.google.ortools.util.Domain;
 
 /** Link integer constraints together. */
 public class StepFunctionSampleSat {
-
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Create the CP-SAT model.
     CpModel model = new CpModel();
 
@@ -958,86 +941,80 @@ using Google.OrTools.Util;
 
 public class VarArraySolutionPrinter : CpSolverSolutionCallback
 {
-  public VarArraySolutionPrinter(IntVar[] variables)
-  {
-    variables_ = variables;
-  }
-
-  public override void OnSolutionCallback()
-  {
+    public VarArraySolutionPrinter(IntVar[] variables)
     {
-      foreach (IntVar v in variables_)
-      {
-        Console.Write(String.Format("{0}={1} ", v.ShortString(), Value(v)));
-      }
-      Console.WriteLine();
+        variables_ = variables;
     }
-  }
 
-  private IntVar[] variables_;
+    public override void OnSolutionCallback()
+    {
+        {
+            foreach (IntVar v in variables_)
+            {
+                Console.Write(String.Format("{0}={1} ", v.ShortString(), Value(v)));
+            }
+            Console.WriteLine();
+        }
+    }
+
+    private IntVar[] variables_;
 }
 
 public class StepFunctionSampleSat
 {
-  static void Main()
-  {
-    // Create the CP-SAT model.
-    CpModel model = new CpModel();
+    static void Main()
+    {
+        // Create the CP-SAT model.
+        CpModel model = new CpModel();
 
-    // Declare our primary variable.
-    IntVar x = model.NewIntVar(0, 20, "x");
+        // Declare our primary variable.
+        IntVar x = model.NewIntVar(0, 20, "x");
 
-    // Create the expression variable and implement the step function
-    // Note it is not defined for var == 2.
-    //
-    //        -               3
-    // -- --      ---------   2
-    //                        1
-    //      -- ---            0
-    // 0 ================ 20
-    //
-    IntVar expr = model.NewIntVar(0, 3, "expr");
+        // Create the expression variable and implement the step function
+        // Note it is not defined for var == 2.
+        //
+        //        -               3
+        // -- --      ---------   2
+        //                        1
+        //      -- ---            0
+        // 0 ================ 20
+        //
+        IntVar expr = model.NewIntVar(0, 3, "expr");
 
-    // expr == 0 on [5, 6] U [8, 10]
-    ILiteral b0 = model.NewBoolVar("b0");
-    model.AddLinearExpressionInDomain(
-        x,
-        Domain.FromValues(new long[] { 5, 6, 8, 9, 10 })).OnlyEnforceIf(b0);
-    model.Add(expr == 0).OnlyEnforceIf(b0);
+        // expr == 0 on [5, 6] U [8, 10]
+        ILiteral b0 = model.NewBoolVar("b0");
+        model.AddLinearExpressionInDomain(x, Domain.FromValues(new long[] { 5, 6, 8, 9, 10 })).OnlyEnforceIf(b0);
+        model.Add(expr == 0).OnlyEnforceIf(b0);
 
-    // expr == 2 on [0, 1] U [3, 4] U [11, 20]
-    ILiteral b2 = model.NewBoolVar("b2");
-    model.AddLinearExpressionInDomain(
-        x,
-        Domain.FromIntervals(
-            new long[][] {new long[] {0, 1},
-                          new long[] {3, 4},
-                          new long[] {11, 20}})).OnlyEnforceIf(b2);
-    model.Add(expr == 2).OnlyEnforceIf(b2);
+        // expr == 2 on [0, 1] U [3, 4] U [11, 20]
+        ILiteral b2 = model.NewBoolVar("b2");
+        model
+            .AddLinearExpressionInDomain(
+                x,
+                Domain.FromIntervals(new long[][] { new long[] { 0, 1 }, new long[] { 3, 4 }, new long[] { 11, 20 } }))
+            .OnlyEnforceIf(b2);
+        model.Add(expr == 2).OnlyEnforceIf(b2);
 
-    // expr == 3 when x == 7
-    ILiteral b3 = model.NewBoolVar("b3");
-    model.Add(x == 7).OnlyEnforceIf(b3);
-    model.Add(expr == 3).OnlyEnforceIf(b3);
+        // expr == 3 when x == 7
+        ILiteral b3 = model.NewBoolVar("b3");
+        model.Add(x == 7).OnlyEnforceIf(b3);
+        model.Add(expr == 3).OnlyEnforceIf(b3);
 
-    // At least one bi is true. (we could use a sum == 1).
-    model.AddBoolOr(new ILiteral[] { b0, b2, b3 });
+        // At least one bi is true. (we could use a sum == 1).
+        model.AddBoolOr(new ILiteral[] { b0, b2, b3 });
 
-    // Search for x values in increasing order.
-    model.AddDecisionStrategy(
-        new IntVar[] { x },
-        DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
-        DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
+        // Search for x values in increasing order.
+        model.AddDecisionStrategy(new IntVar[] { x }, DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
+                                  DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
 
-    // Create the solver.
-    CpSolver solver = new CpSolver();
+        // Create the solver.
+        CpSolver solver = new CpSolver();
 
-    // Force solver to follow the decision strategy exactly.
-    solver.StringParameters = "search_branching:FIXED_SEARCH";
+        // Force solver to follow the decision strategy exactly.
+        solver.StringParameters = "search_branching:FIXED_SEARCH";
 
-    VarArraySolutionPrinter cb =
-        new VarArraySolutionPrinter(new IntVar[] { x, expr });
-    solver.SearchAllSolutions(model, cb);
-  }
+        VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, expr });
+        solver.SearchAllSolutions(model, cb);
+    }
 }
 ```

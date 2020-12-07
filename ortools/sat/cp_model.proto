@@ -210,14 +210,6 @@ message RoutesConstraintProto {
   int64 capacity = 5;
 }
 
-// Another routing constraint. This one forces the nexts variables to form a
-// permutation, and cycles of this permutation of length more than 1 (nonloops)
-// to contain exactly one of the distinguished nodes.
-message CircuitCoveringConstraintProto {
-  repeated int32 nexts = 1;
-  repeated int64 distinguished_nodes = 2;
-}
-
 // The values of the n-tuple formed by the given variables can only be one of
 // the listed n-tuples in values. The n-tuples are encoded in a flattened way:
 //     [tuple0_v0, tuple0_v1, ..., tuple0_v{n-1}, tuple1_v0, ...].
@@ -346,10 +338,6 @@ message ConstraintProto {
 
     // The routes constraint implements the vehicle routing problem.
     RoutesConstraintProto routes = 23;
-
-    // The circuit_covering constraint is similar to the circuit constraint,
-    // but allows multiple non-overlapping cycles instead of just one.
-    CircuitCoveringConstraintProto circuit_covering = 25;
 
     // The table constraint enforces what values a tuple of variables may
     // take.
@@ -562,7 +550,7 @@ enum CpSolverStatus {
 //
 // TODO(user): support returning multiple solutions. Look at the Stubby
 // streaming API as we probably wants to get them as they are found.
-// Next id: 24
+// Next id: 26
 message CpSolverResponse {
   // The status of the solve.
   CpSolverStatus status = 1;
@@ -638,6 +626,9 @@ message CpSolverResponse {
   int64 num_branches = 12;
   int64 num_binary_propagations = 13;
   int64 num_integer_propagations = 14;
+  int64 num_restarts = 24;
+  int64 num_lp_iterations = 25;
+
   double wall_time = 15;
   double user_time = 16;
   double deterministic_time = 17;

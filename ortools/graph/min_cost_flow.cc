@@ -26,20 +26,20 @@
 
 // TODO(user): Remove these flags and expose the parameters in the API.
 // New clients, please do not use these flags!
-DEFINE_int64(min_cost_flow_alpha, 5,
-             "Divide factor for epsilon at each refine step.");
-DEFINE_bool(min_cost_flow_check_feasibility, true,
-            "Check that the graph has enough capacity to send all supplies "
-            "and serve all demands. Also check that the sum of supplies "
-            "is equal to the sum of demands.");
-DEFINE_bool(min_cost_flow_check_balance, true,
-            "Check that the sum of supplies is equal to the sum of demands.");
-DEFINE_bool(min_cost_flow_check_costs, true,
-            "Check that the magnitude of the costs will not exceed the "
-            "precision of the machine when scaled (multiplied) by the number "
-            "of nodes");
-DEFINE_bool(min_cost_flow_check_result, true,
-            "Check that the result is valid.");
+ABSL_FLAG(int64, min_cost_flow_alpha, 5,
+          "Divide factor for epsilon at each refine step.");
+ABSL_FLAG(bool, min_cost_flow_check_feasibility, true,
+          "Check that the graph has enough capacity to send all supplies "
+          "and serve all demands. Also check that the sum of supplies "
+          "is equal to the sum of demands.");
+ABSL_FLAG(bool, min_cost_flow_check_balance, true,
+          "Check that the sum of supplies is equal to the sum of demands.");
+ABSL_FLAG(bool, min_cost_flow_check_costs, true,
+          "Check that the magnitude of the costs will not exceed the "
+          "precision of the machine when scaled (multiplied) by the number "
+          "of nodes");
+ABSL_FLAG(bool, min_cost_flow_check_result, true,
+          "Check that the result is valid.");
 
 namespace operations_research {
 
@@ -53,7 +53,7 @@ GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::GenericMinCostFlow(
       first_admissible_arc_(),
       active_nodes_(),
       epsilon_(0),
-      alpha_(FLAGS_min_cost_flow_alpha),
+      alpha_(absl::GetFlag(FLAGS_min_cost_flow_alpha)),
       cost_scaling_factor_(1),
       scaled_arc_unit_cost_(),
       total_flow_cost_(0),
@@ -63,7 +63,7 @@ GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::GenericMinCostFlow(
       stats_("MinCostFlow"),
       feasibility_checked_(false),
       use_price_update_(false),
-      check_feasibility_(FLAGS_min_cost_flow_check_feasibility) {
+      check_feasibility_(absl::GetFlag(FLAGS_min_cost_flow_check_feasibility)) {
   const NodeIndex max_num_nodes = Graphs<Graph>::NodeReservation(*graph_);
   if (max_num_nodes > 0) {
     node_excess_.Reserve(0, max_num_nodes - 1);
@@ -491,11 +491,12 @@ GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Solve() {
   status_ = NOT_SOLVED;
-  if (FLAGS_min_cost_flow_check_balance && !CheckInputConsistency()) {
+  if (absl::GetFlag(FLAGS_min_cost_flow_check_balance) &&
+      !CheckInputConsistency()) {
     status_ = UNBALANCED;
     return false;
   }
-  if (FLAGS_min_cost_flow_check_costs && !CheckCostRange()) {
+  if (absl::GetFlag(FLAGS_min_cost_flow_check_costs) && !CheckCostRange()) {
     status_ = BAD_COST_RANGE;
     return false;
   }
@@ -507,7 +508,7 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Solve() {
   ResetFirstAdmissibleArcs();
   ScaleCosts();
   Optimize();
-  if (FLAGS_min_cost_flow_check_result && !CheckResult()) {
+  if (absl::GetFlag(FLAGS_min_cost_flow_check_result) && !CheckResult()) {
     status_ = BAD_RESULT;
     UnscaleCosts();
     return false;

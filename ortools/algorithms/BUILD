@@ -69,7 +69,7 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:int_type",
-        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:strong_vector",
         "//ortools/base:ptr_util",
         "//ortools/util:time_limit",
     ],

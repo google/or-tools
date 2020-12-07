@@ -13,18 +13,6 @@ http_archive(
 )
 
 git_repository(
-    name = "com_github_gflags_gflags",
-    commit = "e171aa2",  # release v2.2.2
-    remote = "https://github.com/gflags/gflags.git",
-)
-
-git_repository(
-    name = "com_github_glog_glog",
-    commit = "96a2f23",  # release v0.4.0
-    remote = "https://github.com/google/glog.git",
-)
-
-git_repository(
     name = "bazel_skylib",
     commit = "e59b620",  # release 1.0.2
     remote = "https://github.com/bazelbuild/bazel-skylib.git",
@@ -33,25 +21,26 @@ git_repository(
 # Python Rules
 http_archive(
     name = "rules_python",
-    url = "https://github.com/bazelbuild/rules_python/releases/download/0.0.2/rules_python-0.0.2.tar.gz",
-    strip_prefix = "rules_python-0.0.2",
     sha256 = "b5668cde8bb6e3515057ef465a35ad712214962f0b3a314e551204266c7be90c",
+    strip_prefix = "rules_python-0.0.2",
+    url = "https://github.com/bazelbuild/rules_python/releases/download/0.0.2/rules_python-0.0.2.tar.gz",
 )
 
 # Protobuf
 git_repository(
     name = "com_google_protobuf",
-    commit = "fde7cf7",  # release v3.13.0
+    commit = "2514f0b",  # release v3.14.0
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+
 # Load common dependencies.
 protobuf_deps()
 
 git_repository(
     name = "com_google_absl",
-    commit = "b56cbdd", # release 20200923
+    commit = "0f3bb46", # release 20200923.2
     remote = "https://github.com/abseil/abseil-cpp.git",
 )
 
@@ -80,7 +69,7 @@ http_archive(
 http_archive(
     name = "scip",
     build_file = "//bazel:scip.BUILD",
-    patches = [ "//bazel:scip.patch" ],
+    patches = ["//bazel:scip.patch"],
     sha256 = "033bf240298d3a1c92e8ddb7b452190e0af15df2dad7d24d0572f10ae8eec5aa",
     url = "https://github.com/google/or-tools/releases/download/v7.7/scip-7.0.1.tgz",
 )

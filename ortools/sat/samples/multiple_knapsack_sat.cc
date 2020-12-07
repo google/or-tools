@@ -40,7 +40,7 @@ struct DataModel {
   const std::vector<int> values = {
       {10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25}};
   const int num_items = weights.size();
-  const int total_value = accumulate(values.begin(), values.end(), 0);
+  const int total_value = std::accumulate(values.begin(), values.end(), 0);
   const std::vector<int> kBinCapacities = {{100, 100, 100, 100, 100}};
   const int kNumBins = 5;
 };

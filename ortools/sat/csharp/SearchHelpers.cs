@@ -17,103 +17,102 @@ using System.Collections.Generic;
 namespace Google.OrTools.Sat
 {
 
-  public class CpSolverSolutionCallback : SolutionCallback
-  {
-    public long Value(LinearExpr e)
+    public class CpSolverSolutionCallback : SolutionCallback
     {
-      List<LinearExpr> exprs = new List<LinearExpr>();
-      List<long> coeffs = new List<long>();
-      exprs.Add(e);
-      coeffs.Add(1L);
-      long constant = 0;
+        public long Value(LinearExpr e)
+        {
+            List<LinearExpr> exprs = new List<LinearExpr>();
+            List<long> coeffs = new List<long>();
+            exprs.Add(e);
+            coeffs.Add(1L);
+            long constant = 0;
 
-      while (exprs.Count > 0)
-      {
-        LinearExpr expr = exprs[0];
-        exprs.RemoveAt(0);
-        long coeff = coeffs[0];
-        coeffs.RemoveAt(0);
-        if (coeff == 0) continue;
+            while (exprs.Count > 0)
+            {
+                LinearExpr expr = exprs[0];
+                exprs.RemoveAt(0);
+                long coeff = coeffs[0];
+                coeffs.RemoveAt(0);
+                if (coeff == 0)
+                    continue;
 
-        if (expr is ProductCst)
-        {
-          ProductCst p = (ProductCst)expr;
-          if (p.Coeff != 0)
-          {
-            exprs.Add(p.Expr);
-            coeffs.Add(p.Coeff * coeff);
-          }
+                if (expr is ProductCst)
+                {
+                    ProductCst p = (ProductCst)expr;
+                    if (p.Coeff != 0)
+                    {
+                        exprs.Add(p.Expr);
+                        coeffs.Add(p.Coeff * coeff);
+                    }
+                }
+                else if (expr is SumArray)
+                {
+                    SumArray a = (SumArray)expr;
+                    constant += coeff * a.Constant;
+                    foreach (LinearExpr sub in a.Expressions)
+                    {
+                        exprs.Add(sub);
+                        coeffs.Add(coeff);
+                    }
+                }
+                else if (expr is IntVar)
+                {
+                    int index = expr.Index;
+                    long value = SolutionIntegerValue(index);
+                    constant += coeff * value;
+                }
+                else if (expr is NotBooleanVariable)
+                {
+                    throw new ArgumentException("Cannot evaluate a literal in an integer expression.");
+                }
+                else
+                {
+                    throw new ArgumentException("Cannot evaluate '" + expr.ToString() + "' in an integer expression");
+                }
+            }
+            return constant;
         }
-        else if (expr is SumArray)
+
+        public Boolean BooleanValue(ILiteral literal)
         {
-          SumArray a = (SumArray)expr;
-          constant += coeff * a.Constant;
-          foreach (LinearExpr sub in a.Expressions)
-          {
-            exprs.Add(sub);
-            coeffs.Add(coeff);
-          }
+            if (literal is IntVar || literal is NotBooleanVariable)
+            {
+                int index = literal.GetIndex();
+                return SolutionBooleanValue(index);
+            }
+            else
+            {
+                throw new ArgumentException("Cannot evaluate '" + literal.ToString() + "' as a boolean literal");
+            }
         }
-        else if (expr is IntVar)
-        {
-          int index = expr.Index;
-          long value = SolutionIntegerValue(index);
-          constant += coeff * value;
-        }
-        else if (expr is NotBooleanVariable)
-        {
-          throw new ArgumentException(
-              "Cannot evaluate a literal in an integer expression.");
-        }
-        else
-        {
-          throw new ArgumentException("Cannot evaluate '" + expr.ToString() +
-                                      "' in an integer expression");
-        }
-      }
-      return constant;
     }
 
-    public Boolean BooleanValue(ILiteral literal)
+    public class ObjectiveSolutionPrinter : CpSolverSolutionCallback
     {
-      if (literal is IntVar || literal is NotBooleanVariable)
-      {
-        int index = literal.GetIndex();
-        return SolutionBooleanValue(index);
-      }
-      else
-      {
-        throw new ArgumentException("Cannot evaluate '" + literal.ToString() +
-                                    "' as a boolean literal");
-      }
-    }
-  }
+        private DateTime _startTime;
+        private int _solutionCount;
 
-  public class ObjectiveSolutionPrinter : CpSolverSolutionCallback
-  {
-    private DateTime _startTime;
-    private int _solutionCount;
+        public ObjectiveSolutionPrinter()
+        {
+            _startTime = DateTime.Now;
+        }
 
-    public ObjectiveSolutionPrinter()
-    {
-      _startTime = DateTime.Now;
-    }
+        public override void OnSolutionCallback()
+        {
+            var currentTime = DateTime.Now;
+            var objective = ObjectiveValue();
+            var objectiveBound = BestObjectiveBound();
+            var objLb = Math.Min(objective, objectiveBound);
+            var objUb = Math.Max(objective, objectiveBound);
+            var time = currentTime - _startTime;
 
-    public override void OnSolutionCallback()
-    {
-      var currentTime = DateTime.Now;
-      var objective = ObjectiveValue();
-      var objectiveBound = BestObjectiveBound();
-      var objLb = Math.Min(objective, objectiveBound);
-      var objUb = Math.Max(objective, objectiveBound);
-      var time = currentTime - _startTime;
+            Console.WriteLine(
+                value: $"Solution {_solutionCount}, time = {time.TotalSeconds} s, objective = [{objLb}, {objUb}]");
 
-      Console.WriteLine(value: $"Solution {_solutionCount}, time = {time.TotalSeconds} s, objective = [{objLb}, {objUb}]");
+            _solutionCount++;
+        }
 
-      _solutionCount++;
+        public int solutionCount() => _solutionCount;
     }
 
-    public int solutionCount() => _solutionCount;
-  }
-
-}  // namespace Google.OrTools.Sat
+} // namespace Google.OrTools.Sat

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['localsearchneighborhoodoperators_3686',['LocalSearchNeighborhoodOperators',['../classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#ae635d50fff08c042dbf2094bde963345',1,'operations_research::PROTOBUF_FINAL']]]
+  ['gettabuvarscallback_5454',['GetTabuVarsCallback',['../classoperations__research_1_1_routing_model.html#a0e106a97f0156868f1d1c741b283793e',1,'operations_research::RoutingModel']]]
 ];

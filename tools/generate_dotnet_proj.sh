@@ -11,7 +11,7 @@ declare -r SRC=$(basename "$FILE")
 # shellcheck disable=SC2155
 declare -r PACKAGES_PATH=$(realpath --relative-to="${FILE%/*}" packages)
 if [[ $FILE == *.cs ]] ; then
-  declare -r LANG_VERSION="    <LangVersion>7.3</LangVersion>"
+  declare -r LANG_VERSION="<LangVersion>7.3</LangVersion>"
   declare -r OR_TOOLS_PKG="Google.OrTools"
 else
   declare -r LANG_VERSION=""
@@ -51,7 +51,7 @@ cat >"$FILE_PROJ" <<EOL
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-${LANG_VERSION}
+    ${LANG_VERSION}
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <EnableDefaultItems>false</EnableDefaultItems>
     <!-- see https://github.com/dotnet/docs/issues/12237 -->

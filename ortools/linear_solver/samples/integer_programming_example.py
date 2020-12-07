@@ -12,7 +12,6 @@
 # limitations under the License.
 """Small example to illustrate solving a MIP problem."""
 # [START program]
-from __future__ import print_function
 # [START import]
 from ortools.linear_solver import pywraplp
 # [END import]

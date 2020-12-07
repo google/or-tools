@@ -17,39 +17,39 @@ using Google.OrTools.Sat;
 
 public class SimpleSatProgram
 {
-  static void Main()
-  {
-    // Creates the model.
-    // [START model]
-    CpModel model = new CpModel();
-    // [END model]
-
-    // Creates the variables.
-    // [START variables]
-    int num_vals = 3;
-
-    IntVar x = model.NewIntVar(0, num_vals - 1, "x");
-    IntVar y = model.NewIntVar(0, num_vals - 1, "y");
-    IntVar z = model.NewIntVar(0, num_vals - 1, "z");
-    // [END variables]
-
-    // Creates the constraints.
-    // [START constraints]
-    model.Add(x != y);
-    // [END constraints]
-
-    // Creates a solver and solves the model.
-    // [START solve]
-    CpSolver solver = new CpSolver();
-    CpSolverStatus status = solver.Solve(model);
-    // [END solve]
-
-    if (status == CpSolverStatus.Optimal)
+    static void Main()
     {
-      Console.WriteLine("x = " + solver.Value(x));
-      Console.WriteLine("y = " + solver.Value(y));
-      Console.WriteLine("z = " + solver.Value(z));
+        // Creates the model.
+        // [START model]
+        CpModel model = new CpModel();
+        // [END model]
+
+        // Creates the variables.
+        // [START variables]
+        int num_vals = 3;
+
+        IntVar x = model.NewIntVar(0, num_vals - 1, "x");
+        IntVar y = model.NewIntVar(0, num_vals - 1, "y");
+        IntVar z = model.NewIntVar(0, num_vals - 1, "z");
+        // [END variables]
+
+        // Creates the constraints.
+        // [START constraints]
+        model.Add(x != y);
+        // [END constraints]
+
+        // Creates a solver and solves the model.
+        // [START solve]
+        CpSolver solver = new CpSolver();
+        CpSolverStatus status = solver.Solve(model);
+        // [END solve]
+
+        if (status == CpSolverStatus.Optimal)
+        {
+            Console.WriteLine("x = " + solver.Value(x));
+            Console.WriteLine("y = " + solver.Value(y));
+            Console.WriteLine("z = " + solver.Value(z));
+        }
     }
-  }
 }
 // [END program]

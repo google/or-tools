@@ -21,11 +21,12 @@ else
 PYTHON_EXECUTABLE := $(shell $(WHICH) $(PYTHON_COMPILER) 2>nul)
 endif
 SET_PYTHONPATH = set PYTHONPATH=$(OR_TOOLS_PYTHONPATH) &&
+GEN_MYPY := $(shell $(WHICH) protoc-gen-mypy 2> NUL)
 else # UNIX
 PYTHON_COMPILER ?= python$(UNIX_PYTHON_VER)
 PYTHON_EXECUTABLE := $(shell which $(PYTHON_COMPILER))
 SET_PYTHONPATH = PYTHONPATH=$(OR_TOOLS_PYTHONPATH)
-GEN_MYPY := $(shell $(WHICH) protoc-gen-mypy)
+GEN_MYPY := $(shell command -v protoc-gen-mypy 2> /dev/null)
 ifneq ($(GEN_MYPY),)
 MYPY_OUT=--mypy_out=$(GEN_PATH)
 endif
@@ -791,6 +792,7 @@ test_python_python: \
  rpy_pyflow_example \
  rpy_reallocate_sat \
  rpy_rcpsp_sat \
+ rpy_shift_scheduling_sat \
  rpy_single_machine_scheduling_with_setup_release_due_dates_sat \
  rpy_steel_mill_slab_sat \
  rpy_stigler_diet \
@@ -801,8 +803,6 @@ test_python_python: \
  rpy_wedding_optimal_chart_sat \
  rpy_worker_schedule_sat \
  rpy_zebra_sat
-	$(MAKE) run SOURCE=examples/python/shift_scheduling_sat.py ARGS="--params max_time_in_seconds:10.0" \
-
 
 .PHONY: test_python_pimpl
 test_python_pimpl: \

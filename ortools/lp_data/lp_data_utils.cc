@@ -73,12 +73,13 @@ void Scale(LinearProgram* lp, SparseMatrixScaler* scaler,
   lp->transpose_matrix_is_consistent_ = false;
 }
 
-void LpScalingHelper::Scale(LinearProgram* lp) {
+void LpScalingHelper::Scale(LinearProgram* lp) { Scale(GlopParameters(), lp); }
+
+void LpScalingHelper::Scale(const GlopParameters& params, LinearProgram* lp) {
   scaler_.Clear();
-  ::operations_research::glop::Scale(
-      lp, &scaler_, operations_research::glop::GlopParameters::DEFAULT);
+  ::operations_research::glop::Scale(lp, &scaler_, params.scaling_method());
   bound_scaling_factor_ = 1.0 / lp->ScaleBounds();
-  objective_scaling_factor_ = 1.0 / lp->ScaleObjective();
+  objective_scaling_factor_ = 1.0 / lp->ScaleObjective(params.cost_scaling());
 }
 
 void LpScalingHelper::Clear() {

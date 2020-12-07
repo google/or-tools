@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.0</span>
+                <span id="sfml">Google OR-Tools 8.1</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -119,9 +119,9 @@ $(document).ready(function(){initNavTree('time__limit_8h_source.html',''); initR
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="preprocessor">#include &quot;exegesis/exegesis/itineraries/perf_subsystem.h&quot;</span></div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="preprocessor">#endif  // HAS_PERF_SUBSYSTEM</span></div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="time__limit_8h.html#a05c25f55df53c30b07aa2585a8424921">   41</a></span>&#160;<a class="code" href="time__limit_8h.html#a05c25f55df53c30b07aa2585a8424921">DECLARE_bool</a>(time_limit_use_usertime);</div>
+<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="time__limit_8h.html#aeebe51fb8b5872f6c2e4d01a04af8f78">   41</a></span>&#160;<a class="code" href="time__limit_8h.html#aeebe51fb8b5872f6c2e4d01a04af8f78">ABSL_DECLARE_FLAG</a>(<span class="keywordtype">bool</span>, time_limit_use_usertime);</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="time__limit_8h.html#a7fbb4f6504fc53b2518311b42fee9401">   47</a></span>&#160;<a class="code" href="time__limit_8h.html#a05c25f55df53c30b07aa2585a8424921">DECLARE_bool</a>(time_limit_use_instruction_count);</div>
+<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="time__limit_8h.html#a1c1600c80c38555c75d29c319ec767ed">   47</a></span>&#160;<a class="code" href="time__limit_8h.html#aeebe51fb8b5872f6c2e4d01a04af8f78">ABSL_DECLARE_FLAG</a>(<span class="keywordtype">bool</span>, time_limit_use_instruction_count);</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceoperations__research.html">operations_research</a> {</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
@@ -358,12 +358,12 @@ $(document).ready(function(){initNavTree('time__limit_8h_source.html',''); initR
 <div class="line"><a name="l00483"></a><span class="lineno">  483</span>&#160;  deterministic_limit_ = deterministic_limit;</div>
 <div class="line"><a name="l00484"></a><span class="lineno">  484</span>&#160;  instruction_limit_ = instruction_limit;</div>
 <div class="line"><a name="l00485"></a><span class="lineno">  485</span>&#160; </div>
-<div class="line"><a name="l00486"></a><span class="lineno">  486</span>&#160;  <span class="keywordflow">if</span> (FLAGS_time_limit_use_usertime) {</div>
+<div class="line"><a name="l00486"></a><span class="lineno">  486</span>&#160;  <span class="keywordflow">if</span> (absl::GetFlag(FLAGS_time_limit_use_usertime)) {</div>
 <div class="line"><a name="l00487"></a><span class="lineno">  487</span>&#160;    user_timer_.Start();</div>
 <div class="line"><a name="l00488"></a><span class="lineno">  488</span>&#160;    limit_in_seconds_ = limit_in_seconds;</div>
 <div class="line"><a name="l00489"></a><span class="lineno">  489</span>&#160;  }</div>
 <div class="line"><a name="l00490"></a><span class="lineno">  490</span>&#160;<span class="preprocessor">#ifdef HAS_PERF_SUBSYSTEM</span></div>
-<div class="line"><a name="l00491"></a><span class="lineno">  491</span>&#160;  <span class="keywordflow">if</span> (FLAGS_time_limit_use_instruction_count) {</div>
+<div class="line"><a name="l00491"></a><span class="lineno">  491</span>&#160;  <span class="keywordflow">if</span> (absl::GetFlag(FLAGS_time_limit_use_instruction_count)) {</div>
 <div class="line"><a name="l00492"></a><span class="lineno">  492</span>&#160;    perf_subsystem_.CleanUp();</div>
 <div class="line"><a name="l00493"></a><span class="lineno">  493</span>&#160;    perf_subsystem_.AddEvent(GetInstructionRetiredEventName());</div>
 <div class="line"><a name="l00494"></a><span class="lineno">  494</span>&#160;    perf_subsystem_.StartCollecting();</div>
@@ -396,7 +396,7 @@ $(document).ready(function(){initNavTree('time__limit_8h_source.html',''); initR
 <div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160; </div>
 <div class="line"><a name="l00522"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_time_limit.html#a4cb3517d59bf4642a85294267736af20">  522</a></span>&#160;<span class="keyword">inline</span> <span class="keywordtype">double</span> <a class="code" href="classoperations__research_1_1_time_limit.html#a4cb3517d59bf4642a85294267736af20">TimeLimit::ReadInstructionCounter</a>() {</div>
 <div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;<span class="preprocessor">#ifdef HAS_PERF_SUBSYSTEM</span></div>
-<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;  <span class="keywordflow">if</span> (FLAGS_time_limit_use_instruction_count) {</div>
+<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;  <span class="keywordflow">if</span> (absl::GetFlag(FLAGS_time_limit_use_instruction_count)) {</div>
 <div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;    <span class="keywordflow">return</span> perf_subsystem_.ReadCounters().GetScaledOrDie(</div>
 <div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;        GetInstructionRetiredEventName());</div>
 <div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;  }</div>
@@ -424,7 +424,7 @@ $(document).ready(function(){initNavTree('time__limit_8h_source.html',''); initR
 <div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160;  running_max_.Add(std::max(safety_buffer_ns_, current_ns - last_ns_));</div>
 <div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160;  last_ns_ = current_ns;</div>
 <div class="line"><a name="l00551"></a><span class="lineno">  551</span>&#160;  <span class="keywordflow">if</span> (current_ns + running_max_.GetCurrentMax() &gt;= limit_ns_) {</div>
-<div class="line"><a name="l00552"></a><span class="lineno">  552</span>&#160;    <span class="keywordflow">if</span> (FLAGS_time_limit_use_usertime) {</div>
+<div class="line"><a name="l00552"></a><span class="lineno">  552</span>&#160;    <span class="keywordflow">if</span> (absl::GetFlag(FLAGS_time_limit_use_usertime)) {</div>
 <div class="line"><a name="l00553"></a><span class="lineno">  553</span>&#160;      <span class="comment">// To avoid making many system calls, we only check the user time when</span></div>
 <div class="line"><a name="l00554"></a><span class="lineno">  554</span>&#160;      <span class="comment">// the &quot;absolute&quot; time limit has been reached. Note that the user time</span></div>
 <div class="line"><a name="l00555"></a><span class="lineno">  555</span>&#160;      <span class="comment">// should advance more slowly, so this is correct.</span></div>
@@ -446,7 +446,7 @@ $(document).ready(function(){initNavTree('time__limit_8h_source.html',''); initR
 <div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;  <span class="keywordflow">if</span> (limit_ns_ == kint64max) <span class="keywordflow">return</span> std::numeric_limits&lt;double&gt;::infinity();</div>
 <div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;  <span class="keyword">const</span> int64 delta_ns = limit_ns_ - absl::GetCurrentTimeNanos();</div>
 <div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;  <span class="keywordflow">if</span> (delta_ns &lt; 0) <span class="keywordflow">return</span> 0.0;</div>
-<div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;  <span class="keywordflow">if</span> (FLAGS_time_limit_use_usertime) {</div>
+<div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;  <span class="keywordflow">if</span> (absl::GetFlag(FLAGS_time_limit_use_usertime)) {</div>
 <div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160;    <span class="keywordflow">return</span> std::max(limit_in_seconds_ - user_timer_.Get(), 0.0);</div>
 <div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160;  } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160;    <span class="keywordflow">return</span> delta_ns * 1e-9;</div>
@@ -483,6 +483,7 @@ $(document).ready(function(){initNavTree('time__limit_8h_source.html',''); initR
 <div class="ttc" id="aclassoperations__research_1_1_nested_time_limit_html"><div class="ttname"><a href="classoperations__research_1_1_nested_time_limit.html">operations_research::NestedTimeLimit</a></div><div class="ttdoc">Provides a way to nest time limits for algorithms where a certain part of the computation is bounded ...</div><div class="ttdef"><b>Definition:</b> <a href="time__limit_8h_source.html#l00425">time_limit.h:425</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_time_limit_html_a312550ebabce586fb77c49e813c610f8"><div class="ttname"><a href="classoperations__research_1_1_time_limit.html#a312550ebabce586fb77c49e813c610f8">operations_research::TimeLimit::ResetLimitFromParameters</a></div><div class="ttdeci">void ResetLimitFromParameters(const Parameters &amp;parameters)</div><div class="ttdoc">Sets new time limits.</div><div class="ttdef"><b>Definition:</b> <a href="time__limit_8h_source.html#l00505">time_limit.h:505</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_shared_time_limit_html_ab93548508ad14a5cecdaafa67db47cd9"><div class="ttname"><a href="classoperations__research_1_1_shared_time_limit.html#ab93548508ad14a5cecdaafa67db47cd9">operations_research::SharedTimeLimit::SharedTimeLimit</a></div><div class="ttdeci">SharedTimeLimit(TimeLimit *time_limit)</div><div class="ttdef"><b>Definition:</b> <a href="time__limit_8h_source.html#l00340">time_limit.h:340</a></div></div>
+<div class="ttc" id="atime__limit_8h_html_aeebe51fb8b5872f6c2e4d01a04af8f78"><div class="ttname"><a href="time__limit_8h.html#aeebe51fb8b5872f6c2e4d01a04af8f78">ABSL_DECLARE_FLAG</a></div><div class="ttdeci">ABSL_DECLARE_FLAG(bool, time_limit_use_usertime)</div><div class="ttdoc">Enables changing the behavior of the TimeLimit class to use -b usertime instead of walltime.</div></div>
 <div class="ttc" id="aclassoperations__research_1_1_nested_time_limit_html_a7e35d44d642ce651a7b5c7264ed6cc9c"><div class="ttname"><a href="classoperations__research_1_1_nested_time_limit.html#a7e35d44d642ce651a7b5c7264ed6cc9c">operations_research::NestedTimeLimit::GetTimeLimit</a></div><div class="ttdeci">TimeLimit * GetTimeLimit()</div><div class="ttdoc">Returns a time limit object that represents the combination of the overall time limit and the part-sp...</div><div class="ttdef"><b>Definition:</b> <a href="time__limit_8h_source.html#l00460">time_limit.h:460</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_nested_time_limit_html_af23d2dc1b291081b642a728cf0033987"><div class="ttname"><a href="classoperations__research_1_1_nested_time_limit.html#af23d2dc1b291081b642a728cf0033987">operations_research::NestedTimeLimit::NestedTimeLimit</a></div><div class="ttdeci">NestedTimeLimit(TimeLimit *base_time_limit, double limit_in_seconds, double deterministic_limit)</div><div class="ttdoc">Creates the nested time limit.</div></div>
 <div class="ttc" id="aclassoperations__research_1_1_time_limit_html_a640ae7a07a6de8fe45a5526326f3b028"><div class="ttname"><a href="classoperations__research_1_1_time_limit.html#a640ae7a07a6de8fe45a5526326f3b028">operations_research::TimeLimit::FromDeterministicTime</a></div><div class="ttdeci">static std::unique_ptr&lt; TimeLimit &gt; FromDeterministicTime(double deterministic_limit)</div><div class="ttdoc">Creates a time limit object that puts limit only on the deterministic time.</div><div class="ttdef"><b>Definition:</b> <a href="time__limit_8h_source.html#l00144">time_limit.h:144</a></div></div>
@@ -502,7 +503,6 @@ $(document).ready(function(){initNavTree('time__limit_8h_source.html',''); initR
 <div class="ttc" id="aclassoperations__research_1_1_time_limit_html_ac7e861414a70fc937d18bc7ca743fc98"><div class="ttname"><a href="classoperations__research_1_1_time_limit.html#ac7e861414a70fc937d18bc7ca743fc98">operations_research::TimeLimit::GetElapsedDeterministicTime</a></div><div class="ttdeci">double GetElapsedDeterministicTime() const</div><div class="ttdoc">Returns the elapsed deterministic time since the construction of this object.</div><div class="ttdef"><b>Definition:</b> <a href="time__limit_8h_source.html#l00260">time_limit.h:260</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_nested_time_limit_html_acc74615391497a1874ffb69d751f80af"><div class="ttname"><a href="classoperations__research_1_1_nested_time_limit.html#acc74615391497a1874ffb69d751f80af">operations_research::NestedTimeLimit::~NestedTimeLimit</a></div><div class="ttdeci">~NestedTimeLimit()</div><div class="ttdoc">Updates elapsed deterministic time in the base time limit object.</div></div>
 <div class="ttc" id="aclassoperations__research_1_1_time_limit_html_a810d5f7aaf80cc09cf5a094e20c1aaca"><div class="ttname"><a href="classoperations__research_1_1_time_limit.html#a810d5f7aaf80cc09cf5a094e20c1aaca">operations_research::TimeLimit::LimitReached</a></div><div class="ttdeci">bool LimitReached()</div><div class="ttdoc">Returns true when the external limit is true, or the deterministic time is over the deterministic lim...</div><div class="ttdef"><b>Definition:</b> <a href="time__limit_8h_source.html#l00532">time_limit.h:532</a></div></div>
-<div class="ttc" id="atime__limit_8h_html_a05c25f55df53c30b07aa2585a8424921"><div class="ttname"><a href="time__limit_8h.html#a05c25f55df53c30b07aa2585a8424921">DECLARE_bool</a></div><div class="ttdeci">DECLARE_bool(time_limit_use_usertime)</div><div class="ttdoc">Enables changing the behavior of the TimeLimit class to use -b usertime instead of walltime.</div></div>
         </div>
         </div>
         <div id="footer-container">

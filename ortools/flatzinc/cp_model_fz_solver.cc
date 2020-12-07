@@ -33,6 +33,7 @@
 #include "ortools/flatzinc/model.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_search.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -46,9 +47,9 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/table.h"
 
-DEFINE_bool(use_flatzinc_format, true, "Output uses the flatzinc format");
-DEFINE_int64(fz_int_max, int64{1} << 50,
-             "Default max value for unbounded integer variables.");
+ABSL_FLAG(bool, use_flatzinc_format, true, "Output uses the flatzinc format");
+ABSL_FLAG(int64, fz_int_max, int64{1} << 50,
+          "Default max value for unbounded integer variables.");
 
 namespace operations_research {
 namespace sat {
@@ -916,7 +917,7 @@ std::string SolutionString(
     std::string result =
         absl::StrCat(output.name, " = array", bound_size, "d(");
     for (int i = 0; i < bound_size; ++i) {
-      if (output.bounds[i].max_value >=  output.bounds[i].min_value) {
+      if (output.bounds[i].max_value >= output.bounds[i].min_value) {
         absl::StrAppend(&result, output.bounds[i].min_value, "..",
                         output.bounds[i].max_value, ", ");
       } else {
@@ -981,7 +982,7 @@ void OutputFlatzincStats(const CpSolverResponse& response) {
 void SolveFzWithCpModelProto(const fz::Model& fz_model,
                              const fz::FlatzincSatParameters& p,
                              const std::string& sat_params) {
-  if (!FLAGS_use_flatzinc_format) {
+  if (!absl::GetFlag(FLAGS_use_flatzinc_format)) {
     LOG(INFO) << "*** Starting translation to CP-SAT";
   } else if (p.verbose_logging) {
     FZLOG << "*** Starting translation to CP-SAT" << FZENDL;
@@ -1006,10 +1007,11 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
         // domains (i.e. int in minizinc) to something hopefully large enough.
         LOG_FIRST_N(WARNING, 1)
             << "Using flag --fz_int_max for unbounded integer variables.";
-        LOG_FIRST_N(WARNING, 1) << "    actual domain is [" << -FLAGS_fz_int_max
-                                << ".." << FLAGS_fz_int_max << "]";
-        var->add_domain(-FLAGS_fz_int_max);
-        var->add_domain(FLAGS_fz_int_max);
+        LOG_FIRST_N(WARNING, 1)
+            << "    actual domain is [" << -absl::GetFlag(FLAGS_fz_int_max)
+            << ".." << absl::GetFlag(FLAGS_fz_int_max) << "]";
+        var->add_domain(-absl::GetFlag(FLAGS_fz_int_max));
+        var->add_domain(absl::GetFlag(FLAGS_fz_int_max));
       } else {
         var->add_domain(fz_var->domain.values[0]);
         var->add_domain(fz_var->domain.values[1]);
@@ -1050,7 +1052,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   m.TranslateSearchAnnotations(fz_model.search_annotations());
 
   // Print model statistics.
-  if (FLAGS_use_flatzinc_format && p.verbose_logging) {
+  if (absl::GetFlag(FLAGS_use_flatzinc_format) && p.verbose_logging) {
     LogInFlatzincFormat(CpModelStats(m.proto));
   }
 
@@ -1090,14 +1092,14 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
 
   // We only need an observer if 'p.all_solutions' is true.
   std::function<void(const CpSolverResponse&)> solution_observer = nullptr;
-  if (p.display_all_solutions && FLAGS_use_flatzinc_format) {
+  if (p.display_all_solutions && absl::GetFlag(FLAGS_use_flatzinc_format)) {
     solution_observer = [&fz_model, &m, &p](const CpSolverResponse& r) {
       const std::string solution_string =
           SolutionString(fz_model, [&m, &r](fz::IntegerVariable* v) {
             return r.solution(gtl::FindOrDie(m.fz_var_to_index, v));
           });
       std::cout << solution_string << std::endl;
-      if (p.display_statistics && FLAGS_use_flatzinc_format) {
+      if (p.display_statistics && absl::GetFlag(FLAGS_use_flatzinc_format)) {
         OutputFlatzincStats(r);
       }
       std::cout << "----------" << std::endl;
@@ -1120,7 +1122,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   }
 
   // Output the solution in the flatzinc official format.
-  if (FLAGS_use_flatzinc_format) {
+  if (absl::GetFlag(FLAGS_use_flatzinc_format)) {
     if (response.status() == CpSolverStatus::FEASIBLE ||
         response.status() == CpSolverStatus::OPTIMAL) {
       if (!p.display_all_solutions) {  // Already printed otherwise.
@@ -1136,10 +1138,18 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
       }
     } else if (response.status() == CpSolverStatus::INFEASIBLE) {
       std::cout << "=====UNSATISFIABLE=====" << std::endl;
+    } else if (response.status() == CpSolverStatus::MODEL_INVALID) {
+      const std::string error_message = ValidateCpModel(m.proto);
+      VLOG(1) << "%% Error message = '" << error_message << "'";
+      if (absl::StrContains(error_message, "overflow")) {
+        std::cout << "=====OVERFLOW=====" << std::endl;
+      } else {
+        std::cout << "=====MODEL INVALID=====" << std::endl;
+      }
     } else {
       std::cout << "%% TIMEOUT" << std::endl;
     }
-    if (p.display_statistics && FLAGS_use_flatzinc_format) {
+    if (p.display_statistics && absl::GetFlag(FLAGS_use_flatzinc_format)) {
       OutputFlatzincStats(response);
     }
   }

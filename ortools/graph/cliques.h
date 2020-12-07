@@ -30,8 +30,8 @@
 
 #include "absl/strings/str_cat.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -272,7 +272,7 @@ class BronKerboschAlgorithm {
     // clique.
     // NOTE(user): We could store the delta between the iterations; however,
     // we need to evaluate the impact this would have on the performance.
-    gtl::ITIVector<CandidateIndex, NodeIndex> candidates;
+    absl::StrongVector<CandidateIndex, NodeIndex> candidates;
     // The index of the first actual candidate in 'candidates'. This number is
     // also the number of elements of the "not" set stored at the beginning of
     // 'candidates'.
@@ -448,7 +448,7 @@ void BronKerboschAlgorithm<NodeIndex>::PushState(NodeIndex selected) {
   DCHECK(time_limit_ != nullptr);
   DVLOG(2) << "PushState: New depth = " << states_.size() + 1
            << ", selected node = " << selected;
-  gtl::ITIVector<CandidateIndex, NodeIndex> new_candidates;
+  absl::StrongVector<CandidateIndex, NodeIndex> new_candidates;
 
   State* const previous_state = &states_.back();
   const double deterministic_time =

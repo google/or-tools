@@ -151,7 +151,7 @@ class PresolveContext {
 
   // Stores a description of a rule that was just applied to have a summary of
   // what the presolve did at the end.
-  void UpdateRuleStats(const std::string& name);
+  void UpdateRuleStats(const std::string& name, int num_times = 1);
 
   // Updates the constraints <-> variables graph. This needs to be called each
   // time a constraint is modified.
@@ -214,6 +214,10 @@ class PresolveContext {
   // representative from the var_equiv_relations.
   AffineRelation::Relation GetAffineRelation(int ref) const;
 
+  // To facilitate debugging.
+  std::string RefDebugString(int ref) const;
+  std::string AffineRelationDebugString(int ref) const;
+
   // Makes sure the domain of ref and of its representative are in sync.
   // Returns false on unsat.
   bool PropagateAffineRelation(int ref);
@@ -275,7 +279,7 @@ class PresolveContext {
   // anything with that variable since it appear in at least two constraints.
   void ReadObjectiveFromProto();
   ABSL_MUST_USE_RESULT bool CanonicalizeObjective();
-  void WriteObjectiveToProto();
+  void WriteObjectiveToProto() const;
 
   // Given a variable defined by the given inequality that also appear in the
   // objective, remove it from the objective by transferring its cost to other

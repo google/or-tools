@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -86,12 +86,20 @@ $(document).ready(function(){initNavTree('namespaceoperations__research_1_1inter
 
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">operations_research::internal Namespace Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1internal_1_1_scip_callback_runner.html">ScipCallbackRunner</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1internal_1_1_scip_callback_runner_impl.html">ScipCallbackRunnerImpl</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a7027f0cf0f3a155f3f474cf9a287492d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1internal.html#a7027f0cf0f3a155f3f474cf9a287492d">OneBit64</a> (int pos)</td></tr>
@@ -108,6 +116,10 @@ Functions</h2></td></tr>
 <tr class="separator:a58fe3d4e20906432c943dafbbc6b9894"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8630ffe6e92b7bdec46b4e9e439f1d1f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1internal.html#a8630ffe6e92b7bdec46b4e9e439f1d1f">ClearBit64</a> (<a class="el" href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a> *const bitset, <a class="el" href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a> pos)</td></tr>
 <tr class="separator:a8630ffe6e92b7bdec46b4e9e439f1d1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10baa8a53114ab362a572d8efe116194"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1internal.html#a10baa8a53114ab362a572d8efe116194">AddConstraintHandlerImpl</a> (const <a class="el" href="structoperations__research_1_1_scip_constraint_handler_description.html">ScipConstraintHandlerDescription</a> &amp;description, std::unique_ptr&lt; <a class="el" href="classoperations__research_1_1internal_1_1_scip_callback_runner.html">ScipCallbackRunner</a> &gt; runner, SCIP *scip)</td></tr>
+<tr class="separator:a10baa8a53114ab362a572d8efe116194"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a20b664d7fac2a352aab8819d35f3f868"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1internal.html#a20b664d7fac2a352aab8819d35f3f868">AddCallbackConstraintImpl</a> (SCIP *scip, const std::string &amp;handler_name, const std::string &amp;constraint_name, void *constraint_data, const <a class="el" href="structoperations__research_1_1_scip_callback_constraint_options.html">ScipCallbackConstraintOptions</a> &amp;options)</td></tr>
+<tr class="separator:a20b664d7fac2a352aab8819d35f3f868"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa1c0d85ffd530d0fe9dcffbe5c5f4038"><td class="memItemLeft" align="right" valign="top">absl::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1internal.html#aa1c0d85ffd530d0fe9dcffbe5c5f4038">ScipCodeToUtilStatus</a> (int retcode, const char *source_file, int source_line, const char *scip_statement)</td></tr>
 <tr class="separator:aa1c0d85ffd530d0fe9dcffbe5c5f4038"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6a44f797a5ce3ccdcd84df402ffa5c0"><td class="memTemplParams" colspan="2">template&lt;typename Proto &gt; </td></tr>
@@ -118,6 +130,90 @@ Functions</h2></td></tr>
 <tr class="separator:a7c9366dedf7c4e7012b4197fa4ec0754"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="a20b664d7fac2a352aab8819d35f3f868"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a20b664d7fac2a352aab8819d35f3f868">&#9670;&nbsp;</a></span>AddCallbackConstraintImpl()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void AddCallbackConstraintImpl </td>
+          <td>(</td>
+          <td class="paramtype">SCIP *&#160;</td>
+          <td class="paramname"><em>scip</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>handler_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>constraint_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>constraint_data</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structoperations__research_1_1_scip_callback_constraint_options.html">ScipCallbackConstraintOptions</a> &amp;&#160;</td>
+          <td class="paramname"><em>options</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="scip__callback_8cc_source.html#l00433">433</a> of file <a class="el" href="scip__callback_8cc_source.html">scip_callback.cc</a>.</p>
+
+</div>
+</div>
+<a id="a10baa8a53114ab362a572d8efe116194"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a10baa8a53114ab362a572d8efe116194">&#9670;&nbsp;</a></span>AddConstraintHandlerImpl()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void AddConstraintHandlerImpl </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structoperations__research_1_1_scip_constraint_handler_description.html">ScipConstraintHandlerDescription</a> &amp;&#160;</td>
+          <td class="paramname"><em>description</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::unique_ptr&lt; <a class="el" href="classoperations__research_1_1internal_1_1_scip_callback_runner.html">ScipCallbackRunner</a> &gt;&#160;</td>
+          <td class="paramname"><em>runner</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">SCIP *&#160;</td>
+          <td class="paramname"><em>scip</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="scip__callback_8cc_source.html#l00409">409</a> of file <a class="el" href="scip__callback_8cc_source.html">scip_callback.cc</a>.</p>
+
+</div>
+</div>
 <a id="a04552bf747d1989b4ecf2e67dfd798a7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a04552bf747d1989b4ecf2e67dfd798a7">&#9670;&nbsp;</a></span>BitLength64()</h2>
 

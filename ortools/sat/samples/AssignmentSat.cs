@@ -19,105 +19,104 @@ using Google.OrTools.Sat;
 
 public class AssignmentSat
 {
-  static void Main()
-  {
-    // Data.
-    // [START data_model]
-    int[,] costs = {
-      {90, 80, 75, 70},
-      {35, 85, 55, 65},
-      {125, 95, 90, 95},
-      {45, 110, 95, 115},
-      {50, 100, 90, 100},
-    };
-    int numWorkers = costs.GetLength(0);
-    int numTasks = costs.GetLength(1);
-    // [END data_model]
-
-    // Model.
-    // [START model]
-    CpModel model = new CpModel();
-    // [END model]
-
-    // Variables.
-    // [START variables]
-    IntVar[,] x = new IntVar[numWorkers, numTasks];
-    // Variables in a 1-dim array.
-    IntVar[] xFlat = new IntVar[numWorkers * numTasks];
-    int[] costsFlat = new int[numWorkers * numTasks];
-    for (int i = 0; i < numWorkers; ++i)
+    static void Main()
     {
-      for (int j = 0; j < numTasks; ++j)
-      {
-        x[i, j] = model.NewIntVar(0, 1, $"worker_{i}_task_{j}");
-        int k = i * numTasks + j;
-        xFlat[k] = x[i, j];
-        costsFlat[k] = costs[i, j];
-      }
-    }
-    // [END variables]
+        // Data.
+        // [START data_model]
+        int[,] costs = {
+            { 90, 80, 75, 70 }, { 35, 85, 55, 65 }, { 125, 95, 90, 95 }, { 45, 110, 95, 115 }, { 50, 100, 90, 100 },
+        };
+        int numWorkers = costs.GetLength(0);
+        int numTasks = costs.GetLength(1);
+        // [END data_model]
 
-    // Constraints
-    // [START constraints]
-    // Each worker is assigned to at most one task.
-    for (int i = 0; i < numWorkers; ++i)
-    {
-      IntVar[] vars = new IntVar[numTasks];
-      for (int j = 0; j < numTasks; ++j)
-      {
-        vars[j] = x[i, j];
-      }
-      model.Add(LinearExpr.Sum(vars) <= 1);
-    }
+        // Model.
+        // [START model]
+        CpModel model = new CpModel();
+        // [END model]
 
-    // Each task is assigned to exactly one worker.
-    for (int j = 0; j < numTasks; ++j)
-    {
-      IntVar[] vars = new IntVar[numWorkers];
-      for (int i = 0; i < numWorkers; ++i)
-      {
-        vars[i] = x[i, j];
-      }
-      model.Add(LinearExpr.Sum(vars) == 1);
-    }
-    // [END constraints]
+        // Variables.
+        // [START variables]
+        IntVar[,] x = new IntVar[numWorkers, numTasks];
+        // Variables in a 1-dim array.
+        IntVar[] xFlat = new IntVar[numWorkers * numTasks];
+        int[] costsFlat = new int[numWorkers * numTasks];
+        for (int i = 0; i < numWorkers; ++i)
+        {
+            for (int j = 0; j < numTasks; ++j)
+            {
+                x[i, j] = model.NewIntVar(0, 1, $"worker_{i}_task_{j}");
+                int k = i * numTasks + j;
+                xFlat[k] = x[i, j];
+                costsFlat[k] = costs[i, j];
+            }
+        }
+        // [END variables]
 
-    // Objective
-    // [START objective]
-    model.Minimize(LinearExpr.ScalProd(xFlat, costsFlat));
-    // [END objective]
+        // Constraints
+        // [START constraints]
+        // Each worker is assigned to at most one task.
+        for (int i = 0; i < numWorkers; ++i)
+        {
+            IntVar[] vars = new IntVar[numTasks];
+            for (int j = 0; j < numTasks; ++j)
+            {
+                vars[j] = x[i, j];
+            }
+            model.Add(LinearExpr.Sum(vars) <= 1);
+        }
 
-    // Solve
-    // [START solve]
-    CpSolver solver = new CpSolver();
-    CpSolverStatus status = solver.Solve(model);
-    Console.WriteLine($"Solve status: {status}");
-    // [END solve]
-
-    // Print solution.
-    // [START print_solution]
-    // Check that the problem has a feasible solution.
-    if (status == CpSolverStatus.Optimal || status == CpSolverStatus.Feasible) {
-      Console.WriteLine($"Total cost: {solver.ObjectiveValue}\n");
-      for (int i = 0; i < numWorkers; ++i)
-      {
+        // Each task is assigned to exactly one worker.
         for (int j = 0; j < numTasks; ++j)
         {
-          if (solver.Value(x[i, j]) > 0.5)
-          {
-            Console.WriteLine($"Worker {i} assigned to task {j}. Cost: {costs[i, j]}");
-          }
+            IntVar[] vars = new IntVar[numWorkers];
+            for (int i = 0; i < numWorkers; ++i)
+            {
+                vars[i] = x[i, j];
+            }
+            model.Add(LinearExpr.Sum(vars) == 1);
         }
-      }
-    } else {
-      Console.WriteLine("No solution found.");
-    }
-    // [END print_solution]
+        // [END constraints]
 
-    Console.WriteLine("Statistics");
-    Console.WriteLine($"  - conflicts : {solver.NumConflicts()}");
-    Console.WriteLine($"  - branches  : {solver.NumBranches()}");
-    Console.WriteLine($"  - wall time : {solver.WallTime()}s");
-  }
+        // Objective
+        // [START objective]
+        model.Minimize(LinearExpr.ScalProd(xFlat, costsFlat));
+        // [END objective]
+
+        // Solve
+        // [START solve]
+        CpSolver solver = new CpSolver();
+        CpSolverStatus status = solver.Solve(model);
+        Console.WriteLine($"Solve status: {status}");
+        // [END solve]
+
+        // Print solution.
+        // [START print_solution]
+        // Check that the problem has a feasible solution.
+        if (status == CpSolverStatus.Optimal || status == CpSolverStatus.Feasible)
+        {
+            Console.WriteLine($"Total cost: {solver.ObjectiveValue}\n");
+            for (int i = 0; i < numWorkers; ++i)
+            {
+                for (int j = 0; j < numTasks; ++j)
+                {
+                    if (solver.Value(x[i, j]) > 0.5)
+                    {
+                        Console.WriteLine($"Worker {i} assigned to task {j}. Cost: {costs[i, j]}");
+                    }
+                }
+            }
+        }
+        else
+        {
+            Console.WriteLine("No solution found.");
+        }
+        // [END print_solution]
+
+        Console.WriteLine("Statistics");
+        Console.WriteLine($"  - conflicts : {solver.NumConflicts()}");
+        Console.WriteLine($"  - branches  : {solver.NumBranches()}");
+        Console.WriteLine($"  - wall time : {solver.WallTime()}s");
+    }
 }
 // [END program]

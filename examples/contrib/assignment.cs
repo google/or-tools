@@ -22,116 +22,111 @@ using Google.OrTools.ConstraintSolver;
 
 public class Assignment
 {
+    /**
+     *
+     * Assignment problem
+     *
+     * From Wayne Winston "Operations Research",
+     * Assignment Problems, page 393f
+     * (generalized version with added test column)
+     *
+     * See  See http://www.hakank.org/or-tools/assignment.py
+     *
+     */
+    private static void Solve()
+    {
+        Solver solver = new Solver("Assignment");
 
-  /**
-   *
-   * Assignment problem
-   *
-   * From Wayne Winston "Operations Research",
-   * Assignment Problems, page 393f
-   * (generalized version with added test column)
-   *
-   * See  See http://www.hakank.org/or-tools/assignment.py
-   *
-   */
-  private static void Solve()
-  {
+        //
+        // data
+        //
 
-    Solver solver = new Solver("Assignment");
+        // Problem instance
+        // hakank: I added the fifth column to make it more
+        //         interesting
+        int rows = 4;
+        int cols = 5;
+        int[,] cost = { { 14, 5, 8, 7, 15 }, { 2, 12, 6, 5, 3 }, { 7, 8, 3, 9, 7 }, { 2, 4, 6, 10, 1 } };
 
-    //
-    // data
-    //
+        //
+        // Decision variables
+        //
+        IntVar[,] x = solver.MakeBoolVarMatrix(rows, cols, "x");
+        IntVar[] x_flat = x.Flatten();
 
-    // Problem instance
-    // hakank: I added the fifth column to make it more
-    //         interesting
-    int rows = 4;
-    int cols = 5;
-    int[,] cost = {
-      {14,  5, 8,  7,  15},
-      { 2, 12, 6,  5,   3},
-      { 7,  8, 3,  9,   7},
-      { 2,  4, 6, 10,   1}
-    };
+        //
+        // Constraints
+        //
 
-
-    //
-    // Decision variables
-    //
-    IntVar[,] x = solver.MakeBoolVarMatrix(rows, cols, "x");
-    IntVar[] x_flat = x.Flatten();
-
-    //
-    // Constraints
-    //
-
-    // Exacly one assignment per row (task),
-    // i.e. all rows must be assigned with one worker
-    for(int i = 0; i < rows; i++) {
-      solver.Add((from j in Enumerable.Range(0, cols)
-                  select x[i,j]).ToArray().Sum() == 1);
-    }
-
-    // At most one assignments per column (worker)
-    for(int j = 0; j < cols; j++) {
-      solver.Add((from i in Enumerable.Range(0, rows)
-                  select x[i,j]).ToArray().Sum() <= 1);
-    }
-
-    // Total cost
-    IntVar total_cost = (from i in Enumerable.Range(0, rows)
-                         from j in Enumerable.Range(0, cols)
-                         select (cost[i,j] * x[i,j])).ToArray().Sum().Var();
-
-    //
-    // objective
-    //
-    OptimizeVar objective = total_cost.Minimize(1);
-
-
-    //
-    // Search
-    //
-    DecisionBuilder db = solver.MakePhase(x_flat,
-                                          Solver.INT_VAR_DEFAULT,
-                                          Solver.INT_VALUE_DEFAULT);
-
-    solver.NewSearch(db, objective);
-
-    while (solver.NextSolution()) {
-      Console.WriteLine("total_cost: {0}", total_cost.Value());
-      for(int i = 0; i < rows; i++) {
-        for(int j = 0; j < cols; j++) {
-          Console.Write(x[i,j].Value() + " ");
+        // Exacly one assignment per row (task),
+        // i.e. all rows must be assigned with one worker
+        for (int i = 0; i < rows; i++)
+        {
+            solver.Add((from j in Enumerable.Range(0, cols) select x[i, j]).ToArray().Sum() == 1);
         }
-        Console.WriteLine();
-      }
-      Console.WriteLine();
-      Console.WriteLine("Assignments:");
-      for(int i = 0; i < rows; i++) {
-        Console.Write("Task " + i);
-        for(int j = 0; j < cols; j++) {
-          if (x[i,j].Value() == 1) {
-            Console.WriteLine(" is done by " + j);
-          }
-        }
-      }
-      Console.WriteLine();
 
+        // At most one assignments per column (worker)
+        for (int j = 0; j < cols; j++)
+        {
+            solver.Add((from i in Enumerable.Range(0, rows) select x[i, j]).ToArray().Sum() <= 1);
+        }
+
+        // Total cost
+        IntVar total_cost =
+            (from i in Enumerable.Range(0, rows) from j in Enumerable.Range(0, cols) select(cost[i, j] * x[i, j]))
+                .ToArray()
+                .Sum()
+                .Var();
+
+        //
+        // objective
+        //
+        OptimizeVar objective = total_cost.Minimize(1);
+
+        //
+        // Search
+        //
+        DecisionBuilder db = solver.MakePhase(x_flat, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+
+        solver.NewSearch(db, objective);
+
+        while (solver.NextSolution())
+        {
+            Console.WriteLine("total_cost: {0}", total_cost.Value());
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < cols; j++)
+                {
+                    Console.Write(x[i, j].Value() + " ");
+                }
+                Console.WriteLine();
+            }
+            Console.WriteLine();
+            Console.WriteLine("Assignments:");
+            for (int i = 0; i < rows; i++)
+            {
+                Console.Write("Task " + i);
+                for (int j = 0; j < cols; j++)
+                {
+                    if (x[i, j].Value() == 1)
+                    {
+                        Console.WriteLine(" is done by " + j);
+                    }
+                }
+            }
+            Console.WriteLine();
+        }
+
+        Console.WriteLine("\nSolutions: {0}", solver.Solutions());
+        Console.WriteLine("WallTime: {0}ms", solver.WallTime());
+        Console.WriteLine("Failures: {0}", solver.Failures());
+        Console.WriteLine("Branches: {0} ", solver.Branches());
+
+        solver.EndSearch();
     }
 
-    Console.WriteLine("\nSolutions: {0}", solver.Solutions());
-    Console.WriteLine("WallTime: {0}ms", solver.WallTime());
-    Console.WriteLine("Failures: {0}", solver.Failures());
-    Console.WriteLine("Branches: {0} ", solver.Branches());
-
-    solver.EndSearch();
-
-  }
-
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+    public static void Main(String[] args)
+    {
+        Solve();
+    }
 }

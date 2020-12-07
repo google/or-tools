@@ -31,22 +31,13 @@ PseudoCosts::PseudoCosts(Model* model)
   pseudo_costs_.resize(num_vars);
 }
 
-void PseudoCosts::InitializeCosts(double initial_value) {
-  if (pseudo_costs_initialized_) return;
-  VLOG(1) << "Initializing pseudo costs";
-  for (int i = 0; i < pseudo_costs_.size(); ++i) {
-    pseudo_costs_[IntegerVariable(i)].Reset(initial_value);
-  }
-  pseudo_costs_initialized_ = true;
-}
-
 void PseudoCosts::UpdateCostForVar(IntegerVariable var, double new_cost) {
   if (var >= pseudo_costs_.size()) {
     // Create space for new variable and its negation.
     const int new_size = std::max(var, NegationOf(var)).value() + 1;
     pseudo_costs_.resize(new_size, IncrementalAverage(0.0));
   }
-  CHECK_LT(var, pseudo_costs_.size());
+  DCHECK_LT(var, pseudo_costs_.size());
   pseudo_costs_[var].AddData(new_cost);
 }
 
@@ -58,28 +49,16 @@ void PseudoCosts::UpdateCost(
 
   for (const VariableBoundChange& decision : bound_changes) {
     if (integer_trail_.IsCurrentlyIgnored(decision.var)) continue;
+    if (decision.lower_bound_change == IntegerValue(0)) continue;
 
-    if (decision.lower_bound_change > IntegerValue(0)) {
-      const double current_pseudo_cost = ToDouble(obj_bound_improvement) /
-                                         ToDouble(decision.lower_bound_change);
-      // Initialize costs of other variables if not already initialized. This
-      // helps in the 0 reliability threshold case. If the other variables have
-      // 0 pseudo cost, there is a chance that some good variables would never
-      // be branched on. Initializing costs to a positive value doesn't
-      // completely solve that problem but it helps.
-      //
-      // Note that this initial value will be overwritten the first time
-      // UpdateCostForVar() is called.
-      if (!pseudo_costs_initialized_) {
-        InitializeCosts(0.0);
-      }
-      UpdateCostForVar(decision.var, current_pseudo_cost);
-    }
+    const double current_pseudo_cost =
+        ToDouble(obj_bound_improvement) / ToDouble(decision.lower_bound_change);
+    UpdateCostForVar(decision.var, current_pseudo_cost);
   }
 }
 
 IntegerVariable PseudoCosts::GetBestDecisionVar() {
-  if (!pseudo_costs_initialized_) return kNoIntegerVariable;
+  if (pseudo_costs_.empty()) return kNoIntegerVariable;
 
   const double epsilon = 1e-6;
 

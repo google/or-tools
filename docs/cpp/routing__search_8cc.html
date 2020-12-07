@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -113,10 +113,10 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a2326094eff7b5fe1f8a050fbe75b0f60"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="routing__search_8cc.html#a2326094eff7b5fe1f8a050fbe75b0f60">DEFINE_bool</a> (routing_strong_debug_checks, false, &quot;Run stronger checks in debug; these stronger tests might change &quot; &quot;the complexity of the code in particular.&quot;)</td></tr>
-<tr class="separator:a2326094eff7b5fe1f8a050fbe75b0f60"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a41cc3bae5f0fa7be470dbcede3cc4660"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="routing__search_8cc.html#a41cc3bae5f0fa7be470dbcede3cc4660">DEFINE_bool</a> (routing_shift_insertion_cost_by_penalty, true, &quot;Shift insertion costs by the penalty of the inserted node(s).&quot;)</td></tr>
-<tr class="separator:a41cc3bae5f0fa7be470dbcede3cc4660"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a60696653bee60d2186d1ea5850f64567"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="routing__search_8cc.html#a60696653bee60d2186d1ea5850f64567">ABSL_FLAG</a> (bool, routing_strong_debug_checks, false, &quot;Run stronger checks in debug; these stronger tests might change &quot; &quot;the complexity of the code in particular.&quot;)</td></tr>
+<tr class="separator:a60696653bee60d2186d1ea5850f64567"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc95d14bc59afe35d789e11bbacfab6f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="routing__search_8cc.html#acc95d14bc59afe35d789e11bbacfab6f">ABSL_FLAG</a> (bool, routing_shift_insertion_cost_by_penalty, true, &quot;Shift insertion costs by the penalty of the inserted node(s).&quot;)</td></tr>
+<tr class="separator:acc95d14bc59afe35d789e11bbacfab6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa2ef113e19924b88159b114a929b3358"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aa2ef113e19924b88159b114a929b3358">MakeMaxActiveVehiclesFilter</a> (const RoutingModel &amp;routing_model)</td></tr>
 <tr class="separator:aa2ef113e19924b88159b114a929b3358"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb15e4444582a925522843bb414de9c3"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aeb15e4444582a925522843bb414de9c3">MakeNodeDisjunctionFilter</a> (const RoutingModel &amp;routing_model)</td></tr>
@@ -127,8 +127,10 @@ Functions</h2></td></tr>
 <tr class="separator:ada7da4059546f5ef90de0b2f8bada19a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a216af1fa4181c4020916828eeeba1591"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a216af1fa4181c4020916828eeeba1591">MakePathCumulFilter</a> (const RoutingDimension &amp;dimension, const RoutingSearchParameters &amp;<a class="el" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>, bool propagate_own_objective_value, bool filter_objective_cost, bool can_use_lp=true)</td></tr>
 <tr class="separator:a216af1fa4181c4020916828eeeba1591"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad7936df5239aaa83e498a9a1363a45e4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ad7936df5239aaa83e498a9a1363a45e4">AppendDimensionCumulFilters</a> (const std::vector&lt; RoutingDimension * &gt; &amp;dimensions, const RoutingSearchParameters &amp;<a class="el" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>, bool filter_objective_cost, std::vector&lt; LocalSearchFilter * &gt; *filters)</td></tr>
-<tr class="separator:ad7936df5239aaa83e498a9a1363a45e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae2219dbffeee11e9bca17cc1e8217747"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ae2219dbffeee11e9bca17cc1e8217747">AppendLightWeightDimensionFilters</a> (const PathState *path_state, const std::vector&lt; RoutingDimension * &gt; &amp;dimensions, std::vector&lt; LocalSearchFilterManager::FilterEvent &gt; *filters)</td></tr>
+<tr class="separator:ae2219dbffeee11e9bca17cc1e8217747"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0e3e4445c55d0c59ef4edbaf7acbd3a8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a0e3e4445c55d0c59ef4edbaf7acbd3a8">AppendDimensionCumulFilters</a> (const std::vector&lt; RoutingDimension * &gt; &amp;dimensions, const RoutingSearchParameters &amp;<a class="el" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>, bool filter_objective_cost, std::vector&lt; LocalSearchFilterManager::FilterEvent &gt; *filters)</td></tr>
+<tr class="separator:a0e3e4445c55d0c59ef4edbaf7acbd3a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad03cbd2a51a0688c1fd08d3a7c1754c9"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ad03cbd2a51a0688c1fd08d3a7c1754c9">MakePickupDeliveryFilter</a> (const RoutingModel &amp;routing_model, const RoutingModel::IndexPairs &amp;pairs, const std::vector&lt; RoutingModel::PickupAndDeliveryPolicy &gt; &amp;vehicle_policies)</td></tr>
 <tr class="separator:ad03cbd2a51a0688c1fd08d3a7c1754c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab962de016b1a14868457ac876eadf008"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ab962de016b1a14868457ac876eadf008">MakeVehicleVarFilter</a> (const RoutingModel &amp;routing_model)</td></tr>
@@ -137,19 +139,25 @@ Functions</h2></td></tr>
 <tr class="separator:a21d884ccc65aaa3278b977df560d31a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2781a8c44a6af7c07abf923678a18697"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a2781a8c44a6af7c07abf923678a18697">MakeGlobalLPCumulFilter</a> (GlobalDimensionCumulOptimizer *optimizer, bool filter_objective_cost)</td></tr>
 <tr class="separator:a2781a8c44a6af7c07abf923678a18697"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac65a4e02e24fad9514e41ea1930c2eaa"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ac65a4e02e24fad9514e41ea1930c2eaa">MakeCPFeasibilityFilter</a> (const RoutingModel *routing_model)</td></tr>
-<tr class="separator:ac65a4e02e24fad9514e41ea1930c2eaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a24a85a196ecfb2b799a0409ef757c6"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a6a24a85a196ecfb2b799a0409ef757c6">MakeCPFeasibilityFilter</a> (RoutingModel *routing_model)</td></tr>
+<tr class="separator:a6a24a85a196ecfb2b799a0409ef757c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="a41cc3bae5f0fa7be470dbcede3cc4660"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a41cc3bae5f0fa7be470dbcede3cc4660">&#9670;&nbsp;</a></span>DEFINE_bool() <span class="overload">[1/2]</span></h2>
+<a id="acc95d14bc59afe35d789e11bbacfab6f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acc95d14bc59afe35d789e11bbacfab6f">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_bool </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">routing_shift_insertion_cost_by_penalty&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -175,15 +183,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a2326094eff7b5fe1f8a050fbe75b0f60"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2326094eff7b5fe1f8a050fbe75b0f60">&#9670;&nbsp;</a></span>DEFINE_bool() <span class="overload">[2/2]</span></h2>
+<a id="a60696653bee60d2186d1ea5850f64567"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a60696653bee60d2186d1ea5850f64567">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_bool </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">routing_strong_debug_checks&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -222,7 +236,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00972">972</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00969">969</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -238,7 +252,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00973">973</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00970">970</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -254,7 +268,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00965">965</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00962">962</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -270,7 +284,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00966">966</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00963">963</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -286,7 +300,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00967">967</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00964">964</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>

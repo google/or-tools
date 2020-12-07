@@ -34,19 +34,19 @@
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 
-DEFINE_int32(minsize, 0, "Minimum problem size.");
-DEFINE_int32(maxsize, 0, "Maximum problem size.");
-DEFINE_int32(model, 1,
-             "Model type: 1 integer variables hard, 2 boolean variables, 3 "
-             "boolean_variable soft");
-DEFINE_string(params, "", "Sat parameters.");
+ABSL_FLAG(int, minsize, 0, "Minimum problem size.");
+ABSL_FLAG(int, maxsize, 0, "Maximum problem size.");
+ABSL_FLAG(int, model, 1,
+          "Model type: 1 integer variables hard, 2 boolean variables, 3 "
+          "boolean_variable soft");
+ABSL_FLAG(std::string, params, "", "Sat parameters.");
 
 namespace operations_research {
 namespace sat {
 
 // Checks that all pairwise distances are unique and returns all violators
-void CheckConstraintViolators(const std::vector<int64> &vars,
-                              std::vector<int> *const violators) {
+void CheckConstraintViolators(const std::vector<int64>& vars,
+                              std::vector<int>* const violators) {
   int dim = vars.size();
 
   // Check that all indices are unique
@@ -77,7 +77,7 @@ void CheckConstraintViolators(const std::vector<int64> &vars,
 }
 
 // Check that all pairwise differences are unique
-bool CheckCostas(const std::vector<int64> &vars) {
+bool CheckCostas(const std::vector<int64>& vars) {
   std::vector<int> violators;
 
   CheckConstraintViolators(vars, &violators);
@@ -113,8 +113,8 @@ void CostasHard(const int dim) {
   }
 
   Model model;
-  if (!FLAGS_params.empty()) {
-    model.Add(NewSatParameters(FLAGS_params));
+  if (!absl::GetFlag(FLAGS_params).empty()) {
+    model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
   }
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
 
@@ -142,8 +142,8 @@ void CostasBool(const int dim) {
   CpModelBuilder cp_model;
 
   // create the variables
-  std::vector<std::vector<BoolVar>> vars(dim);
-  std::vector<std::vector<BoolVar>> transposed_vars(dim);
+  std::vector<std::vector<BoolVar> > vars(dim);
+  std::vector<std::vector<BoolVar> > transposed_vars(dim);
   for (int i = 0; i < dim; ++i) {
     for (int j = 0; j < dim; ++j) {
       const BoolVar var = cp_model.NewBoolVar();
@@ -180,8 +180,8 @@ void CostasBool(const int dim) {
   }
 
   Model model;
-  if (!FLAGS_params.empty()) {
-    model.Add(NewSatParameters(FLAGS_params));
+  if (!absl::GetFlag(FLAGS_params).empty()) {
+    model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
   }
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
 
@@ -213,8 +213,8 @@ void CostasBoolSoft(const int dim) {
   CpModelBuilder cp_model;
 
   // create the variables
-  std::vector<std::vector<BoolVar>> vars(dim);
-  std::vector<std::vector<BoolVar>> transposed_vars(dim);
+  std::vector<std::vector<BoolVar> > vars(dim);
+  std::vector<std::vector<BoolVar> > transposed_vars(dim);
   for (int i = 0; i < dim; ++i) {
     for (int j = 0; j < dim; ++j) {
       const BoolVar var = cp_model.NewBoolVar();
@@ -262,8 +262,8 @@ void CostasBoolSoft(const int dim) {
   cp_model.Minimize(LinearExpr::Sum(all_violations));
 
   Model model;
-  if (!FLAGS_params.empty()) {
-    model.Add(NewSatParameters(FLAGS_params));
+  if (!absl::GetFlag(FLAGS_params).empty()) {
+    model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
   }
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
 
@@ -293,16 +293,16 @@ void CostasBoolSoft(const int dim) {
 }  // namespace sat
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+int main(int argc, char** argv) {
+  absl::ParseCommandLine(argc, argv);
   int min = 1;
   int max = 10;
 
-  if (FLAGS_minsize != 0) {
-    min = FLAGS_minsize;
+  if (absl::GetFlag(FLAGS_minsize) != 0) {
+    min = absl::GetFlag(FLAGS_minsize);
 
-    if (FLAGS_maxsize != 0) {
-      max = FLAGS_maxsize;
+    if (absl::GetFlag(FLAGS_maxsize) != 0) {
+      max = absl::GetFlag(FLAGS_maxsize);
     } else {
       max = min;
     }
@@ -310,11 +310,11 @@ int main(int argc, char **argv) {
 
   for (int size = min; size <= max; ++size) {
     LOG(INFO) << "Computing Costas Array for dim = " << size;
-    if (FLAGS_model == 1) {
+    if (absl::GetFlag(FLAGS_model) == 1) {
       operations_research::sat::CostasHard(size);
-    } else if (FLAGS_model == 2) {
+    } else if (absl::GetFlag(FLAGS_model) == 2) {
       operations_research::sat::CostasBool(size);
-    } else if (FLAGS_model == 3) {
+    } else if (absl::GetFlag(FLAGS_model) == 3) {
       operations_research::sat::CostasBoolSoft(size);
     }
   }

@@ -1,7 +1,5 @@
-gflags=2.2.2
-glog=0.4.0
-Protobuf=3.13.0
-abseil-cpp=20200923
+Protobuf=3.14.0
+abseil-cpp=20200923.2
 Cbc=2.10.5
 Cgl=0.60.3
 Clp=1.17.4

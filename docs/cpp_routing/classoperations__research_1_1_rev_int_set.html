@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.0</span>
+                <span id="sfml">Google OR-Tools 8.1</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -95,7 +95,7 @@ class operations_research::RevIntSet&lt; T &gt;</h3>
 <p>This is a special class to represent a 'residual' set of T. </p>
 <p>T must be an integer type. You fill it at first, and then during search, you can efficiently remove an element, and query the removed elements. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02550">2550</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02549">2549</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
@@ -121,13 +121,13 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6b01bbd962186b2a530cb1ab6855b833"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a34d8dff251306e611f6393c007372233"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_rev_int_set.html#a34d8dff251306e611f6393c007372233">RemovedElement</a> (int i) const</td></tr>
 <tr class="separator:a34d8dff251306e611f6393c007372233"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a09b435e833bb97525ef2e54735f632ea"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_rev_int_set.html#a09b435e833bb97525ef2e54735f632ea">Insert</a> (Solver *const solver, const T &amp;elt)</td></tr>
+<tr class="memitem:a09b435e833bb97525ef2e54735f632ea"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_rev_int_set.html#a09b435e833bb97525ef2e54735f632ea">Insert</a> (<a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *const solver, const T &amp;elt)</td></tr>
 <tr class="separator:a09b435e833bb97525ef2e54735f632ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ace705075d1b47c62aa622a912c14626c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_rev_int_set.html#ace705075d1b47c62aa622a912c14626c">Remove</a> (Solver *const solver, const T &amp;value_index)</td></tr>
+<tr class="memitem:ace705075d1b47c62aa622a912c14626c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_rev_int_set.html#ace705075d1b47c62aa622a912c14626c">Remove</a> (<a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *const solver, const T &amp;value_index)</td></tr>
 <tr class="separator:ace705075d1b47c62aa622a912c14626c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab57ce8f50aeb2f7e4171b04ca42fd447"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_rev_int_set.html#ab57ce8f50aeb2f7e4171b04ca42fd447">Restore</a> (Solver *const solver, const T &amp;value_index)</td></tr>
+<tr class="memitem:ab57ce8f50aeb2f7e4171b04ca42fd447"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_rev_int_set.html#ab57ce8f50aeb2f7e4171b04ca42fd447">Restore</a> (<a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *const solver, const T &amp;value_index)</td></tr>
 <tr class="separator:ab57ce8f50aeb2f7e4171b04ca42fd447"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae44fff9ea13a57991eb263fc98f526ab"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_rev_int_set.html#ae44fff9ea13a57991eb263fc98f526ab">Clear</a> (Solver *const solver)</td></tr>
+<tr class="memitem:ae44fff9ea13a57991eb263fc98f526ab"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_rev_int_set.html#ae44fff9ea13a57991eb263fc98f526ab">Clear</a> (<a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *const solver)</td></tr>
 <tr class="separator:ae44fff9ea13a57991eb263fc98f526ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a29305669b60ca1680752e2fc3592ba99"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_rev_int_set.html#a2fc97dce62b7053449cc868607540dba">const_iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_rev_int_set.html#a29305669b60ca1680752e2fc3592ba99">begin</a> () const</td></tr>
 <tr class="separator:a29305669b60ca1680752e2fc3592ba99"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -154,7 +154,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Iterators on the indices. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02622">2622</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02621">2621</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -185,7 +185,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Capacity is the fixed size of the set (it cannot grow). </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02555">2555</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02554">2554</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -231,7 +231,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Capacity is the fixed size of the set (it cannot grow). </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02567">2567</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02566">2566</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -258,7 +258,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02578">2578</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02577">2577</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -286,7 +286,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02623">2623</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02622">2622</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -313,7 +313,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02586">2586</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02585">2585</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -329,7 +329,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">void Clear </td>
           <td>(</td>
-          <td class="paramtype">Solver *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *const&#160;</td>
           <td class="paramname"><em>solver</em></td><td>)</td>
           <td></td>
         </tr>
@@ -341,7 +341,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02619">2619</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02618">2618</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -369,7 +369,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02588">2588</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02587">2587</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -396,7 +396,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02624">2624</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02623">2623</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -412,7 +412,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">void Insert </td>
           <td>(</td>
-          <td class="paramtype">Solver *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *const&#160;</td>
           <td class="paramname"><em>solver</em>, </td>
         </tr>
         <tr>
@@ -435,7 +435,7 @@ Static Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 <p>Valid.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02600">2600</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02599">2599</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -451,7 +451,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">void Remove </td>
           <td>(</td>
-          <td class="paramtype">Solver *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *const&#160;</td>
           <td class="paramname"><em>solver</em>, </td>
         </tr>
         <tr>
@@ -473,7 +473,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02609">2609</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02608">2608</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -501,7 +501,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02594">2594</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02593">2593</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -517,7 +517,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">void Restore </td>
           <td>(</td>
-          <td class="paramtype">Solver *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *const&#160;</td>
           <td class="paramname"><em>solver</em>, </td>
         </tr>
         <tr>
@@ -539,7 +539,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02614">2614</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02613">2613</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -566,7 +566,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02584">2584</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02583">2583</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -591,7 +591,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02552">2552</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02551">2551</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>

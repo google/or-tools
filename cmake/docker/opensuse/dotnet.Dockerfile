@@ -1,9 +1,11 @@
 FROM ortools/cmake:opensuse_swig AS env
 RUN zypper update -y \
-&& zypper install -y wget tar libicu-devel
-RUN dotnet_sdk_version=3.1.401 \
+&& zypper install -y wget tar gzip libicu-devel
+# .NET install
+# see: https://dotnet.microsoft.com/download/dotnet-core/3.1
+RUN dotnet_sdk_version=3.1.404 \
 && wget -O dotnet.tar.gz https://dotnetcli.azureedge.net/dotnet/Sdk/$dotnet_sdk_version/dotnet-sdk-$dotnet_sdk_version-linux-x64.tar.gz \
-&& dotnet_sha512='5498add9ef83da44d8f7806ca1ce335ad4193c0d3181a5abda4b65e116c7331aac37a229817ff148e4487e9734ad2438f102a0eef0049e26773a185ceb78aac4' \
+&& dotnet_sha512='94d8eca3b4e2e6c36135794330ab196c621aee8392c2545a19a991222e804027f300d8efd152e9e4893c4c610d6be8eef195e30e6f6675285755df1ea49d3605' \
 && echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
 && mkdir -p /usr/share/dotnet \
 && tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \

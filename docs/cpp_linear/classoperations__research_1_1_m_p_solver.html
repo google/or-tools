@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.0</span>
+                <span id="sfml">Google OR-Tools 8.1</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -1928,6 +1928,7 @@ Static Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Parses the name of the solver and returns the correct optimization type or dies. </p>
+<p>Invariant: ParseSolverTypeOrDie(ToString(type)) = type. </p>
 
 </div>
 </div>
@@ -2270,7 +2271,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Solves the model encoded by a MPModelRequest protocol buffer and fills the solution encoded as a MPSolutionResponse. </p>
 <p>Note(user): This creates a temporary <a class="el" href="classoperations__research_1_1_m_p_solver.html" title="This mathematical programming (MP) solver class is the main class though which users build and solve ...">MPSolver</a> and destroys it at the end. If you want to keep the <a class="el" href="classoperations__research_1_1_m_p_solver.html" title="This mathematical programming (MP) solver class is the main class though which users build and solve ...">MPSolver</a> alive (for debugging, or for incremental solving), you should write another version of this function that creates the <a class="el" href="classoperations__research_1_1_m_p_solver.html" title="This mathematical programming (MP) solver class is the main class though which users build and solve ...">MPSolver</a> object on the heap and returns it.</p>
-<p>Note(user): This attempts to first use <code>DirectlySolveProto()</code> (if implemented). Consequently, this most likely does <em>not</em> override any of the default parameters of the underlying solver. This behavior <em>differs</em> from <code><a class="el" href="classoperations__research_1_1_m_p_solver.html#a9f55f5e7a62b45961982063ebc1e9945" title="Solves the problem using the default parameter values.">MPSolver::Solve()</a></code> which by default sets the feasibility tolerance and the gap limit (as of 2020/02/11, to 1e-7 and 0.0001, respectively). </p>
+<p>Note(pawell): This attempts to first use <code>DirectlySolveProto()</code> (if implemented). Consequently, this most likely does <em>not</em> override any of the default parameters of the underlying solver. This behavior <em>differs</em> from <code><a class="el" href="classoperations__research_1_1_m_p_solver.html#a9f55f5e7a62b45961982063ebc1e9945" title="Solves the problem using the default parameter values.">MPSolver::Solve()</a></code> which by default sets the feasibility tolerance and the gap limit (as of 2020/02/11, to 1e-7 and 0.0001, respectively). </p>
 
 </div>
 </div>

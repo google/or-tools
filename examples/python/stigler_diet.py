@@ -14,8 +14,6 @@
 # limitations under the License.
 """Stigler diet example"""
 
-from __future__ import print_function
-from six.moves import xrange
 from ortools.linear_solver import pywraplp
 
 

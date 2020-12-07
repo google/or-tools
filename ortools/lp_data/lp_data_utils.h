@@ -52,6 +52,7 @@ class LpScalingHelper {
  public:
   // Scale the given LP.
   void Scale(LinearProgram* lp);
+  void Scale(const GlopParameters& params, LinearProgram* lp);
 
   // Clear all scaling coefficients.
   void Clear();

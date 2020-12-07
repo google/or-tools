@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2020 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,29 +14,17 @@
 #ifndef OR_TOOLS_BASE_BASE_EXPORT_H_
 #define OR_TOOLS_BASE_BASE_EXPORT_H_
 
-#if defined(COMPONENT_BUILD)
-#if defined(_MSC_VER)
-#if defined(BASE_IMPLEMENTATION)
+#if defined(_MSC_VER) && defined(OR_TOOLS_AS_DYNAMIC_LIB)
+// Annoying stuff for windows -- makes sure clients can import these functions
+#if defined(OR_TOOLS_EXPORTS)
 #define BASE_EXPORT __declspec(dllexport)
-#define BASE_EXPORT_PRIVATE __declspec(dllexport)
 #else
 #define BASE_EXPORT __declspec(dllimport)
-#define BASE_EXPORT_PRIVATE __declspec(dllimport)
-#endif  // defined(BASE_IMPLEMENTATION)
+#endif  // defined(OR_TOOLS_EXPORT)
+#endif  // _MSC_VER && OR_TOOLS_AS_DYNAMIC_LIB
 
-#else  // defined(WIN32)
-#if defined(BASE_IMPLEMENTATION)
-#define BASE_EXPORT __attribute__((visibility("default")))
-#define BASE_EXPORT_PRIVATE __attribute__((visibility("default")))
-#else
+#ifndef BASE_EXPORT
 #define BASE_EXPORT
-#define BASE_EXPORT_PRIVATE
-#endif  // defined(BASE_IMPLEMENTATION)
-#endif
-
-#else  // defined(COMPONENT_BUILD)
-#define BASE_EXPORT
-#define BASE_EXPORT_PRIVATE
 #endif
 
 #endif  // OR_TOOLS_BASE_BASE_EXPORT_H_

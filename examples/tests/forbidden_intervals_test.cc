@@ -150,7 +150,7 @@ class ForbiddenIntervalTest {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   operations_research::ForbiddenIntervalTest forbidden_intervals_test;
   forbidden_intervals_test.TestSimpleReductionOnBothSide();
   forbidden_intervals_test.TestMultipleReductionsOnMin();

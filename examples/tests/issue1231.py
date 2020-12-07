@@ -20,7 +20,6 @@ where each letter represents a unique digit.
 This problem has 72 different solutions in base 10.
 """
 
-from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 from os import abort
 

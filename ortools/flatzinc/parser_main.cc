@@ -17,6 +17,7 @@
 
 #include <string>
 
+#include "absl/flags/flag.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/logging.h"
@@ -24,10 +25,10 @@
 #include "ortools/flatzinc/parser.h"
 #include "ortools/flatzinc/presolve.h"
 
-DEFINE_string(file, "", "Input file in the flatzinc format.");
-DEFINE_bool(print, false, "Print model.");
-DEFINE_bool(presolve, false, "Presolve loaded file.");
-DEFINE_bool(statistics, false, "Print model statistics");
+ABSL_FLAG(std::string, file, "", "Input file in the flatzinc format.");
+ABSL_FLAG(bool, print, false, "Print model.");
+ABSL_FLAG(bool, presolve, false, "Presolve loaded file.");
+ABSL_FLAG(bool, statistics, false, "Print model statistics");
 
 namespace operations_research {
 namespace fz {
@@ -58,12 +59,12 @@ void ParseFile(const std::string& filename, bool presolve) {
     presolve.Run(&model);
     FZLOG << "  - done in " << timer.GetInMs() << " ms" << FZENDL;
   }
-  if (FLAGS_statistics) {
+  if (absl::GetFlag(FLAGS_statistics)) {
     ModelStatistics stats(model);
     stats.BuildStatistics();
     stats.PrintStatistics();
   }
-  if (FLAGS_print) {
+  if (absl::GetFlag(FLAGS_print)) {
     FZLOG << model.DebugString() << FZENDL;
   }
 }
@@ -76,9 +77,10 @@ int main(int argc, char** argv) {
       "human-readable format";
   absl::SetFlag(&FLAGS_log_prefix, false);
   absl::SetFlag(&FLAGS_logtostderr, true);
-  gflags::SetUsageMessage(kUsage);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::SetProgramUsageMessage(kUsage);
+  absl::ParseCommandLine(argc, argv);
   google::InitGoogleLogging(argv[0]);
-  operations_research::fz::ParseFile(FLAGS_file, FLAGS_presolve);
+  operations_research::fz::ParseFile(absl::GetFlag(FLAGS_file),
+                                     absl::GetFlag(FLAGS_presolve));
   return 0;
 }

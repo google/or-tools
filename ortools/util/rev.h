@@ -18,9 +18,9 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/strong_vector.h"
 
 namespace operations_research {
 
@@ -127,7 +127,7 @@ class RevVector : public ReversibleInterface {
  private:
   std::vector<int> end_of_level_;  // In stack_.
   std::vector<std::pair<IndexType, T>> stack_;
-  gtl::ITIVector<IndexType, T> vector_;
+  absl::StrongVector<IndexType, T> vector_;
 };
 
 template <class T>

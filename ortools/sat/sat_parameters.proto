@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 173
+// NEXT TAG: 177
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -469,6 +469,14 @@ message SatParameters {
   // off and any positive value performs substitution.
   optional int32 presolve_substitution_level = 147 [default = 1];
 
+  // If true, we will extract from linear constraints, enforcement literals of
+  // the form "integer variable at bound => simplified constraint". This should
+  // always be beneficial except that we don't always handle them as efficiently
+  // as we could for now. This causes problem on manna81.mps (LP relaxation not
+  // as tight it seems) and on neos-3354841-apure.mps.gz (too many literals
+  // created this way).
+  optional bool presolve_extract_integer_enforcement = 174 [default = false];
+
   // ==========================================================================
   // Max-sat parameters
   // ==========================================================================
@@ -748,6 +756,10 @@ message SatParameters {
   // every root node.
   optional int64 probing_period_at_root = 142 [default = 0];
 
+  // If true, search will continuously probe Boolean variables, and integer
+  // variable bounds.
+  optional bool use_probing_search = 176 [default = false];
+
   // The solver ignores the pseudo costs of variables with number of recordings
   // less than this threshold.
   optional int64 pseudo_cost_reliability_threshold = 123 [default = 100];
@@ -777,9 +789,19 @@ message SatParameters {
   // because the presolve rules only guarantee the existence of one feasible
   // solution to the presolved problem.
   //
-  // TODO(user): Activate the presolve but with just the rules that do not
-  // change the set of feasible solutions.
+  // TODO(user): Do not disable the presolve and let the user choose what
+  // behavior is best by setting keep_all_feasible_solutions_in_presolve.
   optional bool enumerate_all_solutions = 87 [default = false];
+
+  // If true, we disable the presolve reductions that remove feasible solutions
+  // from the search space. Such solution are usually dominated by a "better"
+  // solution that is kept, but depending on the situation, we might want to
+  // keep all solutions.
+  //
+  // A trivial example is when a variable is unused. If this is true, then the
+  // presolve will not fix it to an arbitrary value and it will stay in the
+  // search space.
+  optional bool keep_all_feasible_solutions_in_presolve = 173 [default = false];
 
   // If true, add information about the derived variable domains to the
   // CpSolverResponse. It is an option because it makes the response slighly
@@ -915,6 +937,12 @@ message SatParameters {
   // stronger cuts.
   optional bool use_implied_bounds = 144 [default = true];
 
+  // Whether we try to do a few degenerate iteration at the end of an LP solve
+  // to minimize the fractionality of the integer variable in the basis. This
+  // helps on some problems, but not so much on others. It also cost of bit of
+  // time to do such polish step.
+  optional bool polish_lp_solution = 175 [default = false];
+
   // ==========================================================================
   // MIP -> CP-SAT (i.e. IP with integer coeff) conversion parameters that are
   // used by our automatic "scaling" algorithm.
@@ -944,8 +972,9 @@ message SatParameters {
 
   // When scaling constraint with double coefficients to integer coefficients,
   // we will multiply by a power of 2 and round the coefficients. We will choose
-  // the lowest power such that we have this relative precision on each of the
-  // constraint (resp. objective) coefficient.
+  // the lowest power such that we have no potential overflow and the worst case
+  // constraint activity error do not exceed this threshold relative to the
+  // constraint bounds.
   //
   // We also use this to decide by how much we relax the constraint bounds so
   // that we can have a feasible integer solution of constraints involving
@@ -965,9 +994,7 @@ message SatParameters {
   optional int32 mip_max_activity_exponent = 127 [default = 53];
 
   // As explained in mip_precision and mip_max_activity_exponent, we cannot
-  // always reach the wanted coefficient precision during scaling. When we
-  // cannot, we will report MODEL_INVALID if the relative precision of the worst
-  // case activity error of a constraint divided by its l2 norm is larger than
-  // this parameter.
-  optional double mip_check_precision = 128 [default = 1e-3];
+  // always reach the wanted precision during scaling. We use this threshold to
+  // enphasize in the logs when the precision seems bad.
+  optional double mip_check_precision = 128 [default = 1e-4];
 }

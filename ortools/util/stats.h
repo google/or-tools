@@ -392,7 +392,7 @@ class DisabledScopedInstructionCounter {
 using ScopedTimeDistributionUpdater = EnabledScopedTimeDistributionUpdater;
 #ifdef HAS_PERF_SUBSYSTEM
 using ScopedInstructionCounter = EnabledScopedInstructionCounter;
-#else  // HAS_PERF_SUBSYSTEM
+#else   // HAS_PERF_SUBSYSTEM
 using ScopedInstructionCounter = DisabledScopedInstructionCounter;
 #endif  // HAS_PERF_SUBSYSTEM
 

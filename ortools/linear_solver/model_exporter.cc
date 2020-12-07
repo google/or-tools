@@ -19,6 +19,7 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -29,12 +30,50 @@
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/util/fp_utils.h"
 
-DEFINE_bool(lp_log_invalid_name, false, "DEPRECATED.");
+ABSL_FLAG(bool, lp_log_invalid_name, false, "DEPRECATED.");
 
 namespace operations_research {
 namespace {
 
 constexpr double kInfinity = std::numeric_limits<double>::infinity();
+
+class LineBreaker {
+ public:
+  explicit LineBreaker(int max_line_size)
+      : max_line_size_(max_line_size), line_size_(0), output_() {}
+  // Lines are broken in such a way that:
+  // - Strings that are given to Append() are never split.
+  // - Lines are split so that their length doesn't exceed the max length;
+  //   unless a single string given to Append() exceeds that length (in which
+  //   case it will be put alone on a single unsplit line).
+  void Append(const std::string& s);
+
+  // Returns true if string s will fit on the current line without adding a
+  // carriage return.
+  bool WillFit(const std::string& s) {
+    return line_size_ + s.size() < max_line_size_;
+  }
+
+  // "Consumes" size characters on the line. Used when starting the constraint
+  // lines.
+  void Consume(int size) { line_size_ += size; }
+
+  std::string GetOutput() const { return output_; }
+
+ private:
+  int max_line_size_;
+  int line_size_;
+  std::string output_;
+};
+
+void LineBreaker::Append(const std::string& s) {
+  line_size_ += s.size();
+  if (line_size_ > max_line_size_) {
+    line_size_ = s.size();
+    absl::StrAppend(&output_, "\n ");
+  }
+  absl::StrAppend(&output_, s);
+}
 
 class MPModelProtoExporter {
  public:
@@ -84,7 +123,17 @@ class MPModelProtoExporter {
   // term >= lhs and term <= rhs.
   void AppendComments(const std::string& separator, std::string* output) const;
 
-  // Clears "output" and writes a term to it, in "Lp" format. Returns false on
+  // Appends an MPConstraintProto to the output text. If the constraint has
+  // both an upper and lower bound that are not equal, it splits the constraint
+  // into two constraints, one for the left hand side (_lhs) and one for right
+  // hand side (_rhs).
+  bool AppendConstraint(const MPConstraintProto& ct_proto,
+                        const std::string& name,
+                        const MPModelExportOptions& options,
+                        LineBreaker& line_breaker,
+                        std::vector<bool>& show_variable, std::string* output);
+
+  // Clears "output" and writes a term to it, in "LP" format. Returns false on
   // error (for example, var_index is out of range).
   bool WriteLpTerm(int var_index, double coefficient,
                    std::string* output) const;
@@ -138,6 +187,9 @@ class MPModelProtoExporter {
   // Vector of constraint names as they will be exported.
   std::vector<std::string> exported_constraint_names_;
 
+  // Vector of general constraint names as they will be exported.
+  std::vector<std::string> exported_general_constraint_names_;
+
   // Number of integer variables in proto_.
   int num_integer_variables_;
 
@@ -156,12 +208,17 @@ class MPModelProtoExporter {
 
   DISALLOW_COPY_AND_ASSIGN(MPModelProtoExporter);
 };
+
 }  // namespace
 
 absl::StatusOr<std::string> ExportModelAsLpFormat(
     const MPModelProto& model, const MPModelExportOptions& options) {
-  if (model.general_constraint_size() > 0) {
-    return absl::InvalidArgumentError("General constraints are not supported.");
+  for (const MPGeneralConstraintProto& general_constraint :
+       model.general_constraint()) {
+    if (!general_constraint.has_indicator_constraint()) {
+      return absl::InvalidArgumentError(
+          "Non-indicator general constraints are not supported.");
+    }
   }
   MPModelProtoExporter exporter(model);
   std::string output;
@@ -293,8 +350,9 @@ void MPModelProtoExporter::AppendComments(const std::string& separator,
   absl::StrAppendFormat(output, "%s   %-16s : %s\n", sep, "Name",
                         proto_.has_name() ? proto_.name().c_str() : "NoName");
   absl::StrAppendFormat(output, "%s   %-16s : %s\n", sep, "Format", "Free");
-  absl::StrAppendFormat(output, "%s   %-16s : %d\n", sep, "Constraints",
-                        proto_.constraint_size());
+  absl::StrAppendFormat(
+      output, "%s   %-16s : %d\n", sep, "Constraints",
+      proto_.constraint_size() + proto_.general_constraint_size());
   absl::StrAppendFormat(output, "%s   %-16s : %d\n", sep, "Variables",
                         proto_.variable_size());
   absl::StrAppendFormat(output, "%s     %-14s : %d\n", sep, "Binary",
@@ -306,43 +364,6 @@ void MPModelProtoExporter::AppendComments(const std::string& separator,
 }
 
 namespace {
-class LineBreaker {
- public:
-  explicit LineBreaker(int max_line_size)
-      : max_line_size_(max_line_size), line_size_(0), output_() {}
-  // Lines are broken in such a way that:
-  // - Strings that are given to Append() are never split.
-  // - Lines are split so that their length doesn't exceed the max length;
-  //   unless a single string given to Append() exceeds that length (in which
-  //   case it will be put alone on a single unsplit line).
-  void Append(const std::string& s);
-
-  // Returns true if string s will fit on the current line without adding
-  // a carriage return.
-  bool WillFit(const std::string& s) {
-    return line_size_ + s.size() < max_line_size_;
-  }
-
-  // "Consumes" size characters on the line. Used when starting the constraint
-  // lines.
-  void Consume(int size) { line_size_ += size; }
-
-  std::string GetOutput() const { return output_; }
-
- private:
-  int max_line_size_;
-  int line_size_;
-  std::string output_;
-};
-
-void LineBreaker::Append(const std::string& s) {
-  line_size_ += s.size();
-  if (line_size_ > max_line_size_) {
-    line_size_ = s.size();
-    absl::StrAppend(&output_, "\n ");
-  }
-  absl::StrAppend(&output_, s);
-}
 
 std::string DoubleToStringWithForcedSign(double d) {
   return absl::StrCat((d < 0 ? "" : "+"), (d));
@@ -351,6 +372,58 @@ std::string DoubleToStringWithForcedSign(double d) {
 std::string DoubleToString(double d) { return absl::StrCat((d)); }
 
 }  // namespace
+
+bool MPModelProtoExporter::AppendConstraint(const MPConstraintProto& ct_proto,
+                                            const std::string& name,
+                                            const MPModelExportOptions& options,
+                                            LineBreaker& line_breaker,
+                                            std::vector<bool>& show_variable,
+                                            std::string* output) {
+  for (int i = 0; i < ct_proto.var_index_size(); ++i) {
+    const int var_index = ct_proto.var_index(i);
+    const double coeff = ct_proto.coefficient(i);
+    std::string term;
+    if (!WriteLpTerm(var_index, coeff, &term)) {
+      return false;
+    }
+    line_breaker.Append(term);
+    show_variable[var_index] = coeff != 0.0 || options.show_unused_variables;
+  }
+
+  const double lb = ct_proto.lower_bound();
+  const double ub = ct_proto.upper_bound();
+  if (lb == ub) {
+    line_breaker.Append(absl::StrCat(" = ", DoubleToString(ub), "\n"));
+    absl::StrAppend(output, " ", name, ": ", line_breaker.GetOutput());
+  } else {
+    if (ub != +kInfinity) {
+      std::string rhs_name = name;
+      if (lb != -kInfinity) {
+        absl::StrAppend(&rhs_name, "_rhs");
+      }
+      absl::StrAppend(output, " ", rhs_name, ": ", line_breaker.GetOutput());
+      const std::string relation =
+          absl::StrCat(" <= ", DoubleToString(ub), "\n");
+      // Here we have to make sure we do not add the relation to the contents
+      // of line_breaker, which may be used in the subsequent clause.
+      if (!line_breaker.WillFit(relation)) absl::StrAppend(output, "\n ");
+      absl::StrAppend(output, relation);
+    }
+    if (lb != -kInfinity) {
+      std::string lhs_name = name;
+      if (ub != +kInfinity) {
+        absl::StrAppend(&lhs_name, "_lhs");
+      }
+      absl::StrAppend(output, " ", lhs_name, ": ", line_breaker.GetOutput());
+      const std::string relation =
+          absl::StrCat(" >= ", DoubleToString(lb), "\n");
+      if (!line_breaker.WillFit(relation)) absl::StrAppend(output, "\n ");
+      absl::StrAppend(output, relation);
+    }
+  }
+
+  return true;
+}
 
 bool MPModelProtoExporter::WriteLpTerm(int var_index, double coefficient,
                                        std::string* output) const {
@@ -382,7 +455,7 @@ void UpdateMaxSize(double new_number, int* size) {
 }  // namespace
 
 void MPModelProtoExporter::Setup() {
-  if (FLAGS_lp_log_invalid_name) {
+  if (absl::GetFlag(FLAGS_lp_log_invalid_name)) {
     LOG(WARNING) << "The \"lp_log_invalid_name\" flag is deprecated. Use "
                     "MPModelProtoExportOptions instead.";
   }
@@ -453,6 +526,9 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
   exported_constraint_names_ = ExtractAndProcessNames(
       proto_.constraint(), "C", options.obfuscate, options.log_invalid_names,
       kForbiddenFirstChars, kForbiddenChars);
+  exported_general_constraint_names_ = ExtractAndProcessNames(
+      proto_.general_constraint(), "C", options.obfuscate,
+      options.log_invalid_names, kForbiddenFirstChars, kForbiddenChars);
   exported_variable_names_ = ExtractAndProcessNames(
       proto_.variable(), "V", options.obfuscate, options.log_invalid_names,
       kForbiddenFirstChars, kForbiddenChars);
@@ -482,7 +558,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
     obj_line_breaker.Append(term);
     show_variable[var_index] = coeff != 0.0 || options.show_unused_variables;
   }
-  // Constraints
+  // Linear Constraints
   absl::StrAppend(output, obj_line_breaker.GetOutput(), "\nSubject to\n");
   for (int cst_index = 0; cst_index < proto_.constraint_size(); ++cst_index) {
     const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
@@ -492,46 +568,37 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
     // Account for the size of the constraint name + possibly "_rhs" +
     // the formatting characters here.
     line_breaker.Consume(kNumFormattingChars + name.size());
-    for (int i = 0; i < ct_proto.var_index_size(); ++i) {
-      const int var_index = ct_proto.var_index(i);
-      const double coeff = ct_proto.coefficient(i);
-      std::string term;
-      if (!WriteLpTerm(var_index, coeff, &term)) {
-        return false;
-      }
-      line_breaker.Append(term);
-      show_variable[var_index] = coeff != 0.0 || options.show_unused_variables;
+    if (!AppendConstraint(ct_proto, name, options, line_breaker, show_variable,
+                          output)) {
+      return false;
     }
-    const double lb = ct_proto.lower_bound();
-    const double ub = ct_proto.upper_bound();
-    if (lb == ub) {
-      line_breaker.Append(absl::StrCat(" = ", DoubleToString(ub), "\n"));
-      absl::StrAppend(output, " ", name, ": ", line_breaker.GetOutput());
-    } else {
-      if (ub != +kInfinity) {
-        std::string rhs_name = name;
-        if (lb != -kInfinity) {
-          absl::StrAppend(&rhs_name, "_rhs");
-        }
-        absl::StrAppend(output, " ", rhs_name, ": ", line_breaker.GetOutput());
-        const std::string relation =
-            absl::StrCat(" <= ", DoubleToString(ub), "\n");
-        // Here we have to make sure we do not add the relation to the contents
-        // of line_breaker, which may be used in the subsequent clause.
-        if (!line_breaker.WillFit(relation)) absl::StrAppend(output, "\n ");
-        absl::StrAppend(output, relation);
-      }
-      if (lb != -kInfinity) {
-        std::string lhs_name = name;
-        if (ub != +kInfinity) {
-          absl::StrAppend(&lhs_name, "_lhs");
-        }
-        absl::StrAppend(output, " ", lhs_name, ": ", line_breaker.GetOutput());
-        const std::string relation =
-            absl::StrCat(" >= ", DoubleToString(lb), "\n");
-        if (!line_breaker.WillFit(relation)) absl::StrAppend(output, "\n ");
-        absl::StrAppend(output, relation);
-      }
+  }
+
+  // General Constraints
+  for (int cst_index = 0; cst_index < proto_.general_constraint_size();
+       ++cst_index) {
+    const MPGeneralConstraintProto& ct_proto =
+        proto_.general_constraint(cst_index);
+    const std::string& name = exported_general_constraint_names_[cst_index];
+    LineBreaker line_breaker(options.max_line_length);
+    const int kNumFormattingChars = 10;  // Overevaluated.
+    // Account for the size of the constraint name + possibly "_rhs" +
+    // the formatting characters here.
+    line_breaker.Consume(kNumFormattingChars + name.size());
+
+    if (!ct_proto.has_indicator_constraint()) return false;
+    const MPIndicatorConstraint& indicator_ct = ct_proto.indicator_constraint();
+    const int binary_var_index = indicator_ct.var_index();
+    const int binary_var_value = indicator_ct.var_value();
+    if (binary_var_index < 0 || binary_var_index >= proto_.variable_size()) {
+      return false;
+    }
+    line_breaker.Append(absl::StrFormat(
+        "%s = %d -> ", exported_variable_names_[binary_var_index],
+        binary_var_value));
+    if (!AppendConstraint(indicator_ct.constraint(), name, options,
+                          line_breaker, show_variable, output)) {
+      return false;
     }
   }
 
@@ -653,7 +720,7 @@ void MPModelProtoExporter::AppendMpsColumns(
       AppendMpsTermWithContext(var_name, "COST",
                                var_proto.objective_coefficient(), output);
     }
-    for (const std::pair<int, double> cst_index_and_coeff :
+    for (const std::pair<int, double>& cst_index_and_coeff :
          transpose[var_index]) {
       const std::string& cst_name =
           exported_constraint_names_[cst_index_and_coeff.first];
@@ -678,19 +745,16 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(
       proto_.variable(), "V", options.obfuscate, options.log_invalid_names,
       kForbiddenFirstChars, kForbiddenChars);
 
-  // TODO(user): Support maximization via OBJSENSE section. See:
-  // http://www-eio.upc.es/lceio/manuals/cplex-11/html/reffileformatscplex/
-  // reffileformatscplex10.html
-  if (proto_.maximize()) {
-    LOG(DFATAL) << "MPS cannot represent maximization objectives.";
-    return false;
-  }
   // Comments.
   AppendComments("*", output);
 
   // NAME section.
   // TODO(user): Obfuscate the model name too if `obfuscate` is true.
   absl::StrAppendFormat(output, "%-14s%s\n", "NAME", proto_.name());
+
+  if (proto_.maximize()) {
+    absl::StrAppendFormat(output, "OBJSENSE\n  MAX\n");
+  }
 
   // ROWS section.
   current_mps_column_ = 0;

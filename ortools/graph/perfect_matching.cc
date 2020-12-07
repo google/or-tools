@@ -1179,10 +1179,10 @@ std::string BlossomGraph::NodeDebugString(NodeIndex n) const {
   if (node.is_internal) {
     return absl::StrCat("[I] #", n.value());
   }
-  const std::string type =
-      !NodeIsMatched(n)
-          ? "[*]"
-          : node.type == 1 ? "[+]" : node.type == -1 ? "[-]" : "[0]";
+  const std::string type = !NodeIsMatched(n) ? "[*]"
+                           : node.type == 1  ? "[+]"
+                           : node.type == -1 ? "[-]"
+                                             : "[0]";
   return absl::StrCat(
       type, " #", n.value(), " dual: ", Dual(node).value(),
       " parent: ", node.parent.value(), " match: ", node.match.value(),

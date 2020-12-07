@@ -19,123 +19,128 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-
 public class YoungTableaux
 {
+    /**
+     *
+     * Implements Young tableaux and partitions.
+     * See http://www.hakank.org/or-tools/young_tableuax.py
+     *
+     */
+    private static void Solve(int n)
+    {
+        Solver solver = new Solver("YoungTableaux");
 
+        //
+        // data
+        //
+        Console.WriteLine("n: {0}\n", n);
 
-  /**
-   *
-   * Implements Young tableaux and partitions.
-   * See http://www.hakank.org/or-tools/young_tableuax.py
-   *
-   */
-  private static void Solve(int n)
-  {
-    Solver solver = new Solver("YoungTableaux");
+        //
+        // Decision variables
+        //
+        IntVar[,] x = solver.MakeIntVarMatrix(n, n, 1, n + 1, "x");
+        IntVar[] x_flat = x.Flatten();
 
-    //
-    // data
-    //
-    Console.WriteLine("n: {0}\n", n);
+        // partition structure
+        IntVar[] p = solver.MakeIntVarArray(n, 0, n + 1, "p");
 
-    //
-    // Decision variables
-    //
-    IntVar[,] x = solver.MakeIntVarMatrix(n, n, 1, n + 1, "x");
-    IntVar[] x_flat = x.Flatten();
-
-    // partition structure
-    IntVar[] p = solver.MakeIntVarArray(n, 0, n + 1, "p");
-
-    //
-    // Constraints
-    //
-    // 1..n is used exactly once
-    for(int i = 1; i <= n; i++) {
-      solver.Add(x_flat.Count(i, 1));
-    }
-
-    solver.Add(x[0,0] == 1);
-
-    // row wise
-    for(int i = 0; i < n; i++) {
-      for(int j = 1; j < n; j++) {
-        solver.Add(x[i,j] >= x[i,j - 1]);
-      }
-    }
-
-    // column wise
-    for(int j = 0; j < n; j++) {
-      for(int i = 1; i < n; i++) {
-        solver.Add(x[i,j] >= x[i - 1, j]);
-      }
-    }
-
-    // calculate the structure (i.e. the partition)
-    for(int i = 0; i < n; i++) {
-      IntVar[] b = new IntVar[n];
-      for(int j = 0; j < n; j++) {
-        b[j] = x[i, j] <= n;
-      }
-      solver.Add(p[i] == b.Sum());
-    }
-
-    solver.Add(p.Sum() == n);
-
-    for(int i = 1; i < n; i++) {
-      solver.Add(p[i - 1] >= p[i]);
-    }
-
-
-
-    //
-    // Search
-    //
-    DecisionBuilder db = solver.MakePhase(x_flat,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
-
-    solver.NewSearch(db);
-
-    while (solver.NextSolution()) {
-      Console.Write("p: ");
-      for(int i = 0; i < n; i++) {
-        Console.Write(p[i].Value() + " ");
-      }
-      Console.WriteLine("\nx:");
-
-      for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++) {
-          long val = x[i,j].Value();
-          if (val <= n) {
-            Console.Write(val + " ");
-          }
+        //
+        // Constraints
+        //
+        // 1..n is used exactly once
+        for (int i = 1; i <= n; i++)
+        {
+            solver.Add(x_flat.Count(i, 1));
         }
-        if (p[i].Value() > 0) {
-          Console.WriteLine();
+
+        solver.Add(x[0, 0] == 1);
+
+        // row wise
+        for (int i = 0; i < n; i++)
+        {
+            for (int j = 1; j < n; j++)
+            {
+                solver.Add(x[i, j] >= x[i, j - 1]);
+            }
         }
-      }
-      Console.WriteLine();
+
+        // column wise
+        for (int j = 0; j < n; j++)
+        {
+            for (int i = 1; i < n; i++)
+            {
+                solver.Add(x[i, j] >= x[i - 1, j]);
+            }
+        }
+
+        // calculate the structure (i.e. the partition)
+        for (int i = 0; i < n; i++)
+        {
+            IntVar[] b = new IntVar[n];
+            for (int j = 0; j < n; j++)
+            {
+                b[j] = x[i, j] <= n;
+            }
+            solver.Add(p[i] == b.Sum());
+        }
+
+        solver.Add(p.Sum() == n);
+
+        for (int i = 1; i < n; i++)
+        {
+            solver.Add(p[i - 1] >= p[i]);
+        }
+
+        //
+        // Search
+        //
+        DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
+
+        solver.NewSearch(db);
+
+        while (solver.NextSolution())
+        {
+            Console.Write("p: ");
+            for (int i = 0; i < n; i++)
+            {
+                Console.Write(p[i].Value() + " ");
+            }
+            Console.WriteLine("\nx:");
+
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    long val = x[i, j].Value();
+                    if (val <= n)
+                    {
+                        Console.Write(val + " ");
+                    }
+                }
+                if (p[i].Value() > 0)
+                {
+                    Console.WriteLine();
+                }
+            }
+            Console.WriteLine();
+        }
+
+        Console.WriteLine("\nSolutions: {0}", solver.Solutions());
+        Console.WriteLine("WallTime: {0}ms", solver.WallTime());
+        Console.WriteLine("Failures: {0}", solver.Failures());
+        Console.WriteLine("Branches: {0} ", solver.Branches());
+
+        solver.EndSearch();
     }
 
-    Console.WriteLine("\nSolutions: {0}", solver.Solutions());
-    Console.WriteLine("WallTime: {0}ms", solver.WallTime());
-    Console.WriteLine("Failures: {0}", solver.Failures());
-    Console.WriteLine("Branches: {0} ", solver.Branches());
-
-    solver.EndSearch();
-
-  }
-
-
-
-  public static void Main(String[] args)
-  {
-    int n = 5;
-    if (args.Length > 0) {
-      n = Convert.ToInt32(args[0]);
+    public static void Main(String[] args)
+    {
+        int n = 5;
+        if (args.Length > 0)
+        {
+            n = Convert.ToInt32(args[0]);
+        }
+        Solve(n);
     }
-    Solve(n);
-  }
 }

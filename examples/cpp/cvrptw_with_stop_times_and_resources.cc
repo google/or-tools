@@ -49,38 +49,45 @@ using operations_research::RoutingSearchParameters;
 using operations_research::Solver;
 using operations_research::StopServiceTimePlusTransition;
 
-DEFINE_int32(vrp_stops, 25, "Stop locations in the problem.");
-DEFINE_int32(vrp_orders_per_stop, 5, "Nodes for each stop.");
-DEFINE_int32(vrp_vehicles, 20, "Size of Traveling Salesman Problem instance.");
-DEFINE_bool(vrp_use_deterministic_random_seed, false,
-            "Use deterministic random seeds.");
-DEFINE_string(routing_search_parameters, "",
-              "Text proto RoutingSearchParameters (possibly partial) that will "
-              "override the DefaultRoutingSearchParameters()");
+ABSL_FLAG(int, vrp_stops, 25, "Stop locations in the problem.");
+ABSL_FLAG(int, vrp_orders_per_stop, 5, "Nodes for each stop.");
+ABSL_FLAG(int, vrp_vehicles, 20,
+          "Size of Traveling Salesman Problem instance.");
+ABSL_FLAG(bool, vrp_use_deterministic_random_seed, false,
+          "Use deterministic random seeds.");
+ABSL_FLAG(std::string, routing_search_parameters, "",
+          "Text proto RoutingSearchParameters (possibly partial) that will "
+          "override the DefaultRoutingSearchParameters()");
 
 const char* kTime = "Time";
 const char* kCapacity = "Capacity";
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  CHECK_LT(0, FLAGS_vrp_stops) << "Specify an instance size greater than 0.";
-  CHECK_LT(0, FLAGS_vrp_orders_per_stop)
+  absl::ParseCommandLine(argc, argv);
+  CHECK_LT(0, absl::GetFlag(FLAGS_vrp_stops))
       << "Specify an instance size greater than 0.";
-  CHECK_LT(0, FLAGS_vrp_vehicles) << "Specify a non-null vehicle fleet size.";
-  const int vrp_orders = FLAGS_vrp_stops * FLAGS_vrp_orders_per_stop;
+  CHECK_LT(0, absl::GetFlag(FLAGS_vrp_orders_per_stop))
+      << "Specify an instance size greater than 0.";
+  CHECK_LT(0, absl::GetFlag(FLAGS_vrp_vehicles))
+      << "Specify a non-null vehicle fleet size.";
+  const int vrp_orders =
+      absl::GetFlag(FLAGS_vrp_stops) * absl::GetFlag(FLAGS_vrp_orders_per_stop);
   // Nodes are indexed from 0 to vrp_orders, the starts and ends of the routes
   // are at node 0.
   const RoutingIndexManager::NodeIndex kDepot(0);
-  RoutingIndexManager manager(vrp_orders + 1, FLAGS_vrp_vehicles, kDepot);
+  RoutingIndexManager manager(vrp_orders + 1, absl::GetFlag(FLAGS_vrp_vehicles),
+                              kDepot);
   RoutingModel routing(manager);
 
   // Setting up locations.
   const int64 kXMax = 100000;
   const int64 kYMax = 100000;
   const int64 kSpeed = 10;
-  LocationContainer locations(kSpeed, FLAGS_vrp_use_deterministic_random_seed);
-  for (int stop = 0; stop <= FLAGS_vrp_stops; ++stop) {
-    const int num_orders = stop == 0 ? 1 : FLAGS_vrp_orders_per_stop;
+  LocationContainer locations(
+      kSpeed, absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
+  for (int stop = 0; stop <= absl::GetFlag(FLAGS_vrp_stops); ++stop) {
+    const int num_orders =
+        stop == 0 ? 1 : absl::GetFlag(FLAGS_vrp_orders_per_stop);
     locations.AddRandomLocation(kXMax, kYMax, num_orders);
   }
 
@@ -96,14 +103,14 @@ int main(int argc, char** argv) {
   const int64 kVehicleCapacity = 40;
   const int64 kNullCapacitySlack = 0;
   RandomDemand demand(manager.num_nodes(), kDepot,
-                      FLAGS_vrp_use_deterministic_random_seed);
+                      absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
   demand.Initialize();
   routing.AddDimension(
       routing.RegisterTransitCallback([&demand, &manager](int64 i, int64 j) {
         return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
-      kNullCapacitySlack, kVehicleCapacity,
-      /*fix_start_cumul_to_zero=*/true, kCapacity);
+      kNullCapacitySlack, kVehicleCapacity, /*fix_start_cumul_to_zero=*/true,
+      kCapacity);
 
   // Adding time dimension constraints.
   const int64 kStopTime = 300;
@@ -121,13 +128,15 @@ int main(int argc, char** argv) {
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie(kTime);
 
   // Adding time windows, for the sake of simplicty same for each stop.
-  ACMRandom randomizer(GetSeed(FLAGS_vrp_use_deterministic_random_seed));
+  ACMRandom randomizer(
+      GetSeed(absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed)));
   const int64 kTWDuration = 5 * 3600;
-  for (int stop = 0; stop < FLAGS_vrp_stops; ++stop) {
+  for (int stop = 0; stop < absl::GetFlag(FLAGS_vrp_stops); ++stop) {
     const int64 start = randomizer.Uniform(kHorizon - kTWDuration);
-    for (int stop_order = 0; stop_order < FLAGS_vrp_orders_per_stop;
-         ++stop_order) {
-      const int order = stop * FLAGS_vrp_orders_per_stop + stop_order + 1;
+    for (int stop_order = 0;
+         stop_order < absl::GetFlag(FLAGS_vrp_orders_per_stop); ++stop_order) {
+      const int order =
+          stop * absl::GetFlag(FLAGS_vrp_orders_per_stop) + stop_order + 1;
       time_dimension.CumulVar(order)->SetRange(start, start + kTWDuration);
     }
   }
@@ -135,11 +144,12 @@ int main(int argc, char** argv) {
   // Adding resource constraints at order locations.
   Solver* const solver = routing.solver();
   std::vector<IntervalVar*> intervals;
-  for (int stop = 0; stop < FLAGS_vrp_stops; ++stop) {
+  for (int stop = 0; stop < absl::GetFlag(FLAGS_vrp_stops); ++stop) {
     std::vector<IntervalVar*> stop_intervals;
-    for (int stop_order = 0; stop_order < FLAGS_vrp_orders_per_stop;
-         ++stop_order) {
-      const int order = stop * FLAGS_vrp_orders_per_stop + stop_order + 1;
+    for (int stop_order = 0;
+         stop_order < absl::GetFlag(FLAGS_vrp_orders_per_stop); ++stop_order) {
+      const int order =
+          stop * absl::GetFlag(FLAGS_vrp_orders_per_stop) + stop_order + 1;
       IntervalVar* const interval = solver->MakeFixedDurationIntervalVar(
           0, kHorizon, kStopTime, true, absl::StrCat("Order", order));
       intervals.push_back(interval);
@@ -190,7 +200,7 @@ int main(int argc, char** argv) {
   // Solve, returns a solution if any (owned by RoutingModel).
   RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
   CHECK(google::protobuf::TextFormat::MergeFromString(
-      FLAGS_routing_search_parameters, &parameters));
+      absl::GetFlag(FLAGS_routing_search_parameters), &parameters));
   const Assignment* solution = routing.SolveWithParameters(parameters);
   if (solution != nullptr) {
     DisplayPlan(manager, routing, *solution, /*use_same_vehicle_costs=*/false,

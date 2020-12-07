@@ -136,8 +136,6 @@ class GLPKInterface : public MPSolverInterface {
   int64 iterations() const override;
   // Number of branch-and-bound nodes. Only available for discrete problems.
   int64 nodes() const override;
-  // Best objective bound. Only available for discrete problems.
-  double best_objective_bound() const override;
 
   // Returns the basis status of a row.
   MPSolver::BasisStatus row_status(int constraint_index) const override;
@@ -146,8 +144,6 @@ class GLPKInterface : public MPSolverInterface {
 
   // Checks whether a feasible solution exists.
   bool CheckSolutionExists() const override;
-  // Checks whether information on the best objective bound exists.
-  bool CheckBestObjectiveBoundExists() const override;
 
   // ----- Misc -----
   // Query problem type.
@@ -567,10 +563,12 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
   // Get the results.
   if (mip_) {
     objective_value_ = glp_mip_obj_val(lp_);
+    best_objective_bound_ = mip_callback_info_->best_objective_bound_;
   } else {
     objective_value_ = glp_get_obj_val(lp_);
   }
-  VLOG(1) << "objective=" << objective_value_;
+  VLOG(1) << "objective=" << objective_value_
+          << ", bound=" << best_objective_bound_;
   for (int i = 0; i < solver_->variables_.size(); ++i) {
     MPVariable* const var = solver_->variables_[i];
     double val;
@@ -693,23 +691,6 @@ int64 GLPKInterface::nodes() const {
   }
 }
 
-double GLPKInterface::best_objective_bound() const {
-  if (mip_) {
-    if (!CheckSolutionIsSynchronized() || !CheckBestObjectiveBoundExists()) {
-      return trivial_worst_objective_bound();
-    }
-    if (solver_->variables_.empty() && solver_->constraints_.empty()) {
-      // Special case for empty model.
-      return solver_->Objective().offset();
-    } else {
-      return mip_callback_info_->best_objective_bound_;
-    }
-  } else {
-    LOG(DFATAL) << "Best objective bound only available for discrete problems";
-    return trivial_worst_objective_bound();
-  }
-}
-
 MPSolver::BasisStatus GLPKInterface::row_status(int constraint_index) const {
   DCHECK_GE(constraint_index, 0);
   DCHECK_LT(constraint_index, last_constraint_index_);
@@ -734,18 +715,6 @@ bool GLPKInterface::CheckSolutionExists() const {
   } else {
     // Call default implementation
     return MPSolverInterface::CheckSolutionExists();
-  }
-}
-
-bool GLPKInterface::CheckBestObjectiveBoundExists() const {
-  if (result_status_ == MPSolver::ABNORMAL) {
-    LOG(WARNING) << "Ignoring ABNORMAL status from GLPK: This status may or may"
-                 << " not indicate that information is available on the best"
-                 << " objective bound.";
-    return true;
-  } else {
-    // Call default implementation
-    return MPSolverInterface::CheckBestObjectiveBoundExists();
   }
 }
 

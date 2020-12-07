@@ -1,11 +1,11 @@
 var searchData=
 [
-  ['neighbors_5fratio_3617',['neighbors_ratio',['../structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#a0aa77787d0df1b489476bfc6714ef819',1,'operations_research::GlobalCheapestInsertionFilteredHeuristic::GlobalCheapestInsertionParameters::neighbors_ratio()'],['../structoperations__research_1_1_savings_filtered_heuristic_1_1_savings_parameters.html#a0aa77787d0df1b489476bfc6714ef819',1,'operations_research::SavingsFilteredHeuristic::SavingsParameters::neighbors_ratio()']]],
-  ['next_5fbase_5fto_5fincrement_5f_3618',['next_base_to_increment_',['../classoperations__research_1_1_path_operator.html#ac4e410910ad9361ed46221ecc6f0aa9b',1,'operations_research::PathOperator']]],
-  ['no_5fcompression_3619',['NO_COMPRESSION',['../classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a8a651fea5703c340f40fc527e4626fd5',1,'operations_research::PROTOBUF_FINAL']]],
-  ['num_5fchain_5ftasks_3620',['num_chain_tasks',['../structoperations__research_1_1_disjunctive_propagator_1_1_tasks.html#ad5e547ae9d4f7380beae49908c7cdc48',1,'operations_research::DisjunctivePropagator::Tasks']]],
-  ['num_5fpaths_5f_3621',['num_paths_',['../classoperations__research_1_1_path_operator.html#afd4107d44c9d70962fa429ecd6cc8312',1,'operations_research::PathOperator']]],
-  ['num_5ftype_5fadded_5fto_5fvehicle_3622',['num_type_added_to_vehicle',['../structoperations__research_1_1_type_regulations_checker_1_1_type_policy_occurrence.html#aa0bf1d67fe0a2224b3ce02286a032c3e',1,'operations_research::TypeRegulationsChecker::TypePolicyOccurrence']]],
-  ['num_5ftype_5fremoved_5ffrom_5fvehicle_3623',['num_type_removed_from_vehicle',['../structoperations__research_1_1_type_regulations_checker_1_1_type_policy_occurrence.html#abb92435061d2042b268fb2041c8e2754',1,'operations_research::TypeRegulationsChecker::TypePolicyOccurrence']]],
-  ['number_5fof_5fnexts_5f_3624',['number_of_nexts_',['../classoperations__research_1_1_path_operator.html#aad7695e494039d607c26afb6acd0644a',1,'operations_research::PathOperator']]]
+  ['maintainer_5356',['maintainer',['../structoperations__research_1_1_solver_1_1_integer_cast_info.html#ae1de17a3d4162dd6fef92daccf0741f6',1,'operations_research::Solver::IntegerCastInfo']]],
+  ['max_5357',['max',['../structoperations__research_1_1_unary_dimension_checker_1_1_interval.html#a9d0c202d5fdd62f4fa2c613339ff168a',1,'operations_research::UnaryDimensionChecker::Interval']]],
+  ['max_5fmemory_5fusage_5fbytes_5358',['max_memory_usage_bytes',['../structoperations__research_1_1_savings_filtered_heuristic_1_1_savings_parameters.html#a33bd2c84a2be54d10959e5c0d81f86b5',1,'operations_research::SavingsFilteredHeuristic::SavingsParameters']]],
+  ['max_5ftravels_5359',['max_travels',['../structoperations__research_1_1_travel_bounds.html#a3535b65e25ad7ea4781e7d44cbc978b8',1,'operations_research::TravelBounds']]],
+  ['maximize_5f_5360',['maximize_',['../classoperations__research_1_1_optimize_var.html#ad5d09a69c6c8c8eea9311b0513628683',1,'operations_research::OptimizeVar']]],
+  ['min_5361',['min',['../structoperations__research_1_1_unary_dimension_checker_1_1_interval.html#a021e695f54a13bd809c34b2f4ca87c37',1,'operations_research::UnaryDimensionChecker::Interval']]],
+  ['min_5ftravels_5362',['min_travels',['../structoperations__research_1_1_travel_bounds.html#a4bf199080092cf9464f80c861bfee413',1,'operations_research::TravelBounds']]],
+  ['model_5f_5363',['model_',['../classoperations__research_1_1_type_regulations_checker.html#aeb246ac61d4eadd6abf6dbdb6ce134f5',1,'operations_research::TypeRegulationsChecker::model_()'],['../classoperations__research_1_1_filtered_heuristic_local_search_operator.html#aeb246ac61d4eadd6abf6dbdb6ce134f5',1,'operations_research::FilteredHeuristicLocalSearchOperator::model_()']]]
 ];

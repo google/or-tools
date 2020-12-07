@@ -464,9 +464,11 @@ class SingletonPreprocessor : public Preprocessor {
 
   // This is used as a "cache" by MakeConstraintAnEqualityIfPossible() to avoid
   // scanning more than once each row. See the code to see how this is used.
-  gtl::ITIVector<RowIndex, bool> row_sum_is_cached_;
-  gtl::ITIVector<RowIndex, SumWithNegativeInfiniteAndOneMissing> row_lb_sum_;
-  gtl::ITIVector<RowIndex, SumWithPositiveInfiniteAndOneMissing> row_ub_sum_;
+  absl::StrongVector<RowIndex, bool> row_sum_is_cached_;
+  absl::StrongVector<RowIndex, SumWithNegativeInfiniteAndOneMissing>
+      row_lb_sum_;
+  absl::StrongVector<RowIndex, SumWithPositiveInfiniteAndOneMissing>
+      row_ub_sum_;
 
   // The columns that are deleted by this preprocessor.
   SparseMatrix deleted_columns_;

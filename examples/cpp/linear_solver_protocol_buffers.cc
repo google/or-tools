@@ -99,7 +99,7 @@ void RunAllExamples() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   operations_research::RunAllExamples();
   return EXIT_SUCCESS;
 }

@@ -246,6 +246,29 @@ std::string ValidateRoutesConstraint(const CpModelProto& model,
   return "";
 }
 
+std::string ValidateNoOverlap2DConstraint(const CpModelProto& model,
+                                          const ConstraintProto& ct) {
+  const int size_x = ct.no_overlap_2d().x_intervals().size();
+  const int size_y = ct.no_overlap_2d().y_intervals().size();
+  if (size_x != size_y) {
+    return absl::StrCat("The two lists of intervals must have the same size: ",
+                        ProtobufShortDebugString(ct));
+  }
+  return "";
+}
+
+std::string ValidateAutomatonConstraint(const CpModelProto& model,
+                                        const ConstraintProto& ct) {
+  const int num_transistions = ct.automaton().transition_tail().size();
+  if (num_transistions != ct.automaton().transition_head().size() ||
+      num_transistions != ct.automaton().transition_label().size()) {
+    return absl::StrCat(
+        "The transitions repeated fields must have the same size: ",
+        ProtobufShortDebugString(ct));
+  }
+  return "";
+}
+
 std::string ValidateReservoirConstraint(const CpModelProto& model,
                                         const ConstraintProto& ct) {
   if (ct.enforcement_literal_size() > 0) {
@@ -280,18 +303,6 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
       ct.reservoir().demands_size() != ct.reservoir().times_size()) {
     return "Wrong array length of demands variables";
   }
-  return "";
-}
-
-std::string ValidateCircuitCoveringConstraint(const ConstraintProto& ct) {
-  const int num_nodes = ct.circuit_covering().nexts_size();
-  for (const int d : ct.circuit_covering().distinguished_nodes()) {
-    if (d < 0 || d >= num_nodes) {
-      return absl::StrCat("Distinguished node ", d, " not in [0, ", num_nodes,
-                          ").");
-    }
-  }
-
   return "";
 }
 
@@ -418,7 +429,7 @@ std::string ValidateCpModel(const CpModelProto& model) {
         break;
       case ConstraintProto::ConstraintCase::kLinMax: {
         const std::string target_error =
-            ValidateLinearExpression(model, ct.lin_min().target());
+            ValidateLinearExpression(model, ct.lin_max().target());
         if (!target_error.empty()) return target_error;
         for (int i = 0; i < ct.lin_max().exprs_size(); ++i) {
           const std::string expr_error =
@@ -457,17 +468,20 @@ std::string ValidateCpModel(const CpModelProto& model) {
                               ProtobufShortDebugString(ct));
         }
         break;
+      case ConstraintProto::ConstraintCase::kAutomaton:
+        RETURN_IF_NOT_EMPTY(ValidateAutomatonConstraint(model, ct));
+        break;
       case ConstraintProto::ConstraintCase::kCircuit:
         RETURN_IF_NOT_EMPTY(ValidateCircuitConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kRoutes:
         RETURN_IF_NOT_EMPTY(ValidateRoutesConstraint(model, ct));
         break;
+      case ConstraintProto::ConstraintCase::kNoOverlap2D:
+        RETURN_IF_NOT_EMPTY(ValidateNoOverlap2DConstraint(model, ct));
+        break;
       case ConstraintProto::ConstraintCase::kReservoir:
         RETURN_IF_NOT_EMPTY(ValidateReservoirConstraint(model, ct));
-        break;
-      case ConstraintProto::ConstraintCase::kCircuitCovering:
-        RETURN_IF_NOT_EMPTY(ValidateCircuitCoveringConstraint(ct));
         break;
       default:
         break;
@@ -903,37 +917,6 @@ class ConstraintChecker {
     return true;
   }
 
-  bool CircuitCoveringConstraintIsFeasible(const ConstraintProto& ct) {
-    const int num_nodes = ct.circuit_covering().nexts_size();
-    std::vector<bool> distinguished(num_nodes, false);
-    std::vector<bool> visited(num_nodes, false);
-    for (const int node : ct.circuit_covering().distinguished_nodes()) {
-      distinguished[node] = true;
-    }
-
-    // By design, every node has exactly one neighbour.
-    // Check that distinguished nodes do not share a circuit,
-    // mark nodes visited during the process.
-    std::vector<int> next(num_nodes, -1);
-    for (const int d : ct.circuit_covering().distinguished_nodes()) {
-      visited[d] = true;
-      for (int node = Value(ct.circuit_covering().nexts(d)); node != d;
-           node = Value(ct.circuit_covering().nexts(node))) {
-        if (distinguished[node]) return false;
-        CHECK(!visited[node]);
-        visited[node] = true;
-      }
-    }
-
-    // Check that nodes that were not visited are all loops.
-    for (int node = 0; node < num_nodes; node++) {
-      if (!visited[node] && Value(ct.circuit_covering().nexts(node)) != node) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   bool InverseConstraintIsFeasible(const ConstraintProto& ct) {
     const int num_variables = ct.inverse().f_direct_size();
     if (num_variables != ct.inverse().f_inverse_size()) return false;
@@ -1077,9 +1060,6 @@ bool SolutionIsFeasible(const CpModelProto& model,
       case ConstraintProto::ConstraintCase::kRoutes:
         is_feasible = checker.RoutesConstraintIsFeasible(ct);
         break;
-      case ConstraintProto::ConstraintCase::kCircuitCovering:
-        is_feasible = checker.CircuitCoveringConstraintIsFeasible(ct);
-        break;
       case ConstraintProto::ConstraintCase::kInverse:
         is_feasible = checker.InverseConstraintIsFeasible(ct);
         break;
@@ -1092,21 +1072,28 @@ bool SolutionIsFeasible(const CpModelProto& model,
       default:
         LOG(FATAL) << "Unuspported constraint: " << ConstraintCaseName(type);
     }
+
+    // Display a message to help debugging.
     if (!is_feasible) {
       VLOG(1) << "Failing constraint #" << c << " : "
               << ProtobufShortDebugString(model.constraints(c));
       if (mapping_proto != nullptr && postsolve_mapping != nullptr) {
-        std::vector<bool> fixed(mapping_proto->variables().size(), false);
-        for (const int var : *postsolve_mapping) fixed[var] = true;
+        std::vector<int> reverse_map(mapping_proto->variables().size(), -1);
+        for (int var = 0; var < postsolve_mapping->size(); ++var) {
+          reverse_map[(*postsolve_mapping)[var]] = var;
+        }
         for (const int var : UsedVariables(model.constraints(c))) {
-          VLOG(1) << "var: " << var << " value: " << variable_values[var]
-                  << " was_fixed: " << fixed[var] << " initial_domain: "
+          VLOG(1) << "var: " << var << " mapped_to: " << reverse_map[var]
+                  << " value: " << variable_values[var] << " initial_domain: "
                   << ReadDomainFromProto(model.variables(var))
                   << " postsolved_domain: "
                   << ReadDomainFromProto(mapping_proto->variables(var));
         }
+      } else {
+        for (const int var : UsedVariables(model.constraints(c))) {
+          VLOG(1) << "var: " << var << " value: " << variable_values[var];
+        }
       }
-
       return false;
     }
   }

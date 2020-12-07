@@ -35,19 +35,21 @@
 #include "ortools/util/file_util.h"
 #include "ortools/util/proto_tools.h"
 
-DEFINE_bool(mps_dump_problem, false, "Dumps problem in readable form.");
-DEFINE_bool(mps_solve, true, "Solves problem.");
-DEFINE_bool(mps_terse_result, false,
-            "Displays the result in form of a single CSV line.");
-DEFINE_bool(mps_verbose_result, true, "Displays the result in verbose form.");
-DEFINE_bool(mps_display_full_path, true,
-            "Displays the full path of the input file in the result line.");
-DEFINE_string(input, "", "File pattern for problems to be optimized.");
-DEFINE_string(params_file, "", "Path to a GlopParameters file in text format.");
-DEFINE_string(params, "",
-              "GlopParameters in text format. If --params_file was "
-              "also specified, the --params will be merged onto "
-              "them (i.e. in case of conflicts, --params wins)");
+ABSL_FLAG(bool, mps_dump_problem, false, "Dumps problem in readable form.");
+ABSL_FLAG(bool, mps_solve, true, "Solves problem.");
+ABSL_FLAG(bool, mps_terse_result, false,
+          "Displays the result in form of a single CSV line.");
+ABSL_FLAG(bool, mps_verbose_result, true,
+          "Displays the result in verbose form.");
+ABSL_FLAG(bool, mps_display_full_path, true,
+          "Displays the full path of the input file in the result line.");
+ABSL_FLAG(std::string, input, "", "File pattern for problems to be optimized.");
+ABSL_FLAG(std::string, params_file, "",
+          "Path to a GlopParameters file in text format.");
+ABSL_FLAG(std::string, params, "",
+          "GlopParameters in text format. If --params_file was "
+          "also specified, the --params will be merged onto "
+          "them (i.e. in case of conflicts, --params wins)");
 
 using google::protobuf::TextFormat;
 using operations_research::FullProtocolMessageAsString;
@@ -63,22 +65,22 @@ using operations_research::glop::ToDouble;
 
 // Parse glop parameters from the flags --params_file and --params.
 void ReadGlopParameters(GlopParameters* parameters) {
-  if (!FLAGS_params_file.empty()) {
+  if (!absl::GetFlag(FLAGS_params_file).empty()) {
     std::string params;
     CHECK(TextFormat::ParseFromString(params, parameters)) << params;
   }
-  if (!FLAGS_params.empty()) {
-    CHECK(TextFormat::MergeFromString(FLAGS_params, parameters))
-        << FLAGS_params;
+  if (!absl::GetFlag(FLAGS_params).empty()) {
+    CHECK(TextFormat::MergeFromString(absl::GetFlag(FLAGS_params), parameters))
+        << absl::GetFlag(FLAGS_params);
   }
-  if (FLAGS_mps_verbose_result) {
+  if (absl::GetFlag(FLAGS_mps_verbose_result)) {
     printf("GlopParameters {\n%s}\n",
            FullProtocolMessageAsString(*parameters, 1).c_str());
   }
 }
 
 int main(int argc, char* argv[]) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
 
   GlopParameters parameters;
   ReadGlopParameters(&parameters);
@@ -86,7 +88,7 @@ int main(int argc, char* argv[]) {
   LinearProgram linear_program;
   std::vector<std::string> file_list;
   // Replace this with your favorite match function.
-  file_list.push_back(FLAGS_input);
+  file_list.push_back(absl::GetFlag(FLAGS_input));
   for (int i = 0; i < file_list.size(); ++i) {
     const std::string& file_name = file_list[i];
     MPSReader mps_reader;
@@ -103,7 +105,7 @@ int main(int argc, char* argv[]) {
       ReadFileToProto(file_name, &model_proto);
       MPModelProtoToLinearProgram(model_proto, &linear_program);
     }
-    if (FLAGS_mps_dump_problem) {
+    if (absl::GetFlag(FLAGS_mps_dump_problem)) {
       printf("%s", linear_program.Dump().c_str());
     }
 
@@ -115,19 +117,19 @@ int main(int argc, char* argv[]) {
     std::string status_string;
     double objective_value;
     double solving_time_in_sec = 0;
-    if (FLAGS_mps_solve) {
+    if (absl::GetFlag(FLAGS_mps_solve)) {
       ScopedWallTime timer(&solving_time_in_sec);
       solve_status = solver.Solve(linear_program);
       status_string = GetProblemStatusString(solve_status);
       objective_value = ToDouble(solver.GetObjectiveValue());
     }
 
-    if (FLAGS_mps_terse_result) {
-      if (FLAGS_mps_display_full_path) {
+    if (absl::GetFlag(FLAGS_mps_terse_result)) {
+      if (absl::GetFlag(FLAGS_mps_display_full_path)) {
         printf("%s,", file_name.c_str());
       }
       printf("%s,", linear_program.name().c_str());
-      if (FLAGS_mps_solve) {
+      if (absl::GetFlag(FLAGS_mps_solve)) {
         printf("%15.15e,%s,%-6.4g,", objective_value, status_string.c_str(),
                solving_time_in_sec);
       }
@@ -135,12 +137,12 @@ int main(int argc, char* argv[]) {
              linear_program.GetNonZeroStats().c_str());
     }
 
-    if (FLAGS_mps_verbose_result) {
-      if (FLAGS_mps_display_full_path) {
+    if (absl::GetFlag(FLAGS_mps_verbose_result)) {
+      if (absl::GetFlag(FLAGS_mps_display_full_path)) {
         printf("%-45s: %s\n", "File path", file_name.c_str());
       }
       printf("%-45s: %s\n", "Problem name", linear_program.name().c_str());
-      if (FLAGS_mps_solve) {
+      if (absl::GetFlag(FLAGS_mps_solve)) {
         printf("%-45s: %15.15e\n", "Objective value", objective_value);
         printf("%-45s: %s\n", "Problem status", status_string.c_str());
         printf("%-45s: %-6.4g\n", "Solving time", solving_time_in_sec);

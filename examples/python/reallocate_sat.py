@@ -12,7 +12,6 @@
 # limitations under the License.
 """Reallocate production to smooth it over years."""
 
-from __future__ import print_function
 
 import collections
 

@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.0</span>
+                <span id="sfml">Google OR-Tools 8.1</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -1040,6 +1040,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a9aee36eeb4faeeb30cb4acd1fd6dc9e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a search limit that is reached when either of the underlying limit<br  />
  is reached.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a9aee36eeb4faeeb30cb4acd1fd6dc9e2">More...</a><br /></td></tr>
 <tr class="separator:a9aee36eeb4faeeb30cb4acd1fd6dc9e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c6c9472fb9ad81a590d0954432a8166"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ImprovementSearchLimit.html">ImprovementSearchLimit</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a7c6c9472fb9ad81a590d0954432a8166">MakeImprovementLimit</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> objective_var, boolean maximize, double objective_scaling_factor, double objective_offset, double improvement_rate_coefficient, int improvement_rate_solutions_distance)</td></tr>
+<tr class="memdesc:a7c6c9472fb9ad81a590d0954432a8166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Limits the search based on the improvements of 'objective_var'.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a7c6c9472fb9ad81a590d0954432a8166">More...</a><br /></td></tr>
+<tr class="separator:a7c6c9472fb9ad81a590d0954432a8166"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9b15a0a244f14e91f74d8dded0c25fd8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLimit.html">SearchLimit</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a9b15a0a244f14e91f74d8dded0c25fd8">makeCustomLimit</a> (BooleanSupplier limiter)</td></tr>
 <tr class="memdesc:a9b15a0a244f14e91f74d8dded0c25fd8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback-based search limit.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a9b15a0a244f14e91f74d8dded0c25fd8">More...</a><br /></td></tr>
 <tr class="separator:a9b15a0a244f14e91f74d8dded0c25fd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1274,6 +1277,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a27d81fc7e96dae891af5e30f3f225a0b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Randomized version of local search concatenator; calls a random operator<br  />
  at each call to MakeNextNeighbor().  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a27d81fc7e96dae891af5e30f3f225a0b">More...</a><br /></td></tr>
 <tr class="separator:a27d81fc7e96dae891af5e30f3f225a0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47cd7b8471e82af78399ed697aff14a3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html">LocalSearchOperator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a47cd7b8471e82af78399ed697aff14a3">MultiArmedBanditConcatenateOperators</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html">LocalSearchOperator</a>[] ops, double memory_coefficient, double exploration_coefficient, boolean maximize)</td></tr>
+<tr class="memdesc:a47cd7b8471e82af78399ed697aff14a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a local search operator which concatenates a vector of operators.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a47cd7b8471e82af78399ed697aff14a3">More...</a><br /></td></tr>
+<tr class="separator:a47cd7b8471e82af78399ed697aff14a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f360b91e91e2ee7222010a634e1a5c1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html">LocalSearchOperator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a2f360b91e91e2ee7222010a634e1a5c1">makeNeighborhoodLimit</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html">LocalSearchOperator</a> op, long limit)</td></tr>
 <tr class="memdesc:a2f360b91e91e2ee7222010a634e1a5c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a local search operator that wraps another local search<br  />
  operator and limits the number of neighbors explored (i.e., calls<br  />
@@ -1317,8 +1323,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ac75a36b6359939abe50adc87efe255a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a257c6dbf3a7526864dc0531540a233d9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a257c6dbf3a7526864dc0531540a233d9">makeSumObjectiveFilter</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>[] vars, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>[] secondary_vars, <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1LongTernaryOperator.html">LongTernaryOperator</a> values, int filter_enum)</td></tr>
 <tr class="separator:a257c6dbf3a7526864dc0531540a233d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6224d421644b87a0b3c2185242a1fe63"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilterManager.html">LocalSearchFilterManager</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a6224d421644b87a0b3c2185242a1fe63">MakeLocalSearchFilterManager</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html">LocalSearchFilter</a>[] filters)</td></tr>
-<tr class="separator:a6224d421644b87a0b3c2185242a1fe63"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a41cf22abb1d8da78d6f0c6ffd04610ad"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a41cf22abb1d8da78d6f0c6ffd04610ad">topPeriodicCheck</a> ()</td></tr>
 <tr class="memdesc:a41cf22abb1d8da78d6f0c6ffd04610ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Performs PeriodicCheck on the top-level search; for instance, can be<br  />
  called from a nested solve to check top-level limits.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a41cf22abb1d8da78d6f0c6ffd04610ad">More...</a><br /></td></tr>
@@ -1881,7 +1885,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Accepts the given model visitor. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03623">3623</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03643">3643</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -1974,9 +1978,8 @@ Protected Member Functions</h2></td></tr>
 </p><ul>
 <li>the most common use case is modeling: the given constraint is really<br  />
  part of the problem that the user is trying to solve. In this use case,<br  />
- AddConstraint is called outside of search (i.e., with<div class="fragment"><div class="line"> <a class="code" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#af7b51081730e1f48cc66b80be8a63f48">state</a>() ==</div>
-<div class="line"><a class="code" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a645885ac115d3a4ce1ee33c48a7ca573">OUTSIDE_SEARCH</a>  </div>
-</div><!-- fragment --> ). Most users should only use AddConstraint in this<br  />
+ AddConstraint is called outside of search (i.e., with <code><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#af7b51081730e1f48cc66b80be8a63f48" title="State of the solver.">state()</a> ==<br  />
+ OUTSIDE_SEARCH</code>). Most users should only use AddConstraint in this<br  />
  way. In this case, the constraint will belong to the model forever: it<br  />
  cannot not be removed by backtracking.<br  />
  <br  />
@@ -2026,7 +2029,7 @@ Protected Member Functions</h2></td></tr>
 <p>This is called internally<br  />
  when a propagation monitor is passed to the Solve() or NewSearch() method. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03772">3772</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03792">3792</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2050,7 +2053,7 @@ Protected Member Functions</h2></td></tr>
 <p>This is called internally when<br  />
  a propagation monitor is passed to the Solve() or NewSearch() method. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03756">3756</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03776">3776</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2069,7 +2072,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03627">3627</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03647">3647</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2111,7 +2114,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the cache of the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03697">3697</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03717">3717</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2135,7 +2138,7 @@ Protected Member Functions</h2></td></tr>
 <p>If the variables is the result of expr-&gt;Var(), this<br  />
  method returns expr, nullptr otherwise. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03815">3815</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03835">3835</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2201,7 +2204,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03839">3839</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03859">3859</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2222,7 +2225,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Internal. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03635">3635</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03655">3655</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2243,7 +2246,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Clears the local search state. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03787">3787</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03807">3807</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2283,7 +2286,7 @@ Protected Member Functions</h2></td></tr>
  | \ |<br  />
  db2 tree db2 tree db2 tree | </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02921">2921</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02932">2932</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2319,7 +2322,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02926">2926</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02937">2937</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2361,7 +2364,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02931">2931</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02942">2942</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2381,7 +2384,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02936">2936</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02947">2947</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2432,7 +2435,7 @@ Protected Member Functions</h2></td></tr>
  operator order in the vector). This would result in the following order:<br  />
  operators[3], operators[0], operators[2], operators[1]. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03344">3344</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03355">3355</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2462,7 +2465,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03349">3349</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03360">3360</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2492,7 +2495,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03354">3354</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03365">3365</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2514,7 +2517,7 @@ Protected Member Functions</h2></td></tr>
 <p>Counts the number of constraints that have been added<br  />
  to the solver before the search. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03616">3616</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03636">3636</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2538,7 +2541,7 @@ Protected Member Functions</h2></td></tr>
 <p>It<br  />
  returns false if the solver is not in search at all. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03608">3608</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03628">3628</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2652,7 +2655,7 @@ Protected Member Functions</h2></td></tr>
  The parameter profile_level used to create the solver must be<br  />
  set to true. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03592">3592</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03612">3612</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2758,7 +2761,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Tells the solver to kill or restart the current search. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03823">3823</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03843">3843</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2779,7 +2782,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the local search monitor. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03763">3763</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03783">3783</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2800,7 +2803,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns (or creates) an assignment representing the state of local search. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03779">3779</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03799">3799</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2821,7 +2824,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the propagation monitor. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03747">3747</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03767">3767</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2846,7 +2849,7 @@ Protected Member Functions</h2></td></tr>
  instance. It is not locked; do not use in a multi-threaded or reentrant<br  />
  setup. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03807">3807</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03827">3827</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2868,7 +2871,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns whether the object has been named or not. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03657">3657</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03677">3677</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2889,7 +2892,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns whether we are instrumenting demons. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03705">3705</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03725">3725</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2910,7 +2913,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns whether we are tracing variables. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03726">3726</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03746">3746</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2931,7 +2934,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns whether we are profiling local search. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03719">3719</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03739">3739</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2952,7 +2955,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns whether we are profiling the solver. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03712">3712</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03732">3732</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -2973,7 +2976,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns local search profiling information in a human readable format. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03599">3599</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03619">3619</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -3048,7 +3051,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Local Search Filters. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03482">3482</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03507">3507</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -3294,7 +3297,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02896">2896</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02907">2907</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -3326,7 +3329,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Decisions. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02866">2866</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02877">2877</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -3356,7 +3359,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02891">2891</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02902">2902</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -3386,7 +3389,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02886">2886</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02897">2897</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -3406,7 +3409,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02814">2814</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02825">2825</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -3751,7 +3754,7 @@ Protected Member Functions</h2></td></tr>
 <p>Returns a decision builder that will add the given constraint to<br  />
  the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03148">3148</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03159">3159</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -4275,7 +4278,7 @@ Protected Member Functions</h2></td></tr>
 <p>Search stops when limiter returns true; if<br  />
  this happens at a leaf the corresponding solution will be rejected. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02734">2734</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02745">2745</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -4305,7 +4308,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02906">2906</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02917">2917</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -4344,7 +4347,7 @@ Protected Member Functions</h2></td></tr>
 <p>Returns a decision builder for which the left-most leaf corresponds<br  />
  to assignment, the rest of the tree being explored using 'db'. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03139">3139</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03150">3150</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -4364,7 +4367,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03021">3021</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03032">3032</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -4394,7 +4397,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03026">3026</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03037">3037</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -4436,7 +4439,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Solution Pool. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03441">3441</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03466">3466</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -5374,7 +5377,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>--&mdash; Callback-based search monitors --&mdash; </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02804">2804</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02815">2815</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -5522,7 +5525,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02809">2809</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02820">2820</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -5541,7 +5544,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02901">2901</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02912">2912</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -6505,6 +6508,66 @@ Protected Member Functions</h2></td></tr>
 <p>Special cases with arrays of size two. </p>
 
 <p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l00889">889</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+
+</div>
+</div>
+<a id="a7c6c9472fb9ad81a590d0954432a8166"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7c6c9472fb9ad81a590d0954432a8166">&#9670;&nbsp;</a></span>MakeImprovementLimit()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ImprovementSearchLimit.html">ImprovementSearchLimit</a> MakeImprovementLimit </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>&#160;</td>
+          <td class="paramname"><em>objective_var</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">boolean&#160;</td>
+          <td class="paramname"><em>maximize</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>objective_scaling_factor</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>objective_offset</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>improvement_rate_coefficient</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>improvement_rate_solutions_distance</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Limits the search based on the improvements of 'objective_var'. </p>
+<p>Stops the<br  />
+ search when the improvement rate gets lower than a threshold value. This<br  />
+ threshold value is computed based on the improvement rate during the first<br  />
+ phase of the search. </p>
+
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02736">2736</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -8981,26 +9044,6 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a6224d421644b87a0b3c2185242a1fe63"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6224d421644b87a0b3c2185242a1fe63">&#9670;&nbsp;</a></span>MakeLocalSearchFilterManager()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilterManager.html">LocalSearchFilterManager</a> MakeLocalSearchFilterManager </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html">LocalSearchFilter</a>[]&#160;</td>
-          <td class="paramname"><em>filters</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03507">3507</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
-
-</div>
-</div>
 <a id="a7641b6a95819b18bc4664a1865d3f523"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7641b6a95819b18bc4664a1865d3f523">&#9670;&nbsp;</a></span>makeLocalSearchPhase() <span class="overload">[1/4]</span></h2>
 
@@ -9057,7 +9100,7 @@ Protected Member Functions</h2></td></tr>
  as Guided Local Search, Tabu Search and Simulated Annealing. </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03415">3415</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03440">3440</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -9101,7 +9144,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Variant with a sub_decison_builder specific to the first solution. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03428">3428</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03453">3453</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -9137,7 +9180,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03420">3420</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03445">3445</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -9173,7 +9216,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03433">3433</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03458">3458</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -9211,7 +9254,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Local Search Phase Parameters. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03449">3449</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03474">3474</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -9253,7 +9296,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03454">3454</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03479">3479</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -9301,7 +9344,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03459">3459</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03484">3484</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -9343,7 +9386,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03464">3464</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03489">3489</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -9391,7 +9434,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03469">3469</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03494">3494</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -9445,7 +9488,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03474">3474</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03499">3499</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -10091,7 +10134,7 @@ Protected Member Functions</h2></td></tr>
  current state is that one variable that belongs to the target assignment<br  />
  is set to its target value. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03295">3295</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03306">3306</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -10129,7 +10172,7 @@ Protected Member Functions</h2></td></tr>
  which the only difference compared to the current state is that one<br  />
  variable that belongs to the given vector is set to its target value. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03308">3308</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03319">3319</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -10237,7 +10280,7 @@ Protected Member Functions</h2></td></tr>
 <p>When this limit is reached, MakeNextNeighbor()<br  />
  returns false. The counter is cleared when Start() is called. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03385">3385</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03410">3410</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -10288,7 +10331,7 @@ Protected Member Functions</h2></td></tr>
  as well as the optimization direction, instantiate all variables<br  />
  to this solution, and return nullptr. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03198">3198</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03209">3209</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -10336,7 +10379,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03203">3203</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03214">3214</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -10390,7 +10433,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03208">3208</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03219">3219</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -10450,7 +10493,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03213">3213</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03224">3224</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -10516,7 +10559,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03218">3218</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03229">3229</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -10564,7 +10607,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03223">3223</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03234">3234</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -11353,7 +11396,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Local Search Operators. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03249">3249</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03260">3260</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -11389,7 +11432,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03254">3254</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03265">3265</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -11431,7 +11474,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03264">3264</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03275">3275</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -11467,7 +11510,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03259">3259</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03270">3270</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -11797,7 +11840,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Scheduling phases. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03125">3125</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03136">3136</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -11835,7 +11878,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Shortcuts for small arrays. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03034">3034</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03045">3045</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -11877,7 +11920,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03039">3039</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03050">3050</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -11925,7 +11968,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03044">3044</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03055">3055</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -11979,7 +12022,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03049">3049</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03060">3060</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -12019,7 +12062,7 @@ Protected Member Functions</h2></td></tr>
 <p><br  />
  for all other functions that have several homonyms in this .h). </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02982">2982</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02993">2993</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -12055,7 +12098,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02992">2992</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03003">3003</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -12097,7 +12140,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03011">3011</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03022">3022</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -12136,7 +12179,7 @@ Protected Member Functions</h2></td></tr>
 <p>var_val1_val2_comparator(var, val1, val2) is true iff assigning value<br  />
  "val1" to variable "var" is better than assigning value "val2". </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03001">3001</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03012">3012</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -12179,7 +12222,7 @@ Protected Member Functions</h2></td></tr>
  of these variables. Ownership of the callback is passed to the decision<br  />
  builder. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03103">3103</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03114">3114</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -12230,7 +12273,7 @@ Protected Member Functions</h2></td></tr>
  variables in vars and the values of these variables. Ownership of<br  />
  the callback is passed to the decision builder. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03117">3117</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03128">3128</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -12266,7 +12309,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02987">2987</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02998">2998</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -12302,7 +12345,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03006">3006</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03017">3017</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -12344,7 +12387,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03016">3016</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03027">3027</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -12374,7 +12417,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03130">3130</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03141">3141</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -12427,7 +12470,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Prints the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02822">2822</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02833">2833</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -12530,7 +12573,7 @@ Protected Member Functions</h2></td></tr>
  non-ending search.<br  />
  Optionally a random seed can be specified. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03278">3278</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03289">3289</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -12566,7 +12609,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03283">3283</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03294">3294</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -12599,7 +12642,7 @@ Protected Member Functions</h2></td></tr>
 <p>Returns a decision that tries to rank first the ith interval var<br  />
  in the sequence variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03082">3082</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03093">3093</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -12632,7 +12675,7 @@ Protected Member Functions</h2></td></tr>
 <p>Returns a decision that tries to rank last the ith interval var<br  />
  in the sequence variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03091">3091</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03102">3102</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -12651,7 +12694,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03487">3487</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03512">3512</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -12674,7 +12717,7 @@ Protected Member Functions</h2></td></tr>
 <p>Returns a <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree.">DecisionBuilder</a> which restores an <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html" title="An Assignment is a variable -&gt; domains mapping, used  to report solutions to the user.">Assignment</a><br  />
  (calls void Assignment::Restore()) </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03232">3232</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03243">3243</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -13069,7 +13112,7 @@ Protected Member Functions</h2></td></tr>
  'marker' to 'est' - 1. This decision is used in the<br  />
  INTERVAL_SET_TIMES_BACKWARD strategy. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03073">3073</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03084">3084</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -13112,7 +13155,7 @@ Protected Member Functions</h2></td></tr>
  'marker' to 'est' + 1. This decision is used in the<br  />
  INTERVAL_SET_TIMES_FORWARD strategy. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03061">3061</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03072">3072</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -13135,7 +13178,7 @@ Protected Member Functions</h2></td></tr>
 <p>The SearchMonitors below will display a periodic search log<br  />
  on LOG(INFO) every branch_period branches explored. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02743">2743</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02754">2754</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -13167,7 +13210,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>At each solution, this monitor also display the var value. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02751">2751</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02762">2762</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -13206,7 +13249,7 @@ Protected Member Functions</h2></td></tr>
 <p>At each solution, this monitor will display the 'var' value and the<br  />
  result of <code>display_callback</code>. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02769">2769</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02780">2780</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -13239,7 +13282,7 @@ Protected Member Functions</h2></td></tr>
 <p><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1OptimizeVar.html" title="This class encapsulates an objective.">OptimizeVar</a> Search Logs<br  />
  At each solution, this monitor will also display the 'opt_var' value. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02778">2778</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02789">2789</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -13278,7 +13321,7 @@ Protected Member Functions</h2></td></tr>
 <p>Creates a search monitor that will also print the result of the<br  />
  display callback. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02787">2787</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02798">2798</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -13311,7 +13354,7 @@ Protected Member Functions</h2></td></tr>
 <p>At each solution, this monitor will also display result of <br  />
  <code>display_callback</code>. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02760">2760</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02771">2771</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -13335,7 +13378,7 @@ Protected Member Functions</h2></td></tr>
  search. </p>
 <p>Use this only for low level debugging. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02796">2796</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02807">2807</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -13467,7 +13510,7 @@ Protected Member Functions</h2></td></tr>
  If there are no solutions to this nested tree, then SolveOnce will<br  />
  fail. If there is a solution, it will find it and returns nullptr. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03159">3159</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03170">3170</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -13497,7 +13540,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03164">3164</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03175">3175</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -13533,7 +13576,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03169">3169</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03180">3180</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -13575,7 +13618,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03174">3174</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03185">3185</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -13623,7 +13666,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03179">3179</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03190">3190</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -13653,7 +13696,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03184">3184</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03195">3195</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -13739,7 +13782,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02881">2881</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02892">2892</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -13782,7 +13825,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Displays some nice statistics on the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02830">2830</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02841">2841</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -13805,7 +13848,7 @@ Protected Member Functions</h2></td></tr>
 <p>Returns a <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree.">DecisionBuilder</a> which stores an <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html" title="An Assignment is a variable -&gt; domains mapping, used  to report solutions to the user.">Assignment</a><br  />
  (calls void Assignment::Store()) </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03241">3241</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03252">3252</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -14113,7 +14156,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03502">3502</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03527">3527</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -14149,7 +14192,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03497">3497</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03522">3522</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -14169,7 +14212,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02843">2843</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02854">2854</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -14199,7 +14242,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02848">2848</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02859">2859</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -14235,7 +14278,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02853">2853</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02864">2864</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -14277,7 +14320,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02858">2858</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02869">2869</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -14299,7 +14342,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Symmetry Breaking. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02838">2838</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02849">2849</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -14638,7 +14681,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03492">3492</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03517">3517</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -14668,7 +14711,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02876">2876</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02887">2887</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -14698,7 +14741,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02871">2871</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02882">2882</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -14992,7 +15035,58 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the name of the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03740">3740</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03760">3760</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+
+</div>
+</div>
+<a id="a47cd7b8471e82af78399ed697aff14a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a47cd7b8471e82af78399ed697aff14a3">&#9670;&nbsp;</a></span>MultiArmedBanditConcatenateOperators()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html">LocalSearchOperator</a> MultiArmedBanditConcatenateOperators </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html">LocalSearchOperator</a>[]&#160;</td>
+          <td class="paramname"><em>ops</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>memory_coefficient</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>exploration_coefficient</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">boolean&#160;</td>
+          <td class="paramname"><em>maximize</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Creates a local search operator which concatenates a vector of operators. </p>
+<p><br  />
+ Uses Multi-Armed Bandit approach for choosing the next operator to use.<br  />
+ Sorts operators based on Upper Confidence Bound Algorithm which evaluates<br  />
+ each operator as sum of average improvement and exploration function.<br  />
+ <br  />
+ Updates the order of operators when accepts a neighbor with objective<br  />
+ improvement. </p>
+
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03398">3398</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -15013,7 +15107,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns whether all variables should be named. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03733">3733</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03753">3753</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -15331,7 +15425,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03538">3538</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03558">3558</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -15355,7 +15449,7 @@ Protected Member Functions</h2></td></tr>
 <p>They are visible only because they<br  />
  are useful to write unitary tests. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03534">3534</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03554">3554</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -15377,7 +15471,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns a random value between 0 and 'size' - 1;. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03576">3576</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03596">3596</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -15399,7 +15493,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns a random value between 0 and 'size' - 1;. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03569">3569</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03589">3589</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -15422,7 +15516,7 @@ Protected Member Functions</h2></td></tr>
 <p>Randomized version of local search concatenator; calls a random operator<br  />
  at each call to MakeNextNeighbor(). </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03363">3363</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03374">3374</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -15457,7 +15551,7 @@ Protected Member Functions</h2></td></tr>
 <p>The provided seed is used to<br  />
  initialize the random number generator. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03373">3373</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03384">3384</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -15479,7 +15573,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Adds a new demon and wraps it inside a DemonProfiler if necessary. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03664">3664</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03684">3684</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -15502,7 +15596,7 @@ Protected Member Functions</h2></td></tr>
 <p>Registers a new <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html" title="Interval variables are often used in scheduling.">IntervalVar</a> and wraps it inside a TraceIntervalVar<br  />
  if necessary. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03689">3689</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03709">3709</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -15524,7 +15618,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Registers a new <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in  constraint programming.">IntExpr</a> and wraps it inside a TraceIntExpr if necessary. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03672">3672</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03692">3692</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -15546,7 +15640,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Registers a new <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a> and wraps it inside a TraceIntVar if necessary. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03680">3680</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03700">3700</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -15568,7 +15662,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reseed the solver random generator. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03583">3583</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03603">3603</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -15587,7 +15681,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03827">3827</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03847">3847</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -15629,7 +15723,7 @@ Protected Member Functions</h2></td></tr>
 <p>Returns -1 if<br  />
  there is no active search opened. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03546">3546</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03566">3566</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -15652,7 +15746,7 @@ Protected Member Functions</h2></td></tr>
 <p>Returns -1 if<br  />
  there is no active search opened. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03554">3554</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03574">3574</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -15698,7 +15792,7 @@ Protected Member Functions</h2></td></tr>
  instance. It is not locked; do not use in a multi-threaded or reentrant<br  />
  setup. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03797">3797</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03817">3817</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -15722,7 +15816,7 @@ Protected Member Functions</h2></td></tr>
 <p><br  />
  Disables/enables fast local search. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03643">3643</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03663">3663</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -15744,7 +15838,7 @@ Protected Member Functions</h2></td></tr>
 <p>These methods are only useful for the SWIG wrappers, which need a way<br  />
  to externally cause the <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html" title="Solver Class    A solver represents the main computation engine.">Solver</a> to fail. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03835">3835</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03855">3855</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16212,7 +16306,7 @@ Protected Member Functions</h2></td></tr>
 <p>It returns 0 outside search,<br  />
  1 during the top level search, 2 or more in case of nested searches. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03562">3562</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03582">3582</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16278,7 +16372,7 @@ Protected Member Functions</h2></td></tr>
 <p>Performs PeriodicCheck on the top-level search; for instance, can be<br  />
  called from a nested solve to check top-level limits. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03516">3516</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03536">3536</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16301,7 +16395,7 @@ Protected Member Functions</h2></td></tr>
  reaching the limits of the top-level search (can be called from a nested<br  />
  solve). </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03525">3525</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03545">3545</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16369,7 +16463,7 @@ Protected Member Functions</h2></td></tr>
  balanced tree. Investigate if we should only provide the binary version<br  />
  and/or if we should balance automatically. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02958">2958</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02969">2969</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16405,7 +16499,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02963">2963</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02974">2974</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16447,7 +16541,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02968">2968</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02979">2979</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16467,7 +16561,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02973">2973</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l02984">2984</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16509,7 +16603,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns true if fast local search is enabled. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03650">3650</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03670">3670</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16562,7 +16656,7 @@ Protected Member Functions</h2></td></tr>
 <p><br  />
  The center is defined as (min + max) / 2. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03975">3975</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03995">3995</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16588,7 +16682,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Selects the max value of the selected variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03965">3965</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03985">3985</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16614,7 +16708,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Selects the min value of the selected variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03961">3961</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03981">3981</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16640,7 +16734,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Selects randomly one of the possible values of the selected variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03969">3969</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03989">3989</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16666,7 +16760,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>After successful NextSolution and before EndSearch. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04439">4439</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04459">4459</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16695,7 +16789,7 @@ Protected Member Functions</h2></td></tr>
  t starts after d, i.e. Start(t) &gt;= d.<br  />
  t ends before d, i.e. End(t) &lt;= d. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04369">4369</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04389">4389</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16719,7 +16813,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04416">4416</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04436">4436</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16749,7 +16843,7 @@ Protected Member Functions</h2></td></tr>
  This strategy runs in O(number-of-pairs) at each variable selection,<br  />
  versus O(1) in the static version. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04014">4014</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04034">4034</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16778,7 +16872,7 @@ Protected Member Functions</h2></td></tr>
  Variables are considered in the order of the vector of IntVars used<br  />
  to create the selector. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03866">3866</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03886">3886</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16808,7 +16902,7 @@ Protected Member Functions</h2></td></tr>
  In case of a tie, the first one is selected, first being defined by the<br  />
  order in the vector of IntVars used to create the selector. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03920">3920</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03940">3940</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16838,7 +16932,7 @@ Protected Member Functions</h2></td></tr>
  In case of a tie, the first one is selected, "first" defined by the<br  />
  order in the vector of IntVars used to create the selector. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03913">3913</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03933">3933</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16865,7 +16959,7 @@ Protected Member Functions</h2></td></tr>
 <p>Among unbound variables, select the variable with the largest<br  />
  gap between the first and the second values of the domain. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03937">3937</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03957">3957</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16894,7 +16988,7 @@ Protected Member Functions</h2></td></tr>
  In case of a tie, the first one is selected, first being defined by the<br  />
  order in the vector of IntVars used to create the selector. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03932">3932</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03952">3952</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16923,7 +17017,7 @@ Protected Member Functions</h2></td></tr>
  In case of a tie, the first one is selected, first being defined by the<br  />
  order in the vector of IntVars used to create the selector. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03926">3926</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03946">3946</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16955,7 +17049,7 @@ Protected Member Functions</h2></td></tr>
  In case of a tie, the first one is selected, first being defined by the<br  />
  order in the vector of IntVars used to create the selector. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03906">3906</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03926">3926</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -16987,7 +17081,7 @@ Protected Member Functions</h2></td></tr>
  In case of a tie, the first one is selected, first being defined by the<br  />
  order in the vector of IntVars used to create the selector. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03888">3888</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03908">3908</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17019,7 +17113,7 @@ Protected Member Functions</h2></td></tr>
  In case of a tie, the first one is selected, first being defined by the<br  />
  order in the vector of IntVars used to create the selector. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03897">3897</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03917">3917</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17051,7 +17145,7 @@ Protected Member Functions</h2></td></tr>
  In case of a tie, the first one is selected, first being defined by the<br  />
  order in the vector of IntVars used to create the selector. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03879">3879</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03899">3899</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17075,7 +17169,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04023">4023</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04043">4043</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17102,7 +17196,7 @@ Protected Member Functions</h2></td></tr>
 <p>Selects the next unbound variable on a path, the path being defined by<br  />
  the variables: var[i] corresponds to the index of the next of i. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03942">3942</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03962">3962</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17128,7 +17222,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Randomly select one of the remaining unbound variables. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03870">3870</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03890">3890</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17152,7 +17246,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04024">4024</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04044">4044</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17191,7 +17285,7 @@ Protected Member Functions</h2></td></tr>
  are not up-to-date, e.g. some &lt;variable, value&gt; pairs may not be<br  />
  possible anymore due to propagation since the first to call. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04007">4007</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04027">4027</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17226,7 +17320,7 @@ Protected Member Functions</h2></td></tr>
  1 -&gt; [7] -&gt; 4 -&gt; 5 6 -&gt; [2 -&gt; 3] -&gt; 8<br  />
  1 -&gt; [7] -&gt; 5 6 -&gt; [2 -&gt; 3 -&gt; 4] -&gt; 8 </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04111">4111</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04131">4131</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17255,7 +17349,7 @@ Protected Member Functions</h2></td></tr>
  t starts before d, i.e. Start(t) &lt;= d.<br  />
  t ends after d, i.e. End(t) &gt;= d. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04363">4363</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04383">4383</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17284,7 +17378,7 @@ Protected Member Functions</h2></td></tr>
  The behavior is the same as INCREMENT, except values are decremented<br  />
  instead of incremented. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04196">4196</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04216">4216</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17314,7 +17408,7 @@ Protected Member Functions</h2></td></tr>
  Note: this is for advanced users only. DELAYED_PRIORITY is the lowest priority: Demons will be processed after<br  />
  VAR_PRIORITY and NORMAL_PRIORITY demons. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04273">4273</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04293">4293</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17342,7 +17436,7 @@ Protected Member Functions</h2></td></tr>
  temporal relation between an interval t and an integer d. </p>
 <p>t ends after d, i.e. End(t) &gt;= d. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04337">4337</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04357">4357</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17370,7 +17464,7 @@ Protected Member Functions</h2></td></tr>
  temporal relation between the two intervals t1 and t2. </p>
 <p>t1 ends after t2 end, i.e. End(t1) &gt;= End(t2) + delay. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04292">4292</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04312">4312</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17397,7 +17491,7 @@ Protected Member Functions</h2></td></tr>
 <p>t1 ends after t2 start, i.e. </p>
 <p>End(t1) &gt;= Start(t2) + delay. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04296">4296</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04316">4316</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17424,7 +17518,7 @@ Protected Member Functions</h2></td></tr>
 <p>t ends at d, i.e. </p>
 <p>End(t) == d. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04341">4341</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04361">4361</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17451,7 +17545,7 @@ Protected Member Functions</h2></td></tr>
 <p>t1 ends at t2 end, i.e. </p>
 <p>End(t1) == End(t2) + delay. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04300">4300</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04320">4320</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17478,7 +17572,7 @@ Protected Member Functions</h2></td></tr>
 <p>t1 ends at t2 start, i.e. </p>
 <p>End(t1) == Start(t2) + delay. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04304">4304</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04324">4324</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17505,7 +17599,7 @@ Protected Member Functions</h2></td></tr>
 <p>t ends before d, i.e. </p>
 <p>End(t) &lt;= d. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04345">4345</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04365">4365</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17533,7 +17627,7 @@ Protected Member Functions</h2></td></tr>
  objective.Min . </p>
 <p>. objective.Max. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04260">4260</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04280">4280</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17566,7 +17660,7 @@ Protected Member Functions</h2></td></tr>
  1 -&gt; [4] -&gt; 3 -&gt; [2] -&gt; 5<br  />
  1 -&gt; 2 -&gt; [4] -&gt; [3] -&gt; 5 </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04099">4099</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04119">4119</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17602,7 +17696,7 @@ Protected Member Functions</h2></td></tr>
  1 -&gt; [5] -&gt; 2 -&gt; 4 with 3 inactive<br  />
  1 -&gt; 2 -&gt; [5] -&gt; 4 with 3 inactive </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04158">4158</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04178">4178</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17629,7 +17723,7 @@ Protected Member Functions</h2></td></tr>
 <p>Operator which relaxes one entire path and all inactive nodes, thus<br  />
  defining num_paths neighbors. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04173">4173</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04193">4193</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17659,7 +17753,7 @@ Protected Member Functions</h2></td></tr>
  under which condition a move is accepted based on the current objective<br  />
  value. Move is accepted when the current objective value &gt;= objective.Min. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04251">4251</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04271">4271</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17685,7 +17779,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Executing the root node. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04431">4431</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04451">4451</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17711,7 +17805,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Executing the search code. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04435">4435</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04455">4455</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17745,7 +17839,7 @@ Protected Member Functions</h2></td></tr>
  incremented once. If this is a solution, then next neighbor tries to<br  />
  increment x. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04190">4190</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04210">4210</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17773,7 +17867,7 @@ Protected Member Functions</h2></td></tr>
  set. </p>
 <p>The default behavior is ASSIGN_MIN_VALUE. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03953">3953</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03973">3973</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17799,7 +17893,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>The simple selection is ASSIGN_MIN_VALUE. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03957">3957</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03977">3977</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17827,7 +17921,7 @@ Protected Member Functions</h2></td></tr>
  variable at each node during the search. </p>
 <p>The default behavior is CHOOSE_FIRST_UNBOUND. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03856">3856</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03876">3876</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17853,7 +17947,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>The simple selection is CHOOSE_FIRST_UNBOUND. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03860">3860</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03880">3880</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17881,7 +17975,7 @@ Protected Member Functions</h2></td></tr>
  and its value to be fixed. </p>
 <p>The default is INTERVAL_SET_TIMES_FORWARD. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04035">4035</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04055">4055</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17908,7 +18002,7 @@ Protected Member Functions</h2></td></tr>
 <p>Selects the variable with the highest ending time of all variables,<br  />
  and fixes the ending time to this highest values. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04049">4049</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04069">4069</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17935,7 +18029,7 @@ Protected Member Functions</h2></td></tr>
 <p>Selects the variable with the lowest starting time of all variables,<br  />
  and fixes its starting time to this lowest value. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04044">4044</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04064">4064</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17961,7 +18055,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>The simple is INTERVAL_SET_TIMES_FORWARD. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04039">4039</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04059">4059</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -17990,7 +18084,7 @@ Protected Member Functions</h2></td></tr>
  backtrack makes no sense or is not useful.<br  />
  This is faster as there is no need to create one new node per decision. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04390">4390</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04410">4410</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18019,7 +18113,7 @@ Protected Member Functions</h2></td></tr>
  backtrack makes no sense or is not useful.<br  />
  This is faster as there is no need to create one new node per decision. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04396">4396</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04416">4416</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18047,7 +18141,7 @@ Protected Member Functions</h2></td></tr>
 <p>left and right branches are<br  />
  not applied. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04401">4401</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04421">4421</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18073,7 +18167,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Number of priorities for demons. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03846">3846</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03866">3866</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18099,7 +18193,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Move is accepted when the current objective value &lt;= objective.Max. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04255">4255</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04275">4275</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18130,7 +18224,7 @@ Protected Member Functions</h2></td></tr>
  move followed by a series of 2opt moves. Return a neighbor for which the<br  />
  global gain is positive. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04220">4220</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04240">4240</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18162,7 +18256,7 @@ Protected Member Functions</h2></td></tr>
  1 -&gt; 2 -&gt; [5] -&gt; 3 -&gt; 4<br  />
  1 -&gt; 2 -&gt; 3 -&gt; [5] -&gt; 4 </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04120">4120</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04140">4140</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18194,7 +18288,7 @@ Protected Member Functions</h2></td></tr>
  1 -&gt; 2 -&gt; 4 with 3 inactive<br  />
  1 -&gt; 4 with 2 and 3 inactive </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04137">4137</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04157">4157</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18225,7 +18319,7 @@ Protected Member Functions</h2></td></tr>
  1 -&gt; 3 -&gt; 4 with 2 inactive<br  />
  1 -&gt; 2 -&gt; 4 with 3 inactive </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04128">4128</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04148">4148</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18249,7 +18343,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04455">4455</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04475">4475</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18273,7 +18367,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04456">4456</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04476">4476</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18305,7 +18399,7 @@ Protected Member Functions</h2></td></tr>
  should behave. Keeps the default behavior, i.e. apply left branch first, and then right<br  />
  branch in case of backtracking. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04384">4384</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04404">4404</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18331,7 +18425,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>After failed NextSolution and before EndSearch. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04443">4443</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04463">4463</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18357,7 +18451,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>NORMAL_PRIORITY is the highest priority: Demons will be processed first. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04281">4281</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04301">4301</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18383,7 +18477,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Optimization directions. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04454">4454</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04474">4474</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18423,7 +18517,7 @@ Protected Member Functions</h2></td></tr>
  to the OrOpt operator on a path. The OrOpt operator is a limited<br  />
  version of 3Opt (breaks 3 arcs on a path). </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04085">4085</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04105">4105</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18450,7 +18544,7 @@ Protected Member Functions</h2></td></tr>
 <p>This enum represents the state of the solver w.r.t. </p>
 <p>the search. Before search, after search. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04427">4427</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04447">4447</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18483,7 +18577,7 @@ Protected Member Functions</h2></td></tr>
  Note that the two sub-chains can be part of the same path; they even may<br  />
  overlap. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04168">4168</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04188">4188</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18509,7 +18603,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>After search, the model is infeasible. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04447">4447</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04467">4467</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18535,7 +18629,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Relocate neighborhood with length of 1 (see OROPT comment). </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04089">4089</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04109">4109</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18559,7 +18653,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04417">4417</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04437">4437</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18586,7 +18680,7 @@ Protected Member Functions</h2></td></tr>
 <p>This enum is used internally in private methods Solver::PushState and<br  />
  Solver::PopState to tag states in the search tree. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04414">4414</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04434">4434</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18613,7 +18707,7 @@ Protected Member Functions</h2></td></tr>
 <p>Used for scheduling. </p>
 <p>Not yet implemented. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04021">4021</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04041">4041</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18637,7 +18731,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04022">4022</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04042">4042</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18661,7 +18755,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04415">4415</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04435">4435</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18694,7 +18788,7 @@ Protected Member Functions</h2></td></tr>
  Then y is relaxed, and the solver is looking for a new solution.<br  />
  If a new solution is found, then the next variable to be relaxed is x. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04206">4206</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04226">4226</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18721,7 +18815,7 @@ Protected Member Functions</h2></td></tr>
 <p>Split the domain in two around the center, and choose the lower<br  />
  part first. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03980">3980</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04000">4000</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18748,7 +18842,7 @@ Protected Member Functions</h2></td></tr>
 <p>Split the domain in two around the center, and choose the lower<br  />
  part first. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l03985">3985</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04005">4005</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18775,7 +18869,7 @@ Protected Member Functions</h2></td></tr>
 <p>t starts after d, i.e. </p>
 <p>Start(t) &gt;= d. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04349">4349</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04369">4369</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18802,7 +18896,7 @@ Protected Member Functions</h2></td></tr>
 <p>t1 starts after t2 end, i.e. </p>
 <p>Start(t1) &gt;= End(t2) + delay. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04308">4308</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04328">4328</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18829,7 +18923,7 @@ Protected Member Functions</h2></td></tr>
 <p>t1 starts after t2 start, i.e. </p>
 <p>Start(t1) &gt;= Start(t2) + delay. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04312">4312</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04332">4332</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18856,7 +18950,7 @@ Protected Member Functions</h2></td></tr>
 <p>t starts at d, i.e. </p>
 <p>Start(t) == d. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04353">4353</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04373">4373</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18883,7 +18977,7 @@ Protected Member Functions</h2></td></tr>
 <p>t1 starts at t2 end, i.e. </p>
 <p>Start(t1) == End(t2) + delay. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04316">4316</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04336">4336</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18910,7 +19004,7 @@ Protected Member Functions</h2></td></tr>
 <p>t1 starts at t2 start, i.e. </p>
 <p>Start(t1) == Start(t2) + delay. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04320">4320</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04340">4340</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18937,7 +19031,7 @@ Protected Member Functions</h2></td></tr>
 <p>t starts before d, i.e. </p>
 <p>Start(t) &lt;= d. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04357">4357</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04377">4377</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18966,7 +19060,7 @@ Protected Member Functions</h2></td></tr>
  t1 starts at t2 start, i.e. Start(t1) == Start(t2) + delay.<br  />
  t1 ends at t2 end, i.e. End(t1) == End(t2). </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04326">4326</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04346">4346</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -18997,7 +19091,7 @@ Protected Member Functions</h2></td></tr>
  1 -&gt; [5] -&gt; 3 -&gt; 4 with 2 inactive<br  />
  1 -&gt; 2 -&gt; [5] -&gt; 4 with 3 inactive </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04145">4145</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04165">4165</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -19025,7 +19119,7 @@ Protected Member Functions</h2></td></tr>
 <p>Left branch will be applied in case of<br  />
  backtracking. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04406">4406</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04426">4426</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -19057,7 +19151,7 @@ Protected Member Functions</h2></td></tr>
  limits. To force diversification, the operator iteratively forces each<br  />
  node to serve as base of a meta-node. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04238">4238</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04258">4258</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -19089,7 +19183,7 @@ Protected Member Functions</h2></td></tr>
  nodes A, 2, 3, 4, 5, where A is a merger of nodes 1 and 6 such that<br  />
  cost(A,i) = cost(1,i) and cost(i,A) = cost(i,6). </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04229">4229</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04249">4249</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -19125,7 +19219,7 @@ Protected Member Functions</h2></td></tr>
  1 -&gt; [4 -&gt; 3 -&gt; 2] -&gt; 5<br  />
  1 -&gt; 2 -&gt; [4 -&gt; 3] -&gt; 5 </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04068">4068</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04088">4088</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -19154,7 +19248,7 @@ Protected Member Functions</h2></td></tr>
 <p>That way the path can be improved by inserting<br  />
  inactive nodes or swapping arcs. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04179">4179</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04199">4199</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -19180,7 +19274,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>VAR_PRIORITY is between DELAYED_PRIORITY and NORMAL_PRIORITY. </p>
 
-<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04277">4277</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Solver_8java_source.html#l04297">4297</a> of file <a class="el" href="Solver_8java_source.html">Solver.java</a>.</p>
 
 </div>
 </div>
@@ -19189,8 +19283,6 @@ Protected Member Functions</h2></td></tr>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->
-<div class="ttc" id="aclasscom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver_html_a645885ac115d3a4ce1ee33c48a7ca573"><div class="ttname"><a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a645885ac115d3a4ce1ee33c48a7ca573">com.google.ortools.constraintsolver.Solver.OUTSIDE_SEARCH</a></div><div class="ttdeci">static final int OUTSIDE_SEARCH</div><div class="ttdoc">This enum represents the state of the solver w.r.t.</div><div class="ttdef"><b>Definition:</b> <a href="Solver_8java_source.html#l04427">Solver.java:4427</a></div></div>
-<div class="ttc" id="aclasscom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver_html_af7b51081730e1f48cc66b80be8a63f48"><div class="ttname"><a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#af7b51081730e1f48cc66b80be8a63f48">com.google.ortools.constraintsolver.Solver.state</a></div><div class="ttdeci">int state()</div><div class="ttdoc">State of the solver.</div><div class="ttdef"><b>Definition:</b> <a href="Solver_8java_source.html#l00507">Solver.java:507</a></div></div>
         </div>
         </div>
         <div id="footer-container">

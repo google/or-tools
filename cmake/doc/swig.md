@@ -42,10 +42,10 @@ gcc -dM -E -x c /dev/null | grep __INT64
 #define __INT64_MAX__ 0x7fffffffffffffffL
 #define __INT64_TYPE__ long int
 
-gcc -dM -E -x c++ /dev/null | grep __INT64
-#define __INT64_C(c) c ## L
-#define __INT64_MAX__ 0x7fffffffffffffffL
-#define __INT64_TYPE__ long int
+gcc -dM -E -x c /dev/null | grep __UINT64
+#define __UINT64_C(c) c ## UL
+#define __UINT64_MAX__ 0xffffffffffffffffUL
+#define __UINT64_TYPE__ long unsigned int
 ```
 
 ### Clang

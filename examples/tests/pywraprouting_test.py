@@ -12,7 +12,6 @@
 # limitations under the License.
 """pywrapcp unittest file."""
 
-from __future__ import print_function
 
 from functools import partial
 
@@ -404,7 +403,7 @@ class PyWrapRoutingTest(unittest.TestCase):
         # Solve with parameters
         assignment = model.SolveWithParameters(search_parameters)
         self.assertEqual(
-            10, model.GetNumberOfDecisionsInFirstSolution(search_parameters))
+            11, model.GetNumberOfDecisionsInFirstSolution(search_parameters))
         self.assertEqual(
             0, model.GetNumberOfRejectsInFirstSolution(search_parameters))
         self.assertEqual(90, assignment.ObjectiveValue())

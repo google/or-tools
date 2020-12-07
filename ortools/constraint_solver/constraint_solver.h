@@ -85,14 +85,15 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/sysinfo.h"
 #include "ortools/base/timer.h"
-#include "ortools/constraint_solver/local_search_stats.pb.h"
+#include "ortools/constraint_solver/routing_parameters.pb.h"
+#include "ortools/constraint_solver/search_stats.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 #include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/tuple_set.h"
 
 #if !defined(SWIG)
-DECLARE_int64(cp_random_seed);
+ABSL_DECLARE_FLAG(int64, cp_random_seed);
 #endif  // !defined(SWIG)
 
 class File;
@@ -144,6 +145,7 @@ class RevBitSet;
 class RegularLimit;
 class RegularLimitParameters;
 class Search;
+class ImprovementSearchLimit;
 class SearchLimit;
 class SearchMonitor;
 class SequenceVar;
@@ -159,9 +161,9 @@ template <class T>
 class SimpleRevFIFO;
 
 inline int64 CpRandomSeed() {
-  return FLAGS_cp_random_seed == -1
+  return absl::GetFlag(FLAGS_cp_random_seed) == -1
              ? absl::Uniform<int64>(absl::BitGen(), 0, kint64max)
-             : FLAGS_cp_random_seed;
+             : absl::GetFlag(FLAGS_cp_random_seed);
 }
 
 /// This struct holds all parameters for the default search.
@@ -810,8 +812,8 @@ class Solver {
   ///
   /// - the most common use case is modeling: the given constraint is really
   /// part of the problem that the user is trying to solve. In this use case,
-  /// AddConstraint is called outside of search (i.e., with @code state() ==
-  /// OUTSIDE_SEARCH @endcode). Most users should only use AddConstraint in this
+  /// AddConstraint is called outside of search (i.e., with <tt>state() ==
+  /// OUTSIDE_SEARCH</tt>). Most users should only use AddConstraint in this
   /// way. In this case, the constraint will belong to the model forever: it
   /// cannot not be removed by backtracking.
   ///
@@ -1668,7 +1670,7 @@ class Solver {
   Constraint* MakePathTransitPrecedenceConstraint(
       std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
       const std::vector<std::pair<int, int>>& precedences);
-#endif
+#endif  // !SWIG
   /// This constraint maps the domain of 'var' onto the array of
   /// variables 'actives'. That is
   /// for all i in [0 .. size - 1]: actives[i] == 1 <=> var->Contains(i);
@@ -1710,7 +1712,7 @@ class Solver {
   /// Compatibility layer for Python API.
   Constraint* MakeAllowedAssignments(
       const std::vector<IntVar*>& vars,
-      const std::vector<std::vector<int64>>& raw_tuples) {
+      const std::vector<std::vector<int64> /*keep for swig*/>& raw_tuples) {
     IntTupleSet tuples(vars.size());
     tuples.InsertAll(raw_tuples);
     return MakeAllowedAssignments(vars, tuples);
@@ -1718,7 +1720,7 @@ class Solver {
 
   Constraint* MakeTransitionConstraint(
       const std::vector<IntVar*>& vars,
-      const std::vector<std::vector<int64>>& raw_transitions,
+      const std::vector<std::vector<int64> /*keep for swig*/>& raw_transitions,
       int64 initial_state, const std::vector<int>& final_states) {
     IntTupleSet transitions(3);
     transitions.InsertAll(raw_transitions);
@@ -2198,10 +2200,9 @@ class Solver {
 
   /// Creates a search limit that constrains the running time.
   RegularLimit* MakeTimeLimit(absl::Duration time);
-
 #if !defined(SWIG)
   ABSL_DEPRECATED("Use the version taking absl::Duration() as argument")
-#endif
+#endif  // !defined(SWIG)
   RegularLimit* MakeTimeLimit(int64 time_in_ms) {
     return MakeTimeLimit(time_in_ms == kint64max
                              ? absl::InfiniteDuration()
@@ -2232,7 +2233,7 @@ class Solver {
 
 #if !defined(SWIG)
   ABSL_DEPRECATED("Use other MakeLimit() versions")
-#endif
+#endif  // !defined(SWIG)
   RegularLimit* MakeLimit(int64 time, int64 branches, int64 failures,
                           int64 solutions, bool smart_time_check = false,
                           bool cumulative = false);
@@ -2245,6 +2246,15 @@ class Solver {
   /// argument limits.
   SearchLimit* MakeLimit(SearchLimit* const limit_1,
                          SearchLimit* const limit_2);
+
+  /// Limits the search based on the improvements of 'objective_var'. Stops the
+  /// search when the improvement rate gets lower than a threshold value. This
+  /// threshold value is computed based on the improvement rate during the first
+  /// phase of the search.
+  ImprovementSearchLimit* MakeImprovementLimit(
+      IntVar* objective_var, bool maximize, double objective_scaling_factor,
+      double objective_offset, double improvement_rate_coefficient,
+      int improvement_rate_solutions_distance);
 
   /// Callback-based search limit. Search stops when limiter returns true; if
   /// this happens at a leaf the corresponding solution will be rejected.
@@ -2293,8 +2303,12 @@ class Solver {
     double scaling_factor = 1.0;
     double offset = 0;
     /// SearchMonitors will display the result of display_callback at each new
-    /// solution found.
+    /// solution found and when the search finishes if
+    /// display_on_new_solutions_only is false.
     std::function<std::string()> display_callback;
+    /// To be used to protect from cases where display_callback assumes
+    /// variables are instantiated, which only happens in AtSolution().
+    bool display_on_new_solutions_only = true;
   };
   SearchMonitor* MakeSearchLog(SearchLogParameters parameters);
 
@@ -2652,6 +2666,17 @@ class Solver {
   LocalSearchOperator* RandomConcatenateOperators(
       const std::vector<LocalSearchOperator*>& ops, int32 seed);
 
+  /// Creates a local search operator which concatenates a vector of operators.
+  /// Uses Multi-Armed Bandit approach for choosing the next operator to use.
+  /// Sorts operators based on Upper Confidence Bound Algorithm which evaluates
+  /// each operator as sum of average improvement and exploration function.
+  ///
+  /// Updates the order of operators when accepts a neighbor with objective
+  /// improvement.
+  LocalSearchOperator* MultiArmedBanditConcatenateOperators(
+      const std::vector<LocalSearchOperator*>& ops, double memory_coefficient,
+      double exploration_coefficient, bool maximize);
+
   /// Creates a local search operator that wraps another local search
   /// operator and limits the number of neighbors explored (i.e., calls
   /// to MakeNextNeighbor from the current solution (between two calls
@@ -2743,8 +2768,6 @@ class Solver {
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars, IndexEvaluator3 values,
       Solver::LocalSearchFilterBound filter_enum);
-  LocalSearchFilterManager* MakeLocalSearchFilterManager(
-      std::vector<LocalSearchFilter*> filters);
 
   /// Performs PeriodicCheck on the top-level search; for instance, can be
   /// called from a nested solve to check top-level limits.
@@ -2821,6 +2844,8 @@ class Solver {
   std::string LocalSearchProfile() const;
 
 #if !defined(SWIG)
+  /// Returns detailed cp search statistics.
+  ConstraintSolverStatistics GetConstraintSolverStatistics() const;
   /// Returns detailed local search statistics.
   LocalSearchStatistics GetLocalSearchStatistics() const;
 #endif  // !defined(SWIG)
@@ -3117,8 +3142,8 @@ inline int64 Zero() { return 0; }
 inline int64 One() { return 1; }
 
 /// A BaseObject is the root of all reversibly allocated objects.
-/// A DebugString method and the associated @code operator<< @endcode
-/// are implemented as a convenience.
+/// A DebugString method and the associated << operator are implemented
+/// as a convenience.
 class BaseObject {
  public:
   BaseObject() {}
@@ -4309,6 +4334,46 @@ class RegularLimit : public SearchLimit {
   /// - within a search, it's an offset to be subtracted from the current value
   /// - outside of search, it's the amount consumed in previous searches
   bool cumulative_;
+};
+
+// Limit based on the improvement rate of 'objective_var'.
+// This limit proceeds in two stages:
+// 1) During the phase of the search in which the objective_var is strictly
+// improving, a threshold value is computed as the minimum improvement rate of
+// the objective, based on the 'improvement_rate_coefficient' and
+// 'improvement_rate_solutions_distance' parameters.
+// 2) Then, if the search continues beyond this phase of strict improvement, the
+// limit stops the search when the improvement rate of the objective gets below
+// this threshold value.
+class ImprovementSearchLimit : public SearchLimit {
+ public:
+  ImprovementSearchLimit(Solver* const s, IntVar* objective_var, bool maximize,
+                         double objective_scaling_factor,
+                         double objective_offset,
+                         double improvement_rate_coefficient,
+                         int improvement_rate_solutions_distance);
+  ~ImprovementSearchLimit() override;
+  void Copy(const SearchLimit* const limit) override;
+  SearchLimit* MakeClone() const override;
+  bool Check() override;
+  bool AtSolution() override;
+  void Init() override;
+
+ private:
+  IntVar* objective_var_;
+  bool maximize_;
+  double objective_scaling_factor_;
+  double objective_offset_;
+  double improvement_rate_coefficient_;
+  int improvement_rate_solutions_distance_;
+
+  double best_objective_;
+  // clang-format off
+  std::deque<std::pair<double, int64> > improvements_;
+  // clang-format on
+  double threshold_;
+  bool objective_updated_;
+  bool gradient_stage_;
 };
 
 /// Interval variables are often used in scheduling. The main characteristics

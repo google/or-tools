@@ -12,7 +12,6 @@
 # limitations under the License.
 """Cutting stock problem with the objective to minimize wasted space."""
 
-from __future__ import print_function
 
 import argparse
 import collections

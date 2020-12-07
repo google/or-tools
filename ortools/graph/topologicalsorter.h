@@ -40,9 +40,10 @@
 //   non-dense integers), but slower, or the "dense int" versions which requires
 //   nodes to be a dense interval [0..num_nodes-1]. Note that the type must
 //   be compatible with LOG << T if you're using the OrDie() version.
-// - The sorting can be either stable or not. Stable sorting means that if
-//   nodes A and B appear in that order and aren't ancestors of each other,
-//   they will remain in that order in the returned topological order.
+// - The sorting can be either stable or not. "Stable" essentially means that it
+//   will preserve the order of nodes, if possible. More precisely, the returned
+//   topological order will be the lexicographically minimal valid order, where
+//   "lexicographic" applies to the indices of the nodes.
 //
 //   TopologicalSort()
 //   TopologicalSortOrDie()
@@ -69,7 +70,6 @@
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
-//#include "ortools/base/vector32.h"
 
 namespace util {
 
@@ -141,7 +141,7 @@ template <bool stable_sort = false>
 class DenseIntTopologicalSorterTpl {
  public:
   // To store the adjacency lists efficiently.
-  typedef ::std::vector<int> AdjacencyList;
+  typedef std::vector<int> AdjacencyList;
 
   // For efficiency, it is best to specify how many nodes are required
   // by using the next constructor.

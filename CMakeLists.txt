@@ -61,7 +61,7 @@ endif()
 # Layout build dir like install dir
 include(GNUInstallDirs)
 if(UNIX)
-  option(BUILD_SHARED_LIBS "Build shared libraries(.so or .dyld)." ON)
+  option(BUILD_SHARED_LIBS "Build shared libraries (.so or .dyld)." ON)
   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
@@ -75,7 +75,7 @@ if(UNIX)
   endforeach()
 else()
   # Currently Only support static build for windows
-  set(BUILD_SHARED_LIBS OFF)
+  option(BUILD_SHARED_LIBS "Build shared libraries (.dll)." OFF)
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
@@ -109,6 +109,13 @@ if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
 endif()
 
 include(CMakeDependentOption)
+
+CMAKE_DEPENDENT_OPTION(BUILD_FLATZINC "Build flatzinc" ON "BUILD_CXX" OFF)
+message(STATUS "Build Flatzinc: ${BUILD_FLATZINC}")
+
+CMAKE_DEPENDENT_OPTION(BUILD_GLOP "Build GLOP standalone" ON "NOT BUILD_CXX" OFF)
+message(STATUS "Build standalone Glop: ${BUILD_GLOP}")
+
 option(BUILD_SAMPLES "Build samples" ON)
 message(STATUS "Build samples: ${BUILD_SAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_CXX_SAMPLES "Build cxx samples" ON "BUILD_SAMPLES;BUILD_CXX" OFF)
@@ -155,20 +162,12 @@ CMAKE_DEPENDENT_OPTION(BUILD_absl "Build the abseil-cpp dependency Library" OFF
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build abseil-cpp: ${BUILD_absl}")
 
-CMAKE_DEPENDENT_OPTION(BUILD_gflags "Build the gflags dependency Library" OFF
-  "NOT BUILD_DEPS" ON)
-message(STATUS "Build gflags: ${BUILD_gflags}")
-
-CMAKE_DEPENDENT_OPTION(BUILD_glog "Build the glog dependency Library" OFF
-  "NOT BUILD_DEPS" ON)
-message(STATUS "Build glog: ${BUILD_glog}")
-
 CMAKE_DEPENDENT_OPTION(BUILD_Protobuf "Build the Protobuf dependency Library" OFF
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build protobuf: ${BUILD_Protobuf}")
 
 # Optional third party solvers (enabled by default)
-option(USE_SCIP "Use the SCIP solver" ON)
+CMAKE_DEPENDENT_OPTION(USE_SCIP "Use the Scip solver" ON "BUILD_CXX" OFF)
 message(STATUS "SCIP support: ${USE_SCIP}")
 if(USE_SCIP)
   CMAKE_DEPENDENT_OPTION(BUILD_SCIP "Build the SCIP dependency Library" OFF
@@ -176,7 +175,7 @@ if(USE_SCIP)
   message(STATUS "Build SCIP: ${BUILD_SCIP}")
 endif()
 
-option(USE_COINOR "Use the COIN-OR solver" ON)
+CMAKE_DEPENDENT_OPTION(USE_COINOR "Use the COIN-OR solver" ON "BUILD_CXX" OFF)
 message(STATUS "COIN-OR support: ${USE_COINOR}")
 if(USE_COINOR)
   CMAKE_DEPENDENT_OPTION(BUILD_CoinUtils "Build the CoinUtils dependency Library" OFF
@@ -243,7 +242,10 @@ check_type_size("int *" SIZEOF_INT_P LANGUAGE CXX)
 message(STATUS "Found int * size: ${SIZEOF_INT_P}")
 cmake_pop_check_state()
 
+include(deps)
 include(cpp)
+include(flatzinc)
+include(glop)
 
 include(python)
 include(java)

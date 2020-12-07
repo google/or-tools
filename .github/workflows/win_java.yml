@@ -14,7 +14,7 @@ jobs:
       run: |
         (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.0.2.zip","swigwin-4.0.2.zip");
         Expand-Archive .\swigwin-4.0.2.zip .;
-        echo "::add-path::./swigwin-4.0.2"
+        echo "$((Get-Item .).FullName)/swigwin-4.0.2" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Check swig
       run: swig -version
     - name: Check java
@@ -22,8 +22,8 @@ jobs:
     - name: Configure
       run: cmake -S. -Bbuild -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release -DBUILD_JAVA=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
     - name: Build
-      run: cmake --build build --config Release --target ALL_BUILD -- /maxcpucount
+      run: cmake --build build --config Release --target ALL_BUILD -v -- /maxcpucount
     - name: Test
-      run: cmake --build build --config Release --target RUN_TESTS -- /maxcpucount
+      run: cmake --build build --config Release --target RUN_TESTS -v -- /maxcpucount
     - name: Install
-      run: cmake --build build --config Release --target INSTALL -- /maxcpucount
+      run: cmake --build build --config Release --target INSTALL -v -- /maxcpucount

@@ -52,17 +52,17 @@
 #include "ortools/constraint_solver/routing_parameters.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 
-DEFINE_string(pdp_file, "",
-              "File containing the Pickup and Delivery Problem to solve.");
-DEFINE_int32(pdp_force_vehicles, 0,
-             "Force the number of vehicles used (maximum number of routes.");
-DEFINE_bool(reduce_vehicle_cost_model, true,
-            "Overrides the homonymous field of "
-            "DefaultRoutingModelParameters().");
-DEFINE_string(routing_search_parameters,
-              "first_solution_strategy:ALL_UNPERFORMED",
-              "Text proto RoutingSearchParameters (possibly partial) that will "
-              "override the DefaultRoutingSearchParameters()");
+ABSL_FLAG(std::string, pdp_file, "",
+          "File containing the Pickup and Delivery Problem to solve.");
+ABSL_FLAG(int, pdp_force_vehicles, 0,
+          "Force the number of vehicles used (maximum number of routes.");
+ABSL_FLAG(bool, reduce_vehicle_cost_model, true,
+          "Overrides the homonymous field of "
+          "DefaultRoutingModelParameters().");
+ABSL_FLAG(std::string, routing_search_parameters,
+          "first_solution_strategy:ALL_UNPERFORMED",
+          "Text proto RoutingSearchParameters (possibly partial) that will "
+          "override the DefaultRoutingSearchParameters()");
 
 namespace operations_research {
 
@@ -227,8 +227,9 @@ bool LoadAndSolve(const std::string& pdp_file,
     LOG(WARNING) << "Malformed header: " << lines[0];
     return false;
   }
-  const int num_vehicles =
-      FLAGS_pdp_force_vehicles > 0 ? FLAGS_pdp_force_vehicles : parsed_int[0];
+  const int num_vehicles = absl::GetFlag(FLAGS_pdp_force_vehicles) > 0
+                               ? absl::GetFlag(FLAGS_pdp_force_vehicles)
+                               : parsed_int[0];
   const int64 capacity = parsed_int[1];
   // We do not care about the 'speed' field, in third position.
 
@@ -389,18 +390,18 @@ bool LoadAndSolve(const std::string& pdp_file,
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   operations_research::RoutingModelParameters model_parameters =
       operations_research::DefaultRoutingModelParameters();
   model_parameters.set_reduce_vehicle_cost_model(
-      FLAGS_reduce_vehicle_cost_model);
+      absl::GetFlag(FLAGS_reduce_vehicle_cost_model));
   operations_research::RoutingSearchParameters search_parameters =
       operations_research::DefaultRoutingSearchParameters();
   CHECK(google::protobuf::TextFormat::MergeFromString(
-      FLAGS_routing_search_parameters, &search_parameters));
-  if (!operations_research::LoadAndSolve(FLAGS_pdp_file, model_parameters,
-                                         search_parameters)) {
-    LOG(INFO) << "Error solving " << FLAGS_pdp_file;
+      absl::GetFlag(FLAGS_routing_search_parameters), &search_parameters));
+  if (!operations_research::LoadAndSolve(absl::GetFlag(FLAGS_pdp_file),
+                                         model_parameters, search_parameters)) {
+    LOG(INFO) << "Error solving " << absl::GetFlag(FLAGS_pdp_file);
   }
   return EXIT_SUCCESS;
 }

@@ -21,8 +21,8 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
-DECLARE_int32(cache_initial_size);
-DEFINE_bool(cp_disable_cache, false, "Disable caching of model objects");
+ABSL_DECLARE_FLAG(int, cache_initial_size);
+ABSL_FLAG(bool, cp_disable_cache, false, "Disable caching of model objects");
 
 namespace operations_research {
 // ----- ModelCache -----
@@ -109,8 +109,8 @@ template <class C, class A1>
 class Cache1 {
  public:
   Cache1()
-      : array_(new Cell*[FLAGS_cache_initial_size]),
-        size_(FLAGS_cache_initial_size),
+      : array_(new Cell*[absl::GetFlag(FLAGS_cache_initial_size)]),
+        size_(absl::GetFlag(FLAGS_cache_initial_size)),
         num_items_(0) {
     memset(array_, 0, sizeof(*array_) * size_);
   }
@@ -197,8 +197,8 @@ template <class C, class A1, class A2>
 class Cache2 {
  public:
   Cache2()
-      : array_(new Cell*[FLAGS_cache_initial_size]),
-        size_(FLAGS_cache_initial_size),
+      : array_(new Cell*[absl::GetFlag(FLAGS_cache_initial_size)]),
+        size_(absl::GetFlag(FLAGS_cache_initial_size)),
         num_items_(0) {
     memset(array_, 0, sizeof(*array_) * size_);
   }
@@ -286,8 +286,8 @@ template <class C, class A1, class A2, class A3>
 class Cache3 {
  public:
   Cache3()
-      : array_(new Cell*[FLAGS_cache_initial_size]),
-        size_(FLAGS_cache_initial_size),
+      : array_(new Cell*[absl::GetFlag(FLAGS_cache_initial_size)]),
+        size_(absl::GetFlag(FLAGS_cache_initial_size)),
         num_items_(0) {
     memset(array_, 0, sizeof(*array_) * size_);
   }
@@ -511,7 +511,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK_LT(type, VOID_CONSTRAINT_MAX);
     DCHECK(ct != nullptr);
     if (solver()->state() == Solver::OUTSIDE_SEARCH &&
-        !FLAGS_cp_disable_cache) {
+        !absl::GetFlag(FLAGS_cp_disable_cache)) {
       void_constraints_[type] = ct;
     }
   }
@@ -535,7 +535,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_CONSTANT_CONSTRAINT_MAX);
     if (solver()->state() == Solver::OUTSIDE_SEARCH &&
-        !FLAGS_cp_disable_cache &&
+        !absl::GetFlag(FLAGS_cp_disable_cache) &&
         var_constant_constraints_[type]->Find(var, value) == nullptr) {
       var_constant_constraints_[type]->UnsafeInsert(var, value, ct);
     }
@@ -560,7 +560,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_CONSTANT_CONSTANT_CONSTRAINT_MAX);
     if (solver()->state() == Solver::OUTSIDE_SEARCH &&
-        !FLAGS_cp_disable_cache &&
+        !absl::GetFlag(FLAGS_cp_disable_cache) &&
         var_constant_constant_constraints_[type]->Find(var, value1, value2) ==
             nullptr) {
       var_constant_constant_constraints_[type]->UnsafeInsert(var, value1,
@@ -589,7 +589,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, EXPR_EXPR_CONSTRAINT_MAX);
     if (solver()->state() == Solver::OUTSIDE_SEARCH &&
-        !FLAGS_cp_disable_cache &&
+        !absl::GetFlag(FLAGS_cp_disable_cache) &&
         expr_expr_constraints_[type]->Find(var1, var2) == nullptr) {
       expr_expr_constraints_[type]->UnsafeInsert(var1, var2, ct);
     }
@@ -612,7 +612,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, EXPR_EXPRESSION_MAX);
     if (solver()->state() == Solver::OUTSIDE_SEARCH &&
-        !FLAGS_cp_disable_cache &&
+        !absl::GetFlag(FLAGS_cp_disable_cache) &&
         expr_expressions_[type]->Find(expr) == nullptr) {
       expr_expressions_[type]->UnsafeInsert(expr, expression);
     }
@@ -637,7 +637,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, EXPR_CONSTANT_EXPRESSION_MAX);
     if (solver()->state() == Solver::OUTSIDE_SEARCH &&
-        !FLAGS_cp_disable_cache &&
+        !absl::GetFlag(FLAGS_cp_disable_cache) &&
         expr_constant_expressions_[type]->Find(expr, value) == nullptr) {
       expr_constant_expressions_[type]->UnsafeInsert(expr, value, expression);
     }
@@ -663,7 +663,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, EXPR_EXPR_EXPRESSION_MAX);
     if (solver()->state() == Solver::OUTSIDE_SEARCH &&
-        !FLAGS_cp_disable_cache &&
+        !absl::GetFlag(FLAGS_cp_disable_cache) &&
         expr_expr_expressions_[type]->Find(var1, var2) == nullptr) {
       expr_expr_expressions_[type]->UnsafeInsert(var1, var2, expression);
     }
@@ -690,7 +690,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, EXPR_EXPR_CONSTANT_EXPRESSION_MAX);
     if (solver()->state() == Solver::OUTSIDE_SEARCH &&
-        !FLAGS_cp_disable_cache &&
+        !absl::GetFlag(FLAGS_cp_disable_cache) &&
         expr_expr_constant_expressions_[type]->Find(var1, var2, constant) ==
             nullptr) {
       expr_expr_constant_expressions_[type]->UnsafeInsert(var1, var2, constant,
@@ -717,7 +717,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_CONSTANT_CONSTANT_EXPRESSION_MAX);
     if (solver()->state() == Solver::OUTSIDE_SEARCH &&
-        !FLAGS_cp_disable_cache &&
+        !absl::GetFlag(FLAGS_cp_disable_cache) &&
         var_constant_constant_expressions_[type]->Find(var, value1, value2) ==
             nullptr) {
       var_constant_constant_expressions_[type]->UnsafeInsert(
@@ -745,7 +745,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_CONSTANT_ARRAY_EXPRESSION_MAX);
     if (solver()->state() == Solver::OUTSIDE_SEARCH &&
-        !FLAGS_cp_disable_cache &&
+        !absl::GetFlag(FLAGS_cp_disable_cache) &&
         var_constant_array_expressions_[type]->Find(var, values) == nullptr) {
       var_constant_array_expressions_[type]->UnsafeInsert(var, values,
                                                           expression);
@@ -768,7 +768,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_ARRAY_EXPRESSION_MAX);
     if (solver()->state() == Solver::OUTSIDE_SEARCH &&
-        !FLAGS_cp_disable_cache &&
+        !absl::GetFlag(FLAGS_cp_disable_cache) &&
         var_array_expressions_[type]->Find(vars) == nullptr) {
       var_array_expressions_[type]->UnsafeInsert(vars, expression);
     }

@@ -1,6 +1,8 @@
 var searchData=
 [
-  ['pickup_5fand_5fdelivery_5ffifo_3934',['PICKUP_AND_DELIVERY_FIFO',['../classoperations__research_1_1_routing_model.html#aa5cff2ee7fbe3a9c5c701bfba7460c83a5c55a9aa52a754be8eb1b9d29af97a8a',1,'operations_research::RoutingModel']]],
-  ['pickup_5fand_5fdelivery_5flifo_3935',['PICKUP_AND_DELIVERY_LIFO',['../classoperations__research_1_1_routing_model.html#aa5cff2ee7fbe3a9c5c701bfba7460c83a272376ed085de7d28d36fa1013394cc8',1,'operations_research::RoutingModel']]],
-  ['pickup_5fand_5fdelivery_5fno_5forder_3936',['PICKUP_AND_DELIVERY_NO_ORDER',['../classoperations__research_1_1_routing_model.html#aa5cff2ee7fbe3a9c5c701bfba7460c83a2fecd02405f5ff0769292822ad17a955',1,'operations_research::RoutingModel']]]
+  ['makeactive_5799',['MAKEACTIVE',['../classoperations__research_1_1_solver.html#a6fc60ae040ae35c83f09736d2e682a18ab0af70328b3e18dfb0008306fccef2de',1,'operations_research::Solver']]],
+  ['makechaininactive_5800',['MAKECHAININACTIVE',['../classoperations__research_1_1_solver.html#a6fc60ae040ae35c83f09736d2e682a18a60b0c4db87e990aa84b63ba1990aa41e',1,'operations_research::Solver']]],
+  ['makeinactive_5801',['MAKEINACTIVE',['../classoperations__research_1_1_solver.html#a6fc60ae040ae35c83f09736d2e682a18a2270aed8867e84e996306402cfa4f5d5',1,'operations_research::Solver']]],
+  ['maximization_5802',['MAXIMIZATION',['../classoperations__research_1_1_solver.html#a39a89fa3de66d68071c66a936f17fd2ba20ee926b0aa645b0e3badb5d5171d6e1',1,'operations_research::Solver']]],
+  ['minimization_5803',['MINIMIZATION',['../classoperations__research_1_1_solver.html#a39a89fa3de66d68071c66a936f17fd2ba34d4bc092ef084ef376537320f95bc13',1,'operations_research::Solver']]]
 ];
