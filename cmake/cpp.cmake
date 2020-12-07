@@ -2,104 +2,6 @@ if(NOT BUILD_CXX)
   return()
 endif()
 
-# Check dependencies
-set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
-set(THREAD_PREFER_PTHREAD_FLAG TRUE)
-find_package(Threads REQUIRED)
-
-# Tell find_package() to try “Config” mode before “Module” mode if no mode was specified.
-# This should avoid find_package() to first find our FindXXX.cmake modules if
-# distro package already provide a CMake config file...
-set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
-
-# libprotobuf force us to depends on ZLIB::ZLIB target
-if(NOT BUILD_ZLIB)
- find_package(ZLIB REQUIRED)
-endif()
-if(NOT TARGET ZLIB::ZLIB)
-  message(FATAL_ERROR "Target ZLIB::ZLIB not available.")
-endif()
-
-if(NOT BUILD_absl)
-  find_package(absl REQUIRED)
-endif()
-set(ABSL_DEPS
-  absl::base
-  absl::cord
-  absl::random_random
-  absl::raw_hash_set
-  absl::hash
-  absl::memory
-  absl::meta
-  absl::stacktrace
-  absl::status
-  absl::str_format
-  absl::strings
-  absl::synchronization
-  absl::any
-  )
-
-set(GFLAGS_USE_TARGET_NAMESPACE TRUE)
-if(NOT BUILD_gflags)
-  find_package(gflags REQUIRED)
-endif()
-if(NOT TARGET gflags::gflags)
-  message(FATAL_ERROR "Target gflags::gflags not available.")
-endif()
-
-if(NOT BUILD_glog)
-  find_package(glog REQUIRED)
-endif()
-if(NOT TARGET glog::glog)
-  message(FATAL_ERROR "Target glog::glog not available.")
-endif()
-
-if(NOT BUILD_Protobuf)
-  find_package(Protobuf REQUIRED)
-endif()
-if(NOT TARGET protobuf::libprotobuf)
-  message(FATAL_ERROR "Target protobuf::libprotobuf not available.")
-endif()
-
-if(USE_SCIP)
-  if(NOT BUILD_SCIP)
-    find_package(SCIP REQUIRED)
-  endif()
-endif()
-
-if(USE_COINOR)
-  if(NOT BUILD_CoinUtils)
-    find_package(CoinUtils REQUIRED)
-  endif()
-
-  if(NOT BUILD_Osi)
-    find_package(Osi REQUIRED)
-  endif()
-
-  if(NOT BUILD_Clp)
-    find_package(Clp REQUIRED)
-  endif()
-
-  if(NOT BUILD_Cgl)
-    find_package(Cgl REQUIRED)
-  endif()
-
-  if(NOT BUILD_Cbc)
-    find_package(Cbc REQUIRED)
-  endif()
-
-  set(COINOR_DEPS Coin::CbcSolver Coin::OsiCbc Coin::ClpSolver Coin::OsiClp)
-endif()
-
-# Check optional Dependencies
-if(USE_CPLEX)
-  find_package(CPLEX REQUIRED)
-endif()
-
-if(USE_XPRESS)
-  find_package(XPRESS REQUIRED)
-endif()
-
 # Main Target
 add_library(${PROJECT_NAME} "")
 # Xcode fails to build if library doesn't contains at least one source file.
@@ -110,12 +12,16 @@ if(XCODE)
   target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/version.cpp)
 endif()
 
+if(BUILD_SHARED_LIBS)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_TOOLS_AS_DYNAMIC_LIB")
+endif()
 list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
   "USE_BOP" # enable BOP support
   "USE_GLOP" # enable GLOP support
   )
 if(USE_SCIP)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_SCIP")
+  set(GSCIP_DIR gscip)
 endif()
 if(USE_COINOR)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
@@ -214,8 +120,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ${CMAKE_DL_LIBS}
   ZLIB::ZLIB
   ${ABSL_DEPS}
-  gflags::gflags
-  glog::glog
   protobuf::libprotobuf
   ${COINOR_DEPS}
   $<$<BOOL:${USE_SCIP}>:libscip>
@@ -243,6 +147,10 @@ file(GLOB_RECURSE proto_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/util/*.proto"
   "ortools/linear_solver/*.proto"
   )
+if(USE_SCIP)
+  file(GLOB_RECURSE gscip_proto_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/gscip/*.proto")
+  list(APPEND proto_files ${gscip_proto_files})
+endif()
 
 ## Get Protobuf include dir
 get_target_property(protobuf_dirs protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
@@ -276,10 +184,11 @@ foreach(PROTO_FILE IN LISTS proto_files)
 endforeach()
 #add_library(${PROJECT_NAME}_proto STATIC ${PROTO_SRCS} ${PROTO_HDRS})
 add_library(${PROJECT_NAME}_proto OBJECT ${PROTO_SRCS} ${PROTO_HDRS})
-set_target_properties(${PROJECT_NAME}_proto PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(${PROJECT_NAME}_proto PROPERTIES CXX_STANDARD 17)
-set_target_properties(${PROJECT_NAME}_proto PROPERTIES CXX_STANDARD_REQUIRED ON)
-set_target_properties(${PROJECT_NAME}_proto PROPERTIES CXX_EXTENSIONS OFF)
+set_target_properties(${PROJECT_NAME}_proto PROPERTIES
+  POSITION_INDEPENDENT_CODE ON
+  CXX_STANDARD 17
+  CXX_STANDARD_REQUIRED ON
+  CXX_EXTENSIONS OFF)
 target_include_directories(${PROJECT_NAME}_proto PRIVATE
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR}
@@ -296,12 +205,23 @@ target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}::proto>)
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}::proto)
 
 foreach(SUBPROJECT IN ITEMS
-    algorithms base bop constraint_solver data glop graph linear_solver lp_data
-    port sat util)
+ algorithms
+ base
+ bop
+ constraint_solver
+ data
+ ${GSCIP_DIR}
+ glop
+ graph
+ linear_solver
+ lp_data
+ port
+ sat
+ util)
   add_subdirectory(ortools/${SUBPROJECT})
-  #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}::${SUBPROJECT})
-  target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}::${SUBPROJECT}>)
-  add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}::${SUBPROJECT})
+  #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_${SUBPROJECT})
+  target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_${SUBPROJECT}>)
+  add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_${SUBPROJECT})
 endforeach()
 
 # Install rules
@@ -378,7 +298,7 @@ function(add_cxx_sample FILE_NAME)
   target_link_libraries(${SAMPLE_NAME} PRIVATE ortools::ortools)
 
   include(GNUInstallDirs)
-  install(TARGETS ${EXECUTABLE})
+  install(TARGETS ${SAMPLE_NAME})
 
   if(BUILD_TESTING)
     add_test(NAME cxx_${COMPONENT_NAME}_${SAMPLE_NAME} COMMAND ${SAMPLE_NAME})

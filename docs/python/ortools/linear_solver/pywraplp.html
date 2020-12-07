@@ -372,7 +372,7 @@ class Solver(object):
         solving), you should write another version of this function that creates
         the MPSolver object on the heap and returns it.
 
-        Note(user): This attempts to first use `DirectlySolveProto()` (if
+        Note(pawell): This attempts to first use `DirectlySolveProto()` (if
         implemented). Consequently, this most likely does *not* override any of
         the default parameters of the underlying solver. This behavior *differs*
         from `MPSolver::Solve()` which by default sets the feasibility tolerance
@@ -618,7 +618,7 @@ def Solver_SolveWithProto(model_request: &#34;operations_research::MPModelReques
     solving), you should write another version of this function that creates
     the MPSolver object on the heap and returns it.
 
-    Note(user): This attempts to first use `DirectlySolveProto()` (if
+    Note(pawell): This attempts to first use `DirectlySolveProto()` (if
     implemented). Consequently, this most likely does *not* override any of
     the default parameters of the underlying solver. This behavior *differs*
     from `MPSolver::Solve()` which by default sets the feasibility tolerance
@@ -2486,7 +2486,7 @@ though which users build and solve problems.</p>
         solving), you should write another version of this function that creates
         the MPSolver object on the heap and returns it.
 
-        Note(user): This attempts to first use `DirectlySolveProto()` (if
+        Note(pawell): This attempts to first use `DirectlySolveProto()` (if
         implemented). Consequently, this most likely does *not* override any of
         the default parameters of the underlying solver. This behavior *differs*
         from `MPSolver::Solve()` which by default sets the feasibility tolerance
@@ -2888,7 +2888,7 @@ solution encoded as a MPSolutionResponse.</p>
 If you want to keep the MPSolver alive (for debugging, or for incremental
 solving), you should write another version of this function that creates
 the MPSolver object on the heap and returns it.</p>
-<p>Note(user): This attempts to first use <code>DirectlySolveProto()</code> (if
+<p>Note(pawell): This attempts to first use <code>DirectlySolveProto()</code> (if
 implemented). Consequently, this most likely does <em>not</em> override any of
 the default parameters of the underlying solver. This behavior <em>differs</em>
 from <code>MPSolver::Solve()</code> which by default sets the feasibility tolerance
@@ -2908,7 +2908,7 @@ def SolveWithProto(model_request: &#34;operations_research::MPModelRequest const
     solving), you should write another version of this function that creates
     the MPSolver object on the heap and returns it.
 
-    Note(user): This attempts to first use `DirectlySolveProto()` (if
+    Note(pawell): This attempts to first use `DirectlySolveProto()` (if
     implemented). Consequently, this most likely does *not* override any of
     the default parameters of the underlying solver. This behavior *differs*
     from `MPSolver::Solve()` which by default sets the feasibility tolerance

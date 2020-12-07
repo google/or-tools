@@ -40,56 +40,57 @@
 #include "zlib.h"
 
 // These flags are used to set the fields in the DefaultSolverParameters proto.
-DEFINE_bool(cp_trace_propagation, false,
-            "Trace propagation events (constraint and demon executions,"
-            " variable modifications).");
-DEFINE_bool(cp_trace_search, false, "Trace search events");
-DEFINE_bool(cp_print_added_constraints, false,
-            "show all constraints added to the solver.");
-DEFINE_bool(cp_print_model, false,
-            "use PrintModelVisitor on model before solving.");
-DEFINE_bool(cp_model_stats, false,
-            "use StatisticsModelVisitor on model before solving.");
-DEFINE_bool(cp_disable_solve, false,
-            "Force failure at the beginning of a search.");
-DEFINE_string(cp_profile_file, "", "Export profiling overview to file.");
-DEFINE_bool(cp_print_local_search_profile, false,
-            "Print local search profiling data after solving.");
-DEFINE_bool(cp_name_variables, false, "Force all variables to have names.");
-DEFINE_bool(cp_name_cast_variables, false,
-            "Name variables casted from expressions");
-DEFINE_bool(cp_use_small_table, true,
-            "Use small compact table constraint when possible.");
-DEFINE_bool(cp_use_cumulative_edge_finder, true,
-            "Use the O(n log n) cumulative edge finding algorithm described "
-            "in 'Edge Finding Filtering Algorithm for Discrete  Cumulative "
-            "Resources in O(kn log n)' by Petr Vilim, CP 2009.");
-DEFINE_bool(cp_use_cumulative_time_table, true,
-            "Use a O(n^2) cumulative time table propagation algorithm.");
-DEFINE_bool(cp_use_cumulative_time_table_sync, false,
-            "Use a synchronized O(n^2 log n) cumulative time table propagation "
-            "algorithm.");
-DEFINE_bool(cp_use_sequence_high_demand_tasks, true,
-            "Use a sequence constraints for cumulative tasks that have a "
-            "demand greater than half of the capacity of the resource.");
-DEFINE_bool(cp_use_all_possible_disjunctions, true,
-            "Post temporal disjunctions for all pairs of tasks sharing a "
-            "cumulative resource and that cannot overlap because the sum of "
-            "their demand exceeds the capacity.");
-DEFINE_int32(cp_max_edge_finder_size, 50,
-             "Do not post the edge finder in the cumulative constraints if "
-             "it contains more than this number of tasks");
-DEFINE_bool(cp_diffn_use_cumulative, true,
-            "Diffn constraint adds redundant cumulative constraint");
-DEFINE_bool(cp_use_element_rmq, true,
-            "If true, rmq's will be used in element expressions.");
-DEFINE_int32(cp_check_solution_period, 1,
-             "Number of solutions explored between two solution checks during "
-             "local search.");
-DEFINE_int64(cp_random_seed, 12345,
-             "Random seed used in several (but not all) random number "
-             "generators used by the CP solver. Use -1 to auto-generate an"
-             "undeterministic random seed.");
+ABSL_FLAG(bool, cp_trace_propagation, false,
+          "Trace propagation events (constraint and demon executions,"
+          " variable modifications).");
+ABSL_FLAG(bool, cp_trace_search, false, "Trace search events");
+ABSL_FLAG(bool, cp_print_added_constraints, false,
+          "show all constraints added to the solver.");
+ABSL_FLAG(bool, cp_print_model, false,
+          "use PrintModelVisitor on model before solving.");
+ABSL_FLAG(bool, cp_model_stats, false,
+          "use StatisticsModelVisitor on model before solving.");
+ABSL_FLAG(bool, cp_disable_solve, false,
+          "Force failure at the beginning of a search.");
+ABSL_FLAG(std::string, cp_profile_file, "",
+          "Export profiling overview to file.");
+ABSL_FLAG(bool, cp_print_local_search_profile, false,
+          "Print local search profiling data after solving.");
+ABSL_FLAG(bool, cp_name_variables, false, "Force all variables to have names.");
+ABSL_FLAG(bool, cp_name_cast_variables, false,
+          "Name variables casted from expressions");
+ABSL_FLAG(bool, cp_use_small_table, true,
+          "Use small compact table constraint when possible.");
+ABSL_FLAG(bool, cp_use_cumulative_edge_finder, true,
+          "Use the O(n log n) cumulative edge finding algorithm described "
+          "in 'Edge Finding Filtering Algorithm for Discrete  Cumulative "
+          "Resources in O(kn log n)' by Petr Vilim, CP 2009.");
+ABSL_FLAG(bool, cp_use_cumulative_time_table, true,
+          "Use a O(n^2) cumulative time table propagation algorithm.");
+ABSL_FLAG(bool, cp_use_cumulative_time_table_sync, false,
+          "Use a synchronized O(n^2 log n) cumulative time table propagation "
+          "algorithm.");
+ABSL_FLAG(bool, cp_use_sequence_high_demand_tasks, true,
+          "Use a sequence constraints for cumulative tasks that have a "
+          "demand greater than half of the capacity of the resource.");
+ABSL_FLAG(bool, cp_use_all_possible_disjunctions, true,
+          "Post temporal disjunctions for all pairs of tasks sharing a "
+          "cumulative resource and that cannot overlap because the sum of "
+          "their demand exceeds the capacity.");
+ABSL_FLAG(int, cp_max_edge_finder_size, 50,
+          "Do not post the edge finder in the cumulative constraints if "
+          "it contains more than this number of tasks");
+ABSL_FLAG(bool, cp_diffn_use_cumulative, true,
+          "Diffn constraint adds redundant cumulative constraint");
+ABSL_FLAG(bool, cp_use_element_rmq, true,
+          "If true, rmq's will be used in element expressions.");
+ABSL_FLAG(int, cp_check_solution_period, 1,
+          "Number of solutions explored between two solution checks during "
+          "local search.");
+ABSL_FLAG(int64, cp_random_seed, 12345,
+          "Random seed used in several (but not all) random number "
+          "generators used by the CP solver. Use -1 to auto-generate an"
+          "undeterministic random seed.");
 
 void ConstraintSolverFailsHere() { VLOG(3) << "Fail"; }
 
@@ -120,31 +121,37 @@ ConstraintSolverParameters Solver::DefaultSolverParameters() {
   params.set_trail_block_size(8000);
   params.set_array_split_size(16);
   params.set_store_names(true);
-  params.set_profile_propagation(!FLAGS_cp_profile_file.empty());
-  params.set_trace_propagation(FLAGS_cp_trace_propagation);
-  params.set_trace_search(FLAGS_cp_trace_search);
-  params.set_name_all_variables(FLAGS_cp_name_variables);
-  params.set_profile_file(FLAGS_cp_profile_file);
-  params.set_profile_local_search(FLAGS_cp_print_local_search_profile);
-  params.set_print_local_search_profile(FLAGS_cp_print_local_search_profile);
-  params.set_print_model(FLAGS_cp_print_model);
-  params.set_print_model_stats(FLAGS_cp_model_stats);
-  params.set_disable_solve(FLAGS_cp_disable_solve);
-  params.set_name_cast_variables(FLAGS_cp_name_cast_variables);
-  params.set_print_added_constraints(FLAGS_cp_print_added_constraints);
-  params.set_use_small_table(FLAGS_cp_use_small_table);
-  params.set_use_cumulative_edge_finder(FLAGS_cp_use_cumulative_edge_finder);
-  params.set_use_cumulative_time_table(FLAGS_cp_use_cumulative_time_table);
+  params.set_profile_propagation(!absl::GetFlag(FLAGS_cp_profile_file).empty());
+  params.set_trace_propagation(absl::GetFlag(FLAGS_cp_trace_propagation));
+  params.set_trace_search(absl::GetFlag(FLAGS_cp_trace_search));
+  params.set_name_all_variables(absl::GetFlag(FLAGS_cp_name_variables));
+  params.set_profile_file(absl::GetFlag(FLAGS_cp_profile_file));
+  params.set_profile_local_search(
+      absl::GetFlag(FLAGS_cp_print_local_search_profile));
+  params.set_print_local_search_profile(
+      absl::GetFlag(FLAGS_cp_print_local_search_profile));
+  params.set_print_model(absl::GetFlag(FLAGS_cp_print_model));
+  params.set_print_model_stats(absl::GetFlag(FLAGS_cp_model_stats));
+  params.set_disable_solve(absl::GetFlag(FLAGS_cp_disable_solve));
+  params.set_name_cast_variables(absl::GetFlag(FLAGS_cp_name_cast_variables));
+  params.set_print_added_constraints(
+      absl::GetFlag(FLAGS_cp_print_added_constraints));
+  params.set_use_small_table(absl::GetFlag(FLAGS_cp_use_small_table));
+  params.set_use_cumulative_edge_finder(
+      absl::GetFlag(FLAGS_cp_use_cumulative_edge_finder));
+  params.set_use_cumulative_time_table(
+      absl::GetFlag(FLAGS_cp_use_cumulative_time_table));
   params.set_use_cumulative_time_table_sync(
-      FLAGS_cp_use_cumulative_time_table_sync);
+      absl::GetFlag(FLAGS_cp_use_cumulative_time_table_sync));
   params.set_use_sequence_high_demand_tasks(
-      FLAGS_cp_use_sequence_high_demand_tasks);
+      absl::GetFlag(FLAGS_cp_use_sequence_high_demand_tasks));
   params.set_use_all_possible_disjunctions(
-      FLAGS_cp_use_all_possible_disjunctions);
-  params.set_max_edge_finder_size(FLAGS_cp_max_edge_finder_size);
-  params.set_diffn_use_cumulative(FLAGS_cp_diffn_use_cumulative);
-  params.set_use_element_rmq(FLAGS_cp_use_element_rmq);
-  params.set_check_solution_period(FLAGS_cp_check_solution_period);
+      absl::GetFlag(FLAGS_cp_use_all_possible_disjunctions));
+  params.set_max_edge_finder_size(absl::GetFlag(FLAGS_cp_max_edge_finder_size));
+  params.set_diffn_use_cumulative(absl::GetFlag(FLAGS_cp_diffn_use_cumulative));
+  params.set_use_element_rmq(absl::GetFlag(FLAGS_cp_use_element_rmq));
+  params.set_check_solution_period(
+      absl::GetFlag(FLAGS_cp_check_solution_period));
   return params;
 }
 
@@ -1535,6 +1542,16 @@ bool Solver::IsUncheckedSolutionLimitReached() {
 void Solver::TopPeriodicCheck() { TopLevelSearch()->PeriodicCheck(); }
 
 int Solver::TopProgressPercent() { return TopLevelSearch()->ProgressPercent(); }
+
+ConstraintSolverStatistics Solver::GetConstraintSolverStatistics() const {
+  ConstraintSolverStatistics stats;
+  stats.set_num_branches(branches());
+  stats.set_num_failures(failures());
+  stats.set_num_solutions(solutions());
+  stats.set_bytes_used(MemoryUsage());
+  stats.set_duration_seconds(absl::ToDoubleSeconds(timer_->GetDuration()));
+  return stats;
+}
 
 void Solver::PushState() {
   StateInfo info;

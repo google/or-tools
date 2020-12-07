@@ -75,6 +75,7 @@ help:
 	@echo -e "\tWith ${BOLD}<vm>${RESET}:"
 	@echo -e "\t\t${BOLD}freebsd${RESET} (FreeBSD)"
 	@echo
+	@echo -e "\tWith ${BOLD}<glop>${RESET}:"
 	@echo
 	@echo -e "\t${BOLD}clean${RESET}: Remove cache and docker image."
 	@echo -e "\t${BOLD}clean_<distro>${RESET}: Remove cache and docker image for the specified distro."
@@ -326,14 +327,43 @@ $(targets_freebsd): clean_freebsd_%:
 	cd vagrant/freebsd/$* && vagrant destroy -f
 	-rm -rf vagrant/freebsd/$*/.vagrant
 
+##########
+## GLOP ##
+##########
+glop_targets = $(addprefix glop_, $(STAGES))
+.PHONY: $(glop_targets)
+$(glop_targets): glop_%: docker/glop/Dockerfile
+	#@docker image rm -f ${IMAGE}:$@ 2>/dev/null
+	${DOCKER_BUILD_CMD} --target=$* --tag ${IMAGE}:$@ -f $< ..
+
+save_glop_targets = $(addprefix save_glop_, $(STAGES))
+.PHONY: $(save_glop_targets)
+$(save_glop_targets): save_glop_%: cache/glop/docker_%.tar
+cache/glop/docker_%.tar: glop_%
+	@rm -f $@
+	mkdir -p cache/$*
+	docker save ${IMAGE}:$< -o $@
+
+sh_glop_targets = $(addprefix sh_glop_, $(STAGES))
+.PHONY: $(sh_glop_targets)
+$(sh_glop_targets): sh_glop_%: glop_%
+	${DOCKER_RUN_CMD} -it --name ${PROJECT}_${BUILD_SYSTEM}_$< ${IMAGE}:$<
+
+clean_glop_targets = $(addprefix clean_glop_, $(STAGES))
+.PHONY: $(clean_glop_targets)
+$(clean_glop_targets): clean_glop_%
+	docker image rm -f ${IMAGE}:glop_$* 2>/dev/null
+	rm -f cache/glop/docker_$*.tar
 
 # CLEAN
 targets = $(addprefix clean_, $(DISTROS))
 vms = $(addprefix clean_, $(VMS))
+glops = $(addprefix clean_glop_, $(STAGES))
 .PHONY: clean $(targets)
-clean: $(targets) $(vms)
+clean: $(targets) $(vms) $(glops)
 	docker container prune -f
 	docker image prune -f
+	-rmdir cache/glop
 	-rmdir cache
 $(targets): clean_%: $(addprefix clean_%_, $(PRESTAGES)) $(addprefix clean_%_, $(STAGES))
 	-rmdir cache/$*

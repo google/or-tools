@@ -3,5 +3,5 @@ set -ex
 
 rm -f *.svg
 for i in *.dot; do
-  plantuml -Tsvg $i;
+  plantuml -Tsvg "$i";
 done

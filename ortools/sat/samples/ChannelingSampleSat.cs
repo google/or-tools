@@ -17,63 +17,60 @@ using Google.OrTools.Util;
 
 public class VarArraySolutionPrinter : CpSolverSolutionCallback
 {
-  public VarArraySolutionPrinter(IntVar[] variables)
-  {
-    variables_ = variables;
-  }
-
-  public override void OnSolutionCallback()
-  {
+    public VarArraySolutionPrinter(IntVar[] variables)
     {
-      foreach (IntVar v in variables_)
-      {
-        Console.Write(String.Format("{0}={1} ", v.ShortString(), Value(v)));
-      }
-      Console.WriteLine();
+        variables_ = variables;
     }
-  }
 
-  private IntVar[] variables_;
+    public override void OnSolutionCallback()
+    {
+        {
+            foreach (IntVar v in variables_)
+            {
+                Console.Write(String.Format("{0}={1} ", v.ShortString(), Value(v)));
+            }
+            Console.WriteLine();
+        }
+    }
+
+    private IntVar[] variables_;
 }
 
 public class ChannelingSampleSat
 {
-  static void Main()
-  {
-    // Create the CP-SAT model.
-    CpModel model = new CpModel();
+    static void Main()
+    {
+        // Create the CP-SAT model.
+        CpModel model = new CpModel();
 
-    // Declare our two primary variables.
-    IntVar x = model.NewIntVar(0, 10, "x");
-    IntVar y = model.NewIntVar(0, 10, "y");
+        // Declare our two primary variables.
+        IntVar x = model.NewIntVar(0, 10, "x");
+        IntVar y = model.NewIntVar(0, 10, "y");
 
-    // Declare our intermediate boolean variable.
-    IntVar b = model.NewBoolVar("b");
+        // Declare our intermediate boolean variable.
+        IntVar b = model.NewBoolVar("b");
 
-    // Implement b == (x >= 5).
-    model.Add(x >= 5).OnlyEnforceIf(b);
-    model.Add(x < 5).OnlyEnforceIf(b.Not());
+        // Implement b == (x >= 5).
+        model.Add(x >= 5).OnlyEnforceIf(b);
+        model.Add(x < 5).OnlyEnforceIf(b.Not());
 
-    // Create our two half-reified constraints.
-    // First, b implies (y == 10 - x).
-    model.Add(y == 10 - x).OnlyEnforceIf(b);
-    // Second, not(b) implies y == 0.
-    model.Add(y == 0).OnlyEnforceIf(b.Not());
+        // Create our two half-reified constraints.
+        // First, b implies (y == 10 - x).
+        model.Add(y == 10 - x).OnlyEnforceIf(b);
+        // Second, not(b) implies y == 0.
+        model.Add(y == 0).OnlyEnforceIf(b.Not());
 
-    // Search for x values in increasing order.
-    model.AddDecisionStrategy(
-        new IntVar[] {x},
-        DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
-        DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
+        // Search for x values in increasing order.
+        model.AddDecisionStrategy(new IntVar[] { x }, DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
+                                  DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
 
-    // Create the solver.
-    CpSolver solver = new CpSolver();
+        // Create the solver.
+        CpSolver solver = new CpSolver();
 
-    // Force solver to follow the decision strategy exactly.
-    solver.StringParameters = "search_branching:FIXED_SEARCH";
+        // Force solver to follow the decision strategy exactly.
+        solver.StringParameters = "search_branching:FIXED_SEARCH";
 
-    VarArraySolutionPrinter cb =
-        new VarArraySolutionPrinter(new IntVar[] {x, y, b});
-    solver.SearchAllSolutions(model, cb);
-  }
+        VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, y, b });
+        solver.SearchAllSolutions(model, cb);
+    }
 }

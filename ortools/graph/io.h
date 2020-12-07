@@ -23,13 +23,13 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "ortools/base/filelineiter.h"
-#include "ortools/base/statusor.h"
 #include "ortools/graph/graph.h"
 
 namespace util {
@@ -58,7 +58,7 @@ std::string GraphToString(const Graph& graph, GraphToStringFormat format);
 //   <node1> <node2>.
 //
 // This returns a newly created graph upon success, which the user needs to take
-// ownership of, or a failure status. See ortools/base/statusor.h.
+// ownership of, or a failure status. See absl/status/statusor.h.
 //
 // If "num_nodes_with_color_or_null" is not nullptr, it will be filled with the
 // color information: num_nodes_with_color_or_null[i] will be the number of
@@ -140,7 +140,7 @@ absl::StatusOr<Graph*> ReadGraphFile(
     ++num_lines_read;
     if (num_lines_read == 1) {
       std::vector<int64> header_ints;
-      // if (!SplitStringAndParse(line, " ", &absl::SimpleAtoi,
+      // if (!SplitStringAndParse(line, " ", &strings::safe_strto64,
       //                          &header_ints) ||
       //     header_ints.size() < 2 || header_ints[0] < 0 || header_ints[1] < 0)
       //     {

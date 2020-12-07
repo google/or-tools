@@ -81,8 +81,8 @@ if __name__ == "__main__":
       format="[%(levelname)s] %(message)s", stream=sys.stdout, level=loglevel)
 
   # Display Python Version and path
-  logging.info(f"Python path : {sys.executable}")
-  logging.info(f"Python version : {sys.version}")
+  logging.info("Python path : %s", sys.executable)
+  logging.info("Python version : %s", sys.version)
 
   # Choose the pypi package
   ortools_name = "ortools"

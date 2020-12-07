@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Build all the wheel artifacts for the platforms supported by manylinux1 and
 # export them to the specified location.
 #
@@ -15,8 +15,7 @@
 #                  destination path for the wheels export.
 #   BUILD_ROOT     if not specified at command line, this value is used as the
 #                  root path for the build process.
-set -x
-set -eo pipefail
+set -euxo pipefail
 
 DEFAULT_BUILD_ROOT="$HOME"
 DEFAULT_EXPORT_ROOT="${HOME}/export"
@@ -45,7 +44,7 @@ function export_manylinux_wheel {
     # Arguments:
     #   $1 the or-tools sources root directory
     #   $2 the artifacts export directory
-    if [ "$#" -ne 2 ]; then
+    if [[ "$#" -ne 2 ]]; then
         echo "build_pypi_archives called with an illegal number of parameters"
         exit 1  # TODO return error and check it outside
     fi
@@ -90,26 +89,26 @@ function test_installed {
 ###############################################################################
 # Setup
 
-if [ -z "$1" ]; then
+if [[ -z "$1" ]]; then
   (>&2 usage)
   exit 1
 fi
 
 SRC_ROOT="$1";
-if [ -n "$2" ]; then BUILD_ROOT="$2"; fi
-if [ -n "$3" ]; then EXPORT_ROOT="$3"; fi
+if [[ -n "$2" ]]; then BUILD_ROOT="$2"; fi
+if [[ -n "$3" ]]; then EXPORT_ROOT="$3"; fi
 
-if [ ! -d "$SRC_ROOT" ]; then
+if [[ ! -d "$SRC_ROOT" ]]; then
     (>&2 echo "Can't find or-tools sources at the specified location: $SRC_ROOT")
     exit 1
 fi
 
-if [ -z "$BUILD_ROOT" ]; then
+if [[ -z "$BUILD_ROOT" ]]; then
     (>&2 echo "\$BUILD_ROOT is not set, using default location: $DEFAULT_BUILD_ROOT")
     BUILD_ROOT="$DEFAULT_BUILD_ROOT"
 fi
 
-if [ -z "$EXPORT_ROOT" ]; then
+if [[ -z "$EXPORT_ROOT" ]]; then
     (>&2 echo "\$EXPORT_ROOT is not set, using default location: $DEFAULT_EXPORT_ROOT")
     EXPORT_ROOT="$DEFAULT_EXPORT_ROOT"
 fi
@@ -145,7 +144,7 @@ mkdir -p "${BUILD_ROOT}"
 mkdir -p "${EXPORT_ROOT}"
 
 # Make third_party if needed
-if [ ! -f "${SRC_ROOT}/Makefile.local" ]; then
+if [[ ! -f "${SRC_ROOT}/Makefile.local" ]]; then
   (>&2 echo "\${SRC_ROOT}/Makefile.local doesn't exist, building third_party")
   cd "$SRC_ROOT"
   make third_party
@@ -159,7 +158,7 @@ do
     PYTAG=$(basename "$PYROOT")
     # Check for platforms to be skipped
     _skip=$(contains_element "$PYTAG" "${SKIP[@]}")
-    if [ "$_skip" -eq '0' ]; then
+    if [[ "$_skip" -eq '0' ]]; then
         (>&2 echo "skipping deprecated platform $PYTAG")
         continue
     fi
@@ -172,7 +171,8 @@ do
     "${PYBIN}/virtualenv" -p "${PYBIN}/python" "${BUILD_ROOT}/${PYTAG}"
     # shellcheck source=/dev/null
     source "${BUILD_ROOT}/${PYTAG}/bin/activate"
-    pip install -U pip setuptools wheel six  # six is needed by make test_python
+    pip install -U pip setuptools wheel absl-py  # absl-py is needed by make test_python
+    pip install -U mypy-protobuf  # need to generate protobuf mypy files
     # Build artifact
     export PKG_CONFIG_PATH="${PYROOT}/lib/pkgconfig:${BASE_PKG_CONFIG}"
     echo "PKG_CONFIG_PATH: ${PKG_CONFIG_PATH}"
@@ -184,14 +184,14 @@ do
 
     # Hack wheel file to rename it manylinux1 since manylinux2010 is still not
     # supported by default pip on most distro.
-    FILE=(${EXPORT_ROOT}/ortools-*-${PYTAG}-manylinux2010_x86_64.whl)
+    FILE=${EXPORT_ROOT}/ortools-*-${PYTAG}-manylinux2010_x86_64.whl
     echo "Old wheel file to hack: ${WHEEL_FILE}"
 
     # Unpack to hack it
     unzip "$FILE" -d /tmp
-    rm -f $FILE
-    WHEEL_FILE=(/tmp/ortools-*.dist-info/WHEEL)
-    RECORD_FILE=(/tmp/ortools-*.dist-info/RECORD)
+    rm -f "$FILE"
+    WHEEL_FILE=/tmp/ortools-*.dist-info/WHEEL
+    RECORD_FILE=/tmp/ortools-*.dist-info/RECORD
 
     # Save old hash and size, in order to look them up in RECORD
     # see: https://github.com/pypa/pip/blob/c9df690f3b5bb285a855953272e6fe24f69aa08a/src/pip/_internal/wheel.py#L71-L84
@@ -204,24 +204,24 @@ hashlib.sha256(open('${WHEEL_FILE}', 'rb').read())\
 .digest())\
 .decode('latin1')\
 .rstrip('='))\""
-    OLD_HASH=$(eval ${WHEEL_HASH_CMD})
-    OLD_SIZE=$(wc -c < ${WHEEL_FILE})
+    OLD_HASH=$(eval "${WHEEL_HASH_CMD}")
+    OLD_SIZE=$(wc -c < "${WHEEL_FILE}")
 
     # Hack the WHEEL file and recompute the new hash
-    sed -i 's/manylinux2010/manylinux1/' ${WHEEL_FILE}
-    NEW_HASH=$(eval ${WHEEL_HASH_CMD})
-    NEW_SIZE=$(wc -c < ${WHEEL_FILE})
+    sed -i 's/manylinux2010/manylinux1/' "${WHEEL_FILE}"
+    NEW_HASH=$(eval "${WHEEL_HASH_CMD}")
+    NEW_SIZE=$(wc -c < "${WHEEL_FILE}")
     # Update RECORD file with the new hash and size
-    sed -i "s/${OLD_HASH},${OLD_SIZE}/${NEW_HASH},${NEW_SIZE}/" ${RECORD_FILE}
+    sed -i "s/${OLD_HASH},${OLD_SIZE}/${NEW_HASH},${NEW_SIZE}/" "${RECORD_FILE}"
 
     # Repack it as a manylinux1 package
     WHEEL_FILE=${FILE//manylinux2010/manylinux1}
-    (cd /tmp; zip -r ${WHEEL_FILE} ortools ortools-*; rm -r ortools*)
+    (cd /tmp; zip -r "${WHEEL_FILE}" ortools ortools-*; rm -r ortools*)
     echo "New hacked wheel file: ${WHEEL_FILE}"
 
     # verify manylinux1 package integrity using pex
     pip install pex
-    python -m pex -o ort.pex ${WHEEL_FILE}
+    python -m pex -o ort.pex "${WHEEL_FILE}"
     rm ort.pex
 
     # Restore environment
@@ -235,7 +235,7 @@ hashlib.sha256(open('${WHEEL_FILE}', 'rb').read())\
     "${PYBIN}/virtualenv" -p "${PYBIN}/python" "${BUILD_ROOT}/${PYTAG}-test"
     # shellcheck source=/dev/null
     source "${BUILD_ROOT}/${PYTAG}-test/bin/activate"
-    pip install -U pip setuptools wheel six
+    pip install -U pip setuptools wheel absl-py
 
     # Install wheel and run tests
     pip install --no-cache-dir "$WHEEL_FILE"

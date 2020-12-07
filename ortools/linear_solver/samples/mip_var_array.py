@@ -13,9 +13,7 @@
 """MIP example that uses a variable array."""
 # [START program]
 # [START import]
-from __future__ import print_function
 from ortools.linear_solver import pywraplp
-
 # [END import]
 
 
@@ -35,7 +33,6 @@ def create_data_model():
     data['num_vars'] = 5
     data['num_constraints'] = 4
     return data
-
 
 # [END data_model]
 

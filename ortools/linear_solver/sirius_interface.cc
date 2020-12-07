@@ -75,10 +75,10 @@ namespace operations_research {
 	using std::unique_ptr;
 
 	// For a model that is extracted to an instance of this class there is a
-	// 1:1 corresponence between MPVariable instances and XPRESS columns: the
-	// index of an extracted variable is the column index in the XPRESS model.
+	// 1:1 corresponence between MPVariable instances and SIRIUS columns: the
+	// index of an extracted variable is the column index in the SIRIUS model.
 	// Similiar for instances of MPConstraint: the index of the constraint in
-	// the model is the row index in the XPRESS model.
+	// the model is the row index in the SIRIUS model.
 	class SiriusInterface : public MPSolverInterface {
 	public:
 		// NOTE: 'mip' specifies the type of the problem (either continuous or
@@ -126,13 +126,13 @@ namespace operations_research {
 		virtual int64 iterations() const;
 		// Number of branch-and-bound nodes. Only available for discrete problems.
 		virtual int64 nodes() const;
-		// Best objective bound. Only available for discrete problems.
-		virtual double best_objective_bound() const;
 
 		// Returns the basis status of a row.
 		virtual MPSolver::BasisStatus row_status(int constraint_index) const;
 		// Returns the basis status of a column.
 		virtual MPSolver::BasisStatus column_status(int variable_index) const;
+
+		bool SetSolverSpecificParametersAsString(const std::string& parameters) override;
 
 		// ----- Misc -----
 
@@ -176,6 +176,7 @@ namespace operations_research {
 		virtual void SetLpAlgorithm(int value);
 
 		virtual bool ReadParameterFile(std::string const &filename);
+		virtual absl::Status SetNumThreads(int num_threads) override;
 		virtual std::string ValidFileExtensionForParameterFile() const;
 
 	private:
@@ -188,8 +189,8 @@ namespace operations_research {
 			sync_status_ = MUST_RELOAD;
 		}
 
-		// Transform XPRESS basis status to MPSolver basis status.
-		static MPSolver::BasisStatus xformBasisStatus(char xpress_basis_status);
+		// Transform SIRIUS basis status to MPSolver basis status.
+		static MPSolver::BasisStatus xformBasisStatus(char sirius_basis_status);
 
 	private:
 		SRS_PROBLEM * mLp;
@@ -222,7 +223,7 @@ namespace operations_research {
 			SlowSetVariableBounds = 0x0040,
 			SlowUpdatesAll = 0xffff
 		} const slowUpdates;
-		// XPRESS has no method to query the basis status of a single variable.
+		// SIRIUS has no method to query the basis status of a single variable.
 		// Hence we query the status only once and cache the array. This is
 		// much faster in case the basis status of more than one row/column
 		// is required.
@@ -234,6 +235,9 @@ namespace operations_research {
 			double &range);
 
 		std::map<int , std::vector<std::pair<int, double> > > fixedOrderCoefficientsPerConstraint;
+
+		// vector to store TypeDeBorneDeLaVariable values
+		std::vector<int> varBoundsTypeValues;
 	};
 
 	// Creates a LP/MIP instance.
@@ -373,14 +377,14 @@ namespace operations_research {
 			//   [ rhs[i], rhs[i]+rngval[i] ]
 			// see also the reference documentation for SRSnewrows()
 			if (ub < lb) {
-				// The bounds for the constraint are contradictory. XPRESS models
+				// The bounds for the constraint are contradictory. SIRIUS models
 				// a range constraint l <= ax <= u as
 				//    ax = l + v
 				// where v is an auxiliary variable the range of which is controlled
 				// by l and u: if l < u then v in [0, u-l]
 				//             else          v in [u-l, 0]
 				// (the range is specified as the rngval[] argument to SRSnewrows).
-				// Thus XPRESS cannot represent range constraints with contradictory
+				// Thus SIRIUS cannot represent range constraints with contradictory
 				// bounds and we must error out here.
 				CHECK_STATUS(-1);
 			}
@@ -409,7 +413,7 @@ namespace operations_research {
 			// Note that the case lb==ub was already handled above, so we just
 			// pick the bound with larger magnitude and create a constraint for it.
 			// Note that we replace the infinite bound by SRS_infinite since
-			// bounds with larger magnitude may cause other XPRESS functions to
+			// bounds with larger magnitude may cause other SIRIUS functions to
 			// fail (for example the export to LP files).
 			DCHECK_GT(std::abs(lb), SRS_infinite);
 			DCHECK_GT(std::abs(ub), SRS_infinite);
@@ -637,32 +641,9 @@ namespace operations_research {
 		}
 	}
 
-	// Returns the best objective bound. Only available for discrete problems.
-	double SiriusInterface::best_objective_bound() const {
-		if (mMip) {
-			if (!CheckSolutionIsSynchronized() || !CheckBestObjectiveBoundExists())
-				// trivial_worst_objective_bound() returns sense*infinity,
-				// that is meaningful even for infeasible problems
-				return trivial_worst_objective_bound();
-			if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
-				// For an empty model the best objective bound is just the offset.
-				return solver_->Objective().offset();
-			}
-			else {
-				double value = SRS_NAN;
-				//FIXME CHECK_STATUS(SRSgetdblattrib(mLp, SRS_BESTBOUND, &value));
-				return value;
-			}
-		}
-		else {
-			LOG(DFATAL) << "Best objective bound only available for discrete problems";
-			return trivial_worst_objective_bound();
-		}
-	}
-
-	// Transform a XPRESS basis status to an MPSolver basis status.
-	MPSolver::BasisStatus SiriusInterface::xformBasisStatus(char xpress_basis_status) {
-		switch (xpress_basis_status) {
+	// Transform a SIRIUS basis status to an MPSolver basis status.
+	MPSolver::BasisStatus SiriusInterface::xformBasisStatus(char sirius_basis_status) {
+		switch (sirius_basis_status) {
 			case SRS_AT_LOWER:
 				return MPSolver::AT_LOWER_BOUND;
 			case SRS_BASIC:
@@ -675,7 +656,7 @@ namespace operations_research {
 			case SRS_BASIC_FREE:
 				return MPSolver::FREE;
 			default:
-				LOG(DFATAL) << "Unknown XPRESS basis status";
+				LOG(DFATAL) << "Unknown SIRIUS basis status";
 				return MPSolver::FREE;
 		}
 	}
@@ -699,8 +680,9 @@ namespace operations_research {
 		else
 			mRstat = 0;
 
-		if (mRstat)
+		if (mRstat) {
 			return xformBasisStatus(mRstat[constraint_index]);
+		}
 		else {
 			LOG(FATAL) << "Row basis status not available";
 			return MPSolver::FREE;
@@ -726,8 +708,9 @@ namespace operations_research {
 		else
 			mCstat = 0;
 
-		if (mCstat)
+		if (mCstat) {
 			return xformBasisStatus(mCstat[variable_index]);
+		}
 		else {
 			LOG(FATAL) << "Column basis status not available";
 			return MPSolver::FREE;
@@ -1053,6 +1036,26 @@ namespace operations_research {
 
 	// ------ Parameters  -----
 
+	// WIP : Use SetSolverSpecificParametersAsString to pass TypeDeBorneDeLaVariable
+	bool SiriusInterface::SetSolverSpecificParametersAsString(const std::string& parameters)
+	{
+		std::stringstream ss(parameters);
+		std::string paramName;
+		std::getline(ss, paramName, ' ');
+		if (paramName == "VAR_BOUNDS_TYPE") {
+			std::string paramValue;
+			varBoundsTypeValues.clear();
+			while (std::getline(ss, paramValue, ' ')) {
+				varBoundsTypeValues.push_back(std::stoi(paramValue));
+			}
+			return true;
+		}
+		else {
+			// unknow paramName
+			return false;
+		}
+	}
+
 	void SiriusInterface::SetParameters(const MPSolverParameters &param) {
 		SetCommonParameters(param);
 		if (mMip) SetMIPParameters(param);
@@ -1106,7 +1109,7 @@ namespace operations_research {
 		}
 	}
 
-	// Sets the LP algorithm : primal, dual or barrier. Note that XPRESS offers other
+	// Sets the LP algorithm : primal, dual or barrier. Note that SIRIUS offers other
 	// LP algorithm (e.g. network) and automatic selection
 	void SiriusInterface::SetLpAlgorithm(int value) {
 		MPSolverParameters::LpAlgorithmValues const algorithm =
@@ -1135,8 +1138,15 @@ namespace operations_research {
 
 	bool SiriusInterface::ReadParameterFile(std::string const &filename) {
 		// Return true on success and false on error.
-		LOG(DFATAL) << "ReadParameterFile not implemented for XPRESS interface";
-		return false;
+		return true;
+		// LOG(DFATAL) << "ReadParameterFile not implemented for Sirius interface";
+		// return false;
+	}
+
+	absl::Status SiriusInterface::SetNumThreads(int num_threads)
+	{
+		// sirius does not support mt
+		return absl::OkStatus();
 	}
 
 	std::string SiriusInterface::ValidFileExtensionForParameterFile() const {
@@ -1177,8 +1187,8 @@ namespace operations_research {
 		VLOG(1) << absl::StrFormat("Model build in %.3f seconds.", timer.Get());
 
 		// Set log level.
-		//FIXME CHECK_STATUS(SRSsetintcontrol(mLp, SRS_LPLOG, quiet() ? 0 : 1));
-		//FIXME CHECK_STATUS(SRSsetintcontrol(mLp, SRS_MIPLOG, quiet() ? 0 : 1));
+		CHECK_STATUS(SRSsetintparams(mLp, SRS_PARAM_VERBOSE_SPX, quiet() ? 0 : 1));
+		CHECK_STATUS(SRSsetintparams(mLp, SRS_PARAM_VERBOSE_PNE, quiet() ? 0 : 1));
 
 		// Set parameters.
 		// NOTE: We must invoke SetSolverSpecificParametersAsString() _first_.
@@ -1189,7 +1199,7 @@ namespace operations_research {
 		SetParameters(param);
 		if (solver_->time_limit()) {
 			VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-			//FIXME CHECK_STATUS(SRSsetdblcontrol(mLp, SRS_MAXTIME, solver_->time_limit() * 1e-3));
+			CHECK_STATUS(SRSsetdoubleparams(mLp, SRS_PARAM_MAX_TIME, solver_->time_limit() * 1e-3));
 		}
 
 		// Solve.
@@ -1223,6 +1233,20 @@ namespace operations_research {
 		//	std::cout << mLp->problem_mps->SensDeLaContrainte[i] << " " << mLp->problem_mps->Rhs[i] << std::endl;
 		//
 		//exit(0);
+
+		// set variables's bound's type if any
+		if (!varBoundsTypeValues.empty()) {
+			SRScopyvarboundstype(mLp, varBoundsTypeValues.data());
+		}
+
+		// set solution hints if any
+		if (!solver_->solution_hint_.empty()) {
+			// store X values
+			for (std::pair<const MPVariable*, double>& solution_hint_elt : solver_->solution_hint_) {
+				SRSsetxvalue(mLp, solution_hint_elt.first->index(), solution_hint_elt.second);
+			}
+
+		}
 
 		status = SRSoptimize(mLp);
 
@@ -1337,7 +1361,7 @@ namespace operations_research {
 			}
 		}
 
-		// Map XPRESS status to more generic solution status in MPSolver
+		// Map SIRIUS status to more generic solution status in MPSolver
 		switch (problemStatus) {
 		case SRS_STATUS_OPTIMAL:
 			result_status_ = MPSolver::OPTIMAL;

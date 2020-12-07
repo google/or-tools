@@ -31,6 +31,8 @@
 
 #include <numeric>
 
+#include "ortools/base/stl_util.h"
+
 void DenseConnectedComponentsFinder::SetNumberOfNodes(int num_nodes) {
   const int old_num_nodes = GetNumberOfNodes();
   if (num_nodes == old_num_nodes) {
@@ -66,6 +68,29 @@ int DenseConnectedComponentsFinder::FindRoot(int node) {
     node = prev_parent;
   }
   return root;
+}
+
+const std::vector<int>& DenseConnectedComponentsFinder::GetComponentRoots() {
+  const int num_nodes = GetNumberOfNodes();
+  if (num_nodes != num_nodes_at_last_get_roots_call_) {
+    // Add potential roots for each new node that did not exist the last time
+    // GetComponentRoots() was called.  The cost here is amortized against
+    // adding the nodes in the first place.
+    const int previous_num_roots = roots_.size();
+    roots_.resize(previous_num_roots + num_nodes -
+                  num_nodes_at_last_get_roots_call_);
+    std::iota(roots_.begin() + previous_num_roots, roots_.end(),
+              num_nodes_at_last_get_roots_call_);
+  }
+
+  // Remove the roots that have been merged with other components. Each node
+  // only gets removed once from the roots vector, so the cost of FindRoot() is
+  // amortized against adding the edge.
+  gtl::STLEraseAllFromSequenceIf(
+      &roots_, [&](const int node) { return node != FindRoot(node); });
+
+  num_nodes_at_last_get_roots_call_ = num_nodes;
+  return roots_;
 }
 
 void DenseConnectedComponentsFinder::AddEdge(int node1, int node2) {

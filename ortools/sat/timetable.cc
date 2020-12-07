@@ -68,22 +68,25 @@ void TimeTablingPerTask::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->RegisterReversibleInt(id, &forward_num_tasks_to_sweep_);
   watcher->RegisterReversibleInt(id, &backward_num_tasks_to_sweep_);
   watcher->RegisterReversibleInt(id, &num_profile_tasks_);
+
+  // Changing the times or pushing task absence migth have side effects on the
+  // other intervals, so we would need to be called again in this case.
+  watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
+// Note that we relly on being called again to reach a fixed point.
 bool TimeTablingPerTask::Propagate() {
-  // Repeat until the propagator does not filter anymore.
-  profile_changed_ = true;
-  while (profile_changed_) {
-    profile_changed_ = false;
-    // This can fail if the profile exceeds the resource capacity.
-    if (!BuildProfile()) return false;
-    // Update the minimum start times.
-    if (!SweepAllTasks(/*is_forward=*/true)) return false;
-    // We reuse the same profile, but reversed, to update the maximum end times.
-    ReverseProfile();
-    // Update the maximum end times (reversed problem).
-    if (!SweepAllTasks(/*is_forward=*/false)) return false;
-  }
+  // This can fail if the profile exceeds the resource capacity.
+  if (!BuildProfile()) return false;
+
+  // Update the minimum start times.
+  if (!SweepAllTasks(/*is_forward=*/true)) return false;
+
+  // We reuse the same profile, but reversed, to update the maximum end times.
+  ReverseProfile();
+
+  // Update the maximum end times (reversed problem).
+  if (!SweepAllTasks(/*is_forward=*/false)) return false;
 
   return true;
 }
@@ -305,21 +308,6 @@ bool TimeTablingPerTask::SweepTask(int task_id) {
   if (initial_start_min != new_start_min &&
       !UpdateStartingTime(task_id, last_initial_conflict, new_start_min)) {
     return false;
-  }
-
-  // The profile needs to be recomputed if we pushed something (because it can
-  // have side effects). Note that for the case where the interval is optional
-  // but not its start, it is possible that UpdateStartingTime() didn't change
-  // the start, so we need to test this in order to avoid an infinite loop.
-  //
-  // TODO(user): find an efficient way to keep the start_max < new_end_min
-  // condition. The problem is that ReduceProfile() assumes that by_end_min and
-  // by_start_max are up to date (this is not necessarily the case if we use
-  // the old condition). A solution is to update those vector before calling
-  // ReduceProfile() or to ReduceProfile() directly after BuildProfile() in the
-  // main loop.
-  if (helper_->StartMin(task_id) != initial_start_min) {
-    profile_changed_ = true;
   }
 
   return true;

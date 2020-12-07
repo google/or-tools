@@ -34,10 +34,10 @@
 #include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/strong_vector.h"
 
 namespace operations_research {
 
@@ -451,16 +451,16 @@ class BlossomGraph {
   bool is_initialized_ = false;
 
   // The set of all edges/nodes of the graph.
-  gtl::ITIVector<EdgeIndex, Edge> edges_;
-  gtl::ITIVector<NodeIndex, Node> nodes_;
+  absl::StrongVector<EdgeIndex, Edge> edges_;
+  absl::StrongVector<NodeIndex, Node> nodes_;
 
   // Identity for a non-blossom node, and its top blossom node (in case of many
   // nested blossom) for an internal node.
-  gtl::ITIVector<NodeIndex, NodeIndex> root_blossom_node_;
+  absl::StrongVector<NodeIndex, NodeIndex> root_blossom_node_;
 
   // The current graph incidence. Note that one EdgeIndex should appear in
   // exactly two places (on its tail and head incidence list).
-  gtl::ITIVector<NodeIndex, std::vector<EdgeIndex>> graph_;
+  absl::StrongVector<NodeIndex, std::vector<EdgeIndex>> graph_;
 
   // Used by SubNodes().
   std::vector<NodeIndex> subnodes_;

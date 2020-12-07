@@ -60,7 +60,6 @@ class GLOPInterface : public MPSolverInterface {
   // ------ Query statistics on the solution and the solve ------
   int64 iterations() const override;
   int64 nodes() const override;
-  double best_objective_bound() const override;
   MPSolver::BasisStatus row_status(int constraint_index) const override;
   MPSolver::BasisStatus column_status(int variable_index) const override;
 
@@ -243,11 +242,6 @@ int64 GLOPInterface::iterations() const {
 int64 GLOPInterface::nodes() const {
   LOG(DFATAL) << "Number of nodes only available for discrete problems";
   return kUnknownNumberOfNodes;
-}
-
-double GLOPInterface::best_objective_bound() const {
-  // TODO(user): report a better bound when we can.
-  return trivial_worst_objective_bound();
 }
 
 MPSolver::BasisStatus GLOPInterface::row_status(int constraint_index) const {

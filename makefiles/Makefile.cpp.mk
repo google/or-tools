@@ -76,6 +76,9 @@ $(GEN_DIR)/ortools/glop: | $(GEN_DIR)/ortools
 $(GEN_DIR)/ortools/graph: | $(GEN_DIR)/ortools
 	-$(MKDIR) $(GEN_PATH)$Sortools$Sgraph
 
+$(GEN_DIR)/ortools/gscip: | $(GEN_DIR)/ortools
+	-$(MKDIR) $(GEN_PATH)$Sortools$Sgscip
+
 $(GEN_DIR)/ortools/linear_solver: | $(GEN_DIR)/ortools
 	-$(MKDIR) $(GEN_PATH)$Sortools$Slinear_solver
 
@@ -118,6 +121,9 @@ $(OBJ_DIR)/glop: | $(OBJ_DIR)
 $(OBJ_DIR)/graph: | $(OBJ_DIR)
 	-$(MKDIR_P) $(OBJ_DIR)$Sgraph
 
+$(OBJ_DIR)/gscip: | $(OBJ_DIR)
+	-$(MKDIR_P) $(OBJ_DIR)$Sgscip
+
 $(OBJ_DIR)/linear_solver: | $(OBJ_DIR)
 	-$(MKDIR_P) $(OBJ_DIR)$Slinear_solver
 
@@ -153,11 +159,13 @@ $(GEN_DIR)/ortools/bop/bop_parameters.pb.h \
 $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/assignment.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/demon_profiler.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/local_search_stats.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/routing_enums.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/routing_parameters.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/search_limit.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h
+$(GEN_DIR)/ortools/constraint_solver/search_stats.pb.h \
+$(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h \
+$(GEN_DIR)/ortools/gscip/gscip.pb.h
+
 include $(OR_ROOT)makefiles/Makefile.gen.mk
 
 all_protos: $(PROTO_DEPS)
@@ -176,7 +184,8 @@ $(OR_TOOLS_LIBS): \
  $(GRAPH_LIB_OBJS) \
  $(ALGORITHMS_LIB_OBJS) \
  $(SAT_LIB_OBJS) \
- $(CP_LIB_OBJS) | $(LIB_DIR)
+ $(CP_LIB_OBJS) \
+ $(GSCIP_LIB_OBJS) | $(LIB_DIR)
 	$(LINK_CMD) \
  $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)ortools.$L \
  $(BASE_LIB_OBJS) \
@@ -191,6 +200,7 @@ $(OR_TOOLS_LIBS): \
  $(BOP_LIB_OBJS) \
  $(LP_LIB_OBJS) \
  $(CP_LIB_OBJS) \
+ $(GSCIP_LIB_OBJS) \
  $(DEPENDENCIES_LNK) \
  $(LDFLAGS)
 
@@ -241,8 +251,16 @@ $(FLATZINC_LIBS): $(OR_TOOLS_LIBS) $(FLATZINC_OBJS) | $(LIB_DIR)
 
 .PHONY: fz # Build Flatzinc binaries.
 fz: \
+ $(BIN_DIR)/ortools.msc \
  $(BIN_DIR)/fz$E \
  $(BIN_DIR)/parser_main$E
+
+$(BIN_DIR)/ortools.msc: $(SRC_DIR)/ortools/flatzinc/ortools.msc.in | $(BIN_DIR)
+	$(SED) -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
+ ortools$Sflatzinc$Sortools.msc.in \
+ > $(BIN_DIR)$Sortools.msc
+	$(SED) -i -e "s/@FZ_REL_INSTALL_BINARY@/.\/fz$E/" \
+ $(BIN_DIR)$Sortools.msc
 
 $(BIN_DIR)/fz$E: $(OBJ_DIR)/flatzinc/fz.$O $(FLATZINC_LIBS) $(OR_TOOLS_LIBS) | $(BIN_DIR)
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc$Sfz.$O $(FLATZINC_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz$E
@@ -557,15 +575,6 @@ install_libortools: $(OR_TOOLS_LIBS) install_ortools_dirs
 
 .PHONY: install_third_party
 install_third_party: install_dirs
-ifeq ($(UNIX_GFLAGS_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	$(COPYREC) dependencies$Sinstall$Sinclude$Sgflags "$(DESTDIR)$(prefix)$Sinclude"
-	$(COPYREC) dependencies$Sinstall$Slib*$Slibgflags* "$(DESTDIR)$(prefix)$Slib"
-	$(COPYREC) dependencies$Sinstall$Sbin$Sgflags_completions.sh "$(DESTDIR)$(prefix)$Sbin"
-endif
-ifeq ($(UNIX_GLOG_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	$(COPYREC) dependencies$Sinstall$Sinclude$Sglog "$(DESTDIR)$(prefix)$Sinclude"
-	$(COPYREC) dependencies$Sinstall$Slib*$Slibglog* "$(DESTDIR)$(prefix)$Slib"
-endif
 ifeq ($(UNIX_PROTOBUF_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 	$(COPYREC) dependencies$Sinstall$Sinclude$Sgoogle "$(DESTDIR)$(prefix)$Sinclude"
 	$(COPYREC) dependencies$Sinstall$Slib*$Slibproto* "$(DESTDIR)$(prefix)$Slib"
@@ -596,14 +605,6 @@ endif  # USE_SCIP
 ifeq ($(WINDOWS_ZLIB_DIR),$(OR_ROOT)dependencies/install)
 	$(COPY) dependencies$Sinstall$Sinclude$Szlib.h "$(DESTDIR)$(prefix)$Sinclude"
 	$(COPY) dependencies$Sinstall$Sinclude$Szconf.h "$(DESTDIR)$(prefix)$Sinclude"
-endif
-ifeq ($(WINDOWS_GFLAGS_DIR),$(OR_ROOT)dependencies/install)
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sgflags"
-	$(COPYREC) /E /Y dependencies$Sinstall$Sinclude$Sgflags "$(DESTDIR)$(prefix)$Sinclude$Sgflags"
-endif
-ifeq ($(WINDOWS_GLOG_DIR),$(OR_ROOT)dependencies/install)
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sglog"
-	$(COPYREC) /E /Y dependencies$Sinstall$Sinclude$Sglog "$(DESTDIR)$(prefix)$Sinclude$Sglog"
 endif
 ifeq ($(WINDOWS_PROTOBUF_DIR),$(OR_ROOT)dependencies/install)
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sgoogle"
@@ -726,6 +727,7 @@ clean_cc:
 	-$(DEL) $(OBJ_DIR)$Sport$S*.$O
 	-$(DEL) $(OBJ_DIR)$Ssat$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sutil$S*.$O
+	-$(DEL) $(BIN_DIR)$Sortools.msc
 	-$(DEL) $(BIN_DIR)$Sfz$E
 	-$(DEL) $(BIN_DIR)$Sparser_main$E
 	-$(DEL) $(BIN_DIR)$Ssat_runner$E

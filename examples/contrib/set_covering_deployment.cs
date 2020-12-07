@@ -22,128 +22,111 @@ using Google.OrTools.ConstraintSolver;
 
 public class SetCoveringDeployment
 {
+    /**
+     *
+     * Solves a set covering deployment problem.
+     * See  See http://www.hakank.org/or-tools/set_covering_deployment.py
+     *
+     */
+    private static void Solve()
+    {
+        Solver solver = new Solver("SetCoveringDeployment");
 
-  /**
-   *
-   * Solves a set covering deployment problem.
-   * See  See http://www.hakank.org/or-tools/set_covering_deployment.py
-   *
-   */
-  private static void Solve()
-  {
+        //
+        // data
+        //
 
-    Solver solver = new Solver("SetCoveringDeployment");
+        // From http://mathworld.wolfram.com/SetCoveringDeployment.html
+        string[] countries = { "Alexandria", "Asia Minor", "Britain", "Byzantium", "Gaul", "Iberia", "Rome", "Tunis" };
 
-    //
-    // data
-    //
+        int n = countries.Length;
 
-    // From http://mathworld.wolfram.com/SetCoveringDeployment.html
-    string[] countries = {"Alexandria",
-                          "Asia Minor",
-                          "Britain",
-                          "Byzantium",
-                          "Gaul",
-                          "Iberia",
-                          "Rome",
-                          "Tunis"};
+        // the incidence matrix (neighbours)
+        int[,] mat = { { 0, 1, 0, 1, 0, 0, 1, 1 }, { 1, 0, 0, 1, 0, 0, 0, 0 }, { 0, 0, 0, 0, 1, 1, 0, 0 },
+                       { 1, 1, 0, 0, 0, 0, 1, 0 }, { 0, 0, 1, 0, 0, 1, 1, 0 }, { 0, 0, 1, 0, 1, 0, 1, 1 },
+                       { 1, 0, 0, 1, 1, 1, 0, 1 }, { 1, 0, 0, 0, 0, 1, 1, 0 } };
 
-    int n = countries.Length;
+        //
+        // Decision variables
+        //
 
-    // the incidence matrix (neighbours)
-    int[,] mat = {{0, 1, 0, 1, 0, 0, 1, 1},
-                  {1, 0, 0, 1, 0, 0, 0, 0},
-                  {0, 0, 0, 0, 1, 1, 0, 0},
-                  {1, 1, 0, 0, 0, 0, 1, 0},
-                  {0, 0, 1, 0, 0, 1, 1, 0},
-                  {0, 0, 1, 0, 1, 0, 1, 1},
-                  {1, 0, 0, 1, 1, 1, 0, 1},
-                  {1, 0, 0, 0, 0, 1, 1, 0}};
+        // First army
+        IntVar[] x = solver.MakeIntVarArray(n, 0, 1, "x");
 
-    //
-    // Decision variables
-    //
+        // Second (reserve) army
+        IntVar[] y = solver.MakeIntVarArray(n, 0, 1, "y");
 
-    // First army
-    IntVar[] x = solver.MakeIntVarArray(n, 0, 1, "x");
+        // total number of armies
+        IntVar num_armies = (x.Sum() + y.Sum()).Var();
 
-    // Second (reserve) army
-    IntVar[] y = solver.MakeIntVarArray(n, 0, 1, "y");
+        //
+        // Constraints
+        //
 
-    // total number of armies
-    IntVar num_armies = (x.Sum() + y.Sum()).Var();
+        //
+        //  Constraint 1: There is always an army in a city
+        //                (+ maybe a backup)
+        //                Or rather: Is there a backup, there
+        //                must be an an army
+        //
+        for (int i = 0; i < n; i++)
+        {
+            solver.Add(x[i] >= y[i]);
+        }
 
-
-    //
-    // Constraints
-    //
-
-    //
-    //  Constraint 1: There is always an army in a city
-    //                (+ maybe a backup)
-    //                Or rather: Is there a backup, there
-    //                must be an an army
-    //
-    for(int i = 0; i < n; i++) {
-      solver.Add(x[i] >= y[i]);
-    }
-
-    //
-    // Constraint 2: There should always be an backup
-    //               army near every city
-    //
-    for(int i = 0; i < n; i++) {
-      IntVar[] count_neighbours = (
-                                   from j in Enumerable.Range(0, n)
-                                   where mat[i,j] == 1
-                                   select(y[j])).ToArray();
+        //
+        // Constraint 2: There should always be an backup
+        //               army near every city
+        //
+        for (int i = 0; i < n; i++)
+        {
+      IntVar[] count_neighbours =
+          (from j in Enumerable.Range(0, n) where mat[i, j] == 1 select(y[j]))
+              .ToArray();
 
       solver.Add((x[i] + count_neighbours.Sum()) >= 1);
-
-    }
-
-
-    //
-    // objective
-    //
-    OptimizeVar objective = num_armies.Minimize(1);
-
-
-    //
-    // Search
-    //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.INT_VAR_DEFAULT,
-                                          Solver.INT_VALUE_DEFAULT);
-
-    solver.NewSearch(db, objective);
-
-    while (solver.NextSolution()) {
-      Console.WriteLine("num_armies: " + num_armies.Value());
-      for(int i = 0; i < n; i++) {
-        if (x[i].Value() == 1) {
-          Console.Write("Army: " + countries[i] + " ");
         }
 
-        if (y[i].Value() == 1) {
-          Console.WriteLine(" Reverse army: " + countries[i]);
-        }
-      }
-      Console.WriteLine("\n");
+        //
+        // objective
+        //
+        OptimizeVar objective = num_armies.Minimize(1);
 
+        //
+        // Search
+        //
+        DecisionBuilder db = solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+
+        solver.NewSearch(db, objective);
+
+        while (solver.NextSolution())
+        {
+            Console.WriteLine("num_armies: " + num_armies.Value());
+            for (int i = 0; i < n; i++)
+            {
+                if (x[i].Value() == 1)
+                {
+                    Console.Write("Army: " + countries[i] + " ");
+                }
+
+                if (y[i].Value() == 1)
+                {
+                    Console.WriteLine(" Reverse army: " + countries[i]);
+                }
+            }
+            Console.WriteLine("\n");
+        }
+
+        Console.WriteLine("\nSolutions: {0}", solver.Solutions());
+        Console.WriteLine("WallTime: {0}ms", solver.WallTime());
+        Console.WriteLine("Failures: {0}", solver.Failures());
+        Console.WriteLine("Branches: {0} ", solver.Branches());
+
+        solver.EndSearch();
     }
 
-    Console.WriteLine("\nSolutions: {0}", solver.Solutions());
-    Console.WriteLine("WallTime: {0}ms", solver.WallTime());
-    Console.WriteLine("Failures: {0}", solver.Failures());
-    Console.WriteLine("Branches: {0} ", solver.Branches());
-
-    solver.EndSearch();
-
-  }
-
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+    public static void Main(String[] args)
+    {
+        Solve();
+    }
 }

@@ -62,9 +62,6 @@ the compiler environment of your choice.<br>You can either build OR-Tools with
 CMake as a standalone project or it can be incorporated into an existing CMake
  project.
 
-**warning: Currently OR-Tools CMake doesn't support Java nor .Net, please use
-the Makefile based build instead.**
-
 ## [Dependencies](#deps)
 
 OR-Tools depends on severals mandatory libraries. You can compile them all at
@@ -73,24 +70,25 @@ compile few of them using the options below.
 
 * ZLIB (`BUILD_ZLIB`),
 * Google Abseil-cpp (`BUILD_absl`),
-* Google Gflags (`BUILD_gflags`),
-* Google Glog (`BUILD_glog`),
 * Google Protobuf (`BUILD_Protobuf`),
-* SCIP (`BUILD_SCIP`),
-* COIN-OR CoinUtils (`BUILD_CoinUtils`),
-* COIN-OR Osi (`BUILD_Osi`),
-* COIN-OR Clp (`BUILD_Clp`),
-* COIN-OR Cgl (`BUILD_Cgl`),
-* COIN-OR Cbc (`BUILD_Cbc`),
+* SCIP (`BUILD_SCIP`),<br>
+  note: You can disable the support of SCIP solvers
+  by using `-DUSE_SCIP=OFF` (`ON` by default).
 
-note: You can disable the support of COIN-OR solvers (i.e. Cbc and Clp solver)
-by using `-DUSE_COINOR=OFF`.
+* COIN-OR solvers,
+  * COIN-OR CoinUtils (`BUILD_CoinUtils`),
+  * COIN-OR Osi (`BUILD_Osi`),
+  * COIN-OR Clp (`BUILD_Clp`),
+  * COIN-OR Cgl (`BUILD_Cgl`),
+  * COIN-OR Cbc (`BUILD_Cbc`),<br>
+  note: You can disable the support of COIN-OR solvers (i.e. Cbc and Clp solver)
+  by using `-DUSE_COINOR=OFF` (`ON` by default).
 
 OR-Tools also have few (ed compile time) optional solvers support (disabled by
 default):
 
-*   CPLEX (`USE_CPLEX`),
-*   XPRESS (`USE_XPRESS`)
+* CPLEX (`USE_CPLEX`),
+* XPRESS (`USE_XPRESS`)
 
 **warning: Since these solvers require license and are proprietary, we can't
 test it on public CI and support can be broken.**
@@ -116,7 +114,7 @@ note: You may need to set
 in order for CMake to find your OR-Tools installation.
 
 ```cmake
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.14)
 project(myproj VERSION 1.0)
 
 find_package(ortools CONFIG REQUIRED)
@@ -143,7 +141,7 @@ Note: The **ortools::ortools** target is in this case an ALIAS library target
 for the **ortools** library target.
 
 ```cmake
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.14)
 project(myproj VERSION 1.0)
 
 add_subdirectory(or-tools)
@@ -163,7 +161,7 @@ instead. Note: The **ortools::ortools** target is in this case an ALIAS library
 target for the **ortools** library target.
 
 ```cmake
-cmake_minimum_required(VERSION 3.11.4)
+cmake_minimum_required(VERSION 3.14)
 project(myproj VERSION 1.0 LANGUAGES CXX)
 
 include(FetchContent)

@@ -162,14 +162,38 @@ class CircuitCoveringPropagator : PropagatorInterface, ReversibleInterface {
   std::vector<bool> visited_;
 };
 
+// Changes the node indices so that we get a graph in [0, num_nodes) where every
+// node has at least one incoming or outgoing arc. Returns the number of nodes.
+template <class IntContainer>
+int ReindexArcs(IntContainer* tails, IntContainer* heads) {
+  const int num_arcs = tails->size();
+  if (num_arcs == 0) return 0;
+
+  // Put all nodes in a set.
+  std::set<int> nodes;
+  for (int arc = 0; arc < num_arcs; ++arc) {
+    nodes.insert((*tails)[arc]);
+    nodes.insert((*heads)[arc]);
+  }
+
+  // Compute the new indices while keeping a stable order.
+  int new_index = 0;
+  absl::flat_hash_map<int, int> mapping;
+  for (const int node : nodes) {
+    mapping[node] = new_index++;
+  }
+
+  // Remap the arcs.
+  for (int arc = 0; arc < num_arcs; ++arc) {
+    (*tails)[arc] = mapping[(*tails)[arc]];
+    (*heads)[arc] = mapping[(*heads)[arc]];
+  }
+  return nodes.size();
+}
+
 // ============================================================================
 // Model based functions.
 // ============================================================================
-
-// Changes the node indices so that we get a graph in [0, num_nodes) where every
-// node has at least one incoming or outgoing arc. Returns the number of nodes.
-int ReindexArcs(std::vector<int>* tails, std::vector<int>* heads,
-                std::vector<Literal>* literals);
 
 // This just wraps CircuitPropagator. See the comment there to see what this
 // does. Note that any nodes with no outoing or no incoming arc will cause the

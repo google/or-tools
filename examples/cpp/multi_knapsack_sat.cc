@@ -25,8 +25,8 @@
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 
-DEFINE_int32(size, 16, "scaling factor of the model");
-DEFINE_string(params, "", "Sat parameters");
+ABSL_FLAG(int, size, 16, "scaling factor of the model");
+ABSL_FLAG(std::string, params, "", "Sat parameters");
 
 namespace operations_research {
 namespace sat {
@@ -49,7 +49,7 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
   const int num_items = scaling * kNumItems;
   const int num_bins = scaling;
 
-  std::vector<std::vector<BoolVar>> items_in_bins(num_bins);
+  std::vector<std::vector<BoolVar> > items_in_bins(num_bins);
   for (int b = 0; b < num_bins; ++b) {
     for (int i = 0; i < num_items; ++i) {
       items_in_bins[b].push_back(builder.NewBoolVar());
@@ -107,7 +107,8 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  operations_research::sat::MultiKnapsackSat(FLAGS_size, FLAGS_params);
+  absl::ParseCommandLine(argc, argv);
+  operations_research::sat::MultiKnapsackSat(absl::GetFlag(FLAGS_size),
+                                             absl::GetFlag(FLAGS_params));
   return EXIT_SUCCESS;
 }

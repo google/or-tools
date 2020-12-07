@@ -30,20 +30,17 @@ void RecordLPRelaxationValues(Model* model) {
   std::vector<double> relaxation_values(
       lp_vars.model_vars_size, std::numeric_limits<double>::infinity());
 
-  IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
-
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   for (const LPVariable& lp_var : lp_vars.vars) {
     const IntegerVariable positive_var = lp_var.positive_var;
-    const int model_var = lp_var.model_var;
     if (integer_trail->IsCurrentlyIgnored(positive_var)) continue;
 
     LinearProgrammingConstraint* lp = lp_var.lp;
     if (lp == nullptr || !lp->HasSolution()) continue;
-    const double lp_value = lp->GetSolutionValue(positive_var);
 
-    relaxation_values[model_var] = lp_value;
+    relaxation_values[lp_var.model_var] = lp->GetSolutionValue(positive_var);
   }
-  lp_solutions->NewLPSolution(relaxation_values);
+  lp_solutions->NewLPSolution(std::move(relaxation_values));
 }
 
 namespace {

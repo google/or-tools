@@ -20,8 +20,10 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/types/optional.h"
 #include "ortools/base/cleanup.h"
@@ -45,34 +47,6 @@ inline absl::Status GurobiCodeToUtilStatus(int error_code,
   return absl::InvalidArgumentError(absl::StrFormat(
       "Gurobi error code %d (file '%s', line %d) on '%s': %s", error_code,
       source_file, source_line, statement, GRBgeterrormsg(env)));
-}
-
-absl::Status SetSolverSpecificParameters(const std::string& parameters,
-                                         GRBenv* gurobi) {
-  for (const auto parameter :
-       absl::StrSplit(parameters, '\n', absl::SkipWhitespace())) {
-    if (parameter.empty()) return absl::OkStatus();
-    if (*parameter.begin() == '#') return absl::OkStatus();
-    std::vector<std::string> key_value =
-        absl::StrSplit(parameter, ' ', absl::SkipWhitespace());
-    if (key_value.size() != 2) {
-      return absl::InvalidArgumentError(
-          absl::StrFormat("Cannot parse parameter '%s'. Expected format is "
-                          "'ParameterName value'",
-                          parameter));
-    }
-
-    std::string name = key_value[0];
-    std::string value = key_value[1];
-
-    if (GRBsetparam(gurobi, name.c_str(), value.c_str()) != GRB_OK) {
-      return absl::InvalidArgumentError(
-          absl::StrFormat("Error setting parameter '%s' to value '%s': %s",
-                          name, value, GRBgeterrormsg(gurobi)));
-    }
-  }
-
-  return absl::OkStatus();
 }
 
 int AddIndicatorConstraint(const MPGeneralConstraintProto& gen_cst,
@@ -245,39 +219,85 @@ int AddMaxConstraint(const MPGeneralConstraintProto& gen_cst,
 }
 }  // namespace
 
+absl::Status SetSolverSpecificParameters(const std::string& parameters,
+                                         GRBenv* gurobi) {
+  if (parameters.empty()) return absl::OkStatus();
+  std::vector<std::string> error_messages;
+  for (absl::string_view line : absl::StrSplit(parameters, '\n')) {
+    // Comment tokens end at the next new-line, or the end of the string.
+    // The first character must be '#'
+    if (line[0] == '#') continue;
+    for (absl::string_view token :
+         absl::StrSplit(line, ',', absl::SkipWhitespace())) {
+      if (token.empty()) continue;
+      std::vector<std::string> key_value =
+          absl::StrSplit(token, absl::ByAnyChar(" ="), absl::SkipWhitespace());
+      // If one parameter fails, we keep processing the list of parameters.
+      if (key_value.size() != 2) {
+        const std::string current_message =
+            absl::StrCat("Cannot parse parameter '", token,
+                         "'. Expected format is 'ParameterName value' or "
+                         "'ParameterName=value'");
+        error_messages.push_back(current_message);
+        continue;
+      }
+      const int gurobi_code =
+          GRBsetparam(gurobi, key_value[0].c_str(), key_value[1].c_str());
+      if (gurobi_code != GRB_OK) {
+        const std::string current_message = absl::StrCat(
+            "Error setting parameter '", key_value[0], "' to value '",
+            key_value[1], "': ", GRBgeterrormsg(gurobi));
+        error_messages.push_back(current_message);
+        continue;
+      }
+      VLOG(2) << absl::StrCat("Set parameter '", key_value[0], "' to value '",
+                              key_value[1]);
+    }
+  }
+
+  if (error_messages.empty()) return absl::OkStatus();
+  return absl::InvalidArgumentError(absl::StrJoin(error_messages, "\n"));
+}
+
 absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
-    const MPModelRequest& request) {
+    const MPModelRequest& request, GRBenv* gurobi_env) {
   MPSolutionResponse response;
   const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
       ExtractValidMPModelOrPopulateResponseStatus(request, &response);
   if (!optional_model) return response;
   const MPModelProto& model = optional_model->get();
 
-  if (model.has_solution_hint()) {
-    // TODO(user): Support solution hints.
-    return absl::UnimplementedError("Solution hint not supported.");
+  // We set `gurobi_env` to point to a new environment if no existing one is
+  // provided. We must make sure that we free this environment when we exit this
+  // function.
+  bool gurobi_env_was_created = false;
+  auto gurobi_env_deleter = absl::MakeCleanup([&]() {
+    if (gurobi_env_was_created && gurobi_env != nullptr) {
+      GRBfreeenv(gurobi_env);
+    }
+  });
+  if (gurobi_env == nullptr) {
+    // We activate the deletion of `gurobi_env` before making the call to
+    // `LoadGurobiEnvironment()` since this function still returns a non null
+    // value even when it fails.
+    gurobi_env_was_created = true;
+    RETURN_IF_ERROR(LoadGurobiEnvironment(&gurobi_env));
   }
 
-  GRBenv* gurobi = nullptr;
   GRBmodel* gurobi_model = nullptr;
-
-// `gurobi` references ther GRBenv variable defined above.
-#define RETURN_IF_GUROBI_ERROR(x) \
-  RETURN_IF_ERROR(GurobiCodeToUtilStatus(x, __FILE__, __LINE__, #x, gurobi));
-
-  auto delete_gurobi_objects = [&]() -> absl::Status {
-    // Release all created pointers.
-    if (gurobi_model) RETURN_IF_GUROBI_ERROR(GRBfreemodel(gurobi_model));
-    if (gurobi) GRBfreeenv(gurobi);
-    return absl::OkStatus();
-  };
-  auto gurobi_deleter = absl::MakeCleanup([delete_gurobi_objects]() {
-    const absl::Status deleter_status = delete_gurobi_objects();
-    LOG_IF(DFATAL, !deleter_status.ok()) << deleter_status;
+  auto gurobi_model_deleter = absl::MakeCleanup([&]() {
+    const int error_code = GRBfreemodel(gurobi_model);
+    LOG_IF(DFATAL, error_code != GRB_OK)
+        << "GRBfreemodel failed with error " << error_code << ": "
+        << GRBgeterrormsg(gurobi_env);
   });
 
-  RETURN_IF_ERROR(LoadGurobiEnvironment(&gurobi));
-  RETURN_IF_GUROBI_ERROR(GRBnewmodel(gurobi, &gurobi_model,
+// `gurobi_env` references ther GRBenv argument.
+#define RETURN_IF_GUROBI_ERROR(x) \
+  RETURN_IF_ERROR(                \
+      GurobiCodeToUtilStatus(x, __FILE__, __LINE__, #x, gurobi_env));
+
+  RETURN_IF_GUROBI_ERROR(GRBnewmodel(gurobi_env, &gurobi_model,
                                      model.name().c_str(),
                                      /*numvars=*/0,
                                      /*obj=*/nullptr,
@@ -291,7 +311,8 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
         request.solver_specific_parameters(), GRBgetenv(gurobi_model));
     if (!parameters_status.ok()) {
       response.set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
-      response.set_status_str(parameters_status.message().data());
+      response.set_status_str(
+          std::string(parameters_status.message()));  // NOLINT
       return response;
     }
   }
@@ -327,6 +348,13 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
                    /*obj=*/obj_coeffs.data(),
                    /*lb=*/lb.data(), /*ub=*/ub.data(), /*vtype=*/ctype.data(),
                    /*varnames=*/const_cast<char**>(varnames.data())));
+
+    // Set solution hints if any.
+    for (int i = 0; i < model.solution_hint().var_index_size(); ++i) {
+      RETURN_IF_GUROBI_ERROR(GRBsetdblattrelement(
+          gurobi_model, GRB_DBL_ATTR_START, model.solution_hint().var_index(i),
+          model.solution_hint().var_value(i)));
+    }
   }
 
   {

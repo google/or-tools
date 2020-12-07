@@ -27,13 +27,13 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/model.h"
 
-DEFINE_string(input, "", "Jobshop data file name.");
-DEFINE_string(params, "", "Sat parameters in text proto format.");
-DEFINE_bool(use_optional_variables, true,
-            "Whether we use optional variables for bounds of an optional "
-            "interval or not.");
-DEFINE_bool(display_model, false, "Display jobshop proto before solving.");
-DEFINE_bool(display_sat_model, false, "Display sat proto before solving.");
+ABSL_FLAG(std::string, input, "", "Jobshop data file name.");
+ABSL_FLAG(std::string, params, "", "Sat parameters in text proto format.");
+ABSL_FLAG(bool, use_optional_variables, true,
+          "Whether we use optional variables for bounds of an optional "
+          "interval or not.");
+ABSL_FLAG(bool, display_model, false, "Display jobshop proto before solving.");
+ABSL_FLAG(bool, display_sat_model, false, "Display sat proto before solving.");
 
 using operations_research::data::jssp::Job;
 using operations_research::data::jssp::JobPrecedence;
@@ -90,7 +90,7 @@ int64 ComputeHorizon(const JsspInputProblem& problem) {
 
 // Solve a JobShop scheduling problem using SAT.
 void Solve(const JsspInputProblem& problem) {
-  if (FLAGS_display_model) {
+  if (absl::GetFlag(FLAGS_display_model)) {
     LOG(INFO) << problem.DebugString();
   }
 
@@ -107,11 +107,11 @@ void Solve(const JsspInputProblem& problem) {
 
   const IntVar makespan = cp_model.NewIntVar(all_horizon);
 
-  std::vector<std::vector<IntervalVar>> machine_to_intervals(num_machines);
-  std::vector<std::vector<int>> machine_to_jobs(num_machines);
-  std::vector<std::vector<IntVar>> machine_to_starts(num_machines);
-  std::vector<std::vector<IntVar>> machine_to_ends(num_machines);
-  std::vector<std::vector<BoolVar>> machine_to_presences(num_machines);
+  std::vector<std::vector<IntervalVar> > machine_to_intervals(num_machines);
+  std::vector<std::vector<int> > machine_to_jobs(num_machines);
+  std::vector<std::vector<IntVar> > machine_to_starts(num_machines);
+  std::vector<std::vector<IntVar> > machine_to_ends(num_machines);
+  std::vector<std::vector<BoolVar> > machine_to_presences(num_machines);
   std::vector<IntVar> job_starts(num_jobs);
   std::vector<IntVar> job_ends(num_jobs);
   std::vector<IntVar> task_starts;
@@ -177,19 +177,19 @@ void Solve(const JsspInputProblem& problem) {
         for (int a = 0; a < num_alternatives; ++a) {
           const BoolVar presence = cp_model.NewBoolVar();
           const IntVar local_start =
-              FLAGS_use_optional_variables
+              absl::GetFlag(FLAGS_use_optional_variables)
                   ? cp_model.NewIntVar(Domain(hard_start, hard_end))
                   : start;
           const IntVar local_duration = cp_model.NewConstant(task.duration(a));
           const IntVar local_end =
-              FLAGS_use_optional_variables
+              absl::GetFlag(FLAGS_use_optional_variables)
                   ? cp_model.NewIntVar(Domain(hard_start, hard_end))
                   : end;
           const IntervalVar local_interval = cp_model.NewOptionalIntervalVar(
               local_start, local_duration, local_end, presence);
 
           // Link local and global variables.
-          if (FLAGS_use_optional_variables) {
+          if (absl::GetFlag(FLAGS_use_optional_variables)) {
             cp_model.AddEquality(start, local_start).OnlyEnforceIf(presence);
             cp_model.AddEquality(end, local_end).OnlyEnforceIf(presence);
 
@@ -329,14 +329,14 @@ void Solve(const JsspInputProblem& problem) {
   LOG(INFO) << "#jobs:" << num_jobs;
   LOG(INFO) << "horizon:" << horizon;
 
-  if (FLAGS_display_sat_model) {
+  if (absl::GetFlag(FLAGS_display_sat_model)) {
     LOG(INFO) << cp_model.Proto().DebugString();
   }
 
   LOG(INFO) << CpModelStats(cp_model.Proto());
 
   Model model;
-  model.Add(NewSatParameters(FLAGS_params));
+  model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
 
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
   LOG(INFO) << CpSolverResponseStats(response);
@@ -381,13 +381,13 @@ void Solve(const JsspInputProblem& problem) {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  if (FLAGS_input.empty()) {
+  absl::ParseCommandLine(argc, argv);
+  if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }
 
   operations_research::data::jssp::JsspParser parser;
-  CHECK(parser.ParseFile(FLAGS_input));
+  CHECK(parser.ParseFile(absl::GetFlag(FLAGS_input)));
   operations_research::sat::Solve(parser.problem());
   return EXIT_SUCCESS;
 }

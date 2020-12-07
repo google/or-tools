@@ -19,11 +19,11 @@
 
 #include "ortools/base/basictypes.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/random.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
@@ -174,7 +174,7 @@ class RelationGraphBasedNeighborhood : public NeighborhoodGenerator {
 
   // TODO(user): reuse by_variable_matrix_ from the LS? Note however than we
   // don't need the coefficients here.
-  gtl::ITIVector<VariableIndex, std::vector<ConstraintIndex>> columns_;
+  absl::StrongVector<VariableIndex, std::vector<ConstraintIndex>> columns_;
   MTRandom* random_;
 };
 

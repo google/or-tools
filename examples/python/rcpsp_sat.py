@@ -12,27 +12,24 @@
 # limitations under the License.
 """Sat based solver for the RCPSP problems (see rcpsp.proto)."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-import argparse
 import collections
 import time
 
 from google.protobuf import text_format
+from absl import app
+from absl import flags
 from ortools.data import pywraprcpsp
 from ortools.sat.python import cp_model
 
-PARSER = argparse.ArgumentParser()
-PARSER.add_argument(
-    '--input', default="", help='Input file to parse and solve.')
-PARSER.add_argument(
-    '--output_proto',
-    default="",
-    help='Output file to write the cp_model'
-    'proto to.')
-PARSER.add_argument('--params', default="", help='Sat solver parameters.')
+FLAGS = flags.FLAGS
+
+flags.DEFINE_string('input', '', 'Input file to parse and solve.')
+flags.DEFINE_string('output_proto', '',
+                    'Output file to write the cp_model proto to.')
+flags.DEFINE_string('params', '', 'Sat solver parameters.')
+flags.DEFINE_bool('use_interval_makespan', True,
+                  'Whether we encode the makespan using an interval or not.')
+flags.DEFINE_integer('horizon', -1, 'Force horizon.')
 
 
 class SolutionPrinter(cp_model.CpSolverSolutionCallback):
@@ -52,7 +49,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__solution_count += 1
 
 
-def solve_rcpsp(problem, proto_file, params):
+def SolveRcpsp(problem, proto_file, params):
     """Parse and solve a given RCPSP problem in proto format."""
 
     # Determine problem type.
@@ -80,6 +77,8 @@ def solve_rcpsp(problem, proto_file, params):
     all_resources = range(num_resources)
 
     horizon = problem.deadline if problem.deadline != -1 else problem.horizon
+    if FLAGS.horizon > 0:
+        horizon = FLAGS.horizon
     if horizon == -1:  # Naive computation.
         horizon = sum(max(r.duration for r in t.recipes) for t in problem.tasks)
         if problem.is_rcpsp_max:
@@ -189,6 +188,9 @@ def solve_rcpsp(problem, proto_file, params):
 
     # Create makespan variable
     makespan = model.NewIntVar(0, horizon, 'makespan')
+    interval_makespan = model.NewIntervalVar(
+        makespan, model.NewIntVar(1, horizon, 'interval_makespan_size'),
+        model.NewConstant(horizon + 1), 'interval_makespan')
 
     # Add precedences.
     if problem.is_rcpsp_max:
@@ -217,6 +219,8 @@ def solve_rcpsp(problem, proto_file, params):
         for t in all_active_tasks:
             for n in problem.tasks[t].successors:
                 if n == num_tasks - 1:
+                    # TODO(user): I guess these are still useful, but we might want to
+                    #    experiment with removing them.
                     model.Add(task_ends[t] <= makespan)
                 else:
                     model.Add(task_ends[t] <= task_starts[n])
@@ -241,13 +245,19 @@ def solve_rcpsp(problem, proto_file, params):
             max_cost += c * resource.unit_cost
         elif resource.renewable:
             if intervals_per_resource[r]:
-                model.AddCumulative(intervals_per_resource[r],
-                                    demands_per_resource[r], c)
+                if FLAGS.use_interval_makespan:
+                    model.AddCumulative(
+                        intervals_per_resource[r] + [interval_makespan],
+                        demands_per_resource[r] + [c], c)
+                else:
+                    model.AddCumulative(intervals_per_resource[r],
+                                        demands_per_resource[r], c)
         elif presences_per_resource[r]:  # Non empty non renewable resource.
             if problem.is_consumer_producer:
-                model.AddReservoirConstraint(
-                    starts_per_resource[r], demands_per_resource[r],
-                    resource.min_capacity, resource.max_capacity)
+                model.AddReservoirConstraint(starts_per_resource[r],
+                                             demands_per_resource[r],
+                                             resource.min_capacity,
+                                             resource.max_capacity)
             else:
                 model.Add(
                     sum(presences_per_resource[r][i] *
@@ -257,8 +267,9 @@ def solve_rcpsp(problem, proto_file, params):
     # Objective.
     if problem.is_resource_investment:
         objective = model.NewIntVar(0, max_cost, 'capacity_costs')
-        model.Add(objective == sum(problem.resources[i].unit_cost * capacities[
-            i] for i in range(len(capacities))))
+        model.Add(objective == sum(problem.resources[i].unit_cost *
+                                   capacities[i]
+                                   for i in range(len(capacities))))
     else:
         objective = makespan
 
@@ -272,17 +283,17 @@ def solve_rcpsp(problem, proto_file, params):
     # Solve model.
     solver = cp_model.CpSolver()
     if params:
-        text_format.Merge(params, solver.parameters)
+        text_format.Parse(params, solver.parameters)
     solution_printer = SolutionPrinter()
     solver.SolveWithSolutionCallback(model, solution_printer)
     print(solver.ResponseStats())
 
 
-def main(args):
+def main(_):
     rcpsp_parser = pywraprcpsp.RcpspParser()
-    rcpsp_parser.ParseFile(args.input)
-    solve_rcpsp(rcpsp_parser.Problem(), args.output_proto, args.params)
+    rcpsp_parser.ParseFile(FLAGS.input)
+    SolveRcpsp(rcpsp_parser.Problem(), FLAGS.output_proto, FLAGS.params)
 
 
 if __name__ == '__main__':
-    main(PARSER.parse_args())
+    app.run(main)

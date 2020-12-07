@@ -21,12 +21,22 @@ Constraints:
 - 15 min cleaning time after the last shift
 - 2 min waiting time after each shift for passenger boarding and alighting
 """
-from __future__ import print_function
 
 import collections
 import math
 
+from google.protobuf import text_format
+from absl import app
+from absl import flags
 from ortools.sat.python import cp_model
+
+FLAGS = flags.FLAGS
+
+flags.DEFINE_string('output_proto', '',
+                    'Output file to write the cp_model proto to.')
+flags.DEFINE_string('params', 'num_search_workers:8,log_search_progress:true',
+                    'Sat solver parameters.')
+flags.DEFINE_integer('instance', 1, 'Instance to select (1, 2, 3).', 1, 3)
 
 SAMPLE_SHIFTS_SMALL = [
     #
@@ -1652,22 +1662,39 @@ SAMPLE_SHIFTS_LARGE = [
     [1355, '00:57', '01:07', 1497, 1507, 10]
 ]  # yapf:disable
 
-
-SAMPLE_SHIFTS = SAMPLE_SHIFTS_MEDIUM
+# pytype: disable=wrong-arg-types
 
 
 def bus_driver_scheduling(minimize_drivers, max_num_drivers):
     """Optimize the bus driver scheduling problem.
 
-    This model has two modes.
+  This model has two modes.
 
-    If minimize_drivers == True, the objective will be to find the minimal
-    number of drivers, independently of the working times of each drivers.
+  If minimize_drivers == True, the objective will be to find the minimal
+  number of drivers, independently of the working times of each drivers.
 
-    Otherwise, will will create max_num_drivers non optional drivers, and
-    minimize the sum of working times of these drivers.
-    """
-    num_shifts = len(SAMPLE_SHIFTS)
+  Otherwise, will will create max_num_drivers non optional drivers, and
+  minimize the sum of working times of these drivers.
+
+  Args:
+    minimize_drivers: A Boolean parameter specifying the objective of the
+      problem. If True, it tries to minimize the number of used drivers. If
+      false, it minimizes the sum of working times per workers.
+    max_num_drivers: This number specifies the exact number of non optional
+      drivers to use. This is only used if 'minimize_drivers' is False.
+
+  Returns:
+      The objective value of the model.
+  """
+    shifts = None
+    if FLAGS.instance == 1:
+        shifts = SAMPLE_SHIFTS_SMALL
+    elif FLAGS.instance == 2:
+        shifts = SAMPLE_SHIFTS_MEDIUM
+    elif FLAGS.instance == 3:
+        shifts = SAMPLE_SHIFTS_LARGE
+
+    num_shifts = len(shifts)
 
     # All durations are in minutes.
     max_driving_time = 540  # 8 hours.
@@ -1680,12 +1707,12 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
     cleanup_time = 15
 
     # Computed data.
-    total_driving_time = sum(shift[5] for shift in SAMPLE_SHIFTS)
-    min_num_drivers = int(
-        math.ceil(total_driving_time * 1.0 / max_driving_time))
+    total_driving_time = sum(shift[5] for shift in shifts)
+    min_num_drivers = int(math.ceil(total_driving_time * 1.0 /
+                                    max_driving_time))
     num_drivers = 2 * min_num_drivers if minimize_drivers else max_num_drivers
-    min_start_time = min(shift[3] for shift in SAMPLE_SHIFTS)
-    max_end_time = max(shift[4] for shift in SAMPLE_SHIFTS)
+    min_start_time = min(shift[3] for shift in shifts)
+    max_end_time = max(shift[4] for shift in shifts)
 
     print('Bus driver scheduling')
     print('  num shifts =', num_shifts)
@@ -1760,7 +1787,7 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
             performed[d, s] = model.NewBoolVar('performed_%i_%i' % (d, s))
 
         for s in range(num_shifts):
-            shift = SAMPLE_SHIFTS[s]
+            shift = shifts[s]
             duration = shift[5]
 
             # Arc from source to shift.
@@ -1772,10 +1799,9 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
             shared_incoming_literals[s].append(source_lit)
             model.Add(start_times[d] == shift[3] -
                       setup_time).OnlyEnforceIf(source_lit)
-            model.Add(
-                total_driving[d, s] == duration).OnlyEnforceIf(source_lit)
-            model.Add(
-                no_break_driving[d, s] == duration).OnlyEnforceIf(source_lit)
+            model.Add(total_driving[d, s] == duration).OnlyEnforceIf(source_lit)
+            model.Add(no_break_driving[d,
+                                       s] == duration).OnlyEnforceIf(source_lit)
             starting_shifts[d, s] = source_lit
 
             # Arc from shift to sink
@@ -1787,14 +1813,15 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
             incoming_sink_literals.append(sink_lit)
             model.Add(end_times[d] == shift[4] +
                       cleanup_time).OnlyEnforceIf(sink_lit)
-            model.Add(driving_times[d] == total_driving[d, s]).OnlyEnforceIf(
-                sink_lit)
+            model.Add(
+                driving_times[d] == total_driving[d, s]).OnlyEnforceIf(sink_lit)
 
             # Node not performed
             #    - set both driving times to 0
             #    - add a looping arc on the node
-            model.Add(total_driving[d, s] == 0).OnlyEnforceIf(
-                performed[d, s].Not())
+            model.Add(total_driving[d,
+                                    s] == 0).OnlyEnforceIf(performed[d,
+                                                                     s].Not())
             model.Add(no_break_driving[d, s] == 0).OnlyEnforceIf(
                 performed[d, s].Not())
             incoming_literals[s].append(performed[d, s].Not())
@@ -1811,7 +1838,7 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
                 performed[d, s])
 
             for o in range(num_shifts):
-                other = SAMPLE_SHIFTS[o]
+                other = shifts[o]
                 delay = other[3] - shift[4]
                 if delay < min_delay_between_shifts:
                     continue
@@ -1826,9 +1853,8 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
                     model.Add(
                         no_break_driving[d, o] == other[5]).OnlyEnforceIf(lit)
                 else:
-                    model.Add(
-                        no_break_driving[d, o] == no_break_driving[d, s] +
-                        other[5]).OnlyEnforceIf(lit)
+                    model.Add(no_break_driving[d, o] == no_break_driving[d, s] +
+                              other[5]).OnlyEnforceIf(lit)
 
                 # Add arc
                 outgoing_literals[s].append(lit)
@@ -1890,26 +1916,32 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
                                  working_drivers[d + 1].Not())
 
     # Redundant constraints: sum of driving times = sum of shift driving times
-    model.Add(sum(driving_times) == total_driving_time)
+    model.Add(cp_model.LinearExpr.Sum(driving_times) == total_driving_time)
     if not minimize_drivers:
         model.Add(
-            sum(working_times) == total_driving_time +
+            cp_model.LinearExpr.Sum(working_times) == total_driving_time +
             num_drivers * (setup_time + cleanup_time) +
             cp_model.LinearExpr.ScalProd(delay_literals, delay_weights))
 
     if minimize_drivers:
         # Minimize the number of working drivers
-        model.Minimize(sum(working_drivers))
+        model.Minimize(cp_model.LinearExpr.Sum(working_drivers))
     else:
         # Minimize the sum of delays between tasks, which in turns minimize the
         # sum of working times as the total driving time is fixed
         model.Minimize(
             cp_model.LinearExpr.ScalProd(delay_literals, delay_weights))
 
+    if not minimize_drivers and FLAGS.output_proto:
+        print('Writing proto to %s' % FLAGS.output_proto)
+        with open(FLAGS.output_proto, 'w') as text_file:
+            text_file.write(str(model))
+
     # Solve model.
     solver = cp_model.CpSolver()
-    solver.parameters.log_search_progress = True # not minimize_drivers
-    solver.parameters.num_search_workers = 8
+    if FLAGS.params:
+        text_format.Parse(FLAGS.params, solver.parameters)
+
     status = solver.Solve(model)
 
     if status != cp_model.OPTIMAL and status != cp_model.FEASIBLE:
@@ -1929,7 +1961,7 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
 
         first = True
         for s in range(num_shifts):
-            shift = SAMPLE_SHIFTS[s]
+            shift = shifts[s]
 
             if not solver.BooleanValue(performed[d, s]):
                 continue
@@ -1939,18 +1971,22 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
             # no_break_driving which was reinitialized in that case.
             if solver.Value(no_break_driving[d, s]) == shift[5] and not first:
                 print('    **break**')
-            print('    shift ', shift[0], ':', shift[1], "-", shift[2])
+            print('    shift ', shift[0], ':', shift[1], '-', shift[2])
             first = False
 
     return int(solver.ObjectiveValue())
 
 
-def optimize_bus_driver_allocation():
+def main(_):
     """Optimize the bus driver allocation in two passes."""
     print('----------- first pass: minimize the number of drivers')
     num_drivers = bus_driver_scheduling(True, -1)
-    print('----------- second pass: minimize the sum of working times')
-    bus_driver_scheduling(False, num_drivers)
+    if num_drivers == -1:
+        print('no solution found, skipping the final step')
+    else:
+        print('----------- second pass: minimize the sum of working times')
+        bus_driver_scheduling(False, num_drivers)
 
 
-optimize_bus_driver_allocation()
+if __name__ == '__main__':
+    app.run(main)

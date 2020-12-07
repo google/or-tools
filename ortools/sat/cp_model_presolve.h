@@ -122,6 +122,7 @@ class CpModelPresolver {
   bool RemoveSingletonInLinear(ConstraintProto* ct);
   bool PresolveSmallLinear(ConstraintProto* ct);
   bool PresolveLinearOnBooleans(ConstraintProto* ct);
+  void PresolveLinearEqualityModuloTwo(ConstraintProto* ct);
 
   // SetPPC is short for set packing, partitioning and covering constraints.
   // These are sum of booleans <=, = and >= 1 respectively.
@@ -140,7 +141,9 @@ class CpModelPresolver {
   void ExtractAtMostOneFromLinear(ConstraintProto* ct);
 
   void DivideLinearByGcd(ConstraintProto* ct);
-  void ExtractEnforcementLiteralFromLinearConstraint(ConstraintProto* ct);
+
+  void ExtractEnforcementLiteralFromLinearConstraint(int ct_index,
+                                                     ConstraintProto* ct);
 
   // Extracts cliques from bool_and and small at_most_one constraints and
   // transforms them into maximal cliques.

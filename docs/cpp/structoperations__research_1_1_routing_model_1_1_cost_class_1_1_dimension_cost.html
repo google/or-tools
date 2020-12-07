@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -96,7 +96,7 @@ $(document).ready(function(){initNavTree('structoperations__research_1_1_routing
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>SUBTLE: The vehicle's fixed cost is skipped on purpose here, because we can afford to do so: </p>
 <ul>
-<li>We don't really care about creating "strict" equivalence classes; all we care about is to: 1) compress the space of cost callbacks so that we can cache them more efficiently. 2) have a smaller IntVar domain thanks to using a "cost class var" instead of the vehicle var, so that we reduce the search space. Both of these are an incentive for <em>fewer</em> cost classes. Ignoring the fixed costs can only be good in that regard.</li>
+<li>We don't really care about creating "strict" equivalence classes; all we care about is to: 1) compress the space of cost callbacks so that we can cache them more efficiently. 2) have a smaller <a class="el" href="classoperations__research_1_1_int_var.html" title="The class IntVar is a subset of IntExpr.">IntVar</a> domain thanks to using a "cost class var" instead of the vehicle var, so that we reduce the search space. Both of these are an incentive for <em>fewer</em> cost classes. Ignoring the fixed costs can only be good in that regard.</li>
 <li>The fixed costs are only needed when evaluating the cost of the first arc of the route, in which case we know the vehicle, since we have the route's start node. Only dimensions that have non-zero cost evaluator and a non-zero cost coefficient (in this cost class) are listed here. Since we only need their transit evaluator (the raw version that takes var index, not <a class="el" href="namespaceoperations__research_1_1_node.html">Node</a> Index) and their span cost coefficient, we just store those. This is sorted by the natural operator &lt; (and <em>not</em> by DimensionIndex). </li>
 </ul>
 

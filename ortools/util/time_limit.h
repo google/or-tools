@@ -38,13 +38,13 @@
  * Enables changing the behavior of the TimeLimit class to use -b usertime
  * instead of \b walltime. This is mainly useful for benchmarks.
  */
-DECLARE_bool(time_limit_use_usertime);
+ABSL_DECLARE_FLAG(bool, time_limit_use_usertime);
 
 /**
  * Adds support to measure the number of executed instructions in the TimeLimit
  * class.
  */
-DECLARE_bool(time_limit_use_instruction_count);
+ABSL_DECLARE_FLAG(bool, time_limit_use_instruction_count);
 
 namespace operations_research {
 
@@ -483,12 +483,12 @@ inline void TimeLimit::ResetTimers(double limit_in_seconds,
   deterministic_limit_ = deterministic_limit;
   instruction_limit_ = instruction_limit;
 
-  if (FLAGS_time_limit_use_usertime) {
+  if (absl::GetFlag(FLAGS_time_limit_use_usertime)) {
     user_timer_.Start();
     limit_in_seconds_ = limit_in_seconds;
   }
 #ifdef HAS_PERF_SUBSYSTEM
-  if (FLAGS_time_limit_use_instruction_count) {
+  if (absl::GetFlag(FLAGS_time_limit_use_instruction_count)) {
     perf_subsystem_.CleanUp();
     perf_subsystem_.AddEvent(GetInstructionRetiredEventName());
     perf_subsystem_.StartCollecting();
@@ -521,7 +521,7 @@ inline void TimeLimit::MergeWithGlobalTimeLimit(TimeLimit* other) {
 
 inline double TimeLimit::ReadInstructionCounter() {
 #ifdef HAS_PERF_SUBSYSTEM
-  if (FLAGS_time_limit_use_instruction_count) {
+  if (absl::GetFlag(FLAGS_time_limit_use_instruction_count)) {
     return perf_subsystem_.ReadCounters().GetScaledOrDie(
         GetInstructionRetiredEventName());
   }
@@ -549,7 +549,7 @@ inline bool TimeLimit::LimitReached() {
   running_max_.Add(std::max(safety_buffer_ns_, current_ns - last_ns_));
   last_ns_ = current_ns;
   if (current_ns + running_max_.GetCurrentMax() >= limit_ns_) {
-    if (FLAGS_time_limit_use_usertime) {
+    if (absl::GetFlag(FLAGS_time_limit_use_usertime)) {
       // To avoid making many system calls, we only check the user time when
       // the "absolute" time limit has been reached. Note that the user time
       // should advance more slowly, so this is correct.
@@ -571,7 +571,7 @@ inline double TimeLimit::GetTimeLeft() const {
   if (limit_ns_ == kint64max) return std::numeric_limits<double>::infinity();
   const int64 delta_ns = limit_ns_ - absl::GetCurrentTimeNanos();
   if (delta_ns < 0) return 0.0;
-  if (FLAGS_time_limit_use_usertime) {
+  if (absl::GetFlag(FLAGS_time_limit_use_usertime)) {
     return std::max(limit_in_seconds_ - user_timer_.Get(), 0.0);
   } else {
     return delta_ns * 1e-9;

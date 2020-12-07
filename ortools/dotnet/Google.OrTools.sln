@@ -11,29 +11,29 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools.FSharp",   "
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools.FSharp.Tests",   "Google.OrTools.FSharp.Tests\Google.OrTools.FSharp.Tests.fsproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
 EndProject
 Global
-	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Debug|x64 = Debug|x64
-		Debug|x86 = Debug|x86
-		Release|Any CPU = Release|Any CPU
-		Release|x64 = Release|x64
-		Release|x86 = Release|x86
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{FC646C34-8541-427D-B9F6-1247798F4574}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FC646C34-8541-427D-B9F6-1247798F4574}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FC646C34-8541-427D-B9F6-1247798F4574}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{FC646C34-8541-427D-B9F6-1247798F4574}.Debug|x64.Build.0 = Debug|Any CPU
-		{FC646C34-8541-427D-B9F6-1247798F4574}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{FC646C34-8541-427D-B9F6-1247798F4574}.Debug|x86.Build.0 = Debug|Any CPU
-		{FC646C34-8541-427D-B9F6-1247798F4574}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FC646C34-8541-427D-B9F6-1247798F4574}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FC646C34-8541-427D-B9F6-1247798F4574}.Release|x64.ActiveCfg = Release|Any CPU
-		{FC646C34-8541-427D-B9F6-1247798F4574}.Release|x64.Build.0 = Release|Any CPU
-		{FC646C34-8541-427D-B9F6-1247798F4574}.Release|x86.ActiveCfg = Release|Any CPU
-		{FC646C34-8541-427D-B9F6-1247798F4574}.Release|x86.Build.0 = Release|Any CPU
-	EndGlobalSection
+GlobalSection(SolutionConfigurationPlatforms) = preSolution
+Debug|Any CPU = Debug|Any CPU
+Debug|x64 = Debug|x64
+Debug|x86 = Debug|x86
+Release|Any CPU = Release|Any CPU
+Release|x64 = Release|x64
+Release|x86 = Release|x86
+EndGlobalSection
+GlobalSection(SolutionProperties) = preSolution
+HideSolutionNode = FALSE
+EndGlobalSection
+GlobalSection(ProjectConfigurationPlatforms) = postSolution
+{FC646C34-8541-427D-B9F6-1247798F4574}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{FC646C34-8541-427D-B9F6-1247798F4574}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{FC646C34-8541-427D-B9F6-1247798F4574}.Debug|x64.ActiveCfg = Debug|Any CPU
+{FC646C34-8541-427D-B9F6-1247798F4574}.Debug|x64.Build.0 = Debug|Any CPU
+{FC646C34-8541-427D-B9F6-1247798F4574}.Debug|x86.ActiveCfg = Debug|Any CPU
+{FC646C34-8541-427D-B9F6-1247798F4574}.Debug|x86.Build.0 = Debug|Any CPU
+{FC646C34-8541-427D-B9F6-1247798F4574}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{FC646C34-8541-427D-B9F6-1247798F4574}.Release|Any CPU.Build.0 = Release|Any CPU
+{FC646C34-8541-427D-B9F6-1247798F4574}.Release|x64.ActiveCfg = Release|Any CPU
+{FC646C34-8541-427D-B9F6-1247798F4574}.Release|x64.Build.0 = Release|Any CPU
+{FC646C34-8541-427D-B9F6-1247798F4574}.Release|x86.ActiveCfg = Release|Any CPU
+{FC646C34-8541-427D-B9F6-1247798F4574}.Release|x86.Build.0 = Release|Any CPU
+EndGlobalSection
 EndGlobal

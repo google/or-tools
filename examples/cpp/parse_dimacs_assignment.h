@@ -31,10 +31,10 @@
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/linear_assignment.h"
 
-DEFINE_bool(assignment_maximize_cost, false,
-            "Negate costs so a max-cost assignment is found.");
-DEFINE_bool(assignment_optimize_layout, true,
-            "Optimize graph layout for speed.");
+ABSL_FLAG(bool, assignment_maximize_cost, false,
+          "Negate costs so a max-cost assignment is found.");
+ABSL_FLAG(bool, assignment_optimize_layout, true,
+          "Optimize graph layout for speed.");
 
 namespace operations_research {
 
@@ -120,7 +120,7 @@ void DimacsAssignmentParser<GraphType>::ParseProblemLine(
 
   state_.num_arcs = num_arcs;
   graph_builder_ = new AnnotatedGraphBuildManager<GraphType>(
-      num_nodes, num_arcs, FLAGS_assignment_optimize_layout);
+      num_nodes, num_arcs, absl::GetFlag(FLAGS_assignment_optimize_layout));
 }
 
 template <typename GraphType>
@@ -165,7 +165,8 @@ void DimacsAssignmentParser<GraphType>::ParseArcLine(const std::string& line) {
     state_.bad_line.reset(new std::string(line));
   }
   ArcIndex arc = graph_builder_->AddArc(tail - 1, head - 1);
-  assignment_->SetArcCost(arc, FLAGS_assignment_maximize_cost ? -cost : cost);
+  assignment_->SetArcCost(
+      arc, absl::GetFlag(FLAGS_assignment_maximize_cost) ? -cost : cost);
 }
 
 // Parameters out of style-guide order because this function is used

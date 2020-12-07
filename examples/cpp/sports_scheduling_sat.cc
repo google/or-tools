@@ -48,8 +48,8 @@
 #include "ortools/sat/cp_model.h"
 
 // Problem main flags.
-DEFINE_int32(num_teams, 10, "Number of teams in the problem.");
-DEFINE_string(params, "", "Sat parameters.");
+ABSL_FLAG(int, num_teams, 10, "Number of teams in the problem.");
+ABSL_FLAG(std::string, params, "", "Sat parameters.");
 
 namespace operations_research {
 namespace sat {
@@ -61,9 +61,9 @@ void FirstModel(int num_teams) {
   CpModelBuilder builder;
 
   // Calendar variables.
-  std::vector<std::vector<IntVar>> opponents(num_teams);
-  std::vector<std::vector<BoolVar>> home_aways(num_teams);
-  std::vector<std::vector<IntVar>> signed_opponents(num_teams);
+  std::vector<std::vector<IntVar> > opponents(num_teams);
+  std::vector<std::vector<BoolVar> > home_aways(num_teams);
+  std::vector<std::vector<IntVar> > signed_opponents(num_teams);
 
   for (int t = 0; t < num_teams; ++t) {
     for (int d = 0; d < num_days; ++d) {
@@ -160,8 +160,8 @@ void FirstModel(int num_teams) {
   builder.Minimize(LinearExpr::BooleanSum(breaks));
 
   Model model;
-  if (!FLAGS_params.empty()) {
-    model.Add(NewSatParameters(FLAGS_params));
+  if (!absl::GetFlag(FLAGS_params).empty()) {
+    model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
   }
 
   const CpSolverResponse response = SolveCpModel(builder.Build(), &model);
@@ -193,7 +193,7 @@ void SecondModel(int num_teams) {
   CpModelBuilder builder;
 
   // Does team i receive team j at home on day d?
-  std::vector<std::vector<std::vector<BoolVar>>> fixtures(num_days);
+  std::vector<std::vector<std::vector<BoolVar> > > fixtures(num_days);
   for (int d = 0; d < num_days; ++d) {
     fixtures[d].resize(num_teams);
     for (int i = 0; i < num_teams; ++i) {
@@ -209,7 +209,7 @@ void SecondModel(int num_teams) {
   }
 
   // Is team t at home on day d?
-  std::vector<std::vector<BoolVar>> at_home(num_days);
+  std::vector<std::vector<BoolVar> > at_home(num_days);
   for (int d = 0; d < num_days; ++d) {
     for (int t = 0; t < num_teams; ++t) {
       at_home[d].push_back(builder.NewBoolVar());
@@ -301,8 +301,8 @@ void SecondModel(int num_teams) {
   builder.Minimize(LinearExpr::BooleanSum(breaks));
 
   Model model;
-  if (!FLAGS_params.empty()) {
-    model.Add(NewSatParameters(FLAGS_params));
+  if (!absl::GetFlag(FLAGS_params).empty()) {
+    model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
   }
 
   const CpSolverResponse response = SolveCpModel(builder.Build(), &model);
@@ -316,11 +316,12 @@ static const char kUsage[] =
     "Usage: see flags.\nThis program runs a sports scheduling problem."
     "There is no output besides the debug LOGs of the solver.";
 
-int main(int argc, char **argv) {
-  gflags::SetUsageMessage(kUsage);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  CHECK_EQ(0, FLAGS_num_teams % 2) << "The number of teams must be even";
-  CHECK_GE(FLAGS_num_teams, 2) << "At least 2 teams";
-  operations_research::sat::SecondModel(FLAGS_num_teams);
+int main(int argc, char** argv) {
+  absl::SetProgramUsageMessage(kUsage);
+  absl::ParseCommandLine(argc, argv);
+  CHECK_EQ(0, absl::GetFlag(FLAGS_num_teams) % 2)
+      << "The number of teams must be even";
+  CHECK_GE(absl::GetFlag(FLAGS_num_teams), 2) << "At least 2 teams";
+  operations_research::sat::SecondModel(absl::GetFlag(FLAGS_num_teams));
   return EXIT_SUCCESS;
 }

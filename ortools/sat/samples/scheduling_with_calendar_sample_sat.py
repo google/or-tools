@@ -12,10 +12,6 @@
 # limitations under the License.
 """Code sample to demonstrate how an interval can span across a break."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from ortools.sat.python import cp_model
 
 

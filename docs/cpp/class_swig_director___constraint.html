@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -115,42 +115,87 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a537aacb23f4e0cc81d356b435f2f1aa3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#a537aacb23f4e0cc81d356b435f2f1aa3">SwigDirector_Constraint</a> (operations_research::Solver *const solver)</td></tr>
+<tr class="memitem:a537aacb23f4e0cc81d356b435f2f1aa3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#a537aacb23f4e0cc81d356b435f2f1aa3">SwigDirector_Constraint</a> (<a class="el" href="classoperations__research_1_1_solver.html">operations_research::Solver</a> *const <a class="el" href="classoperations__research_1_1_propagation_base_object.html#a5f32c22c620c811754ba7b6f977db864">solver</a>)</td></tr>
 <tr class="separator:a537aacb23f4e0cc81d356b435f2f1aa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adaee8e7c09728c978f7b39cb233ae437"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#adaee8e7c09728c978f7b39cb233ae437">~SwigDirector_Constraint</a> ()</td></tr>
 <tr class="separator:adaee8e7c09728c978f7b39cb233ae437"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a764be64f3029f8b8e23511061d8de355"><td class="memItemLeft" align="right" valign="top">virtual std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#a764be64f3029f8b8e23511061d8de355">DebugString</a> () const</td></tr>
 <tr class="separator:a764be64f3029f8b8e23511061d8de355"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1d89c28bd42ba9a52da008bb69367171"><td class="memItemLeft" align="right" valign="top">virtual std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#a1d89c28bd42ba9a52da008bb69367171">name</a> () const</td></tr>
+<tr class="memdesc:a1d89c28bd42ba9a52da008bb69367171"><td class="mdescLeft">&#160;</td><td class="mdescRight">Object naming.  <a href="class_swig_director___constraint.html#a1d89c28bd42ba9a52da008bb69367171">More...</a><br /></td></tr>
 <tr class="separator:a1d89c28bd42ba9a52da008bb69367171"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8d3de765a37ab507b801467955dc183e"><td class="memItemLeft" align="right" valign="top">virtual std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#a8d3de765a37ab507b801467955dc183e">BaseName</a> () const</td></tr>
+<tr class="memdesc:a8d3de765a37ab507b801467955dc183e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a base name for automatic naming.  <a href="class_swig_director___constraint.html#a8d3de765a37ab507b801467955dc183e">More...</a><br /></td></tr>
 <tr class="separator:a8d3de765a37ab507b801467955dc183e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a26bb434223a472d5c8abb371db0d88ed"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#a26bb434223a472d5c8abb371db0d88ed">Post</a> ()</td></tr>
+<tr class="memdesc:a26bb434223a472d5c8abb371db0d88ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method is called when the constraint is processed by the solver.  <a href="class_swig_director___constraint.html#a26bb434223a472d5c8abb371db0d88ed">More...</a><br /></td></tr>
 <tr class="separator:a26bb434223a472d5c8abb371db0d88ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a878bf54f592279f3d8fa5f39e34215c0"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#a878bf54f592279f3d8fa5f39e34215c0">InitialPropagate</a> ()</td></tr>
+<tr class="memdesc:a878bf54f592279f3d8fa5f39e34215c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method performs the initial propagation of the constraint.  <a href="class_swig_director___constraint.html#a878bf54f592279f3d8fa5f39e34215c0">More...</a><br /></td></tr>
 <tr class="separator:a878bf54f592279f3d8fa5f39e34215c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af0eff4f908561d5465c32309c378f7e8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#af0eff4f908561d5465c32309c378f7e8">swig_connect_director</a> (<a class="el" href="class_swig_director___constraint.html#a411a8fa0fb7b140467ee5b40769c347e">SWIG_Callback0_t</a> callbackToString, <a class="el" href="class_swig_director___constraint.html#a5199f249efc452d440324d7949a50ce6">SWIG_Callback1_t</a> callbackName, <a class="el" href="class_swig_director___constraint.html#acd8b164be3079693a1298ec4a09e0937">SWIG_Callback2_t</a> callbackBaseName, <a class="el" href="class_swig_director___constraint.html#aef473edbdf461362ac144d8a6f58953a">SWIG_Callback3_t</a> callbackPost, <a class="el" href="class_swig_director___constraint.html#a2caa4490d62d16595b249308d065adbf">SWIG_Callback4_t</a> callbackInitialPropagateWrapper)</td></tr>
 <tr class="separator:af0eff4f908561d5465c32309c378f7e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9ecc4a5ef469874d58c3b366755b446f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#a9ecc4a5ef469874d58c3b366755b446f">SwigDirector_Constraint</a> (PyObject *self, operations_research::Solver *const solver)</td></tr>
+<tr class="memitem:a9ecc4a5ef469874d58c3b366755b446f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#a9ecc4a5ef469874d58c3b366755b446f">SwigDirector_Constraint</a> (PyObject *self, <a class="el" href="classoperations__research_1_1_solver.html">operations_research::Solver</a> *const <a class="el" href="classoperations__research_1_1_propagation_base_object.html#a5f32c22c620c811754ba7b6f977db864">solver</a>)</td></tr>
 <tr class="separator:a9ecc4a5ef469874d58c3b366755b446f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae82d9da9754329d61215ecb593f3e715"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#ae82d9da9754329d61215ecb593f3e715">~SwigDirector_Constraint</a> ()</td></tr>
 <tr class="separator:ae82d9da9754329d61215ecb593f3e715"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8eba5d533fa9df4617c1868d3ec2afc4"><td class="memItemLeft" align="right" valign="top">virtual std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#a8eba5d533fa9df4617c1868d3ec2afc4">DebugString</a> () const</td></tr>
 <tr class="separator:a8eba5d533fa9df4617c1868d3ec2afc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6a119daa8b83c3aaffdb6e11fac1f97e"><td class="memItemLeft" align="right" valign="top">virtual std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#a6a119daa8b83c3aaffdb6e11fac1f97e">name</a> () const</td></tr>
+<tr class="memdesc:a6a119daa8b83c3aaffdb6e11fac1f97e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Object naming.  <a href="class_swig_director___constraint.html#a6a119daa8b83c3aaffdb6e11fac1f97e">More...</a><br /></td></tr>
 <tr class="separator:a6a119daa8b83c3aaffdb6e11fac1f97e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adeaf7e6254f350d37d5a23a3628c11e9"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#adeaf7e6254f350d37d5a23a3628c11e9">Post</a> ()</td></tr>
+<tr class="memdesc:adeaf7e6254f350d37d5a23a3628c11e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method is called when the constraint is processed by the solver.  <a href="class_swig_director___constraint.html#adeaf7e6254f350d37d5a23a3628c11e9">More...</a><br /></td></tr>
 <tr class="separator:adeaf7e6254f350d37d5a23a3628c11e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb9570b6312e98827ff3a349743c5108"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#afb9570b6312e98827ff3a349743c5108">InitialPropagate</a> ()</td></tr>
+<tr class="memdesc:afb9570b6312e98827ff3a349743c5108"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method performs the initial propagation of the constraint.  <a href="class_swig_director___constraint.html#afb9570b6312e98827ff3a349743c5108">More...</a><br /></td></tr>
 <tr class="separator:afb9570b6312e98827ff3a349743c5108"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8043b2f97c119b7f9281a7a5a88089f0"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#a8043b2f97c119b7f9281a7a5a88089f0">Accept</a> (operations_research::ModelVisitor *const visitor) const</td></tr>
+<tr class="memitem:a8043b2f97c119b7f9281a7a5a88089f0"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#a8043b2f97c119b7f9281a7a5a88089f0">Accept</a> (<a class="el" href="classoperations__research_1_1_model_visitor.html">operations_research::ModelVisitor</a> *const visitor) const</td></tr>
+<tr class="memdesc:a8043b2f97c119b7f9281a7a5a88089f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Accepts the given visitor.  <a href="class_swig_director___constraint.html#a8043b2f97c119b7f9281a7a5a88089f0">More...</a><br /></td></tr>
 <tr class="separator:a8043b2f97c119b7f9281a7a5a88089f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c5b651f8fe6e47bba5b073817a665c0"><td class="memItemLeft" align="right" valign="top">virtual operations_research::IntVar *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#a0c5b651f8fe6e47bba5b073817a665c0">Var</a> ()</td></tr>
+<tr class="memitem:a0c5b651f8fe6e47bba5b073817a665c0"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classoperations__research_1_1_int_var.html">operations_research::IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#a0c5b651f8fe6e47bba5b073817a665c0">Var</a> ()</td></tr>
+<tr class="memdesc:a0c5b651f8fe6e47bba5b073817a665c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a Boolean variable representing the status of the constraint (false = constraint is violated, true = constraint is satisfied).  <a href="class_swig_director___constraint.html#a0c5b651f8fe6e47bba5b073817a665c0">More...</a><br /></td></tr>
 <tr class="separator:a0c5b651f8fe6e47bba5b073817a665c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af43b592d5c1865fde72e81456cce554f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#af43b592d5c1865fde72e81456cce554f">swig_get_inner</a> (const char *swig_protected_method_name) const</td></tr>
 <tr class="separator:af43b592d5c1865fde72e81456cce554f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a27e259958ad8653add1aefd5b7e33402"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_director___constraint.html#a27e259958ad8653add1aefd5b7e33402">swig_set_inner</a> (const char *swig_protected_method_name, bool swig_val) const</td></tr>
 <tr class="separator:a27e259958ad8653add1aefd5b7e33402"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19c44e0b2911b809a9403701804088e3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_constraint.html#a19c44e0b2911b809a9403701804088e3">PostAndPropagate</a> ()</td></tr>
+<tr class="memdesc:a19c44e0b2911b809a9403701804088e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calls Post and then Propagate to initialize the constraints.  <a href="classoperations__research_1_1_constraint.html#a19c44e0b2911b809a9403701804088e3">More...</a><br /></td></tr>
+<tr class="separator:a19c44e0b2911b809a9403701804088e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a573284ea4ace994b6886c6a4feffa0aa"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_constraint.html#a573284ea4ace994b6886c6a4feffa0aa">IsCastConstraint</a> () const</td></tr>
+<tr class="memdesc:a573284ea4ace994b6886c6a4feffa0aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is the constraint created by a cast from expression to integer variable?  <a href="classoperations__research_1_1_constraint.html#a573284ea4ace994b6886c6a4feffa0aa">More...</a><br /></td></tr>
+<tr class="separator:a573284ea4ace994b6886c6a4feffa0aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f32c22c620c811754ba7b6f977db864"><td class="memItemLeft" align="right" valign="top">Solver *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_propagation_base_object.html#a5f32c22c620c811754ba7b6f977db864">solver</a> () const</td></tr>
+<tr class="separator:a5f32c22c620c811754ba7b6f977db864"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5155ff01cf80f5a478fd09916abab155"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_propagation_base_object.html#a5155ff01cf80f5a478fd09916abab155">FreezeQueue</a> ()</td></tr>
+<tr class="memdesc:a5155ff01cf80f5a478fd09916abab155"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method freezes the propagation queue.  <a href="classoperations__research_1_1_propagation_base_object.html#a5155ff01cf80f5a478fd09916abab155">More...</a><br /></td></tr>
+<tr class="separator:a5155ff01cf80f5a478fd09916abab155"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae038f4a9249362629fc47e8dfc441ec7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_propagation_base_object.html#ae038f4a9249362629fc47e8dfc441ec7">UnfreezeQueue</a> ()</td></tr>
+<tr class="memdesc:ae038f4a9249362629fc47e8dfc441ec7"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method unfreezes the propagation queue.  <a href="classoperations__research_1_1_propagation_base_object.html#ae038f4a9249362629fc47e8dfc441ec7">More...</a><br /></td></tr>
+<tr class="separator:ae038f4a9249362629fc47e8dfc441ec7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a173cbf153462b14f9b57362d2c45638a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_propagation_base_object.html#a173cbf153462b14f9b57362d2c45638a">EnqueueDelayedDemon</a> (Demon *const d)</td></tr>
+<tr class="memdesc:a173cbf153462b14f9b57362d2c45638a"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method pushes the demon onto the propagation queue.  <a href="classoperations__research_1_1_propagation_base_object.html#a173cbf153462b14f9b57362d2c45638a">More...</a><br /></td></tr>
+<tr class="separator:a173cbf153462b14f9b57362d2c45638a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a448b9bde901fcf3ec2e94ab972b083f0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_propagation_base_object.html#a448b9bde901fcf3ec2e94ab972b083f0">EnqueueVar</a> (Demon *const d)</td></tr>
+<tr class="separator:a448b9bde901fcf3ec2e94ab972b083f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d3bd9d99cf43cf184a1246d2c278c31"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_propagation_base_object.html#a3d3bd9d99cf43cf184a1246d2c278c31">ExecuteAll</a> (const SimpleRevFIFO&lt; Demon * &gt; &amp;demons)</td></tr>
+<tr class="separator:a3d3bd9d99cf43cf184a1246d2c278c31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5a5ad1a2482043e4a9d2c19bbab1e250"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_propagation_base_object.html#a5a5ad1a2482043e4a9d2c19bbab1e250">EnqueueAll</a> (const SimpleRevFIFO&lt; Demon * &gt; &amp;demons)</td></tr>
+<tr class="separator:a5a5ad1a2482043e4a9d2c19bbab1e250"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ae4667b0e7a9e6c63c91202480c8876"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_propagation_base_object.html#a3ae4667b0e7a9e6c63c91202480c8876">set_action_on_fail</a> (Solver::Action <a class="el" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a>)</td></tr>
+<tr class="separator:a3ae4667b0e7a9e6c63c91202480c8876"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26d87b428f06d54a1a44d6e950a0e196"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_propagation_base_object.html#a26d87b428f06d54a1a44d6e950a0e196">reset_action_on_fail</a> ()</td></tr>
+<tr class="memdesc:a26d87b428f06d54a1a44d6e950a0e196"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method clears the failure callback.  <a href="classoperations__research_1_1_propagation_base_object.html#a26d87b428f06d54a1a44d6e950a0e196">More...</a><br /></td></tr>
+<tr class="separator:a26d87b428f06d54a1a44d6e950a0e196"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa799a452245f03cc53355e6432c107a7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_propagation_base_object.html#aa799a452245f03cc53355e6432c107a7">set_variable_to_clean_on_fail</a> (IntVar *v)</td></tr>
+<tr class="memdesc:aa799a452245f03cc53355e6432c107a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shortcut for variable cleaner.  <a href="classoperations__research_1_1_propagation_base_object.html#aa799a452245f03cc53355e6432c107a7">More...</a><br /></td></tr>
+<tr class="separator:aa799a452245f03cc53355e6432c107a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5260b9627048b854b45d05ed34adc22"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_propagation_base_object.html#ad5260b9627048b854b45d05ed34adc22">set_name</a> (const std::string &amp;<a class="el" href="class_swig_director___constraint.html#a1d89c28bd42ba9a52da008bb69367171">name</a>)</td></tr>
+<tr class="separator:ad5260b9627048b854b45d05ed34adc22"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a31eda3918c04e32fa9e8c432d72b2d60"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_propagation_base_object.html#a31eda3918c04e32fa9e8c432d72b2d60">HasName</a> () const</td></tr>
+<tr class="memdesc:a31eda3918c04e32fa9e8c432d72b2d60"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns whether the object has been named or not.  <a href="classoperations__research_1_1_propagation_base_object.html#a31eda3918c04e32fa9e8c432d72b2d60">More...</a><br /></td></tr>
+<tr class="separator:a31eda3918c04e32fa9e8c432d72b2d60"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae73138bd79b68bb81e3a1c9b9f2cbcdf"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_1_1_director.html#ae73138bd79b68bb81e3a1c9b9f2cbcdf">swig_set_self</a> (JNIEnv *jenv, jobject jself, bool mem_own, bool weak_global)</td></tr>
 <tr class="separator:ae73138bd79b68bb81e3a1c9b9f2cbcdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae73138bd79b68bb81e3a1c9b9f2cbcdf"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_swig_1_1_director.html#ae73138bd79b68bb81e3a1c9b9f2cbcdf">swig_set_self</a> (JNIEnv *jenv, jobject jself, bool mem_own, bool weak_global)</td></tr>
@@ -308,7 +353,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="class_swig_director___constraint.html">SwigDirector_Constraint</a> </td>
           <td>(</td>
-          <td class="paramtype">operations_research::Solver *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_solver.html">operations_research::Solver</a> *const&#160;</td>
           <td class="paramname"><em>solver</em></td><td>)</td>
           <td></td>
         </tr>
@@ -361,7 +406,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">operations_research::Solver *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_solver.html">operations_research::Solver</a> *const&#160;</td>
           <td class="paramname"><em>solver</em>&#160;</td>
         </tr>
         <tr>
@@ -372,7 +417,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver__python__wrap_8cc_source.html#l04989">4989</a> of file <a class="el" href="constraint__solver__python__wrap_8cc_source.html">constraint_solver_python_wrap.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver__python__wrap_8cc_source.html#l04990">4990</a> of file <a class="el" href="constraint__solver__python__wrap_8cc_source.html">constraint_solver_python_wrap.cc</a>.</p>
 
 </div>
 </div>
@@ -414,7 +459,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">void Accept </td>
           <td>(</td>
-          <td class="paramtype">operations_research::ModelVisitor *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_model_visitor.html">operations_research::ModelVisitor</a> *const&#160;</td>
           <td class="paramname"><em>visitor</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -426,7 +471,11 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver__python__wrap_8cc_source.html#l05117">5117</a> of file <a class="el" href="constraint__solver__python__wrap_8cc_source.html">constraint_solver_python_wrap.cc</a>.</p>
+<p>Accepts the given visitor. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_constraint.html#aac4aa5ecf086378b1bbac4b669bab4db">Constraint</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver__python__wrap_8cc_source.html#l05118">5118</a> of file <a class="el" href="constraint__solver__python__wrap_8cc_source.html">constraint_solver_python_wrap.cc</a>.</p>
 
 </div>
 </div>
@@ -452,6 +501,10 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Returns a base name for automatic naming. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_propagation_base_object.html#a8d3de765a37ab507b801467955dc183e">PropagationBaseObject</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l02243">2243</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
@@ -480,6 +533,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_constraint.html#aed804747c45a7e1caf81461f9e45dd91">Constraint</a>.</p>
+
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l02209">2209</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
 </div>
@@ -507,6 +562,182 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_constraint.html#aed804747c45a7e1caf81461f9e45dd91">Constraint</a>.</p>
+
+</div>
+</div>
+<a id="a5a5ad1a2482043e4a9d2c19bbab1e250"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5a5ad1a2482043e4a9d2c19bbab1e250">&#9670;&nbsp;</a></span>EnqueueAll()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void EnqueueAll </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_simple_rev_f_i_f_o.html">SimpleRevFIFO</a>&lt; <a class="el" href="classoperations__research_1_1_demon.html">Demon</a> * &gt; &amp;&#160;</td>
+          <td class="paramname"><em>demons</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02521">2521</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+
+</div>
+</div>
+<a id="a173cbf153462b14f9b57362d2c45638a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a173cbf153462b14f9b57362d2c45638a">&#9670;&nbsp;</a></span>EnqueueDelayedDemon()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void EnqueueDelayedDemon </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_demon.html">Demon</a> *const&#160;</td>
+          <td class="paramname"><em>d</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>This method pushes the demon onto the propagation queue. </p>
+<p>It will be processed directly if the queue is empty. It will be enqueued according to its priority otherwise. </p>
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03187">3187</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+
+</div>
+</div>
+<a id="a448b9bde901fcf3ec2e94ab972b083f0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a448b9bde901fcf3ec2e94ab972b083f0">&#9670;&nbsp;</a></span>EnqueueVar()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void EnqueueVar </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_demon.html">Demon</a> *const&#160;</td>
+          <td class="paramname"><em>d</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03188">3188</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+
+</div>
+</div>
+<a id="a3d3bd9d99cf43cf184a1246d2c278c31"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3d3bd9d99cf43cf184a1246d2c278c31">&#9670;&nbsp;</a></span>ExecuteAll()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ExecuteAll </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_simple_rev_f_i_f_o.html">SimpleRevFIFO</a>&lt; <a class="el" href="classoperations__research_1_1_demon.html">Demon</a> * &gt; &amp;&#160;</td>
+          <td class="paramname"><em>demons</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02517">2517</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+
+</div>
+</div>
+<a id="a5155ff01cf80f5a478fd09916abab155"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5155ff01cf80f5a478fd09916abab155">&#9670;&nbsp;</a></span>FreezeQueue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void FreezeQueue </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>This method freezes the propagation queue. </p>
+<p>It is useful when you need to apply multiple modifications at once. </p>
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03178">3178</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+
+</div>
+</div>
+<a id="a31eda3918c04e32fa9e8c432d72b2d60"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a31eda3918c04e32fa9e8c432d72b2d60">&#9670;&nbsp;</a></span>HasName()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool HasName </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns whether the object has been named or not. </p>
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02513">2513</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+
 </div>
 </div>
 <a id="a878bf54f592279f3d8fa5f39e34215c0"></a>
@@ -531,6 +762,11 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>This method performs the initial propagation of the constraint. </p>
+<p>It is called just after the post. </p>
+
+<p>Implements <a class="el" href="classoperations__research_1_1_constraint.html#a9100fab5545234f60a4ce442dbb45630">Constraint</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l02269">2269</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
@@ -559,6 +795,40 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>This method performs the initial propagation of the constraint. </p>
+<p>It is called just after the post. </p>
+
+<p>Implements <a class="el" href="classoperations__research_1_1_constraint.html#a9100fab5545234f60a4ce442dbb45630">Constraint</a>.</p>
+
+</div>
+</div>
+<a id="a573284ea4ace994b6886c6a4feffa0aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a573284ea4ace994b6886c6a4feffa0aa">&#9670;&nbsp;</a></span>IsCastConstraint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool IsCastConstraint </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Is the constraint created by a cast from expression to integer variable? </p>
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03253">3253</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+
 </div>
 </div>
 <a id="a1d89c28bd42ba9a52da008bb69367171"></a>
@@ -583,6 +853,10 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Object naming. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_propagation_base_object.html#a1d89c28bd42ba9a52da008bb69367171">PropagationBaseObject</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l02226">2226</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
@@ -611,6 +885,10 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Object naming. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_propagation_base_object.html#a1d89c28bd42ba9a52da008bb69367171">PropagationBaseObject</a>.</p>
+
 </div>
 </div>
 <a id="a26bb434223a472d5c8abb371db0d88ed"></a>
@@ -635,6 +913,11 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>This method is called when the constraint is processed by the solver. </p>
+<p>Its main usage is to attach demons to variables. </p>
+
+<p>Implements <a class="el" href="classoperations__research_1_1_constraint.html#af33bad3aa81a2f411224d5e471f9956f">Constraint</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html#l02260">2260</a> of file <a class="el" href="constraint__solver__csharp__wrap_8cc_source.html">constraint_solver_csharp_wrap.cc</a>.</p>
 
@@ -662,6 +945,183 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>This method is called when the constraint is processed by the solver. </p>
+<p>Its main usage is to attach demons to variables. </p>
+
+<p>Implements <a class="el" href="classoperations__research_1_1_constraint.html#af33bad3aa81a2f411224d5e471f9956f">Constraint</a>.</p>
+
+</div>
+</div>
+<a id="a19c44e0b2911b809a9403701804088e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19c44e0b2911b809a9403701804088e3">&#9670;&nbsp;</a></span>PostAndPropagate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void PostAndPropagate </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Calls Post and then Propagate to initialize the constraints. </p>
+<p>This is usually done in the root node. </p>
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03239">3239</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+
+</div>
+</div>
+<a id="a26d87b428f06d54a1a44d6e950a0e196"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a26d87b428f06d54a1a44d6e950a0e196">&#9670;&nbsp;</a></span>reset_action_on_fail()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void reset_action_on_fail </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>This method clears the failure callback. </p>
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03201">3201</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+
+</div>
+</div>
+<a id="a3ae4667b0e7a9e6c63c91202480c8876"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ae4667b0e7a9e6c63c91202480c8876">&#9670;&nbsp;</a></span>set_action_on_fail()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void set_action_on_fail </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_solver.html#ad7946514ee3dd6cb3ab993dc9e98b33b">Solver::Action</a>&#160;</td>
+          <td class="paramname"><em>a</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03195">3195</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+
+</div>
+</div>
+<a id="ad5260b9627048b854b45d05ed34adc22"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5260b9627048b854b45d05ed34adc22">&#9670;&nbsp;</a></span>set_name()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void set_name </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>name</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02509">2509</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+
+</div>
+</div>
+<a id="aa799a452245f03cc53355e6432c107a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa799a452245f03cc53355e6432c107a7">&#9670;&nbsp;</a></span>set_variable_to_clean_on_fail()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void set_variable_to_clean_on_fail </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Shortcut for variable cleaner. </p>
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03204">3204</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+
+</div>
+</div>
+<a id="a5f32c22c620c811754ba7b6f977db864"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f32c22c620c811754ba7b6f977db864">&#9670;&nbsp;</a></span>solver()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Solver* solver </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03174">3174</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1565,6 +2025,36 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="ae038f4a9249362629fc47e8dfc441ec7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae038f4a9249362629fc47e8dfc441ec7">&#9670;&nbsp;</a></span>UnfreezeQueue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void UnfreezeQueue </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>This method unfreezes the propagation queue. </p>
+<p>All modifications that happened when the queue was frozen will be processed. </p>
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03182">3182</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+
+</div>
+</div>
 <a id="a0c5b651f8fe6e47bba5b073817a665c0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0c5b651f8fe6e47bba5b073817a665c0">&#9670;&nbsp;</a></span>Var()</h2>
 
@@ -1575,7 +2065,7 @@ Protected Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">operations_research::IntVar * Var </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var.html">operations_research::IntVar</a> * Var </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -1588,7 +2078,12 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver__python__wrap_8cc_source.html#l05122">5122</a> of file <a class="el" href="constraint__solver__python__wrap_8cc_source.html">constraint_solver_python_wrap.cc</a>.</p>
+<p>Creates a Boolean variable representing the status of the constraint (false = constraint is violated, true = constraint is satisfied). </p>
+<p>It returns nullptr if the constraint does not support this API. </p>
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_constraint.html#ab9499597067cb211270f23aea108ef99">Constraint</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="constraint__solver__python__wrap_8cc_source.html#l05123">5123</a> of file <a class="el" href="constraint__solver__python__wrap_8cc_source.html">constraint_solver_python_wrap.cc</a>.</p>
 
 </div>
 </div>

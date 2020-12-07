@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.0</span>
+                <span id="sfml">Google OR-Tools 8.1</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -90,7 +90,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_unsorted
 <div class="textblock"><p>This class represents a reversible bitset. </p>
 <p>It is meant to represent a set of active bits. It does not offer direct access, but just methods that can reversibly subtract another bitset, or check if the current active bitset intersects with another bitset. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02776">2776</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02775">2775</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -99,13 +99,13 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae3e0d47f72e6e07c2332b872b372cd4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a76ba13aa9ecbcd8755720533712f4f70"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_unsorted_nullable_rev_bitset.html#a76ba13aa9ecbcd8755720533712f4f70">~UnsortedNullableRevBitset</a> ()</td></tr>
 <tr class="separator:a76ba13aa9ecbcd8755720533712f4f70"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adb9e7eb51aef8d63ea81e193d92c034e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_unsorted_nullable_rev_bitset.html#adb9e7eb51aef8d63ea81e193d92c034e">Init</a> (Solver *const solver, const std::vector&lt; uint64 &gt; &amp;mask)</td></tr>
+<tr class="memitem:adb9e7eb51aef8d63ea81e193d92c034e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_unsorted_nullable_rev_bitset.html#adb9e7eb51aef8d63ea81e193d92c034e">Init</a> (<a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *const solver, const std::vector&lt; uint64 &gt; &amp;mask)</td></tr>
 <tr class="memdesc:adb9e7eb51aef8d63ea81e193d92c034e"><td class="mdescLeft">&#160;</td><td class="mdescRight">This methods overwrites the active bitset with the mask.  <a href="classoperations__research_1_1_unsorted_nullable_rev_bitset.html#adb9e7eb51aef8d63ea81e193d92c034e">More...</a><br /></td></tr>
 <tr class="separator:adb9e7eb51aef8d63ea81e193d92c034e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3e194990f98b0ed598211613c8e03639"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_unsorted_nullable_rev_bitset.html#a3e194990f98b0ed598211613c8e03639">RevSubtract</a> (Solver *const solver, const std::vector&lt; uint64 &gt; &amp;mask)</td></tr>
+<tr class="memitem:a3e194990f98b0ed598211613c8e03639"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_unsorted_nullable_rev_bitset.html#a3e194990f98b0ed598211613c8e03639">RevSubtract</a> (<a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *const solver, const std::vector&lt; uint64 &gt; &amp;mask)</td></tr>
 <tr class="memdesc:a3e194990f98b0ed598211613c8e03639"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method subtracts the mask from the active bitset.  <a href="classoperations__research_1_1_unsorted_nullable_rev_bitset.html#a3e194990f98b0ed598211613c8e03639">More...</a><br /></td></tr>
 <tr class="separator:a3e194990f98b0ed598211613c8e03639"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a895c2532e70163d81ef29c8198c1c9c3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_unsorted_nullable_rev_bitset.html#a895c2532e70163d81ef29c8198c1c9c3">RevAnd</a> (Solver *const solver, const std::vector&lt; uint64 &gt; &amp;mask)</td></tr>
+<tr class="memitem:a895c2532e70163d81ef29c8198c1c9c3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_unsorted_nullable_rev_bitset.html#a895c2532e70163d81ef29c8198c1c9c3">RevAnd</a> (<a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *const solver, const std::vector&lt; uint64 &gt; &amp;mask)</td></tr>
 <tr class="memdesc:a895c2532e70163d81ef29c8198c1c9c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method ANDs the mask with the active bitset.  <a href="classoperations__research_1_1_unsorted_nullable_rev_bitset.html#a895c2532e70163d81ef29c8198c1c9c3">More...</a><br /></td></tr>
 <tr class="separator:a895c2532e70163d81ef29c8198c1c9c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae6bce1d393b8e189c1d550ed4f02b07f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_unsorted_nullable_rev_bitset.html#ae6bce1d393b8e189c1d550ed4f02b07f">ActiveWordSize</a> () const</td></tr>
@@ -179,7 +179,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02781">2781</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02780">2780</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -209,7 +209,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the set of active word indices. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02816">2816</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02815">2815</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -238,7 +238,7 @@ Public Member Functions</h2></td></tr>
 
 <p>This method returns the number of non null 64 bit words in the bitset representation. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02797">2797</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02796">2796</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -267,7 +267,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the number of bits given in the constructor of the bitset. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02812">2812</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02811">2811</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -296,7 +296,7 @@ Public Member Functions</h2></td></tr>
 
 <p>This method returns true if the active bitset is null. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02800">2800</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02799">2799</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -309,7 +309,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void Init </td>
           <td>(</td>
-          <td class="paramtype">Solver *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *const&#160;</td>
           <td class="paramname"><em>solver</em>, </td>
         </tr>
         <tr>
@@ -374,7 +374,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">bool RevAnd </td>
           <td>(</td>
-          <td class="paramtype">Solver *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *const&#160;</td>
           <td class="paramname"><em>solver</em>, </td>
         </tr>
         <tr>
@@ -405,7 +405,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">bool RevSubtract </td>
           <td>(</td>
-          <td class="paramtype">Solver *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *const&#160;</td>
           <td class="paramname"><em>solver</em>, </td>
         </tr>
         <tr>
@@ -452,7 +452,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the number of 64 bit words used to store the bitset. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02814">2814</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02813">2813</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>

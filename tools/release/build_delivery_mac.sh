@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-if [ ! -f "$DOTNET_SNK" ]; then
+if [[ -z "${DOTNET_SNK}" ]]; then
   echo "DOTNET_SNK: not found !" | tee build.log
   exit 1
 fi
@@ -31,20 +31,26 @@ for i in "${PY[@]}"; do
   command -v "python$i"
   command -v "python$i" | xargs echo "python$i: " | tee -a build.log
   "python$i" -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
-  "python$i" -m pip install --user wheel six
+  "python$i" -m pip install --user wheel absl-py mypy-protobuf
 done
 
 # java
-echo "JAVA_HOME: ${JAVA_HOME}" | tee -a build.log
-command -v java
-command -v java | xargs echo "java: " | tee -a build.log
-command -v javac
-command -v javac | xargs echo "javac: " | tee -a build.log
-command -v jar
-command -v jar | xargs echo "jar: " | tee -a build.log
-command -v mvn
-command -v mvn | xargs echo "mvn: " | tee -a build.log
-java -version 2>&1 | head -n 1 | grep 1.8
+# maven require JAVA_HOME
+if [[ -z "${JAVA_HOME}" ]]; then
+  echo "JAVA_HOME: not found !" | tee build.log
+  exit 1
+else
+  echo "JAVA_HOME: ${JAVA_HOME}" | tee -a build.log
+  command -v java
+  command -v java | xargs echo "java: " | tee -a build.log
+  command -v javac
+  command -v javac | xargs echo "javac: " | tee -a build.log
+  command -v jar
+  command -v jar | xargs echo "jar: " | tee -a build.log
+  command -v mvn
+  command -v mvn | xargs echo "mvn: " | tee -a build.log
+  java -version 2>&1 | head -n 1 | grep 1.8
+fi
 
 # C#
 command -v dotnet

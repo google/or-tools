@@ -1,5 +1,6 @@
 FROM ortools/make:archlinux_swig AS env
 RUN pacman -Syu --noconfirm python python-pip python-wheel
+RUN python -m pip install absl-py mypy-protobuf
 
 FROM env AS devel
 WORKDIR /home/project

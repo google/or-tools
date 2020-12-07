@@ -19,9 +19,9 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/bitset.h"
@@ -79,7 +79,7 @@ class DomainDeductions {
   std::vector<int> tmp_num_occurrences_;
 
   SparseBitset<Index> something_changed_;
-  gtl::ITIVector<Index, std::vector<int>> enforcement_to_vars_;
+  absl::StrongVector<Index, std::vector<int>> enforcement_to_vars_;
   absl::flat_hash_map<std::pair<Index, int>, Domain> deductions_;
 };
 

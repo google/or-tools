@@ -55,10 +55,6 @@ class PseudoCosts {
   }
 
  private:
-  // Initializes the pseudo costs of all variables to given value. This method
-  // doesn't change the number of recordings.
-  void InitializeCosts(double initial_value);
-
   // Updates the cost of a given variable.
   void UpdateCostForVar(IntegerVariable var, double new_cost);
 
@@ -67,9 +63,7 @@ class PseudoCosts {
 
   const SatParameters& parameters_;
 
-  bool pseudo_costs_initialized_ = false;
-
-  gtl::ITIVector<IntegerVariable, IncrementalAverage> pseudo_costs_;
+  absl::StrongVector<IntegerVariable, IncrementalAverage> pseudo_costs_;
 };
 
 // Returns extracted information to update pseudo costs from the given

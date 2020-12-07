@@ -496,10 +496,8 @@ class Solver(object):
 
         - the most common use case is modeling: the given constraint is really
         part of the problem that the user is trying to solve. In this use case,
-        AddConstraint is called outside of search (i.e., with.. code-block:: c++
-
-           state() ==
-            OUTSIDE_SEARCH). Most users should only use AddConstraint in this
+        AddConstraint is called outside of search (i.e., with state() ==
+        OUTSIDE_SEARCH). Most users should only use AddConstraint in this
         way. In this case, the constraint will belong to the model forever: it
         cannot not be removed by backtracking.
 
@@ -1955,10 +1953,8 @@ def Solver_MemoryUsage() -&gt; &#34;int64&#34;:
 class BaseObject(object):
     r&#34;&#34;&#34;
     A BaseObject is the root of all reversibly allocated objects.
-    A DebugString method and the associated.. code-block:: c++
-
-       operator&lt;&lt;
-    are implemented as a convenience.
+    A DebugString method and the associated &lt;&lt; operator are implemented
+    as a convenience.
     &#34;&#34;&#34;
 
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
@@ -5071,9 +5067,6 @@ class RoutingModel(object):
     def GetNumberOfVisitTypes(self) -&gt; &#34;int&#34;:
         return _pywrapcp.RoutingModel_GetNumberOfVisitTypes(self)
 
-    def GetTopologicallySortedVisitTypes(self) -&gt; &#34;std::vector&lt; int &gt; const &amp;&#34;:
-        return _pywrapcp.RoutingModel_GetTopologicallySortedVisitTypes(self)
-
     def AddHardTypeIncompatibility(self, type1: &#34;int&#34;, type2: &#34;int&#34;) -&gt; &#34;void&#34;:
         r&#34;&#34;&#34;
         Incompatibilities:
@@ -6132,9 +6125,6 @@ class RoutingDimension(object):
                       cumulVar).
         This is also handy to model earliness costs when the dimension represents
         time.
-        Note: Using soft lower and upper bounds or span costs together is, as of
-        6/2014, not well supported in the sense that an optimal schedule is not
-        guaranteed.
         &#34;&#34;&#34;
         return _pywrapcp.RoutingDimension_SetCumulVarSoftLowerBound(self, index, lower_bound, coefficient)
 
@@ -7961,9 +7951,8 @@ int index_;
 </code></dt>
 <dd>
 <div class="desc"><p>A BaseObject is the root of all reversibly allocated objects.
-A DebugString method and the associated.. code-block:: c++</p>
-<p>operator&lt;&lt;
-are implemented as a convenience.</p></div>
+A DebugString method and the associated &lt;&lt; operator are implemented
+as a convenience.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -7971,10 +7960,8 @@ are implemented as a convenience.</p></div>
 <pre><code class="python">class BaseObject(object):
     r&#34;&#34;&#34;
     A BaseObject is the root of all reversibly allocated objects.
-    A DebugString method and the associated.. code-block:: c++
-
-       operator&lt;&lt;
-    are implemented as a convenience.
+    A DebugString method and the associated &lt;&lt; operator are implemented
+    as a convenience.
     &#34;&#34;&#34;
 
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
@@ -14987,9 +14974,6 @@ to have this information here.</p></div>
                       cumulVar).
         This is also handy to model earliness costs when the dimension represents
         time.
-        Note: Using soft lower and upper bounds or span costs together is, as of
-        6/2014, not well supported in the sense that an optimal schedule is not
-        guaranteed.
         &#34;&#34;&#34;
         return _pywrapcp.RoutingDimension_SetCumulVarSoftLowerBound(self, index, lower_bound, coefficient)
 
@@ -15522,10 +15506,7 @@ cumulVar &gt; lower_bound -&gt; cost = 0
 cumulVar &lt;= lower_bound -&gt; cost = coefficient * (lower_bound -
 cumulVar).
 This is also handy to model earliness costs when the dimension represents
-time.
-Note: Using soft lower and upper bounds or span costs together is, as of
-6/2014, not well supported in the sense that an optimal schedule is not
-guaranteed.</p></div>
+time.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -15541,9 +15522,6 @@ guaranteed.</p></div>
                   cumulVar).
     This is also handy to model earliness costs when the dimension represents
     time.
-    Note: Using soft lower and upper bounds or span costs together is, as of
-    6/2014, not well supported in the sense that an optimal schedule is not
-    guaranteed.
     &#34;&#34;&#34;
     return _pywrapcp.RoutingDimension_SetCumulVarSoftLowerBound(self, index, lower_bound, coefficient)</code></pre>
 </details>
@@ -16321,9 +16299,6 @@ and end nodes) + number of non-start or end nodes.</p></div>
 
     def GetNumberOfVisitTypes(self) -&gt; &#34;int&#34;:
         return _pywrapcp.RoutingModel_GetNumberOfVisitTypes(self)
-
-    def GetTopologicallySortedVisitTypes(self) -&gt; &#34;std::vector&lt; int &gt; const &amp;&#34;:
-        return _pywrapcp.RoutingModel_GetTopologicallySortedVisitTypes(self)
 
     def AddHardTypeIncompatibility(self, type1: &#34;int&#34;, type2: &#34;int&#34;) -&gt; &#34;void&#34;:
         r&#34;&#34;&#34;
@@ -18887,19 +18862,6 @@ type.</p></div>
 </summary>
 <pre><code class="python">def GetTemporalTypeIncompatibilitiesOfType(self, type: &#34;int&#34;) -&gt; &#34;absl::flat_hash_set&lt; int &gt; const &amp;&#34;:
     return _pywrapcp.RoutingModel_GetTemporalTypeIncompatibilitiesOfType(self, type)</code></pre>
-</details>
-</dd>
-<dt id="pywrapcp.RoutingModel.GetTopologicallySortedVisitTypes"><code class="name flex">
-<span>def <span class="ident">GetTopologicallySortedVisitTypes</span></span>(<span>self) -> 'std::vector< int > const &'</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def GetTopologicallySortedVisitTypes(self) -&gt; &#34;std::vector&lt; int &gt; const &amp;&#34;:
-    return _pywrapcp.RoutingModel_GetTopologicallySortedVisitTypes(self)</code></pre>
 </details>
 </dd>
 <dt id="pywrapcp.RoutingModel.GetVehicleClassIndexOfVehicle"><code class="name flex">
@@ -22328,10 +22290,8 @@ solver() through the AddConstraint() method,
 
         - the most common use case is modeling: the given constraint is really
         part of the problem that the user is trying to solve. In this use case,
-        AddConstraint is called outside of search (i.e., with.. code-block:: c++
-
-           state() ==
-            OUTSIDE_SEARCH). Most users should only use AddConstraint in this
+        AddConstraint is called outside of search (i.e., with state() ==
+        OUTSIDE_SEARCH). Most users should only use AddConstraint in this
         way. In this case, the constraint will belong to the model forever: it
         cannot not be removed by backtracking.
 
@@ -24264,16 +24224,16 @@ addition, any assignment of variables to values must satisfy the given
 constraint in order to be considered feasible. There are two fairly
 different use cases:</p>
 <ul>
-<li>the most common use case is modeling: the given constraint is really
+<li>
+<p>the most common use case is modeling: the given constraint is really
 part of the problem that the user is trying to solve. In this use case,
-AddConstraint is called outside of search (i.e., with.. code-block:: c++</li>
-</ul>
-<p>state() ==
+AddConstraint is called outside of search (i.e., with state() ==
 OUTSIDE_SEARCH). Most users should only use AddConstraint in this
 way. In this case, the constraint will belong to the model forever: it
 cannot not be removed by backtracking.</p>
-<ul>
-<li>a rarer use case is that 'c' is not a real constraint of the model. It
+</li>
+<li>
+<p>a rarer use case is that 'c' is not a real constraint of the model. It
 may be a constraint generated by a branching decision (a constraint whose
 goal is to restrict the search space), a symmetry breaking constraint (a
 constraint that does restrict the search space, but in a way that cannot
@@ -24285,7 +24245,8 @@ that the constraint is added during the search (i.e., with state() ==
 IN_SEARCH or state() == IN_ROOT_NODE). When a constraint is
 added during a search, it applies only to the subtree of the search tree
 rooted at the current node, and will be automatically removed by
-backtracking.</li>
+backtracking.</p>
+</li>
 </ul>
 <p>This method does not take ownership of the constraint. If the constraint
 has been created by any factory method (Solver::MakeXXX), it will
@@ -24307,10 +24268,8 @@ MyConstraint(&hellip;));</p></div>
 
     - the most common use case is modeling: the given constraint is really
     part of the problem that the user is trying to solve. In this use case,
-    AddConstraint is called outside of search (i.e., with.. code-block:: c++
-
-       state() ==
-        OUTSIDE_SEARCH). Most users should only use AddConstraint in this
+    AddConstraint is called outside of search (i.e., with state() ==
+    OUTSIDE_SEARCH). Most users should only use AddConstraint in this
     way. In this case, the constraint will belong to the model forever: it
     cannot not be removed by backtracking.
 
@@ -28995,7 +28954,6 @@ OR
 <li><code><a title="pywrapcp.RoutingModel.GetSameVehicleRequiredTypeAlternativesOfType" href="#pywrapcp.RoutingModel.GetSameVehicleRequiredTypeAlternativesOfType">GetSameVehicleRequiredTypeAlternativesOfType</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetSingleNodesOfType" href="#pywrapcp.RoutingModel.GetSingleNodesOfType">GetSingleNodesOfType</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetTemporalTypeIncompatibilitiesOfType" href="#pywrapcp.RoutingModel.GetTemporalTypeIncompatibilitiesOfType">GetTemporalTypeIncompatibilitiesOfType</a></code></li>
-<li><code><a title="pywrapcp.RoutingModel.GetTopologicallySortedVisitTypes" href="#pywrapcp.RoutingModel.GetTopologicallySortedVisitTypes">GetTopologicallySortedVisitTypes</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetVehicleClassIndexOfVehicle" href="#pywrapcp.RoutingModel.GetVehicleClassIndexOfVehicle">GetVehicleClassIndexOfVehicle</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetVehicleClassesCount" href="#pywrapcp.RoutingModel.GetVehicleClassesCount">GetVehicleClassesCount</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetVehicleTypeContainer" href="#pywrapcp.RoutingModel.GetVehicleTypeContainer">GetVehicleTypeContainer</a></code></li>

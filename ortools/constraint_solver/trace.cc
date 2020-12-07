@@ -27,9 +27,8 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
-DEFINE_bool(
-    cp_full_trace, false,
-    "Display all trace information, even if the modifiers has no effect");
+ABSL_FLAG(bool, cp_full_trace, false,
+          "Display all trace information, even if the modifiers has no effect");
 
 namespace operations_research {
 namespace {
@@ -739,7 +738,7 @@ class PrintTrace : public PropagationMonitor {
 
  private:
   void PushDelayedInfo(const std::string& delayed) {
-    if (FLAGS_cp_full_trace) {
+    if (absl::GetFlag(FLAGS_cp_full_trace)) {
       LOG(INFO) << Indent() << delayed << " {";
       IncreaseIndent();
     } else {
@@ -748,7 +747,7 @@ class PrintTrace : public PropagationMonitor {
   }
 
   void PopDelayedInfo() {
-    if (FLAGS_cp_full_trace) {
+    if (absl::GetFlag(FLAGS_cp_full_trace)) {
       DecreaseIndent();
       LOG(INFO) << Indent() << "}";
     } else {
@@ -779,7 +778,7 @@ class PrintTrace : public PropagationMonitor {
   }
 
   void DisplayModification(const std::string& to_print) {
-    if (FLAGS_cp_full_trace) {
+    if (absl::GetFlag(FLAGS_cp_full_trace)) {
       LOG(INFO) << Indent() << to_print;
     } else {
       PrintDelayedString();

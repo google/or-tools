@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -106,7 +106,7 @@ $(document).ready(function(){initNavTree('status__macros_8h_source.html',''); in
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#define OR_TOOLS_BASE_STATUS_MACROS_H_</span></div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#include &quot;absl/status/status.h&quot;</span></div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="statusor_8h.html">ortools/base/statusor.h</a>&quot;</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="preprocessor">#include &quot;absl/status/statusor.h&quot;</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceabsl.html">absl</a> {</div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
@@ -127,18 +127,18 @@ $(document).ready(function(){initNavTree('status__macros_8h_source.html',''); in
 <div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="status__macros_8h.html#adfa1b5068b2bb4dcfd48879d7af43e21">   36</a></span>&#160;<span class="preprocessor">#define STATUS_MACROS_CONCAT_NAME(x, y) STATUS_MACROS_CONCAT_NAME_INNER(x, y)</span></div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00039"></a><span class="lineno"><a class="line" href="namespaceabsl.html#a604a347b8b2f7cad73343e3959f7de7d">   39</a></span>&#160;::absl::Status <a class="code" href="namespaceabsl.html#a604a347b8b2f7cad73343e3959f7de7d">DoAssignOrReturn</a>(T&amp; lhs, ::<a class="code" href="structabsl_1_1_status_or.html">absl::StatusOr&lt;T&gt;</a> result) {  <span class="comment">// NOLINT</span></div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;  <span class="keywordflow">if</span> (result.<a class="code" href="structabsl_1_1_status_or.html#a03cb7eaa663dc83af68bc28a596d09e6">ok</a>()) {</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    lhs = result.<a class="code" href="structabsl_1_1_status_or.html#a77c7d528ac063d870b8c8426ec81c1c3">value</a>();</div>
+<div class="line"><a name="l00039"></a><span class="lineno"><a class="line" href="namespaceabsl.html#a604a347b8b2f7cad73343e3959f7de7d">   39</a></span>&#160;::absl::Status <a class="code" href="namespaceabsl.html#a604a347b8b2f7cad73343e3959f7de7d">DoAssignOrReturn</a>(T&amp; lhs, ::absl::StatusOr&lt;T&gt; result) {  <span class="comment">// NOLINT</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;  <span class="keywordflow">if</span> (result.ok()) {</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    lhs = result.value();</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;  }</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;  <span class="keywordflow">return</span> result.<a class="code" href="structabsl_1_1_status_or.html#adb1490a44086db009cdb51f854a02a65">status</a>();</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;  <span class="keywordflow">return</span> result.status();</div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;}</div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
 <div class="line"><a name="l00046"></a><span class="lineno"><a class="line" href="status__macros_8h.html#afa5b28a30dd7715c6a827f42f936e9b0">   46</a></span>&#160;<span class="preprocessor">#define ASSIGN_OR_RETURN_IMPL(status, lhs, rexpr)         \</span></div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="preprocessor">  ::absl::Status status = DoAssignOrReturn(lhs, (rexpr)); \</span></div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="preprocessor">  if (!status.ok()) return status;</span></div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="comment">// Executes an expression that returns a absl::StatusOr, extracting its value</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="comment">// Executes an expression that returns an absl::StatusOr, extracting its value</span></div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="comment">// into the variable defined by lhs (or returning on error).</span></div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="comment">//</span></div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="comment">// Example: Assigning to an existing value</span></div>
@@ -156,11 +156,6 @@ $(document).ready(function(){initNavTree('status__macros_8h_source.html',''); in
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="preprocessor">#endif  // OR_TOOLS_BASE_STATUS_MACROS_H_</span></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
-<div class="ttc" id="astructabsl_1_1_status_or_html_a03cb7eaa663dc83af68bc28a596d09e6"><div class="ttname"><a href="structabsl_1_1_status_or.html#a03cb7eaa663dc83af68bc28a596d09e6">absl::StatusOr::ok</a></div><div class="ttdeci">bool ok() const</div><div class="ttdef"><b>Definition:</b> <a href="statusor_8h_source.html#l00035">statusor.h:35</a></div></div>
-<div class="ttc" id="astatusor_8h_html"><div class="ttname"><a href="statusor_8h.html">statusor.h</a></div></div>
-<div class="ttc" id="astructabsl_1_1_status_or_html_adb1490a44086db009cdb51f854a02a65"><div class="ttname"><a href="structabsl_1_1_status_or.html#adb1490a44086db009cdb51f854a02a65">absl::StatusOr::status</a></div><div class="ttdeci">Status status() const</div><div class="ttdef"><b>Definition:</b> <a href="statusor_8h_source.html#l00041">statusor.h:41</a></div></div>
-<div class="ttc" id="astructabsl_1_1_status_or_html_a77c7d528ac063d870b8c8426ec81c1c3"><div class="ttname"><a href="structabsl_1_1_status_or.html#a77c7d528ac063d870b8c8426ec81c1c3">absl::StatusOr::value</a></div><div class="ttdeci">const T &amp; value() const</div><div class="ttdef"><b>Definition:</b> <a href="statusor_8h_source.html#l00036">statusor.h:36</a></div></div>
-<div class="ttc" id="astructabsl_1_1_status_or_html"><div class="ttname"><a href="structabsl_1_1_status_or.html">absl::StatusOr</a></div><div class="ttdef"><b>Definition:</b> <a href="statusor_8h_source.html#l00024">statusor.h:24</a></div></div>
 <div class="ttc" id="anamespaceabsl_html"><div class="ttname"><a href="namespaceabsl.html">absl</a></div><div class="ttdef"><b>Definition:</b> <a href="cleanup_8h_source.html#l00022">cleanup.h:22</a></div></div>
 <div class="ttc" id="anamespaceabsl_html_a604a347b8b2f7cad73343e3959f7de7d"><div class="ttname"><a href="namespaceabsl.html#a604a347b8b2f7cad73343e3959f7de7d">absl::DoAssignOrReturn</a></div><div class="ttdeci">::absl::Status DoAssignOrReturn(T &amp;lhs, ::absl::StatusOr&lt; T &gt; result)</div><div class="ttdef"><b>Definition:</b> <a href="status__macros_8h_source.html#l00039">status_macros.h:39</a></div></div>
 <!-- HTML footer for doxygen 1.8.18-->

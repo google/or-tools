@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -297,9 +297,6 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 <li>GetChangedBounds()
 : <a class="el" href="classoperations__research_1_1sat_1_1_shared_bounds_manager.html#a7aa28ef33d58d24db19943fb77fcecbd">SharedBoundsManager</a>
 </li>
-<li>GetClassRepresentative()
-: <a class="el" href="classoperations__research_1_1_connected_components.html#a874a54f45623ba735a5634b1ea9289ea">ConnectedComponents&lt; NodeIndex, ArcIndex &gt;</a>
-</li>
 <li>GetCoefficient()
 : <a class="el" href="classoperations__research_1_1glop_1_1_random_access_sparse_column.html#ab988bcb6c80bbc7853904ea85328a007">RandomAccessSparseColumn</a>
 , <a class="el" href="classoperations__research_1_1glop_1_1_sparse_vector.html#aee58c48c57d6575064f1dd9a66077fad">SparseVector&lt; IndexType, IteratorType &gt;</a>
@@ -324,11 +321,17 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 <li>GetComponentIds()
 : <a class="el" href="class_dense_connected_components_finder.html#a74aadb96adc6f37110393d5fbd2279c5">DenseConnectedComponentsFinder</a>
 </li>
+<li>GetComponentRoots()
+: <a class="el" href="class_dense_connected_components_finder.html#ae6201f6f09303eabd7f77e238b4f3a44">DenseConnectedComponentsFinder</a>
+</li>
 <li>GetConstraintActivity()
 : <a class="el" href="classoperations__research_1_1glop_1_1_revised_simplex.html#a3f6696618f5f850c805b361aa0c8bd7e">RevisedSimplex</a>
 </li>
 <li>GetConstraintName()
 : <a class="el" href="classoperations__research_1_1glop_1_1_linear_program.html#a8d7d21abe90edddc22416e5db1db563f">LinearProgram</a>
+</li>
+<li>GetConstraintSolverStatistics()
+: <a class="el" href="classoperations__research_1_1_solver.html#a23b67374a08dfb275ebd9f084ff42567">Solver</a>
 </li>
 <li>GetConstraintStatus()
 : <a class="el" href="classoperations__research_1_1glop_1_1_revised_simplex.html#ac0064327c37c56b93e86a91a1d64fd96">RevisedSimplex</a>
@@ -554,6 +557,9 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 <li>GetHomogeneousCost()
 : <a class="el" href="classoperations__research_1_1_routing_model.html#aa241abc19460575d250a5788f03afbf6">RoutingModel</a>
 </li>
+<li>GetImplicitUniquePickupAndDeliveryPairs()
+: <a class="el" href="classoperations__research_1_1_routing_model.html#a82f989d278bca985a55a3785be2d7b42">RoutingModel</a>
+</li>
 <li>GetImpliedBounds()
 : <a class="el" href="classoperations__research_1_1sat_1_1_implied_bounds.html#a1abcc20de9ebbf211ba0e97710b4be4d">ImpliedBounds</a>
 </li>
@@ -641,6 +647,12 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 <li>GetLocalOptimizerOffsetForVehicle()
 : <a class="el" href="classoperations__research_1_1_routing_dimension.html#a82f14203d850d1ede49849c5020c6f51">RoutingDimension</a>
 </li>
+<li>GetLocalSearchMonitor()
+: <a class="el" href="classoperations__research_1_1_solver.html#a869f7ed2cc6505c59ecf1eb8ecb2288a">Solver</a>
+</li>
+<li>GetLocalSearchStatistics()
+: <a class="el" href="classoperations__research_1_1_solver.html#a2563992eba2a464bd9f4c56c7f894945">Solver</a>
+</li>
 <li>GetLowerAndUpperBoundWhenItem()
 : <a class="el" href="classoperations__research_1_1_base_knapsack_solver.html#a89a48b92823beaaf48f9580ea38c24d1">BaseKnapsackSolver</a>
 , <a class="el" href="classoperations__research_1_1_knapsack_generic_solver.html#a35bfa97bc24861491acb8d3d20087306">KnapsackGenericSolver</a>
@@ -681,12 +693,18 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 </li>
 <li>GetMetadata()
 : <a class="el" href="classoperations__research_1_1bop_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#abee10a388b53df255f15fbec07e1ac80">PROTOBUF_FINAL</a>
+, <a class="el" href="classoperations__research_1_1_g_scip_parameters___bool_params_entry___do_not_use.html#ab586d26cf9d20d52de0e3d2081fc1419">GScipParameters_BoolParamsEntry_DoNotUse</a>
+, <a class="el" href="classoperations__research_1_1_g_scip_parameters___char_params_entry___do_not_use.html#ab586d26cf9d20d52de0e3d2081fc1419">GScipParameters_CharParamsEntry_DoNotUse</a>
+, <a class="el" href="classoperations__research_1_1_g_scip_parameters___int_params_entry___do_not_use.html#ab586d26cf9d20d52de0e3d2081fc1419">GScipParameters_IntParamsEntry_DoNotUse</a>
+, <a class="el" href="classoperations__research_1_1_g_scip_parameters___long_params_entry___do_not_use.html#ab586d26cf9d20d52de0e3d2081fc1419">GScipParameters_LongParamsEntry_DoNotUse</a>
+, <a class="el" href="classoperations__research_1_1_g_scip_parameters___real_params_entry___do_not_use.html#ab586d26cf9d20d52de0e3d2081fc1419">GScipParameters_RealParamsEntry_DoNotUse</a>
+, <a class="el" href="classoperations__research_1_1_g_scip_parameters___string_params_entry___do_not_use.html#ab586d26cf9d20d52de0e3d2081fc1419">GScipParameters_StringParamsEntry_DoNotUse</a>
 , <a class="el" href="classoperations__research_1_1_m_p_model_delta_proto___constraint_overrides_entry___do_not_use.html#ab586d26cf9d20d52de0e3d2081fc1419">MPModelDeltaProto_ConstraintOverridesEntry_DoNotUse</a>
 , <a class="el" href="classoperations__research_1_1_m_p_model_delta_proto___variable_overrides_entry___do_not_use.html#ab586d26cf9d20d52de0e3d2081fc1419">MPModelDeltaProto_VariableOverridesEntry_DoNotUse</a>
 , <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#abee10a388b53df255f15fbec07e1ac80">PROTOBUF_FINAL</a>
 </li>
 <li>GetMinimum()
-: <a class="el" href="classoperations__research_1_1_piecewise_linear_function.html#af87c9de5c5c31922d8ef11e311c517aa">PiecewiseLinearFunction</a>
+: <a class="el" href="classoperations__research_1_1_piecewise_linear_function.html#a5be18ef6d2f3dd792e522ae7628e4f3a">PiecewiseLinearFunction</a>
 </li>
 <li>GetMinimumFromRange()
 : <a class="el" href="classoperations__research_1_1_range_minimum_query.html#a20bd6e147a4ff92b8290e3c9bc7e366a">RangeMinimumQuery&lt; T, Compare &gt;</a>
@@ -739,6 +757,9 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 , <a class="el" href="classoperations__research_1_1_knapsack_propagator.html#a9aea5e61ac71dca1139fda445cc2dfee">KnapsackPropagator</a>
 , <a class="el" href="classoperations__research_1_1_knapsack_propagator_for_cuts.html#a209cc502d723eeca92f979ba59e22faa">KnapsackPropagatorForCuts</a>
 </li>
+<li>GetNextSolution()
+: <a class="el" href="classoperations__research_1_1_solution_pool.html#a6fbedcc0e848833761bc0ed775aa5436">SolutionPool</a>
+</li>
 <li>GetNextTask()
 : <a class="el" href="classoperations__research_1_1_thread_pool.html#a574a58759834205c815d601debc67636">ThreadPool</a>
 </li>
@@ -772,9 +793,6 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 <li>GetNumberOfComponents()
 : <a class="el" href="class_connected_components_finder.html#af1a300e659dbc3041b1485f12855bd31">ConnectedComponentsFinder&lt; T, CompareOrHashT &gt;</a>
 , <a class="el" href="class_dense_connected_components_finder.html#af1a300e659dbc3041b1485f12855bd31">DenseConnectedComponentsFinder</a>
-</li>
-<li>GetNumberOfConnectedComponents()
-: <a class="el" href="classoperations__research_1_1_connected_components.html#ad93186658fbb95624b55f85af74f8ea5">ConnectedComponents&lt; NodeIndex, ArcIndex &gt;</a>
 </li>
 <li>GetNumberOfDecisionsInFirstSolution()
 : <a class="el" href="classoperations__research_1_1_routing_model.html#a04bd106a61d493872cabb0f41f7f118f">RoutingModel</a>
@@ -868,6 +886,9 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 <li>GetOrCreateLiteralAssociatedToEquality()
 : <a class="el" href="classoperations__research_1_1sat_1_1_integer_encoder.html#a074fe196a1aaff1dd5fd73e0b3bb1f0e">IntegerEncoder</a>
 </li>
+<li>GetOrCreateLocalSearchState()
+: <a class="el" href="classoperations__research_1_1_solver.html#a3c57f3559561d1a7616bbe881d7e79d3">Solver</a>
+</li>
 <li>GetOrCreateVarValueEncoding()
 : <a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html#a2d3663d98d826c7d782de9cda7b42344">PresolveContext</a>
 </li>
@@ -947,6 +968,9 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 </li>
 <li>GetProblemStatus()
 : <a class="el" href="classoperations__research_1_1glop_1_1_revised_simplex.html#a938b612b6f9885a417fda1bf886f4b39">RevisedSimplex</a>
+</li>
+<li>GetPropagationMonitor()
+: <a class="el" href="classoperations__research_1_1_solver.html#a92271ad8e09cd801f83ae84e6af5f609">Solver</a>
 </li>
 <li>GetProtoVariableFromBooleanVariable()
 : <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_mapping.html#a870d11729c8b44299ad9e258b06fa768">CpModelMapping</a>
@@ -1111,7 +1135,7 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 : <a class="el" href="classoperations__research_1_1_local_search_filter.html#a14786ee7098dc88e3eefc6f0a2c9411e">LocalSearchFilter</a>
 , <a class="el" href="classoperations__research_1_1_local_search_filter_manager.html#a5e12ecb41f49732af540d54a3e71b6e7">LocalSearchFilterManager</a>
 , <a class="el" href="class_swig_director___int_var_local_search_filter.html#a14786ee7098dc88e3eefc6f0a2c9411e">SwigDirector_IntVarLocalSearchFilter</a>
-, <a class="el" href="class_swig_director___local_search_filter.html#a14786ee7098dc88e3eefc6f0a2c9411e">SwigDirector_LocalSearchFilter</a>
+, <a class="el" href="class_swig_director___local_search_filter.html#a5e12ecb41f49732af540d54a3e71b6e7">SwigDirector_LocalSearchFilter</a>
 </li>
 <li>GetTemporalTypeIncompatibilitiesOfType()
 : <a class="el" href="classoperations__research_1_1_routing_model.html#a20e9006ff9b8dc8ce89a8239a092b0c7">RoutingModel</a>
@@ -1127,7 +1151,7 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 : <a class="el" href="classoperations__research_1_1_nested_time_limit.html#a7e35d44d642ce651a7b5c7264ed6cc9c">NestedTimeLimit</a>
 </li>
 <li>GetTopologicallySortedVisitTypes()
-: <a class="el" href="classoperations__research_1_1_routing_model.html#a768d26b80704955e5ca59c83d5fcf871">RoutingModel</a>
+: <a class="el" href="classoperations__research_1_1_routing_model.html#a30ebc3cb1dddc3c582f8b7f2395bbc93">RoutingModel</a>
 </li>
 <li>GetTouchedPathStarts()
 : <a class="el" href="classoperations__research_1_1_base_path_filter.html#a26989f619c7b30da9d40047b03733b93">BasePathFilter</a>
@@ -1255,7 +1279,7 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 : <a class="el" href="classoperations__research_1_1_g_l_o_p_interface.html#aeded338dfea54ad0f2e1ab1e090b40d2">GLOPInterface</a>
 </li>
 <li>GlopParameters()
-: <a class="el" href="classoperations__research_1_1glop_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#ac7c4c1b82cec655b248d794fdda899a7">PROTOBUF_FINAL</a>
+: <a class="el" href="classoperations__research_1_1glop_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a6318652966655e7a4badbe889149497a">PROTOBUF_FINAL</a>
 </li>
 <li>glucose_decay_increment()
 : <a class="el" href="classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#aa3342f5373f095b947b22a3aff402d4c">PROTOBUF_FINAL</a>
@@ -1265,6 +1289,9 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 </li>
 <li>glucose_max_decay()
 : <a class="el" href="classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a5808f2a80feb7508c0f0bd10c4f3f8ca">PROTOBUF_FINAL</a>
+</li>
+<li>GoogleInitializer()
+: <a class="el" href="classgoogle_1_1logging__internal_1_1_google_initializer.html#a1b4efe182e3bdfc9976130e8f194810a">GoogleInitializer</a>
 </li>
 <li>graph()
 : <a class="el" href="classoperations__research_1_1_generic_max_flow.html#a10bcb8f7f63b390821ae5e95fe4822cc">GenericMaxFlow&lt; Graph &gt;</a>
@@ -1308,6 +1335,36 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 </li>
 <li>GrowRightByOne()
 : <a class="el" href="classoperations__research_1_1_sorted_disjoint_interval_list.html#ac9faa3bb49d9f9d5f26dbe69e62f56b3">SortedDisjointIntervalList</a>
+</li>
+<li>GScipLinearExpr()
+: <a class="el" href="structoperations__research_1_1_g_scip_linear_expr.html#a43e0d424450d49c675de95d866e159e5">GScipLinearExpr</a>
+</li>
+<li>GScipOutput()
+: <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a5d082e0d7da85d9b3211f04a45731a01">PROTOBUF_FINAL</a>
+</li>
+<li>GScipParameters()
+: <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a0d808b978f19a897f0c13517f51292fa">PROTOBUF_FINAL</a>
+</li>
+<li>GScipParameters_BoolParamsEntry_DoNotUse()
+: <a class="el" href="classoperations__research_1_1_g_scip_parameters___bool_params_entry___do_not_use.html#ab8251d41956ac028f18d93a6a96d3bfe">GScipParameters_BoolParamsEntry_DoNotUse</a>
+</li>
+<li>GScipParameters_CharParamsEntry_DoNotUse()
+: <a class="el" href="classoperations__research_1_1_g_scip_parameters___char_params_entry___do_not_use.html#a6b4dd75b2d70c9f65ffb80a84e3e1edc">GScipParameters_CharParamsEntry_DoNotUse</a>
+</li>
+<li>GScipParameters_IntParamsEntry_DoNotUse()
+: <a class="el" href="classoperations__research_1_1_g_scip_parameters___int_params_entry___do_not_use.html#abc0a943dee4a28ca7c2430235211e987">GScipParameters_IntParamsEntry_DoNotUse</a>
+</li>
+<li>GScipParameters_LongParamsEntry_DoNotUse()
+: <a class="el" href="classoperations__research_1_1_g_scip_parameters___long_params_entry___do_not_use.html#aad1dd65e4659817295122d5bdd64ba1f">GScipParameters_LongParamsEntry_DoNotUse</a>
+</li>
+<li>GScipParameters_RealParamsEntry_DoNotUse()
+: <a class="el" href="classoperations__research_1_1_g_scip_parameters___real_params_entry___do_not_use.html#a5cbff7ece5bf112302a8adbfa95296d9">GScipParameters_RealParamsEntry_DoNotUse</a>
+</li>
+<li>GScipParameters_StringParamsEntry_DoNotUse()
+: <a class="el" href="classoperations__research_1_1_g_scip_parameters___string_params_entry___do_not_use.html#a931ff9aa3610740a4316ebae5b0e8739">GScipParameters_StringParamsEntry_DoNotUse</a>
+</li>
+<li>GScipSolvingStats()
+: <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a722b8b57b08725bc95789338196b11e4">PROTOBUF_FINAL</a>
 </li>
 <li>Guard()
 : <a class="el" href="class_swig_1_1_guard.html#ac57eeea7346b06c869ff9e9f1c9ed87a">Guard</a>

@@ -31,10 +31,10 @@
 #include "ortools/base/random.h"
 #include "ortools/linear_solver/linear_solver.h"
 
-DEFINE_int32(verbose, 0, "Verbosity level.");
-DEFINE_int32(facilities, 20, "Candidate facilities to consider.");
-DEFINE_int32(clients, 100, "Clients to serve.");
-DEFINE_double(fix_cost, 5000, "Cost of opening a facility.");
+ABSL_FLAG(int, verbose, 0, "Verbosity level.");
+ABSL_FLAG(int, facilities, 20, "Candidate facilities to consider.");
+ABSL_FLAG(int, clients, 100, "Clients to serve.");
+ABSL_FLAG(double, fix_cost, 5000, "Cost of opening a facility.");
 
 namespace operations_research {
 
@@ -110,8 +110,7 @@ static void UncapacitatedFacilityLocation(
     snprintf(name_buffer, kStrLen, "R-Client[%d](%g,%g)", c, client[c].x,
              client[c].y);
     MPConstraint* client_constraint =
-        solver.MakeRowConstraint(/* lb */ 1,
-                                 /* ub */ infinity, name_buffer);
+        solver.MakeRowConstraint(/* lb */ 1, /* ub */ infinity, name_buffer);
     for (int f = 0; f < facilities; ++f) {
       double distance = Distance(facility[f], client[c]);
       if (distance > kMaxDistance) continue;
@@ -127,8 +126,7 @@ static void UncapacitatedFacilityLocation(
       // add constraint (2)
       snprintf(name_buffer, kStrLen, "R-Edge[%d,%d]", f, c);
       MPConstraint* edge_constraint =
-          solver.MakeRowConstraint(/* lb */ 0,
-                                   /* ub */ infinity, name_buffer);
+          solver.MakeRowConstraint(/* lb */ 0, /* ub */ infinity, name_buffer);
       edge_constraint->SetCoefficient(edge.x, -1);
       edge_constraint->SetCoefficient(xf[f], 1);
     }
@@ -151,8 +149,8 @@ static void UncapacitatedFacilityLocation(
     LOG(FATAL) << "The problem does not have an optimal solution!";
   } else {
     LOG(INFO) << "Optimal objective value = " << objective->Value();
-    if (FLAGS_verbose) {
-      std::vector<std::vector<int>> solution(facilities);
+    if (absl::GetFlag(FLAGS_verbose)) {
+      std::vector<std::vector<int> > solution(facilities);
       for (auto& edge : edges) {
         if (edge.x->solution_value() < 0.5) continue;
         solution[edge.f].push_back(edge.c);
@@ -223,15 +221,19 @@ void RunAllExamples(int32 facilities, int32 clients, double fix_cost) {
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
-  gflags::SetUsageMessage(
+  absl::SetProgramUsageMessage(
       std::string("This program solve a (randomly generated)\n") +
       std::string("Uncapacitated Facility Location Problem. Sample Usage:\n"));
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  CHECK_LT(0, FLAGS_facilities) << "Specify an instance size greater than 0.";
-  CHECK_LT(0, FLAGS_clients) << "Specify a non-null client size.";
-  CHECK_LT(0, FLAGS_fix_cost) << "Specify a non-null client size.";
-  FLAGS_logtostderr = 1;
-  operations_research::RunAllExamples(FLAGS_facilities, FLAGS_clients,
-                                      FLAGS_fix_cost);
+  absl::ParseCommandLine(argc, argv);
+  CHECK_LT(0, absl::GetFlag(FLAGS_facilities))
+      << "Specify an instance size greater than 0.";
+  CHECK_LT(0, absl::GetFlag(FLAGS_clients))
+      << "Specify a non-null client size.";
+  CHECK_LT(0, absl::GetFlag(FLAGS_fix_cost))
+      << "Specify a non-null client size.";
+  absl::SetFlag(&FLAGS_logtostderr, 1);
+  operations_research::RunAllExamples(absl::GetFlag(FLAGS_facilities),
+                                      absl::GetFlag(FLAGS_clients),
+                                      absl::GetFlag(FLAGS_fix_cost));
   return EXIT_SUCCESS;
 }

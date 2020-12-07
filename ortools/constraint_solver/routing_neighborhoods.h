@@ -285,6 +285,7 @@ class SwapIndexPairOperator : public IntVarLocalSearchOperator {
  public:
   SwapIndexPairOperator(const std::vector<IntVar*>& vars,
                         const std::vector<IntVar*>& path_vars,
+                        std::function<int(int64)> start_empty_path_class,
                         const RoutingIndexPairs& index_pairs);
   ~SwapIndexPairOperator() override {}
 
@@ -339,51 +340,120 @@ class IndexPairSwapActiveOperator : public PathOperator {
   int inactive_node_;
 };
 
+/// Class of operators using a RoutingFilteredHeuristic to insert unperformed
+/// nodes after changes have been made to the current solution.
+// TODO(user): Put these methods in an object with helper methods instead
+// of adding a layer to the class hierarchy.
+class FilteredHeuristicLocalSearchOperator : public IntVarLocalSearchOperator {
+ public:
+  explicit FilteredHeuristicLocalSearchOperator(
+      std::unique_ptr<RoutingFilteredHeuristic> heuristic,
+      bool keep_inverse_values = false);
+  ~FilteredHeuristicLocalSearchOperator() override {}
+
+ protected:
+  virtual bool IncrementPosition() = 0;
+  /// Virtual method to return the next_accessor to be passed to the heuristic
+  /// to build a new solution. This method should also correctly set the
+  /// nodes being removed (if any) in removed_nodes_.
+  virtual std::function<int64(int64)> SetupNextAccessorForNeighbor() = 0;
+
+  std::string HeuristicName() const {
+    std::string heuristic_name = heuristic_->DebugString();
+    const int erase_pos = heuristic_name.find("FilteredHeuristic");
+    if (erase_pos != std::string::npos) {
+      const int expected_name_size = heuristic_name.size() - 17;
+      heuristic_name.erase(erase_pos);
+      // NOTE: Verify that the "FilteredHeuristic" string was at the end of the
+      // heuristic name.
+      DCHECK_EQ(heuristic_name.size(), expected_name_size);
+    }
+    return heuristic_name;
+  }
+
+  // TODO(user): Remove the dependency from RoutingModel by storing an
+  // IntVarFilteredHeuristic here instead and storing information on path
+  // start/ends like PathOperator does (instead of relying on the model).
+  const RoutingModel& model_;
+  /// Keeps track of removed nodes when making a neighbor.
+  SparseBitset<> removed_nodes_;
+
+ private:
+  bool MakeOneNeighbor() override;
+  bool MakeChangesAndInsertNodes();
+
+  int64 VehicleVarIndex(int64 node) const { return model_.Size() + node; }
+
+  const std::unique_ptr<RoutingFilteredHeuristic> heuristic_;
+  const bool consider_vehicle_vars_;
+};
+
 /// LNS-like operator based on a filtered first solution heuristic to rebuild
 /// the solution, after the destruction phase consisting of removing one route.
-class FilteredHeuristicPathLNSOperator : public IntVarLocalSearchOperator {
+class FilteredHeuristicPathLNSOperator
+    : public FilteredHeuristicLocalSearchOperator {
  public:
   explicit FilteredHeuristicPathLNSOperator(
       std::unique_ptr<RoutingFilteredHeuristic> heuristic);
   ~FilteredHeuristicPathLNSOperator() override {}
 
   std::string DebugString() const override {
-    std::string heuristic_name = heuristic_->DebugString();
-    const int erase_pos = heuristic_name.find("FilteredHeuristic");
-    if (erase_pos != std::string::npos) {
-      heuristic_name.erase(erase_pos);
-    }
-    return absl::StrCat("HeuristicPathLNS(", heuristic_name, ")");
+    return absl::StrCat("HeuristicPathLNS(", HeuristicName(), ")");
   }
 
  private:
   void OnStart() override;
-  bool MakeOneNeighbor() override;
 
-  bool IncrementRoute();
+  bool IncrementPosition() override;
   bool CurrentRouteIsEmpty() const;
   void IncrementCurrentRouteToNextNonEmpty();
 
-  bool DestroyRouteAndReinsertNodes();
+  std::function<int64(int64)> SetupNextAccessorForNeighbor() override;
 
-  int64 VehicleVarIndex(int64 node) const { return model_.Size() + node; }
-
-  // TODO(user): Remove the dependency from RoutingModel by storing an
-  // IntVarFilteredHeuristic here instead and storing information on path
-  // start/ends like PathOperator does (instead of relying on the model).
-  const std::unique_ptr<RoutingFilteredHeuristic> heuristic_;
-  const RoutingModel& model_;
-  const bool consider_vehicle_vars_;
   int current_route_;
   int last_route_;
   bool just_started_;
 };
 
-/// Similar to the move above, but instead of removing one route entirely, the
-/// destruction phase consists of removing all nodes on an "expensive" chain
-/// from a route.
+/// Heuristic-based local search operator which relocates an entire route to
+/// an empty vehicle of different vehicle class and then tries to insert
+/// unperformed nodes using the heuristic.
+class RelocatePathAndHeuristicInsertUnperformedOperator
+    : public FilteredHeuristicLocalSearchOperator {
+ public:
+  explicit RelocatePathAndHeuristicInsertUnperformedOperator(
+      std::unique_ptr<RoutingFilteredHeuristic> heuristic);
+  ~RelocatePathAndHeuristicInsertUnperformedOperator() override {}
+
+  std::string DebugString() const override {
+    return absl::StrCat("RelocatePathAndHeuristicInsertUnperformed(",
+                        HeuristicName(), ")");
+  }
+
+ private:
+  void OnStart() override;
+
+  bool IncrementPosition() override;
+  bool IncrementRoutes();
+
+  std::function<int64(int64)> SetupNextAccessorForNeighbor() override;
+
+  int route_to_relocate_index_;
+  int last_route_to_relocate_index_;
+  int empty_route_index_;
+  int last_empty_route_index_;
+  std::vector<int> routes_to_relocate_;
+  std::vector<int> empty_routes_;
+  std::vector<int64> last_node_on_route_;
+  bool has_unperformed_nodes_;
+  bool just_started_;
+};
+
+/// Similar to the heuristic path LNS above, but instead of removing one route
+/// entirely, the destruction phase consists of removing all nodes on an
+/// "expensive" chain from a route.
 class FilteredHeuristicExpensiveChainLNSOperator
-    : public IntVarLocalSearchOperator {
+    : public FilteredHeuristicLocalSearchOperator {
  public:
   FilteredHeuristicExpensiveChainLNSOperator(
       std::unique_ptr<RoutingFilteredHeuristic> heuristic,
@@ -392,30 +462,19 @@ class FilteredHeuristicExpensiveChainLNSOperator
   ~FilteredHeuristicExpensiveChainLNSOperator() override {}
 
   std::string DebugString() const override {
-    std::string heuristic_name = heuristic_->DebugString();
-    const int erase_pos = heuristic_name.find("FilteredHeuristic");
-    if (erase_pos != std::string::npos) {
-      heuristic_name.erase(erase_pos);
-    }
-    return absl::StrCat("HeuristicExpensiveChainLNS(", heuristic_name, ")");
+    return absl::StrCat("HeuristicExpensiveChainLNS(", HeuristicName(), ")");
   }
 
  private:
   void OnStart() override;
-  bool MakeOneNeighbor() override;
 
-  bool IncrementPosition();
+  bool IncrementPosition() override;
   bool IncrementRoute();
   bool IncrementCurrentArcIndices();
   bool FindMostExpensiveChainsOnRemainingRoutes();
 
-  bool DestroyChainAndReinsertNodes();
+  std::function<int64(int64)> SetupNextAccessorForNeighbor() override;
 
-  int64 VehicleVarIndex(int64 node) const { return model_.Size() + node; }
-
-  const std::unique_ptr<RoutingFilteredHeuristic> heuristic_;
-  const RoutingModel& model_;
-  const bool consider_vehicle_vars_;
   int current_route_;
   int last_route_;
 
@@ -432,40 +491,29 @@ class FilteredHeuristicExpensiveChainLNSOperator
   bool just_started_;
 };
 
-// Filtered heuristic LNS operator, where the destruction phase consists of
-// removing a node and the 'num_close_nodes' nodes closest to it, along with
-// each of their corresponding sibling pickup/deliveries that are performed.
-// TODO(user): Factor out MakeOneNeighbor() and the common parts of the
-// destruction/reconstruction methods in a parent class for the three heuristic
-// LNS operators.
+/// Filtered heuristic LNS operator, where the destruction phase consists of
+/// removing a node and the 'num_close_nodes' nodes closest to it, along with
+/// each of their corresponding sibling pickup/deliveries that are performed.
 class FilteredHeuristicCloseNodesLNSOperator
-    : public IntVarLocalSearchOperator {
+    : public FilteredHeuristicLocalSearchOperator {
  public:
   FilteredHeuristicCloseNodesLNSOperator(
       std::unique_ptr<RoutingFilteredHeuristic> heuristic, int num_close_nodes);
   ~FilteredHeuristicCloseNodesLNSOperator() override {}
 
   std::string DebugString() const override {
-    std::string heuristic_name = heuristic_->DebugString();
-    const int erase_pos = heuristic_name.find("FilteredHeuristic");
-    if (erase_pos != std::string::npos) {
-      heuristic_name.erase(erase_pos);
-    }
-    return absl::StrCat("HeuristicCloseNodesLNS(", heuristic_name, ")");
+    return absl::StrCat("HeuristicCloseNodesLNS(", HeuristicName(), ")");
   }
 
  private:
   void OnStart() override;
-  bool MakeOneNeighbor() override;
 
-  bool IncrementNode();
+  bool IncrementPosition() override;
 
-  bool RemoveCloseNodesAndReinsert();
+  std::function<int64(int64)> SetupNextAccessorForNeighbor() override;
 
   void RemoveNode(int64 node);
   void RemoveNodeAndActiveSibling(int64 node);
-
-  int64 VehicleVarIndex(int64 node) const { return model_.Size() + node; }
 
   bool IsActive(int64 node) const {
     DCHECK_LT(node, model_.Size());
@@ -484,19 +532,15 @@ class FilteredHeuristicCloseNodesLNSOperator
 
   std::vector<int64> GetActiveSiblings(int64 node) const;
 
-  const std::unique_ptr<RoutingFilteredHeuristic> heuristic_;
-  const RoutingModel& model_;
   const std::vector<std::pair<std::vector<int64>, std::vector<int64>>>&
       pickup_delivery_pairs_;
 
-  const bool consider_vehicle_vars_;
   int current_node_;
   int last_node_;
   bool just_started_;
 
   std::vector<std::vector<int64>> close_nodes_;
-  // Keep track of changes when making a neighbor.
-  SparseBitset<> removed_nodes_;
+  /// Keep track of changes when making a neighbor.
   std::vector<int64> new_nexts_;
   SparseBitset<> changed_nexts_;
   std::vector<int64> new_prevs_;

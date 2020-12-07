@@ -20,7 +20,6 @@ For examples leveraging the code defined here, see ./pywraplp_test.py and
 
 import collections
 import numbers
-from six import iteritems
 
 # The classes below allow linear expressions to be expressed naturally with the
 # usual arithmetic operators +-*/ and with constant numbers, which makes the
@@ -260,6 +259,6 @@ class LinearConstraint(object):
       ub = self.__ub - constant
 
     constraint = solver.RowConstraint(lb, ub, name)
-    for v, c, in iteritems(coeffs):
+    for v, c, in coeffs.items():
       constraint.SetCoefficient(v, float(c))
     return constraint

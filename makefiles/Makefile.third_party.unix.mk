@@ -5,8 +5,6 @@ help_third_party:
 	@echo
 
 # Checks if the user has overwritten default libraries and binaries.
-UNIX_GFLAGS_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
-UNIX_GLOG_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_PROTOBUF_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_PROTOC_BINARY ?= $(UNIX_PROTOBUF_DIR)/bin/protoc
 UNIX_ABSL_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
@@ -22,10 +20,8 @@ UNIX_SWIG_BINARY ?= swig
 PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
 
 # Tags of dependencies to checkout.
-GFLAGS_TAG = 2.2.2
-GLOG_TAG = 0.4.0
-PROTOBUF_TAG = v3.13.0
-ABSL_TAG = 20200923
+PROTOBUF_TAG = v3.14.0
+ABSL_TAG = 20200923.2
 CBC_TAG = 2.10.5
 CGL_TAG = 0.60.3
 # Clp >= 1.17.5 is broken, so we must keep 1.17.4
@@ -44,16 +40,6 @@ third_party: build_third_party
 third_party_check: dependencies/check.log
 
 dependencies/check.log: Makefile.local
-ifeq ($(wildcard $(UNIX_GFLAGS_DIR)/include/gflags/gflags.h),)
-	$(error Third party GFlags files was not found! did you run 'make third_party' or set UNIX_GFLAGS_DIR ?)
-else
-	$(info GFLAGS: found)
-endif
-ifeq ($(wildcard $(UNIX_GLOG_DIR)/include/glog/logging.h),)
-	$(error Third party GLog files was not found! did you run 'make third_party' or set UNIX_GLOG_DIR ?)
-else
-	$(info GLOG: found)
-endif
 ifeq ($(wildcard $(UNIX_PROTOBUF_DIR)/include/google/protobuf/descriptor.h),)
 	$(error Third party Protobuf files was not found! did you run 'make third_party' or set UNIX_PROTOBUF_DIR ?)
 else
@@ -129,8 +115,6 @@ endif
 build_third_party: \
  Makefile.local \
  install_deps_directories \
- install_gflags \
- install_glog \
  install_protobuf \
  install_absl \
  install_cbc \
@@ -205,12 +189,6 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo >> Makefile.local
 	@echo "## REQUIRED DEPENDENCIES ##" >> Makefile.local
 	@echo "# By default they will be automatically built -> nothing to define" >> Makefile.local
-	@echo "# Define UNIX_GFLAGS_DIR to depend on external Gflags dynamic library" >> Makefile.local
-	@echo "#   e.g. UNIX_GFLAGS_DIR = /opt/gflags-x.y.z" >> Makefile.local
-	@echo >> Makefile.local
-	@echo "# Define UNIX_GLOG_DIR to depend on external Glog dynamic library" >> Makefile.local
-	@echo "#   e.g. UNIX_GLOG_DIR = /opt/glog-x.y.z" >> Makefile.local
-	@echo >> Makefile.local
 	@echo "# Define UNIX_PROTOBUF_DIR to depend on external Protobuf dynamic library" >> Makefile.local
 	@echo "#   e.g. UNIX_PROTOBUF_DIR = /opt/protobuf-x.y.z" >> Makefile.local
 	@echo "# Define UNIX_PROTOC_BINARY to use a custom version." >> Makefile.local
@@ -218,94 +196,8 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo "#   (default: UNIX_PROTOBUF_DIR/bin/protoc)" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "# note: You don't need to run \"make third_party\" if you only use external dependencies" >> Makefile.local
-	@echo "# i.e. You have defined all UNIX_GFLAGS_DIR, UNIX_GLOG_DIR, UNIX_PROTOBUF_DIR and UNIX_CBC_DIR" >> Makefile.local
+	@echo "# i.e. You have defined all UNIX_PROTOBUF_DIR and UNIX_CBC_DIR" >> Makefile.local
 
-############
-##  GLOG  ##
-############
-# This uses glog cmake-based build.
-.PHONY: install_glog
-install_glog: dependencies/install/lib/libglog.a
-
-dependencies/install/lib/libglog.a: dependencies/install/lib/libgflags.a dependencies/sources/glog-$(GLOG_TAG) | dependencies/install
-	cd dependencies/sources/glog-$(GLOG_TAG) && \
-  $(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
-    -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_STANDARD=17 \
-    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
-    -DCMAKE_CXX_EXTENSIONS=OFF \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-    -DWITH_GFLAGS=OFF \
-    -DBUILD_SHARED_LIBS=OFF \
-    -DBUILD_TESTING=OFF \
-    -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
-    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath,\$$ORIGIN" \
-    -DCMAKE_INSTALL_PREFIX=../../install && \
-  $(CMAKE) --build build_cmake -v -- -j 4 && \
-  $(CMAKE) --build build_cmake --target install
-
-dependencies/sources/glog-$(GLOG_TAG): | dependencies/sources
-	-$(DELREC) dependencies/sources/glog-$(GLOG_TAG)
-	git clone --quiet -b v$(GLOG_TAG) https://github.com/google/glog.git dependencies/sources/glog-$(GLOG_TAG)
-	cd dependencies/sources/glog-$(GLOG_TAG) && git apply "$(OR_TOOLS_TOP)/patches/glog-v$(GLOG_TAG).patch"
-
-GLOG_INC = -I$(UNIX_GLOG_DIR)/include
-GLOG_SWIG = $(GLOG_INC)
-_GLOG_STATIC_LIB_DIR = $(dir $(wildcard \
- $(UNIX_GLOG_DIR)/lib*/libglog.a \
- $(UNIX_GLOG_DIR)/lib/*/libglog.a))
-
-STATIC_GLOG_LNK = $(_GLOG_STATIC_LIB_DIR)libglog.a
-
-GLOG_LNK = $(STATIC_GLOG_LNK)
-
-DEPENDENCIES_INC += $(GLOG_INC)
-SWIG_INC += $(GLOG_SWIG)
-DEPENDENCIES_LNK += $(GLOG_LNK)
-OR_TOOLS_LNK += $(GLOG_LNK)
-
-##############
-##  GFLAGS  ##
-##############
-# This uses gflags cmake-based build.
-.PHONY: install_gflags
-install_gflags: dependencies/install/lib/libgflags.a
-
-dependencies/install/lib/libgflags.a: dependencies/sources/gflags-$(GFLAGS_TAG) | dependencies/install
-	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
-  $(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_STANDARD=17 \
-    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
-    -DCMAKE_CXX_EXTENSIONS=OFF \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-    -DINSTALL_HEADERS=ON \
-    -DBUILD_SHARED_LIBS=OFF \
-    -DINSTALL_SHARED_LIBS=OFF \
-    -DBUILD_STATIC_LIBS=ON \
-    -DINSTALL_STATIC_LIBS=ON \
-    -DBUILD_TESTING=OFF \
-    -DGFLAGS_NAMESPACE=gflags \
-    -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
-    -DCMAKE_INSTALL_PREFIX=../../install && \
-  $(CMAKE) --build build_cmake -v -- -j 4 && \
-  $(CMAKE) --build build_cmake --target install
-
-dependencies/sources/gflags-$(GFLAGS_TAG): | dependencies/sources
-	-$(DELREC) dependencies/sources/gflags-$(GFLAGS_TAG)
-	git clone --quiet -b v$(GFLAGS_TAG) https://github.com/gflags/gflags.git dependencies/sources/gflags-$(GFLAGS_TAG)
-
-GFLAGS_INC = -I$(UNIX_GFLAGS_DIR)/include
-GFLAGS_SWIG = $(GFLAGS_INC)
-STATIC_GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
-
-GFLAGS_LNK = $(STATIC_GFLAGS_LNK)
-
-DEPENDENCIES_INC += $(GFLAGS_INC)
-SWIG_INC += $(GFLAGS_SWIG)
-DEPENDENCIES_LNK += $(GFLAGS_LNK)
-OR_TOOLS_LNK += $(GFLAGS_LNK)
 
 ################
 ##  Protobuf  ##
@@ -314,7 +206,7 @@ OR_TOOLS_LNK += $(GFLAGS_LNK)
 .PHONY: install_protobuf
 install_protobuf: dependencies/install/lib/libprotobuf.a
 
-dependencies/install/lib/libprotobuf.a: dependencies/install/lib/libglog.a dependencies/sources/protobuf-$(PROTOBUF_TAG) | dependencies/install
+dependencies/install/lib/libprotobuf.a: dependencies/sources/protobuf-$(PROTOBUF_TAG) | dependencies/install
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && \
   $(SET_COMPILER) $(CMAKE) -Hcmake -Bbuild_cmake \
     -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
@@ -329,8 +221,8 @@ dependencies/install/lib/libprotobuf.a: dependencies/install/lib/libglog.a depen
     -Dprotobuf_BUILD_EXAMPLES=OFF \
     -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
     -DCMAKE_INSTALL_PREFIX=../../install && \
-  $(CMAKE) --build build_cmake -v -- -j 4 && \
-  $(CMAKE) --build build_cmake --target install
+  $(CMAKE) --build build_cmake --config Release -v -- -j 4 && \
+  $(CMAKE) --build build_cmake --config Release --target install
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG): patches/protobuf-$(PROTOBUF_TAG).patch | dependencies/sources
 	-$(DELREC) dependencies/sources/protobuf-$(PROTOBUF_TAG)
@@ -401,8 +293,8 @@ dependencies/install/lib/libabsl.a: dependencies/sources/abseil-cpp-$(ABSL_TAG) 
     -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
     -DBUILD_TESTING=OFF \
     -DCMAKE_INSTALL_PREFIX=../../install && \
-  $(CMAKE) --build build_cmake -v -- -j4 && \
-  $(CMAKE) --build build_cmake --target install
+  $(CMAKE) --build build_cmake --config Release -v -- -j4 && \
+  $(CMAKE) --build build_cmake --config Release --target install
 
 dependencies/sources/abseil-cpp-$(ABSL_TAG): | dependencies/sources
 	-$(DELREC) dependencies/sources/abseil-cpp-$(ABSL_TAG)
@@ -457,6 +349,7 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_scoped_set_env.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_spinlock_wait.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_stacktrace.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_status.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_statusor.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_str_format_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_strings.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_strings_internal.a \
@@ -469,6 +362,18 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_cord.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_int128.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_debugging_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_demangle_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_commandlineflag.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_commandlineflag_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_config.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_marshalling.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_parse.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_private_handle_accessor.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_program_name.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_reflection.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_usage.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_usage_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_base.a \
 
 ABSL_LNK = $(STATIC_ABSL_LNK)
@@ -748,6 +653,8 @@ endif
 $(SCIP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(SCIP_SRCDIR)
 	tar xvzf dependencies/archives/scip-$(SCIP_TAG).tgz -C dependencies/sources
+	cd dependencies/sources/scip-$(SCIP_TAG) && git apply --ignore-whitespace ../../../patches/scip-$(SCIP_TAG).patch
+
 
 $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc: $(SCIP_SRCDIR) | $(GEN_DIR)/ortools/linear_solver
 	$(COPY) dependencies/sources/scip-$(SCIP_TAG)/src/lpi/lpi_glop.cpp $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
@@ -804,8 +711,6 @@ endif
 clean_third_party:
 	-$(DEL) Makefile.local
 	-$(DEL) dependencies/check.log
-	-$(DELREC) dependencies/sources/gflags*
-	-$(DELREC) dependencies/sources/glog*
 	-$(DELREC) dependencies/sources/protobuf*
 	-$(DELREC) dependencies/sources/abseil-cpp*
 	-$(DELREC) dependencies/sources/google*
@@ -832,12 +737,6 @@ clean_third_party:
 .PHONY: detect_third_party # Show variables used to find third party
 detect_third_party:
 	@echo Relevant info on third party:
-	@echo UNIX_GFLAGS_DIR = $(UNIX_GFLAGS_DIR)
-	@echo GFLAGS_INC = $(GFLAGS_INC)
-	@echo GFLAGS_LNK = $(GFLAGS_LNK)
-	@echo UNIX_GLOG_DIR = $(UNIX_GLOG_DIR)
-	@echo GLOG_INC = $(GLOG_INC)
-	@echo GLOG_LNK = $(GLOG_LNK)
 	@echo UNIX_PROTOBUF_DIR = $(UNIX_PROTOBUF_DIR)
 	@echo PROTOBUF_INC = $(PROTOBUF_INC)
 	@echo PROTOBUF_LNK = $(PROTOBUF_LNK)

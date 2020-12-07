@@ -10,58 +10,16 @@ set_target_properties(${NAME} PROPERTIES
   CXX_EXTENSIONS OFF
   POSITION_INDEPENDENT_CODE ON
   )
-# CMake < 3.12: CMakeError: Object library may not link to anything.
-#target_link_libraries(${NAME} PRIVATE
-#  absl::hash absl::meta absl::memory absl::strings absl::str_format
-#  gflags::gflags glog::glog
-#  protobuf::libprotobuf
-#  Coin::Cbc
-#  ${PROJECT_NAME}::proto)
 target_include_directories(${NAME} PRIVATE
   ${PROJECT_SOURCE_DIR}
-  ${PROJECT_BINARY_DIR}
-  $<TARGET_PROPERTY:absl::hash,INTERFACE_INCLUDE_DIRECTORIES>
-  $<TARGET_PROPERTY:absl::meta,INTERFACE_INCLUDE_DIRECTORIES>
-  $<TARGET_PROPERTY:absl::memory,INTERFACE_INCLUDE_DIRECTORIES>
-  $<TARGET_PROPERTY:absl::strings,INTERFACE_INCLUDE_DIRECTORIES>
-  $<TARGET_PROPERTY:absl::str_format,INTERFACE_INCLUDE_DIRECTORIES>
-  $<TARGET_PROPERTY:gflags::gflags,INTERFACE_INCLUDE_DIRECTORIES>
-  $<TARGET_PROPERTY:glog::glog,INTERFACE_INCLUDE_DIRECTORIES>
-  $<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
-  $<$<BOOL:${USE_COINOR}>:$<TARGET_PROPERTY:Coin::Cbc,INTERFACE_INCLUDE_DIRECTORIES>>
-  $<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_INCLUDE_DIRECTORIES>)
-target_compile_options(${NAME} PRIVATE
-  $<TARGET_PROPERTY:absl::hash,INTERFACE_COMPILE_OPTIONS>
-  $<TARGET_PROPERTY:absl::meta,INTERFACE_COMPILE_OPTIONS>
-  $<TARGET_PROPERTY:absl::memory,INTERFACE_COMPILE_OPTIONS>
-  $<TARGET_PROPERTY:absl::strings,INTERFACE_COMPILE_OPTIONS>
-  $<TARGET_PROPERTY:absl::str_format,INTERFACE_COMPILE_OPTIONS>
-  $<TARGET_PROPERTY:gflags::gflags,INTERFACE_COMPILE_OPTIONS>
-  $<TARGET_PROPERTY:glog::glog,INTERFACE_COMPILE_OPTIONS>
-  $<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_COMPILE_OPTIONS>
-  $<$<BOOL:${USE_COINOR}>:$<TARGET_PROPERTY:Coin::Cbc,INTERFACE_COMPILE_OPTIONS>>
-  $<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_COMPILE_OPTIONS>
-  )
-target_compile_definitions(${NAME} PRIVATE
-  $<TARGET_PROPERTY:absl::hash,INTERFACE_COMPILE_DEFINITIONS>
-  $<TARGET_PROPERTY:absl::meta,INTERFACE_COMPILE_DEFINITIONS>
-  $<TARGET_PROPERTY:absl::memory,INTERFACE_COMPILE_DEFINITIONS>
-  $<TARGET_PROPERTY:absl::strings,INTERFACE_COMPILE_DEFINITIONS>
-  $<TARGET_PROPERTY:absl::str_format,INTERFACE_COMPILE_DEFINITIONS>
-  $<TARGET_PROPERTY:gflags::gflags,INTERFACE_COMPILE_DEFINITIONS>
-  $<TARGET_PROPERTY:glog::glog,INTERFACE_COMPILE_DEFINITIONS>
-  $<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_COMPILE_DEFINITIONS>
-  $<$<BOOL:${USE_COINOR}>:$<TARGET_PROPERTY:Coin::Cbc,INTERFACE_COMPILE_DEFINITIONS>>
-  $<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_COMPILE_DEFINITIONS>
-  )
-add_dependencies(${NAME}
-  absl::hash absl::meta absl::memory absl::strings absl::str_format
-  gflags::gflags glog::glog
+  ${PROJECT_BINARY_DIR})
+target_link_libraries(${NAME} PRIVATE
+  absl::hash
+  absl::meta
+  absl::memory
+  absl::strings
+  absl::str_format
   protobuf::libprotobuf
-  ${PROJECT_NAME}::proto)
-
-if(USE_COINOR)
-  add_dependencies(${NAME} Coin::Cbc)
-endif()
-
-add_library(${PROJECT_NAME}::graph ALIAS ${NAME})
+  ${PROJECT_NAME}::proto
+  $<$<BOOL:${USE_COINOR}>:Coin::Cbc>)
+#add_library(${PROJECT_NAME}::graph ALIAS ${NAME})

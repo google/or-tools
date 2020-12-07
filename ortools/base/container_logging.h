@@ -73,33 +73,33 @@ namespace internal {
 
 struct LogBase {
   template <typename ElementT>
-  void Log(std::ostream &out, const ElementT &element) const {  // NOLINT
+  void Log(std::ostream& out, const ElementT& element) const {  // NOLINT
     out << element;
   }
-  void LogEllipsis(std::ostream &out) const {  // NOLINT
+  void LogEllipsis(std::ostream& out) const {  // NOLINT
     out << "...";
   }
 };
 
 struct LogShortBase : public LogBase {
-  void LogOpening(std::ostream &out) const { out << "["; }        // NOLINT
-  void LogClosing(std::ostream &out) const { out << "]"; }        // NOLINT
-  void LogFirstSeparator(std::ostream &out) const { out << ""; }  // NOLINT
-  void LogSeparator(std::ostream &out) const { out << ", "; }     // NOLINT
+  void LogOpening(std::ostream& out) const { out << "["; }        // NOLINT
+  void LogClosing(std::ostream& out) const { out << "]"; }        // NOLINT
+  void LogFirstSeparator(std::ostream& out) const { out << ""; }  // NOLINT
+  void LogSeparator(std::ostream& out) const { out << ", "; }     // NOLINT
 };
 
 struct LogMultilineBase : public LogBase {
-  void LogOpening(std::ostream &out) const { out << "["; }          // NOLINT
-  void LogClosing(std::ostream &out) const { out << "\n]"; }        // NOLINT
-  void LogFirstSeparator(std::ostream &out) const { out << "\n"; }  // NOLINT
-  void LogSeparator(std::ostream &out) const { out << "\n"; }       // NOLINT
+  void LogOpening(std::ostream& out) const { out << "["; }          // NOLINT
+  void LogClosing(std::ostream& out) const { out << "\n]"; }        // NOLINT
+  void LogFirstSeparator(std::ostream& out) const { out << "\n"; }  // NOLINT
+  void LogSeparator(std::ostream& out) const { out << "\n"; }       // NOLINT
 };
 
 struct LogLegacyBase : public LogBase {
-  void LogOpening(std::ostream &out) const { out << ""; }         // NOLINT
-  void LogClosing(std::ostream &out) const { out << ""; }         // NOLINT
-  void LogFirstSeparator(std::ostream &out) const { out << ""; }  // NOLINT
-  void LogSeparator(std::ostream &out) const { out << " "; }      // NOLINT
+  void LogOpening(std::ostream& out) const { out << ""; }         // NOLINT
+  void LogClosing(std::ostream& out) const { out << ""; }         // NOLINT
+  void LogFirstSeparator(std::ostream& out) const { out << ""; }  // NOLINT
+  void LogSeparator(std::ostream& out) const { out << " "; }      // NOLINT
 };
 
 }  // namespace internal
@@ -170,9 +170,9 @@ typedef LogShortUpTo100 LogDefault;
 // LogRangeToStream should be used to define operator<< for
 // STL and STL-like containers.  For example, see stl_logging.h.
 template <typename IteratorT, typename PolicyT>
-inline void LogRangeToStream(std::ostream &out,  // NOLINT
+inline void LogRangeToStream(std::ostream& out,  // NOLINT
                              IteratorT begin, IteratorT end,
-                             const PolicyT &policy) {
+                             const PolicyT& policy) {
   policy.LogOpening(out);
   for (int64 i = 0; begin != end && i < policy.MaxElements(); ++i, ++begin) {
     if (i == 0) {
@@ -200,11 +200,11 @@ namespace detail {
 template <typename IteratorT, typename PolicyT>
 class RangeLogger {
  public:
-  RangeLogger(const IteratorT &begin, const IteratorT &end,
-              const PolicyT &policy)
+  RangeLogger(const IteratorT& begin, const IteratorT& end,
+              const PolicyT& policy)
       : begin_(begin), end_(end), policy_(policy) {}
 
-  friend std::ostream &operator<<(std::ostream &out, const RangeLogger &range) {
+  friend std::ostream& operator<<(std::ostream& out, const RangeLogger& range) {
     gtl::LogRangeToStream<IteratorT, PolicyT>(out, range.begin_, range.end_,
                                               range.policy_);
     return out;
@@ -229,7 +229,7 @@ class EnumLogger {
  public:
   explicit EnumLogger(E e) : e_(e) {}
 
-  friend std::ostream &operator<<(std::ostream &out, const EnumLogger &v) {
+  friend std::ostream& operator<<(std::ostream& out, const EnumLogger& v) {
     using I = typename std::underlying_type<E>::type;
     return out << static_cast<I>(v.e_);
   }
@@ -247,9 +247,9 @@ class EnumLogger {
 // The above example will print the range using newlines between
 // elements, enclosed in [] braces.
 template <typename IteratorT, typename PolicyT>
-detail::RangeLogger<IteratorT, PolicyT> LogRange(const IteratorT &begin,
-                                                 const IteratorT &end,
-                                                 const PolicyT &policy) {
+detail::RangeLogger<IteratorT, PolicyT> LogRange(const IteratorT& begin,
+                                                 const IteratorT& end,
+                                                 const PolicyT& policy) {
   return gtl::detail::RangeLogger<IteratorT, PolicyT>(begin, end, policy);
 }
 
@@ -260,8 +260,8 @@ detail::RangeLogger<IteratorT, PolicyT> LogRange(const IteratorT &begin,
 // By default, Range() uses the LogShortUpTo100 policy: comma-space
 // separation, no newlines, and with limit of 100 items.
 template <typename IteratorT>
-detail::RangeLogger<IteratorT, LogDefault> LogRange(const IteratorT &begin,
-                                                    const IteratorT &end) {
+detail::RangeLogger<IteratorT, LogDefault> LogRange(const IteratorT& begin,
+                                                    const IteratorT& end) {
   return gtl::LogRange(begin, end, LogDefault());
 }
 
@@ -272,7 +272,7 @@ detail::RangeLogger<IteratorT, LogDefault> LogRange(const IteratorT &begin,
 // The above example will print the container using newlines between
 // elements, enclosed in [] braces.
 template <typename ContainerT, typename PolicyT>
-auto LogContainer(const ContainerT &container, const PolicyT &policy)
+auto LogContainer(const ContainerT& container, const PolicyT& policy)
     -> decltype(gtl::LogRange(container.begin(), container.end(), policy)) {
   return gtl::LogRange(container.begin(), container.end(), policy);
 }
@@ -284,7 +284,7 @@ auto LogContainer(const ContainerT &container, const PolicyT &policy)
 // By default, Container() uses the LogShortUpTo100 policy: comma-space
 // separation, no newlines, and with limit of 100 items.
 template <typename ContainerT>
-auto LogContainer(const ContainerT &container)
+auto LogContainer(const ContainerT& container)
     -> decltype(gtl::LogContainer(container, LogDefault())) {
   return gtl::LogContainer(container, LogDefault());
 }

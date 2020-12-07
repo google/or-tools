@@ -30,7 +30,7 @@ namespace sat {
 // positive variable ref in the proto is mapped to variable_mapping[ref] in the
 // model. All the variables referred in the search strategy must be correctly
 // mapped, the other entries can be set to kNoIntegerVariable.
-std::function<LiteralIndex()> ConstructSearchStrategy(
+std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
     const CpModelProto& cp_model_proto,
     const std::vector<IntegerVariable>& variable_mapping,
     IntegerVariable objective_var, Model* model);
@@ -39,10 +39,11 @@ std::function<LiteralIndex()> ConstructSearchStrategy(
 // domain before taking each decision. Note that we copy the instrumented
 // stategy so it doesn't have to outlive the returned functions like the other
 // arguments.
-std::function<LiteralIndex()> InstrumentSearchStrategy(
+std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     const CpModelProto& cp_model_proto,
     const std::vector<IntegerVariable>& variable_mapping,
-    const std::function<LiteralIndex()>& instrumented_strategy, Model* model);
+    const std::function<BooleanOrIntegerLiteral()>& instrumented_strategy,
+    Model* model);
 
 // Returns up to "num_workers" different parameters. We do not always return
 // num_worker parameters to leave room for strategies like LNS that do not

@@ -13,8 +13,6 @@
 """Minimal jobshop example."""
 
 # [START program]
-from __future__ import print_function
-
 import collections
 
 # [START model]

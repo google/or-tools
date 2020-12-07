@@ -25,10 +25,10 @@
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/model.h"
 #include "ortools/util/bitset.h"
 
@@ -400,11 +400,11 @@ class Trail {
   VariablesAssignment assignment_;
   std::vector<Literal> trail_;
   std::vector<Literal> conflict_;
-  gtl::ITIVector<BooleanVariable, AssignmentInfo> info_;
+  absl::StrongVector<BooleanVariable, AssignmentInfo> info_;
   SatClause* failing_sat_clause_;
 
   // Data used by EnqueueWithSameReasonAs().
-  gtl::ITIVector<BooleanVariable, BooleanVariable>
+  absl::StrongVector<BooleanVariable, BooleanVariable>
       reference_var_with_same_reason_as_;
 
   // Reason cache. Mutable since we want the API to be the same whether the
@@ -431,8 +431,9 @@ class Trail {
   // variables, the memory address of the vectors (kept in reasons_) are still
   // valid.
   mutable std::deque<std::vector<Literal>> reasons_repository_;
-  mutable gtl::ITIVector<BooleanVariable, absl::Span<const Literal>> reasons_;
-  mutable gtl::ITIVector<BooleanVariable, int> old_type_;
+  mutable absl::StrongVector<BooleanVariable, absl::Span<const Literal>>
+      reasons_;
+  mutable absl::StrongVector<BooleanVariable, int> old_type_;
 
   // This is used by RegisterPropagator() and Reason().
   std::vector<SatPropagator*> propagators_;

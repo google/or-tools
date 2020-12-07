@@ -59,30 +59,31 @@
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
-DEFINE_string(directory, "", "Specifies the directory of the data.");
-DEFINE_string(value_evaluator, "",
-              "Specifies if a value evaluator will be used by the "
-              "decision builder.");
-DEFINE_string(variable_evaluator, "",
-              "Specifies if a variable evaluator will be used by the "
-              "decision builder.");
-DEFINE_int32(time_limit_in_ms, 0, "Time limit in ms, <= 0 means no limit.");
-DEFINE_int32(choose_next_variable_strategy, 1,
-             "Selection strategy for variable: "
-             "1 = CHOOSE_FIRST_UNBOUND, "
-             "2 = CHOOSE_MIN_SIZE_LOWEST_MIN, "
-             "3 = CHOOSE_MIN_SIZE_HIGHEST_MAX, "
-             "4 = CHOOSE_RANDOM, ");
-DEFINE_int32(restart, -1, "Parameter for constant restart monitor.");
-DEFINE_bool(find_components, false,
-            "If possible, split the problem into independent sub-problems.");
-DEFINE_bool(luby, false,
-            "Use luby restart monitor instead of constant restart monitor.");
-DEFINE_bool(log_search, true, "Create a search log.");
-DEFINE_bool(soft, false, "Use soft solver instead of hard solver.");
-DEFINE_bool(display_time, true,
-            "Print how much time the solving process took.");
-DEFINE_bool(display_results, true, "Print the results of the solving process.");
+ABSL_FLAG(std::string, directory, "", "Specifies the directory of the data.");
+ABSL_FLAG(std::string, value_evaluator, "",
+          "Specifies if a value evaluator will be used by the "
+          "decision builder.");
+ABSL_FLAG(std::string, variable_evaluator, "",
+          "Specifies if a variable evaluator will be used by the "
+          "decision builder.");
+ABSL_FLAG(int, time_limit_in_ms, 0, "Time limit in ms, <= 0 means no limit.");
+ABSL_FLAG(int, choose_next_variable_strategy, 1,
+          "Selection strategy for variable: "
+          "1 = CHOOSE_FIRST_UNBOUND, "
+          "2 = CHOOSE_MIN_SIZE_LOWEST_MIN, "
+          "3 = CHOOSE_MIN_SIZE_HIGHEST_MAX, "
+          "4 = CHOOSE_RANDOM, ");
+ABSL_FLAG(int, restart, -1, "Parameter for constant restart monitor.");
+ABSL_FLAG(bool, find_components, false,
+          "If possible, split the problem into independent sub-problems.");
+ABSL_FLAG(bool, luby, false,
+          "Use luby restart monitor instead of constant restart monitor.");
+ABSL_FLAG(bool, log_search, true, "Create a search log.");
+ABSL_FLAG(bool, soft, false, "Use soft solver instead of hard solver.");
+ABSL_FLAG(bool, display_time, true,
+          "Print how much time the solving process took.");
+ABSL_FLAG(bool, display_results, true,
+          "Print the results of the solving process.");
 
 namespace operations_research {
 
@@ -330,7 +331,7 @@ bool ConstraintImpactComparator(FapConstraint constraint1,
 }
 
 int64 ValueEvaluator(
-    absl::flat_hash_map<int64, std::pair<int64, int64>>* value_evaluator_map,
+    absl::flat_hash_map<int64, std::pair<int64, int64> >* value_evaluator_map,
     int64 variable_index, int64 value) {
   CHECK(value_evaluator_map != nullptr);
   // Evaluate the choice. Smaller ranking denotes a better choice.
@@ -343,7 +344,7 @@ int64 ValueEvaluator(
   }
 
   // Update the history of assigned values and their rankings of each variable.
-  absl::flat_hash_map<int64, std::pair<int64, int64>>::iterator it;
+  absl::flat_hash_map<int64, std::pair<int64, int64> >::iterator it;
   int64 new_value = value;
   int64 new_ranking = ranking;
   if ((it = value_evaluator_map->find(variable_index)) !=
@@ -439,7 +440,7 @@ void CreateModelConstraints(const std::vector<FapConstraint>& data_constraints,
 void ChooseVariableStrategy(Solver::IntVarStrategy* variable_strategy) {
   CHECK(variable_strategy != nullptr);
 
-  switch (FLAGS_choose_next_variable_strategy) {
+  switch (absl::GetFlag(FLAGS_choose_next_variable_strategy)) {
     case 1: {
       *variable_strategy = Solver::CHOOSE_FIRST_UNBOUND;
       LOG(INFO) << "Using Solver::CHOOSE_FIRST_UNBOUND "
@@ -479,24 +480,26 @@ void CreateAdditionalMonitors(OptimizeVar* const objective, Solver* solver,
   CHECK(monitors != nullptr);
 
   // Search Log
-  if (FLAGS_log_search) {
+  if (absl::GetFlag(FLAGS_log_search)) {
     SearchMonitor* const log = solver->MakeSearchLog(100000, objective);
     monitors->push_back(log);
   }
 
   // Time Limit
-  if (FLAGS_time_limit_in_ms != 0) {
-    LOG(INFO) << "Adding time limit of " << FLAGS_time_limit_in_ms << " ms.";
+  if (absl::GetFlag(FLAGS_time_limit_in_ms) != 0) {
+    LOG(INFO) << "Adding time limit of "
+              << absl::GetFlag(FLAGS_time_limit_in_ms) << " ms.";
     SearchLimit* const limit = solver->MakeLimit(
-        FLAGS_time_limit_in_ms, kint64max, kint64max, kint64max);
+        absl::GetFlag(FLAGS_time_limit_in_ms), kint64max, kint64max, kint64max);
     monitors->push_back(limit);
   }
 
   // Search Restart
   SearchMonitor* const restart =
-      FLAGS_restart != -1
-          ? (FLAGS_luby ? solver->MakeLubyRestart(FLAGS_restart)
-                        : solver->MakeConstantRestart(FLAGS_restart))
+      absl::GetFlag(FLAGS_restart) != -1
+          ? (absl::GetFlag(FLAGS_luby)
+                 ? solver->MakeLubyRestart(absl::GetFlag(FLAGS_restart))
+                 : solver->MakeConstantRestart(absl::GetFlag(FLAGS_restart)))
           : nullptr;
   if (restart) {
     monitors->push_back(restart);
@@ -578,8 +581,8 @@ void HardFapSolver(const std::map<int, FapVariable>& data_variables,
   ChooseVariableStrategy(&variable_strategy);
   // Choose the value selection strategy.
   DecisionBuilder* db;
-  absl::flat_hash_map<int64, std::pair<int64, int64>> history;
-  if (FLAGS_value_evaluator == "value_evaluator") {
+  absl::flat_hash_map<int64, std::pair<int64, int64> > history;
+  if (absl::GetFlag(FLAGS_value_evaluator) == "value_evaluator") {
     LOG(INFO) << "Using ValueEvaluator for value selection strategy.";
     Solver::IndexEvaluator2 index_evaluator2 = [&history](int64 var,
                                                           int64 value) {
@@ -611,11 +614,11 @@ void HardFapSolver(const std::map<int, FapVariable>& data_variables,
   const int64 time2 = solver.wall_time();
 
   // Display Time.
-  if (FLAGS_display_time) {
+  if (absl::GetFlag(FLAGS_display_time)) {
     PrintElapsedTime(time1, time2);
   }
   // Display Results.
-  if (FLAGS_display_results) {
+  if (absl::GetFlag(FLAGS_display_results)) {
     PrintResultsHard(collector, variables, objective_var, data_variables,
                      data_constraints, index_from_key, key_from_index);
   }
@@ -776,7 +779,7 @@ int SoftFapSolver(const std::map<int, FapVariable>& data_variables,
   // Decision Builder Configuration
   // Choose the next variable selection strategy.
   DecisionBuilder* db;
-  if (FLAGS_variable_evaluator == "variable_evaluator") {
+  if (absl::GetFlag(FLAGS_variable_evaluator) == "variable_evaluator") {
     LOG(INFO) << "Using VariableEvaluator for variable selection strategy and "
                  "Solver::ASSIGN_MIN_VALUE for value selection strategy.";
     Solver::IndexEvaluator1 var_evaluator = [&key_from_index,
@@ -811,11 +814,11 @@ int SoftFapSolver(const std::map<int, FapVariable>& data_variables,
   int violation_sum =
       collector->Value(collector->solution_count() - 1, objective_var);
   // Display Time.
-  if (FLAGS_display_time) {
+  if (absl::GetFlag(FLAGS_display_time)) {
     PrintElapsedTime(time1, time2);
   }
   // Display Results.
-  if (FLAGS_display_results) {
+  if (absl::GetFlag(FLAGS_display_results)) {
     PrintResultsSoft(collector, variables, objective_var, hard_variables,
                      hard_constraints, soft_variables, soft_constraints,
                      index_from_key, key_from_index);
@@ -853,23 +856,25 @@ void SolveProblem(const std::map<int, FapVariable>& variables,
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
 
-  CHECK(!FLAGS_directory.empty()) << "Requires --directory=<directory name>";
+  CHECK(!absl::GetFlag(FLAGS_directory).empty())
+      << "Requires --directory=<directory name>";
 
-  LOG(INFO) << "Solving instance in directory  " << FLAGS_directory;
+  LOG(INFO) << "Solving instance in directory  "
+            << absl::GetFlag(FLAGS_directory);
   // Parse!
   std::map<int, operations_research::FapVariable> variables;
   std::vector<operations_research::FapConstraint> constraints;
   std::string objective;
   std::vector<int> values;
   absl::flat_hash_map<int, operations_research::FapComponent> components;
-  operations_research::ParseInstance(FLAGS_directory, FLAGS_find_components,
-                                     &variables, &constraints, &objective,
-                                     &values, &components);
-  if (!FLAGS_find_components) {
+  operations_research::ParseInstance(
+      absl::GetFlag(FLAGS_directory), absl::GetFlag(FLAGS_find_components),
+      &variables, &constraints, &objective, &values, &components);
+  if (!absl::GetFlag(FLAGS_find_components)) {
     operations_research::SolveProblem(variables, constraints, objective, values,
-                                      FLAGS_soft);
+                                      absl::GetFlag(FLAGS_soft));
   } else {
     int component_id = 1;
     LOG(INFO) << "Number of components in the RLFAP graph "
@@ -878,7 +883,7 @@ int main(int argc, char** argv) {
       LOG(INFO) << "Solving Component " << component_id;
       operations_research::SolveProblem(component.second.variables,
                                         component.second.constraints, objective,
-                                        values, FLAGS_soft);
+                                        values, absl::GetFlag(FLAGS_soft));
       component_id++;
     }
   }

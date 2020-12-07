@@ -23,10 +23,10 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -93,7 +93,7 @@ bool ComputeBooleanLinearExpressionCanonicalForm(
 // Finally, this will return false if some integer overflow or underflow
 // occurred during the constraint simplification.
 bool ApplyLiteralMapping(
-    const gtl::ITIVector<LiteralIndex, LiteralIndex>& mapping,
+    const absl::StrongVector<LiteralIndex, LiteralIndex>& mapping,
     std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shift,
     Coefficient* max_value);
 
@@ -318,7 +318,7 @@ class MutableUpperBoundedLinearConstraint {
   // The encoding is special:
   // - If terms_[x] > 0, then the associated term is 'terms_[x] . x'
   // - If terms_[x] < 0, then the associated term is 'terms_[x] . (x - 1)'
-  gtl::ITIVector<BooleanVariable, Coefficient> terms_;
+  absl::StrongVector<BooleanVariable, Coefficient> terms_;
 
   // The right hand side of the constraint (sum terms <= rhs_).
   Coefficient rhs_;
@@ -639,11 +639,11 @@ class PbConstraints : public SatPropagator {
   std::vector<std::unique_ptr<UpperBoundedLinearConstraint>> constraints_;
 
   // The current value of the threshold for each constraints.
-  gtl::ITIVector<ConstraintIndex, Coefficient> thresholds_;
+  absl::StrongVector<ConstraintIndex, Coefficient> thresholds_;
 
   // For each literal, the list of all the constraints that contains it together
   // with the literal coefficient in these constraints.
-  gtl::ITIVector<LiteralIndex, std::vector<ConstraintIndexWithCoeff>>
+  absl::StrongVector<LiteralIndex, std::vector<ConstraintIndexWithCoeff>>
       to_update_;
 
   // Bitset used to optimize the Untrail() function.
@@ -713,7 +713,7 @@ class VariableWithSameReasonIdentifier {
 
  private:
   const Trail& trail_;
-  gtl::ITIVector<BooleanVariable, BooleanVariable> first_variable_;
+  absl::StrongVector<BooleanVariable, BooleanVariable> first_variable_;
   SparseBitset<BooleanVariable> seen_;
 
   DISALLOW_COPY_AND_ASSIGN(VariableWithSameReasonIdentifier);

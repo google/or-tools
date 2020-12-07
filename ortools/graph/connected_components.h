@@ -95,6 +95,10 @@ class DenseConnectedComponentsFinder {
   int GetNumberOfComponents() const { return num_components_; }
   int GetNumberOfNodes() const { return parent_.size(); }
 
+  // Gets the current set of root nodes in sorted order. Runs in amortized
+  // O(#components) time.
+  const std::vector<int>& GetComponentRoots();
+
   // Sets the number of nodes in the graph. The graph can only grow: this
   // dies if "num_nodes" is lower or equal to any of the values ever given
   // to AddEdge(), or lower than a previous value given to SetNumberOfNodes().
@@ -120,6 +124,11 @@ class DenseConnectedComponentsFinder {
   std::vector<int> rank_;
   // Number of connected components.
   int num_components_ = 0;
+  // The current roots.  This is maintained lazily by GetComponentRoots().
+  std::vector<int> roots_;
+  // The number of nodes that existed the last time GetComponentRoots() was
+  // called.
+  int num_nodes_at_last_get_roots_call_ = 0;
 };
 
 namespace internal {
@@ -141,8 +150,8 @@ struct ConnectedComponentsTypeHelper {
   // like a hash functor.
   template <typename U>
   struct SelectContainer<
-      U, absl::enable_if_t<std::is_integral<decltype(
-             std::declval<const U&>()(std::declval<const T&>()))>::value>> {
+      U, absl::enable_if_t<std::is_integral<decltype(std::declval<const U&>()(
+             std::declval<const T&>()))>::value>> {
     using Set = absl::flat_hash_set<T, CompareOrHashT>;
     using Map = absl::flat_hash_map<T, int, CompareOrHashT>;
   };

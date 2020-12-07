@@ -31,11 +31,11 @@
 #include "ortools/graph/iterators.h"
 #include "ortools/graph/util.h"
 
-DEFINE_bool(minimize_permutation_support_size, false,
-            "Tweak the algorithm to try and minimize the support size"
-            " of the generators produced. This may negatively impact the"
-            " performance, but works great on the sat_holeXXX benchmarks"
-            " to reduce the support size.");
+ABSL_FLAG(bool, minimize_permutation_support_size, false,
+          "Tweak the algorithm to try and minimize the support size"
+          " of the generators produced. This may negatively impact the"
+          " performance, but works great on the sat_holeXXX benchmarks"
+          " to reduce the support size.");
 
 namespace operations_research {
 
@@ -567,7 +567,7 @@ inline void GetBestMapping(const DynamicPartition& base_partition,
   // but 3) yields much smaller supports for the sat_holeXXX benchmarks, as
   // long as it's combined with the other tweak enabled by
   // FLAGS_minimize_permutation_support_size.
-  if (FLAGS_minimize_permutation_support_size) {
+  if (absl::GetFlag(FLAGS_minimize_permutation_support_size)) {
     // Variant 3).
     for (const int node : base_partition.ElementsInPart(part_index)) {
       if (image_partition.PartOf(node) == part_index) {
@@ -939,7 +939,7 @@ bool GraphSymmetryFinder::ConfirmFullMatchOrFindNextMappingDecision(
 
   // The following clause should be true most of the times, except in some
   // specific use cases.
-  if (!FLAGS_minimize_permutation_support_size) {
+  if (!absl::GetFlag(FLAGS_minimize_permutation_support_size)) {
     // First, we try to map the loose ends of the current permutations: these
     // loose ends can't be mapped to themselves, so we'll have to map them to
     // something anyway.

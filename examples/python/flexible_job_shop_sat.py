@@ -12,8 +12,6 @@
 # limitations under the License.
 """Solves a flexible jobshop problems with the CP-SAT solver."""
 
-from __future__ import print_function
-
 import collections
 from ortools.sat.python import cp_model
 
@@ -35,10 +33,23 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
 def flexible_jobshop():
     """Solve a small flexible jobshop problem."""
     # Data part.
-    jobs = [[[(3, 0), (1, 1), (5, 2)], [(2, 0), (4, 1), (6, 2)], [(2, 0), (3, 1), (1, 2)]],
-            [[(2, 0), (3, 1), (4, 2)], [(1, 0), (5, 1), (4, 2)], [(2, 0), (1, 1), (4, 2)]],
-            [[(2, 0), (1, 1), (4, 2)], [(2, 0), (3, 1), (4, 2)], [(3, 0), (1, 1), (5, 2)]]
-    ] # yapf:disable
+    jobs = [ # task = (processing_time, machine_id)
+        [ # Job 0
+            [(3, 0), (1, 1), (5, 2)], # alternative 0
+            [(2, 0), (4, 1), (6, 2)], # alternative 1
+            [(2, 0), (3, 1), (1, 2)], # alternative 2
+        ],
+        [ # Job 1
+            [(2, 0), (3, 1), (4, 2)],
+            [(1, 0), (5, 1), (4, 2)],
+            [(2, 0), (1, 1), (4, 2)],
+        ],
+        [ # Job 2
+            [(2, 0), (1, 1), (4, 2)],
+            [(2, 0), (3, 1), (4, 2)],
+            [(3, 0), (1, 1), (5, 2)],
+        ],
+    ]
 
     num_jobs = len(jobs)
     all_jobs = range(num_jobs)

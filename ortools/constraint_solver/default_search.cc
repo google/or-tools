@@ -31,7 +31,7 @@
 #include "ortools/util/cached_log.h"
 #include "ortools/util/string_array.h"
 
-DEFINE_int32(cp_impact_divider, 10, "Divider for continuous update.");
+ABSL_FLAG(int, cp_impact_divider, 10, "Divider for continuous update.");
 
 namespace operations_research {
 
@@ -445,8 +445,9 @@ class ImpactRecorder : public SearchMonitor {
     const int64 value_index = value - original_min_[var_index];
     const double current_impact = impacts_[var_index][value_index];
     const double new_impact =
-        (current_impact * (FLAGS_cp_impact_divider - 1) + impact) /
-        FLAGS_cp_impact_divider;
+        (current_impact * (absl::GetFlag(FLAGS_cp_impact_divider) - 1) +
+         impact) /
+        absl::GetFlag(FLAGS_cp_impact_divider);
     impacts_[var_index][value_index] = new_impact;
   }
 

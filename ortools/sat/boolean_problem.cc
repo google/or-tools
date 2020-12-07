@@ -36,11 +36,11 @@
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
-DEFINE_string(debug_dump_symmetry_graph_to_file, "",
-              "If this flag is non-empty, an undirected graph whose"
-              " automorphism group is in one-to-one correspondence with the"
-              " symmetries of the SAT problem will be dumped to a file every"
-              " time FindLinearBooleanProblemSymmetries() is called.");
+ABSL_FLAG(std::string, debug_dump_symmetry_graph_to_file, "",
+          "If this flag is non-empty, an undirected graph whose"
+          " automorphism group is in one-to-one correspondence with the"
+          " symmetries of the SAT problem will be dumped to a file every"
+          " time FindLinearBooleanProblemSymmetries() is called.");
 
 namespace operations_research {
 namespace sat {
@@ -677,7 +677,7 @@ void FindLinearBooleanProblemSymmetries(
   LOG(INFO) << "Graph has " << graph->num_nodes() << " nodes and "
             << graph->num_arcs() / 2 << " edges.";
 #if !defined(__PORTABLE_PLATFORM__)
-  if (!FLAGS_debug_dump_symmetry_graph_to_file.empty()) {
+  if (!absl::GetFlag(FLAGS_debug_dump_symmetry_graph_to_file).empty()) {
     // Remap the graph nodes to sort them by equivalence classes.
     std::vector<int> new_node_index(graph->num_nodes(), -1);
     const int num_classes = 1 + *std::max_element(equivalence_classes.begin(),
@@ -692,7 +692,7 @@ void FindLinearBooleanProblemSymmetries(
     }
     std::unique_ptr<Graph> remapped_graph = RemapGraph(*graph, new_node_index);
     const absl::Status status = util::WriteGraphToFile(
-        *remapped_graph, FLAGS_debug_dump_symmetry_graph_to_file,
+        *remapped_graph, absl::GetFlag(FLAGS_debug_dump_symmetry_graph_to_file),
         /*directed=*/false, class_size);
     if (!status.ok()) {
       LOG(DFATAL) << "Error when writing the symmetry graph to file: "
@@ -741,7 +741,7 @@ void FindLinearBooleanProblemSymmetries(
 }
 
 void ApplyLiteralMappingToBooleanProblem(
-    const gtl::ITIVector<LiteralIndex, LiteralIndex>& mapping,
+    const absl::StrongVector<LiteralIndex, LiteralIndex>& mapping,
     LinearBooleanProblem* problem) {
   Coefficient bound_shift;
   Coefficient max_value;
@@ -831,7 +831,7 @@ void ProbeAndSimplifyProblem(SatPostsolver* postsolver,
       LOG(INFO) << "UNSAT when loading the problem.";
     }
 
-    gtl::ITIVector<LiteralIndex, LiteralIndex> equiv_map;
+    absl::StrongVector<LiteralIndex, LiteralIndex> equiv_map;
     ProbeAndFindEquivalentLiteral(&solver, postsolver, /*drat_writer=*/nullptr,
                                   &equiv_map);
 
@@ -857,7 +857,7 @@ void ProbeAndSimplifyProblem(SatPostsolver* postsolver,
     // Remap the variables into a dense set. All the variables for which the
     // equiv_map is not the identity are no longer needed.
     BooleanVariable new_var(0);
-    gtl::ITIVector<BooleanVariable, BooleanVariable> var_map;
+    absl::StrongVector<BooleanVariable, BooleanVariable> var_map;
     for (BooleanVariable var(0); var < solver.NumVariables(); ++var) {
       if (equiv_map[Literal(var, true).Index()] == Literal(var, true).Index()) {
         var_map.push_back(new_var);

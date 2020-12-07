@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
@@ -32,6 +33,7 @@
 #include "ortools/base/cleanup.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/gscip/legacy_scip_params.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
@@ -50,96 +52,11 @@
 #include "scip/type_paramset.h"
 #include "scip/type_var.h"
 
-DEFINE_string(scip_proto_solver_output_cip_file, "",
-              "If given, saves the generated CIP file here. Useful for "
-              "reporting bugs to SCIP.");
+ABSL_FLAG(std::string, scip_proto_solver_output_cip_file, "",
+          "If given, saves the generated CIP file here. Useful for "
+          "reporting bugs to SCIP.");
 
 namespace operations_research {
-
-absl::Status ScipSetSolverSpecificParameters(const std::string& parameters,
-                                             SCIP* scip) {
-  for (const auto parameter :
-       absl::StrSplit(parameters, '\n', absl::SkipWhitespace())) {
-    std::vector<std::string> key_value =
-        absl::StrSplit(parameter, '=', absl::SkipWhitespace());
-    if (key_value.size() != 2) {
-      return absl::InvalidArgumentError(
-          absl::StrFormat("Cannot parse parameter '%s'. Expected format is "
-                          "'parameter/name = value'",
-                          parameter));
-    }
-
-    std::string name = key_value[0];
-    absl::RemoveExtraAsciiWhitespace(&name);
-    std::string value = key_value[1];
-    absl::RemoveExtraAsciiWhitespace(&value);
-    const double infinity = SCIPinfinity(scip);
-
-    SCIP_PARAM* param = SCIPgetParam(scip, name.c_str());
-    if (param == nullptr) {
-      return absl::InvalidArgumentError(
-          absl::StrFormat("Invalid parameter name '%s'", name));
-    }
-    switch (param->paramtype) {
-      case SCIP_PARAMTYPE_BOOL: {
-        bool parsed_value;
-        if (absl::SimpleAtob(value, &parsed_value)) {
-          RETURN_IF_SCIP_ERROR(
-              SCIPsetBoolParam(scip, name.c_str(), parsed_value));
-          continue;
-        }
-        break;
-      }
-      case SCIP_PARAMTYPE_INT: {
-        int parsed_value;
-        if (absl::SimpleAtoi(value, &parsed_value)) {
-          RETURN_IF_SCIP_ERROR(
-              SCIPsetIntParam(scip, name.c_str(), parsed_value));
-          continue;
-        }
-        break;
-      }
-      case SCIP_PARAMTYPE_LONGINT: {
-        int64 parsed_value;
-        if (absl::SimpleAtoi(value, &parsed_value)) {
-          RETURN_IF_SCIP_ERROR(
-              SCIPsetLongintParam(scip, name.c_str(), parsed_value));
-          continue;
-        }
-        break;
-      }
-      case SCIP_PARAMTYPE_REAL: {
-        double parsed_value;
-        if (absl::SimpleAtod(value, &parsed_value)) {
-          if (parsed_value > infinity) parsed_value = infinity;
-          RETURN_IF_SCIP_ERROR(
-              SCIPsetRealParam(scip, name.c_str(), parsed_value));
-          continue;
-        }
-        break;
-      }
-      case SCIP_PARAMTYPE_CHAR: {
-        if (value.size() == 1) {
-          RETURN_IF_SCIP_ERROR(SCIPsetCharParam(scip, name.c_str(), value[0]));
-          continue;
-        }
-        break;
-      }
-      case SCIP_PARAMTYPE_STRING: {
-        if (value.front() == '"' && value.back() == '"') {
-          value.erase(value.begin());
-          value.erase(value.end() - 1);
-        }
-        RETURN_IF_SCIP_ERROR(
-            SCIPsetStringParam(scip, name.c_str(), value.c_str()));
-        continue;
-      }
-    }
-    return absl::InvalidArgumentError(
-        absl::StrFormat("Invalid parameter value '%s'", parameter));
-  }
-  return absl::OkStatus();
-}
 
 namespace {
 // This function will create a new constraint if the indicator constraint has
@@ -781,11 +698,12 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
     return response;
   }
 
-  const auto parameters_status = ScipSetSolverSpecificParameters(
+  const auto parameters_status = LegacyScipSetSolverSpecificParameters(
       request.solver_specific_parameters(), scip);
   if (!parameters_status.ok()) {
     response.set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
-    response.set_status_str(std::string(parameters_status.message()));
+    response.set_status_str(
+        std::string(parameters_status.message()));  // NOLINT
     return response;
   }
   // Default clock type. We use wall clock time because getting CPU user seconds
@@ -917,9 +835,10 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
   RETURN_IF_SCIP_ERROR(SCIPaddOrigObjoffset(scip, model.objective_offset()));
   RETURN_IF_ERROR(AddSolutionHint(model, scip, scip_variables));
 
-  if (!FLAGS_scip_proto_solver_output_cip_file.empty()) {
-    SCIPwriteOrigProblem(scip, FLAGS_scip_proto_solver_output_cip_file.c_str(),
-                         nullptr, true);
+  if (!absl::GetFlag(FLAGS_scip_proto_solver_output_cip_file).empty()) {
+    SCIPwriteOrigProblem(
+        scip, absl::GetFlag(FLAGS_scip_proto_solver_output_cip_file).c_str(),
+        nullptr, true);
   }
   RETURN_IF_SCIP_ERROR(SCIPsolve(scip));
 

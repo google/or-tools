@@ -13,7 +13,7 @@
          * [Java code](#java-code)
          * [C# code](#c-code-1)
 
-<!-- Added by: lperron, at: Thu Nov 14 21:15:56 CET 2019 -->
+<!-- Added by: lperron, at: Tue Nov  3 17:33:08 CET 2020 -->
 
 <!--te-->
 
@@ -86,10 +86,6 @@ Some remarks:
 
 ```python
 """Code sample that solves a model using solution hinting."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
@@ -182,6 +178,7 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
@@ -190,9 +187,8 @@ import com.google.ortools.sat.LinearExpr;
 
 /** Minimal CP-SAT example to showcase calling the solver. */
 public class SolutionHintingSampleSat {
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Create the model.
     CpModel model = new CpModel();
 
@@ -248,63 +244,59 @@ using Google.OrTools.Sat;
 
 public class VarArraySolutionPrinter : CpSolverSolutionCallback
 {
-  public VarArraySolutionPrinter(IntVar[] variables)
-  {
-    variables_ = variables;
-  }
-
-  public override void OnSolutionCallback()
-  {
+    public VarArraySolutionPrinter(IntVar[] variables)
     {
-      Console.WriteLine(String.Format("Solution #{0}: time = {1:F2} s",
-                                      solution_count_, WallTime()));
-      foreach (IntVar v in variables_)
-      {
-        Console.WriteLine(
-            String.Format("  {0} = {1}", v.ShortString(), Value(v)));
-      }
-      solution_count_++;
+        variables_ = variables;
     }
-  }
 
-  public int SolutionCount()
-  {
-    return solution_count_;
-  }
+    public override void OnSolutionCallback()
+    {
+        {
+            Console.WriteLine(String.Format("Solution #{0}: time = {1:F2} s", solution_count_, WallTime()));
+            foreach (IntVar v in variables_)
+            {
+                Console.WriteLine(String.Format("  {0} = {1}", v.ShortString(), Value(v)));
+            }
+            solution_count_++;
+        }
+    }
 
-  private int solution_count_;
-  private IntVar[] variables_;
+    public int SolutionCount()
+    {
+        return solution_count_;
+    }
+
+    private int solution_count_;
+    private IntVar[] variables_;
 }
 
 public class SolutionHintingSampleSat
 {
-  static void Main()
-  {
-    // Creates the model.
-    CpModel model = new CpModel();
+    static void Main()
+    {
+        // Creates the model.
+        CpModel model = new CpModel();
 
-    // Creates the variables.
-    int num_vals = 3;
+        // Creates the variables.
+        int num_vals = 3;
 
-    IntVar x = model.NewIntVar(0, num_vals - 1, "x");
-    IntVar y = model.NewIntVar(0, num_vals - 1, "y");
-    IntVar z = model.NewIntVar(0, num_vals - 1, "z");
+        IntVar x = model.NewIntVar(0, num_vals - 1, "x");
+        IntVar y = model.NewIntVar(0, num_vals - 1, "y");
+        IntVar z = model.NewIntVar(0, num_vals - 1, "z");
 
-    // Creates the constraints.
-    model.Add(x != y);
+        // Creates the constraints.
+        model.Add(x != y);
 
-    // Solution hinting: x <- 1, y <- 2
-    model.AddHint(x, 1);
-    model.AddHint(y, 2);
+        // Solution hinting: x <- 1, y <- 2
+        model.AddHint(x, 1);
+        model.AddHint(y, 2);
 
-    model.Maximize(LinearExpr.ScalProd(new IntVar[] {x, y, z}, new int[] {1, 2, 3}));
+        model.Maximize(LinearExpr.ScalProd(new IntVar[] { x, y, z }, new int[] { 1, 2, 3 }));
 
-    // Creates a solver and solves the model.
-    CpSolver solver = new CpSolver();
-    VarArraySolutionPrinter cb =
-        new VarArraySolutionPrinter(new IntVar[] { x, y, z });
-    CpSolverStatus status = solver.SolveWithSolutionCallback(model, cb);
-
-  }
+        // Creates a solver and solves the model.
+        CpSolver solver = new CpSolver();
+        VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, y, z });
+        CpSolverStatus status = solver.SolveWithSolutionCallback(model, cb);
+    }
 }
 ```

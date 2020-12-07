@@ -29,11 +29,11 @@
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/graph/iterators.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -167,6 +167,8 @@ struct IntegerLiteral {
     DCHECK_LE(bound, kMaxIntegerValue + 1);
   }
 
+  bool IsValid() const { return var != kNoIntegerVariable; }
+
   // The negation of x >= bound is x <= bound - 1.
   IntegerLiteral Negated() const;
 
@@ -228,23 +230,17 @@ struct AffineExpression {
 };
 
 // A singleton that holds the INITIAL integer variable domains.
-struct IntegerDomains : public gtl::ITIVector<IntegerVariable, Domain> {
+struct IntegerDomains : public absl::StrongVector<IntegerVariable, Domain> {
   explicit IntegerDomains(Model* model) {}
 };
 
 // A singleton used for debugging. If this is set in the model, then we can
 // check that various derived constraint do not exclude this solution (if it is
 // a known optimal solution for instance).
-struct DebugSolution : public gtl::ITIVector<IntegerVariable, IntegerValue> {
+struct DebugSolution
+    : public absl::StrongVector<IntegerVariable, IntegerValue> {
   explicit DebugSolution(Model* model) {}
 };
-
-// Some heuristics may be generated automatically, for instance by constraints.
-// Those will be stored in a SearchHeuristicsVector object owned by the model.
-//
-// TODO(user): Move this and other similar classes in a "model_singleton" file?
-class SearchHeuristicsVector
-    : public std::vector<std::function<LiteralIndex()>> {};
 
 // Each integer variable x will be associated with a set of literals encoding
 // (x >= v) for some values of v. This class maintains the relationship between
@@ -477,19 +473,20 @@ class IntegerEncoder {
   //
   // TODO(user): Remove the entry no longer needed because of level zero
   // propagations.
-  gtl::ITIVector<IntegerVariable, std::map<IntegerValue, Literal>>
+  absl::StrongVector<IntegerVariable, std::map<IntegerValue, Literal>>
       encoding_by_var_;
 
   // Store for a given LiteralIndex the list of its associated IntegerLiterals.
   const InlinedIntegerLiteralVector empty_integer_literal_vector_;
-  gtl::ITIVector<LiteralIndex, InlinedIntegerLiteralVector> reverse_encoding_;
-  gtl::ITIVector<LiteralIndex, InlinedIntegerLiteralVector>
+  absl::StrongVector<LiteralIndex, InlinedIntegerLiteralVector>
+      reverse_encoding_;
+  absl::StrongVector<LiteralIndex, InlinedIntegerLiteralVector>
       full_reverse_encoding_;
   std::vector<IntegerLiteral> newly_fixed_integer_literals_;
 
   // Store for a given LiteralIndex its IntegerVariable view or kNoLiteralIndex
   // if there is none.
-  gtl::ITIVector<LiteralIndex, IntegerVariable> literal_view_;
+  absl::StrongVector<LiteralIndex, IntegerVariable> literal_view_;
 
   // Mapping (variable == value) -> associated literal. Note that even if
   // there is more than one literal associated to the same fact, we just keep
@@ -501,11 +498,11 @@ class IntegerEncoder {
       equality_to_associated_literal_;
 
   // Mutable because this is lazily cleaned-up by PartialDomainEncoding().
-  mutable gtl::ITIVector<PositiveOnlyIndex, std::vector<ValueLiteralPair>>
+  mutable absl::StrongVector<PositiveOnlyIndex, std::vector<ValueLiteralPair>>
       equality_by_var_;
 
   // Variables that are fully encoded.
-  mutable gtl::ITIVector<PositiveOnlyIndex, bool> is_fully_encoded_;
+  mutable absl::StrongVector<PositiveOnlyIndex, bool> is_fully_encoded_;
 
   // A literal that is always true, convenient to encode trivial domains.
   // This will be lazily created when needed.
@@ -833,6 +830,11 @@ class IntegerTrail : public SatPropagator {
   bool CurrentBranchHadAnIncompletePropagation();
   IntegerVariable FirstUnassignedVariable() const;
 
+  // Return true if we can fix new fact at level zero.
+  bool HasPendingRootLevelDeduction() const {
+    return !literal_to_fix_.empty() || !integer_literal_to_fix_.empty();
+  }
+
  private:
   // Used for DHECKs to validate the reason given to the public functions above.
   // Tests that all Literal are false. Tests that all IntegerLiteral are true.
@@ -903,7 +905,7 @@ class IntegerTrail : public SatPropagator {
     // Trail index of the last TrailEntry in the trail refering to this var.
     int current_trail_index;
   };
-  gtl::ITIVector<IntegerVariable, VarInfo> vars_;
+  absl::StrongVector<IntegerVariable, VarInfo> vars_;
 
   // This is used by FindLowestTrailIndexThatExplainBound() and
   // FindTrailIndexOfVarBefore() to speed up the lookup. It keeps a trail index
@@ -912,7 +914,7 @@ class IntegerTrail : public SatPropagator {
   //
   // The cache will only be updated with trail_index >= threshold.
   mutable int var_trail_index_cache_threshold_ = 0;
-  mutable gtl::ITIVector<IntegerVariable, int> var_trail_index_cache_;
+  mutable absl::StrongVector<IntegerVariable, int> var_trail_index_cache_;
 
   // Used by GetOrCreateConstantIntegerVariable() to return already created
   // constant variables that share the same value.
@@ -958,7 +960,7 @@ class IntegerTrail : public SatPropagator {
   mutable std::vector<int> lazy_reason_trail_indices_;
 
   // The "is_ignored" literal of the optional variables or kNoLiteralIndex.
-  gtl::ITIVector<IntegerVariable, LiteralIndex> is_ignored_literals_;
+  absl::StrongVector<IntegerVariable, LiteralIndex> is_ignored_literals_;
 
   // This is only filled for variables with a domain more complex than a single
   // interval of values. var_to_current_lb_interval_index_[var] stores the
@@ -973,8 +975,17 @@ class IntegerTrail : public SatPropagator {
   mutable bool has_dependency_ = false;
   mutable std::vector<int> tmp_queue_;
   mutable std::vector<IntegerVariable> tmp_to_clear_;
-  mutable gtl::ITIVector<IntegerVariable, int> tmp_var_to_trail_index_in_queue_;
+  mutable absl::StrongVector<IntegerVariable, int>
+      tmp_var_to_trail_index_in_queue_;
   mutable SparseBitset<BooleanVariable> added_variables_;
+
+  // Sometimes we propagate fact with no reason at a positive level, those
+  // will automatically be fixed on the next restart.
+  //
+  // TODO(user): If we change the logic to not restart right away, we probably
+  // need to not store duplicates bounds for the same variable.
+  std::vector<Literal> literal_to_fix_;
+  std::vector<IntegerLiteral> integer_literal_to_fix_;
 
   // Temporary heap used by RelaxLinearReason();
   struct RelaxHeapEntry {
@@ -1169,8 +1180,8 @@ class GenericLiteralWatcher : public SatPropagator {
     int id;
     int watch_index;
   };
-  gtl::ITIVector<LiteralIndex, std::vector<WatchData>> literal_to_watcher_;
-  gtl::ITIVector<IntegerVariable, std::vector<WatchData>> var_to_watcher_;
+  absl::StrongVector<LiteralIndex, std::vector<WatchData>> literal_to_watcher_;
+  absl::StrongVector<IntegerVariable, std::vector<WatchData>> var_to_watcher_;
   std::vector<PropagatorInterface*> watchers_;
   SparseBitset<IntegerVariable> modified_vars_;
 

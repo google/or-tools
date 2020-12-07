@@ -1,7 +1,13 @@
 ---
 Language:        Cpp
 BasedOnStyle:  Google
+# Forse pointer to the type for C++
+DerivePointerAlignment: false
+PointerAlignment: Left
 ---
 Language:        Java
 BasedOnStyle:  Google
+---
+Language:      CSharp
+BasedOnStyle:  Microsoft
 ...

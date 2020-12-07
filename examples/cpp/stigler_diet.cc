@@ -17,7 +17,7 @@
 namespace operations_research {
 void RunStiglerDietExample() {
   // Nutrient minimums.
-  std::vector<std::pair<std::string, double>> nutrients = {
+  std::vector<std::pair<std::string, double> > nutrients = {
       {"Calories (kcal)", 3.0},
       {"Protein (g)", 70.0},
       {"Calcium (g)", 0.8},
@@ -294,7 +294,7 @@ void RunStiglerDietExample() {
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
-  FLAGS_logtostderr = 1;
+  absl::SetFlag(&FLAGS_logtostderr, 1);
   operations_research::RunStiglerDietExample();
   return EXIT_SUCCESS;
 }

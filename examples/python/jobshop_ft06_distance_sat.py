@@ -24,8 +24,6 @@ This variation introduces a minimum distance between all the jobs on each
 machine.
 """
 
-from __future__ import print_function
-
 import collections
 
 from ortools.sat.python import cp_model
@@ -66,8 +64,9 @@ def jobshop_ft06_distance():
             end_var = model.NewIntVar(0, horizon, 'end_%i_%i' % (i, j))
             interval_var = model.NewIntervalVar(start_var, duration, end_var,
                                                 'interval_%i_%i' % (i, j))
-            all_tasks[(i, j)] = task_type(
-                start=start_var, end=end_var, interval=interval_var)
+            all_tasks[(i, j)] = task_type(start=start_var,
+                                          end=end_var,
+                                          interval=interval_var)
 
     # Create disjuctive constraints.
     for i in all_machines:
@@ -102,8 +101,8 @@ def jobshop_ft06_distance():
                 # We add the reified precedence to link the literal with the
                 # times of the two tasks.
                 min_distance = distance_between_jobs(j1, j2)
-                model.Add(job_starts[j2] >=
-                          job_ends[j1] + min_distance).OnlyEnforceIf(lit)
+                model.Add(job_starts[j2] >= job_ends[j1] +
+                          min_distance).OnlyEnforceIf(lit)
 
         model.AddCircuit(arcs)
 

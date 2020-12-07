@@ -186,7 +186,7 @@ class MatrixNonZeroPattern {
   //
   // TODO(user): We could be even more efficient since a size of int32 is enough
   // for us and we could store in common the inlined/not-inlined size.
-  gtl::ITIVector<RowIndex, absl::InlinedVector<ColIndex, 6>> row_non_zero_;
+  absl::StrongVector<RowIndex, absl::InlinedVector<ColIndex, 6>> row_non_zero_;
   StrictITIVector<RowIndex, int32> row_degree_;
   StrictITIVector<ColIndex, int32> col_degree_;
   DenseBooleanRow deleted_columns_;
@@ -259,7 +259,7 @@ class SparseMatrixWithReusableColumnMemory {
   // mutable_column(col) is stored in columns_[mapping_[col]].
   // The columns_ that can be reused have their index stored in free_columns_.
   const SparseColumn empty_column_;
-  gtl::ITIVector<ColIndex, int> mapping_;
+  absl::StrongVector<ColIndex, int> mapping_;
   std::vector<int> free_columns_;
   std::vector<SparseColumn> columns_;
   DISALLOW_COPY_AND_ASSIGN(SparseMatrixWithReusableColumnMemory);

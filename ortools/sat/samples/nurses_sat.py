@@ -15,7 +15,6 @@
 # [START program]
 # [START import]
 from ortools.sat.python import cp_model
-
 # [END import]
 
 
@@ -50,7 +49,6 @@ class NursesPartialSolutionPrinter(cp_model.CpSolverSolutionCallback):
 
     def solution_count(self):
         return self._solution_count
-
 
 # [END solution_printer]
 

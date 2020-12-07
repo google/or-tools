@@ -21,93 +21,90 @@ using Google.OrTools.ConstraintSolver;
 
 public class Langford
 {
+    /**
+     *
+     * Langford number problem.
+     * See http://www.hakank.org/or-tools/langford.py
+     *
+     */
+    private static void Solve(int k = 8, int num_sol = 0)
+    {
+        Solver solver = new Solver("Langford");
 
-  /**
-   *
-   * Langford number problem.
-   * See http://www.hakank.org/or-tools/langford.py
-   *
-   */
-  private static void Solve(int k = 8, int num_sol = 0)
-  {
+        Console.WriteLine("k: {0}", k);
 
-    Solver solver = new Solver("Langford");
+        //
+        // data
+        //
+        int p = 2 * k;
 
-    Console.WriteLine("k: {0}", k);
+        //
+        // Decision variables
+        //
+        IntVar[] position = solver.MakeIntVarArray(p, 0, p - 1, "position");
+        IntVar[] solution = solver.MakeIntVarArray(p, 1, k, "solution");
 
-    //
-    // data
-    //
-    int p = 2*k;
+        //
+        // Constraints
+        //
+        solver.Add(position.AllDifferent());
 
-    //
-    // Decision variables
-    //
-    IntVar[] position = solver.MakeIntVarArray(p, 0, p-1, "position");
-    IntVar[] solution = solver.MakeIntVarArray(p, 1, k, "solution");
+        for (int i = 1; i <= k; i++)
+        {
+            solver.Add(position[i + k - 1] - (position[i - 1] + solver.MakeIntVar(i + 1, i + 1)) == 0);
+            solver.Add(solution.Element(position[i - 1]) == i);
+            solver.Add(solution.Element(position[k + i - 1]) == i);
+        }
 
-    //
-    // Constraints
-    //
-    solver.Add(position.AllDifferent());
+        // Symmetry breaking
+        solver.Add(solution[0] < solution[2 * k - 1]);
 
-    for(int i = 1; i <= k; i++) {
-      solver.Add(position[i+k-1] - (position[i-1] + solver.MakeIntVar(i+1,i+1)) == 0);
-      solver.Add(solution.Element(position[i-1]) == i);
-      solver.Add(solution.Element(position[k+i-1]) == i);
+        //
+        // Search
+        //
+        DecisionBuilder db = solver.MakePhase(position, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
+
+        solver.NewSearch(db);
+
+        int num_solutions = 0;
+        while (solver.NextSolution())
+        {
+            Console.Write("solution : ");
+            for (int i = 0; i < p; i++)
+            {
+                Console.Write(solution[i].Value() + " ");
+            }
+            Console.WriteLine();
+            num_solutions++;
+            if (num_sol > 0 && num_solutions >= num_sol)
+            {
+                break;
+            }
+        }
+
+        Console.WriteLine("\nSolutions: {0}", solver.Solutions());
+        Console.WriteLine("WallTime: {0}ms", solver.WallTime());
+        Console.WriteLine("Failures: {0}", solver.Failures());
+        Console.WriteLine("Branches: {0} ", solver.Branches());
+
+        solver.EndSearch();
     }
 
-    // Symmetry breaking
-    solver.Add(solution[0] < solution[2*k-1]);
+    public static void Main(String[] args)
+    {
+        int k = 8;
+        int num_sol = 0; // 0: print all solutions
 
-    //
-    // Search
-    //
-    DecisionBuilder db = solver.MakePhase(position,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+        if (args.Length > 0)
+        {
+            k = Convert.ToInt32(args[0]);
+        }
 
+        if (args.Length > 1)
+        {
+            num_sol = Convert.ToInt32(args[1]);
+        }
 
-    solver.NewSearch(db);
-
-    int num_solutions = 0;
-    while (solver.NextSolution()) {
-      Console.Write("solution : ");
-      for(int i = 0; i < p; i++) {
-        Console.Write(solution[i].Value() + " ");
-      }
-      Console.WriteLine();
-      num_solutions++;
-      if (num_sol > 0 && num_solutions >= num_sol) {
-        break;
-      }
+        Solve(k, num_sol);
     }
-
-    Console.WriteLine("\nSolutions: {0}", solver.Solutions());
-    Console.WriteLine("WallTime: {0}ms", solver.WallTime());
-    Console.WriteLine("Failures: {0}", solver.Failures());
-    Console.WriteLine("Branches: {0} ", solver.Branches());
-
-    solver.EndSearch();
-
-  }
-
-
-
-  public static void Main(String[] args)
-  {
-    int k = 8;
-    int num_sol = 0; // 0: print all solutions
-
-    if (args.Length > 0) {
-      k = Convert.ToInt32(args[0]);
-    }
-
-    if (args.Length > 1) {
-      num_sol = Convert.ToInt32(args[1]);
-    }
-
-    Solve(k, num_sol);
-
-  }
 }

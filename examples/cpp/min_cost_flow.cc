@@ -24,7 +24,7 @@ struct Arc {
 
 void SolveMinCostFlow() {
   // Define supply of each node.
-  const std::vector<std::pair<NodeIndex, FlowQuantity>> supplies = {
+  const std::vector<std::pair<NodeIndex, FlowQuantity> > supplies = {
       {0, 20}, {1, 0}, {2, 0}, {3, -5}, {4, -15}};
 
   // Define each arc
@@ -38,12 +38,12 @@ void SolveMinCostFlow() {
 
   StarGraph graph(supplies.size(), arcs.size());
   MinCostFlow min_cost_flow(&graph);
-  for (const auto &it : arcs) {
+  for (const auto& it : arcs) {
     ArcIndex arc = graph.AddArc(it.nodes.first, it.nodes.second);
     min_cost_flow.SetArcCapacity(arc, it.capacity);
     min_cost_flow.SetArcUnitCost(arc, it.unit_cost);
   }
-  for (const auto &it : supplies) {
+  for (const auto& it : supplies) {
     min_cost_flow.SetNodeSupply(it.first, it.second);
   }
 
@@ -67,9 +67,9 @@ void SolveMinCostFlow() {
 }
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
-  FLAGS_logtostderr = 1;
+  absl::SetFlag(&FLAGS_logtostderr, 1);
   operations_research::SolveMinCostFlow();
   return EXIT_SUCCESS;
 }

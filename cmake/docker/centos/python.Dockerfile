@@ -1,4 +1,5 @@
 FROM ortools/cmake:centos_swig AS env
+ENV PATH=/root/.local/bin:$PATH
 RUN dnf -y update \
 && dnf -y install python36-devel \
 && dnf clean all \

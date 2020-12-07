@@ -21,9 +21,8 @@ package com.google.ortools.constraintsolver;
  *
  */
 public class JavaDecisionBuilder extends DecisionBuilder {
-  /**
-   * This methods wraps the calls to next() and catches fail exceptions.
-   */
+  /** This methods wraps the calls to next() and catches fail exceptions. */
+  @Override
   public final Decision nextWrap(Solver solver) {
     try {
       return next(solver);

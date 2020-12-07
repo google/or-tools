@@ -17,8 +17,6 @@
 # Furthermore, if one color is an a group, at least k items with this color must
 # be in that group.
 
-from __future__ import print_function
-from __future__ import division
 
 from ortools.sat.python import cp_model
 import math

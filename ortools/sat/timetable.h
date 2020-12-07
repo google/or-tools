@@ -121,10 +121,6 @@ class TimeTablingPerTask : public PropagatorInterface {
   // height of the leftmost profile rectangle that can be used for propagation.
   IntegerValue starting_profile_height_;
 
-  // True if the last call of the propagator has filtered the domain of a task
-  // and changed the shape of the profile.
-  bool profile_changed_;
-
   // Reversible sets of tasks to consider for the forward (resp. backward)
   // propagation. A task with a fixed start do not need to be considered for the
   // forward pass, same for task with fixed end for the backward pass. It is why

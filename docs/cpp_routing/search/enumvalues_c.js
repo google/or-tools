@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['trace_5fvar_3948',['TRACE_VAR',['../namespaceoperations__research.html#a403e52e933033645c3388146d5e2edd2af2d15b703802d6a1f8f402f90de90dc6',1,'operations_research']]],
-  ['type_5fadded_5fto_5fvehicle_3949',['TYPE_ADDED_TO_VEHICLE',['../classoperations__research_1_1_routing_model.html#a495b53b94a8c31a8f13755962d6c6059a0c6d4521dc67c6bc22dc917caef2286a',1,'operations_research::RoutingModel']]],
-  ['type_5fon_5fvehicle_5fup_5fto_5fvisit_3950',['TYPE_ON_VEHICLE_UP_TO_VISIT',['../classoperations__research_1_1_routing_model.html#a495b53b94a8c31a8f13755962d6c6059a7fc0cab89681d70bbb68958ed70b85c1',1,'operations_research::RoutingModel']]],
-  ['type_5fsimultaneously_5fadded_5fand_5fremoved_3951',['TYPE_SIMULTANEOUSLY_ADDED_AND_REMOVED',['../classoperations__research_1_1_routing_model.html#a495b53b94a8c31a8f13755962d6c6059ad86e8082b5636a532fe181b288a4dea7',1,'operations_research::RoutingModel']]]
+  ['opp_5fvar_5810',['OPP_VAR',['../namespaceoperations__research.html#a403e52e933033645c3388146d5e2edd2ae8e4c6f3e5a6d22d24204ec432f57860',1,'operations_research']]],
+  ['optimal_5811',['OPTIMAL',['../namespaceoperations__research.html#aa0787bf78fb09d1e30f2451b5a68d4b8af00c8dbdd6e1f11bdae06be94277d293',1,'operations_research']]],
+  ['oropt_5812',['OROPT',['../classoperations__research_1_1_solver.html#a6fc60ae040ae35c83f09736d2e682a18a9bbd3bcce8e7d9e4a6901cce828e8704',1,'operations_research::Solver']]],
+  ['outside_5fsearch_5813',['OUTSIDE_SEARCH',['../classoperations__research_1_1_solver.html#a2f2bea2202c96738b11b050e71a28e63a7d249934db0928e26d2f3b6944be88ea',1,'operations_research::Solver']]]
 ];

@@ -53,6 +53,12 @@ int FindRationalFactor(double x, int limit = 1e4, double tolerance = 1e-6);
 std::vector<double> ScaleContinuousVariables(double scaling, double max_bound,
                                              MPModelProto* mp_model);
 
+// To satisfy our scaling requirements, any terms that is almost zero can just
+// be set to zero. We need to do that before operations like
+// DetectImpliedIntegers(), becauses really low coefficients can cause issues
+// and might lead to less detection.
+void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model);
+
 // This will mark implied integer as such. Note that it can also discover
 // variable of the form coeff * Integer + offset, and will change the model
 // so that these are marked as integer. It is why we return both a scaling and

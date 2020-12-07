@@ -218,20 +218,20 @@ class StampingSimplifier {
   int64 num_fixed_ = 0;
 
   // Encode a spanning tree of the implication graph.
-  gtl::ITIVector<LiteralIndex, LiteralIndex> parents_;
+  absl::StrongVector<LiteralIndex, LiteralIndex> parents_;
 
   // Adjacency list representation of the parents_ tree.
-  gtl::ITIVector<LiteralIndex, int> sizes_;
-  gtl::ITIVector<LiteralIndex, int> starts_;
+  absl::StrongVector<LiteralIndex, int> sizes_;
+  absl::StrongVector<LiteralIndex, int> starts_;
   std::vector<LiteralIndex> children_;
 
   // Temporary data for the DFS.
-  gtl::ITIVector<LiteralIndex, bool> marked_;
+  absl::StrongVector<LiteralIndex, bool> marked_;
   std::vector<LiteralIndex> dfs_stack_;
 
   // First/Last visited index in a DFS of the tree above.
-  gtl::ITIVector<LiteralIndex, int> first_stamps_;
-  gtl::ITIVector<LiteralIndex, int> last_stamps_;
+  absl::StrongVector<LiteralIndex, int> first_stamps_;
+  absl::StrongVector<LiteralIndex, int> last_stamps_;
 };
 
 // A clause c is "blocked" by a literal l if all clauses containing the
@@ -273,18 +273,19 @@ class BlockedClauseSimplifier {
   int64 num_inspected_literals_ = 0;
 
   // Temporary vector to mark literal of a clause.
-  gtl::ITIVector<LiteralIndex, bool> marked_;
+  absl::StrongVector<LiteralIndex, bool> marked_;
 
   // List of literal to process.
   // TODO(user): use priority queue?
-  gtl::ITIVector<LiteralIndex, bool> in_queue_;
+  absl::StrongVector<LiteralIndex, bool> in_queue_;
   std::deque<Literal> queue_;
 
   // We compute the occurrence graph just once at the beginning of each round
   // and we do not shrink it as we remove blocked clauses.
   DEFINE_INT_TYPE(ClauseIndex, int32);
-  gtl::ITIVector<ClauseIndex, SatClause*> clauses_;
-  gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex>> literal_to_clauses_;
+  absl::StrongVector<ClauseIndex, SatClause*> clauses_;
+  absl::StrongVector<LiteralIndex, std::vector<ClauseIndex>>
+      literal_to_clauses_;
 };
 
 class BoundedVariableElimination {
@@ -340,7 +341,7 @@ class BoundedVariableElimination {
   int64 score_threshold_;
 
   // Temporary vector to mark literal of a clause and compute its resolvant.
-  gtl::ITIVector<LiteralIndex, bool> marked_;
+  absl::StrongVector<LiteralIndex, bool> marked_;
   std::vector<Literal> resolvant_;
 
   // Priority queue of variable to process.
@@ -358,16 +359,17 @@ class BoundedVariableElimination {
   IntegerPriorityQueue<VariableWithPriority> queue_;
 
   // We update the queue_ in batch.
-  gtl::ITIVector<BooleanVariable, bool> in_need_to_be_updated_;
+  absl::StrongVector<BooleanVariable, bool> in_need_to_be_updated_;
   std::vector<BooleanVariable> need_to_be_updated_;
 
   // We compute the occurrence graph just once at the beginning of each round.
   // We maintains the sizes at all time and lazily shrink the graph with deleted
   // clauses.
   DEFINE_INT_TYPE(ClauseIndex, int32);
-  gtl::ITIVector<ClauseIndex, SatClause*> clauses_;
-  gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex>> literal_to_clauses_;
-  gtl::ITIVector<LiteralIndex, int> literal_to_num_clauses_;
+  absl::StrongVector<ClauseIndex, SatClause*> clauses_;
+  absl::StrongVector<LiteralIndex, std::vector<ClauseIndex>>
+      literal_to_clauses_;
+  absl::StrongVector<LiteralIndex, int> literal_to_num_clauses_;
 };
 
 }  // namespace sat

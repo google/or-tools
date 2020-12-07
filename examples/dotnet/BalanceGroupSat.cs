@@ -18,10 +18,9 @@ using Google.OrTools.Sat;
 
 /// <summary>
 /// We are trying to group items in equal sized groups.
-/// Each item has a color and a value. We want the sum of values of each group to
-/// be as close to the average as possible.
-/// Furthermore, if one color is an a group, at least k items with this color must
-/// be in that group.
+/// Each item has a color and a value. We want the sum of values of each group
+/// to be as close to the average as possible. Furthermore, if one color is an a
+/// group, at least k items with this color must be in that group.
 /// </summary>
 public class BalanceGroupSat
 {
@@ -50,7 +49,7 @@ public class BalanceGroupSat
             itemsPerColor[color] = new List<int>();
             foreach (var item in allItems)
             {
-                if(colors[item] == color)
+                if (colors[item] == color)
                     itemsPerColor[color].Add(item);
             }
         }
@@ -86,7 +85,8 @@ public class BalanceGroupSat
         // The deviation of the sum of each items in a group against the average.
         var e = model.NewIntVar(0, 550, "epsilon");
 
-        // Constrain the sum of values in one group around the average sum per group.
+        // Constrain the sum of values in one group around the average sum per
+        // group.
         foreach (var @group in allGroups)
         {
             var itemValues = allItems.Select(x => itemInGroup[x, @group]).ToArray();
@@ -129,7 +129,8 @@ public class BalanceGroupSat
 
         // Compute the maximum number of colors in a group.
         int maxColor = numItemsPerGroup / minItemsOfSameColorPerGroup;
-        // Redundant contraint: The problem does not solve in reasonable time without it.
+        // Redundant contraint: The problem does not solve in reasonable time
+        // without it.
         if (maxColor < numberColors)
         {
             foreach (var @group in allGroups)
@@ -206,4 +207,3 @@ public class BalanceGroupSat
         }
     }
 }
-

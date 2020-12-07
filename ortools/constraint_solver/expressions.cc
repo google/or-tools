@@ -33,9 +33,10 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/string_array.h"
 
-DEFINE_bool(cp_disable_expression_optimization, false,
-            "Disable special optimization when creating expressions.");
-DEFINE_bool(cp_share_int_consts, true, "Share IntConst's with the same value.");
+ABSL_FLAG(bool, cp_disable_expression_optimization, false,
+          "Disable special optimization when creating expressions.");
+ABSL_FLAG(bool, cp_share_int_consts, true,
+          "Share IntConst's with the same value.");
 
 #if defined(_MSC_VER)
 #pragma warning(disable : 4351 4355)
@@ -6447,7 +6448,7 @@ IntVar* Solver::MakeIntConst(int64 val, const std::string& name) {
   // If IntConst is going to be named after its creation,
   // cp_share_int_consts should be set to false otherwise names can potentially
   // be overwritten.
-  if (FLAGS_cp_share_int_consts && name.empty() &&
+  if (absl::GetFlag(FLAGS_cp_share_int_consts) && name.empty() &&
       val >= MIN_CACHED_INT_CONST && val <= MAX_CACHED_INT_CONST) {
     return cached_constants_[val - MIN_CACHED_INT_CONST];
   }
@@ -6778,7 +6779,8 @@ IntExpr* Solver::MakeProd(IntExpr* const expr, int64 value) {
       result = RegisterIntExpr(
           RevAlloc(new TimesIntNegCstExpr(this, m_expr, coefficient)));
     }
-    if (m_expr->IsVar() && !FLAGS_cp_disable_expression_optimization) {
+    if (m_expr->IsVar() &&
+        !absl::GetFlag(FLAGS_cp_disable_expression_optimization)) {
       result = result->Var();
     }
     Cache()->InsertExprConstantExpression(result, expr, value,

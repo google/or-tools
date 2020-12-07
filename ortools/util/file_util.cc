@@ -13,6 +13,7 @@
 
 #include "ortools/util/file_util.h"
 
+#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"

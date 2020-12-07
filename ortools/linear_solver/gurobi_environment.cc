@@ -23,7 +23,7 @@
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {
-absl::Status LoadGurobiEnvironment(GRBenv **env) {
+absl::Status LoadGurobiEnvironment(GRBenv** env) {
   constexpr int GRB_OK = 0;
   const char kGurobiEnvErrorMsg[] =
       "Could not load Gurobi environment. Is gurobi correctly installed and "
@@ -36,93 +36,99 @@ absl::Status LoadGurobiEnvironment(GRBenv **env) {
   return absl::OkStatus();
 }
 
-std::function<int(GRBmodel *, int, int *, double *, double, double,
-                  const char *)>
+std::function<int(GRBmodel*, int, int*, double*, double, double, const char*)>
     GRBaddrangeconstr = nullptr;
-std::function<int(GRBmodel *, int, int, int *, int *, double *, double *,
-                  double *, double *, char *, char **)>
+std::function<int(GRBmodel* model, int numnz, int* vind, double* vval,
+                  double obj, double lb, double ub, char vtype,
+                  const char* varname)>
+    GRBaddvar = nullptr;
+std::function<int(GRBmodel*, int, int, int*, int*, double*, double*, double*,
+                  double*, char*, char**)>
     GRBaddvars = nullptr;
-std::function<void(GRBenv *)> GRBfreeenv = nullptr;
-std::function<int(GRBmodel *)> GRBfreemodel = nullptr;
-std::function<int(GRBmodel *, const char *, int, char *)>
-    GRBgetcharattrelement = nullptr;
-std::function<int(GRBmodel *, const char *, double *)> GRBgetdblattr = nullptr;
-std::function<int(GRBmodel *, const char *, int, int, double *)>
+std::function<int(GRBmodel* model, int numchgs, int* cind, int* vind,
+                  double* val)>
+    GRBchgcoeffs = nullptr;
+std::function<void(GRBenv*)> GRBfreeenv = nullptr;
+std::function<int(GRBmodel*)> GRBfreemodel = nullptr;
+std::function<int(GRBmodel*, const char*, int, char*)> GRBgetcharattrelement =
+    nullptr;
+std::function<int(GRBmodel*, const char*, double*)> GRBgetdblattr = nullptr;
+std::function<int(GRBmodel*, const char*, int, int, double*)>
     GRBgetdblattrarray = nullptr;
-std::function<int(GRBmodel *, const char *, int, double *)>
-    GRBgetdblattrelement = nullptr;
-std::function<int(GRBenv *, const char *, double *)> GRBgetdblparam = nullptr;
-std::function<GRBenv *(GRBmodel *)> GRBgetenv = nullptr;
-std::function<char *(GRBenv *)> GRBgeterrormsg = nullptr;
-std::function<int(GRBmodel *, const char *, int *)> GRBgetintattr = nullptr;
-std::function<int(GRBmodel *, const char *, int, int *)> GRBgetintattrelement =
+std::function<int(GRBmodel*, const char*, int, double*)> GRBgetdblattrelement =
     nullptr;
-std::function<int(GRBenv **, const char *)> GRBloadenv = nullptr;
-std::function<int(GRBenv *, GRBmodel **, const char *, int numvars, double *,
-                  double *, double *, char *, char **)>
+std::function<int(GRBenv*, const char*, double*)> GRBgetdblparam = nullptr;
+std::function<GRBenv*(GRBmodel*)> GRBgetenv = nullptr;
+std::function<char*(GRBenv*)> GRBgeterrormsg = nullptr;
+std::function<int(GRBmodel*, const char*, int*)> GRBgetintattr = nullptr;
+std::function<int(GRBmodel*, const char*, int, int*)> GRBgetintattrelement =
+    nullptr;
+std::function<int(GRBenv**, const char*)> GRBloadenv = nullptr;
+std::function<int(GRBenv*, GRBmodel**, const char*, int numvars, double*,
+                  double*, double*, char*, char**)>
     GRBnewmodel = nullptr;
-std::function<int(GRBmodel *)> GRBoptimize = nullptr;
-std::function<int(GRBenv *, const char *)> GRBreadparams = nullptr;
-std::function<int(GRBenv *)> GRBresetparams = nullptr;
-std::function<int(GRBmodel *, const char *, int, char)> GRBsetcharattrelement =
+std::function<int(GRBmodel*)> GRBoptimize = nullptr;
+std::function<int(GRBenv*, const char*)> GRBreadparams = nullptr;
+std::function<int(GRBenv*)> GRBresetparams = nullptr;
+std::function<int(GRBmodel*, const char*, int, char)> GRBsetcharattrelement =
     nullptr;
-std::function<int(GRBmodel *, const char *, double)> GRBsetdblattr = nullptr;
-std::function<int(GRBmodel *, const char *, int, double)> GRBsetdblattrelement =
+std::function<int(GRBmodel*, const char*, double)> GRBsetdblattr = nullptr;
+std::function<int(GRBmodel*, const char*, int, double)> GRBsetdblattrelement =
     nullptr;
-std::function<int(GRBenv *, const char *, double)> GRBsetdblparam = nullptr;
-std::function<int(GRBmodel *, const char *, int)> GRBsetintattr = nullptr;
-std::function<int(GRBenv *, const char *, int)> GRBsetintparam = nullptr;
-std::function<void(GRBmodel *)> GRBterminate = nullptr;
-std::function<int(GRBmodel *)> GRBupdatemodel = nullptr;
-std::function<void(int *, int *, int *)> GRBversion = nullptr;
-std::function<int(GRBmodel *, const char *)> GRBwrite = nullptr;
-std::function<int(void *cbdata, int where, int what, void *resultP)> GRBcbget =
+std::function<int(GRBenv*, const char*, double)> GRBsetdblparam = nullptr;
+std::function<int(GRBmodel*, const char*, int)> GRBsetintattr = nullptr;
+std::function<int(GRBenv*, const char*, int)> GRBsetintparam = nullptr;
+std::function<void(GRBmodel*)> GRBterminate = nullptr;
+std::function<int(GRBmodel*)> GRBupdatemodel = nullptr;
+std::function<void(int*, int*, int*)> GRBversion = nullptr;
+std::function<int(GRBmodel*, const char*)> GRBwrite = nullptr;
+std::function<int(void* cbdata, int where, int what, void* resultP)> GRBcbget =
     nullptr;
-std::function<int(void *cbdata, int cutlen, const int *cutind,
-                  const double *cutval, char cutsense, double cutrhs)>
+std::function<int(void* cbdata, int cutlen, const int* cutind,
+                  const double* cutval, char cutsense, double cutrhs)>
     GRBcbcut = nullptr;
-std::function<int(void *cbdata, int lazylen, const int *lazyind,
-                  const double *lazyval, char lazysense, double lazyrhs)>
+std::function<int(void* cbdata, int lazylen, const int* lazyind,
+                  const double* lazyval, char lazysense, double lazyrhs)>
     GRBcblazy = nullptr;
-std::function<int(void *cbdata, const double *solution, double *objvalP)>
+std::function<int(void* cbdata, const double* solution, double* objvalP)>
     GRBcbsolution = nullptr;
-std::function<int(GRBmodel *model, int numnz, int *cind, double *cval,
-                  char sense, double rhs, const char *constrname)>
+std::function<int(GRBmodel* model, int numnz, int* cind, double* cval,
+                  char sense, double rhs, const char* constrname)>
     GRBaddconstr = nullptr;
-std::function<int(GRBmodel *model, const char *name, int binvar, int binval,
-                  int nvars, const int *vars, const double *vals, char sense,
+std::function<int(GRBmodel* model, const char* name, int binvar, int binval,
+                  int nvars, const int* vars, const double* vals, char sense,
                   double rhs)>
     GRBaddgenconstrIndicator = nullptr;
-std::function<int(GRBmodel *model, const char *attrname, int element,
+std::function<int(GRBmodel* model, const char* attrname, int element,
                   int newvalue)>
     GRBsetintattrelement = nullptr;
-std::function<int(GRBmodel *model, int(STDCALL *cb)(CB_ARGS), void *usrdata)>
+std::function<int(GRBmodel* model, int(STDCALL* cb)(CB_ARGS), void* usrdata)>
     GRBsetcallbackfunc = nullptr;
-std::function<int(GRBenv *env, const char *paramname, const char *value)>
+std::function<int(GRBenv* env, const char* paramname, const char* value)>
     GRBsetparam = nullptr;
-std::function<int(GRBmodel *model, int numsos, int nummembers, int *types,
-                  int *beg, int *ind, double *weight)>
+std::function<int(GRBmodel* model, int numsos, int nummembers, int* types,
+                  int* beg, int* ind, double* weight)>
     GRBaddsos = nullptr;
-std::function<int(GRBmodel *model, int numlnz, int *lind, double *lval,
-                  int numqnz, int *qrow, int *qcol, double *qval, char sense,
-                  double rhs, const char *QCname)>
+std::function<int(GRBmodel* model, int numlnz, int* lind, double* lval,
+                  int numqnz, int* qrow, int* qcol, double* qval, char sense,
+                  double rhs, const char* QCname)>
     GRBaddqconstr = nullptr;
-std::function<int(GRBmodel *model, const char *name, int resvar, int nvars,
-                  const int *vars, double constant)>
+std::function<int(GRBmodel* model, const char* name, int resvar, int nvars,
+                  const int* vars, double constant)>
     GRBaddgenconstrMax = nullptr;
-std::function<int(GRBmodel *model, const char *name, int resvar, int nvars,
-                  const int *vars, double constant)>
+std::function<int(GRBmodel* model, const char* name, int resvar, int nvars,
+                  const int* vars, double constant)>
     GRBaddgenconstrMin = nullptr;
-std::function<int(GRBmodel *model, const char *name, int resvar, int argvar)>
+std::function<int(GRBmodel* model, const char* name, int resvar, int argvar)>
     GRBaddgenconstrAbs = nullptr;
-std::function<int(GRBmodel *model, const char *name, int resvar, int nvars,
-                  const int *vars)>
+std::function<int(GRBmodel* model, const char* name, int resvar, int nvars,
+                  const int* vars)>
     GRBaddgenconstrAnd = nullptr;
-std::function<int(GRBmodel *model, const char *name, int resvar, int nvars,
-                  const int *vars)>
+std::function<int(GRBmodel* model, const char* name, int resvar, int nvars,
+                  const int* vars)>
     GRBaddgenconstrOr = nullptr;
-std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
-                  double *qval)>
+std::function<int(GRBmodel* model, int numqnz, int* qrow, int* qcol,
+                  double* qval)>
     GRBaddqpterms = nullptr;
 
 std::unique_ptr<DynamicLibrary> gurobi_dynamic_library;
@@ -131,7 +137,9 @@ std::string gurobi_library_path;
 void LoadGurobiFunctions() {
   gurobi_dynamic_library->GetFunction(&GRBaddrangeconstr,
                                       NAMEOF(GRBaddrangeconstr));
+  gurobi_dynamic_library->GetFunction(&GRBaddvar, NAMEOF(GRBaddvar));
   gurobi_dynamic_library->GetFunction(&GRBaddvars, NAMEOF(GRBaddvars));
+  gurobi_dynamic_library->GetFunction(&GRBchgcoeffs, NAMEOF(GRBchgcoeffs));
   gurobi_dynamic_library->GetFunction(&GRBfreeenv, NAMEOF(GRBfreeenv));
   gurobi_dynamic_library->GetFunction(&GRBfreemodel, NAMEOF(GRBfreemodel));
   gurobi_dynamic_library->GetFunction(&GRBgetcharattrelement,
@@ -191,53 +199,61 @@ void LoadGurobiFunctions() {
   gurobi_dynamic_library->GetFunction(&GRBaddqpterms, NAMEOF(GRBaddqpterms));
 }
 
-bool LoadSpecificGurobiLibrary(const std::string &full_library_path) {
+bool LoadSpecificGurobiLibrary(const std::string& full_library_path) {
   CHECK(gurobi_dynamic_library.get() != nullptr);
   VLOG(1) << "Try to load from " << full_library_path;
   return gurobi_dynamic_library->TryToLoad(full_library_path);
 }
 
+namespace {
+const std::vector<std::vector<std::string>> GurobiVersionLib = {
+    {"911", "91"}, {"910", "91"}, {"903", "90"}, {"902", "90"}};
+}
+
 bool SearchForGurobiDynamicLibrary() {
-  const char *gurobi_home_from_env = getenv("GUROBI_HOME");
+  if (!gurobi_library_path.empty() &&
+      LoadSpecificGurobiLibrary(gurobi_library_path)) {
+    return true;
+  }
+
+  const char* gurobi_home_from_env = getenv("GUROBI_HOME");
+  for (const std::vector<std::string>& version_lib : GurobiVersionLib) {
+    const std::string& dir = version_lib[0];
+    const std::string& number = version_lib[1];
 #if defined(_MSC_VER)  // Windows
-  if (!gurobi_library_path.empty() &&
-      LoadSpecificGurobiLibrary(gurobi_library_path)) {
-    return true;
-  }
-  if (gurobi_home_from_env != nullptr &&
-      LoadSpecificGurobiLibrary(
-          absl::StrCat(gurobi_home_from_env, "\\bin\\gurobi90.dll"))) {
-    return true;
-  }
-  if (LoadSpecificGurobiLibrary(
-          "C:\\Program Files\\gurobi902\\win64\\bin\\gurobi90.dll")) {
-    return true;
-  }
+    if (gurobi_home_from_env != nullptr &&
+        LoadSpecificGurobiLibrary(absl::StrCat(
+            gurobi_home_from_env, "\\bin\\gurobi", number, ".dll"))) {
+      return true;
+    }
+    if (LoadSpecificGurobiLibrary(
+            absl::StrCat("C:\\Program Files\\gurobi", dir,
+                         "\\win64\\bin\\gurobi", number, ".dll"))) {
+      return true;
+    }
 #elif defined(__APPLE__)  // OS X
-  if (!gurobi_library_path.empty() &&
-      LoadSpecificGurobiLibrary(gurobi_library_path)) {
-    return true;
-  }
-  if (gurobi_home_from_env != nullptr &&
-      LoadSpecificGurobiLibrary(
-          absl::StrCat(gurobi_home_from_env, "/lib/libgurobi90.dylib"))) {
-    return true;
-  }
-  if (LoadSpecificGurobiLibrary(
-          "/Library/gurobi902/mac64/lib/libgurobi90.dylib")) {
-    return true;
-  }
+    if (gurobi_home_from_env != nullptr &&
+        LoadSpecificGurobiLibrary(absl::StrCat(
+            gurobi_home_from_env, "/lib/libgurobi", number, ".dylib"))) {
+      return true;
+    }
+    if (LoadSpecificGurobiLibrary(absl::StrCat(
+        "/Library/gurobi", dir, "/mac64/lib/libgurobi", number, ".dylib"))) {
+      return true;
+    }
 #elif defined(__GNUC__)   // Linux
-  if (gurobi_home_from_env != nullptr &&
-      LoadSpecificGurobiLibrary(
-          absl::StrCat(gurobi_home_from_env, "/lib/libgurobi90.so"))) {
-    return true;
-  }
-  if (!gurobi_library_path.empty() &&
-      LoadSpecificGurobiLibrary(gurobi_library_path)) {
-    return true;
-  }
+    if (gurobi_home_from_env != nullptr &&
+        LoadSpecificGurobiLibrary(absl::StrCat(
+            gurobi_home_from_env, "/lib/libgurobi", number, ".so"))) {
+      return true;
+    }
+    if (gurobi_home_from_env != nullptr &&
+        LoadSpecificGurobiLibrary(absl::StrCat(
+            gurobi_home_from_env, "/lib64/libgurobi", number, ".so"))) {
+      return true;
+    }
 #endif
+  }
 
   return false;
 }
@@ -257,14 +273,16 @@ bool MPSolver::LoadGurobiSharedLibrary() {
   return false;
 }
 
-void MPSolver::SetGurobiLibraryPath(const std::string &full_library_path) {
+void MPSolver::SetGurobiLibraryPath(const std::string& full_library_path) {
   gurobi_library_path = full_library_path;
 }
 
 bool MPSolver::GurobiIsCorrectlyInstalled() {
   if (!LoadGurobiSharedLibrary()) return false;
-  GRBenv *env;
+  GRBenv* env;
   if (GRBloadenv(&env, nullptr) != 0 || env == nullptr) return false;
+
+  GRBfreeenv(env);
 
   return true;
 }

@@ -332,7 +332,7 @@ void PortfolioOptimizer::CreateOptimizers(
 // OptimizerSelector
 //------------------------------------------------------------------------------
 OptimizerSelector::OptimizerSelector(
-    const gtl::ITIVector<OptimizerIndex, BopOptimizerBase*>& optimizers)
+    const absl::StrongVector<OptimizerIndex, BopOptimizerBase*>& optimizers)
     : run_infos_(), selected_index_(optimizers.size()) {
   for (OptimizerIndex i(0); i < optimizers.size(); ++i) {
     info_positions_.push_back(run_infos_.size());

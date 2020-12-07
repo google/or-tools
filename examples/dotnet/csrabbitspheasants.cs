@@ -19,55 +19,52 @@ using Google.OrTools.ConstraintSolver;
  */
 public class AssignFirstUnboundToMin : NetDecisionBuilder
 {
-  public AssignFirstUnboundToMin(IntVar[] vars)
-  {
-    vars_ = vars;
-  }
-
-  public override Decision Next(Solver solver)
-  {
-    foreach (IntVar var in vars_)
+    public AssignFirstUnboundToMin(IntVar[] vars)
     {
-      if (!var.Bound())
-      {
-        return solver.MakeAssignVariableValue(var, var.Min());
-      }
+        vars_ = vars;
     }
-    return null;
-  }
 
-  private IntVar[] vars_;
+    public override Decision Next(Solver solver)
+    {
+        foreach (IntVar var in vars_)
+        {
+            if (!var.Bound())
+            {
+                return solver.MakeAssignVariableValue(var, var.Min());
+            }
+        }
+        return null;
+    }
+
+    private IntVar[] vars_;
 }
-
 
 public class CsRabbitsPheasants
 {
-  /**
-   * Solves the rabbits + pheasants problem.  We are seing 20 heads
-   * and 56 legs. How many rabbits and how many pheasants are we thus
-   * seeing?
-   */
-  private static void Solve()
-  {
-    Solver solver = new Solver("RabbitsPheasants");
-    IntVar rabbits = solver.MakeIntVar(0, 100, "rabbits");
-    IntVar pheasants = solver.MakeIntVar(0, 100, "pheasants");
-    solver.Add(rabbits + pheasants == 20);
-    solver.Add(rabbits * 4 + pheasants * 2 == 56);
-    DecisionBuilder db =
-        new AssignFirstUnboundToMin(new IntVar[] {rabbits, pheasants});
-    solver.NewSearch(db);
-    solver.NextSolution();
-    Console.WriteLine(
-        "Solved Rabbits + Pheasants in {0} ms, and {1} search tree branches.",
-        solver.WallTime(),  solver.Branches());
-    Console.WriteLine(rabbits.ToString());
-    Console.WriteLine(pheasants.ToString());
-    solver.EndSearch();
-  }
+    /**
+     * Solves the rabbits + pheasants problem.  We are seing 20 heads
+     * and 56 legs. How many rabbits and how many pheasants are we thus
+     * seeing?
+     */
+    private static void Solve()
+    {
+        Solver solver = new Solver("RabbitsPheasants");
+        IntVar rabbits = solver.MakeIntVar(0, 100, "rabbits");
+        IntVar pheasants = solver.MakeIntVar(0, 100, "pheasants");
+        solver.Add(rabbits + pheasants == 20);
+        solver.Add(rabbits * 4 + pheasants * 2 == 56);
+        DecisionBuilder db = new AssignFirstUnboundToMin(new IntVar[] { rabbits, pheasants });
+        solver.NewSearch(db);
+        solver.NextSolution();
+        Console.WriteLine("Solved Rabbits + Pheasants in {0} ms, and {1} search tree branches.", solver.WallTime(),
+                          solver.Branches());
+        Console.WriteLine(rabbits.ToString());
+        Console.WriteLine(pheasants.ToString());
+        solver.EndSearch();
+    }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+    public static void Main(String[] args)
+    {
+        Solve();
+    }
 }

@@ -19,10 +19,10 @@
 
 #include "absl/types/span.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_expr.h"
@@ -108,13 +108,13 @@ class IntervalsRepository {
 
   // Literal indicating if the tasks is executed. Tasks that are always executed
   // will have a kNoLiteralIndex entry in this vector.
-  gtl::ITIVector<IntervalVariable, LiteralIndex> is_present_;
+  absl::StrongVector<IntervalVariable, LiteralIndex> is_present_;
 
   // The integer variables for each tasks.
-  gtl::ITIVector<IntervalVariable, IntegerVariable> start_vars_;
-  gtl::ITIVector<IntervalVariable, IntegerVariable> end_vars_;
-  gtl::ITIVector<IntervalVariable, IntegerVariable> size_vars_;
-  gtl::ITIVector<IntervalVariable, IntegerValue> fixed_sizes_;
+  absl::StrongVector<IntervalVariable, IntegerVariable> start_vars_;
+  absl::StrongVector<IntervalVariable, IntegerVariable> end_vars_;
+  absl::StrongVector<IntervalVariable, IntegerVariable> size_vars_;
+  absl::StrongVector<IntervalVariable, IntegerValue> fixed_sizes_;
 
   DISALLOW_COPY_AND_ASSIGN(IntervalsRepository);
 };

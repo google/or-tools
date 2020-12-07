@@ -37,7 +37,7 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
   }
 
   // TODO(user): Support sharing constraints in the model across constraints.
-  absl::flat_hash_map<std::pair<int, int>, int> precedence_cache;
+  absl::flat_hash_map<std::tuple<int, int, int, int>, int> precedence_cache;
   const ReservoirConstraintProto& reservoir = ct->reservoir();
   const int num_events = reservoir.times_size();
 
@@ -104,8 +104,10 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
         if (context->LiteralIsFalse(active_j)) continue;
 
         const int time_j = reservoir.times(j);
-        const std::pair<int, int> p = std::make_pair(time_i, time_j);
-        const std::pair<int, int> rev_p = std::make_pair(time_j, time_i);
+        const std::tuple<int, int, int, int> p =
+            std::make_tuple(time_i, time_j, active_i, active_j);
+        const std::tuple<int, int, int, int> rev_p =
+            std::make_tuple(time_j, time_i, active_j, active_i);
         if (gtl::ContainsKey(precedence_cache, p)) continue;
 
         const int i_lesseq_j = context->NewBoolVar();
@@ -151,7 +153,8 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
 
         const int time_j = reservoir.times(j);
         level->mutable_linear()->add_vars(gtl::FindOrDieNoPrint(
-            precedence_cache, std::make_pair(time_j, time_i)));
+            precedence_cache,
+            std::make_tuple(time_j, time_i, active_j, active_i)));
         level->mutable_linear()->add_coeffs(reservoir.demands(j));
       }
 

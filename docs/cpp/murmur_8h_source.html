@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -111,7 +111,7 @@ $(document).ready(function(){initNavTree('murmur_8h_source.html',''); initResiza
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="comment">// In the or-tools project, MurmurHash64 is just a redirection towards</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="comment">// ThoroughHash. Ideally, it is meant to be using the murmurhash</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="comment">// algorithm described in http://murmurhash.googlepages.com.</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno"><a class="line" href="namespaceutil__hash.html#aa8b1127cf2ccc6c437830e0f1e44fec0">   23</a></span>&#160;<span class="keyword">inline</span> <a class="code" href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a> <a class="code" href="namespaceutil__hash.html#aa8b1127cf2ccc6c437830e0f1e44fec0">MurmurHash64</a>(<span class="keyword">const</span> <span class="keywordtype">char</span> *buf, <span class="keyword">const</span> <span class="keywordtype">size_t</span> len) {</div>
+<div class="line"><a name="l00023"></a><span class="lineno"><a class="line" href="namespaceutil__hash.html#aa8b1127cf2ccc6c437830e0f1e44fec0">   23</a></span>&#160;<span class="keyword">inline</span> <a class="code" href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a> <a class="code" href="namespaceutil__hash.html#aa8b1127cf2ccc6c437830e0f1e44fec0">MurmurHash64</a>(<span class="keyword">const</span> <span class="keywordtype">char</span>* buf, <span class="keyword">const</span> <span class="keywordtype">size_t</span> len) {</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;  <a class="code" href="namespaceoperations__research.html#a8627f242a0332f34d29d85b6c57f1224">return ::operations_research::ThoroughHash</a>(buf, len);</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;}</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;}  <span class="comment">// namespace util_hash</span></div>

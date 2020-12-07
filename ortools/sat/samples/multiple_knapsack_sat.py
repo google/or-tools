@@ -14,12 +14,7 @@
 """Solves a multiple knapsack problem using the CP-SAT solver."""
 
 # [START import]
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from ortools.sat.python import cp_model
-
 # [END import]
 
 
@@ -37,7 +32,6 @@ def create_data_model():
     data['num_bins'] = len(data['bin_capacities'])
     data['all_bins'] = range(data['num_bins'])
     return data
-
 
 # [END data_model]
 
@@ -63,7 +57,6 @@ def print_solutions(data, solver, x):
         total_value += bin_value
     print('Total packed weight:', total_weight)
     print('Total packed value:', total_value)
-
 
 # [END solution_printer]
 

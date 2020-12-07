@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -157,7 +157,7 @@ Public Types</h2></td></tr>
 <tr class="separator:a76874cd778ea1b9220673e019f9e7abe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6719229c28ba88ce65968989bb85616b"><td class="memItemLeft" align="right" valign="top">typedef std::function&lt; <a class="el" href="structoperations__research_1_1_routing_model_1_1_state_dependent_transit.html">StateDependentTransit</a>(<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a6719229c28ba88ce65968989bb85616b">VariableIndexEvaluator2</a></td></tr>
 <tr class="separator:a6719229c28ba88ce65968989bb85616b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0e106a97f0156868f1d1c741b283793e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a0e106a97f0156868f1d1c741b283793e">GetTabuVarsCallback</a> = std::function&lt; std::vector&lt; operations_research::IntVar * &gt;(<a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> *)&gt;</td></tr>
+<tr class="memitem:a0e106a97f0156868f1d1c741b283793e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a0e106a97f0156868f1d1c741b283793e">GetTabuVarsCallback</a> = std::function&lt; std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">operations_research::IntVar</a> * &gt;(<a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> *)&gt;</td></tr>
 <tr class="memdesc:a0e106a97f0156868f1d1c741b283793e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the callback returning the variable to use for the Tabu <a class="el" href="classoperations__research_1_1_search.html">Search</a> metaheuristic.  <a href="classoperations__research_1_1_routing_model.html#a0e106a97f0156868f1d1c741b283793e">More...</a><br /></td></tr>
 <tr class="separator:a0e106a97f0156868f1d1c741b283793e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -218,7 +218,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a9681fce3b255669812d0eb7fd7e372b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae374acc8df39a05017649aa0533b66fd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#ae374acc8df39a05017649aa0533b66fd">AddDimensionDependentDimensionWithVehicleCapacity</a> (int pure_transit, int dependent_transit, const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> *base_dimension, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> slack_max, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> vehicle_capacity, bool fix_start_cumul_to_zero, const std::string &amp;<a class="el" href="linear__solver_8cc.html#a82e2a7e0f28d620da677073b6b24574b">name</a>)</td></tr>
 <tr class="separator:ae374acc8df39a05017649aa0533b66fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4ffedcd1ce5dc6b224edff0b417aad5c"><td class="memItemLeft" align="right" valign="top">Constraint *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a4ffedcd1ce5dc6b224edff0b417aad5c">MakePathSpansAndTotalSlacks</a> (const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> *dimension, std::vector&lt; IntVar * &gt; spans, std::vector&lt; IntVar * &gt; total_slacks)</td></tr>
+<tr class="memitem:a4ffedcd1ce5dc6b224edff0b417aad5c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_constraint.html">Constraint</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a4ffedcd1ce5dc6b224edff0b417aad5c">MakePathSpansAndTotalSlacks</a> (const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> *dimension, std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; spans, std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; total_slacks)</td></tr>
 <tr class="memdesc:a4ffedcd1ce5dc6b224edff0b417aad5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">For every vehicle of the routing model:  <a href="classoperations__research_1_1_routing_model.html#a4ffedcd1ce5dc6b224edff0b417aad5c">More...</a><br /></td></tr>
 <tr class="separator:a4ffedcd1ce5dc6b224edff0b417aad5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a644ab247b579b93e9a3b1ecd96ba415c"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a644ab247b579b93e9a3b1ecd96ba415c">GetAllDimensionNames</a> () const</td></tr>
@@ -323,6 +323,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a9e42e15bdb23d63ae78137b97a4882de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a075c26c8a078b9c0f1a4f2be00f1f795"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; std::pair&lt; <a class="el" href="classoperations__research_1_1_routing_model.html#afa7cbbd4db2dd5d0bec3393efc9ebac1">DisjunctionIndex</a>, <a class="el" href="classoperations__research_1_1_routing_model.html#afa7cbbd4db2dd5d0bec3393efc9ebac1">DisjunctionIndex</a> &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a075c26c8a078b9c0f1a4f2be00f1f795">GetPickupAndDeliveryDisjunctions</a> () const</td></tr>
 <tr class="separator:a075c26c8a078b9c0f1a4f2be00f1f795"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a82f989d278bca985a55a3785be2d7b42"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1_routing_model.html#a76874cd778ea1b9220673e019f9e7abe">IndexPairs</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a82f989d278bca985a55a3785be2d7b42">GetImplicitUniquePickupAndDeliveryPairs</a> () const</td></tr>
+<tr class="memdesc:a82f989d278bca985a55a3785be2d7b42"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns implicit pickup and delivery pairs currently in the model.  <a href="classoperations__research_1_1_routing_model.html#a82f989d278bca985a55a3785be2d7b42">More...</a><br /></td></tr>
+<tr class="separator:a82f989d278bca985a55a3785be2d7b42"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a77320442b8568aad01f668c2f9eb6f07"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a77320442b8568aad01f668c2f9eb6f07">SetVisitType</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>, int type, <a class="el" href="classoperations__research_1_1_routing_model.html#a495b53b94a8c31a8f13755962d6c6059">VisitTypePolicy</a> type_policy)</td></tr>
 <tr class="separator:a77320442b8568aad01f668c2f9eb6f07"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a95886cce213f51091399427b4728a6b2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a95886cce213f51091399427b4728a6b2">GetVisitType</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) const</td></tr>
@@ -338,8 +341,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a822458cc9a9a6fa02e86af3e3a1e5c89"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a24478803a7138d68852093b9c2743892"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a24478803a7138d68852093b9c2743892">GetNumberOfVisitTypes</a> () const</td></tr>
 <tr class="separator:a24478803a7138d68852093b9c2743892"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a768d26b80704955e5ca59c83d5fcf871"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; int &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a768d26b80704955e5ca59c83d5fcf871">GetTopologicallySortedVisitTypes</a> () const</td></tr>
-<tr class="separator:a768d26b80704955e5ca59c83d5fcf871"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a30ebc3cb1dddc3c582f8b7f2395bbc93"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; std::vector&lt; int &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a30ebc3cb1dddc3c582f8b7f2395bbc93">GetTopologicallySortedVisitTypes</a> () const</td></tr>
+<tr class="separator:a30ebc3cb1dddc3c582f8b7f2395bbc93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a796b4eed03ed53bbbaed642f4ae94952"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a796b4eed03ed53bbbaed642f4ae94952">AddHardTypeIncompatibility</a> (int type1, int type2)</td></tr>
 <tr class="memdesc:a796b4eed03ed53bbbaed642f4ae94952"><td class="mdescLeft">&#160;</td><td class="mdescRight">Incompatibilities: Two nodes with "hard" incompatible types cannot share the same route at all, while with a "temporal" incompatibility they can't be on the same route at the same time.  <a href="classoperations__research_1_1_routing_model.html#a796b4eed03ed53bbbaed642f4ae94952">More...</a><br /></td></tr>
 <tr class="separator:a796b4eed03ed53bbbaed642f4ae94952"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -425,31 +428,31 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a7ccaa3133378da76d3fd5cdb560038ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed6760664a6e4f3427832ee3b7ba0602"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#aed6760664a6e4f3427832ee3b7ba0602">AreEmptyRouteCostsConsideredForVehicle</a> (int vehicle) const</td></tr>
 <tr class="separator:aed6760664a6e4f3427832ee3b7ba0602"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a660cb5477a6d3fbf146657aa7af73968"><td class="memItemLeft" align="right" valign="top">const Solver::IndexEvaluator2 &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a660cb5477a6d3fbf146657aa7af73968">first_solution_evaluator</a> () const</td></tr>
+<tr class="memitem:a660cb5477a6d3fbf146657aa7af73968"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1_solver.html#abb24034fec2804ac3c0172f043087321">Solver::IndexEvaluator2</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a660cb5477a6d3fbf146657aa7af73968">first_solution_evaluator</a> () const</td></tr>
 <tr class="memdesc:a660cb5477a6d3fbf146657aa7af73968"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets/sets the evaluator used during the search.  <a href="classoperations__research_1_1_routing_model.html#a660cb5477a6d3fbf146657aa7af73968">More...</a><br /></td></tr>
 <tr class="separator:a660cb5477a6d3fbf146657aa7af73968"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab69145472d51d341f82d3ad29e9c6be2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#ab69145472d51d341f82d3ad29e9c6be2">SetFirstSolutionEvaluator</a> (Solver::IndexEvaluator2 evaluator)</td></tr>
+<tr class="memitem:ab69145472d51d341f82d3ad29e9c6be2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#ab69145472d51d341f82d3ad29e9c6be2">SetFirstSolutionEvaluator</a> (<a class="el" href="classoperations__research_1_1_solver.html#abb24034fec2804ac3c0172f043087321">Solver::IndexEvaluator2</a> evaluator)</td></tr>
 <tr class="memdesc:ab69145472d51d341f82d3ad29e9c6be2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Takes ownership of evaluator.  <a href="classoperations__research_1_1_routing_model.html#ab69145472d51d341f82d3ad29e9c6be2">More...</a><br /></td></tr>
 <tr class="separator:ab69145472d51d341f82d3ad29e9c6be2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1156fa8214dba09e2a2a94862244aa1f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a1156fa8214dba09e2a2a94862244aa1f">AddLocalSearchOperator</a> (<a class="el" href="classoperations__research_1_1_local_search_operator.html">LocalSearchOperator</a> *ls_operator)</td></tr>
 <tr class="memdesc:a1156fa8214dba09e2a2a94862244aa1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a local search operator to the set of operators used to solve the vehicle routing problem.  <a href="classoperations__research_1_1_routing_model.html#a1156fa8214dba09e2a2a94862244aa1f">More...</a><br /></td></tr>
 <tr class="separator:a1156fa8214dba09e2a2a94862244aa1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0e23be986e4c3b96a50c8798aa5f536d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a0e23be986e4c3b96a50c8798aa5f536d">AddSearchMonitor</a> (SearchMonitor *const monitor)</td></tr>
+<tr class="memitem:a0e23be986e4c3b96a50c8798aa5f536d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a0e23be986e4c3b96a50c8798aa5f536d">AddSearchMonitor</a> (<a class="el" href="classoperations__research_1_1_search_monitor.html">SearchMonitor</a> *const monitor)</td></tr>
 <tr class="memdesc:a0e23be986e4c3b96a50c8798aa5f536d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a search monitor to the search used to solve the routing model.  <a href="classoperations__research_1_1_routing_model.html#a0e23be986e4c3b96a50c8798aa5f536d">More...</a><br /></td></tr>
 <tr class="separator:a0e23be986e4c3b96a50c8798aa5f536d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a086605d9650ce3c576d8a9c45ce0b9fc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a086605d9650ce3c576d8a9c45ce0b9fc">AddAtSolutionCallback</a> (std::function&lt; void()&gt; <a class="el" href="gurobi__interface_8cc.html#a6627a3800ac768bb5528ef54c9cace36">callback</a>)</td></tr>
 <tr class="memdesc:a086605d9650ce3c576d8a9c45ce0b9fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a callback called each time a solution is found during the search.  <a href="classoperations__research_1_1_routing_model.html#a086605d9650ce3c576d8a9c45ce0b9fc">More...</a><br /></td></tr>
 <tr class="separator:a086605d9650ce3c576d8a9c45ce0b9fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4768ba91c34c542eddec212a68d79473"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a4768ba91c34c542eddec212a68d79473">AddVariableMinimizedByFinalizer</a> (IntVar *<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>)</td></tr>
+<tr class="memitem:a4768ba91c34c542eddec212a68d79473"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a4768ba91c34c542eddec212a68d79473">AddVariableMinimizedByFinalizer</a> (<a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>)</td></tr>
 <tr class="memdesc:a4768ba91c34c542eddec212a68d79473"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a variable to minimize in the solution finalizer.  <a href="classoperations__research_1_1_routing_model.html#a4768ba91c34c542eddec212a68d79473">More...</a><br /></td></tr>
 <tr class="separator:a4768ba91c34c542eddec212a68d79473"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aabdcf3bd412a5a61d811ef85e115e5ff"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#aabdcf3bd412a5a61d811ef85e115e5ff">AddVariableMaximizedByFinalizer</a> (IntVar *<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>)</td></tr>
+<tr class="memitem:aabdcf3bd412a5a61d811ef85e115e5ff"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#aabdcf3bd412a5a61d811ef85e115e5ff">AddVariableMaximizedByFinalizer</a> (<a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>)</td></tr>
 <tr class="memdesc:aabdcf3bd412a5a61d811ef85e115e5ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a variable to maximize in the solution finalizer (see above for information on the solution finalizer).  <a href="classoperations__research_1_1_routing_model.html#aabdcf3bd412a5a61d811ef85e115e5ff">More...</a><br /></td></tr>
 <tr class="separator:aabdcf3bd412a5a61d811ef85e115e5ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a939aa2ef2afec0337b0f9d4dcb1c2db8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a939aa2ef2afec0337b0f9d4dcb1c2db8">AddWeightedVariableMinimizedByFinalizer</a> (IntVar *<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="routing__flow_8cc.html#a26a8cbbc7bcf4117c2bf65104b4a54b4">cost</a>)</td></tr>
+<tr class="memitem:a939aa2ef2afec0337b0f9d4dcb1c2db8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a939aa2ef2afec0337b0f9d4dcb1c2db8">AddWeightedVariableMinimizedByFinalizer</a> (<a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="routing__flow_8cc.html#a26a8cbbc7bcf4117c2bf65104b4a54b4">cost</a>)</td></tr>
 <tr class="memdesc:a939aa2ef2afec0337b0f9d4dcb1c2db8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a variable to minimize in the solution finalizer, with a weighted priority: the higher the more priority it has.  <a href="classoperations__research_1_1_routing_model.html#a939aa2ef2afec0337b0f9d4dcb1c2db8">More...</a><br /></td></tr>
 <tr class="separator:a939aa2ef2afec0337b0f9d4dcb1c2db8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1739a41268c21cfc401d870f05b93536"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a1739a41268c21cfc401d870f05b93536">AddVariableTargetToFinalizer</a> (IntVar *<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> target)</td></tr>
+<tr class="memitem:a1739a41268c21cfc401d870f05b93536"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a1739a41268c21cfc401d870f05b93536">AddVariableTargetToFinalizer</a> (<a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> target)</td></tr>
 <tr class="memdesc:a1739a41268c21cfc401d870f05b93536"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a variable to set the closest possible to the target value in the solution finalizer.  <a href="classoperations__research_1_1_routing_model.html#a1739a41268c21cfc401d870f05b93536">More...</a><br /></td></tr>
 <tr class="separator:a1739a41268c21cfc401d870f05b93536"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:add71470f4175a0859e6e3d69c2a53988"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#add71470f4175a0859e6e3d69c2a53988">CloseModel</a> ()</td></tr>
@@ -458,16 +461,16 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aa79f8d482de4dd0ef86a1b54999686af"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#aa79f8d482de4dd0ef86a1b54999686af">CloseModelWithParameters</a> (const RoutingSearchParameters &amp;search_parameters)</td></tr>
 <tr class="memdesc:aa79f8d482de4dd0ef86a1b54999686af"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as above taking search parameters (as of 10/2015 some the parameters have to be set when closing the model).  <a href="classoperations__research_1_1_routing_model.html#aa79f8d482de4dd0ef86a1b54999686af">More...</a><br /></td></tr>
 <tr class="separator:aa79f8d482de4dd0ef86a1b54999686af"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae3bb9f7055b5dabd24e2ea7c6a377a6a"><td class="memItemLeft" align="right" valign="top">const Assignment *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#ae3bb9f7055b5dabd24e2ea7c6a377a6a">Solve</a> (const Assignment *assignment=nullptr)</td></tr>
+<tr class="memitem:ae3bb9f7055b5dabd24e2ea7c6a377a6a"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#ae3bb9f7055b5dabd24e2ea7c6a377a6a">Solve</a> (const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *assignment=nullptr)</td></tr>
 <tr class="memdesc:ae3bb9f7055b5dabd24e2ea7c6a377a6a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solves the current routing model; closes the current model.  <a href="classoperations__research_1_1_routing_model.html#ae3bb9f7055b5dabd24e2ea7c6a377a6a">More...</a><br /></td></tr>
 <tr class="separator:ae3bb9f7055b5dabd24e2ea7c6a377a6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8c5267a8f35e062c163b61bcae31857b"><td class="memItemLeft" align="right" valign="top">const Assignment *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a8c5267a8f35e062c163b61bcae31857b">SolveWithParameters</a> (const RoutingSearchParameters &amp;search_parameters, std::vector&lt; const Assignment * &gt; *solutions=nullptr)</td></tr>
+<tr class="memitem:a8c5267a8f35e062c163b61bcae31857b"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a8c5267a8f35e062c163b61bcae31857b">SolveWithParameters</a> (const RoutingSearchParameters &amp;search_parameters, std::vector&lt; const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> * &gt; *solutions=nullptr)</td></tr>
 <tr class="memdesc:a8c5267a8f35e062c163b61bcae31857b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solves the current routing model with the given parameters.  <a href="classoperations__research_1_1_routing_model.html#a8c5267a8f35e062c163b61bcae31857b">More...</a><br /></td></tr>
 <tr class="separator:a8c5267a8f35e062c163b61bcae31857b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a674ab7782c46ba72034c73932b1dbd38"><td class="memItemLeft" align="right" valign="top">const Assignment *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a674ab7782c46ba72034c73932b1dbd38">SolveFromAssignmentWithParameters</a> (const Assignment *assignment, const RoutingSearchParameters &amp;search_parameters, std::vector&lt; const Assignment * &gt; *solutions=nullptr)</td></tr>
+<tr class="memitem:a674ab7782c46ba72034c73932b1dbd38"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a674ab7782c46ba72034c73932b1dbd38">SolveFromAssignmentWithParameters</a> (const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *assignment, const RoutingSearchParameters &amp;search_parameters, std::vector&lt; const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> * &gt; *solutions=nullptr)</td></tr>
 <tr class="separator:a674ab7782c46ba72034c73932b1dbd38"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac1a2ab630f6b13644ca6853c7893f413"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#ac1a2ab630f6b13644ca6853c7893f413">SetAssignmentFromOtherModelAssignment</a> (Assignment *target_assignment, const <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> *source_model, const Assignment *source_assignment)</td></tr>
-<tr class="memdesc:ac1a2ab630f6b13644ca6853c7893f413"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a "source_model" and its "source_assignment", resets "target_assignment" with the IntVar variables (nexts_, and vehicle_vars_ if costs aren't homogeneous across vehicles) of "this" model, with the values set according to those in "other_assignment".  <a href="classoperations__research_1_1_routing_model.html#ac1a2ab630f6b13644ca6853c7893f413">More...</a><br /></td></tr>
+<tr class="memitem:ac1a2ab630f6b13644ca6853c7893f413"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#ac1a2ab630f6b13644ca6853c7893f413">SetAssignmentFromOtherModelAssignment</a> (<a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *target_assignment, const <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> *source_model, const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *source_assignment)</td></tr>
+<tr class="memdesc:ac1a2ab630f6b13644ca6853c7893f413"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a "source_model" and its "source_assignment", resets "target_assignment" with the <a class="el" href="classoperations__research_1_1_int_var.html" title="The class IntVar is a subset of IntExpr.">IntVar</a> variables (nexts_, and vehicle_vars_ if costs aren't homogeneous across vehicles) of "this" model, with the values set according to those in "other_assignment".  <a href="classoperations__research_1_1_routing_model.html#ac1a2ab630f6b13644ca6853c7893f413">More...</a><br /></td></tr>
 <tr class="separator:ac1a2ab630f6b13644ca6853c7893f413"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae9b2404a26ab1e6acf562b8261eeba38"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#ae9b2404a26ab1e6acf562b8261eeba38">ComputeLowerBound</a> ()</td></tr>
 <tr class="memdesc:ae9b2404a26ab1e6acf562b8261eeba38"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes a lower bound to the routing problem solving a linear assignment problem.  <a href="classoperations__research_1_1_routing_model.html#ae9b2404a26ab1e6acf562b8261eeba38">More...</a><br /></td></tr>
@@ -475,50 +478,50 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:adb1490a44086db009cdb51f854a02a65"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_routing_model.html#a67a0db04d321a74b7e7fcfd3f1a3f70b">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#adb1490a44086db009cdb51f854a02a65">status</a> () const</td></tr>
 <tr class="memdesc:adb1490a44086db009cdb51f854a02a65"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current status of the routing model.  <a href="classoperations__research_1_1_routing_model.html#adb1490a44086db009cdb51f854a02a65">More...</a><br /></td></tr>
 <tr class="separator:adb1490a44086db009cdb51f854a02a65"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9986c84a6cab9f2f14b2b6c13432367b"><td class="memItemLeft" align="right" valign="top">IntVar *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a9986c84a6cab9f2f14b2b6c13432367b">ApplyLocks</a> (const std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt; &amp;locks)</td></tr>
+<tr class="memitem:a9986c84a6cab9f2f14b2b6c13432367b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a9986c84a6cab9f2f14b2b6c13432367b">ApplyLocks</a> (const std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt; &amp;locks)</td></tr>
 <tr class="memdesc:a9986c84a6cab9f2f14b2b6c13432367b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Applies a lock chain to the next search.  <a href="classoperations__research_1_1_routing_model.html#a9986c84a6cab9f2f14b2b6c13432367b">More...</a><br /></td></tr>
 <tr class="separator:a9986c84a6cab9f2f14b2b6c13432367b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a410f7da30cf944b7874eebe57eebe41a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a410f7da30cf944b7874eebe57eebe41a">ApplyLocksToAllVehicles</a> (const std::vector&lt; std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt;&gt; &amp;locks, bool close_routes)</td></tr>
 <tr class="memdesc:a410f7da30cf944b7874eebe57eebe41a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Applies lock chains to all vehicles to the next search, such that locks[p] is the lock chain for route p.  <a href="classoperations__research_1_1_routing_model.html#a410f7da30cf944b7874eebe57eebe41a">More...</a><br /></td></tr>
 <tr class="separator:a410f7da30cf944b7874eebe57eebe41a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae033bc458ffce1ecc4874f3e212896f7"><td class="memItemLeft" align="right" valign="top">const Assignment *const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#ae033bc458ffce1ecc4874f3e212896f7">PreAssignment</a> () const</td></tr>
+<tr class="memitem:ae033bc458ffce1ecc4874f3e212896f7"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#ae033bc458ffce1ecc4874f3e212896f7">PreAssignment</a> () const</td></tr>
 <tr class="memdesc:ae033bc458ffce1ecc4874f3e212896f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns an assignment used to fix some of the variables of the problem.  <a href="classoperations__research_1_1_routing_model.html#ae033bc458ffce1ecc4874f3e212896f7">More...</a><br /></td></tr>
 <tr class="separator:ae033bc458ffce1ecc4874f3e212896f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3af1158b77552d60afc3f0473de3892d"><td class="memItemLeft" align="right" valign="top">Assignment *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a3af1158b77552d60afc3f0473de3892d">MutablePreAssignment</a> ()</td></tr>
+<tr class="memitem:a3af1158b77552d60afc3f0473de3892d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a3af1158b77552d60afc3f0473de3892d">MutablePreAssignment</a> ()</td></tr>
 <tr class="separator:a3af1158b77552d60afc3f0473de3892d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acfcef421e8c8cd243157543f741d6a73"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#acfcef421e8c8cd243157543f741d6a73">WriteAssignment</a> (const std::string &amp;file_name) const</td></tr>
 <tr class="memdesc:acfcef421e8c8cd243157543f741d6a73"><td class="mdescLeft">&#160;</td><td class="mdescRight">Writes the current solution to a file containing an <a class="el" href="namespaceoperations__research_1_1_assignment_proto.html">AssignmentProto</a>.  <a href="classoperations__research_1_1_routing_model.html#acfcef421e8c8cd243157543f741d6a73">More...</a><br /></td></tr>
 <tr class="separator:acfcef421e8c8cd243157543f741d6a73"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3d81f16de798be60f56cf03cd9b907cf"><td class="memItemLeft" align="right" valign="top">Assignment *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a3d81f16de798be60f56cf03cd9b907cf">ReadAssignment</a> (const std::string &amp;file_name)</td></tr>
+<tr class="memitem:a3d81f16de798be60f56cf03cd9b907cf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a3d81f16de798be60f56cf03cd9b907cf">ReadAssignment</a> (const std::string &amp;file_name)</td></tr>
 <tr class="memdesc:a3d81f16de798be60f56cf03cd9b907cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reads an assignment from a file and returns the current solution.  <a href="classoperations__research_1_1_routing_model.html#a3d81f16de798be60f56cf03cd9b907cf">More...</a><br /></td></tr>
 <tr class="separator:a3d81f16de798be60f56cf03cd9b907cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d3987c3df07976d19f3165788fc97a9"><td class="memItemLeft" align="right" valign="top">Assignment *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a0d3987c3df07976d19f3165788fc97a9">RestoreAssignment</a> (const Assignment &amp;solution)</td></tr>
+<tr class="memitem:a0d3987c3df07976d19f3165788fc97a9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a0d3987c3df07976d19f3165788fc97a9">RestoreAssignment</a> (const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;solution)</td></tr>
 <tr class="memdesc:a0d3987c3df07976d19f3165788fc97a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Restores an assignment as a solution in the routing model and returns the new solution.  <a href="classoperations__research_1_1_routing_model.html#a0d3987c3df07976d19f3165788fc97a9">More...</a><br /></td></tr>
 <tr class="separator:a0d3987c3df07976d19f3165788fc97a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a12e98c90493eed1ffd6dba61eeb719a3"><td class="memItemLeft" align="right" valign="top">Assignment *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a12e98c90493eed1ffd6dba61eeb719a3">ReadAssignmentFromRoutes</a> (const std::vector&lt; std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt;&gt; &amp;routes, bool ignore_inactive_indices)</td></tr>
+<tr class="memitem:a12e98c90493eed1ffd6dba61eeb719a3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a12e98c90493eed1ffd6dba61eeb719a3">ReadAssignmentFromRoutes</a> (const std::vector&lt; std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt;&gt; &amp;routes, bool ignore_inactive_indices)</td></tr>
 <tr class="memdesc:a12e98c90493eed1ffd6dba61eeb719a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Restores the routes as the current solution.  <a href="classoperations__research_1_1_routing_model.html#a12e98c90493eed1ffd6dba61eeb719a3">More...</a><br /></td></tr>
 <tr class="separator:a12e98c90493eed1ffd6dba61eeb719a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a78f7f1cb8b08b7ec1d477a14447bd8d4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a78f7f1cb8b08b7ec1d477a14447bd8d4">RoutesToAssignment</a> (const std::vector&lt; std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt;&gt; &amp;routes, bool ignore_inactive_indices, bool close_routes, Assignment *const assignment) const</td></tr>
+<tr class="memitem:a78f7f1cb8b08b7ec1d477a14447bd8d4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a78f7f1cb8b08b7ec1d477a14447bd8d4">RoutesToAssignment</a> (const std::vector&lt; std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt;&gt; &amp;routes, bool ignore_inactive_indices, bool close_routes, <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *const assignment) const</td></tr>
 <tr class="memdesc:a78f7f1cb8b08b7ec1d477a14447bd8d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fills an assignment from a specification of the routes of the vehicles.  <a href="classoperations__research_1_1_routing_model.html#a78f7f1cb8b08b7ec1d477a14447bd8d4">More...</a><br /></td></tr>
 <tr class="separator:a78f7f1cb8b08b7ec1d477a14447bd8d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a97d152b7049084186342b719eee6fa15"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a97d152b7049084186342b719eee6fa15">AssignmentToRoutes</a> (const Assignment &amp;assignment, std::vector&lt; std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt;&gt; *const routes) const</td></tr>
+<tr class="memitem:a97d152b7049084186342b719eee6fa15"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a97d152b7049084186342b719eee6fa15">AssignmentToRoutes</a> (const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;assignment, std::vector&lt; std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt;&gt; *const routes) const</td></tr>
 <tr class="memdesc:a97d152b7049084186342b719eee6fa15"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts the solution in the given assignment to routes for all vehicles.  <a href="classoperations__research_1_1_routing_model.html#a97d152b7049084186342b719eee6fa15">More...</a><br /></td></tr>
 <tr class="separator:a97d152b7049084186342b719eee6fa15"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5b629ec63dd2723180eaaf6668a9f118"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a5b629ec63dd2723180eaaf6668a9f118">GetRoutesFromAssignment</a> (const Assignment &amp;assignment)</td></tr>
+<tr class="memitem:a5b629ec63dd2723180eaaf6668a9f118"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a5b629ec63dd2723180eaaf6668a9f118">GetRoutesFromAssignment</a> (const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;assignment)</td></tr>
 <tr class="memdesc:a5b629ec63dd2723180eaaf6668a9f118"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts the solution in the given assignment to routes for all vehicles.  <a href="classoperations__research_1_1_routing_model.html#a5b629ec63dd2723180eaaf6668a9f118">More...</a><br /></td></tr>
 <tr class="separator:a5b629ec63dd2723180eaaf6668a9f118"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3ea07f9778e02e7160c30bfb0f08736b"><td class="memItemLeft" align="right" valign="top">Assignment *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a3ea07f9778e02e7160c30bfb0f08736b">CompactAssignment</a> (const Assignment &amp;assignment) const</td></tr>
+<tr class="memitem:a3ea07f9778e02e7160c30bfb0f08736b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a3ea07f9778e02e7160c30bfb0f08736b">CompactAssignment</a> (const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;assignment) const</td></tr>
 <tr class="memdesc:a3ea07f9778e02e7160c30bfb0f08736b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a compacted version of the given assignment, in which all vehicles with id lower or equal to some N have non-empty routes, and all vehicles with id greater than N have empty routes.  <a href="classoperations__research_1_1_routing_model.html#a3ea07f9778e02e7160c30bfb0f08736b">More...</a><br /></td></tr>
 <tr class="separator:a3ea07f9778e02e7160c30bfb0f08736b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9a9f45350da93a613c6226f7d09d4353"><td class="memItemLeft" align="right" valign="top">Assignment *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a9a9f45350da93a613c6226f7d09d4353">CompactAndCheckAssignment</a> (const Assignment &amp;assignment) const</td></tr>
+<tr class="memitem:a9a9f45350da93a613c6226f7d09d4353"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a9a9f45350da93a613c6226f7d09d4353">CompactAndCheckAssignment</a> (const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;assignment) const</td></tr>
 <tr class="memdesc:a9a9f45350da93a613c6226f7d09d4353"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as <a class="el" href="classoperations__research_1_1_routing_model.html#a3ea07f9778e02e7160c30bfb0f08736b" title="Returns a compacted version of the given assignment, in which all vehicles with id lower or equal to ...">CompactAssignment()</a> but also checks the validity of the final compact solution; if it is not valid, no attempts to repair it are made (instead, the method returns nullptr).  <a href="classoperations__research_1_1_routing_model.html#a9a9f45350da93a613c6226f7d09d4353">More...</a><br /></td></tr>
 <tr class="separator:a9a9f45350da93a613c6226f7d09d4353"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a437ae499bef0aa64f2753166a000f5bd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a437ae499bef0aa64f2753166a000f5bd">AddToAssignment</a> (IntVar *const <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>)</td></tr>
+<tr class="memitem:a437ae499bef0aa64f2753166a000f5bd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a437ae499bef0aa64f2753166a000f5bd">AddToAssignment</a> (<a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *const <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>)</td></tr>
 <tr class="memdesc:a437ae499bef0aa64f2753166a000f5bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds an extra variable to the vehicle routing assignment.  <a href="classoperations__research_1_1_routing_model.html#a437ae499bef0aa64f2753166a000f5bd">More...</a><br /></td></tr>
 <tr class="separator:a437ae499bef0aa64f2753166a000f5bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab878a81ace850e3ecd26e95966409f61"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#ab878a81ace850e3ecd26e95966409f61">AddIntervalToAssignment</a> (IntervalVar *const <a class="el" href="resource_8cc.html#af92a8383a05fdf586a52263d358f5ada">interval</a>)</td></tr>
+<tr class="memitem:ab878a81ace850e3ecd26e95966409f61"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#ab878a81ace850e3ecd26e95966409f61">AddIntervalToAssignment</a> (<a class="el" href="classoperations__research_1_1_interval_var.html">IntervalVar</a> *const <a class="el" href="resource_8cc.html#af92a8383a05fdf586a52263d358f5ada">interval</a>)</td></tr>
 <tr class="separator:ab878a81ace850e3ecd26e95966409f61"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a90c35f02b0901acc9822020297e313e7"><td class="memItemLeft" align="right" valign="top">const Assignment *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a90c35f02b0901acc9822020297e313e7">PackCumulsOfOptimizerDimensionsFromAssignment</a> (const Assignment *original_assignment, absl::Duration duration_limit)</td></tr>
+<tr class="memitem:a90c35f02b0901acc9822020297e313e7"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a90c35f02b0901acc9822020297e313e7">PackCumulsOfOptimizerDimensionsFromAssignment</a> (const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *original_assignment, absl::Duration duration_limit)</td></tr>
 <tr class="memdesc:a90c35f02b0901acc9822020297e313e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">For every dimension in the model with an optimizer in local/global_dimension_optimizers_, this method tries to pack the cumul values of the dimension, such that:  <a href="classoperations__research_1_1_routing_model.html#a90c35f02b0901acc9822020297e313e7">More...</a><br /></td></tr>
 <tr class="separator:a90c35f02b0901acc9822020297e313e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a700982f228080c6278eb5a2f7f06f31d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a700982f228080c6278eb5a2f7f06f31d">SetSweepArranger</a> (<a class="el" href="classoperations__research_1_1_sweep_arranger.html">SweepArranger</a> *<a class="el" href="classoperations__research_1_1_routing_model.html#a71815ec83f6605bddb11578ebb835aae">sweep_arranger</a>)</td></tr>
@@ -544,34 +547,34 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:abd33c037942b971eeefad43c6022c20e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#abd33c037942b971eeefad43c6022c20e">VehicleIndex</a> (int <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) const</td></tr>
 <tr class="memdesc:abd33c037942b971eeefad43c6022c20e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the vehicle of the given start/end index, and -1 if the given index is not a vehicle start/end.  <a href="classoperations__research_1_1_routing_model.html#abd33c037942b971eeefad43c6022c20e">More...</a><br /></td></tr>
 <tr class="separator:abd33c037942b971eeefad43c6022c20e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a46a69d9769aa92122c7e5e20f49e3da3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a46a69d9769aa92122c7e5e20f49e3da3">Next</a> (const Assignment &amp;assignment, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) const</td></tr>
-<tr class="memdesc:a46a69d9769aa92122c7e5e20f49e3da3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Assignment inspection Returns the variable index of the node directly after the node corresponding to 'index' in 'assignment'.  <a href="classoperations__research_1_1_routing_model.html#a46a69d9769aa92122c7e5e20f49e3da3">More...</a><br /></td></tr>
+<tr class="memitem:a46a69d9769aa92122c7e5e20f49e3da3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a46a69d9769aa92122c7e5e20f49e3da3">Next</a> (const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;assignment, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) const</td></tr>
+<tr class="memdesc:a46a69d9769aa92122c7e5e20f49e3da3"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classoperations__research_1_1_assignment.html" title="An Assignment is a variable -&gt; domains mapping, used to report solutions to the user.">Assignment</a> inspection Returns the variable index of the node directly after the node corresponding to 'index' in 'assignment'.  <a href="classoperations__research_1_1_routing_model.html#a46a69d9769aa92122c7e5e20f49e3da3">More...</a><br /></td></tr>
 <tr class="separator:a46a69d9769aa92122c7e5e20f49e3da3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aedb8dca94b15e5465fef1667d1a81db6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#aedb8dca94b15e5465fef1667d1a81db6">IsVehicleUsed</a> (const Assignment &amp;assignment, int vehicle) const</td></tr>
+<tr class="memitem:aedb8dca94b15e5465fef1667d1a81db6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#aedb8dca94b15e5465fef1667d1a81db6">IsVehicleUsed</a> (const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;assignment, int vehicle) const</td></tr>
 <tr class="memdesc:aedb8dca94b15e5465fef1667d1a81db6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the route of 'vehicle' is non empty in 'assignment'.  <a href="classoperations__research_1_1_routing_model.html#aedb8dca94b15e5465fef1667d1a81db6">More...</a><br /></td></tr>
 <tr class="separator:aedb8dca94b15e5465fef1667d1a81db6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad154b31953d2b467bbac3e4ac696cd6"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; IntVar * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#aad154b31953d2b467bbac3e4ac696cd6">Nexts</a> () const</td></tr>
+<tr class="memitem:aad154b31953d2b467bbac3e4ac696cd6"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#aad154b31953d2b467bbac3e4ac696cd6">Nexts</a> () const</td></tr>
 <tr class="memdesc:aad154b31953d2b467bbac3e4ac696cd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns all next variables of the model, such that Nexts(i) is the next variable of the node corresponding to i.  <a href="classoperations__research_1_1_routing_model.html#aad154b31953d2b467bbac3e4ac696cd6">More...</a><br /></td></tr>
 <tr class="separator:aad154b31953d2b467bbac3e4ac696cd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a80572a238b48c2cefe38409e7544f161"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; IntVar * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a80572a238b48c2cefe38409e7544f161">VehicleVars</a> () const</td></tr>
+<tr class="memitem:a80572a238b48c2cefe38409e7544f161"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a80572a238b48c2cefe38409e7544f161">VehicleVars</a> () const</td></tr>
 <tr class="memdesc:a80572a238b48c2cefe38409e7544f161"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns all vehicle variables of the model, such that VehicleVars(i) is the vehicle variable of the node corresponding to i.  <a href="classoperations__research_1_1_routing_model.html#a80572a238b48c2cefe38409e7544f161">More...</a><br /></td></tr>
 <tr class="separator:a80572a238b48c2cefe38409e7544f161"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a66fb44c05f9875685e9c332fbdfb643b"><td class="memItemLeft" align="right" valign="top">IntVar *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a66fb44c05f9875685e9c332fbdfb643b">NextVar</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) const</td></tr>
+<tr class="memitem:a66fb44c05f9875685e9c332fbdfb643b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a66fb44c05f9875685e9c332fbdfb643b">NextVar</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) const</td></tr>
 <tr class="memdesc:a66fb44c05f9875685e9c332fbdfb643b"><td class="mdescLeft">&#160;</td><td class="mdescRight">!defined(SWIGPYTHON)  <a href="classoperations__research_1_1_routing_model.html#a66fb44c05f9875685e9c332fbdfb643b">More...</a><br /></td></tr>
 <tr class="separator:a66fb44c05f9875685e9c332fbdfb643b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afadc1348f0318e9bc8cebb75b2fc4234"><td class="memItemLeft" align="right" valign="top">IntVar *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#afadc1348f0318e9bc8cebb75b2fc4234">ActiveVar</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) const</td></tr>
+<tr class="memitem:afadc1348f0318e9bc8cebb75b2fc4234"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#afadc1348f0318e9bc8cebb75b2fc4234">ActiveVar</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) const</td></tr>
 <tr class="memdesc:afadc1348f0318e9bc8cebb75b2fc4234"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the active variable of the node corresponding to index.  <a href="classoperations__research_1_1_routing_model.html#afadc1348f0318e9bc8cebb75b2fc4234">More...</a><br /></td></tr>
 <tr class="separator:afadc1348f0318e9bc8cebb75b2fc4234"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1be5e37d8b570ccaeb83785220359a7c"><td class="memItemLeft" align="right" valign="top">IntVar *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a1be5e37d8b570ccaeb83785220359a7c">ActiveVehicleVar</a> (int vehicle) const</td></tr>
+<tr class="memitem:a1be5e37d8b570ccaeb83785220359a7c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a1be5e37d8b570ccaeb83785220359a7c">ActiveVehicleVar</a> (int vehicle) const</td></tr>
 <tr class="memdesc:a1be5e37d8b570ccaeb83785220359a7c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the active variable of the vehicle.  <a href="classoperations__research_1_1_routing_model.html#a1be5e37d8b570ccaeb83785220359a7c">More...</a><br /></td></tr>
 <tr class="separator:a1be5e37d8b570ccaeb83785220359a7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7c2d33eef73401442fd9f2e205056c73"><td class="memItemLeft" align="right" valign="top">IntVar *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a7c2d33eef73401442fd9f2e205056c73">VehicleCostsConsideredVar</a> (int vehicle) const</td></tr>
+<tr class="memitem:a7c2d33eef73401442fd9f2e205056c73"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a7c2d33eef73401442fd9f2e205056c73">VehicleCostsConsideredVar</a> (int vehicle) const</td></tr>
 <tr class="memdesc:a7c2d33eef73401442fd9f2e205056c73"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the variable specifying whether or not costs are considered for vehicle.  <a href="classoperations__research_1_1_routing_model.html#a7c2d33eef73401442fd9f2e205056c73">More...</a><br /></td></tr>
 <tr class="separator:a7c2d33eef73401442fd9f2e205056c73"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8cded3d3d6746c179a8ec0eddad24342"><td class="memItemLeft" align="right" valign="top">IntVar *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a8cded3d3d6746c179a8ec0eddad24342">VehicleVar</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) const</td></tr>
+<tr class="memitem:a8cded3d3d6746c179a8ec0eddad24342"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a8cded3d3d6746c179a8ec0eddad24342">VehicleVar</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) const</td></tr>
 <tr class="memdesc:a8cded3d3d6746c179a8ec0eddad24342"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the vehicle variable of the node corresponding to index.  <a href="classoperations__research_1_1_routing_model.html#a8cded3d3d6746c179a8ec0eddad24342">More...</a><br /></td></tr>
 <tr class="separator:a8cded3d3d6746c179a8ec0eddad24342"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abcbe77312783c0a5aa4926ace764533b"><td class="memItemLeft" align="right" valign="top">IntVar *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#abcbe77312783c0a5aa4926ace764533b">CostVar</a> () const</td></tr>
+<tr class="memitem:abcbe77312783c0a5aa4926ace764533b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#abcbe77312783c0a5aa4926ace764533b">CostVar</a> () const</td></tr>
 <tr class="memdesc:abcbe77312783c0a5aa4926ace764533b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the global cost variable which is being minimized.  <a href="classoperations__research_1_1_routing_model.html#abcbe77312783c0a5aa4926ace764533b">More...</a><br /></td></tr>
 <tr class="separator:abcbe77312783c0a5aa4926ace764533b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a50dd6fccc1cca84aa10efc8f3ece396c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a50dd6fccc1cca84aa10efc8f3ece396c">GetArcCostForVehicle</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> from_index, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> to_index, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> vehicle) const</td></tr>
@@ -614,13 +617,13 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a1048b3f7ef92f0d7747f93c8586ea1cc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a1048b3f7ef92f0d7747f93c8586ea1cc">ArcIsMoreConstrainedThanArc</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> from, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> to1, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> to2)</td></tr>
 <tr class="memdesc:a1048b3f7ef92f0d7747f93c8586ea1cc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns whether the arc from-&gt;to1 is more constrained than from-&gt;to2, taking into account, in order:  <a href="classoperations__research_1_1_routing_model.html#a1048b3f7ef92f0d7747f93c8586ea1cc">More...</a><br /></td></tr>
 <tr class="separator:a1048b3f7ef92f0d7747f93c8586ea1cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a25d079aaf52ffdf6d547384b523ff018"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a25d079aaf52ffdf6d547384b523ff018">DebugOutputAssignment</a> (const Assignment &amp;solution_assignment, const std::string &amp;dimension_to_print) const</td></tr>
+<tr class="memitem:a25d079aaf52ffdf6d547384b523ff018"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a25d079aaf52ffdf6d547384b523ff018">DebugOutputAssignment</a> (const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;solution_assignment, const std::string &amp;dimension_to_print) const</td></tr>
 <tr class="memdesc:a25d079aaf52ffdf6d547384b523ff018"><td class="mdescLeft">&#160;</td><td class="mdescRight">Print some debugging information about an assignment, including the feasible intervals of the CumulVar for dimension "dimension_to_print" at each step of the routes.  <a href="classoperations__research_1_1_routing_model.html#a25d079aaf52ffdf6d547384b523ff018">More...</a><br /></td></tr>
 <tr class="separator:a25d079aaf52ffdf6d547384b523ff018"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa1bbc9c58d70daeb04078ea9c9b5dca9"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::vector&lt; std::pair&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#aa1bbc9c58d70daeb04078ea9c9b5dca9">GetCumulBounds</a> (const Assignment &amp;solution_assignment, const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> &amp;dimension)</td></tr>
+<tr class="memitem:aa1bbc9c58d70daeb04078ea9c9b5dca9"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::vector&lt; std::pair&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#aa1bbc9c58d70daeb04078ea9c9b5dca9">GetCumulBounds</a> (const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;solution_assignment, const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> &amp;dimension)</td></tr>
 <tr class="memdesc:aa1bbc9c58d70daeb04078ea9c9b5dca9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a vector cumul_bounds, for which cumul_bounds[i][j] is a pair containing the minimum and maximum of the CumulVar of the jth node on route i.  <a href="classoperations__research_1_1_routing_model.html#aa1bbc9c58d70daeb04078ea9c9b5dca9">More...</a><br /></td></tr>
 <tr class="separator:aa1bbc9c58d70daeb04078ea9c9b5dca9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f32c22c620c811754ba7b6f977db864"><td class="memItemLeft" align="right" valign="top">Solver *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a5f32c22c620c811754ba7b6f977db864">solver</a> () const</td></tr>
+<tr class="memitem:a5f32c22c620c811754ba7b6f977db864"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a5f32c22c620c811754ba7b6f977db864">solver</a> () const</td></tr>
 <tr class="memdesc:a5f32c22c620c811754ba7b6f977db864"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the underlying constraint solver.  <a href="classoperations__research_1_1_routing_model.html#a5f32c22c620c811754ba7b6f977db864">More...</a><br /></td></tr>
 <tr class="separator:a5f32c22c620c811754ba7b6f977db864"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f5d70fe48cb54cbc5d8f6bba55b007d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a3f5d70fe48cb54cbc5d8f6bba55b007d">CheckLimit</a> ()</td></tr>
@@ -651,10 +654,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ac8347e84488d1b5eb7b5e6972fb32be3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7e2d405cde11bc4a08d752d0e669912c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a7e2d405cde11bc4a08d752d0e669912c">SetTabuVarsCallback</a> (<a class="el" href="classoperations__research_1_1_routing_model.html#a0e106a97f0156868f1d1c741b283793e">GetTabuVarsCallback</a> tabu_var_callback)</td></tr>
 <tr class="separator:a7e2d405cde11bc4a08d752d0e669912c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad47a58a0bd5dbd3136c04369fdcd7f4c"><td class="memItemLeft" align="right" valign="top">DecisionBuilder *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#ad47a58a0bd5dbd3136c04369fdcd7f4c">MakeGuidedSlackFinalizer</a> (const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> *dimension, std::function&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>(<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>)&gt; initializer)</td></tr>
+<tr class="memitem:ad47a58a0bd5dbd3136c04369fdcd7f4c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_decision_builder.html">DecisionBuilder</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#ad47a58a0bd5dbd3136c04369fdcd7f4c">MakeGuidedSlackFinalizer</a> (const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> *dimension, std::function&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>(<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>)&gt; initializer)</td></tr>
 <tr class="memdesc:ad47a58a0bd5dbd3136c04369fdcd7f4c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The next few members are in the public section only for testing purposes.  <a href="classoperations__research_1_1_routing_model.html#ad47a58a0bd5dbd3136c04369fdcd7f4c">More...</a><br /></td></tr>
 <tr class="separator:ad47a58a0bd5dbd3136c04369fdcd7f4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acb94aaffe504b1b6873c3400a8edceaa"><td class="memItemLeft" align="right" valign="top">DecisionBuilder *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#acb94aaffe504b1b6873c3400a8edceaa">MakeSelfDependentDimensionFinalizer</a> (const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> *dimension)</td></tr>
+<tr class="memitem:acb94aaffe504b1b6873c3400a8edceaa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_decision_builder.html">DecisionBuilder</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#acb94aaffe504b1b6873c3400a8edceaa">MakeSelfDependentDimensionFinalizer</a> (const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> *dimension)</td></tr>
 <tr class="memdesc:acb94aaffe504b1b6873c3400a8edceaa"><td class="mdescLeft">&#160;</td><td class="mdescRight"><b>SWIG</b>  <a href="classoperations__research_1_1_routing_model.html#acb94aaffe504b1b6873c3400a8edceaa">More...</a><br /></td></tr>
 <tr class="separator:acb94aaffe504b1b6873c3400a8edceaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -663,7 +666,7 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a4aaace80d8b54b0314f29ae619c627b4"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structoperations__research_1_1_routing_model_1_1_state_dependent_transit.html">RoutingModel::StateDependentTransit</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a4aaace80d8b54b0314f29ae619c627b4">MakeStateDependentTransit</a> (const std::function&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>(<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>)&gt; &amp;f, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> domain_start, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> domain_end)</td></tr>
 <tr class="memdesc:a4aaace80d8b54b0314f29ae619c627b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a cached <a class="el" href="structoperations__research_1_1_routing_model_1_1_state_dependent_transit.html" title="What follows is relevant for models with time/state dependent transits.">StateDependentTransit</a> from an std::function.  <a href="classoperations__research_1_1_routing_model.html#a4aaace80d8b54b0314f29ae619c627b4">More...</a><br /></td></tr>
 <tr class="separator:a4aaace80d8b54b0314f29ae619c627b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a43b2c4a7a4f58c02ca36ed0a4d76a3b4"><td class="memItemLeft" align="right" valign="top">static std::unique_ptr&lt; <a class="el" href="classoperations__research_1_1_local_search_operator.html">LocalSearchOperator</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a43b2c4a7a4f58c02ca36ed0a4d76a3b4">MakeGreedyDescentLSOperator</a> (std::vector&lt; IntVar * &gt; variables)</td></tr>
+<tr class="memitem:a43b2c4a7a4f58c02ca36ed0a4d76a3b4"><td class="memItemLeft" align="right" valign="top">static std::unique_ptr&lt; <a class="el" href="classoperations__research_1_1_local_search_operator.html">LocalSearchOperator</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a43b2c4a7a4f58c02ca36ed0a4d76a3b4">MakeGreedyDescentLSOperator</a> (std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; variables)</td></tr>
 <tr class="memdesc:a43b2c4a7a4f58c02ca36ed0a4d76a3b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perhaps move it to <a class="el" href="constraint__solver_8h.html">constraint_solver.h</a>.  <a href="classoperations__research_1_1_routing_model.html#a43b2c4a7a4f58c02ca36ed0a4d76a3b4">More...</a><br /></td></tr>
 <tr class="separator:a43b2c4a7a4f58c02ca36ed0a4d76a3b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -735,14 +738,14 @@ Static Public Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classoperations__research_1_1_routing_model.html#a0e106a97f0156868f1d1c741b283793e">GetTabuVarsCallback</a> =  std::function&lt;std::vector&lt;operations_research::IntVar*&gt;(<a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a>*)&gt;</td>
+          <td class="memname">using <a class="el" href="classoperations__research_1_1_routing_model.html#a0e106a97f0156868f1d1c741b283793e">GetTabuVarsCallback</a> =  std::function&lt;std::vector&lt;<a class="el" href="classoperations__research_1_1_int_var.html">operations_research::IntVar</a>*&gt;(<a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a>*)&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>Sets the callback returning the variable to use for the Tabu <a class="el" href="classoperations__research_1_1_search.html">Search</a> metaheuristic. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01339">1339</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01354">1354</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -927,7 +930,7 @@ Static Public Attributes</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00752">752</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00760">760</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1023,7 +1026,7 @@ Static Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">IntVar* ActiveVar </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a>* ActiveVar </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
@@ -1039,7 +1042,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the active variable of the node corresponding to index. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01184">1184</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01196">1196</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1053,7 +1056,7 @@ Static Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">IntVar* ActiveVehicleVar </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a>* ActiveVehicleVar </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>vehicle</em></td><td>)</td>
@@ -1070,7 +1073,7 @@ Static Public Attributes</h2></td></tr>
 <p>Returns the active variable of the vehicle. </p>
 <p>It will be equal to 1 iff the route of the vehicle is not empty, 0 otherwise. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01187">1187</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01199">1199</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1093,7 +1096,7 @@ Static Public Attributes</h2></td></tr>
 <p>Adds a callback called each time a solution is found during the search. </p>
 <p>This is a shortcut to creating a monitor to call the callback on AtSolution() and adding it with AddSearchMonitor. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03109">3109</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03227">3227</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -1672,7 +1675,7 @@ Static Public Attributes</h2></td></tr>
 <p>Start and end indices of any vehicle cannot be part of a disjunction.</p>
 <p>If a penalty is given, at most 'max_cardinality' of the indices can be active, and if less are active, 'penalty' is payed per inactive index. This is equivalent to adding the constraint: p + Sum(i)active[i] == max_cardinality where p is an integer variable, and the following cost to the cost function: p * penalty. 'penalty' must be positive to make the disjunction optional; a negative penalty will force 'max_cardinality' indices of the disjunction to be performed, and therefore p == 0. Note: passing a vector with a single index will model an optional index with a penalty cost if it is not visited. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01596">1596</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01676">1676</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -1704,7 +1707,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Incompatibilities: Two nodes with "hard" incompatible types cannot share the same route at all, while with a "temporal" incompatibility they can't be on the same route at the same time. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04086">4086</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04204">4204</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -1717,14 +1720,14 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">void AddIntervalToAssignment </td>
           <td>(</td>
-          <td class="paramtype">IntervalVar *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_interval_var.html">IntervalVar</a> *const&#160;</td>
           <td class="paramname"><em>interval</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05555">5555</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05758">5758</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -1755,7 +1758,7 @@ Static Public Attributes</h2></td></tr>
 <p>Adds a custom local search filter to the list of filters used to speed up local search by pruning unfeasible variable assignments. </p>
 <p>Calling this method after the routing model has been closed (<a class="el" href="classoperations__research_1_1_routing_model.html#add71470f4175a0859e6e3d69c2a53988" title="Closes the current routing model; after this method is called, no modification to the model can be do...">CloseModel()</a> or <a class="el" href="classoperations__research_1_1_routing_model.html#ae3bb9f7055b5dabd24e2ea7c6a377a6a" title="Solves the current routing model; closes the current model.">Solve()</a> has been called) has no effect. The routing model does not take ownership of the filter. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01145">1145</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01156">1156</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1777,7 +1780,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Adds a local search operator to the set of operators used to solve the vehicle routing problem. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01802">1802</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01882">1882</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -1855,7 +1858,7 @@ Static Public Attributes</h2></td></tr>
 <p>Notifies that index1 and index2 form a pair of nodes which should belong to the same route. </p>
 <p>This methods helps the search find better solutions, especially in the local search phase. It should be called each time you have an equality constraint linking the vehicle variables of two node (including for instance pickup and delivery problems): Solver* const solver = routing.solver(); int64 index1 = manager.NodeToIndex(node1); int64 index2 = manager.NodeToIndex(node2); solver-&gt;AddConstraint(solver-&gt;MakeEquality( routing.VehicleVar(index1), routing.VehicleVar(index2))); routing.AddPickupAndDelivery(index1, index2); </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01692">1692</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01772">1772</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -1887,7 +1890,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Same as AddPickupAndDelivery but notifying that the performed node from the disjunction of index 'pickup_disjunction' is on the same route as the performed node from the disjunction of index 'delivery_disjunction'. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01697">1697</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01777">1777</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -1919,7 +1922,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>If type_D depends on type_R when adding type_D, any node_D of type_D and VisitTypePolicy TYPE_ADDED_TO_VEHICLE or TYPE_SIMULTANEOUSLY_ADDED_AND_REMOVED requires at least one type_R on its vehicle at the time node_D is visited. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04142">4142</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04260">4260</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -1952,7 +1955,7 @@ Static Public Attributes</h2></td></tr>
 <p>The following requirements apply when visiting dependent nodes that remove their type from the route, i.e. </p>
 <p>type_R must be on the vehicle when type_D of VisitTypePolicy ADDED_TYPE_REMOVED_FROM_VEHICLE, TYPE_ON_VEHICLE_UP_TO_VISIT or TYPE_SIMULTANEOUSLY_ADDED_AND_REMOVED is visited. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04163">4163</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04281">4281</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -1986,7 +1989,7 @@ Static Public Attributes</h2></td></tr>
 <p>The following functions specify that "dependent_type" requires at least one of the types in "required_type_alternatives".</p>
 <p>For same-vehicle requirements, a node of dependent type type_D requires at least one node of type type_R among the required alternatives on the same route. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04120">4120</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04238">4238</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -1999,7 +2002,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">void AddSearchMonitor </td>
           <td>(</td>
-          <td class="paramtype">SearchMonitor *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_search_monitor.html">SearchMonitor</a> *const&#160;</td>
           <td class="paramname"><em>monitor</em></td><td>)</td>
           <td></td>
         </tr>
@@ -2008,7 +2011,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Adds a search monitor to the search used to solve the routing model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03090">3090</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03208">3208</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2041,7 +2044,7 @@ Static Public Attributes</h2></td></tr>
 <p>Adds a soft contraint to force a set of variable indices to be on the same vehicle. </p>
 <p>If all nodes are not on the same vehicle, each extra vehicle used adds 'cost' to the cost function. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01671">1671</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01751">1751</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2071,7 +2074,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04095">4095</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04213">4213</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2084,7 +2087,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">void AddToAssignment </td>
           <td>(</td>
-          <td class="paramtype">IntVar *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *const&#160;</td>
           <td class="paramname"><em>var</em></td><td>)</td>
           <td></td>
         </tr>
@@ -2093,7 +2096,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Adds an extra variable to the vehicle routing assignment. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05551">5551</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05754">5754</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2106,7 +2109,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">void AddVariableMaximizedByFinalizer </td>
           <td>(</td>
-          <td class="paramtype">IntVar *&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td>
           <td class="paramname"><em>var</em></td><td>)</td>
           <td></td>
         </tr>
@@ -2115,7 +2118,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Adds a variable to maximize in the solution finalizer (see above for information on the solution finalizer). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05537">5537</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05740">5740</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2128,7 +2131,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">void AddVariableMinimizedByFinalizer </td>
           <td>(</td>
-          <td class="paramtype">IntVar *&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td>
           <td class="paramname"><em>var</em></td><td>)</td>
           <td></td>
         </tr>
@@ -2138,7 +2141,7 @@ Static Public Attributes</h2></td></tr>
 <p>Adds a variable to minimize in the solution finalizer. </p>
 <p>The solution finalizer is called each time a solution is found during the search and allows to instantiate secondary variables (such as dimension cumul variables). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05541">5541</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05744">5744</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2151,7 +2154,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">void AddVariableTargetToFinalizer </td>
           <td>(</td>
-          <td class="paramtype">IntVar *&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td>
           <td class="paramname"><em>var</em>, </td>
         </tr>
         <tr>
@@ -2170,7 +2173,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Add a variable to set the closest possible to the target value in the solution finalizer. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05530">5530</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05733">5733</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2228,7 +2231,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">void AddWeightedVariableMinimizedByFinalizer </td>
           <td>(</td>
-          <td class="paramtype">IntVar *&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td>
           <td class="paramname"><em>var</em>, </td>
         </tr>
         <tr>
@@ -2247,7 +2250,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Adds a variable to minimize in the solution finalizer, with a weighted priority: the higher the more priority it has. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05517">5517</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05720">5720</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2258,7 +2261,7 @@ Static Public Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">IntVar * ApplyLocks </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * ApplyLocks </td>
           <td>(</td>
           <td class="paramtype">const std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>locks</em></td><td>)</td>
@@ -2271,7 +2274,7 @@ Static Public Attributes</h2></td></tr>
 <p>'locks' represents an ordered vector of nodes representing a partial route which will be fixed during the next search; it will constrain next variables such that: next[locks[i]] == locks[i+1].</p>
 <p>Returns the next variable at the end of the locked chain; this variable is not locked. An assignment containing the locks can be obtained by calling <a class="el" href="classoperations__research_1_1_routing_model.html#ae033bc458ffce1ecc4874f3e212896f7" title="Returns an assignment used to fix some of the variables of the problem.">PreAssignment()</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03577">3577</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03695">3695</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2304,7 +2307,7 @@ Static Public Attributes</h2></td></tr>
 <p>Applies lock chains to all vehicles to the next search, such that locks[p] is the lock chain for route p. </p>
 <p>Returns false if the locks do not contain valid routes; expects that the routes do not contain the depots, i.e. there are empty vectors in place of empty routes. If close_routes is set to true, adds the end nodes to the route of each vehicle and deactivates other nodes. An assignment containing the locks can be obtained by calling <a class="el" href="classoperations__research_1_1_routing_model.html#ae033bc458ffce1ecc4874f3e212896f7" title="Returns an assignment used to fix some of the variables of the problem.">PreAssignment()</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03598">3598</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03716">3716</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2351,7 +2354,7 @@ Static Public Attributes</h2></td></tr>
 <li>the value: the lowest value of the indices to1 and to2 wins. See the .cc for details. The more constrained arc is typically preferable when building a first solution. This method is intended to be used as a callback for the BestValueByComparisonSelector value selector. Args: from: the variable index of the source node to1: the variable index of the first candidate destination node. to2: the variable index of the second candidate destination node. </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03955">3955</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04073">4073</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2379,7 +2382,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00931">931</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00942">942</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2392,7 +2395,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">void AssignmentToRoutes </td>
           <td>(</td>
-          <td class="paramtype">const Assignment &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;&#160;</td>
           <td class="paramname"><em>assignment</em>, </td>
         </tr>
         <tr>
@@ -2412,7 +2415,7 @@ Static Public Attributes</h2></td></tr>
 <p>Converts the solution in the given assignment to routes for all vehicles. </p>
 <p>Expects that assignment contains a valid solution (i.e. routes for all vehicles end with an end index for that vehicle). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03785">3785</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03903">3903</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2441,7 +2444,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns true if the search limit has been crossed. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01302">1302</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01317">1317</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2463,7 +2466,7 @@ Static Public Attributes</h2></td></tr>
 <p>Closes the current routing model; after this method is called, no modification to the model can be done, but RoutesToAssignment becomes available. </p>
 <p>Note that <a class="el" href="classoperations__research_1_1_routing_model.html#add71470f4175a0859e6e3d69c2a53988" title="Closes the current routing model; after this method is called, no modification to the model can be do...">CloseModel()</a> is automatically called by <a class="el" href="classoperations__research_1_1_routing_model.html#ae3bb9f7055b5dabd24e2ea7c6a377a6a" title="Solves the current routing model; closes the current model.">Solve()</a> and other methods that produce solution. This is equivalent to calling CloseModelWithParameters(DefaultRoutingSearchParameters()). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01905">1905</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01985">1985</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2485,7 +2488,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Same as above taking search parameters (as of 10/2015 some the parameters have to be set when closing the model). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l02048">2048</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l02163">2163</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2507,7 +2510,7 @@ Static Public Attributes</h2></td></tr>
 <p>This function should be called once all node visit types have been set and prior to adding any incompatibilities/requirements. </p>
 <p>"close" types. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04077">4077</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04195">4195</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2518,9 +2521,9 @@ Static Public Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">Assignment * CompactAndCheckAssignment </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> * CompactAndCheckAssignment </td>
           <td>(</td>
-          <td class="paramtype">const Assignment &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;&#160;</td>
           <td class="paramname"><em>assignment</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -2529,7 +2532,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Same as <a class="el" href="classoperations__research_1_1_routing_model.html#a3ea07f9778e02e7160c30bfb0f08736b" title="Returns a compacted version of the given assignment, in which all vehicles with id lower or equal to ...">CompactAssignment()</a> but also checks the validity of the final compact solution; if it is not valid, no attempts to repair it are made (instead, the method returns nullptr). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03491">3491</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03609">3609</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2540,9 +2543,9 @@ Static Public Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">Assignment * CompactAssignment </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> * CompactAssignment </td>
           <td>(</td>
-          <td class="paramtype">const Assignment &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;&#160;</td>
           <td class="paramname"><em>assignment</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -2552,7 +2555,7 @@ Static Public Attributes</h2></td></tr>
 <p>Returns a compacted version of the given assignment, in which all vehicles with id lower or equal to some N have non-empty routes, and all vehicles with id greater than N have empty routes. </p>
 <p>Does not take ownership of the returned object. If found, the cost of the compact assignment is the same as in the original assignment and it preserves the values of 'active' variables. Returns nullptr if a compact assignment was not found. This method only works in homogenous mode, and it only swaps equivalent vehicles (vehicles with the same start and end nodes). When creating the compact assignment, the empty plan is replaced by the route assigned to the compatible vehicle with the highest id. Note that with more complex constraints on vehicle variables, this method might fail even if a compact solution exists. This method changes the vehicle and dimension variables as necessary. While compacting the solution, only basic checks on vehicle variables are performed; if one of these checks fails no attempts to repair it are made (instead, the method returns nullptr). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03486">3486</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03604">3604</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2574,7 +2577,7 @@ Static Public Attributes</h2></td></tr>
 <p>Computes a lower bound to the routing problem solving a linear assignment problem. </p>
 <p>The routing model must be closed before calling this method. Note that problems with node disjunction constraints (including optional nodes) and non-homogenous costs are not supported (the method returns 0 in these cases). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03342">3342</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03460">3460</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2612,7 +2615,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00926">926</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00937">937</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2641,7 +2644,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Whether costs are homogeneous across all vehicles. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01206">1206</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01218">1218</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2655,7 +2658,7 @@ Static Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">IntVar* CostVar </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a>* CostVar </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -2670,7 +2673,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the global cost variable which is being minimized. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01199">1199</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01211">1211</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2683,7 +2686,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">std::string DebugOutputAssignment </td>
           <td>(</td>
-          <td class="paramtype">const Assignment &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;&#160;</td>
           <td class="paramname"><em>solution_assignment</em>, </td>
         </tr>
         <tr>
@@ -2703,7 +2706,7 @@ Static Public Attributes</h2></td></tr>
 <p>Print some debugging information about an assignment, including the feasible intervals of the CumulVar for dimension "dimension_to_print" at each step of the routes. </p>
 <p>If "dimension_to_print" is omitted, all dimensions will be printed. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04224">4224</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04342">4342</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2733,7 +2736,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the variable index of the ending node of a vehicle route. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01157">1157</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01169">1169</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2747,7 +2750,7 @@ Static Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const Solver::IndexEvaluator2&amp; first_solution_evaluator </td>
+          <td class="memname">const <a class="el" href="classoperations__research_1_1_solver.html#abb24034fec2804ac3c0172f043087321">Solver::IndexEvaluator2</a>&amp; first_solution_evaluator </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -2763,7 +2766,7 @@ Static Public Attributes</h2></td></tr>
 <p>Gets/sets the evaluator used during the search. </p>
 <p>Only relevant when RoutingSearchParameters.first_solution_strategy = EVALUATOR_STRATEGY. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00939">939</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00950">950</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2857,7 +2860,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00919">919</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00930">930</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2884,7 +2887,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00922">922</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00933">933</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2923,7 +2926,7 @@ Static Public Attributes</h2></td></tr>
 <p>Returns the cost of the segment between two nodes for a given cost class. </p>
 <p>Input are variable indices of nodes and the cost class. Unlike <a class="el" href="classoperations__research_1_1_routing_model.html#a50dd6fccc1cca84aa10efc8f3ece396c" title="Returns the cost of the transit arc between two nodes for a given vehicle.">GetArcCostForVehicle()</a>, if cost_class is kNoCost, then the returned cost won't necessarily be zero: only some of the components of the cost that depend on the cost class will be omited. See the code for details. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03911">3911</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04029">4029</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2956,7 +2959,7 @@ Static Public Attributes</h2></td></tr>
 <p>Returns the cost of the arc in the context of the first solution strategy. </p>
 <p>This is typically a simplification of the actual cost; see the .cc. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03922">3922</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04040">4040</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -2995,7 +2998,7 @@ Static Public Attributes</h2></td></tr>
 <p>Returns the cost of the transit arc between two nodes for a given vehicle. </p>
 <p>Input are variable indices of node. This returns 0 if vehicle &lt; 0. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03901">3901</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04019">4019</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -3024,7 +3027,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the automatic first solution strategy selected. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01329">1329</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01344">1344</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3053,7 +3056,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the number of different cost classes in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01240">1240</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01255">1255</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3083,7 +3086,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Get the cost class index of the given vehicle. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01226">1226</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01238">1238</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3096,7 +3099,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">std::vector&lt; std::vector&lt; std::pair&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt; &gt; &gt; GetCumulBounds </td>
           <td>(</td>
-          <td class="paramtype">const Assignment &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;&#160;</td>
           <td class="paramname"><em>solution_assignment</em>, </td>
         </tr>
         <tr>
@@ -3119,7 +3122,7 @@ Static Public Attributes</h2></td></tr>
 <li>cumul_bounds[i][j].second is the maximum. </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04297">4297</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04415">4415</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -3141,7 +3144,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Same as above for deliveries. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01734">1734</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01814">1814</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -3163,7 +3166,7 @@ Static Public Attributes</h2></td></tr>
 <p>Returns the variable index of the first starting or ending node of all routes. </p>
 <p>If all routes start and end at the same node (single depot), this is the node returned. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01806">1806</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01886">1886</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -3235,7 +3238,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns dimensions with soft or vehicle span costs. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04978">4978</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05165">5165</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -3428,7 +3431,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns visit types incompatible with a given type. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04105">4105</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04223">4223</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -3468,7 +3471,37 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the cost of the segment between two nodes supposing all vehicle costs are the same (returns the cost for the first vehicle otherwise). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01211">1211</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01223">1223</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+
+</div>
+</div>
+<a id="a82f989d278bca985a55a3785be2d7b42"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a82f989d278bca985a55a3785be2d7b42">&#9670;&nbsp;</a></span>GetImplicitUniquePickupAndDeliveryPairs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classoperations__research_1_1_routing_model.html#a76874cd778ea1b9220673e019f9e7abe">IndexPairs</a>&amp; GetImplicitUniquePickupAndDeliveryPairs </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns implicit pickup and delivery pairs currently in the model. </p>
+<p>Pairs are implicit if they are not linked by a pickup and delivery constraint but that for a given unary dimension, the first element of the pair has a positive demand d, and the second element has a demand of -d. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00744">744</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3551,7 +3584,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the maximum number of active vehicles. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00880">880</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00891">891</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3665,7 +3698,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Ditto, minus the 'always zero', built-in cost class. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01242">1242</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01257">1257</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3687,7 +3720,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns statistics on first solution search, number of decisions sent to filters, number of decisions rejected by filters. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03604">3604</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03722">3722</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -3736,7 +3769,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03612">3612</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03730">3730</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -3763,7 +3796,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00780">780</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00788">788</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3784,7 +3817,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the number of non-start/end nodes which do not appear in a pickup/delivery pair. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01760">1760</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01840">1840</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -3804,7 +3837,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04066">4066</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04184">4184</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -3826,7 +3859,7 @@ Static Public Attributes</h2></td></tr>
 <p>Returns the list of all perfect binary disjunctions, as pairs of variable indices: a disjunction is "perfect" when its variables do not appear in any other disjunction. </p>
 <p>Each pair is sorted (lowest variable index first), and the output vector is also sorted (lowest pairs first). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01612">1612</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01692">1692</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -3902,7 +3935,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01755">1755</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01835">1835</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -3924,7 +3957,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns pairs for which the node is a pickup; the first element of each pair is the index in the pickup and delivery pairs list in which the pickup appears, the second element is its index in the pickups list. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01728">1728</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01808">1808</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -3975,7 +4008,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the set of requirement alternatives when adding the given type. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04194">4194</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04312">4312</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -3997,7 +4030,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the set of requirement alternatives when removing the given type. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04201">4201</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04319">4319</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -4010,7 +4043,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">std::vector&lt; std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt; &gt; GetRoutesFromAssignment </td>
           <td>(</td>
-          <td class="paramtype">const Assignment &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;&#160;</td>
           <td class="paramname"><em>assignment</em></td><td>)</td>
           <td></td>
         </tr>
@@ -4020,7 +4053,7 @@ Static Public Attributes</h2></td></tr>
 <p>Converts the solution in the given assignment to routes for all vehicles. </p>
 <p>If the returned vector is route_indices, route_indices[i][j] is the index for jth location visited on route i. Note that contrary to AssignmentToRoutes, the vectors do include start and end locations. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03819">3819</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03937">3937</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -4050,7 +4083,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns variable indices of nodes constrained to be on the same route. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01252">1252</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01267">1267</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4072,7 +4105,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the set of same-vehicle requirement alternatives for the given type. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04186">4186</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04304">4304</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -4092,7 +4125,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04061">4061</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04179">4179</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -4112,12 +4145,12 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04112">4112</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04230">4230</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
-<a id="a768d26b80704955e5ca59c83d5fcf871"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a768d26b80704955e5ca59c83d5fcf871">&#9670;&nbsp;</a></span>GetTopologicallySortedVisitTypes()</h2>
+<a id="a30ebc3cb1dddc3c582f8b7f2395bbc93"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a30ebc3cb1dddc3c582f8b7f2395bbc93">&#9670;&nbsp;</a></span>GetTopologicallySortedVisitTypes()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -4126,7 +4159,7 @@ Static Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const std::vector&lt;int&gt;&amp; GetTopologicallySortedVisitTypes </td>
+          <td class="memname">const std::vector&lt;std::vector&lt;int&gt; &gt;&amp; GetTopologicallySortedVisitTypes </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -4139,7 +4172,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00781">781</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00790">790</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4168,7 +4201,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the number of different vehicle classes in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01250">1250</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01265">1265</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4196,7 +4229,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01245">1245</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01260">1260</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4223,7 +4256,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01257">1257</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01272">1272</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4243,7 +4276,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04056">4056</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04174">4174</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -4263,7 +4296,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04071">4071</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04189">4189</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -4315,7 +4348,7 @@ Static Public Attributes</h2></td></tr>
 <p>Returns true iff any hard (resp. </p>
 <p>temporal) type incompatibilities have been added to the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00798">798</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00809">809</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4345,7 +4378,7 @@ Static Public Attributes</h2></td></tr>
 <p>Returns true iff any same-route (resp. </p>
 <p>temporal) type requirements have been added to the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00843">843</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00854">854</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4372,7 +4405,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00801">801</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00812">812</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4399,7 +4432,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00846">846</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00857">857</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4428,7 +4461,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns true iff the model has any incompatibilities or requirements set on node types. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00852">852</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00863">863</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4458,7 +4491,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns true iff the model contains a vehicle with the given cost_class_index. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01232">1232</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01247">1247</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4480,7 +4513,7 @@ Static Public Attributes</h2></td></tr>
 <p>SPECIAL: Makes the solver ignore all the disjunctions whose active variables are all trivially zero (i.e. </p>
 <p>Max() == 0), by setting their max_cardinality to 0. This can be useful when using the BaseBinaryDisjunctionNeighborhood operators, in the context of arc-based routing. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01629">1629</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01709">1709</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -4510,7 +4543,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns true if 'index' represents the last node of a route. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01161">1161</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01173">1173</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4553,7 +4586,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns true if 'index' represents the first node of a route. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03879">3879</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03997">3997</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -4606,7 +4639,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">bool IsVehicleUsed </td>
           <td>(</td>
-          <td class="paramtype">const Assignment &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;&#160;</td>
           <td class="paramname"><em>assignment</em>, </td>
         </tr>
         <tr>
@@ -4625,7 +4658,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns true if the route of 'vehicle' is non empty in 'assignment'. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03883">3883</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04001">4001</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -4641,7 +4674,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">std::unique_ptr&lt; <a class="el" href="classoperations__research_1_1_local_search_operator.html">LocalSearchOperator</a> &gt; MakeGreedyDescentLSOperator </td>
           <td>(</td>
-          <td class="paramtype">std::vector&lt; IntVar * &gt;&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt;&#160;</td>
           <td class="paramname"><em>variables</em></td><td>)</td>
           <td></td>
         </tr>
@@ -4656,7 +4689,7 @@ Static Public Attributes</h2></td></tr>
 <p>Perhaps move it to <a class="el" href="constraint__solver_8h.html">constraint_solver.h</a>. </p>
 <p>MakeGreedyDescentLSOperator creates a local search operator that tries to improve the initial assignment by moving a logarithmically decreasing step away in each possible dimension. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l05875">5875</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l05950">5950</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -4667,7 +4700,7 @@ Static Public Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DecisionBuilder * MakeGuidedSlackFinalizer </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_decision_builder.html">DecisionBuilder</a> * MakeGuidedSlackFinalizer </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> *&#160;</td>
           <td class="paramname"><em>dimension</em>, </td>
@@ -4687,12 +4720,12 @@ Static Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>The next few members are in the public section only for testing purposes. </p>
-<p>MakeGuidedSlackFinalizer creates a DecisionBuilder for the slacks of a dimension using a callback to choose which values to start with. The finalizer works only when all next variables in the model have been fixed. It has the following two characteristics:</p><ol type="1">
+<p>MakeGuidedSlackFinalizer creates a <a class="el" href="classoperations__research_1_1_decision_builder.html" title="A DecisionBuilder is responsible for creating the search tree.">DecisionBuilder</a> for the slacks of a dimension using a callback to choose which values to start with. The finalizer works only when all next variables in the model have been fixed. It has the following two characteristics:</p><ol type="1">
 <li>It follows the routes defined by the nexts variables when choosing a variable to make a decision on.</li>
 <li>When it comes to choose a value for the slack of node i, the decision builder first calls the callback with argument i, and supposingly the returned value is x it creates decisions slack[i] = x, slack[i] = x + 1, slack[i] = x - 1, slack[i] = x + 2, etc. </li>
 </ol>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l05748">5748</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l05823">5823</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -4703,7 +4736,7 @@ Static Public Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">Constraint * MakePathSpansAndTotalSlacks </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_constraint.html">Constraint</a> * MakePathSpansAndTotalSlacks </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> *&#160;</td>
           <td class="paramname"><em>dimension</em>, </td>
@@ -4711,13 +4744,13 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; IntVar * &gt;&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt;&#160;</td>
           <td class="paramname"><em>spans</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; IntVar * &gt;&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt;&#160;</td>
           <td class="paramname"><em>total_slacks</em>&#160;</td>
         </tr>
         <tr>
@@ -4734,7 +4767,7 @@ Static Public Attributes</h2></td></tr>
 <li>if spans[vehicle] is not nullptr, constrains it to be dimension-&gt;CumulVar(end) - dimension-&gt;CumulVar(start) This does stronger propagation than a decomposition, and takes breaks into account. </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05888">5888</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l06091">6091</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -4745,7 +4778,7 @@ Static Public Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DecisionBuilder * MakeSelfDependentDimensionFinalizer </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_decision_builder.html">DecisionBuilder</a> * MakeSelfDependentDimensionFinalizer </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> *&#160;</td>
           <td class="paramname"><em>dimension</em></td><td>)</td>
@@ -4757,7 +4790,7 @@ Static Public Attributes</h2></td></tr>
 <p><b>SWIG</b> </p>
 <p>MakeSelfDependentDimensionFinalizer is a finalizer for the slacks of a self-dependent dimension. It makes an extensive use of the caches of the state dependent transits. In detail, MakeSelfDependentDimensionFinalizer returns a composition of a local search decision builder with a greedy descent operator for the cumul of the start of each route and a guided slack finalizer. Provided there are no time windows and the maximum slacks are large enough, once the cumul of the start of route is fixed, the guided finalizer can find optimal values of the slacks for the rest of the route in time proportional to the length of the route. Therefore the composed finalizer generally works in time O(log(t)*n*m), where t is the latest possible departute time, n is the number of nodes in the network and m is the number of vehicles. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l05881">5881</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l05956">5956</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -4817,7 +4850,7 @@ Static Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">Assignment* MutablePreAssignment </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a>* MutablePreAssignment </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -4830,7 +4863,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01043">1043</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01054">1054</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4843,7 +4876,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> Next </td>
           <td>(</td>
-          <td class="paramtype">const Assignment &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;&#160;</td>
           <td class="paramname"><em>assignment</em>, </td>
         </tr>
         <tr>
@@ -4860,9 +4893,9 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Assignment inspection Returns the variable index of the node directly after the node corresponding to 'index' in 'assignment'. </p>
+<p><a class="el" href="classoperations__research_1_1_assignment.html" title="An Assignment is a variable -&gt; domains mapping, used to report solutions to the user.">Assignment</a> inspection Returns the variable index of the node directly after the node corresponding to 'index' in 'assignment'. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03893">3893</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04011">4011</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -4876,7 +4909,7 @@ Static Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const std::vector&lt;IntVar*&gt;&amp; Nexts </td>
+          <td class="memname">const std::vector&lt;<a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a>*&gt;&amp; Nexts </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -4891,7 +4924,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns all next variables of the model, such that Nexts(i) is the next variable of the node corresponding to i. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01175">1175</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01187">1187</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4905,7 +4938,7 @@ Static Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">IntVar* NextVar </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a>* NextVar </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
@@ -4922,7 +4955,7 @@ Static Public Attributes</h2></td></tr>
 <p>!defined(SWIGPYTHON) </p>
 <p>Returns the next variable of the node corresponding to index. Note that NextVar(index) == index is equivalent to ActiveVar(index) == 0. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01182">1182</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01194">1194</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4951,7 +4984,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Sizes and indices Returns the number of nodes in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01315">1315</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01330">1330</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4962,9 +4995,9 @@ Static Public Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const Assignment * PackCumulsOfOptimizerDimensionsFromAssignment </td>
+          <td class="memname">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> * PackCumulsOfOptimizerDimensionsFromAssignment </td>
           <td>(</td>
-          <td class="paramtype">const Assignment *&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td>
           <td class="paramname"><em>original_assignment</em>, </td>
         </tr>
         <tr>
@@ -5002,7 +5035,7 @@ Static Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const Assignment* const PreAssignment </td>
+          <td class="memname">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a>* const PreAssignment </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -5018,7 +5051,7 @@ Static Public Attributes</h2></td></tr>
 <p>Returns an assignment used to fix some of the variables of the problem. </p>
 <p>In practice, this assignment locks partial routes of the problem. This can be used in the context of locking the parts of the routes which have already been driven in online routing problems. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01042">1042</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01053">1053</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5029,7 +5062,7 @@ Static Public Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">Assignment * ReadAssignment </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> * ReadAssignment </td>
           <td>(</td>
           <td class="paramtype">const std::string &amp;&#160;</td>
           <td class="paramname"><em>file_name</em></td><td>)</td>
@@ -5041,7 +5074,7 @@ Static Public Attributes</h2></td></tr>
 <p>Reads an assignment from a file and returns the current solution. </p>
 <p>Returns nullptr if the file cannot be opened or if the assignment is not valid. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03629">3629</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03747">3747</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -5052,7 +5085,7 @@ Static Public Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">Assignment * ReadAssignmentFromRoutes </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> * ReadAssignmentFromRoutes </td>
           <td>(</td>
           <td class="paramtype">const std::vector&lt; std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt;&gt; &amp;&#160;</td>
           <td class="paramname"><em>routes</em>, </td>
@@ -5074,7 +5107,7 @@ Static Public Attributes</h2></td></tr>
 <p>Restores the routes as the current solution. </p>
 <p>Returns nullptr if the solution cannot be restored (routes do not contain a valid solution). Note that calling this method will run the solver to assign values to the dimension variables; this may take considerable amount of time, especially when using dimensions with slack. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03772">3772</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03890">3890</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -5205,7 +5238,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the time left in the search limit. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01308">1308</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01323">1323</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5216,9 +5249,9 @@ Static Public Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">Assignment * RestoreAssignment </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> * RestoreAssignment </td>
           <td>(</td>
-          <td class="paramtype">const Assignment &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;&#160;</td>
           <td class="paramname"><em>solution</em></td><td>)</td>
           <td></td>
         </tr>
@@ -5228,7 +5261,7 @@ Static Public Attributes</h2></td></tr>
 <p>Restores an assignment as a solution in the routing model and returns the new solution. </p>
 <p>Returns nullptr if the assignment is not valid. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03638">3638</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03756">3756</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -5259,7 +5292,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">Assignment *const&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *const&#160;</td>
           <td class="paramname"><em>assignment</em>&#160;</td>
         </tr>
         <tr>
@@ -5273,7 +5306,7 @@ Static Public Attributes</h2></td></tr>
 <p>Fills an assignment from a specification of the routes of the vehicles. </p>
 <p>The routes are specified as lists of variable indices that appear on the routes of the vehicles. The indices of the outer vector in 'routes' correspond to vehicles IDs, the inner vector contains the variable indices on the routes for the given vehicle. The inner vectors must not contain the start and end indices, as these are determined by the routing model. Sets the value of NextVars in the assignment, adding the variables to the assignment if necessary. The method does not touch other variables in the assignment. The method can only be called after the model is closed. With ignore_inactive_indices set to false, this method will fail (return nullptr) in case some of the route contain indices that are deactivated in the model; when set to true, these indices will be skipped. Returns true if routes were successfully loaded. However, such assignment still might not be a valid solution to the routing problem due to more complex constraints; it is advisible to call <a class="el" href="classoperations__research_1_1_routing_model.html#a5f32c22c620c811754ba7b6f977db864" title="Returns the underlying constraint solver.">solver()</a>-&gt;<a class="el" href="namespaceoperations__research_1_1fz.html#a8451e6a72eeb9f0ae3ee0ea8187fe880">CheckSolution()</a> afterwards. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03660">3660</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03778">3778</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -5306,7 +5339,7 @@ Static Public Attributes</h2></td></tr>
 <p>Sets the vehicles which can visit a given node. </p>
 <p>If the node is in a disjunction, this will not prevent it from being unperformed. Specifying an empty vector of vehicles has no effect (all vehicles will be allowed to visit the node). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01683">1683</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01763">1763</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -5448,7 +5481,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">void SetAssignmentFromOtherModelAssignment </td>
           <td>(</td>
-          <td class="paramtype">Assignment *&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td>
           <td class="paramname"><em>target_assignment</em>, </td>
         </tr>
         <tr>
@@ -5460,7 +5493,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const Assignment *&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td>
           <td class="paramname"><em>source_assignment</em>&#160;</td>
         </tr>
         <tr>
@@ -5471,10 +5504,10 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Given a "source_model" and its "source_assignment", resets "target_assignment" with the IntVar variables (nexts_, and vehicle_vars_ if costs aren't homogeneous across vehicles) of "this" model, with the values set according to those in "other_assignment". </p>
+<p>Given a "source_model" and its "source_assignment", resets "target_assignment" with the <a class="el" href="classoperations__research_1_1_int_var.html" title="The class IntVar is a subset of IntExpr.">IntVar</a> variables (nexts_, and vehicle_vars_ if costs aren't homogeneous across vehicles) of "this" model, with the values set according to those in "other_assignment". </p>
 <p>The objective_element of target_assignment is set to this-&gt;cost_. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03304">3304</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03422">3422</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -5490,7 +5523,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">void SetFirstSolutionEvaluator </td>
           <td>(</td>
-          <td class="paramtype">Solver::IndexEvaluator2&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_solver.html#abb24034fec2804ac3c0172f043087321">Solver::IndexEvaluator2</a>&#160;</td>
           <td class="paramname"><em>evaluator</em></td><td>)</td>
           <td></td>
         </tr>
@@ -5504,7 +5537,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Takes ownership of evaluator. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00944">944</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00955">955</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5590,7 +5623,7 @@ Static Public Attributes</h2></td></tr>
 <p>Constrains the maximum number of active vehicles, aka the number of vehicles which do not have an empty route. </p>
 <p>For instance, this can be used to limit the number of routes in the case where there are fewer drivers than vehicles and that the fleet of vehicle is heterogeneous. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00876">876</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00887">887</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5613,7 +5646,7 @@ Static Public Attributes</h2></td></tr>
 <p>Sets the Pickup and delivery policy of all vehicles. </p>
 <p>It is equivalent to calling SetPickupAndDeliveryPolicyOfVehicle on all vehicles. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01746">1746</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01826">1826</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -5643,7 +5676,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01740">1740</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l01820">1820</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -5702,7 +5735,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01134">1134</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01145">1145</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5722,7 +5755,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05452">5452</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05640">5640</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -5758,7 +5791,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04048">4048</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04166">4166</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -5787,7 +5820,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the number of next variables in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01319">1319</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01334">1334</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5798,9 +5831,9 @@ Static Public Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const Assignment * Solve </td>
+          <td class="memname">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> * Solve </td>
           <td>(</td>
-          <td class="paramtype">const Assignment *&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td>
           <td class="paramname"><em>assignment</em> = <code>nullptr</code></td><td>)</td>
           <td></td>
         </tr>
@@ -5810,7 +5843,7 @@ Static Public Attributes</h2></td></tr>
 <p>Solves the current routing model; closes the current model. </p>
 <p>This is equivalent to calling SolveWithParameters(DefaultRoutingSearchParameters()) or SolveFromAssignmentWithParameters(assignment, <a class="el" href="namespaceoperations__research.html#ab59d4ce2b572e1ae576d2aa181433187">DefaultRoutingSearchParameters()</a>). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03114">3114</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03232">3232</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -5821,9 +5854,9 @@ Static Public Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const Assignment * SolveFromAssignmentWithParameters </td>
+          <td class="memname">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> * SolveFromAssignmentWithParameters </td>
           <td>(</td>
-          <td class="paramtype">const Assignment *&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *&#160;</td>
           <td class="paramname"><em>assignment</em>, </td>
         </tr>
         <tr>
@@ -5835,7 +5868,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; const Assignment * &gt; *&#160;</td>
+          <td class="paramtype">std::vector&lt; const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> * &gt; *&#160;</td>
           <td class="paramname"><em>solutions</em> = <code>nullptr</code>&#160;</td>
         </tr>
         <tr>
@@ -5846,7 +5879,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03184">3184</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03302">3302</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -5860,7 +5893,7 @@ Static Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">Solver* solver </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_solver.html">Solver</a>* solver </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -5876,7 +5909,7 @@ Static Public Attributes</h2></td></tr>
 <p>Returns the underlying constraint solver. </p>
 <p>Can be used to add extra constraints and/or modify search algoithms. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01299">1299</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01314">1314</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5887,7 +5920,7 @@ Static Public Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const Assignment * SolveWithParameters </td>
+          <td class="memname">const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> * SolveWithParameters </td>
           <td>(</td>
           <td class="paramtype">const RoutingSearchParameters &amp;&#160;</td>
           <td class="paramname"><em>search_parameters</em>, </td>
@@ -5895,7 +5928,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; const Assignment * &gt; *&#160;</td>
+          <td class="paramtype">std::vector&lt; const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> * &gt; *&#160;</td>
           <td class="paramname"><em>solutions</em> = <code>nullptr</code>&#160;</td>
         </tr>
         <tr>
@@ -5907,9 +5940,9 @@ Static Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Solves the current routing model with the given parameters. </p>
-<p>If 'solutions' is specified, it will contain the k best solutions found during the search (from worst to best, including the one returned by this method), where k corresponds to the 'number_of_solutions_to_collect' in 'search_parameters'. Note that the Assignment returned by the method and the ones in solutions are owned by the underlying solver and should not be deleted. </p>
+<p>If 'solutions' is specified, it will contain the k best solutions found during the search (from worst to best, including the one returned by this method), where k corresponds to the 'number_of_solutions_to_collect' in 'search_parameters'. Note that the <a class="el" href="classoperations__research_1_1_assignment.html" title="An Assignment is a variable -&gt; domains mapping, used to report solutions to the user.">Assignment</a> returned by the method and the ones in solutions are owned by the underlying solver and should not be deleted. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03119">3119</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03237">3237</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -5940,7 +5973,7 @@ Static Public Attributes</h2></td></tr>
 <p>Model inspection. </p>
 <p>Returns the variable index of the starting node of a vehicle route. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01155">1155</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01167">1167</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5997,7 +6030,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the current status of the routing model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01018">1018</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01029">1029</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -6026,7 +6059,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the sweep arranger to be used by routing heuristics. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01138">1138</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01149">1149</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -6105,7 +6138,7 @@ Static Public Attributes</h2></td></tr>
 <p>Get the "unperformed" penalty of a node. </p>
 <p>This is only well defined if the node is only part of a single Disjunction involving only itself, and that disjunction has a penalty. In all other cases, including forced active nodes, this returns 0. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04207">4207</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04325">4325</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -6137,7 +6170,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Same as above except that it returns default_value instead of 0 when penalty is not well defined (default value is passed as first argument to simplify the usage of the method in a callback). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04211">4211</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04329">4329</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -6151,7 +6184,7 @@ Static Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">IntVar* VehicleCostsConsideredVar </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a>* VehicleCostsConsideredVar </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>vehicle</em></td><td>)</td>
@@ -6167,7 +6200,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the variable specifying whether or not costs are considered for vehicle. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01192">1192</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01204">1204</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -6197,7 +6230,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the vehicle of the given start/end index, and -1 if the given index is not a vehicle start/end. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01164">1164</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01176">1176</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -6226,7 +6259,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns the number of vehicle routes in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01317">1317</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01332">1332</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -6240,7 +6273,7 @@ Static Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">IntVar* VehicleVar </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a>* VehicleVar </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
@@ -6257,7 +6290,7 @@ Static Public Attributes</h2></td></tr>
 <p>Returns the vehicle variable of the node corresponding to index. </p>
 <p>Note that VehicleVar(index) == -1 is equivalent to ActiveVar(index) == 0. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01197">1197</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01209">1209</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -6271,7 +6304,7 @@ Static Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const std::vector&lt;IntVar*&gt;&amp; VehicleVars </td>
+          <td class="memname">const std::vector&lt;<a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a>*&gt;&amp; VehicleVars </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -6286,7 +6319,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns all vehicle variables of the model, such that VehicleVars(i) is the vehicle variable of the node corresponding to i. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01178">1178</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01190">1190</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -6309,7 +6342,7 @@ Static Public Attributes</h2></td></tr>
 <p>Writes the current solution to a file containing an <a class="el" href="namespaceoperations__research_1_1_assignment_proto.html">AssignmentProto</a>. </p>
 <p>Returns false if the file cannot be opened or if there is no current solution. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03620">3620</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l03738">3738</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>

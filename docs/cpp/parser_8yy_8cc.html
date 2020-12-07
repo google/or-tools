@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -321,7 +321,7 @@ Macros</h2></td></tr>
 <tr class="separator:a56858d18c7eda4f53664496ef566f651"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa3d063564f6ab16f6d408b8369d0e9ff"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#aa3d063564f6ab16f6d408b8369d0e9ff">INITIAL</a>&#160;&#160;&#160;0</td></tr>
 <tr class="separator:aa3d063564f6ab16f6d408b8369d0e9ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a26938d921de835f6183c02e54cf08828"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#a26938d921de835f6183c02e54cf08828">YY_EXTRA_TYPE</a>&#160;&#160;&#160;void *</td></tr>
+<tr class="memitem:a26938d921de835f6183c02e54cf08828"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#a26938d921de835f6183c02e54cf08828">YY_EXTRA_TYPE</a>&#160;&#160;&#160;void*</td></tr>
 <tr class="separator:a26938d921de835f6183c02e54cf08828"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75acfb3798e577ebd296e604e422e86b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#a75acfb3798e577ebd296e604e422e86b">yylval</a>&#160;&#160;&#160;<a class="el" href="parser_8yy_8cc.html#a7507d83bcbf665441b28b684525ae59c">yyg</a>-&gt;yylval_r</td></tr>
 <tr class="separator:a75acfb3798e577ebd296e604e422e86b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -339,7 +339,7 @@ Macros</h2></td></tr>
 <tr class="separator:ac0586b8b0b092d02f4ba7d45abe328f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7682c8d9cec0859408d2421fbe4a5570"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#a7682c8d9cec0859408d2421fbe4a5570">YY_DECL_IS_OURS</a>&#160;&#160;&#160;1</td></tr>
 <tr class="separator:a7682c8d9cec0859408d2421fbe4a5570"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae5b01ac2fa5a6ad5fb97559638abe686"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#ae5b01ac2fa5a6ad5fb97559638abe686">YY_DECL</a>&#160;&#160;&#160;int <a class="el" href="parser_8yy_8cc.html#adaeeff4d42ab7f57df3ad648082015d4">yylex</a>(<a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a> *yylval_param, <a class="el" href="parser_8yy_8cc.html#a157535ed0322a026cc197c8985c08d35">yyscan_t</a> yyscanner)</td></tr>
+<tr class="memitem:ae5b01ac2fa5a6ad5fb97559638abe686"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#ae5b01ac2fa5a6ad5fb97559638abe686">YY_DECL</a>&#160;&#160;&#160;int <a class="el" href="parser_8yy_8cc.html#adaeeff4d42ab7f57df3ad648082015d4">yylex</a>(<a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a>* yylval_param, <a class="el" href="parser_8yy_8cc.html#a157535ed0322a026cc197c8985c08d35">yyscan_t</a> yyscanner)</td></tr>
 <tr class="separator:ae5b01ac2fa5a6ad5fb97559638abe686"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6198b2fcf96178b24ad4efff2a3debb0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#a6198b2fcf96178b24ad4efff2a3debb0">YY_USER_ACTION</a></td></tr>
 <tr class="separator:a6198b2fcf96178b24ad4efff2a3debb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -457,15 +457,15 @@ Functions</h2></td></tr>
 <tr class="separator:ae99214cb04ca948c5dde77ed7178a656"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae92fd9d54517feb81d7a8182295384d2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#ae92fd9d54517feb81d7a8182295384d2">yyset_column</a> (int _column_no, <a class="el" href="parser_8yy_8cc.html#a157535ed0322a026cc197c8985c08d35">yyscan_t</a> yyscanner)</td></tr>
 <tr class="separator:ae92fd9d54517feb81d7a8182295384d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6c6af51e52d7fcedd43b98f8c9558752"><td class="memItemLeft" align="right" valign="top"><a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#a6c6af51e52d7fcedd43b98f8c9558752">yyget_lval</a> (<a class="el" href="parser_8yy_8cc.html#a157535ed0322a026cc197c8985c08d35">yyscan_t</a> yyscanner)</td></tr>
+<tr class="memitem:a6c6af51e52d7fcedd43b98f8c9558752"><td class="memItemLeft" align="right" valign="top"><a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#a6c6af51e52d7fcedd43b98f8c9558752">yyget_lval</a> (<a class="el" href="parser_8yy_8cc.html#a157535ed0322a026cc197c8985c08d35">yyscan_t</a> yyscanner)</td></tr>
 <tr class="separator:a6c6af51e52d7fcedd43b98f8c9558752"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab0cd88647db3e1e240b43ec63cb8d868"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#ab0cd88647db3e1e240b43ec63cb8d868">yyset_lval</a> (<a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a> *yylval_param, <a class="el" href="parser_8yy_8cc.html#a157535ed0322a026cc197c8985c08d35">yyscan_t</a> yyscanner)</td></tr>
+<tr class="memitem:ab0cd88647db3e1e240b43ec63cb8d868"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#ab0cd88647db3e1e240b43ec63cb8d868">yyset_lval</a> (<a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a> *yylval_param, <a class="el" href="parser_8yy_8cc.html#a157535ed0322a026cc197c8985c08d35">yyscan_t</a> yyscanner)</td></tr>
 <tr class="separator:ab0cd88647db3e1e240b43ec63cb8d868"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a803a5596e27386613e41006fa579a189"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#a803a5596e27386613e41006fa579a189">yyunput</a> (int c, char *buf_ptr, <a class="el" href="parser_8yy_8cc.html#a157535ed0322a026cc197c8985c08d35">yyscan_t</a> yyscanner)</td></tr>
 <tr class="separator:a803a5596e27386613e41006fa579a189"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a634cf4429798b1c921a81de8250051"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#a5a634cf4429798b1c921a81de8250051">input</a> (<a class="el" href="parser_8yy_8cc.html#a157535ed0322a026cc197c8985c08d35">yyscan_t</a> yyscanner)</td></tr>
 <tr class="separator:a5a634cf4429798b1c921a81de8250051"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adaeeff4d42ab7f57df3ad648082015d4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#adaeeff4d42ab7f57df3ad648082015d4">yylex</a> (<a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a> *yylval_param, <a class="el" href="parser_8yy_8cc.html#a157535ed0322a026cc197c8985c08d35">yyscan_t</a> yyscanner)</td></tr>
+<tr class="memitem:adaeeff4d42ab7f57df3ad648082015d4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#adaeeff4d42ab7f57df3ad648082015d4">yylex</a> (<a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a> *yylval_param, <a class="el" href="parser_8yy_8cc.html#a157535ed0322a026cc197c8985c08d35">yyscan_t</a> yyscanner)</td></tr>
 <tr class="separator:adaeeff4d42ab7f57df3ad648082015d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a33e91cd0cef6786e9e3a27ac67707207"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> (!<a class="el" href="parser_8yy_8cc.html#a7507d83bcbf665441b28b684525ae59c">yyg</a>-&gt;yy_init)</td></tr>
 <tr class="separator:a33e91cd0cef6786e9e3a27ac67707207"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -497,7 +497,7 @@ Variables</h2></td></tr>
 <tr class="separator:aa749693ef7d0c10b137e887638fdc5b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a483da4c691e92dcb79c40a3514759b6b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#a483da4c691e92dcb79c40a3514759b6b">yy_act</a></td></tr>
 <tr class="separator:a483da4c691e92dcb79c40a3514759b6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7507d83bcbf665441b28b684525ae59c"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="structyyguts__t.html">yyguts_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#a7507d83bcbf665441b28b684525ae59c">yyg</a> = (struct <a class="el" href="structyyguts__t.html">yyguts_t</a> *)yyscanner</td></tr>
+<tr class="memitem:a7507d83bcbf665441b28b684525ae59c"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="structyyguts__t.html">yyguts_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#a7507d83bcbf665441b28b684525ae59c">yyg</a> = (struct <a class="el" href="structyyguts__t.html">yyguts_t</a>*)yyscanner</td></tr>
 <tr class="separator:a7507d83bcbf665441b28b684525ae59c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8702f09f01285d3777507e641f94463"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="parser_8yy_8cc.html#af8702f09f01285d3777507e641f94463">yylval</a> = yylval_param</td></tr>
 <tr class="separator:af8702f09f01285d3777507e641f94463"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1021,7 +1021,7 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define YY_DECL&#160;&#160;&#160;int <a class="el" href="parser_8yy_8cc.html#adaeeff4d42ab7f57df3ad648082015d4">yylex</a>(<a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a> *yylval_param, <a class="el" href="parser_8yy_8cc.html#a157535ed0322a026cc197c8985c08d35">yyscan_t</a> yyscanner)</td>
+          <td class="memname">#define YY_DECL&#160;&#160;&#160;int <a class="el" href="parser_8yy_8cc.html#adaeeff4d42ab7f57df3ad648082015d4">yylex</a>(<a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a>* yylval_param, <a class="el" href="parser_8yy_8cc.html#a157535ed0322a026cc197c8985c08d35">yyscan_t</a> yyscanner)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1136,7 +1136,7 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define YY_EXTRA_TYPE&#160;&#160;&#160;void *</td>
+          <td class="memname">#define YY_EXTRA_TYPE&#160;&#160;&#160;void*</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1391,7 +1391,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line">  <span class="keywordflow">do</span> {                                   \</div>
-<div class="line">    const <span class="keywordtype">char</span> *p;                       \</div>
+<div class="line">    const <span class="keywordtype">char</span>* p;                       \</div>
 <div class="line">    for (p = <a class="code" href="parser_8yy_8cc.html#a61b01b6b236b05090b972f8fd95da539">yy_cp</a> - 1; p &gt;= (dst); --p) \</div>
 <div class="line">      <span class="keywordflow">if</span> (*p == <span class="charliteral">&#39;\n&#39;</span>) --<a class="code" href="parser_8yy_8cc.html#ad71cf0fddcfe4f61de0929105b33226c">yylineno</a>;        \</div>
 <div class="line">  } <span class="keywordflow">while</span> (0)</div>
@@ -3452,7 +3452,7 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a>* yyget_lval </td>
+          <td class="memname"><a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a>* yyget_lval </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="parser_8yy_8cc.html#a157535ed0322a026cc197c8985c08d35">yyscan_t</a>&#160;</td>
           <td class="paramname"><em>yyscanner</em></td><td>)</td>
@@ -3508,7 +3508,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">int yylex </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a> *&#160;</td>
           <td class="paramname"><em>yylval_param</em>, </td>
         </tr>
         <tr>
@@ -3848,7 +3848,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">void yyset_lval </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#ada05af3f6f19ddaae9f4a382f8a4e4cd">YYSTYPE</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="parser_8tab_8cc.html#a2ceb5b985e149f18e018b142cfdd7264">YYSTYPE</a> *&#160;</td>
           <td class="paramname"><em>yylval_param</em>, </td>
         </tr>
         <tr>
@@ -4297,7 +4297,7 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">struct <a class="el" href="structyyguts__t.html">yyguts_t</a>* yyg = (struct <a class="el" href="structyyguts__t.html">yyguts_t</a> *)yyscanner</td>
+          <td class="memname">struct <a class="el" href="structyyguts__t.html">yyguts_t</a>* yyg = (struct <a class="el" href="structyyguts__t.html">yyguts_t</a>*)yyscanner</td>
         </tr>
       </table>
 </div><div class="memdoc">

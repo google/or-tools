@@ -13,9 +13,7 @@
 """Solve a multiple knapsack problem using a MIP solver."""
 # [START program]
 # [START import]
-from __future__ import print_function
 from ortools.linear_solver import pywraplp
-
 # [END import]
 
 
@@ -34,7 +32,6 @@ def create_data_model():
     data['bins'] = list(range(num_bins))
     data['bin_capacities'] = [100, 100, 100, 100, 100]
     return data
-
 
 # [END data_model]
 

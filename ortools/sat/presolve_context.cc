@@ -198,11 +198,10 @@ bool PresolveContext::VariableWasRemoved(int ref) const {
   if (IsFixed(ref)) return false;
   if (!removed_variables_.contains(PositiveRef(ref))) return false;
   if (!var_to_constraints_[PositiveRef(ref)].empty()) {
-    const AffineRelation::Relation r = GetAffineRelation(PositiveRef(ref));
     LOG(INFO) << "Variable " << PositiveRef(ref)
               << " was removed, yet it appears in some constraints!";
-    LOG(INFO) << "affine relation = " << r.coeff << " * X" << r.representative
-              << " + " << r.offset;
+    LOG(INFO) << "affine relation: "
+              << AffineRelationDebugString(PositiveRef(ref));
     for (const int c : var_to_constraints_[PositiveRef(ref)]) {
       LOG(INFO) << "constraint #" << c << " : "
                 << (c >= 0 ? working_model->constraints(c).ShortDebugString()
@@ -282,12 +281,12 @@ ABSL_MUST_USE_RESULT bool PresolveContext::SetLiteralToTrue(int lit) {
   return SetLiteralToFalse(NegatedRef(lit));
 }
 
-void PresolveContext::UpdateRuleStats(const std::string& name) {
+void PresolveContext::UpdateRuleStats(const std::string& name, int num_times) {
   if (enable_stats) {
     VLOG(1) << num_presolve_operations << " : " << name;
-    stats_by_rule_name[name]++;
+    stats_by_rule_name[name] += num_times;
   }
-  num_presolve_operations++;
+  num_presolve_operations += num_times;
 }
 
 void PresolveContext::UpdateLinear1Usage(const ConstraintProto& ct, int c) {
@@ -523,11 +522,7 @@ void PresolveContext::RemoveVariableFromAffineRelation(int var) {
   }
 
   if (VLOG_IS_ON(2)) {
-    const auto r = GetAffineRelation(var);
-    LOG(INFO) << "Removing affine relation for " << var << " : "
-              << DomainOf(var) << " =  " << r.coeff << " * "
-              << DomainOf(r.representative) << " + " << r.offset
-              << " ( rep : " << rep << ").";
+    LOG(INFO) << "Removing affine relation: " << AffineRelationDebugString(var);
   }
 }
 
@@ -756,6 +751,17 @@ AffineRelation::Relation PresolveContext::GetAffineRelation(int ref) const {
   return r;
 }
 
+std::string PresolveContext::RefDebugString(int ref) const {
+  return absl::StrCat(RefIsPositive(ref) ? "X" : "-X", PositiveRef(ref),
+                      DomainOf(ref).ToString());
+}
+
+std::string PresolveContext::AffineRelationDebugString(int ref) const {
+  const AffineRelation::Relation r = GetAffineRelation(ref);
+  return absl::StrCat(RefDebugString(ref), " = ", r.coeff, " * ",
+                      RefDebugString(r.representative), " + ", r.offset);
+}
+
 // Create the internal structure for any new variables in working_model.
 void PresolveContext::InitializeNewDomains() {
   for (int i = domains.size(); i < working_model->variables_size(); ++i) {
@@ -965,10 +971,11 @@ void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
 
   // If an encoding already exist, make the two Boolean equals.
   if (!insert.second) {
-    UpdateRuleStats("variables: merge equivalent var value encoding literals");
     const int previous_literal = insert.first->second.Get(this);
     CHECK(!VariableWasRemoved(previous_literal));
     if (literal != previous_literal) {
+      UpdateRuleStats(
+          "variables: merge equivalent var value encoding literals");
       StoreBooleanEqualityRelation(literal, previous_literal);
     }
     return;
@@ -979,8 +986,8 @@ void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
   } else {
     VLOG(2) << "Insert lit(" << literal << ") <=> var(" << var
             << ") == " << value;
-    // eq_half_encoding_[var][value].insert(literal);
-    // neq_half_encoding_[var][value].insert(NegatedRef(literal));
+    eq_half_encoding_[var][value].insert(literal);
+    neq_half_encoding_[var][value].insert(NegatedRef(literal));
     if (add_constraints) {
       UpdateRuleStats("variables: add encoding constraint");
       AddImplyInDomain(literal, var, Domain(value));
@@ -1339,13 +1346,13 @@ void PresolveContext::SubstituteVariableInObjective(
   // (otherwise it would have been removed), the objective domain should be now
   // constraining.
   objective_domain_is_constraining = true;
-}
 
-void PresolveContext::WriteObjectiveToProto() {
   if (objective_domain.IsEmpty()) {
     return (void)NotifyThatModelIsUnsat();
   }
+}
 
+void PresolveContext::WriteObjectiveToProto() const {
   // We need to sort the entries to be deterministic.
   std::vector<std::pair<int, int64>> entries;
   for (const auto& entry : objective_map) {

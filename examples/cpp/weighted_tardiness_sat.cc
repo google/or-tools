@@ -28,12 +28,12 @@
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 
-DEFINE_string(input, "examples/data/weighted_tardiness/wt40.txt",
-              "wt data file name.");
-DEFINE_int32(size, 40, "Size of the problem in the wt file.");
-DEFINE_int32(n, 28, "1-based instance number in the wt file.");
-DEFINE_string(params, "", "Sat parameters in text proto format.");
-DEFINE_int32(upper_bound, -1, "If positive, look for a solution <= this.");
+ABSL_FLAG(std::string, input, "examples/data/weighted_tardiness/wt40.txt",
+          "wt data file name.");
+ABSL_FLAG(int, size, 40, "Size of the problem in the wt file.");
+ABSL_FLAG(int, n, 28, "1-based instance number in the wt file.");
+ABSL_FLAG(std::string, params, "", "Sat parameters in text proto format.");
+ABSL_FLAG(int, upper_bound, -1, "If positive, look for a solution <= this.");
 
 namespace operations_research {
 namespace sat {
@@ -117,7 +117,8 @@ void Solve(const std::vector<int64>& durations,
   cp_model.AddNoOverlap(task_intervals);
 
   // TODO(user): We can't set an objective upper bound with the current cp_model
-  // interface, so we can't use heuristic or FLAGS_upper_bound here. The best is
+  // interface, so we can't use heuristic or absl::GetFlag(FLAGS_upper_bound)
+  // here. The best is
   // probably to provide a "solution hint" instead.
   //
   // Set a known upper bound (or use the flag). This has a bigger impact than
@@ -164,7 +165,7 @@ void Solve(const std::vector<int64>& durations,
   // Note that we only fully instantiate the start/end and only look at the
   // lower bound for the objective and the tardiness variables.
   Model model;
-  model.Add(NewSatParameters(FLAGS_params));
+  model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
     // Note that we compute the "real" cost here and do not use the tardiness
     // variables. This is because in the core based approach, the tardiness
@@ -215,7 +216,7 @@ void Solve(const std::vector<int64>& durations,
 void ParseAndSolve() {
   std::vector<int> numbers;
   std::vector<std::string> entries;
-  for (const std::string& line : FileLines(FLAGS_input)) {
+  for (const std::string& line : FileLines(absl::GetFlag(FLAGS_input))) {
     entries = absl::StrSplit(line, ' ', absl::SkipEmpty());
     for (const std::string& entry : entries) {
       numbers.push_back(0);
@@ -223,22 +224,26 @@ void ParseAndSolve() {
     }
   }
 
-  const int instance_size = FLAGS_size * 3;
-  LOG(INFO) << numbers.size() << " numbers in '" << FLAGS_input << "'.";
+  const int instance_size = absl::GetFlag(FLAGS_size) * 3;
+  LOG(INFO) << numbers.size() << " numbers in '" << absl::GetFlag(FLAGS_input)
+            << "'.";
   LOG(INFO) << "This correspond to " << numbers.size() / instance_size
-            << " instances of size " << FLAGS_size;
-  LOG(INFO) << "Loading instance #" << FLAGS_n;
-  CHECK_GE(FLAGS_n, 0);
-  CHECK_LE(FLAGS_n * instance_size, numbers.size());
+            << " instances of size " << absl::GetFlag(FLAGS_size);
+  LOG(INFO) << "Loading instance #" << absl::GetFlag(FLAGS_n);
+  CHECK_GE(absl::GetFlag(FLAGS_n), 0);
+  CHECK_LE(absl::GetFlag(FLAGS_n) * instance_size, numbers.size());
 
   // The order in a wt file is: duration, tardiness weights and then due_dates.
-  int index = (FLAGS_n - 1) * instance_size;
+  int index = (absl::GetFlag(FLAGS_n) - 1) * instance_size;
   std::vector<int64> durations;
-  for (int j = 0; j < FLAGS_size; ++j) durations.push_back(numbers[index++]);
+  for (int j = 0; j < absl::GetFlag(FLAGS_size); ++j)
+    durations.push_back(numbers[index++]);
   std::vector<int64> weights;
-  for (int j = 0; j < FLAGS_size; ++j) weights.push_back(numbers[index++]);
+  for (int j = 0; j < absl::GetFlag(FLAGS_size); ++j)
+    weights.push_back(numbers[index++]);
   std::vector<int64> due_dates;
-  for (int j = 0; j < FLAGS_size; ++j) due_dates.push_back(numbers[index++]);
+  for (int j = 0; j < absl::GetFlag(FLAGS_size); ++j)
+    due_dates.push_back(numbers[index++]);
 
   Solve(durations, due_dates, weights);
 }
@@ -248,8 +253,8 @@ void ParseAndSolve() {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  if (FLAGS_input.empty()) {
+  absl::ParseCommandLine(argc, argv);
+  if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }
   operations_research::sat::ParseAndSolve();

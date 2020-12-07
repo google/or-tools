@@ -23,7 +23,6 @@ import com.google.ortools.sat.CumulativeConstraintProto;
 import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.ElementConstraintProto;
 import com.google.ortools.sat.IntegerArgumentProto;
-import com.google.ortools.sat.IntegerVariableProto;
 import com.google.ortools.sat.InverseConstraintProto;
 import com.google.ortools.sat.LinearConstraintProto;
 import com.google.ortools.sat.NoOverlap2DConstraintProto;
@@ -135,8 +134,7 @@ public final class CpModel {
     Constraint ct = new Constraint(modelBuilder);
     LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
     for (int i = 0; i < expr.numElements(); ++i) {
-      lin.addVars(expr.getVariable(i).getIndex());
-      lin.addCoeffs(expr.getCoefficient(i));
+      lin.addVars(expr.getVariable(i).getIndex()).addCoeffs(expr.getCoefficient(i));
     }
     for (long b : domain.flattenedIntervals()) {
       lin.addDomain(b);
@@ -258,8 +256,8 @@ public final class CpModel {
   /** Adds the element constraint: {@code variables[index] == target}. */
   public Constraint addElement(IntVar index, IntVar[] variables, IntVar target) {
     Constraint ct = new Constraint(modelBuilder);
-    ElementConstraintProto.Builder element = ct.getBuilder().getElementBuilder();
-    element.setIndex(index.getIndex());
+    ElementConstraintProto.Builder element =
+        ct.getBuilder().getElementBuilder().setIndex(index.getIndex());
     for (IntVar var : variables) {
       element.addVars(var.getIndex());
     }
@@ -270,8 +268,8 @@ public final class CpModel {
   /** Adds the element constraint: {@code values[index] == target}. */
   public Constraint addElement(IntVar index, long[] values, IntVar target) {
     Constraint ct = new Constraint(modelBuilder);
-    ElementConstraintProto.Builder element = ct.getBuilder().getElementBuilder();
-    element.setIndex(index.getIndex());
+    ElementConstraintProto.Builder element =
+        ct.getBuilder().getElementBuilder().setIndex(index.getIndex());
     for (long v : values) {
       element.addVars(indexFromConstant(v));
     }
@@ -282,8 +280,8 @@ public final class CpModel {
   /** Adds the element constraint: {@code values[index] == target}. */
   public Constraint addElement(IntVar index, int[] values, IntVar target) {
     Constraint ct = new Constraint(modelBuilder);
-    ElementConstraintProto.Builder element = ct.getBuilder().getElementBuilder();
-    element.setIndex(index.getIndex());
+    ElementConstraintProto.Builder element =
+        ct.getBuilder().getElementBuilder().setIndex(index.getIndex());
     for (long v : values) {
       element.addVars(indexFromConstant(v));
     }
@@ -466,9 +464,7 @@ public final class CpModel {
       if (t.length != 3) {
         throw new WrongLength("addAutomaton", "transition does not have length 3");
       }
-      automaton.addTransitionTail(t[0]);
-      automaton.addTransitionLabel(t[1]);
-      automaton.addTransitionHead(t[2]);
+      automaton.addTransitionTail(t[0]).addTransitionLabel(t[1]).addTransitionHead(t[2]);
     }
     return ct;
   }
@@ -536,8 +532,7 @@ public final class CpModel {
     for (long d : demands) {
       reservoir.addDemands(d);
     }
-    reservoir.setMinLevel(minLevel);
-    reservoir.setMaxLevel(maxLevel);
+    reservoir.setMinLevel(minLevel).setMaxLevel(maxLevel);
     return ct;
   }
 
@@ -596,8 +591,7 @@ public final class CpModel {
     for (IntVar var : actives) {
       reservoir.addActives(var.getIndex());
     }
-    reservoir.setMinLevel(minLevel);
-    reservoir.setMaxLevel(maxLevel);
+    reservoir.setMinLevel(minLevel).setMaxLevel(maxLevel);
     return ct;
   }
 
@@ -623,8 +617,8 @@ public final class CpModel {
   /** Adds {@code target == Min(vars)}. */
   public Constraint addMinEquality(IntVar target, IntVar[] vars) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intMin = ct.getBuilder().getIntMinBuilder();
-    intMin.setTarget(target.getIndex());
+    IntegerArgumentProto.Builder intMin =
+        ct.getBuilder().getIntMinBuilder().setTarget(target.getIndex());
     for (IntVar var : vars) {
       intMin.addVars(var.getIndex());
     }
@@ -634,8 +628,8 @@ public final class CpModel {
   /** Adds {@code target == Max(vars)}. */
   public Constraint addMaxEquality(IntVar target, IntVar[] vars) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intMax = ct.getBuilder().getIntMaxBuilder();
-    intMax.setTarget(target.getIndex());
+    IntegerArgumentProto.Builder intMax =
+        ct.getBuilder().getIntMaxBuilder().setTarget(target.getIndex());
     for (IntVar var : vars) {
       intMax.addVars(var.getIndex());
     }
@@ -645,48 +639,52 @@ public final class CpModel {
   /** Adds {@code target == num / denom}, rounded towards 0. */
   public Constraint addDivisionEquality(IntVar target, IntVar num, IntVar denom) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intDiv = ct.getBuilder().getIntDivBuilder();
-    intDiv.setTarget(target.getIndex());
-    intDiv.addVars(num.getIndex());
-    intDiv.addVars(denom.getIndex());
+    ct.getBuilder()
+        .getIntDivBuilder()
+        .setTarget(target.getIndex())
+        .addVars(num.getIndex())
+        .addVars(denom.getIndex());
     return ct;
   }
 
   /** Adds {@code target == Abs(var)}. */
   public Constraint addAbsEquality(IntVar target, IntVar var) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intMax = ct.getBuilder().getIntMaxBuilder();
-    intMax.setTarget(target.getIndex());
-    intMax.addVars(var.getIndex());
-    intMax.addVars(-var.getIndex() - 1);
+    ct.getBuilder()
+        .getIntMaxBuilder()
+        .setTarget(target.getIndex())
+        .addVars(var.getIndex())
+        .addVars(-var.getIndex() - 1);
     return ct;
   }
 
   /** Adds {@code target == var % mod}. */
   public Constraint addModuloEquality(IntVar target, IntVar var, IntVar mod) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intMod = ct.getBuilder().getIntModBuilder();
-    intMod.setTarget(target.getIndex());
-    intMod.addVars(var.getIndex());
-    intMod.addVars(mod.getIndex());
+    ct.getBuilder()
+        .getIntModBuilder()
+        .setTarget(target.getIndex())
+        .addVars(var.getIndex())
+        .addVars(mod.getIndex());
     return ct;
   }
 
   /** Adds {@code target == var % mod}. */
   public Constraint addModuloEquality(IntVar target, IntVar var, long mod) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intMod = ct.getBuilder().getIntModBuilder();
-    intMod.setTarget(target.getIndex());
-    intMod.addVars(var.getIndex());
-    intMod.addVars(indexFromConstant(mod));
+    ct.getBuilder()
+        .getIntModBuilder()
+        .setTarget(target.getIndex())
+        .addVars(var.getIndex())
+        .addVars(indexFromConstant(mod));
     return ct;
   }
 
   /** Adds {@code target == Product(vars)}. */
   public Constraint addProductEquality(IntVar target, IntVar[] vars) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intProd = ct.getBuilder().getIntProdBuilder();
-    intProd.setTarget(target.getIndex());
+    IntegerArgumentProto.Builder intProd =
+        ct.getBuilder().getIntProdBuilder().setTarget(target.getIndex());
     for (IntVar var : vars) {
       intProd.addVars(var.getIndex());
     }
@@ -964,8 +962,7 @@ public final class CpModel {
   public void minimize(LinearExpr expr) {
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
     for (int i = 0; i < expr.numElements(); ++i) {
-      obj.addVars(expr.getVariable(i).getIndex());
-      obj.addCoeffs(expr.getCoefficient(i));
+      obj.addVars(expr.getVariable(i).getIndex()).addCoeffs(expr.getCoefficient(i));
     }
   }
 
@@ -973,8 +970,7 @@ public final class CpModel {
   public void maximize(LinearExpr expr) {
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
     for (int i = 0; i < expr.numElements(); ++i) {
-      obj.addVars(expr.getVariable(i).getIndex());
-      obj.addCoeffs(-expr.getCoefficient(i));
+      obj.addVars(expr.getVariable(i).getIndex()).addCoeffs(-expr.getCoefficient(i));
     }
     obj.setScalingFactor(-1.0);
   }
@@ -989,8 +985,7 @@ public final class CpModel {
     for (IntVar var : variables) {
       ds.addVariables(var.getIndex());
     }
-    ds.setVariableSelectionStrategy(varStr);
-    ds.setDomainReductionStrategy(domStr);
+    ds.setVariableSelectionStrategy(varStr).setDomainReductionStrategy(domStr);
   }
 
   /** Returns some statistics on model as a string. */
@@ -1003,8 +998,8 @@ public final class CpModel {
     return SatHelper.validateModel(model());
   }
 
-  /** Write the model as a ascii protocol buffer to 'file'.*/
-  public Boolean ExportToFile(String file) {
+  /** Write the model as a ascii protocol buffer to 'file'. */
+  public Boolean exportToFile(String file) {
     return SatHelper.writeModelToFile(model(), file);
   }
 
@@ -1020,9 +1015,7 @@ public final class CpModel {
 
   int indexFromConstant(long constant) {
     int index = modelBuilder.getVariablesCount();
-    IntegerVariableProto.Builder cst = modelBuilder.addVariablesBuilder();
-    cst.addDomain(constant);
-    cst.addDomain(constant);
+    modelBuilder.addVariablesBuilder().addDomain(constant).addDomain(constant);
     return index;
   }
 

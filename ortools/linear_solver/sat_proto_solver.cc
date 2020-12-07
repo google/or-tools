@@ -15,7 +15,7 @@
 
 #include <vector>
 
-#include "ortools/base/statusor.h"
+#include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/linear_solver/sat_solver_utils.h"
@@ -35,6 +35,13 @@ using google::protobuf::Message;
 #else
 using google::protobuf::Message;
 #endif
+
+// Proto-lite disables some features of protos (see
+// go/abp-libraries/proto2-lite) and messages inherit from MessageLite directly
+// instead of inheriting from Message (which is itself a specialization of
+// MessageLite).
+constexpr bool kProtoLiteSatParameters =
+    !std::is_base_of<Message, sat::SatParameters>::value;
 
 MPSolverResponseStatus ToMPSolverResponseStatus(sat::CpSolverStatus status,
                                                 bool has_objective) {
@@ -64,13 +71,20 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   params.set_num_search_workers(8);
   params.set_log_search_progress(request.enable_internal_solver_output());
   if (request.has_solver_specific_parameters()) {
-    // If code is compiled with proto-lite runtime, `solver_specific_parameters`
-    // should be encoded as non-human readable string from `SerializeAsString`.
-    if (!std::is_base_of<Message, sat::SatParameters>::value) {
-      CHECK(params.MergeFromString(request.solver_specific_parameters()));
+    // See EncodeSatParametersAsString() documentation.
+    if (kProtoLiteSatParameters) {
+      if (!params.MergeFromString(request.solver_specific_parameters())) {
+        return absl::InvalidArgumentError(
+            "solver_specific_parameters is not a valid binary stream of the "
+            "SatParameters proto");
+      }
     } else {
-      ProtobufTextFormatMergeFromString(request.solver_specific_parameters(),
-                                        &params);
+      if (!ProtobufTextFormatMergeFromString(
+              request.solver_specific_parameters(), &params)) {
+        return absl::InvalidArgumentError(
+            "solver_specific_parameters is not a valid textual representation "
+            "of the SatParameters proto");
+      }
     }
   }
   if (request.has_solver_time_limit_seconds()) {
@@ -110,6 +124,9 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
     return response;
   }
 
+  // We need to do that before the automatic detection of integers.
+  RemoveNearZeroTerms(params, mp_model);
+
   const int num_variables = mp_model->variable_size();
   std::vector<double> var_scaling(num_variables, 1.0);
   if (params.mip_automatically_scale_variables()) {
@@ -145,9 +162,18 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
     for (int i = 0; i < size; ++i) {
       const int var = request.model().solution_hint().var_index(i);
       if (var >= var_scaling.size()) continue;
+
+      // To handle weird hint input values, we cap any large value to +/-
+      // mip_max_bound() which is also the min/max value of any variable once
+      // scaled.
+      double value =
+          request.model().solution_hint().var_value(i) * var_scaling[var];
+      if (std::abs(value) > params.mip_max_bound()) {
+        value = value > 0 ? params.mip_max_bound() : -params.mip_max_bound();
+      }
+
       cp_model_hint->add_vars(var);
-      cp_model_hint->add_values(static_cast<int64>(std::round(
-          (request.model().solution_hint().var_value(i)) * var_scaling[var])));
+      cp_model_hint->add_values(static_cast<int64>(std::round(value)));
     }
   }
 
@@ -193,4 +219,18 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
 
   return response;
 }
+
+std::string EncodeSatParametersAsString(const sat::SatParameters& parameters) {
+  if (kProtoLiteSatParameters) {
+    // Here we use SerializeToString() instead of SerializeAsString() since the
+    // later ignores errors and returns an empty string instead (which can be a
+    // valid value when no fields are set).
+    std::string bytes;
+    CHECK(parameters.SerializeToString(&bytes));
+    return bytes;
+  }
+
+  return parameters.ShortDebugString();
+}
+
 }  // namespace operations_research

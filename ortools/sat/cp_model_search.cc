@@ -39,7 +39,7 @@ struct VarValue {
   IntegerValue value;
 };
 
-const std::function<LiteralIndex()> ConstructSearchStrategyInternal(
+const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
     const absl::flat_hash_map<int, std::pair<int64, int64>>&
         var_to_coeff_offset_pair,
     const std::vector<Strategy>& strategies, Model* model) {
@@ -164,18 +164,18 @@ const std::function<LiteralIndex()> ConstructSearchStrategyInternal(
           LOG(FATAL) << "Unknown DomainReductionStrategy "
                      << strategy.domain_strategy;
       }
-      return integer_encoder->GetOrCreateAssociatedLiteral(literal).Index();
+      return BooleanOrIntegerLiteral(literal);
     }
-    return kNoLiteralIndex;
+    return BooleanOrIntegerLiteral();
   };
 }
 
-std::function<LiteralIndex()> ConstructSearchStrategy(
+std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
     const CpModelProto& cp_model_proto,
     const std::vector<IntegerVariable>& variable_mapping,
     IntegerVariable objective_var, Model* model) {
   // Default strategy is to instantiate the IntegerVariable in order.
-  std::function<LiteralIndex()> default_search_strategy = nullptr;
+  std::function<BooleanOrIntegerLiteral()> default_search_strategy = nullptr;
   const bool instantiate_all_variables =
       model->GetOrCreate<SatParameters>()->instantiate_all_variables();
 
@@ -228,10 +228,11 @@ std::function<LiteralIndex()> ConstructSearchStrategy(
   }
 }
 
-std::function<LiteralIndex()> InstrumentSearchStrategy(
+std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     const CpModelProto& cp_model_proto,
     const std::vector<IntegerVariable>& variable_mapping,
-    const std::function<LiteralIndex()>& instrumented_strategy, Model* model) {
+    const std::function<BooleanOrIntegerLiteral()>& instrumented_strategy,
+    Model* model) {
   std::vector<int> ref_to_display;
   for (int i = 0; i < cp_model_proto.variables_size(); ++i) {
     if (variable_mapping[i] == kNoIntegerVariable) continue;
@@ -246,32 +247,37 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
   std::vector<std::pair<int64, int64>> old_domains(variable_mapping.size());
   return [instrumented_strategy, model, variable_mapping, cp_model_proto,
           old_domains, ref_to_display]() mutable {
-    const LiteralIndex decision = instrumented_strategy();
-//    if (decision == kNoLiteralIndex) return decision;
-//
-//    for (const IntegerLiteral i_lit :
-//         model->Get<IntegerEncoder>()->GetAllIntegerLiterals(
-//             Literal(decision))) {
-//      LOG(INFO) << "decision " << i_lit;
-//    }
-//    const int level = model->Get<Trail>()->CurrentDecisionLevel();
-//    std::string to_display =
-//        absl::StrCat("Diff since last call, level=", level, "\n");
-//    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-//    for (const int ref : ref_to_display) {
-//      const IntegerVariable var = variable_mapping[ref];
-//      const std::pair<int64, int64> new_domain(
-//          integer_trail->LowerBound(var).value(),
-//          integer_trail->UpperBound(var).value());
-//      if (new_domain != old_domains[ref]) {
-//        absl::StrAppend(&to_display, cp_model_proto.variables(ref).name(), " [",
-//                        old_domains[ref].first, ",", old_domains[ref].second,
-//                        "] -> [", new_domain.first, ",", new_domain.second,
-//                        "]\n");
-//        old_domains[ref] = new_domain;
-//      }
-//    }
-//    LOG(INFO) << to_display;
+    const BooleanOrIntegerLiteral decision = instrumented_strategy();
+    if (!decision.HasValue()) return decision;
+
+    if (decision.boolean_literal_index != kNoLiteralIndex) {
+      const Literal l = Literal(decision.boolean_literal_index);
+      LOG(INFO) << "Boolean decision " << l;
+      for (const IntegerLiteral i_lit :
+           model->Get<IntegerEncoder>()->GetAllIntegerLiterals(l)) {
+        LOG(INFO) << " - associated with " << i_lit;
+      }
+    } else {
+      LOG(INFO) << "Integer decision " << decision.integer_literal;
+    }
+    const int level = model->Get<Trail>()->CurrentDecisionLevel();
+    std::string to_display =
+        absl::StrCat("Diff since last call, level=", level, "\n");
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    for (const int ref : ref_to_display) {
+      const IntegerVariable var = variable_mapping[ref];
+      const std::pair<int64, int64> new_domain(
+          integer_trail->LowerBound(var).value(),
+          integer_trail->UpperBound(var).value());
+      if (new_domain != old_domains[ref]) {
+        absl::StrAppend(&to_display, cp_model_proto.variables(ref).name(), " [",
+                        old_domains[ref].first, ",", old_domains[ref].second,
+                        "] -> [", new_domain.first, ",", new_domain.second,
+                        "]\n");
+        old_domains[ref] = new_domain;
+      }
+    }
+    LOG(INFO) << to_display;
     return decision;
   };
 }
@@ -315,6 +321,31 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     strategies["core"] = new_params;
   }
 
+  // It can be interesting to try core and lp.
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    new_params.set_optimize_with_core(true);
+    new_params.set_linearization_level(1);
+    strategies["core_default_lp"] = new_params;
+  }
+
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    new_params.set_optimize_with_core(true);
+    new_params.set_linearization_level(2);
+    strategies["core_max_lp"] = new_params;
+  }
+
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    new_params.set_use_probing_search(true);
+    new_params.set_linearization_level(0);
+    strategies["probing"] = new_params;
+  }
+
   // Search variation.
   {
     SatParameters new_params = base_params;
@@ -327,6 +358,11 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     new_params.set_search_branching(
         SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
     strategies["quick_restart"] = new_params;
+
+    new_params.set_search_branching(
+        SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
+    new_params.set_linearization_level(0);
+    strategies["quick_restart_no_lp"] = new_params;
 
     // We force the max lp here too.
     new_params.set_linearization_level(2);
@@ -376,10 +412,14 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     names.push_back("no_lp");
     names.push_back("max_lp");
     if (cp_model.objective().vars_size() > 1) names.push_back("core");
+    // TODO(user): Experiment with core and LP.
 
     // Only add this strategy if we have enough worker left for LNS.
     if (num_workers > 8 || base_params.interleave_search()) {
       names.push_back("quick_restart");
+    }
+    if (num_workers > 10) {
+      names.push_back("quick_restart_no_lp");
     }
   } else {
     names.push_back("default_lp");
@@ -388,6 +428,12 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     names.push_back("no_lp");
     names.push_back("max_lp");
     names.push_back("quick_restart");
+    if (num_workers > 10) {
+      names.push_back("quick_restart_no_lp");
+    }
+  }
+  if (num_workers > 12) {
+    names.push_back("probing");
   }
 
   // Creates the diverse set of parameters with names and seed. We remove the

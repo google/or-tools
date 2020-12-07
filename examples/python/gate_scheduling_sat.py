@@ -16,23 +16,40 @@ We have a set of jobs to perform (duration, width).
 We have two parallel machines that can perform this job.
 One machine can only perform one job at a time.
 At any point in time, the sum of the width of the two active jobs does not
-exceed a max_length.
+exceed a max_width.
 
 The objective is to minimize the max end time of all jobs.
 """
 
-from ortools.sat.python import cp_model
+from absl import app
+
 from ortools.sat.python import visualization
+from ortools.sat.python import cp_model
 
 
-def main():
+def main(_):
     """Solves the gate scheduling problem."""
     model = cp_model.CpModel()
 
-    jobs = [[3, 3], [2, 5], [1, 3], [3, 7], [7, 3], [2, 2], [2, 2], [5, 5],
-            [10, 2], [4, 3], [2, 6], [1, 2], [6, 8], [4, 5], [3, 7]]
+    jobs = [
+        [3, 3],  # [duration, width]
+        [2, 5],
+        [1, 3],
+        [3, 7],
+        [7, 3],
+        [2, 2],
+        [2, 2],
+        [5, 5],
+        [10, 2],
+        [4, 3],
+        [2, 6],
+        [1, 2],
+        [6, 8],
+        [4, 5],
+        [3, 7]
+    ]
 
-    max_length = 10
+    max_width = 10
 
     horizon = sum(t[0] for t in jobs)
     num_jobs = len(jobs)
@@ -57,14 +74,14 @@ def main():
         ends.append(end)
         demands.append(jobs[i][1])
 
+        # Create an optional copy of interval to be executed on machine 0.
         performed_on_m0 = model.NewBoolVar('perform_%i_on_m0' % i)
         performed.append(performed_on_m0)
-
-        # Create an optional copy of interval to be executed on machine 0.
         start0 = model.NewIntVar(0, horizon, 'start_%i_on_m0' % i)
         end0 = model.NewIntVar(0, horizon, 'end_%i_on_m0' % i)
-        interval0 = model.NewOptionalIntervalVar(
-            start0, duration, end0, performed_on_m0, 'interval_%i_on_m0' % i)
+        interval0 = model.NewOptionalIntervalVar(start0, duration, end0,
+                                                 performed_on_m0,
+                                                 'interval_%i_on_m0' % i)
         intervals0.append(interval0)
 
         # Create an optional copy of interval to be executed on machine 1.
@@ -79,8 +96,8 @@ def main():
         model.Add(start0 == start).OnlyEnforceIf(performed_on_m0)
         model.Add(start1 == start).OnlyEnforceIf(performed_on_m0.Not())
 
-    # Max Length constraint (modeled as a cumulative)
-    model.AddCumulative(intervals, demands, max_length)
+    # Width constraint (modeled as a cumulative)
+    model.AddCumulative(intervals, demands, max_width)
 
     # Choose which machine to perform the jobs on.
     model.AddNoOverlap(intervals0)
@@ -100,7 +117,7 @@ def main():
 
     # Output solution.
     if visualization.RunFromIPython():
-        output = visualization.SvgWrapper(solver.ObjectiveValue(), max_length,
+        output = visualization.SvgWrapper(solver.ObjectiveValue(), max_width,
                                           40.0)
         output.AddTitle('Makespan = %i' % solver.ObjectiveValue())
         color_manager = visualization.ColorManager()
@@ -111,7 +128,7 @@ def main():
             start = solver.Value(starts[i])
             d_x = jobs[i][0]
             d_y = jobs[i][1]
-            s_y = performed_machine * (max_length - d_y)
+            s_y = performed_machine * (max_width - d_y)
             output.AddRectangle(start, s_y, d_x, d_y,
                                 color_manager.RandomColor(), 'black', 'j%i' % i)
 
@@ -124,8 +141,8 @@ def main():
         for i in all_jobs:
             performed_machine = 1 - solver.Value(performed[i])
             start = solver.Value(starts[i])
-            print('  - Job %i starts at %i on machine %i' % (i, start,
-                                                             performed_machine))
+            print('  - Job %i starts at %i on machine %i' %
+                  (i, start, performed_machine))
         print('Statistics')
         print('  - conflicts : %i' % solver.NumConflicts())
         print('  - branches  : %i' % solver.NumBranches())
@@ -133,4 +150,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    app.run(main)

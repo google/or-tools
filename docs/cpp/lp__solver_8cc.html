@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -105,31 +105,37 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a748c31aceff44a1e7dcab984aeebefc8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lp__solver_8cc.html#a748c31aceff44a1e7dcab984aeebefc8">DEFINE_bool</a> (lp_solver_enable_fp_exceptions, false, &quot;When true, NaNs and division / zero produce errors. &quot; &quot;This is very useful for debugging, but incompatible with LLVM. &quot; &quot;It is recommended to set this to false for production usage.&quot;)</td></tr>
-<tr class="separator:a748c31aceff44a1e7dcab984aeebefc8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ade6504c1316f0d5780f4917ddd622836"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lp__solver_8cc.html#ade6504c1316f0d5780f4917ddd622836">DEFINE_bool</a> (lp_dump_to_proto_file, false, &quot;Tells whether do dump the problem to <a class="el" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a> protobuf file.&quot;)</td></tr>
-<tr class="separator:ade6504c1316f0d5780f4917ddd622836"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a737808f7e7397bf8d29d16e818065c6e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lp__solver_8cc.html#a737808f7e7397bf8d29d16e818065c6e">DEFINE_bool</a> (lp_dump_compressed_file, true, &quot;Whether the <a class="el" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a> dump file is compressed.&quot;)</td></tr>
-<tr class="separator:a737808f7e7397bf8d29d16e818065c6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c583e8ee24b5d6617842722fbcc6205"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lp__solver_8cc.html#a0c583e8ee24b5d6617842722fbcc6205">DEFINE_bool</a> (lp_dump_binary_file, false, &quot;Whether the <a class="el" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a> dump file is binary.&quot;)</td></tr>
-<tr class="separator:a0c583e8ee24b5d6617842722fbcc6205"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae8aab85d26232c292109caf348fe1ba4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lp__solver_8cc.html#ae8aab85d26232c292109caf348fe1ba4">DEFINE_int32</a> (lp_dump_file_number, -1, &quot;Number for the dump file, in the form <a class="el" href="linear__solver_8cc.html#a82e2a7e0f28d620da677073b6b24574b">name</a>-000048.pb. &quot; &quot;If &lt; 0, the file is automatically numbered from the number of &quot; &quot;calls to LPSolver::Solve().&quot;)</td></tr>
-<tr class="separator:ae8aab85d26232c292109caf348fe1ba4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a75225e7ace4afa0ad40bbe052f806e2b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lp__solver_8cc.html#a75225e7ace4afa0ad40bbe052f806e2b">DEFINE_string</a> (lp_dump_dir, &quot;/tmp&quot;, &quot;Directory <a class="el" href="gurobi__interface_8cc.html#a675dd47bbf0a66c9cb592047797a6d69">where</a> dump files are written.&quot;)</td></tr>
-<tr class="separator:a75225e7ace4afa0ad40bbe052f806e2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab3c4533b40c002b2c13e35ceaa72932f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lp__solver_8cc.html#ab3c4533b40c002b2c13e35ceaa72932f">DEFINE_string</a> (lp_dump_file_basename, &quot;&quot;, &quot;Base <a class="el" href="linear__solver_8cc.html#a82e2a7e0f28d620da677073b6b24574b">name</a> for dump files. LinearProgram::name_ is used <a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> &quot; &quot;lp_dump_file_basename is empty. If LinearProgram::name_ is &quot; &quot;empty, \&quot;linear_program_dump_file\&quot; is used.&quot;)</td></tr>
-<tr class="separator:ab3c4533b40c002b2c13e35ceaa72932f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0e321160cc045077a64f7c399f587e89"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lp__solver_8cc.html#a0e321160cc045077a64f7c399f587e89">ABSL_FLAG</a> (bool, lp_solver_enable_fp_exceptions, false, &quot;When true, NaNs and division / zero produce errors. &quot; &quot;This is very useful for debugging, but incompatible with LLVM. &quot; &quot;It is recommended to set this to false for production usage.&quot;)</td></tr>
+<tr class="separator:a0e321160cc045077a64f7c399f587e89"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa3003ab2d06a8ff3b490c100232fc05c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lp__solver_8cc.html#aa3003ab2d06a8ff3b490c100232fc05c">ABSL_FLAG</a> (bool, lp_dump_to_proto_file, false, &quot;Tells whether do dump the problem to <a class="el" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a> protobuf file.&quot;)</td></tr>
+<tr class="separator:aa3003ab2d06a8ff3b490c100232fc05c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3255b4eb70f1e20bab9f48f9d822d88a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lp__solver_8cc.html#a3255b4eb70f1e20bab9f48f9d822d88a">ABSL_FLAG</a> (bool, lp_dump_compressed_file, true, &quot;Whether the <a class="el" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a> dump file is compressed.&quot;)</td></tr>
+<tr class="separator:a3255b4eb70f1e20bab9f48f9d822d88a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24e27c5235d5d6c4e7a2e377f98c3281"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lp__solver_8cc.html#a24e27c5235d5d6c4e7a2e377f98c3281">ABSL_FLAG</a> (bool, lp_dump_binary_file, false, &quot;Whether the <a class="el" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a> dump file is binary.&quot;)</td></tr>
+<tr class="separator:a24e27c5235d5d6c4e7a2e377f98c3281"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acaaf678d8a0ec2cbe6e933440b2b27f0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lp__solver_8cc.html#acaaf678d8a0ec2cbe6e933440b2b27f0">ABSL_FLAG</a> (int, lp_dump_file_number, -1, &quot;Number for the dump file, in the form <a class="el" href="linear__solver_8cc.html#a82e2a7e0f28d620da677073b6b24574b">name</a>-000048.pb. &quot; &quot;If &lt; 0, the file is automatically numbered from the number of &quot; &quot;calls to LPSolver::Solve().&quot;)</td></tr>
+<tr class="separator:acaaf678d8a0ec2cbe6e933440b2b27f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b18ae1b9058762bcf8aff02efe24092"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lp__solver_8cc.html#a5b18ae1b9058762bcf8aff02efe24092">ABSL_FLAG</a> (std::string, lp_dump_dir, &quot;/tmp&quot;, &quot;Directory <a class="el" href="gurobi__interface_8cc.html#a675dd47bbf0a66c9cb592047797a6d69">where</a> dump files are written.&quot;)</td></tr>
+<tr class="separator:a5b18ae1b9058762bcf8aff02efe24092"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac3ba1f6d9971758c9a56b57694613cfb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lp__solver_8cc.html#ac3ba1f6d9971758c9a56b57694613cfb">ABSL_FLAG</a> (std::string, lp_dump_file_basename, &quot;&quot;, &quot;Base <a class="el" href="linear__solver_8cc.html#a82e2a7e0f28d620da677073b6b24574b">name</a> for dump files. LinearProgram::name_ is used <a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> &quot; &quot;lp_dump_file_basename is empty. If LinearProgram::name_ is &quot; &quot;empty, \&quot;linear_program_dump_file\&quot; is used.&quot;)</td></tr>
+<tr class="separator:ac3ba1f6d9971758c9a56b57694613cfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="a0c583e8ee24b5d6617842722fbcc6205"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0c583e8ee24b5d6617842722fbcc6205">&#9670;&nbsp;</a></span>DEFINE_bool() <span class="overload">[1/4]</span></h2>
+<a id="a24e27c5235d5d6c4e7a2e377f98c3281"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a24e27c5235d5d6c4e7a2e377f98c3281">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[1/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_bool </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">lp_dump_binary_file&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -155,15 +161,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a737808f7e7397bf8d29d16e818065c6e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a737808f7e7397bf8d29d16e818065c6e">&#9670;&nbsp;</a></span>DEFINE_bool() <span class="overload">[2/4]</span></h2>
+<a id="a3255b4eb70f1e20bab9f48f9d822d88a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3255b4eb70f1e20bab9f48f9d822d88a">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[2/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_bool </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">lp_dump_compressed_file&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -189,15 +201,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ade6504c1316f0d5780f4917ddd622836"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ade6504c1316f0d5780f4917ddd622836">&#9670;&nbsp;</a></span>DEFINE_bool() <span class="overload">[3/4]</span></h2>
+<a id="aa3003ab2d06a8ff3b490c100232fc05c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa3003ab2d06a8ff3b490c100232fc05c">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[3/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_bool </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">lp_dump_to_proto_file&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -223,15 +241,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a748c31aceff44a1e7dcab984aeebefc8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a748c31aceff44a1e7dcab984aeebefc8">&#9670;&nbsp;</a></span>DEFINE_bool() <span class="overload">[4/4]</span></h2>
+<a id="a0e321160cc045077a64f7c399f587e89"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0e321160cc045077a64f7c399f587e89">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[4/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_bool </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">lp_solver_enable_fp_exceptions&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -269,15 +293,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ae8aab85d26232c292109caf348fe1ba4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae8aab85d26232c292109caf348fe1ba4">&#9670;&nbsp;</a></span>DEFINE_int32()</h2>
+<a id="acaaf678d8a0ec2cbe6e933440b2b27f0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acaaf678d8a0ec2cbe6e933440b2b27f0">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[5/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_int32 </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">lp_dump_file_number&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -303,15 +333,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a75225e7ace4afa0ad40bbe052f806e2b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a75225e7ace4afa0ad40bbe052f806e2b">&#9670;&nbsp;</a></span>DEFINE_string() <span class="overload">[1/2]</span></h2>
+<a id="a5b18ae1b9058762bcf8aff02efe24092"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b18ae1b9058762bcf8aff02efe24092">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[6/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_string </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">lp_dump_dir&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -337,15 +373,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ab3c4533b40c002b2c13e35ceaa72932f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab3c4533b40c002b2c13e35ceaa72932f">&#9670;&nbsp;</a></span>DEFINE_string() <span class="overload">[2/2]</span></h2>
+<a id="ac3ba1f6d9971758c9a56b57694613cfb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac3ba1f6d9971758c9a56b57694613cfb">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[7/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">DEFINE_string </td>
+          <td class="memname">ABSL_FLAG </td>
           <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">lp_dump_file_basename&#160;</td>
           <td class="paramname">, </td>
         </tr>

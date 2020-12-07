@@ -65,11 +65,11 @@
 #include "ortools/base/macros.h"
 #include "ortools/linear_solver/linear_solver.h"
 
-DEFINE_bool(colgen_verbose, false, "print verbosely");
-DEFINE_bool(colgen_complete, false, "generate all columns initially");
-DEFINE_int32(colgen_max_iterations, 500, "max iterations");
-DEFINE_string(colgen_solver, "glop", "solver - glop (default) or clp");
-DEFINE_int32(colgen_instance, -1, "Which instance to solve (0 - 9)");
+ABSL_FLAG(bool, colgen_verbose, false, "print verbosely");
+ABSL_FLAG(bool, colgen_complete, false, "generate all columns initially");
+ABSL_FLAG(int, colgen_max_iterations, 500, "max iterations");
+ABSL_FLAG(std::string, colgen_solver, "glop", "solver - glop (default) or clp");
+ABSL_FLAG(int, colgen_instance, -1, "Which instance to solve (0 - 9)");
 
 namespace operations_research {
 // ---------- Data Instances ----------
@@ -321,7 +321,7 @@ class CoveringProblem {
 
     AddCellConstraints();     // sum for every cell is <=1 or =1
     AddMaxBoxesConstraint();  // sum of box variables is <= max_boxes()
-    if (!FLAGS_colgen_complete) {
+    if (!absl::GetFlag(FLAGS_colgen_complete)) {
       AddBox(Box(0, width() - 1, 0, height() - 1));  // grid-covering box
     } else {
       // Naive alternative to column generation - generate all boxes;
@@ -558,14 +558,14 @@ void SolveInstance(const Instance& instance,
   LOG(INFO) << "Initial problem:\n" << problem.PrintGrid();
 
   int step_number = 0;
-  while (step_number < FLAGS_colgen_max_iterations) {
-    if (FLAGS_colgen_verbose) {
+  while (step_number < absl::GetFlag(FLAGS_colgen_max_iterations)) {
+    if (absl::GetFlag(FLAGS_colgen_verbose)) {
       LOG(INFO) << "Step number " << step_number;
     }
 
     // Solve with existing columns.
     CHECK_EQ(MPSolver::OPTIMAL, solver.Solve());
-    if (FLAGS_colgen_verbose) {
+    if (absl::GetFlag(FLAGS_colgen_verbose)) {
       LOG(INFO) << problem.PrintCovering();
     }
 
@@ -577,7 +577,7 @@ void SolveInstance(const Instance& instance,
     }
 
     // Add new column to problem.
-    if (FLAGS_colgen_verbose) {
+    if (absl::GetFlag(FLAGS_colgen_verbose)) {
       LOG(INFO) << "Adding " << box.DebugString()
                 << ", reduced_cost =" << reduced_cost;
     }
@@ -586,7 +586,7 @@ void SolveInstance(const Instance& instance,
     ++step_number;
   }
 
-  if (step_number >= FLAGS_colgen_max_iterations) {
+  if (step_number >= absl::GetFlag(FLAGS_colgen_max_iterations)) {
     // Solve one last time with all generated columns.
     CHECK_EQ(MPSolver::OPTIMAL, solver.Solve());
   }
@@ -602,31 +602,31 @@ int main(int argc, char** argv) {
   usage += "  --colgen_max_iterations <n>  max columns to generate\n";
   usage += "  --colgen_complete            generate all columns at start\n";
 
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
 
   operations_research::MPSolver::OptimizationProblemType solver_type;
   bool found = false;
 #if defined(USE_CLP)
-  if (FLAGS_colgen_solver == "clp") {
+  if (absl::GetFlag(FLAGS_colgen_solver) == "clp") {
     solver_type = operations_research::MPSolver::CLP_LINEAR_PROGRAMMING;
     found = true;
   }
 #endif  // USE_CLP
 #if defined(USE_GLOP)
-  if (FLAGS_colgen_solver == "glop") {
+  if (absl::GetFlag(FLAGS_colgen_solver) == "glop") {
     solver_type = operations_research::MPSolver::GLOP_LINEAR_PROGRAMMING;
     found = true;
   }
 #endif  // USE_GLOP
 #if defined(USE_XPRESS)
-  if (FLAGS_colgen_solver == "xpress") {
+  if (absl::GetFlag(FLAGS_colgen_solver) == "xpress") {
     solver_type = operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
     // solver_type = operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
     found = true;
   }
 #endif
 #if defined(USE_CPLEX)
-  if (FLAGS_colgen_solver == "cplex") {
+  if (absl::GetFlag(FLAGS_colgen_solver) == "cplex") {
     solver_type = operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
     found = true;
   }
@@ -638,23 +638,25 @@ int main(int argc, char** argv) {
   }
 #endif
   if (!found) {
-    LOG(ERROR) << "Unknown solver " << FLAGS_colgen_solver;
+    LOG(ERROR) << "Unknown solver " << absl::GetFlag(FLAGS_colgen_solver);
     return 1;
   }
 
-  LOG(INFO) << "Chosen solver: " << FLAGS_colgen_solver << std::endl;
+  LOG(INFO) << "Chosen solver: " << absl::GetFlag(FLAGS_colgen_solver)
+            << std::endl;
 
-  if (FLAGS_colgen_instance == -1) {
+  if (absl::GetFlag(FLAGS_colgen_instance) == -1) {
     for (int i = 0; i < operations_research::kInstanceCount; ++i) {
       const operations_research::Instance& instance =
           operations_research::kInstances[i];
       operations_research::SolveInstance(instance, solver_type);
     }
   } else {
-    CHECK_GE(FLAGS_colgen_instance, 0);
-    CHECK_LT(FLAGS_colgen_instance, operations_research::kInstanceCount);
+    CHECK_GE(absl::GetFlag(FLAGS_colgen_instance), 0);
+    CHECK_LT(absl::GetFlag(FLAGS_colgen_instance),
+             operations_research::kInstanceCount);
     const operations_research::Instance& instance =
-        operations_research::kInstances[FLAGS_colgen_instance];
+        operations_research::kInstances[absl::GetFlag(FLAGS_colgen_instance)];
     operations_research::SolveInstance(instance, solver_type);
   }
   return EXIT_SUCCESS;

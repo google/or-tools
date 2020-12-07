@@ -35,48 +35,48 @@
 #include "ortools/util/file_util.h"
 #endif
 
-DEFINE_bool(lp_solver_enable_fp_exceptions, false,
-            "When true, NaNs and division / zero produce errors. "
-            "This is very useful for debugging, but incompatible with LLVM. "
-            "It is recommended to set this to false for production usage.");
-DEFINE_bool(lp_dump_to_proto_file, false,
-            "Tells whether do dump the problem to a protobuf file.");
-DEFINE_bool(lp_dump_compressed_file, true,
-            "Whether the proto dump file is compressed.");
-DEFINE_bool(lp_dump_binary_file, false,
-            "Whether the proto dump file is binary.");
-DEFINE_int32(lp_dump_file_number, -1,
-             "Number for the dump file, in the form name-000048.pb. "
-             "If < 0, the file is automatically numbered from the number of "
-             "calls to LPSolver::Solve().");
-DEFINE_string(lp_dump_dir, "/tmp", "Directory where dump files are written.");
-DEFINE_string(lp_dump_file_basename, "",
-              "Base name for dump files. LinearProgram::name_ is used if "
-              "lp_dump_file_basename is empty. If LinearProgram::name_ is "
-              "empty, \"linear_program_dump_file\" is used.");
+ABSL_FLAG(bool, lp_solver_enable_fp_exceptions, false,
+          "When true, NaNs and division / zero produce errors. "
+          "This is very useful for debugging, but incompatible with LLVM. "
+          "It is recommended to set this to false for production usage.");
+ABSL_FLAG(bool, lp_dump_to_proto_file, false,
+          "Tells whether do dump the problem to a protobuf file.");
+ABSL_FLAG(bool, lp_dump_compressed_file, true,
+          "Whether the proto dump file is compressed.");
+ABSL_FLAG(bool, lp_dump_binary_file, false,
+          "Whether the proto dump file is binary.");
+ABSL_FLAG(int, lp_dump_file_number, -1,
+          "Number for the dump file, in the form name-000048.pb. "
+          "If < 0, the file is automatically numbered from the number of "
+          "calls to LPSolver::Solve().");
+ABSL_FLAG(std::string, lp_dump_dir, "/tmp",
+          "Directory where dump files are written.");
+ABSL_FLAG(std::string, lp_dump_file_basename, "",
+          "Base name for dump files. LinearProgram::name_ is used if "
+          "lp_dump_file_basename is empty. If LinearProgram::name_ is "
+          "empty, \"linear_program_dump_file\" is used.");
 
 namespace operations_research {
 namespace glop {
 namespace {
 
-// Writes a LinearProgram to a file if FLAGS_lp_dump_to_proto_file is true.
-// The integer num is appended to the base name of the file.
-// When this function is called from LPSolver::Solve(), num is usually the
-// number of times Solve() was called.
-// For a LinearProgram whose name is "LinPro", and num = 48, the default output
-// file will be /tmp/LinPro-000048.pb.gz.
+// Writes a LinearProgram to a file if FLAGS_lp_dump_to_proto_file is true. The
+// integer num is appended to the base name of the file. When this function is
+// called from LPSolver::Solve(), num is usually the number of times Solve() was
+// called. For a LinearProgram whose name is "LinPro", and num = 48, the default
+// output file will be /tmp/LinPro-000048.pb.gz.
 //
 // Warning: is a no-op on portable platforms (android, ios, etc).
 void DumpLinearProgramIfRequiredByFlags(const LinearProgram& linear_program,
                                         int num) {
-  if (!FLAGS_lp_dump_to_proto_file) return;
+  if (!absl::GetFlag(FLAGS_lp_dump_to_proto_file)) return;
 #ifdef __PORTABLE_PLATFORM__
   LOG(WARNING) << "DumpLinearProgramIfRequiredByFlags(linear_program, num) "
                   "requested for linear_program.name()='"
                << linear_program.name() << "', num=" << num
                << " but is not implemented for this platform.";
 #else
-  std::string filename = FLAGS_lp_dump_file_basename;
+  std::string filename = absl::GetFlag(FLAGS_lp_dump_file_basename);
   if (filename.empty()) {
     if (linear_program.name().empty()) {
       filename = "linear_program_dump";
@@ -84,17 +84,19 @@ void DumpLinearProgramIfRequiredByFlags(const LinearProgram& linear_program,
       filename = linear_program.name();
     }
   }
-  const int file_num =
-      FLAGS_lp_dump_file_number >= 0 ? FLAGS_lp_dump_file_number : num;
+  const int file_num = absl::GetFlag(FLAGS_lp_dump_file_number) >= 0
+                           ? absl::GetFlag(FLAGS_lp_dump_file_number)
+                           : num;
   absl::StrAppendFormat(&filename, "-%06d.pb", file_num);
-  const std::string filespec = absl::StrCat(FLAGS_lp_dump_dir, "/", filename);
+  const std::string filespec =
+      absl::StrCat(absl::GetFlag(FLAGS_lp_dump_dir), "/", filename);
   MPModelProto proto;
   LinearProgramToMPModelProto(linear_program, &proto);
-  const ProtoWriteFormat write_format = FLAGS_lp_dump_binary_file
+  const ProtoWriteFormat write_format = absl::GetFlag(FLAGS_lp_dump_binary_file)
                                             ? ProtoWriteFormat::kProtoBinary
                                             : ProtoWriteFormat::kProtoText;
   if (!WriteProtoToFile(filespec, proto, write_format,
-                        FLAGS_lp_dump_compressed_file)) {
+                        absl::GetFlag(FLAGS_lp_dump_compressed_file))) {
     LOG(DFATAL) << "Could not write " << filespec;
   }
 #endif
@@ -159,7 +161,7 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
   // that the program is valid. This way, if we have input NaNs, we will not
   // crash.
   ScopedFloatingPointEnv scoped_fenv;
-  if (FLAGS_lp_solver_enable_fp_exceptions) {
+  if (absl::GetFlag(FLAGS_lp_solver_enable_fp_exceptions)) {
 #ifdef _MSC_VER
     scoped_fenv.EnableExceptions(_EM_INVALID | EM_ZERODIVIDE);
 #else

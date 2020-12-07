@@ -157,6 +157,8 @@
 #include "ortools/linear_solver/linear_solver_callback.h"
 #include "ortools/port/proto_utils.h"
 
+ABSL_DECLARE_FLAG(bool, linear_solver_enable_verbose_output);
+
 namespace operations_research {
 
 constexpr double kDefaultPrimalTolerance = 1e-07;
@@ -268,7 +270,7 @@ class MPSolver {
 
   /**
    * Parses the name of the solver and returns the correct optimization type or
-   * dies.
+   * dies. Invariant: ParseSolverTypeOrDie(ToString(type)) = type.
    */
   static OptimizationProblemType ParseSolverTypeOrDie(
       const std::string& solver_id);
@@ -531,7 +533,7 @@ class MPSolver {
    * solving), you should write another version of this function that creates
    * the MPSolver object on the heap and returns it.
    *
-   * Note(user): This attempts to first use `DirectlySolveProto()` (if
+   * Note(pawell): This attempts to first use `DirectlySolveProto()` (if
    * implemented). Consequently, this most likely does *not* override any of
    * the default parameters of the underlying solver. This behavior *differs*
    * from `MPSolver::Solve()` which by default sets the feasibility tolerance
@@ -1617,11 +1619,8 @@ class MPSolverInterface {
   // otherwise it crashes, or returns kUnknownNumberOfNodes in NDEBUG mode.
   virtual int64 nodes() const = 0;
   // Returns the best objective bound. The problem must be discrete, otherwise
-  // it crashes, or returns trivial_worst_objective_bound() in NDEBUG mode.
-  virtual double best_objective_bound() const = 0;
-  // A trivial objective bound: the worst possible value of the objective,
-  // which will be +infinity if minimizing and -infinity if maximing.
-  double trivial_worst_objective_bound() const;
+  // it crashes, or returns trivial bound (+/- inf) in NDEBUG mode.
+  double best_objective_bound() const;
   // Returns the objective value of the best solution found so far.
   double objective_value() const;
 
@@ -1641,9 +1640,6 @@ class MPSolverInterface {
   bool CheckSolutionIsSynchronizedAndExists() const {
     return CheckSolutionIsSynchronized() && CheckSolutionExists();
   }
-  // Checks whether information on the best objective bound exists. The behavior
-  // is similar to CheckSolutionIsSynchronized() above.
-  virtual bool CheckBestObjectiveBoundExists() const;
 
   // ----- Misc -----
   // Queries problem type. For simplicity, the distinction between
@@ -1737,6 +1733,9 @@ class MPSolverInterface {
 
   // The value of the objective function.
   double objective_value_;
+
+  // The value of the best objective bound. Used only for MIP solvers.
+  double best_objective_bound_;
 
   // Boolean indicator for the verbosity of the solver output.
   bool quiet_;

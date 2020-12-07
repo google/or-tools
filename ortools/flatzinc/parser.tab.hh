@@ -1,4 +1,4 @@
-/* A Bison parser, made by GNU Bison 3.5.1.  */
+/* A Bison parser, made by GNU Bison 3.7.2.  */
 
 /* Bison interface for Yacc-like parsers in C
 
@@ -31,8 +31,9 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-/* Undocumented macros, especially those whose name start with YY_,
-   are private implementation details.  Do not rely on them.  */
+/* DO NOT RELY ON FEATURES THAT ARE NOT DOCUMENTED in the manual,
+   especially those whose name start with YY_ or yy_.  They are
+   private implementation details that can be changed or removed.  */
 
 #ifndef YY_ORFZ_ORTOOLS_FLATZINC_PARSER_TAB_HH_INCLUDED
 #define YY_ORFZ_ORTOOLS_FLATZINC_PARSER_TAB_HH_INCLUDED
@@ -68,32 +69,37 @@ typedef operations_research::fz::LexerInfo YYSTYPE;
 
 #endif  // OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_
 
-#line 72 "./ortools/flatzinc/parser.tab.hh"
+#line 73 "./ortools/flatzinc/parser.tab.hh"
 
-/* Token type.  */
+/* Token kinds.  */
 #ifndef ORFZ_TOKENTYPE
 #define ORFZ_TOKENTYPE
 enum orfz_tokentype {
-  ARRAY = 258,
-  TOKEN_BOOL = 259,
-  CONSTRAINT = 260,
-  TOKEN_FLOAT = 261,
-  TOKEN_INT = 262,
-  MAXIMIZE = 263,
-  MINIMIZE = 264,
-  OF = 265,
-  PREDICATE = 266,
-  SATISFY = 267,
-  SET = 268,
-  SOLVE = 269,
-  VAR = 270,
-  DOTDOT = 271,
-  COLONCOLON = 272,
-  IVALUE = 273,
-  SVALUE = 274,
-  IDENTIFIER = 275,
-  DVALUE = 276
+  ORFZ_EMPTY = -2,
+  ORFZ_EOF = 0,      /* "end of file"  */
+  ORFZ_error = 256,  /* error  */
+  ORFZ_UNDEF = 257,  /* "invalid token"  */
+  ARRAY = 258,       /* ARRAY  */
+  TOKEN_BOOL = 259,  /* TOKEN_BOOL  */
+  CONSTRAINT = 260,  /* CONSTRAINT  */
+  TOKEN_FLOAT = 261, /* TOKEN_FLOAT  */
+  TOKEN_INT = 262,   /* TOKEN_INT  */
+  MAXIMIZE = 263,    /* MAXIMIZE  */
+  MINIMIZE = 264,    /* MINIMIZE  */
+  OF = 265,          /* OF  */
+  PREDICATE = 266,   /* PREDICATE  */
+  SATISFY = 267,     /* SATISFY  */
+  SET = 268,         /* SET  */
+  SOLVE = 269,       /* SOLVE  */
+  VAR = 270,         /* VAR  */
+  DOTDOT = 271,      /* DOTDOT  */
+  COLONCOLON = 272,  /* COLONCOLON  */
+  IVALUE = 273,      /* IVALUE  */
+  SVALUE = 274,      /* SVALUE  */
+  IDENTIFIER = 275,  /* IDENTIFIER  */
+  DVALUE = 276       /* DVALUE  */
 };
+typedef enum orfz_tokentype orfz_token_kind_t;
 #endif
 
 /* Value type.  */

@@ -11,13 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 using Google.OrTools.Sat;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-
 
 /// <summary>
 /// This model solves a multicommodity mono-routing problem with
@@ -31,27 +29,32 @@ using System.Linq;
 /// Please note that constraint programming is well suited here because
 /// we cannot have multiple active paths for a single demand.
 /// Otherwise, a approach based on a linear solver is a better match.
-/// A random problem generator is also included. 
+/// A random problem generator is also included.
 /// </summary>
 public class NetworkRoutingSat
 {
-    private static int clients = 0; // Number of network clients nodes. If equal to zero, then all backbones nodes are also client nodes.
-    private static int backbones = 0; // "Number of backbone nodes"
-    private static int demands = 0; // "Number of network demands."
-    private static int trafficMin = 0; // "Min traffic of a demand."
-    private static int trafficMax = 0; // "Max traffic of a demand."
-    private static int minClientDegree = 0; //"Min number of connections from a client to the backbone."
-    private static int maxClientDegree = 0; //"Max number of connections from a client to the backbone."
-    private static int minBackboneDegree = 0; //"Min number of connections from a backbone node to the rest of the backbone nodes."
-    private static int maxBackboneDegree = 0; // "Max number of connections from a backbone node to the rest of the backbone nodes."
-    private static int maxCapacity = 0; //"Max traffic on any arc."
-    private static int fixedChargeCost = 0; //"Fixed charged cost when using an arc."
-    private static int seed = 0; //"Random seed"
-    private static double comfortZone = 0.85; // "Above this limit in 1/1000th, the link is said to be congested."
-    private static int extraHops = 6; // "When creating all paths for a demand, we look at paths with maximum length 'shortest path + extra_hops'"
-    private static int maxPaths = 1200; //"Max number of possible paths for a demand."
-    private static bool printModel = false; //"Print details of the model."
-    private static string parameters = ""; // "Sat parameters."
+    private static int clients = 0;           // Number of network clients nodes. If equal to zero, then all
+                                              // backbones nodes are also client nodes.
+    private static int backbones = 0;         // "Number of backbone nodes"
+    private static int demands = 0;           // "Number of network demands."
+    private static int trafficMin = 0;        // "Min traffic of a demand."
+    private static int trafficMax = 0;        // "Max traffic of a demand."
+    private static int minClientDegree = 0;   //"Min number of connections from a client to the backbone."
+    private static int maxClientDegree = 0;   //"Max number of connections from a client to the backbone."
+    private static int minBackboneDegree = 0; //"Min number of connections from a backbone node to the rest of the
+                                              // backbone nodes."
+    private static int maxBackboneDegree = 0; // "Max number of connections from a backbone node to
+                                              // the rest of the backbone nodes."
+    private static int maxCapacity = 0;       //"Max traffic on any arc."
+    private static int fixedChargeCost = 0;   //"Fixed charged cost when using an arc."
+    private static int seed = 0;              //"Random seed"
+    private static double comfortZone = 0.85; // "Above this limit in 1/1000th, the link is said to
+                                              // be congested."
+    private static int extraHops = 6;         // "When creating all paths for a demand, we look at paths with
+                                              // maximum length 'shortest path + extra_hops'"
+    private static int maxPaths = 1200;       //"Max number of possible paths for a demand."
+    private static bool printModel = false;   //"Print details of the model."
+    private static string parameters = "";    // "Sat parameters."
 
     private const long kDisconnectedDistance = -1L;
 
@@ -60,7 +63,8 @@ public class NetworkRoutingSat
         readArgs(args);
         var builder = new NetworkRoutingDataBuilder();
         var data = builder.BuildModelFromParameters(clients, backbones, demands, trafficMin, trafficMax,
-            minClientDegree, maxClientDegree, minBackboneDegree, maxBackboneDegree, maxCapacity, fixedChargeCost, seed);
+                                                    minClientDegree, maxClientDegree, minBackboneDegree,
+                                                    maxBackboneDegree, maxCapacity, fixedChargeCost, seed);
         var solver = new NetworkRoutingSolver();
         solver.Init(data, extraHops, maxPaths);
         var cost = solver.Solve();
@@ -145,19 +149,24 @@ public class NetworkRoutingSat
     /// </summary>
     public class NetworkRoutingData
     {
-        private Dictionary<(int source, int destination), int> _arcs = new Dictionary<(int source, int destination), int>();
+        private Dictionary<(int source, int destination), int> _arcs =
+            new Dictionary<(int source, int destination), int>();
         private Dictionary<(int node1, int node2), int> _demands = new Dictionary<(int node1, int node2), int>();
 
         public int NumberOfNodes { get; set; } = -1;
 
         public int NumberOfArcs
         {
-            get { return _arcs.Count(); }
+            get {
+                return _arcs.Count();
+            }
         }
 
         public int NumberOfDemands
         {
-            get { return _demands.Count(); }
+            get {
+                return _demands.Count();
+            }
         }
 
         public int MaximumCapacity { get; set; } = -1;
@@ -167,7 +176,7 @@ public class NetworkRoutingSat
         public void AddDemand(int source, int destination, int traffic)
         {
             var pair = (source, destination);
-            if(!_demands.ContainsKey(pair))
+            if (!_demands.ContainsKey(pair))
                 _demands.Add(pair, traffic);
         }
 
@@ -206,7 +215,7 @@ public class NetworkRoutingSat
     /// 'maxBackboneDegree' other backbone nodes. There are 'numDemands'
     /// demands, with a traffic between 'trafficMin' and 'trafficMax'.
     /// Each arc has a capacity of 'maxCapacity'. Using an arc incurs a
-    /// fixed cost of 'fixedChargeCost'. 
+    /// fixed cost of 'fixedChargeCost'.
     /// </summary>
     public class NetworkRoutingDataBuilder
     {
@@ -214,12 +223,11 @@ public class NetworkRoutingSat
         private List<int> _degrees;
         private Random _random;
 
-        public NetworkRoutingData BuildModelFromParameters(int numClients, int numBackbones,
-                                                           int numDemands, int trafficMin,
-                                                           int trafficMax, int minClientDegree,
+        public NetworkRoutingData BuildModelFromParameters(int numClients, int numBackbones, int numDemands,
+                                                           int trafficMin, int trafficMax, int minClientDegree,
                                                            int maxClientDegree, int minBackboneDegree,
-                                                           int maxBackboneDegree, int maxCapacity,
-                                                           int fixedChargeCost, int seed)
+                                                           int maxBackboneDegree, int maxCapacity, int fixedChargeCost,
+                                                           int seed)
         {
             Debug.Assert(numBackbones >= 1);
             Debug.Assert(numClients >= 0);
@@ -238,11 +246,12 @@ public class NetworkRoutingSat
 
             int size = numBackbones + numClients;
             initData(size, seed);
-            buildGraph(numClients, numBackbones, minClientDegree, maxClientDegree, minBackboneDegree, maxBackboneDegree);
+            buildGraph(numClients, numBackbones, minClientDegree, maxClientDegree, minBackboneDegree,
+                       maxBackboneDegree);
             NetworkRoutingData data = new NetworkRoutingData();
             createDemands(numClients, numBackbones, numDemands, trafficMin, trafficMax, data);
             fillData(numClients, numBackbones, numDemands, trafficMin, trafficMax, minClientDegree, maxClientDegree,
-                minBackboneDegree, maxBackboneDegree, maxCapacity, fixedChargeCost, seed, data);
+                     minBackboneDegree, maxBackboneDegree, maxCapacity, fixedChargeCost, seed, data);
 
             return data;
         }
@@ -264,12 +273,12 @@ public class NetworkRoutingSat
             {
                 _degrees.Add(0);
             }
-            
+
             _random = new Random(seed);
         }
 
-        private void buildGraph(int numClients, int numBackbones, int minClientDegree,
-                                int maxClientDegree, int minBackboneDegree, int maxBackboneDegree)
+        private void buildGraph(int numClients, int numBackbones, int minClientDegree, int maxClientDegree,
+                                int minBackboneDegree, int maxBackboneDegree)
         {
             int size = numBackbones + numClients;
             for (int i = 1; i < numBackbones; i++)
@@ -349,8 +358,8 @@ public class NetworkRoutingSat
             return toComplete.Last();
         }
 
-        private void createDemands(int numClients, int numBackbones, int numDemands,
-                                   int trafficMin, int trafficMax, NetworkRoutingData data)
+        private void createDemands(int numClients, int numBackbones, int numDemands, int trafficMin, int trafficMax,
+                                   NetworkRoutingData data)
         {
             while (data.NumberOfDemands < numDemands)
             {
@@ -366,15 +375,13 @@ public class NetworkRoutingSat
             }
         }
 
-        private void fillData(int numClients, int numBackbones, int numDemands,
-                              int trafficMin, int trafficMax, int minClientDegree,
-                              int maxClientDegree, int minBackboneDegree,
-                              int maxBackboneDegree, int maxCapacity,
-                              int fixedChargeCost, int seed,
-                              NetworkRoutingData data)
+        private void fillData(int numClients, int numBackbones, int numDemands, int trafficMin, int trafficMax,
+                              int minClientDegree, int maxClientDegree, int minBackboneDegree, int maxBackboneDegree,
+                              int maxCapacity, int fixedChargeCost, int seed, NetworkRoutingData data)
         {
             int size = numBackbones + numClients;
-            string name = $"mp_c{numClients}_b{numBackbones}_d{numDemands}.t{trafficMin}-{trafficMax}.cd{minClientDegree}-{maxClientDegree}.bd{minBackboneDegree}-{maxBackboneDegree}.mc{maxCapacity}.fc{fixedChargeCost}.s{seed}";
+            string name =
+                $"mp_c{numClients}_b{numBackbones}_d{numDemands}.t{trafficMin}-{trafficMax}.cd{minClientDegree}-{maxClientDegree}.bd{minBackboneDegree}-{maxBackboneDegree}.mc{maxCapacity}.fc{fixedChargeCost}.s{seed}";
             data.Name = name;
 
             data.NumberOfNodes = size;
@@ -411,9 +418,7 @@ public class NetworkRoutingSat
 
         private int randomClient(int numClients, int numBackbones)
         {
-            var p = (numClients == 0) 
-                ? randomUniform(numBackbones)
-                : randomUniform(numClients) + numBackbones;
+            var p = (numClients == 0) ? randomUniform(numBackbones) : randomUniform(numClients) + numBackbones;
             return p;
         }
 
@@ -441,7 +446,8 @@ public class NetworkRoutingSat
 
     public class NetworkRoutingSolver
     {
-        private List<(long source, long destination, int arcId)> _arcsData = new List<(long source, long destination, int arcId)>();
+        private List<(long source, long destination, int arcId)> _arcsData =
+            new List<(long source, long destination, int arcId)>();
         private List<int> _arcCapacity = new List<int>();
         private List<Demand> _demands = new List<Demand>();
         private List<int> _allMinPathLengths = new List<int>();
@@ -452,7 +458,9 @@ public class NetworkRoutingSat
 
         private int countArcs
         {
-            get { return _arcsData.Count / 2; }
+            get {
+                return _arcsData.Count / 2;
+            }
         }
 
         public void ComputeAllPathsForOneDemandAndOnePathLength(int demandIndex, int maxLength, int maxPaths)
@@ -491,7 +499,8 @@ public class NetworkRoutingSat
 
             var solver = new CpSolver();
 
-            var solutionPrinter = new FeasibleSolutionChecker(demandIndex, ref _allPaths, maxLength, arcVars, maxPaths, nodeVars);
+            var solutionPrinter =
+                new FeasibleSolutionChecker(demandIndex, ref _allPaths, maxLength, arcVars, maxPaths, nodeVars);
             var status = solver.SearchAllSolutions(cpModel, solutionPrinter);
         }
 
@@ -506,7 +515,7 @@ public class NetworkRoutingSat
                 arcs[i, 1] = data.destination;
                 arcs[i, 2] = data.arcId;
             }
-            
+
             return arcs;
         }
 
@@ -517,7 +526,7 @@ public class NetworkRoutingSat
             {
                 int minPathLength = _allMinPathLengths[demandIndex];
 
-                for (int maxLength = minPathLength + 1; maxLength <= minPathLength + extraHops+1; maxLength++)
+                for (int maxLength = minPathLength + 1; maxLength <= minPathLength + extraHops + 1; maxLength++)
                 {
                     ComputeAllPathsForOneDemandAndOnePathLength(demandIndex, maxLength, maxPaths);
 
@@ -610,7 +619,7 @@ public class NetworkRoutingSat
                 paths.Clear();
                 var demand = _demands[demandIndex];
                 var r = DijkstraShortestPath(NumberOfNodes, demand.Source, demand.Destination,
-                    ((int x, int y) p) => hasArc(p.x, p.y), kDisconnectedDistance, paths);
+                                             ((int x, int y)p) => hasArc(p.x, p.y), kDisconnectedDistance, paths);
 
                 _allMinPathLengths.Add(paths.Count - 1);
                 var minPathLength = _allMinPathLengths[demandIndex];
@@ -627,14 +636,15 @@ public class NetworkRoutingSat
             Console.WriteLine($"    - extra hops = {extraHops}");
             Console.WriteLine($"    - max paths per demand = {maxPaths}");
 
-            _allPaths =new List<List<HashSet<int>>>(numDemands);
+            _allPaths = new List<List<HashSet<int>>>(numDemands);
 
             var numPaths = ComputeAllPaths(extraHops, maxPaths);
 
             for (int demandIndex = 0; demandIndex < numDemands; demandIndex++)
             {
                 var demand = _demands[demandIndex];
-                Console.WriteLine($"Demand from {demand.Source} to {demand.Destination} with traffic {demand.Traffic}, amd {_allPaths[demandIndex].Count} possible paths.");
+                Console.WriteLine(
+                    $"Demand from {demand.Source} to {demand.Destination} with traffic {demand.Traffic}, amd {_allPaths[demandIndex].Count} possible paths.");
             }
 
             return numPaths;
@@ -743,25 +753,24 @@ public class NetworkRoutingSat
                 var comfort = cpModel.NewBoolVar($"comfort{arcIndex}");
                 var safeCapacity = (long)(capacity * comfortZone);
                 cpModel.Add(trafficVar > safeCapacity).OnlyEnforceIf(comfort);
-                cpModel.Add(trafficVar <=safeCapacity).OnlyEnforceIf(comfort.Not());
+                cpModel.Add(trafficVar <= safeCapacity).OnlyEnforceIf(comfort.Not());
                 comfortableTrafficVars.Add(comfort);
             }
 
             var maxUsageCost = cpModel.NewIntVar(0, maxNormalizedTraffic, "maxUsageCost");
             cpModel.AddMaxEquality(maxUsageCost, normalizedTrafficVars);
 
-            var obj = new List<IntVar>() {maxUsageCost};
+            var obj = new List<IntVar>() { maxUsageCost };
             obj.AddRange(comfortableTrafficVars);
             cpModel.Minimize(LinearExpr.Sum(obj));
 
             CpSolver solver = new CpSolver();
             solver.StringParameters = parameters;
 
-            CpSolverStatus status = solver.SearchAllSolutions(cpModel,
-                new FeasibleSolutionChecker2(maxUsageCost, comfortableTrafficVars, trafficVars));
+            CpSolverStatus status = solver.SearchAllSolutions(
+                cpModel, new FeasibleSolutionChecker2(maxUsageCost, comfortableTrafficVars, trafficVars));
 
             return (long)solver.ObjectiveValue;
-
         }
     }
 
@@ -776,7 +785,7 @@ public class NetworkRoutingSat
         private readonly List<int> _notVisited = new List<int>();
         private readonly List<int> _addedToFrontier = new List<int>();
 
-        public DijkstraSP(int nodeCount, int startNode, Func<(int,int), long> graph, long disconnectedDistance)
+        public DijkstraSP(int nodeCount, int startNode, Func<(int, int), long> graph, long disconnectedDistance)
         {
             NodeCount = nodeCount;
             StartNode = startNode;
@@ -818,15 +827,14 @@ public class NetworkRoutingSat
             }
 
             return found;
-
         }
 
         private void initialize()
         {
             for (int i = 0; i < NodeCount; i++)
             {
-                _elements.Add(new Element {Node = i});
-                
+                _elements.Add(new Element { Node = i });
+
                 if (i == StartNode)
                 {
                     _predecessor[i] = -1;
@@ -891,7 +899,7 @@ public class NetworkRoutingSat
     }
 
     public static bool DijkstraShortestPath(int nodeCount, int startNode, int endNode, Func<(int, int), long> graph,
-        long disconnectedDistance, List<int> nodes)
+                                            long disconnectedDistance, List<int> nodes)
     {
         DijkstraSP bf = new DijkstraSP(nodeCount, startNode, graph, disconnectedDistance);
         return bf.ShortestPath(endNode, nodes);
@@ -916,7 +924,8 @@ public class NetworkRoutingSat
         }
     }
 
-    private class AdjustablePriorityQueue<T> where T: class, IHasHeapIndex, IComparable<T>
+    private class AdjustablePriorityQueue<T>
+        where T : class, IHasHeapIndex, IComparable<T>
     {
         private readonly List<T> _elems = new List<T>();
 
@@ -967,7 +976,9 @@ public class NetworkRoutingSat
 
         public bool IsEmpty
         {
-            get { return !_elems.Any(); }
+            get {
+                return !_elems.Any();
+            }
         }
 
         public void Clear()
@@ -983,7 +994,7 @@ public class NetworkRoutingSat
                 if (leftChild < _elems.Count)
                 {
                     var compare = _elems[i].CompareTo(_elems[leftChild]);
-                    Debug.Assert(compare >=0);
+                    Debug.Assert(compare >= 0);
                 }
 
                 int rightChild = leftChild + 1;
@@ -1045,8 +1056,8 @@ public class NetworkRoutingSat
 
                 var rightChild = leftChild + 1;
                 var next = (rightChild < _elems.Count && _elems[leftChild].CompareTo(_elems[rightChild]) == -1)
-                    ? rightChild
-                    : leftChild;
+                               ? rightChild
+                               : leftChild;
 
                 if (t.CompareTo(_elems[next]) != -1)
                 {
@@ -1070,7 +1081,8 @@ public class NetworkRoutingSat
 
     private class FeasibleSolutionChecker : CpSolverSolutionCallback
     {
-        public FeasibleSolutionChecker(int demandIndex, ref List<List<HashSet<int>>> allPaths, int maxLength, List<IntVar> arcVars, int maxPaths, List<IntVar> nodeVars)
+        public FeasibleSolutionChecker(int demandIndex, ref List<List<HashSet<int>>> allPaths, int maxLength,
+                                       List<IntVar> arcVars, int maxPaths, List<IntVar> nodeVars)
         {
             DemandIndex = demandIndex;
             AllPaths = allPaths;
@@ -1089,7 +1101,7 @@ public class NetworkRoutingSat
 
         public override void OnSolutionCallback()
         {
-            if(AllPaths.Count < DemandIndex + 1)
+            if (AllPaths.Count < DemandIndex + 1)
                 AllPaths.Add(new List<HashSet<int>>());
 
             int pathId = AllPaths[DemandIndex].Count;
@@ -1097,7 +1109,7 @@ public class NetworkRoutingSat
 
             for (int i = 0; i < MaxLength - 1; i++)
             {
-                int arc = (int) this.SolutionIntegerValue(ArcVars[i].GetIndex());
+                int arc = (int)this.SolutionIntegerValue(ArcVars[i].GetIndex());
                 AllPaths[DemandIndex][pathId].Add(arc);
             }
 
@@ -1115,7 +1127,8 @@ public class NetworkRoutingSat
         public List<IntVar> TrafficVars { get; }
         private int _numSolutions = 0;
 
-        public FeasibleSolutionChecker2(IntVar maxUsageCost, List<IntVar> comfortableTrafficVars, List<IntVar> trafficVars)
+        public FeasibleSolutionChecker2(IntVar maxUsageCost, List<IntVar> comfortableTrafficVars,
+                                        List<IntVar> trafficVars)
         {
             MaxUsageCost = maxUsageCost;
             ComfortableTrafficVars = comfortableTrafficVars;
@@ -1135,7 +1148,8 @@ public class NetworkRoutingSat
 
             if (numNonComfortableArcs > 0)
             {
-                Console.WriteLine($"*** Found a solution with a max usage of {percent}%, and {numNonComfortableArcs} links above the comfort zone");
+                Console.WriteLine(
+                    $"*** Found a solution with a max usage of {percent}%, and {numNonComfortableArcs} links above the comfort zone");
             }
             else
             {

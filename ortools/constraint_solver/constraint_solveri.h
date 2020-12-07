@@ -256,31 +256,23 @@ inline uint64 Hash1(void* const ptr) {
 
 template <class T>
 uint64 Hash1(const std::vector<T*>& ptrs) {
-  if (ptrs.empty()) {
-    return 0;
-  } else if (ptrs.size() == 1) {
-    return Hash1(ptrs[0]);
-  } else {
-    uint64 hash = Hash1(ptrs[0]);
-    for (int i = 1; i < ptrs.size(); ++i) {
-      hash = hash * i + Hash1(ptrs[i]);
-    }
-    return hash;
+  if (ptrs.empty()) return 0;
+  if (ptrs.size() == 1) return Hash1(ptrs[0]);
+  uint64 hash = Hash1(ptrs[0]);
+  for (int i = 1; i < ptrs.size(); ++i) {
+    hash = hash * i + Hash1(ptrs[i]);
   }
+  return hash;
 }
 
 inline uint64 Hash1(const std::vector<int64>& ptrs) {
-  if (ptrs.empty()) {
-    return 0;
-  } else if (ptrs.size() == 1) {
-    return Hash1(ptrs[0]);
-  } else {
-    uint64 hash = Hash1(ptrs[0]);
-    for (int i = 1; i < ptrs.size(); ++i) {
-      hash = hash * i + Hash1(ptrs[i]);
-    }
-    return hash;
+  if (ptrs.empty()) return 0;
+  if (ptrs.size() == 1) return Hash1(ptrs[0]);
+  uint64 hash = Hash1(ptrs[0]);
+  for (int i = 1; i < ptrs.size(); ++i) {
+    hash = hash * i + Hash1(ptrs[i]);
   }
+  return hash;
 }
 
 /// Reversible Immutable MultiMap class.
@@ -1004,6 +996,7 @@ class IntVarLocalSearchHandler {
 /// In python, we use a whitelist to expose the API. This whitelist must also
 /// be extended here.
 #if defined(SWIGPYTHON)
+// clang-format off
 %unignore VarLocalSearchOperator<IntVar, int64,
                                  IntVarLocalSearchHandler>::Size;
 %unignore VarLocalSearchOperator<IntVar, int64,
@@ -1020,6 +1013,7 @@ class IntVarLocalSearchHandler {
                                  IntVarLocalSearchHandler>::IsIncremental;
 %unignore VarLocalSearchOperator<IntVar, int64,
                                  IntVarLocalSearchHandler>::OnStart;
+// clang-format on
 #endif  // SWIGPYTHON
 
 // clang-format off
@@ -1753,6 +1747,9 @@ class LocalSearchFilter : public BaseObject {
   /// Cancels the changes made by the last Relax()/Accept() calls.
   virtual void Revert() {}
 
+  /// Sets the filter to empty solution.
+  virtual void Reset() {}
+
   /// Objective value from last time Synchronize() was called.
   virtual int64 GetSynchronizedObjectiveValue() const { return 0LL; }
   /// Objective value from the last time Accept() was called and returned true.
@@ -2027,7 +2024,8 @@ class SearchLog : public SearchMonitor {
  public:
   SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
             double scaling_factor, double offset,
-            std::function<std::string()> display_callback, int period);
+            std::function<std::string()> display_callback,
+            bool display_on_new_solutions_only, int period);
   ~SearchLog() override;
   void EnterSearch() override;
   void ExitSearch() override;
@@ -2057,6 +2055,7 @@ class SearchLog : public SearchMonitor {
   const double scaling_factor_;
   const double offset_;
   std::function<std::string()> display_callback_;
+  const bool display_on_new_solutions_only_;
   int nsol_;
   int64 tick_;
   int64 objective_min_;
@@ -2993,20 +2992,12 @@ inline void FillValues(const std::vector<IntVar*>& vars,
 
 inline int64 PosIntDivUp(int64 e, int64 v) {
   DCHECK_GT(v, 0);
-  if (e >= 0) {
-    return e % v == 0 ? e / v : e / v + 1;
-  } else {
-    return e / v;
-  }
+  return (e < 0 || e % v == 0) ? e / v : e / v + 1;
 }
 
 inline int64 PosIntDivDown(int64 e, int64 v) {
   DCHECK_GT(v, 0);
-  if (e >= 0) {
-    return e / v;
-  } else {
-    return e % v == 0 ? e / v : e / v - 1;
-  }
+  return (e >= 0 || e % v == 0) ? e / v : e / v - 1;
 }
 
 std::vector<int64> ToInt64Vector(const std::vector<int>& input);
@@ -3121,6 +3112,11 @@ class PathState {
   // more formally, changes the state from (P0 |> D, D) to (P0, \emptyset).
   void Revert();
 
+  // LNS Operators may not fix variables,
+  // in which case we mark the candidate invalid.
+  void SetInvalid() { is_invalid_ = true; }
+  bool IsInvalid() const { return is_invalid_; }
+
  private:
   // Most structs below are named pairs of ints, for typing purposes.
 
@@ -3160,6 +3156,13 @@ class PathState {
     int arc;
     bool operator<(const IndexArc& other) const { return index < other.index; }
   };
+
+  // From changed_paths_ and changed_arcs_, fill chains_ and paths_.
+  // Selection-based algorithm in O(n^2), to use for small change sets.
+  void MakeChainsFromChangedPathsAndArcsWithSelectionAlgorithm();
+  // From changed_paths_ and changed_arcs_, fill chains_ and paths_.
+  // Generic algorithm in O(std::sort(n)+n), to use for larger change sets.
+  void MakeChainsFromChangedPathsAndArcsWithGenericAlgorithm();
 
   // Copies nodes in chains of path at the end of nodes,
   // and sets those nodes' path member to value path.
@@ -3219,6 +3222,9 @@ class PathState {
   std::vector<IndexArc> arcs_by_tail_index_;
   std::vector<IndexArc> arcs_by_head_index_;
   std::vector<int> next_arc_;
+
+  // See IsInvalid() and SetInvalid().
+  bool is_invalid_ = false;
 };
 
 // A Chain is a range of committed nodes.

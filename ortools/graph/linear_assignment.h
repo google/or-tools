@@ -214,9 +214,9 @@
 #include "ortools/util/zvector.h"
 
 #ifndef SWIG
-DECLARE_int64(assignment_alpha);
-DECLARE_int32(assignment_progress_logging_period);
-DECLARE_bool(assignment_stack_order);
+ABSL_DECLARE_FLAG(int64, assignment_alpha);
+ABSL_DECLARE_FLAG(int, assignment_progress_logging_period);
+ABSL_DECLARE_FLAG(bool, assignment_stack_order);
 #endif
 
 namespace operations_research {
@@ -966,7 +966,7 @@ LinearSumAssignment<GraphType>::LinearSumAssignment(
       num_left_nodes_(num_left_nodes),
       success_(false),
       cost_scaling_factor_(1 + num_left_nodes),
-      alpha_(FLAGS_assignment_alpha),
+      alpha_(absl::GetFlag(FLAGS_assignment_alpha)),
       epsilon_(0),
       price_lower_bound_(0),
       slack_relabeling_price_(0),
@@ -976,7 +976,7 @@ LinearSumAssignment<GraphType>::LinearSumAssignment(
       matched_arc_(num_left_nodes, 0),
       matched_node_(num_left_nodes, 2 * num_left_nodes - 1),
       scaled_arc_cost_(graph.max_end_arc_index(), 0),
-      active_nodes_(FLAGS_assignment_stack_order
+      active_nodes_(absl::GetFlag(FLAGS_assignment_stack_order)
                         ? static_cast<ActiveNodeContainerInterface*>(
                               new ActiveNodeStack())
                         : static_cast<ActiveNodeContainerInterface*>(
@@ -989,7 +989,7 @@ LinearSumAssignment<GraphType>::LinearSumAssignment(
       num_left_nodes_(num_left_nodes),
       success_(false),
       cost_scaling_factor_(1 + num_left_nodes),
-      alpha_(FLAGS_assignment_alpha),
+      alpha_(absl::GetFlag(FLAGS_assignment_alpha)),
       epsilon_(0),
       price_lower_bound_(0),
       slack_relabeling_price_(0),
@@ -999,7 +999,7 @@ LinearSumAssignment<GraphType>::LinearSumAssignment(
       matched_arc_(num_left_nodes, 0),
       matched_node_(num_left_nodes, 2 * num_left_nodes - 1),
       scaled_arc_cost_(num_arcs, 0),
-      active_nodes_(FLAGS_assignment_stack_order
+      active_nodes_(absl::GetFlag(FLAGS_assignment_stack_order)
                         ? static_cast<ActiveNodeContainerInterface*>(
                               new ActiveNodeStack())
                         : static_cast<ActiveNodeContainerInterface*>(

@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-set -x
-set -e
+set -euxo pipefail
 
-if [ ! -f "$DOTNET_SNK" ]; then
+if [[ -z "${DOTNET_SNK}" ]]; then
   echo "DOTNET_SNK: not found !" | tee build.log
   exit 1
 fi
@@ -20,14 +19,23 @@ command -v gcc | xargs echo "gcc: " | tee -a build.log
 command -v cmake | xargs echo "cmake: " | tee -a build.log
 command -v make | xargs echo "make: " | tee -a build.log
 command -v swig | xargs echo "swig: " | tee -a build.log
+
 # python
 command -v python3 | xargs echo "python3: " | tee -a build.log
+
 # java
-echo "JAVA_HOME: ${JAVA_HOME}" | tee -a build.log
-command -v java | xargs echo "java: " | tee -a build.log
-command -v javac | xargs echo "javac: " | tee -a build.log
-command -v jar | xargs echo "jar: " | tee -a build.log
-command -v mvn | xargs echo "mvn: " | tee -a build.log
+# maven require JAVA_HOME
+if [[ -z "${JAVA_HOME}" ]]; then
+  echo "JAVA_HOME: not found !" | tee build.log
+  exit 1
+else
+  echo "JAVA_HOME: ${JAVA_HOME}" | tee -a build.log
+  command -v java | xargs echo "java: " | tee -a build.log
+  command -v javac | xargs echo "javac: " | tee -a build.log
+  command -v jar | xargs echo "jar: " | tee -a build.log
+  command -v mvn | xargs echo "mvn: " | tee -a build.log
+fi
+
 # dotnet
 command -v dotnet | xargs echo "dotnet: " | tee -a build.log
 

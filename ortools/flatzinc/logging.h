@@ -24,19 +24,19 @@
 // It supports internal logging mechanisms as well as official mechanism from
 // the flatzinc specifications.
 
-DECLARE_bool(fz_logging);
-DECLARE_bool(fz_verbose);
-DECLARE_bool(fz_debug);
+ABSL_DECLARE_FLAG(bool, fz_logging);
+ABSL_DECLARE_FLAG(bool, fz_verbose);
+ABSL_DECLARE_FLAG(bool, fz_debug);
 
 #define FZENDL std::endl
 #define FZLOG \
-  if (FLAGS_fz_logging) std::cout << "%% "
+  if (absl::GetFlag(FLAGS_fz_logging)) std::cout << "%% "
 
 #define FZVLOG \
-  if (FLAGS_fz_verbose) std::cout << "%%%% "
+  if (absl::GetFlag(FLAGS_fz_verbose)) std::cout << "%%%% "
 
 #define FZDLOG \
-  if (FLAGS_fz_debug) std::cout << "%%%%%% "
+  if (absl::GetFlag(FLAGS_fz_debug)) std::cout << "%%%%%% "
 
-#define HASVLOG FLAGS_fz_verbose
+#define HASVLOG absl::GetFlag(FLAGS_fz_verbose)
 #endif  // OR_TOOLS_FLATZINC_LOGGING_H_

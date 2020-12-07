@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.0</span>
+   &#160;<span id="projectnumber">8.1</span>
    </div>
   </td>
  </tr>
@@ -94,7 +94,7 @@ $(document).ready(function(){initNavTree('structoperations__research_1_1_global_
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03108">3108</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03159">3159</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -110,8 +110,30 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a7d91387b5081be8f22d053d93eb9edf4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#a7d91387b5081be8f22d053d93eb9edf4">use_neighbors_ratio_for_initialization</a></td></tr>
 <tr class="memdesc:a7d91387b5081be8f22d053d93eb9edf4"><td class="mdescLeft">&#160;</td><td class="mdescRight">If true, only closest neighbors (see neighbors_ratio) are considered as insertion positions during initialization.  <a href="structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#a7d91387b5081be8f22d053d93eb9edf4">More...</a><br /></td></tr>
 <tr class="separator:a7d91387b5081be8f22d053d93eb9edf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad962358b9cb4da242cdc3c98ee2ce6ce"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#ad962358b9cb4da242cdc3c98ee2ce6ce">add_unperformed_entries</a></td></tr>
+<tr class="memdesc:ad962358b9cb4da242cdc3c98ee2ce6ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">If true, entries are created for making the nodes/pairs unperformed, and when the cost of making a node unperformed is lower than all insertions, the node/pair will be made unperformed.  <a href="structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#ad962358b9cb4da242cdc3c98ee2ce6ce">More...</a><br /></td></tr>
+<tr class="separator:ad962358b9cb4da242cdc3c98ee2ce6ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="ad962358b9cb4da242cdc3c98ee2ce6ce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad962358b9cb4da242cdc3c98ee2ce6ce">&#9670;&nbsp;</a></span>add_unperformed_entries</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool add_unperformed_entries</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>If true, entries are created for making the nodes/pairs unperformed, and when the cost of making a node unperformed is lower than all insertions, the node/pair will be made unperformed. </p>
+<p>If false, only entries making a node/pair performed are considered. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03176">3176</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+
+</div>
+</div>
 <a id="a5ad481f9ba9161a2aef5920b41303120"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5ad481f9ba9161a2aef5920b41303120">&#9670;&nbsp;</a></span>farthest_seeds_ratio</h2>
 
@@ -126,7 +148,7 @@ Public Attributes</h2></td></tr>
 
 <p>The ratio of routes on which to insert farthest nodes as seeds before starting the cheapest insertion. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03113">3113</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03164">3164</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -144,7 +166,7 @@ Public Attributes</h2></td></tr>
 
 <p>Whether the routes are constructed sequentially or in parallel. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03110">3110</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03161">3161</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -162,7 +184,7 @@ Public Attributes</h2></td></tr>
 
 <p>If neighbors_ratio &lt; 1 then for each node only this ratio of its neighbors leading to the smallest arc costs are considered. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03116">3116</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03167">3167</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -181,7 +203,7 @@ Public Attributes</h2></td></tr>
 <p>If true, only closest neighbors (see neighbors_ratio) are considered as insertion positions during initialization. </p>
 <p>Otherwise, all possible insertion positions are considered. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03120">3120</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03171">3171</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

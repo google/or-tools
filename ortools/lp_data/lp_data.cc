@@ -55,7 +55,7 @@ bool AreBoundsFreeOrBoxed(Fractional lower_bound, Fractional upper_bound) {
 }
 
 template <class I, class T>
-double Average(const gtl::ITIVector<I, T>& v) {
+double Average(const absl::StrongVector<I, T>& v) {
   const size_t size = v.size();
   DCHECK_LT(0, size);
   double sum = 0.0;
@@ -69,7 +69,7 @@ double Average(const gtl::ITIVector<I, T>& v) {
 }
 
 template <class I, class T>
-double StandardDeviation(const gtl::ITIVector<I, T>& v) {
+double StandardDeviation(const absl::StrongVector<I, T>& v) {
   const size_t size = v.size();
   double n = 0.0;  // n is used in a calculation involving doubles.
   double sigma_square = 0.0;
@@ -86,7 +86,7 @@ double StandardDeviation(const gtl::ITIVector<I, T>& v) {
 
 // Returns 0 when the vector is empty.
 template <class I, class T>
-T GetMaxElement(const gtl::ITIVector<I, T>& v) {
+T GetMaxElement(const absl::StrongVector<I, T>& v) {
   const size_t size = v.size();
   if (size == 0) {
     return T(0);
@@ -1119,6 +1119,29 @@ void UpdateMinAndMaxMagnitude(const FractionalRange& range,
   }
 }
 
+Fractional GetMedianScalingFactor(const DenseRow& range) {
+  std::vector<Fractional> median;
+  for (const Fractional value : range) {
+    if (value == 0.0) continue;
+    median.push_back(std::abs(value));
+  }
+  if (median.empty()) return 1.0;
+  std::sort(median.begin(), median.end());
+  return median[median.size() / 2];
+}
+
+Fractional GetMeanScalingFactor(const DenseRow& range) {
+  Fractional mean = 0.0;
+  int num_non_zeros = 0;
+  for (const Fractional value : range) {
+    if (value == 0.0) continue;
+    ++num_non_zeros;
+    mean += std::abs(value);
+  }
+  if (num_non_zeros == 0.0) return 1.0;
+  return mean / static_cast<Fractional>(num_non_zeros);
+}
+
 Fractional ComputeDivisorSoThatRangeContainsOne(Fractional min_magnitude,
                                                 Fractional max_magnitude) {
   if (min_magnitude > 1.0 && min_magnitude < kInfinity) {
@@ -1131,22 +1154,36 @@ Fractional ComputeDivisorSoThatRangeContainsOne(Fractional min_magnitude,
 
 }  // namespace
 
-Fractional LinearProgram::ScaleObjective() {
+Fractional LinearProgram::ScaleObjective(
+    GlopParameters::CostScalingAlgorithm method) {
   Fractional min_magnitude = kInfinity;
   Fractional max_magnitude = 0.0;
   UpdateMinAndMaxMagnitude(objective_coefficients(), &min_magnitude,
                            &max_magnitude);
-  const Fractional cost_scaling_factor =
-      ComputeDivisorSoThatRangeContainsOne(min_magnitude, max_magnitude);
+  Fractional cost_scaling_factor = 1.0;
+  switch (method) {
+    case GlopParameters::NO_COST_SCALING:
+      break;
+    case GlopParameters::CONTAIN_ONE_COST_SCALING:
+      cost_scaling_factor =
+          ComputeDivisorSoThatRangeContainsOne(min_magnitude, max_magnitude);
+      break;
+    case GlopParameters::MEAN_COST_SCALING:
+      cost_scaling_factor = GetMeanScalingFactor(objective_coefficients());
+      break;
+    case GlopParameters::MEDIAN_COST_SCALING:
+      cost_scaling_factor = GetMedianScalingFactor(objective_coefficients());
+      break;
+  }
   if (cost_scaling_factor != 1.0) {
     for (ColIndex col(0); col < num_variables(); ++col) {
+      if (objective_coefficients()[col] == 0.0) continue;
       SetObjectiveCoefficient(
           col, objective_coefficients()[col] / cost_scaling_factor);
     }
     SetObjectiveScalingFactor(objective_scaling_factor() * cost_scaling_factor);
     SetObjectiveOffset(objective_offset() / cost_scaling_factor);
   }
-
   VLOG(1) << "Objective magnitude range is [" << min_magnitude << ", "
           << max_magnitude << "] (dividing by " << cost_scaling_factor << ").";
   return cost_scaling_factor;

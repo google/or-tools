@@ -62,7 +62,7 @@ void RunKnapsackExample() {
 
   std::vector<int64> packed_weights;
   packed_weights.reserve(packed_items.size());
-  for (const auto &it : packed_items) {
+  for (const auto& it : packed_items) {
     packed_weights.push_back(weights[0][it]);
   }
   std::ostringstream packed_weights_ss;
@@ -81,7 +81,7 @@ void RunKnapsackExample() {
 }
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   operations_research::RunKnapsackExample();
   return EXIT_SUCCESS;
 }

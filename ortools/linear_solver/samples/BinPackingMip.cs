@@ -20,106 +20,108 @@ using Google.OrTools.LinearSolver;
 // [START program_part1]
 public class BinPackingMip
 {
-  // [START data_model]
-  class DataModel
-  {
-    public static double[] Weights = {48, 30, 19, 36, 36, 27, 42, 42, 36, 24, 30};
-    public int NumItems = Weights.Length;
-    public int NumBins = Weights.Length;
-    public double BinCapacity = 100.0;
-  }
-  // [END data_model]
-  public static void Main()
-  {
-    // [START data]
-    DataModel data = new DataModel();
-    // [END data]
-    // [END program_part1]
-
-    // [START solver]
-    // Create the linear solver with the SCIP backend.
-    Solver solver = Solver.CreateSolver("SCIP");
-    // [END solver]
-
-    // [START program_part2]
-    // [START variables]
-    Variable[,] x = new Variable[data.NumItems, data.NumBins];
-    for (int i = 0; i < data.NumItems; i++)
+    // [START data_model]
+    class DataModel
     {
-      for (int j = 0; j < data.NumBins; j++)
-      {
-        x[i, j] = solver.MakeIntVar(0, 1, $"x_{i}_{j}");
-      }
+        public static double[] Weights = { 48, 30, 19, 36, 36, 27, 42, 42, 36, 24, 30 };
+        public int NumItems = Weights.Length;
+        public int NumBins = Weights.Length;
+        public double BinCapacity = 100.0;
     }
-    Variable[] y = new Variable[data.NumBins];
-    for (int j = 0; j < data.NumBins; j++)
-      {
-        y[j] = solver.MakeIntVar(0, 1, $"y_{j}");
-      }
-    // [END variables]
-
-    // [START constraints]
-    for (int i = 0; i < data.NumItems; ++i) {
-      Constraint constraint = solver.MakeConstraint(1, 1, "");
-      for (int j = 0; j < data.NumBins; ++j) {
-        constraint.SetCoefficient(x[i, j], 1);
-      }
-    }
-
-    for (int j = 0; j < data.NumBins; ++j)
+    // [END data_model]
+    public static void Main()
     {
-      Constraint constraint = solver.MakeConstraint(0, Double.PositiveInfinity, "");
-      constraint.SetCoefficient(y[j], data.BinCapacity);
-      for (int i = 0; i < data.NumItems; ++i)
-      {
-        constraint.SetCoefficient(x[i, j], -DataModel.Weights[i]);
-      }
-    }
-    // [END constraints]
+        // [START data]
+        DataModel data = new DataModel();
+        // [END data]
+        // [END program_part1]
 
-    // [START objective]
-    Objective objective = solver.Objective();
-    for (int j = 0; j < data.NumBins; ++j)
-    {
-      objective.SetCoefficient(y[j], 1);
-    }
-    objective.SetMinimization();
-    // [END objective]
+        // [START solver]
+        // Create the linear solver with the SCIP backend.
+        Solver solver = Solver.CreateSolver("SCIP");
+        // [END solver]
 
-    // [START solve]
-    Solver.ResultStatus resultStatus = solver.Solve();
-    // [END solve]
+        // [START program_part2]
+        // [START variables]
+        Variable[,] x = new Variable[data.NumItems, data.NumBins];
+        for (int i = 0; i < data.NumItems; i++)
+        {
+            for (int j = 0; j < data.NumBins; j++)
+            {
+                x[i, j] = solver.MakeIntVar(0, 1, $"x_{i}_{j}");
+            }
+        }
+        Variable[] y = new Variable[data.NumBins];
+        for (int j = 0; j < data.NumBins; j++)
+        {
+            y[j] = solver.MakeIntVar(0, 1, $"y_{j}");
+        }
+        // [END variables]
 
-    // [START print_solution]
-    // Check that the problem has an optimal solution.
-    if (resultStatus != Solver.ResultStatus.OPTIMAL)
-    {
-      Console.WriteLine("The problem does not have an optimal solution!");
-      return;
-    }
-    Console.WriteLine($"Number of bins used: {solver.Objective().Value()}");
-    double TotalWeight = 0.0;
-    for (int j = 0; j < data.NumBins; ++j)
-    {
-      double BinWeight = 0.0;
-      if (y[j].SolutionValue() == 1)
-      {
-        Console.WriteLine($"Bin {j}");
+        // [START constraints]
         for (int i = 0; i < data.NumItems; ++i)
         {
-          if (x[i, j].SolutionValue() == 1)
-          {
-            Console.WriteLine($"Item {i} weight: {DataModel.Weights[i]}");
-            BinWeight += DataModel.Weights[i];
-          }
+            Constraint constraint = solver.MakeConstraint(1, 1, "");
+            for (int j = 0; j < data.NumBins; ++j)
+            {
+                constraint.SetCoefficient(x[i, j], 1);
+            }
         }
-        Console.WriteLine($"Packed bin weight: {BinWeight}");
-        TotalWeight += BinWeight;
-      }
+
+        for (int j = 0; j < data.NumBins; ++j)
+        {
+            Constraint constraint = solver.MakeConstraint(0, Double.PositiveInfinity, "");
+            constraint.SetCoefficient(y[j], data.BinCapacity);
+            for (int i = 0; i < data.NumItems; ++i)
+            {
+                constraint.SetCoefficient(x[i, j], -DataModel.Weights[i]);
+            }
+        }
+        // [END constraints]
+
+        // [START objective]
+        Objective objective = solver.Objective();
+        for (int j = 0; j < data.NumBins; ++j)
+        {
+            objective.SetCoefficient(y[j], 1);
+        }
+        objective.SetMinimization();
+        // [END objective]
+
+        // [START solve]
+        Solver.ResultStatus resultStatus = solver.Solve();
+        // [END solve]
+
+        // [START print_solution]
+        // Check that the problem has an optimal solution.
+        if (resultStatus != Solver.ResultStatus.OPTIMAL)
+        {
+            Console.WriteLine("The problem does not have an optimal solution!");
+            return;
+        }
+        Console.WriteLine($"Number of bins used: {solver.Objective().Value()}");
+        double TotalWeight = 0.0;
+        for (int j = 0; j < data.NumBins; ++j)
+        {
+            double BinWeight = 0.0;
+            if (y[j].SolutionValue() == 1)
+            {
+                Console.WriteLine($"Bin {j}");
+                for (int i = 0; i < data.NumItems; ++i)
+                {
+                    if (x[i, j].SolutionValue() == 1)
+                    {
+                        Console.WriteLine($"Item {i} weight: {DataModel.Weights[i]}");
+                        BinWeight += DataModel.Weights[i];
+                    }
+                }
+                Console.WriteLine($"Packed bin weight: {BinWeight}");
+                TotalWeight += BinWeight;
+            }
+        }
+        Console.WriteLine($"Total packed weight: {TotalWeight}");
+        // [END print_solution]
     }
-    Console.WriteLine($"Total packed weight: {TotalWeight}");
-    // [END print_solution]
-  }
 }
 // [END program_part2]
 // [END program]

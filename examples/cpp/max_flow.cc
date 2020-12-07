@@ -22,9 +22,9 @@ void SolveMaxFlow() {
   // Can't use std::tuple<NodeIndex, NodeIndex, FlowQuantity>
   // Initialization list is not working on std:tuple cf. N4387
   // Arc are stored as {{begin_node, end_node}, capacity}
-  std::vector<std::pair<std::pair<NodeIndex, NodeIndex>, FlowQuantity>> arcs = {
-      {{0, 1}, 20}, {{0, 2}, 30}, {{0, 3}, 10}, {{1, 2}, 40}, {{1, 4}, 30},
-      {{2, 3}, 10}, {{2, 4}, 20}, {{3, 2}, 5},  {{3, 4}, 20}};
+  std::vector<std::pair<std::pair<NodeIndex, NodeIndex>, FlowQuantity> > arcs =
+      {{{0, 1}, 20}, {{0, 2}, 30}, {{0, 3}, 10}, {{1, 2}, 40}, {{1, 4}, 30},
+       {{2, 3}, 10}, {{2, 4}, 20}, {{3, 2}, 5},  {{3, 4}, 20}};
   StarGraph graph(num_nodes, arcs.size());
   MaxFlow max_flow(&graph, 0, num_nodes - 1);
   for (const auto& it : arcs) {
@@ -53,7 +53,7 @@ void SolveMaxFlow() {
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
-  FLAGS_logtostderr = 1;
+  absl::SetFlag(&FLAGS_logtostderr, 1);
   operations_research::SolveMaxFlow();
   return EXIT_SUCCESS;
 }

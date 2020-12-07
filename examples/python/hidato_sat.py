@@ -12,8 +12,6 @@
 # limitations under the License.
 """Solves the Hidato problem with the CP-SAT solver."""
 
-from __future__ import print_function
-
 from ortools.sat.python import visualization
 from ortools.sat.python import cp_model
 
@@ -31,13 +29,16 @@ def build_pairs(rows, cols):
     rows: the number of rows in the grid
     cols: the number of columns in the grid
   """
-    return [
-        (x * cols + y, (x + dx) * cols + (y + dy)) for x in range(rows)
-        for y in range(cols) for dx in (-1, 0, 1)
-        for dy in (-1, 0, 1)
-        if (x + dx >= 0 and x + dx < rows and y + dy >= 0 and y + dy < cols and
-            (dx != 0 or dy != 0))
-    ]
+    result = []
+    for x in range(rows):
+        for y in range(cols):
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    if (x + dx >= 0 and x + dx < rows and y + dy >= 0 and
+                            y + dy < cols and (dx != 0 or dy != 0)):
+                        result.append(
+                            (x * cols + y, (x + dx) * cols + (y + dy)))
+    return result
 
 
 def print_solution(positions, rows, cols):
@@ -83,8 +84,8 @@ def build_puzzle(problem):
     elif problem == 2:
         puzzle = [[0, 44, 41, 0, 0, 0, 0], [0, 43, 0, 28, 29, 0, 0],
                   [0, 1, 0, 0, 0, 33, 0], [0, 2, 25, 4, 34, 0, 36],
-                  [49, 16, 0, 23, 0, 0, 0], [0, 19, 0, 0, 12, 7,
-                                             0], [0, 0, 0, 14, 0, 0, 0]]
+                  [49, 16, 0, 23, 0, 0, 0], [0, 19, 0, 0, 12, 7, 0],
+                  [0, 0, 0, 14, 0, 0, 0]]
 
     elif problem == 3:
         # Problems from the book:
@@ -106,10 +107,9 @@ def build_puzzle(problem):
     elif problem == 6:
         # Problem 15 (Intermediate)
         puzzle = [[64, 0, 0, 0, 0, 0, 0, 0], [1, 63, 0, 59, 15, 57, 53, 0],
-                  [0, 4, 0, 14, 0, 0, 0, 0], [3, 0, 11, 0, 20, 19, 0,
-                                              50], [0, 0, 0, 0, 22, 0, 48, 40],
-                  [9, 0, 0, 32, 23, 0, 0, 41], [27, 0, 0, 0, 36, 0, 46,
-                                                0], [28, 30, 0, 35, 0, 0, 0, 0]]
+                  [0, 4, 0, 14, 0, 0, 0, 0], [3, 0, 11, 0, 20, 19, 0, 50],
+                  [0, 0, 0, 0, 22, 0, 48, 40], [9, 0, 0, 32, 23, 0, 0, 41],
+                  [27, 0, 0, 0, 36, 0, 46, 0], [28, 30, 0, 35, 0, 0, 0, 0]]
     return puzzle
 
 
@@ -172,8 +172,8 @@ def solve_hidato(puzzle, index):
                 output.AddRectangle(x, r - y - 1, 1, 1, color, 'black',
                                     str(i + 1))
 
-            output.AddTitle('Puzzle %i solved in %f s' % (index,
-                                                          solver.WallTime()))
+            output.AddTitle('Puzzle %i solved in %f s' %
+                            (index, solver.WallTime()))
             output.Display()
         else:
             print_solution(

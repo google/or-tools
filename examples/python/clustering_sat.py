@@ -12,8 +12,6 @@
 # limitations under the License.
 """Cluster 40 cities in 4 equal groups to minimize sum of crossed distances."""
 
-from __future__ import print_function
-from __future__ import division
 
 from ortools.sat.python import cp_model
 

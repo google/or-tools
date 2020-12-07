@@ -18,90 +18,81 @@ using Google.OrTools.ConstraintSolver;
 
 public class Map2
 {
-  /**
-   *
-   * Solves a simple map coloring problem.
-   *
-   * Alternative version, using a matrix to represent
-   * the neighbours.
-   *
-   * See http://www.hakank.org/google_or_tools/map.py
-   *
-   *
-   */
-  private static void Solve()
-  {
-    Solver solver = new Solver("Map2");
+    /**
+     *
+     * Solves a simple map coloring problem.
+     *
+     * Alternative version, using a matrix to represent
+     * the neighbours.
+     *
+     * See http://www.hakank.org/google_or_tools/map.py
+     *
+     *
+     */
+    private static void Solve()
+    {
+        Solver solver = new Solver("Map2");
 
-    //
-    // data
-    //
-    int Belgium     = 0;
-    int Denmark     = 1;
-    int France      = 2;
-    int Germany     = 3;
-    int Netherlands = 4;
-    int Luxembourg  = 5;
+        //
+        // data
+        //
+        int Belgium = 0;
+        int Denmark = 1;
+        int France = 2;
+        int Germany = 3;
+        int Netherlands = 4;
+        int Luxembourg = 5;
 
-    int n = 6;
-    int max_num_colors = 4;
+        int n = 6;
+        int max_num_colors = 4;
 
-    int[,] neighbours =  {{France,     Belgium},
-                         {France,     Luxembourg},
-                         {France,     Germany},
-                         {Luxembourg, Germany},
-                         {Luxembourg, Belgium},
-                         {Belgium,    Netherlands},
-                         {Belgium,    Germany},
-                         {Germany,    Netherlands},
-                         {Germany,    Denmark}};
+        int[,] neighbours = { { France, Belgium },     { France, Luxembourg },   { France, Germany },
+                              { Luxembourg, Germany }, { Luxembourg, Belgium },  { Belgium, Netherlands },
+                              { Belgium, Germany },    { Germany, Netherlands }, { Germany, Denmark } };
 
+        //
+        // Decision variables
+        //
+        IntVar[] color = solver.MakeIntVarArray(n, 1, max_num_colors, "color");
 
+        //
+        // Constraints
+        //
+        for (int i = 0; i < neighbours.GetLength(0); i++)
+        {
+            solver.Add(color[neighbours[i, 0]] != color[neighbours[i, 1]]);
+        }
 
-    //
-    // Decision variables
-    //
-    IntVar[] color = solver.MakeIntVarArray(n, 1, max_num_colors, "color");
+        // Symmetry breaking
+        solver.Add(color[Belgium] == 1);
 
-    //
-    // Constraints
-    //
-    for(int i = 0; i < neighbours.GetLength(0); i++) {
-      solver.Add(color[neighbours[i,0]] != color[neighbours[i,1]]);
+        //
+        // Search
+        //
+        DecisionBuilder db = solver.MakePhase(color, Solver.CHOOSE_MIN_SIZE_LOWEST_MAX, Solver.ASSIGN_CENTER_VALUE);
+
+        solver.NewSearch(db);
+        while (solver.NextSolution())
+        {
+            Console.Write("colors: ");
+            for (int i = 0; i < n; i++)
+            {
+                Console.Write("{0} ", color[i].Value());
+            }
+
+            Console.WriteLine();
+        }
+
+        Console.WriteLine("\nSolutions: {0}", solver.Solutions());
+        Console.WriteLine("WallTime: {0}ms", solver.WallTime());
+        Console.WriteLine("Failures: {0}", solver.Failures());
+        Console.WriteLine("Branches: {0} ", solver.Branches());
+
+        solver.EndSearch();
     }
 
-    // Symmetry breaking
-    solver.Add(color[Belgium] == 1);
-
-
-    //
-    // Search
-    //
-    DecisionBuilder db = solver.MakePhase(color,
-                                          Solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
-                                          Solver.ASSIGN_CENTER_VALUE);
-
-    solver.NewSearch(db);
-    while (solver.NextSolution()) {
-      Console.Write("colors: ");
-      for(int i = 0; i < n; i++) {
-        Console.Write("{0} ", color[i].Value());
-      }
-
-      Console.WriteLine();
+    public static void Main(String[] args)
+    {
+        Solve();
     }
-
-    Console.WriteLine("\nSolutions: {0}", solver.Solutions());
-    Console.WriteLine("WallTime: {0}ms", solver.WallTime());
-    Console.WriteLine("Failures: {0}", solver.Failures());
-    Console.WriteLine("Branches: {0} ", solver.Branches());
-
-    solver.EndSearch();
-
-  }
-
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
 }

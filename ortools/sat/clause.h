@@ -28,9 +28,9 @@
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -331,7 +331,7 @@ class LiteralWatchers : public SatPropagator {
   // Common code between LazyDetach() and Detach().
   void InternalDetach(SatClause* clause);
 
-  gtl::ITIVector<LiteralIndex, std::vector<Watcher>> watchers_on_false_;
+  absl::StrongVector<LiteralIndex, std::vector<Watcher>> watchers_on_false_;
 
   // SatClause reasons by trail_index.
   std::vector<SatClause*> reasons_;
@@ -738,8 +738,8 @@ class BinaryImplicationGraph : public SatPropagator {
   // Same as ExpandAtMostOne() but try to maximize the weight in the clique.
   std::vector<Literal> ExpandAtMostOneWithWeight(
       const absl::Span<const Literal> at_most_one,
-      const gtl::ITIVector<LiteralIndex, bool>& can_be_included,
-      const gtl::ITIVector<LiteralIndex, double>& expanded_lp_values);
+      const absl::StrongVector<LiteralIndex, bool>& can_be_included,
+      const absl::StrongVector<LiteralIndex, double>& expanded_lp_values);
 
   // Process all at most one constraints starting at or after base_index in
   // at_most_one_buffer_. This replace literal by their representative, remove
@@ -767,7 +767,8 @@ class BinaryImplicationGraph : public SatPropagator {
   //
   // TODO(user): We could be even more efficient since a size of int32 is enough
   // for us and we could store in common the inlined/not-inlined size.
-  gtl::ITIVector<LiteralIndex, absl::InlinedVector<Literal, 6>> implications_;
+  absl::StrongVector<LiteralIndex, absl::InlinedVector<Literal, 6>>
+      implications_;
   int64 num_implications_ = 0;
 
   // Internal representation of at_most_one constraints. Each entry point to the
@@ -777,7 +778,7 @@ class BinaryImplicationGraph : public SatPropagator {
   //
   // TODO(user): We could be more cache efficient by combining this with
   // implications_ in some way. Do some propagation speed benchmark.
-  gtl::ITIVector<LiteralIndex, absl::InlinedVector<int32, 6>> at_most_ones_;
+  absl::StrongVector<LiteralIndex, absl::InlinedVector<int32, 6>> at_most_ones_;
   std::vector<Literal> at_most_one_buffer_;
 
   // Used by GenerateAtMostOnesWithLargeWeight().
@@ -808,15 +809,15 @@ class BinaryImplicationGraph : public SatPropagator {
   // Filled by DetectEquivalences().
   bool is_dag_ = false;
   std::vector<LiteralIndex> reverse_topological_order_;
-  gtl::ITIVector<LiteralIndex, bool> is_redundant_;
-  gtl::ITIVector<LiteralIndex, LiteralIndex> representative_of_;
+  absl::StrongVector<LiteralIndex, bool> is_redundant_;
+  absl::StrongVector<LiteralIndex, LiteralIndex> representative_of_;
 
   // For in-processing and removing variables.
   std::vector<Literal> direct_implications_;
   std::vector<Literal> direct_implications_of_negated_literal_;
-  gtl::ITIVector<LiteralIndex, bool> in_direct_implications_;
-  gtl::ITIVector<LiteralIndex, bool> is_removed_;
-  gtl::ITIVector<LiteralIndex, int> estimated_sizes_;
+  absl::StrongVector<LiteralIndex, bool> in_direct_implications_;
+  absl::StrongVector<LiteralIndex, bool> is_removed_;
+  absl::StrongVector<LiteralIndex, int> estimated_sizes_;
 
   // For RemoveFixedVariables().
   int num_processed_fixed_variables_ = 0;

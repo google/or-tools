@@ -12,9 +12,6 @@
 # limitations under the License.
 """Tests for ortools.util.sorted_interval_list."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import unittest
 from ortools.util import sorted_interval_list

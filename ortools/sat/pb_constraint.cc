@@ -100,7 +100,7 @@ bool ComputeBooleanLinearExpressionCanonicalForm(
 }
 
 bool ApplyLiteralMapping(
-    const gtl::ITIVector<LiteralIndex, LiteralIndex>& mapping,
+    const absl::StrongVector<LiteralIndex, LiteralIndex>& mapping,
     std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shift,
     Coefficient* max_value) {
   int index = 0;
@@ -1086,7 +1086,7 @@ void PbConstraints::UpdateActivityIncrement() {
 }
 
 void PbConstraints::DeleteConstraintMarkedForDeletion() {
-  gtl::ITIVector<ConstraintIndex, ConstraintIndex> index_mapping(
+  absl::StrongVector<ConstraintIndex, ConstraintIndex> index_mapping(
       constraints_.size(), ConstraintIndex(-1));
   ConstraintIndex new_index(0);
   for (ConstraintIndex i(0); i < constraints_.size(); ++i) {

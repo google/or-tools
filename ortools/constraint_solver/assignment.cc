@@ -539,7 +539,7 @@ void Assignment::Load(const AssignmentProto& assignment_proto) {
                               &AssignmentProto::sequence_var_assignment);
   if (assignment_proto.has_objective()) {
     const IntVarAssignment& objective = assignment_proto.objective();
-    const std::string objective_id = objective.var_id();
+    const std::string& objective_id = objective.var_id();
     CHECK(!objective_id.empty());
     if (HasObjective() && objective_id == Objective()->name()) {
       const int64 obj_min = objective.min();

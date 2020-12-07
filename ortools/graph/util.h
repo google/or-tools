@@ -21,9 +21,9 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/map_util.h"
@@ -180,7 +180,7 @@ bool PathHasCycle(const Graph& graph, const std::vector<int>& arc_path);
 // unique, hence the function name.
 //
 // PERFORMANCE: If you see this function taking too much memory and/or too much
-// time, reach out to @user: one could halve the memory usage and speed it up.
+// time, reach out to viger@: one could halve the memory usage and speed it up.
 template <class Graph>
 std::vector<int> ComputeOnePossibleReverseArcMapping(const Graph& graph,
                                                      bool die_if_not_symmetric);
