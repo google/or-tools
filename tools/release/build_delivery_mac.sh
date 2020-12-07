@@ -33,6 +33,7 @@ for i in "${PY[@]}"; do
   "python$i" -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
   "python$i" -m pip install --user wheel absl-py mypy-protobuf
 done
+command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
 
 # java
 # maven require JAVA_HOME
