@@ -233,24 +233,48 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a4294a0d0925de99e2ab2c3155ce05ba5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5d39e29ef34d15e9addf42185bf57fa2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a5d39e29ef34d15e9addf42185bf57fa2">GetVisitTypePolicy</a> (long index)</td></tr>
 <tr class="separator:a5d39e29ef34d15e9addf42185bf57fa2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a559948421ccda152a19425c4bfc547e6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a559948421ccda152a19425c4bfc547e6">closeVisitTypes</a> ()</td></tr>
+<tr class="memdesc:a559948421ccda152a19425c4bfc547e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function should be called once all node visit types have been set and<br  />
+ prior to adding any incompatibilities/requirements.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a559948421ccda152a19425c4bfc547e6">More...</a><br /></td></tr>
+<tr class="separator:a559948421ccda152a19425c4bfc547e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa849bab916a1e3b88b1df040c3308258"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#aa849bab916a1e3b88b1df040c3308258">getNumberOfVisitTypes</a> ()</td></tr>
 <tr class="separator:aa849bab916a1e3b88b1df040c3308258"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad74eb0736dcac1394cdecd3e63dd1314"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#ad74eb0736dcac1394cdecd3e63dd1314">AddRequiredTypeAlternativesWhenAddingType</a> (int dependent_type, SWIGTYPE_p_absl__flat_hash_setT_int_t required_type_alternatives)</td></tr>
-<tr class="memdesc:ad74eb0736dcac1394cdecd3e63dd1314"><td class="mdescLeft">&#160;</td><td class="mdescRight">If type_D depends on type_R when adding type_D, any node_D of type_D and<br  />
+<tr class="memitem:a75d8aade1f826eb5d7842e4879637a89"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a75d8aade1f826eb5d7842e4879637a89">addHardTypeIncompatibility</a> (int type1, int type2)</td></tr>
+<tr class="memdesc:a75d8aade1f826eb5d7842e4879637a89"><td class="mdescLeft">&#160;</td><td class="mdescRight">Incompatibilities:<br  />
+ Two nodes with "hard" incompatible types cannot share the same route at<br  />
+ all, while with a "temporal" incompatibility they can't be on the same<br  />
+ route at the same time.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a75d8aade1f826eb5d7842e4879637a89">More...</a><br /></td></tr>
+<tr class="separator:a75d8aade1f826eb5d7842e4879637a89"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a94fb4f2ebd06e003611789cbb0267dd0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a94fb4f2ebd06e003611789cbb0267dd0">addTemporalTypeIncompatibility</a> (int type1, int type2)</td></tr>
+<tr class="separator:a94fb4f2ebd06e003611789cbb0267dd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afa6a020a797b17293c91654c16d3c20b"><td class="memItemLeft" align="right" valign="top">SWIGTYPE_p_absl__flat_hash_setT_int_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#afa6a020a797b17293c91654c16d3c20b">getTemporalTypeIncompatibilitiesOfType</a> (int type)</td></tr>
+<tr class="separator:afa6a020a797b17293c91654c16d3c20b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2e056516ca5a7c17be796a18415c588"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#af2e056516ca5a7c17be796a18415c588">hasHardTypeIncompatibilities</a> ()</td></tr>
+<tr class="memdesc:af2e056516ca5a7c17be796a18415c588"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if any hard (resp.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#af2e056516ca5a7c17be796a18415c588">More...</a><br /></td></tr>
+<tr class="separator:af2e056516ca5a7c17be796a18415c588"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52530c3d334b321e6f57513e277e27ce"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a52530c3d334b321e6f57513e277e27ce">hasTemporalTypeIncompatibilities</a> ()</td></tr>
+<tr class="separator:a52530c3d334b321e6f57513e277e27ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a282833a5691078278fcc53e61d0dcd59"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a282833a5691078278fcc53e61d0dcd59">addRequiredTypeAlternativesWhenAddingType</a> (int dependent_type, SWIGTYPE_p_absl__flat_hash_setT_int_t required_type_alternatives)</td></tr>
+<tr class="memdesc:a282833a5691078278fcc53e61d0dcd59"><td class="mdescLeft">&#160;</td><td class="mdescRight">If type_D depends on type_R when adding type_D, any node_D of type_D and<br  />
  VisitTypePolicy TYPE_ADDED_TO_VEHICLE or<br  />
  TYPE_SIMULTANEOUSLY_ADDED_AND_REMOVED requires at least one type_R on its<br  />
- vehicle at the time node_D is visited.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#ad74eb0736dcac1394cdecd3e63dd1314">More...</a><br /></td></tr>
-<tr class="separator:ad74eb0736dcac1394cdecd3e63dd1314"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2a7cc0ae71e4f17302b174bbb8e359df"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a2a7cc0ae71e4f17302b174bbb8e359df">AddRequiredTypeAlternativesWhenRemovingType</a> (int dependent_type, SWIGTYPE_p_absl__flat_hash_setT_int_t required_type_alternatives)</td></tr>
-<tr class="memdesc:a2a7cc0ae71e4f17302b174bbb8e359df"><td class="mdescLeft">&#160;</td><td class="mdescRight">The following requirements apply when visiting dependent nodes that remove<br  />
- their type from the route, i.e.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a2a7cc0ae71e4f17302b174bbb8e359df">More...</a><br /></td></tr>
-<tr class="separator:a2a7cc0ae71e4f17302b174bbb8e359df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+ vehicle at the time node_D is visited.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a282833a5691078278fcc53e61d0dcd59">More...</a><br /></td></tr>
+<tr class="separator:a282833a5691078278fcc53e61d0dcd59"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f3e0a10fef1ae041b232eeeef27a059"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a7f3e0a10fef1ae041b232eeeef27a059">addRequiredTypeAlternativesWhenRemovingType</a> (int dependent_type, SWIGTYPE_p_absl__flat_hash_setT_int_t required_type_alternatives)</td></tr>
+<tr class="memdesc:a7f3e0a10fef1ae041b232eeeef27a059"><td class="mdescLeft">&#160;</td><td class="mdescRight">The following requirements apply when visiting dependent nodes that remove<br  />
+ their type from the route, i.e.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a7f3e0a10fef1ae041b232eeeef27a059">More...</a><br /></td></tr>
+<tr class="separator:a7f3e0a10fef1ae041b232eeeef27a059"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a450927393434e1fa5b413e763a82c29e"><td class="memItemLeft" align="right" valign="top">SWIGTYPE_p_std__vectorT_absl__flat_hash_setT_int_t_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a450927393434e1fa5b413e763a82c29e">GetRequiredTypeAlternativesWhenAddingType</a> (int type)</td></tr>
 <tr class="memdesc:a450927393434e1fa5b413e763a82c29e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the set of requirement alternatives when adding the given type.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a450927393434e1fa5b413e763a82c29e">More...</a><br /></td></tr>
 <tr class="separator:a450927393434e1fa5b413e763a82c29e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa634a76f4da6df02b9b94ae7b76fdd25"><td class="memItemLeft" align="right" valign="top">SWIGTYPE_p_std__vectorT_absl__flat_hash_setT_int_t_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#aa634a76f4da6df02b9b94ae7b76fdd25">GetRequiredTypeAlternativesWhenRemovingType</a> (int type)</td></tr>
 <tr class="memdesc:aa634a76f4da6df02b9b94ae7b76fdd25"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the set of requirement alternatives when removing the given type.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#aa634a76f4da6df02b9b94ae7b76fdd25">More...</a><br /></td></tr>
 <tr class="separator:aa634a76f4da6df02b9b94ae7b76fdd25"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5753f9dae6d2ecdb1e5178915f698319"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a5753f9dae6d2ecdb1e5178915f698319">hasSameVehicleTypeRequirements</a> ()</td></tr>
+<tr class="memdesc:a5753f9dae6d2ecdb1e5178915f698319"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true iff any same-route (resp.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a5753f9dae6d2ecdb1e5178915f698319">More...</a><br /></td></tr>
+<tr class="separator:a5753f9dae6d2ecdb1e5178915f698319"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9efda067e1fd63bfe3debb3af7f65275"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a9efda067e1fd63bfe3debb3af7f65275">hasTemporalTypeRequirements</a> ()</td></tr>
+<tr class="separator:a9efda067e1fd63bfe3debb3af7f65275"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac28bcee33d7b4d4ac9464e09e1e1d44b"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#ac28bcee33d7b4d4ac9464e09e1e1d44b">unperformedPenalty</a> (long var_index)</td></tr>
 <tr class="memdesc:ac28bcee33d7b4d4ac9464e09e1e1d44b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the "unperformed" penalty of a node.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#ac28bcee33d7b4d4ac9464e09e1e1d44b">More...</a><br /></td></tr>
 <tr class="separator:ac28bcee33d7b4d4ac9464e09e1e1d44b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -328,10 +352,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a54e1de711478452d54dc6bd6ea16114e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a variable to minimize in the solution finalizer, with a weighted<br  />
  priority: the higher the more priority it has.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a54e1de711478452d54dc6bd6ea16114e">More...</a><br /></td></tr>
 <tr class="separator:a54e1de711478452d54dc6bd6ea16114e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8fc9637a84e82b2b4aefda381153b492"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a8fc9637a84e82b2b4aefda381153b492">AddVariableTargetToFinalizer</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> var, long target)</td></tr>
-<tr class="memdesc:a8fc9637a84e82b2b4aefda381153b492"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a variable to set the closest possible to the target value in the<br  />
- solution finalizer.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a8fc9637a84e82b2b4aefda381153b492">More...</a><br /></td></tr>
-<tr class="separator:a8fc9637a84e82b2b4aefda381153b492"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a820a205c90007a696585713303a7602c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a820a205c90007a696585713303a7602c">addVariableTargetToFinalizer</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> var, long target)</td></tr>
+<tr class="memdesc:a820a205c90007a696585713303a7602c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a variable to set the closest possible to the target value in the<br  />
+ solution finalizer.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a820a205c90007a696585713303a7602c">More...</a><br /></td></tr>
+<tr class="separator:a820a205c90007a696585713303a7602c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3879762940e60031dbe3524a70617108"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a3879762940e60031dbe3524a70617108">closeModel</a> ()</td></tr>
 <tr class="memdesc:a3879762940e60031dbe3524a70617108"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes the current routing model; after this method is called, no<br  />
  modification to the model can be done, but RoutesToAssignment becomes<br  />
@@ -452,9 +476,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a0470e5550b91a578e56bf84b39d5c833"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a0470e5550b91a578e56bf84b39d5c833">activeVar</a> (long index)</td></tr>
 <tr class="memdesc:a0470e5550b91a578e56bf84b39d5c833"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the active variable of the node corresponding to index.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a0470e5550b91a578e56bf84b39d5c833">More...</a><br /></td></tr>
 <tr class="separator:a0470e5550b91a578e56bf84b39d5c833"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9fec4efb7389bfe24a036ef50c3b05fc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a9fec4efb7389bfe24a036ef50c3b05fc">ActiveVehicleVar</a> (int vehicle)</td></tr>
-<tr class="memdesc:a9fec4efb7389bfe24a036ef50c3b05fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the active variable of the vehicle.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a9fec4efb7389bfe24a036ef50c3b05fc">More...</a><br /></td></tr>
-<tr class="separator:a9fec4efb7389bfe24a036ef50c3b05fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d9f560798da7ac35a052a5a0f0d6e9b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a3d9f560798da7ac35a052a5a0f0d6e9b">activeVehicleVar</a> (int vehicle)</td></tr>
+<tr class="memdesc:a3d9f560798da7ac35a052a5a0f0d6e9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the active variable of the vehicle.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a3d9f560798da7ac35a052a5a0f0d6e9b">More...</a><br /></td></tr>
+<tr class="separator:a3d9f560798da7ac35a052a5a0f0d6e9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a58c1f7c5eb35a3d0d0643267abd1fd14"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a58c1f7c5eb35a3d0d0643267abd1fd14">VehicleCostsConsideredVar</a> (int vehicle)</td></tr>
 <tr class="memdesc:a58c1f7c5eb35a3d0d0643267abd1fd14"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the variable specifying whether or not costs are considered for<br  />
  vehicle.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a58c1f7c5eb35a3d0d0643267abd1fd14">More...</a><br /></td></tr>
@@ -727,18 +751,18 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the active variable of the node corresponding to index. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01144">1144</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01195">1195</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
-<a id="a9fec4efb7389bfe24a036ef50c3b05fc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9fec4efb7389bfe24a036ef50c3b05fc">&#9670;&nbsp;</a></span>ActiveVehicleVar()</h2>
+<a id="a3d9f560798da7ac35a052a5a0f0d6e9b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3d9f560798da7ac35a052a5a0f0d6e9b">&#9670;&nbsp;</a></span>activeVehicleVar()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> ActiveVehicleVar </td>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> activeVehicleVar </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>vehicle</em></td><td>)</td>
@@ -751,7 +775,7 @@ Protected Member Functions</h2></td></tr>
 <p>It will be equal to 1 iff the<br  />
  route of the vehicle is not empty, 0 otherwise. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01153">1153</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01204">1204</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -776,7 +800,7 @@ Protected Member Functions</h2></td></tr>
  This is a shortcut to creating a monitor to call the callback on<br  />
  AtSolution() and adding it with AddSearchMonitor. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00755">755</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00806">806</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -1232,6 +1256,41 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a75d8aade1f826eb5d7842e4879637a89"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a75d8aade1f826eb5d7842e4879637a89">&#9670;&nbsp;</a></span>addHardTypeIncompatibility()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void addHardTypeIncompatibility </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>type1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>type2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Incompatibilities:<br  />
+ Two nodes with "hard" incompatible types cannot share the same route at<br  />
+ all, while with a "temporal" incompatibility they can't be on the same<br  />
+ route at the same time. </p>
+
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00577">577</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+
+</div>
+</div>
 <a id="a0a8efaa0a9815193a1499ccb43047bcc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0a8efaa0a9815193a1499ccb43047bcc">&#9670;&nbsp;</a></span>addIntervalToAssignment()</h2>
 
@@ -1248,7 +1307,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01048">1048</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01099">1099</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -1275,7 +1334,7 @@ Protected Member Functions</h2></td></tr>
  or Solve() has been called) has no effect.<br  />
  The routing model does not take ownership of the filter. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01059">1059</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01110">1110</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -1298,7 +1357,7 @@ Protected Member Functions</h2></td></tr>
 <p>Adds a local search operator to the set of operators used to solve the<br  />
  vehicle routing problem. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00739">739</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00790">790</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -1340,7 +1399,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01413">1413</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01464">1464</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -1423,14 +1482,14 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ad74eb0736dcac1394cdecd3e63dd1314"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad74eb0736dcac1394cdecd3e63dd1314">&#9670;&nbsp;</a></span>AddRequiredTypeAlternativesWhenAddingType()</h2>
+<a id="a282833a5691078278fcc53e61d0dcd59"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a282833a5691078278fcc53e61d0dcd59">&#9670;&nbsp;</a></span>addRequiredTypeAlternativesWhenAddingType()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void AddRequiredTypeAlternativesWhenAddingType </td>
+          <td class="memname">void addRequiredTypeAlternativesWhenAddingType </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>dependent_type</em>, </td>
@@ -1454,18 +1513,18 @@ Protected Member Functions</h2></td></tr>
  TYPE_SIMULTANEOUSLY_ADDED_AND_REMOVED requires at least one type_R on its<br  />
  vehicle at the time node_D is visited. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00568">568</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00607">607</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
-<a id="a2a7cc0ae71e4f17302b174bbb8e359df"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2a7cc0ae71e4f17302b174bbb8e359df">&#9670;&nbsp;</a></span>AddRequiredTypeAlternativesWhenRemovingType()</h2>
+<a id="a7f3e0a10fef1ae041b232eeeef27a059"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7f3e0a10fef1ae041b232eeeef27a059">&#9670;&nbsp;</a></span>addRequiredTypeAlternativesWhenRemovingType()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void AddRequiredTypeAlternativesWhenRemovingType </td>
+          <td class="memname">void addRequiredTypeAlternativesWhenRemovingType </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>dependent_type</em>, </td>
@@ -1491,7 +1550,7 @@ Protected Member Functions</h2></td></tr>
  TYPE_ON_VEHICLE_UP_TO_VISIT or TYPE_SIMULTANEOUSLY_ADDED_AND_REMOVED is<br  />
  visited. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00579">579</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00618">618</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -1513,7 +1572,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Adds a search monitor to the search used to solve the routing model. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00746">746</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00797">797</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -1552,6 +1611,36 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a94fb4f2ebd06e003611789cbb0267dd0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a94fb4f2ebd06e003611789cbb0267dd0">&#9670;&nbsp;</a></span>addTemporalTypeIncompatibility()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void addTemporalTypeIncompatibility </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>type1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>type2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00581">581</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+
+</div>
+</div>
 <a id="ae54ea0724bf7e1f02bfad2e5c965f29c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae54ea0724bf7e1f02bfad2e5c965f29c">&#9670;&nbsp;</a></span>addToAssignment()</h2>
 
@@ -1570,7 +1659,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Adds an extra variable to the vehicle routing assignment. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01044">1044</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01095">1095</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -1593,7 +1682,7 @@ Protected Member Functions</h2></td></tr>
 <p>Adds a variable to maximize in the solution finalizer (see above for<br  />
  information on the solution finalizer). </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00773">773</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00824">824</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -1619,18 +1708,18 @@ Protected Member Functions</h2></td></tr>
  allows to instantiate secondary variables (such as dimension cumul<br  />
  variables). </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00765">765</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00816">816</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
-<a id="a8fc9637a84e82b2b4aefda381153b492"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8fc9637a84e82b2b4aefda381153b492">&#9670;&nbsp;</a></span>AddVariableTargetToFinalizer()</h2>
+<a id="a820a205c90007a696585713303a7602c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a820a205c90007a696585713303a7602c">&#9670;&nbsp;</a></span>addVariableTargetToFinalizer()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void AddVariableTargetToFinalizer </td>
+          <td class="memname">void addVariableTargetToFinalizer </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>&#160;</td>
           <td class="paramname"><em>var</em>, </td>
@@ -1652,7 +1741,7 @@ Protected Member Functions</h2></td></tr>
 <p>Add a variable to set the closest possible to the target value in the<br  />
  solution finalizer. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00789">789</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00840">840</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -1736,7 +1825,7 @@ Protected Member Functions</h2></td></tr>
 <p>Adds a variable to minimize in the solution finalizer, with a weighted<br  />
  priority: the higher the more priority it has. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00781">781</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00832">832</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -1766,7 +1855,7 @@ Protected Member Functions</h2></td></tr>
  not locked. An assignment containing the locks can be obtained by calling<br  />
  PreAssignment(). </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00897">897</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00948">948</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -1806,7 +1895,7 @@ Protected Member Functions</h2></td></tr>
  An assignment containing the locks can be obtained by calling<br  />
  PreAssignment(). </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00912">912</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00963">963</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -1870,7 +1959,7 @@ Protected Member Functions</h2></td></tr>
  to2: the variable index of the second candidate destination node. </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01298">1298</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01349">1349</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -1890,7 +1979,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00722">722</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00773">773</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -1925,7 +2014,7 @@ Protected Member Functions</h2></td></tr>
  Expects that assignment contains a valid solution (i.e. routes for all<br  />
  vehicles end with an end index for that vehicle). </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00999">999</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01050">1050</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -1946,7 +2035,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns true if the search limit has been crossed. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01329">1329</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01380">1380</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -1973,7 +2062,7 @@ Protected Member Functions</h2></td></tr>
  This is equivalent to calling<br  />
  CloseModelWithParameters(DefaultRoutingSearchParameters()). </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00801">801</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00852">852</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -1996,7 +2085,31 @@ Protected Member Functions</h2></td></tr>
 <p>Same as above taking search parameters (as of 10/2015 some the parameters<br  />
  have to be set when closing the model). </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00809">809</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00860">860</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+
+</div>
+</div>
+<a id="a559948421ccda152a19425c4bfc547e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a559948421ccda152a19425c4bfc547e6">&#9670;&nbsp;</a></span>closeVisitTypes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void closeVisitTypes </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>This function should be called once all node visit types have been set and<br  />
+ prior to adding any incompatibilities/requirements. </p>
+<p><br  />
+ "close" types. </p>
+
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00563">563</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2020,7 +2133,7 @@ Protected Member Functions</h2></td></tr>
  compact solution; if it is not valid, no attempts to repair it are made<br  />
  (instead, the method returns nullptr). </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01036">1036</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01087">1087</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2063,7 +2176,7 @@ Protected Member Functions</h2></td></tr>
  performed; if one of these checks fails no attempts to repair it are made<br  />
  (instead, the method returns nullptr). </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01026">1026</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01077">1077</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2089,7 +2202,7 @@ Protected Member Functions</h2></td></tr>
  nodes) and non-homogenous costs are not supported (the method returns 0 in<br  />
  these cases). </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00876">876</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00927">927</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2119,7 +2232,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00718">718</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00769">769</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2140,7 +2253,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Whether costs are homogeneous across all vehicles. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01195">1195</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01246">1246</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2161,7 +2274,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the global cost variable which is being minimized. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01179">1179</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01230">1230</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2197,7 +2310,7 @@ Protected Member Functions</h2></td></tr>
 <p><br  />
  If "dimension_to_print" is omitted, all dimensions will be printed. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01308">1308</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01359">1359</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2238,7 +2351,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the variable index of the ending node of a vehicle route. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01074">1074</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01125">1125</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2257,7 +2370,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00710">710</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00761">761</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2276,7 +2389,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00714">714</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00765">765</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2320,7 +2433,7 @@ Protected Member Functions</h2></td></tr>
  of the cost that depend on the cost class will be omited. See the code<br  />
  for details. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01223">1223</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01274">1274</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2354,7 +2467,7 @@ Protected Member Functions</h2></td></tr>
 <p><br  />
  This is typically a simplification of the actual cost; see the .cc. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01211">1211</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01262">1262</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2394,7 +2507,7 @@ Protected Member Functions</h2></td></tr>
 <p><br  />
  Input are variable indices of node. This returns 0 if vehicle &lt; 0. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01188">1188</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01239">1239</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2415,7 +2528,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the number of different cost classes in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01245">1245</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01296">1296</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2437,7 +2550,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Get the cost class index of the given vehicle. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01230">1230</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01281">1281</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2461,7 +2574,7 @@ Protected Member Functions</h2></td></tr>
 <p>If all routes start and end at the same node (single depot), this<br  />
  is the node returned. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00621">621</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00672">672</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2598,7 +2711,7 @@ Protected Member Functions</h2></td></tr>
  vehicle is not empty, aka there's at least one node on the route other<br  />
  than the first and last nodes. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00678">678</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00729">729</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2631,7 +2744,7 @@ Protected Member Functions</h2></td></tr>
 <p>Returns the cost of the segment between two nodes supposing all vehicle<br  />
  costs are the same (returns the cost for the first vehicle otherwise). </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01203">1203</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01254">1254</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2741,7 +2854,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the maximum number of active vehicles. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00638">638</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00689">689</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2786,7 +2899,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Ditto, minus the 'always zero', built-in cost class. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01252">1252</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01303">1303</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2809,7 +2922,7 @@ Protected Member Functions</h2></td></tr>
 <p>Returns statistics on first solution search, number of decisions sent to<br  />
  filters, number of decisions rejected by filters. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01359">1359</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01410">1410</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2850,7 +2963,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01363">1363</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01414">1414</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2869,7 +2982,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00558">558</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00567">567</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2974,7 +3087,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the set of requirement alternatives when adding the given type. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00586">586</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00625">625</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -2996,7 +3109,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the set of requirement alternatives when removing the given type. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00593">593</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00632">632</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3018,7 +3131,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns variable indices of nodes constrained to be on the same route. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01270">1270</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01321">1321</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3042,6 +3155,26 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="afa6a020a797b17293c91654c16d3c20b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afa6a020a797b17293c91654c16d3c20b">&#9670;&nbsp;</a></span>getTemporalTypeIncompatibilitiesOfType()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">SWIGTYPE_p_absl__flat_hash_setT_int_t getTemporalTypeIncompatibilitiesOfType </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>type</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00585">585</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+
+</div>
+</div>
 <a id="a14773eada46fcabc77d7a7a8474f216f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a14773eada46fcabc77d7a7a8474f216f">&#9670;&nbsp;</a></span>getVehicleClassesCount()</h2>
 
@@ -3059,7 +3192,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the number of different vehicle classes in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01263">1263</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01314">1314</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3079,7 +3212,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01256">1256</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01307">1307</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3098,7 +3231,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01274">1274</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01325">1325</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3164,6 +3297,90 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="af2e056516ca5a7c17be796a18415c588"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af2e056516ca5a7c17be796a18415c588">&#9670;&nbsp;</a></span>hasHardTypeIncompatibilities()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean hasHardTypeIncompatibilities </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns true if any hard (resp. </p>
+<p>temporal) type incompatibilities have<br  />
+ been added to the model. </p>
+
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00593">593</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+
+</div>
+</div>
+<a id="a5753f9dae6d2ecdb1e5178915f698319"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5753f9dae6d2ecdb1e5178915f698319">&#9670;&nbsp;</a></span>hasSameVehicleTypeRequirements()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean hasSameVehicleTypeRequirements </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns true iff any same-route (resp. </p>
+<p>temporal) type requirements have<br  />
+ been added to the model. </p>
+
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00640">640</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+
+</div>
+</div>
+<a id="a52530c3d334b321e6f57513e277e27ce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a52530c3d334b321e6f57513e277e27ce">&#9670;&nbsp;</a></span>hasTemporalTypeIncompatibilities()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean hasTemporalTypeIncompatibilities </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00597">597</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+
+</div>
+</div>
+<a id="a9efda067e1fd63bfe3debb3af7f65275"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9efda067e1fd63bfe3debb3af7f65275">&#9670;&nbsp;</a></span>hasTemporalTypeRequirements()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean hasTemporalTypeRequirements </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00644">644</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+
+</div>
+</div>
 <a id="adafa608d0b3c29ac36cc7a6b65f4b632"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adafa608d0b3c29ac36cc7a6b65f4b632">&#9670;&nbsp;</a></span>hasVehicleWithCostClassIndex()</h2>
 
@@ -3183,7 +3400,7 @@ Protected Member Functions</h2></td></tr>
 <p>Returns true iff the model contains a vehicle with the given<br  />
  cost_class_index. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01238">1238</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01289">1289</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3231,7 +3448,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns true if 'index' represents the last node of a route. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01088">1088</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01139">1139</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3252,7 +3469,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns true if a vehicle/node matching problem is detected. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01370">1370</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01421">1421</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3274,7 +3491,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns true if 'index' represents the first node of a route. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01081">1081</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01132">1132</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3338,7 +3555,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns true if the route of 'vehicle' is non empty in 'assignment'. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01112">1112</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01163">1163</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3385,7 +3602,7 @@ Protected Member Functions</h2></td></tr>
  1, slack[i] = x - 1, slack[i] = x + 2, etc. </li>
 </ol>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01388">1388</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01439">1439</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3470,7 +3687,7 @@ Protected Member Functions</h2></td></tr>
  departute time, n is the number of nodes in the network and m is the<br  />
  number of vehicles. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01408">1408</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01459">1459</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3489,7 +3706,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00927">927</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00978">978</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3523,7 +3740,7 @@ Protected Member Functions</h2></td></tr>
  Returns the variable index of the node directly after the node<br  />
  corresponding to 'index' in 'assignment'. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01105">1105</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01156">1156</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3545,7 +3762,7 @@ Protected Member Functions</h2></td></tr>
 <p>Returns all next variables of the model, such that Nexts(i) is the next<br  />
  variable of the node corresponding to i. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01120">1120</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01171">1171</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3569,7 +3786,7 @@ Protected Member Functions</h2></td></tr>
 <p>Note that<br  />
  NextVar(index) == index is equivalent to ActiveVar(index) == 0. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01136">1136</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01187">1187</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3591,7 +3808,7 @@ Protected Member Functions</h2></td></tr>
 <p>Sizes and indices<br  />
  Returns the number of nodes in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01337">1337</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01388">1388</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3616,7 +3833,7 @@ Protected Member Functions</h2></td></tr>
  can be used in the context of locking the parts of the routes which have<br  />
  already been driven in online routing problems. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00922">922</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00973">973</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3641,7 +3858,7 @@ Protected Member Functions</h2></td></tr>
  Returns nullptr if the file cannot be opened or if the assignment is not<br  />
  valid. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00946">946</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00997">997</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3678,7 +3895,7 @@ Protected Member Functions</h2></td></tr>
  dimension variables; this may take considerable amount of time, especially<br  />
  when using dimensions with slack. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00967">967</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01018">1018</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3784,7 +4001,7 @@ Protected Member Functions</h2></td></tr>
  new solution. </p>
 <p>Returns nullptr if the assignment is not valid. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00955">955</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01006">1006</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3844,7 +4061,7 @@ Protected Member Functions</h2></td></tr>
  solution to the routing problem due to more complex constraints;<br  />
  it is advisible to call <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a731f5347bbdd221db54ada93d1a4f677" title="Returns a vector cumul_bounds, for which cumul_bounds[i][j] is a pair  containing the minimum and max...">solver()</a>-&gt;CheckSolution() afterwards. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00990">990</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01041">1041</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3929,7 +4146,7 @@ Protected Member Functions</h2></td></tr>
  Sets the linear and quadratic cost factor of all vehicles. </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00699">699</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00750">750</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3967,7 +4184,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Sets the linear and quadratic cost factor of the given vehicle. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00706">706</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00757">757</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -3991,7 +4208,7 @@ Protected Member Functions</h2></td></tr>
  route between node 'from' and 'to' is evaluator(from, to), whatever the<br  />
  route or vehicle performing the route. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00647">647</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00698">698</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4023,7 +4240,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Sets the cost function for a given vehicle route. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00654">654</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00705">705</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4066,7 +4283,7 @@ Protected Member Functions</h2></td></tr>
 <p><br  />
  The objective_element of target_assignment is set to this-&gt;cost_. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00865">865</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00916">916</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4091,7 +4308,7 @@ Protected Member Functions</h2></td></tr>
  RoutingSearchParameters.first_solution_strategy = EVALUATOR_STRATEGY.<br  />
  Takes ownership of evaluator. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00731">731</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00782">782</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4115,7 +4332,7 @@ Protected Member Functions</h2></td></tr>
 <p>It is equivalent to calling<br  />
  SetFixedCostOfVehicle on all vehicle routes. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00662">662</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00713">713</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4147,7 +4364,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Sets the fixed cost of one vehicle route. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00669">669</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00720">720</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4173,7 +4390,7 @@ Protected Member Functions</h2></td></tr>
  to limit the number of routes in the case where there are fewer drivers<br  />
  than vehicles and that the fleet of vehicle is heterogeneous. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00631">631</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00682">682</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4310,7 +4527,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the number of next variables in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01351">1351</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01402">1402</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4337,7 +4554,7 @@ Protected Member Functions</h2></td></tr>
  SolveFromAssignmentWithParameters(assignment,<br  />
  DefaultRoutingSearchParameters()). </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00834">834</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00885">885</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4365,7 +4582,7 @@ Protected Member Functions</h2></td></tr>
  SolveFromAssignmentWithParameters(assignment,<br  />
  DefaultRoutingSearchParameters()). </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00821">821</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00872">872</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4395,7 +4612,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00853">853</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00904">904</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4426,7 +4643,7 @@ Protected Member Functions</h2></td></tr>
  constraints and/or modify search algoithms. </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01321">1321</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01372">1372</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4455,7 +4672,7 @@ Protected Member Functions</h2></td></tr>
  the ones in solutions are owned by the underlying solver and should not be<br  />
  deleted. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00848">848</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00899">899</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4479,7 +4696,7 @@ Protected Member Functions</h2></td></tr>
 <p><br  />
  Returns the variable index of the starting node of a vehicle route. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01067">1067</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01118">1118</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4500,7 +4717,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the current status of the routing model. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00883">883</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00934">934</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4526,7 +4743,7 @@ Protected Member Functions</h2></td></tr>
  disjunction has a penalty. In all other cases, including forced active<br  />
  nodes, this returns 0. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00603">603</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00654">654</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4560,7 +4777,7 @@ Protected Member Functions</h2></td></tr>
  penalty is not well defined (default value is passed as first argument to<br  />
  simplify the usage of the method in a callback). </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00612">612</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00663">663</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4583,7 +4800,7 @@ Protected Member Functions</h2></td></tr>
 <p>Returns the variable specifying whether or not costs are considered for<br  />
  vehicle. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01162">1162</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01213">1213</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4606,7 +4823,7 @@ Protected Member Functions</h2></td></tr>
 <p>Returns the vehicle of the given start/end index, and -1 if the given<br  />
  index is not a vehicle start/end. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01096">1096</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01147">1147</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4627,7 +4844,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the number of vehicle routes in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01344">1344</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01395">1395</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4651,7 +4868,7 @@ Protected Member Functions</h2></td></tr>
 <p>Note that<br  />
  VehicleVar(index) == -1 is equivalent to ActiveVar(index) == 0. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01171">1171</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01222">1222</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4673,7 +4890,7 @@ Protected Member Functions</h2></td></tr>
 <p>Returns all vehicle variables of the model, such that VehicleVars(i) is<br  />
  the vehicle variable of the node corresponding to i. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01128">1128</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01179">1179</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4698,7 +4915,7 @@ Protected Member Functions</h2></td></tr>
  Returns false if the file cannot be opened or if there is no current<br  />
  solution. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00937">937</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l00988">988</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4729,7 +4946,7 @@ Protected Member Functions</h2></td></tr>
  If the type was not previously added to the route or all added instances<br  />
  have already been removed, this visit has no effect on the types. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01486">1486</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01537">1537</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4755,7 +4972,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Deliveries must be performed in the same order as pickups. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01459">1459</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01510">1510</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4781,7 +4998,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Deliveries must be performed in reverse order of pickups. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01455">1455</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01506">1506</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4808,7 +5025,7 @@ Protected Member Functions</h2></td></tr>
 <p>Types of precedence policy applied to pickup and delivery pairs. </p>
 <p>Any precedence is accepted. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01451">1451</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01502">1502</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4834,7 +5051,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>No solution found to the problem after calling RoutingModel::Solve(). </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01433">1433</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01484">1484</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4860,7 +5077,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Time limit reached before finding a solution with RoutingModel::Solve(). </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01437">1437</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01488">1488</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4886,7 +5103,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Model, model parameters or flags are not valid. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01441">1441</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01492">1492</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4913,7 +5130,7 @@ Protected Member Functions</h2></td></tr>
 <p>Status of the search. </p>
 <p>Problem not solved yet (before calling RoutingModel::Solve()). </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01425">1425</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01476">1476</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4939,7 +5156,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Problem solved successfully after calling RoutingModel::Solve(). </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01429">1429</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01480">1480</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -4976,7 +5193,7 @@ Protected Member Functions</h2></td></tr>
  impacts the number of types 'T' on the route when visited, and thus<br  />
  determines how temporal incompatibilities and requirements take effect. When visited, the number of types 'T' on the vehicle increases by one. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01479">1479</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01530">1530</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -5003,7 +5220,7 @@ Protected Member Functions</h2></td></tr>
 <p>With the following policy, the visit enforces that type 'T' is<br  />
  considered on the route from its start until this node is visited. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01491">1491</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01542">1542</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>
@@ -5033,7 +5250,7 @@ Protected Member Functions</h2></td></tr>
  This policy can be used for visits which are part of an incompatibility<br  />
  or requirement set without affecting the type count on the route. </p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01498">1498</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingModel_8java_source.html#l01549">1549</a> of file <a class="el" href="RoutingModel_8java_source.html">RoutingModel.java</a>.</p>
 
 </div>
 </div>

@@ -113,8 +113,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a5d6f020504838c2d57528f47cd1fe164"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8d484cfa3afefda70ef152313dffdc27"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1sat_1_1_integer_literal.html">IntegerLiteral</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html#a8d484cfa3afefda70ef152313dffdc27">LowerOrEqual</a> (IntegerValue <a class="el" href="routing__search_8cc.html#a204f9b990226e8288e1aaecbb496cbf8">bound</a>) const</td></tr>
 <tr class="separator:a8d484cfa3afefda70ef152313dffdc27"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19bff44fb82e19c55a4da7fe9aa38a86"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html#a19bff44fb82e19c55a4da7fe9aa38a86">Negated</a> () const</td></tr>
+<tr class="separator:a19bff44fb82e19c55a4da7fe9aa38a86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd9d282f8048fa2818f5856b80466d40"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html#acd9d282f8048fa2818f5856b80466d40">operator==</a> (<a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> o) const</td></tr>
 <tr class="separator:acd9d282f8048fa2818f5856b80466d40"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa9c149604bc3f558e14c6d233ebc4b19"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html#aa9c149604bc3f558e14c6d233ebc4b19">LpValue</a> (const <a class="el" href="classabsl_1_1_strong_vector.html">absl::StrongVector</a>&lt; IntegerVariable, double &gt; &amp;lp_values) const</td></tr>
+<tr class="separator:aa9c149604bc3f558e14c6d233ebc4b19"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -172,7 +176,7 @@ Public Attributes</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">explicit</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -200,12 +204,12 @@ Public Attributes</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">explicit</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00209">209</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00210">210</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -243,7 +247,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00210">210</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00212">212</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -287,7 +291,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00212">212</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00214">214</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -297,6 +301,9 @@ Public Attributes</h2></td></tr>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="structoperations__research_1_1sat_1_1_integer_literal.html">IntegerLiteral</a> GreaterOrEqual </td>
@@ -306,9 +313,14 @@ Public Attributes</h2></td></tr>
           <td> const</td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l00028">28</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01268">1268</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -317,6 +329,9 @@ Public Attributes</h2></td></tr>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="structoperations__research_1_1sat_1_1_integer_literal.html">IntegerLiteral</a> LowerOrEqual </td>
@@ -326,9 +341,69 @@ Public Attributes</h2></td></tr>
           <td> const</td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l00036">36</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01277">1277</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+
+</div>
+</div>
+<a id="aa9c149604bc3f558e14c6d233ebc4b19"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa9c149604bc3f558e14c6d233ebc4b19">&#9670;&nbsp;</a></span>LpValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double LpValue </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classabsl_1_1_strong_vector.html">absl::StrongVector</a>&lt; IntegerVariable, double &gt; &amp;&#160;</td>
+          <td class="paramname"><em>lp_values</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00233">233</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+
+</div>
+</div>
+<a id="a19bff44fb82e19c55a4da7fe9aa38a86"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19bff44fb82e19c55a4da7fe9aa38a86">&#9670;&nbsp;</a></span>Negated()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> Negated </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00224">224</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -356,7 +431,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00222">222</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00228">228</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -373,7 +448,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00228">228</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00241">241</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -389,7 +464,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00229">229</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00242">242</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -405,13 +480,12 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00227">227</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00240">240</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
-<hr/>The documentation for this struct was generated from the following files:<ul>
+<hr/>The documentation for this struct was generated from the following file:<ul>
 <li><a class="el" href="integer_8h_source.html">integer.h</a></li>
-<li><a class="el" href="integer_8cc_source.html">integer.cc</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

@@ -115,8 +115,8 @@ $(document).ready(function(){initNavTree('cliques_8h_source.html',''); initResiz
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &quot;absl/strings/str_cat.h&quot;</span></div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#include &quot;ortools/base/int_type.h&quot;</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#include &quot;ortools/base/int_type_indexed_vector.h&quot;</span></div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="preprocessor">#include &quot;ortools/base/logging.h&quot;</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#include &quot;ortools/base/logging.h&quot;</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="preprocessor">#include &quot;ortools/base/strong_vector.h&quot;</span></div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="preprocessor">#include &quot;ortools/util/time_limit.h&quot;</span></div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceoperations__research.html">operations_research</a> {</div>
@@ -357,7 +357,7 @@ $(document).ready(function(){initNavTree('cliques_8h_source.html',''); initResiz
 <div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    <span class="comment">// clique.</span></div>
 <div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <span class="comment">// NOTE(user): We could store the delta between the iterations; however,</span></div>
 <div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <span class="comment">// we need to evaluate the impact this would have on the performance.</span></div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    gtl::ITIVector&lt;CandidateIndex, NodeIndex&gt; candidates;</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    absl::StrongVector&lt;CandidateIndex, NodeIndex&gt; candidates;</div>
 <div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    <span class="comment">// The index of the first actual candidate in &#39;candidates&#39;. This number is</span></div>
 <div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    <span class="comment">// also the number of elements of the &quot;not&quot; set stored at the beginning of</span></div>
 <div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    <span class="comment">// &#39;candidates&#39;.</span></div>
@@ -533,7 +533,7 @@ $(document).ready(function(){initNavTree('cliques_8h_source.html',''); initResiz
 <div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;  DCHECK(time_limit_ != <span class="keyword">nullptr</span>);</div>
 <div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;  DVLOG(2) &lt;&lt; <span class="stringliteral">&quot;PushState: New depth = &quot;</span> &lt;&lt; states_.size() + 1</div>
 <div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;           &lt;&lt; <span class="stringliteral">&quot;, selected node = &quot;</span> &lt;&lt; selected;</div>
-<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;  gtl::ITIVector&lt;CandidateIndex, NodeIndex&gt; new_candidates;</div>
+<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;  absl::StrongVector&lt;CandidateIndex, NodeIndex&gt; new_candidates;</div>
 <div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160; </div>
 <div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;  State* <span class="keyword">const</span> previous_state = &amp;states_.back();</div>
 <div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;  <span class="keyword">const</span> <span class="keywordtype">double</span> deterministic_time =</div>

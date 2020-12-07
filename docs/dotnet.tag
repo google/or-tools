@@ -173,7 +173,6 @@
     <class kind="class">Google::OrTools::Sat::ReservoirConstraintProto</class>
     <class kind="class">Google::OrTools::Sat::CircuitConstraintProto</class>
     <class kind="class">Google::OrTools::Sat::RoutesConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::CircuitCoveringConstraintProto</class>
     <class kind="class">Google::OrTools::Sat::TableConstraintProto</class>
     <class kind="class">Google::OrTools::Sat::InverseConstraintProto</class>
     <class kind="class">Google::OrTools::Sat::AutomatonConstraintProto</class>
@@ -6637,129 +6636,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Sat::CircuitCoveringConstraintProto</name>
-    <filename>classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html</filename>
-    <member kind="function">
-      <type></type>
-      <name>CircuitCoveringConstraintProto</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>abc15affb181813f07701dddccc0b4f54</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>CircuitCoveringConstraintProto</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a6d22e0f33adae66e164b9d3ae864d6ef</anchor>
-      <arglist>(CircuitCoveringConstraintProto other)</arglist>
-    </member>
-    <member kind="function">
-      <type>CircuitCoveringConstraintProto</type>
-      <name>Clone</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a70c6abe6a33be0411c85e2a6e95d1144</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>override bool</type>
-      <name>Equals</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>aed28555b480a5bca5a5d8349d0f01f11</anchor>
-      <arglist>(object other)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>Equals</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>ac65ff5c64f46ee6be96b2d8ab3055923</anchor>
-      <arglist>(CircuitCoveringConstraintProto other)</arglist>
-    </member>
-    <member kind="function">
-      <type>override int</type>
-      <name>GetHashCode</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a77e1afa2b6dee1ed3640da81d7407b42</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>override string</type>
-      <name>ToString</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>aa73e7c4dd1df5fd5fbf81c7764ee1533</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>WriteTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a3b36e6a370fa4c10b03b619d8f1f1ab1</anchor>
-      <arglist>(pb::CodedOutputStream output)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>CalculateSize</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a3b4564c183dd5666fa9c002a55f80ded</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>MergeFrom</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a3ca75cc4f75f382446482ec579a275b9</anchor>
-      <arglist>(CircuitCoveringConstraintProto other)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>MergeFrom</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a67eef3374888e85bdb523ae39a13e2ac</anchor>
-      <arglist>(pb::CodedInputStream input)</arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
-      <name>NextsFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a4ba5fa320b391aed4974303a5f920e54</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
-      <name>DistinguishedNodesFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a96f57efa5ac9cec39ff587b41ebaa9aa</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property" static="yes">
-      <type>static pb::MessageParser&lt; CircuitCoveringConstraintProto &gt;</type>
-      <name>Parser</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>ad0a46f7b704394041d6778eeed9a8a83</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property" static="yes">
-      <type>static pbr::MessageDescriptor</type>
-      <name>Descriptor</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>acbefcf491fe57d4ebe699914922577fb</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>pbc::RepeatedField&lt; int &gt;</type>
-      <name>Nexts</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a5bef251e9ca8bcce35c82ab6cb53083a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>pbc::RepeatedField&lt; long &gt;</type>
-      <name>DistinguishedNodes</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a165f5c7e64152ed05ecb3259c1ec0851</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>Google::OrTools::LinearSolver::Constraint</name>
     <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</filename>
     <member kind="function">
@@ -7644,7 +7520,6 @@
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281ea231afe47f3f37d3808096b36c28b4ded">Element</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281ea3f370e4e0c59b577aee24aed37e101ee">Circuit</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281eab41067229f91bece9cdfc66681cdd7a3">Routes</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281eaa39056af9e3ac04964e0572677261683">CircuitCovering</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281ea51c45b795d5d18a3e4e0c37e8b20a141">Table</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281eaf1e9ef5d782707fd3975b60cd8f163cf">Automaton</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281ea9f87f02f2da8f99c571b2a1c2a96132b">Inverse</enumvalue>
@@ -7866,13 +7741,6 @@
     </member>
     <member kind="variable" static="yes">
       <type>const int</type>
-      <name>CircuitCoveringFieldNumber</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>ad6eb782502e78045186f0b81c20ce617</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>const int</type>
       <name>TableFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a3678c1082c1966d2023931c59cb013dd</anchor>
@@ -8065,13 +7933,6 @@
       <name>Routes</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a134d17a5f3d3ca04c0e02765d40228ad</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>global::Google.OrTools.Sat.CircuitCoveringConstraintProto??</type>
-      <name>CircuitCovering</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a4c2339ce9ef89286814732851ef2018d</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -15789,45 +15650,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::ConstraintSolver::Int64VectorVector::Int64VectorVectorEnumerator</name>
-    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</filename>
-    <member kind="function">
-      <type></type>
-      <name>Int64VectorVectorEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
-      <anchor>a54c1e4d98a58129ce7291654a685ff8e</anchor>
-      <arglist>(Int64VectorVector collection)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>MoveNext</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
-      <anchor>ad5316c283894d57be1450edab878aed0</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reset</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
-      <anchor>a372de693ad40b3f42839c8ec6ac845f4</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
-      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="property">
-      <type>Int64Vector</type>
-      <name>Current</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
-      <anchor>af75fd7b0112445ab143de51a22c28f77</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>Google::OrTools::LinearSolver::Int64VectorVector::Int64VectorVectorEnumerator</name>
     <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</filename>
     <member kind="function">
@@ -15862,6 +15684,45 @@
       <type>Int64Vector</type>
       <name>Current</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchor>af75fd7b0112445ab143de51a22c28f77</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::ConstraintSolver::Int64VectorVector::Int64VectorVectorEnumerator</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>Int64VectorVectorEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchor>a54c1e4d98a58129ce7291654a685ff8e</anchor>
+      <arglist>(Int64VectorVector collection)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>MoveNext</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchor>ad5316c283894d57be1450edab878aed0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reset</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchor>a372de693ad40b3f42839c8ec6ac845f4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="property">
+      <type>Int64Vector</type>
+      <name>Current</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
       <anchor>af75fd7b0112445ab143de51a22c28f77</anchor>
       <arglist></arglist>
     </member>
@@ -19671,6 +19532,31 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>Google::OrTools::Sat::IntVarArrayHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1Sat_1_1IntVarArrayHelper.html</filename>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>Sum</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVarArrayHelper.html</anchorfile>
+      <anchor>a6ec79ce60e8bb4a2d2620b6e1249c5c3</anchor>
+      <arglist>(this IntVar[] vars)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>ScalProd</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVarArrayHelper.html</anchorfile>
+      <anchor>ada2ac7afc8181ca0d7fc2e62384c2729</anchor>
+      <arglist>(this IntVar[] vars, int[] coeffs)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>ScalProd</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVarArrayHelper.html</anchorfile>
+      <anchor>a05d86afc13c4d0feee0a6f9c4a465a8a</anchor>
+      <arglist>(this IntVar[] vars, long[] coeffs)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::IntVarArrayHelper</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarArrayHelper.html</filename>
     <member kind="function" static="yes">
@@ -19805,31 +19691,6 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarArrayHelper.html</anchorfile>
       <anchor>a84681f91fead396baa53981fd5c1eb7a</anchor>
       <arglist>(this IntVar[,] vars)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Sat::IntVarArrayHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1Sat_1_1IntVarArrayHelper.html</filename>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>Sum</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVarArrayHelper.html</anchorfile>
-      <anchor>a6ec79ce60e8bb4a2d2620b6e1249c5c3</anchor>
-      <arglist>(this IntVar[] vars)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>ScalProd</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVarArrayHelper.html</anchorfile>
-      <anchor>ada2ac7afc8181ca0d7fc2e62384c2729</anchor>
-      <arglist>(this IntVar[] vars, int[] coeffs)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>ScalProd</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVarArrayHelper.html</anchorfile>
-      <anchor>a05d86afc13c4d0feee0a6f9c4a465a8a</anchor>
-      <arglist>(this IntVar[] vars, long[] coeffs)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -22738,228 +22599,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Algorithms::IntVectorVector</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</filename>
-    <class kind="class">Google::OrTools::Algorithms::IntVectorVector::IntVectorVectorEnumerator</class>
-    <member kind="function">
-      <type>void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>adee1dcdd926029ad73b417dc4a2f132c</anchor>
-      <arglist>(global::System.Collections.IEnumerable c)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a77bc59de2bdc251d450034d128b65d91</anchor>
-      <arglist>(global::System.Collections.Generic.IEnumerable&lt; IntVector &gt; c)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>afcf815b72fd02bc71cf77d682a4d4d9b</anchor>
-      <arglist>(IntVector[] array)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a7c2ecbd3b6d1185e7a372c62b8a03586</anchor>
-      <arglist>(IntVector[] array, int arrayIndex)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a1fa514a297b0b009f2e6201ab8ed77ea</anchor>
-      <arglist>(int index, IntVector[] array, int arrayIndex, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>IntVector[]</type>
-      <name>ToArray</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>ae3653e0143110b760a3c56563df175ad</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>IntVectorVectorEnumerator</type>
-      <name>GetEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a1bc2bce5de676b39892075979cba59d5</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Clear</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Add</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>abd9a721b5fa16c3b187d6873aee52bd7</anchor>
-      <arglist>(IntVector x)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a0629b07ba010d53e61ea88aab8cd0f7c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a987746cb1a1095e839067197e9a77be1</anchor>
-      <arglist>(IntVectorVector other)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a59e575f75f9cce2c06cb08f6061d3990</anchor>
-      <arglist>(int capacity)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a03270dfc11507b7a3936e9d59049c922</anchor>
-      <arglist>(IntVectorVector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>IntVectorVector</type>
-      <name>GetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a81cbb75f46a3361fdccda5585e7257b3</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Insert</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>ad09d6b96777bc25a957f403205268dbb</anchor>
-      <arglist>(int index, IntVector x)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>InsertRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>abd53c11dd489025397e9c7aab54b7e2c</anchor>
-      <arglist>(int index, IntVectorVector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveAt</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
-      <arglist>(int index)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>ab81e84f36e1f3879566a09bc3d087c0d</anchor>
-      <arglist>(int index, IntVectorVector values)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static IntVectorVector</type>
-      <name>Repeat</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a4c53efc451b44f9c88fd7597257ab3f4</anchor>
-      <arglist>(IntVector value, int count)</arglist>
-    </member>
-    <member kind="function" protection="protected" virtualness="virtual">
-      <type>virtual void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
-      <arglist>(bool disposing)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>bool</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsFixedSize</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsReadOnly</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>IntVector</type>
-      <name>this[int index]</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a340cfa1eac903b4119cf7e84c49fae5b</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Capacity</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Count</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>aad462966ed963f892117056de1eba502</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsSynchronized</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>Google::OrTools::Util::IntVectorVector</name>
     <filename>classGoogle_1_1OrTools_1_1Util_1_1IntVectorVector.html</filename>
     <class kind="class">Google::OrTools::Util::IntVectorVector::IntVectorVectorEnumerator</class>
@@ -23177,6 +22816,228 @@
       <type>bool</type>
       <name>IsSynchronized</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1IntVectorVector.html</anchorfile>
+      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Algorithms::IntVectorVector</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</filename>
+    <class kind="class">Google::OrTools::Algorithms::IntVectorVector::IntVectorVectorEnumerator</class>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>adee1dcdd926029ad73b417dc4a2f132c</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a77bc59de2bdc251d450034d128b65d91</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; IntVector &gt; c)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>afcf815b72fd02bc71cf77d682a4d4d9b</anchor>
+      <arglist>(IntVector[] array)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a7c2ecbd3b6d1185e7a372c62b8a03586</anchor>
+      <arglist>(IntVector[] array, int arrayIndex)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a1fa514a297b0b009f2e6201ab8ed77ea</anchor>
+      <arglist>(int index, IntVector[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVector[]</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>ae3653e0143110b760a3c56563df175ad</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVectorVectorEnumerator</type>
+      <name>GetEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a1bc2bce5de676b39892075979cba59d5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Clear</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Add</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>abd9a721b5fa16c3b187d6873aee52bd7</anchor>
+      <arglist>(IntVector x)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a0629b07ba010d53e61ea88aab8cd0f7c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a987746cb1a1095e839067197e9a77be1</anchor>
+      <arglist>(IntVectorVector other)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a59e575f75f9cce2c06cb08f6061d3990</anchor>
+      <arglist>(int capacity)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a03270dfc11507b7a3936e9d59049c922</anchor>
+      <arglist>(IntVectorVector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVectorVector</type>
+      <name>GetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a81cbb75f46a3361fdccda5585e7257b3</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Insert</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>ad09d6b96777bc25a957f403205268dbb</anchor>
+      <arglist>(int index, IntVector x)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>InsertRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>abd53c11dd489025397e9c7aab54b7e2c</anchor>
+      <arglist>(int index, IntVectorVector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveAt</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>ab81e84f36e1f3879566a09bc3d087c0d</anchor>
+      <arglist>(int index, IntVectorVector values)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static IntVectorVector</type>
+      <name>Repeat</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a4c53efc451b44f9c88fd7597257ab3f4</anchor>
+      <arglist>(IntVector value, int count)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsFixedSize</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsReadOnly</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>IntVector</type>
+      <name>this[int index]</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a340cfa1eac903b4119cf7e84c49fae5b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Capacity</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Count</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>aad462966ed963f892117056de1eba502</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsSynchronized</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
       <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
       <arglist></arglist>
     </member>
@@ -23847,6 +23708,171 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>Google::OrTools::LinearSolver::LinearExpr</name>
+    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</filename>
+    <member kind="function" virtualness="virtual">
+      <type>virtual double</type>
+      <name>DoVisit</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>af51e8f2b32c9c1e397be6798aa2c79ff</anchor>
+      <arglist>(Dictionary&lt; Variable, double &gt; coefficients, double multiplier)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>Visit</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a433055f200c844a61e58cef630c03fcf</anchor>
+      <arglist>(Dictionary&lt; Variable, double &gt; coefficients)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a548d26025ce5842b43ca805b99646416</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>abd413258d303116f1dfef91f64eb1c2b</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a8dce68ee7a75412eefc193e25cce2359</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator-</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a84a0cd8a12a4114a5be319387837f019</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator-</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>aec3ffacd07d8d90bb255fca7931aa212</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator-</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ae10ffffedef48bf520a489f2612cbba5</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator-</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a532c2d44559645b8247bd747f7ff9035</anchor>
+      <arglist>(LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator*</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a6ab27638ca270e8e0db700d696c723b1</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator/</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a6a2565dc62093400d0faf4daad8f3a2f</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator*</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ae5884c17893b758739964ec63d15816e</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator==</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>adf02d4173330d1866540b5f5ac7f4633</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator==</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a48270aeb3c2bf7d5a67a99aaa7f99579</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator!=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ae69414683801db2310c4191e55d46a65</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator!=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a3124bbb1585a9f54c584fdbd79757250</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Equality</type>
+      <name>operator==</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ac2814e3f58b3724aca29b3e1487cd90a</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Equality</type>
+      <name>operator!=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a9353d050cc6d4a6ad9f92c70243ea28f</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator&lt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>aaa5c8ed01cf652f6b12a1d9432104838</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator&gt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ac7089bc88944bdd4b9500a89c8c78beb</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator&lt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a02ec90c34fea15807c2d4a04a8f4a23d</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator&gt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ae15dfa4bb4e721b3aedf0f22c71b534b</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static implicit</type>
+      <name>operator LinearExpr</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>aacf833e03b58cf1fbd1e65300ede9ba9</anchor>
+      <arglist>(Variable a)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>Google::OrTools::Sat::LinearExpr</name>
     <filename>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</filename>
     <member kind="function" virtualness="virtual">
@@ -24093,171 +24119,6 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
       <anchor>a075e1e3c9dd399cef584d7338cc37938</anchor>
       <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::LinearSolver::LinearExpr</name>
-    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual double</type>
-      <name>DoVisit</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>af51e8f2b32c9c1e397be6798aa2c79ff</anchor>
-      <arglist>(Dictionary&lt; Variable, double &gt; coefficients, double multiplier)</arglist>
-    </member>
-    <member kind="function">
-      <type>double</type>
-      <name>Visit</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a433055f200c844a61e58cef630c03fcf</anchor>
-      <arglist>(Dictionary&lt; Variable, double &gt; coefficients)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator+</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a548d26025ce5842b43ca805b99646416</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator+</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>abd413258d303116f1dfef91f64eb1c2b</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator+</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a8dce68ee7a75412eefc193e25cce2359</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a84a0cd8a12a4114a5be319387837f019</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>aec3ffacd07d8d90bb255fca7931aa212</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae10ffffedef48bf520a489f2612cbba5</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a532c2d44559645b8247bd747f7ff9035</anchor>
-      <arglist>(LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator*</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a6ab27638ca270e8e0db700d696c723b1</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator/</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a6a2565dc62093400d0faf4daad8f3a2f</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator*</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae5884c17893b758739964ec63d15816e</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator==</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>adf02d4173330d1866540b5f5ac7f4633</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator==</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a48270aeb3c2bf7d5a67a99aaa7f99579</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator!=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae69414683801db2310c4191e55d46a65</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator!=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a3124bbb1585a9f54c584fdbd79757250</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Equality</type>
-      <name>operator==</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ac2814e3f58b3724aca29b3e1487cd90a</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Equality</type>
-      <name>operator!=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a9353d050cc6d4a6ad9f92c70243ea28f</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator&lt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>aaa5c8ed01cf652f6b12a1d9432104838</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ac7089bc88944bdd4b9500a89c8c78beb</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator&lt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a02ec90c34fea15807c2d4a04a8f4a23d</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae15dfa4bb4e721b3aedf0f22c71b534b</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static implicit</type>
-      <name>operator LinearExpr</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>aacf833e03b58cf1fbd1e65300ede9ba9</anchor>
-      <arglist>(Variable a)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -47392,10 +47253,52 @@
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, long jarg2)</arglist>
     </member>
     <member kind="function">
+      <type>static void</type>
+      <name>RoutingModel_CloseVisitTypes</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a5e39c112ee4a4d06ce0e80b6a4d9b303</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
       <type>static int</type>
       <name>RoutingModel_GetNumberOfVisitTypes</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
       <anchor>ab9e837843a2d4fba14ce475c457aa28b</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>RoutingModel_AddHardTypeIncompatibility</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a0a8ab52fcff94164d22d759d8eb4706b</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2, int jarg3)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>RoutingModel_AddTemporalTypeIncompatibility</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a4b4c82aed9e60ba81d3c1460b9107319</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2, int jarg3)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>RoutingModel_GetTemporalTypeIncompatibilitiesOfType</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a3d2d7952c0bf0ebda092ecc2877ccad7</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static bool</type>
+      <name>RoutingModel_HasHardTypeIncompatibilities</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>acc93c6e4c452e3e42e697c28ff83acca</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static bool</type>
+      <name>RoutingModel_HasTemporalTypeIncompatibilities</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a2b9cf6e68812408081af05dae5aa60e5</anchor>
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
     </member>
     <member kind="function">
@@ -47414,6 +47317,13 @@
     </member>
     <member kind="function">
       <type>static global::System.IntPtr</type>
+      <name>RoutingModel_GetSameVehicleRequiredTypeAlternativesOfType</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a93e1870e7bb254b8acd99e39a9e234d9</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
       <name>RoutingModel_GetRequiredTypeAlternativesWhenAddingType</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
       <anchor>a064fe12ccb989c44846275ef2c16a459</anchor>
@@ -47425,6 +47335,20 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
       <anchor>afec21f2b77bb27d862ab205c415ee928</anchor>
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static bool</type>
+      <name>RoutingModel_HasSameVehicleTypeRequirements</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>ac402e7beb6ec745bd42b4f2ab0be8c4a</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static bool</type>
+      <name>RoutingModel_HasTemporalTypeRequirements</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a7e74df2c63fe4d384eb6e169d35e1de1</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
     </member>
     <member kind="function">
       <type>static long</type>
@@ -57485,10 +57409,52 @@
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
+      <type>void</type>
+      <name>CloseVisitTypes</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a822458cc9a9a6fa02e86af3e3a1e5c89</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>int</type>
       <name>GetNumberOfVisitTypes</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
       <anchor>ad4f1108da751a34d46fc1a358998616b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddHardTypeIncompatibility</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a796b4eed03ed53bbbaed642f4ae94952</anchor>
+      <arglist>(int type1, int type2)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddTemporalTypeIncompatibility</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a7086a908f1890a7e1550c97b774e6384</anchor>
+      <arglist>(int type1, int type2)</arglist>
+    </member>
+    <member kind="function">
+      <type>SWIGTYPE_p_absl__flat_hash_setT_int_t</type>
+      <name>GetTemporalTypeIncompatibilitiesOfType</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>abd6e1f5b3190054b860f49c15267dbc3</anchor>
+      <arglist>(int type)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasHardTypeIncompatibilities</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a841607525fe2f6e0983e6108259172db</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasTemporalTypeIncompatibilities</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a87ef147b7f7f302015d5156b4e6d027b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -57507,6 +57473,13 @@
     </member>
     <member kind="function">
       <type>SWIGTYPE_p_std__vectorT_absl__flat_hash_setT_int_t_t</type>
+      <name>GetSameVehicleRequiredTypeAlternativesOfType</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>ad5862296785e73fe4e6dd615d2bd32fd</anchor>
+      <arglist>(int type)</arglist>
+    </member>
+    <member kind="function">
+      <type>SWIGTYPE_p_std__vectorT_absl__flat_hash_setT_int_t_t</type>
       <name>GetRequiredTypeAlternativesWhenAddingType</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
       <anchor>a450927393434e1fa5b413e763a82c29e</anchor>
@@ -57518,6 +57491,20 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
       <anchor>aa634a76f4da6df02b9b94ae7b76fdd25</anchor>
       <arglist>(int type)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasSameVehicleTypeRequirements</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>ad2319bf6be14fd3f2ef6a02cc460c5db</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasTemporalTypeRequirements</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a8f39f222e533672ecba06cc52f2eddae</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>long</type>
@@ -68366,98 +68353,34 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::ConstraintSolver::operations_research_constraint_solverPINVOKE::SWIGExceptionHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGExceptionHelper.html</filename>
+    <name>Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE::SWIGExceptionHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</filename>
     <member kind="function">
       <type>delegate void</type>
       <name>ExceptionDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
       <anchor>a2f7b42fc9e57300a8dea7054b35cf1b9</anchor>
       <arglist>(string message)</arglist>
     </member>
     <member kind="function">
       <type>delegate void</type>
       <name>ExceptionArgumentDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
       <anchor>a11886f6ea7069976960a49740509e6cf</anchor>
       <arglist>(string message, string paramName)</arglist>
     </member>
     <member kind="function">
       <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacks_operations_research_constraint_solver</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a59c7767a46b65a71b114a5c1f5ec2c68</anchor>
+      <name>SWIGRegisterExceptionCallbacks_operations_research_linear_solver</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a9514dd03c52ea4b929bed32e2011ef50</anchor>
       <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
     </member>
     <member kind="function">
       <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_constraint_solver</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a2093962797ce82969124ef29c723400e</anchor>
-      <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Algorithms::operations_research_algorithmsPINVOKE::SWIGExceptionHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</filename>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>ExceptionDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a2f7b42fc9e57300a8dea7054b35cf1b9</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>ExceptionArgumentDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a11886f6ea7069976960a49740509e6cf</anchor>
-      <arglist>(string message, string paramName)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacks_operations_research_algorithms</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a6491f8665369a63323ed7fd519b0a5fa</anchor>
-      <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_algorithms</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a12aac45343728c2520028e1fa4cebdba</anchor>
-      <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Graph::operations_research_graphPINVOKE::SWIGExceptionHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGExceptionHelper.html</filename>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>ExceptionDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a2f7b42fc9e57300a8dea7054b35cf1b9</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>ExceptionArgumentDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a11886f6ea7069976960a49740509e6cf</anchor>
-      <arglist>(string message, string paramName)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacks_operations_research_graph</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a6214e64304d7458004687d81a0e30cae</anchor>
-      <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_graph</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a372194d7a4b88ec00246a8a04f994e64</anchor>
+      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_linear_solver</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a343877a57000420d1077e5437bb40617</anchor>
       <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
     </member>
   </compound>
@@ -68494,38 +68417,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE::SWIGExceptionHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</filename>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>ExceptionDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a2f7b42fc9e57300a8dea7054b35cf1b9</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>ExceptionArgumentDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a11886f6ea7069976960a49740509e6cf</anchor>
-      <arglist>(string message, string paramName)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacks_operations_research_linear_solver</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a9514dd03c52ea4b929bed32e2011ef50</anchor>
-      <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_linear_solver</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a343877a57000420d1077e5437bb40617</anchor>
-      <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>Google::OrTools::Util::operations_research_utilPINVOKE::SWIGExceptionHelper</name>
     <filename>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</filename>
     <member kind="function">
@@ -68558,78 +68449,99 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Graph::operations_research_graphPINVOKE::SWIGPendingException</name>
-    <filename>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGPendingException.html</filename>
-    <member kind="function" static="yes">
+    <name>Google::OrTools::Algorithms::operations_research_algorithmsPINVOKE::SWIGExceptionHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</filename>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>ExceptionDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a2f7b42fc9e57300a8dea7054b35cf1b9</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>ExceptionArgumentDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a11886f6ea7069976960a49740509e6cf</anchor>
+      <arglist>(string message, string paramName)</arglist>
+    </member>
+    <member kind="function">
       <type>static void</type>
-      <name>Set</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a82baf4e1ebc3af6128595ba8a17034c6</anchor>
-      <arglist>(global::System.Exception e)</arglist>
+      <name>SWIGRegisterExceptionCallbacks_operations_research_algorithms</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a6491f8665369a63323ed7fd519b0a5fa</anchor>
+      <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
     </member>
-    <member kind="function" static="yes">
-      <type>static global::System.Exception</type>
-      <name>Retrieve</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a99561aa89dd816ba2dd85af036e32227</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="property" static="yes">
-      <type>static bool</type>
-      <name>Pending</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
-      <arglist></arglist>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_algorithms</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a12aac45343728c2520028e1fa4cebdba</anchor>
+      <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Util::operations_research_utilPINVOKE::SWIGPendingException</name>
-    <filename>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</filename>
-    <member kind="function" static="yes">
+    <name>Google::OrTools::ConstraintSolver::operations_research_constraint_solverPINVOKE::SWIGExceptionHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGExceptionHelper.html</filename>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>ExceptionDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a2f7b42fc9e57300a8dea7054b35cf1b9</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>ExceptionArgumentDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a11886f6ea7069976960a49740509e6cf</anchor>
+      <arglist>(string message, string paramName)</arglist>
+    </member>
+    <member kind="function">
       <type>static void</type>
-      <name>Set</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a82baf4e1ebc3af6128595ba8a17034c6</anchor>
-      <arglist>(global::System.Exception e)</arglist>
+      <name>SWIGRegisterExceptionCallbacks_operations_research_constraint_solver</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a59c7767a46b65a71b114a5c1f5ec2c68</anchor>
+      <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
     </member>
-    <member kind="function" static="yes">
-      <type>static global::System.Exception</type>
-      <name>Retrieve</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a99561aa89dd816ba2dd85af036e32227</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="property" static="yes">
-      <type>static bool</type>
-      <name>Pending</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
-      <arglist></arglist>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_constraint_solver</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a2093962797ce82969124ef29c723400e</anchor>
+      <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE::SWIGPendingException</name>
-    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</filename>
-    <member kind="function" static="yes">
+    <name>Google::OrTools::Graph::operations_research_graphPINVOKE::SWIGExceptionHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGExceptionHelper.html</filename>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>ExceptionDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a2f7b42fc9e57300a8dea7054b35cf1b9</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>ExceptionArgumentDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a11886f6ea7069976960a49740509e6cf</anchor>
+      <arglist>(string message, string paramName)</arglist>
+    </member>
+    <member kind="function">
       <type>static void</type>
-      <name>Set</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a82baf4e1ebc3af6128595ba8a17034c6</anchor>
-      <arglist>(global::System.Exception e)</arglist>
+      <name>SWIGRegisterExceptionCallbacks_operations_research_graph</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a6214e64304d7458004687d81a0e30cae</anchor>
+      <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
     </member>
-    <member kind="function" static="yes">
-      <type>static global::System.Exception</type>
-      <name>Retrieve</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a99561aa89dd816ba2dd85af036e32227</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="property" static="yes">
-      <type>static bool</type>
-      <name>Pending</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
-      <arglist></arglist>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_graph</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a372194d7a4b88ec00246a8a04f994e64</anchor>
+      <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -68653,31 +68565,6 @@
       <type>static bool</type>
       <name>Pending</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Sat::operations_research_satPINVOKE::SWIGPendingException</name>
-    <filename>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>Set</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a82baf4e1ebc3af6128595ba8a17034c6</anchor>
-      <arglist>(global::System.Exception e)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static global::System.Exception</type>
-      <name>Retrieve</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a99561aa89dd816ba2dd85af036e32227</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="property" static="yes">
-      <type>static bool</type>
-      <name>Pending</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</anchorfile>
       <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
       <arglist></arglist>
     </member>
@@ -68708,21 +68595,103 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE::SWIGStringHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGStringHelper.html</filename>
-    <member kind="function">
-      <type>delegate string</type>
-      <name>SWIGStringDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>a09806292f70eb61f70057ee6fd528c34</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
+    <name>Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE::SWIGPendingException</name>
+    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</filename>
+    <member kind="function" static="yes">
       <type>static void</type>
-      <name>SWIGRegisterStringCallback_operations_research_linear_solver</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>aef4f16365d83b1d89815a95ef48a0003</anchor>
-      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
+      <name>Set</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a82baf4e1ebc3af6128595ba8a17034c6</anchor>
+      <arglist>(global::System.Exception e)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static global::System.Exception</type>
+      <name>Retrieve</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a99561aa89dd816ba2dd85af036e32227</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="property" static="yes">
+      <type>static bool</type>
+      <name>Pending</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Graph::operations_research_graphPINVOKE::SWIGPendingException</name>
+    <filename>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGPendingException.html</filename>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>Set</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a82baf4e1ebc3af6128595ba8a17034c6</anchor>
+      <arglist>(global::System.Exception e)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static global::System.Exception</type>
+      <name>Retrieve</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a99561aa89dd816ba2dd85af036e32227</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="property" static="yes">
+      <type>static bool</type>
+      <name>Pending</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Sat::operations_research_satPINVOKE::SWIGPendingException</name>
+    <filename>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</filename>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>Set</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a82baf4e1ebc3af6128595ba8a17034c6</anchor>
+      <arglist>(global::System.Exception e)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static global::System.Exception</type>
+      <name>Retrieve</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a99561aa89dd816ba2dd85af036e32227</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="property" static="yes">
+      <type>static bool</type>
+      <name>Pending</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Util::operations_research_utilPINVOKE::SWIGPendingException</name>
+    <filename>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</filename>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>Set</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a82baf4e1ebc3af6128595ba8a17034c6</anchor>
+      <arglist>(global::System.Exception e)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static global::System.Exception</type>
+      <name>Retrieve</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a99561aa89dd816ba2dd85af036e32227</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="property" static="yes">
+      <type>static bool</type>
+      <name>Pending</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
+      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -68740,24 +68709,6 @@
       <name>SWIGRegisterStringCallback_operations_research_graph</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGStringHelper.html</anchorfile>
       <anchor>a6cd5f5702d713b53ce34ef5079c50682</anchor>
-      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Util::operations_research_utilPINVOKE::SWIGStringHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGStringHelper.html</filename>
-    <member kind="function">
-      <type>delegate string</type>
-      <name>SWIGStringDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>a09806292f70eb61f70057ee6fd528c34</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterStringCallback_operations_research_util</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>a50fcf56fc9d5220e2a190ad58881e4af</anchor>
       <arglist>(SWIGStringDelegate stringDelegate)</arglist>
     </member>
   </compound>
@@ -68780,20 +68731,38 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Algorithms::operations_research_algorithmsPINVOKE::SWIGStringHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html</filename>
+    <name>Google::OrTools::Util::operations_research_utilPINVOKE::SWIGStringHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGStringHelper.html</filename>
     <member kind="function">
       <type>delegate string</type>
       <name>SWIGStringDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGStringHelper.html</anchorfile>
       <anchor>a09806292f70eb61f70057ee6fd528c34</anchor>
       <arglist>(string message)</arglist>
     </member>
     <member kind="function">
       <type>static void</type>
-      <name>SWIGRegisterStringCallback_operations_research_algorithms</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>abae544aa94ecba5f3bb316e1cebba97f</anchor>
+      <name>SWIGRegisterStringCallback_operations_research_util</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>a50fcf56fc9d5220e2a190ad58881e4af</anchor>
+      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE::SWIGStringHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGStringHelper.html</filename>
+    <member kind="function">
+      <type>delegate string</type>
+      <name>SWIGStringDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>a09806292f70eb61f70057ee6fd528c34</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterStringCallback_operations_research_linear_solver</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>aef4f16365d83b1d89815a95ef48a0003</anchor>
       <arglist>(SWIGStringDelegate stringDelegate)</arglist>
     </member>
   </compound>
@@ -68812,6 +68781,24 @@
       <name>SWIGRegisterStringCallback_operations_research_constraint_solver</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGStringHelper.html</anchorfile>
       <anchor>ac9adff8a435815a9ef0bd8865c012bcf</anchor>
+      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Algorithms::operations_research_algorithmsPINVOKE::SWIGStringHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html</filename>
+    <member kind="function">
+      <type>delegate string</type>
+      <name>SWIGStringDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>a09806292f70eb61f70057ee6fd528c34</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterStringCallback_operations_research_algorithms</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>abae544aa94ecba5f3bb316e1cebba97f</anchor>
       <arglist>(SWIGStringDelegate stringDelegate)</arglist>
     </member>
   </compound>
@@ -69938,6 +69925,69 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>Google::OrTools::Sat::DecisionStrategyProto::Types</name>
+    <filename>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html</filename>
+    <class kind="class">Google::OrTools::Sat::DecisionStrategyProto::Types::AffineTransformation</class>
+    <member kind="enumeration">
+      <type></type>
+      <name>VariableSelectionStrategy</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html</anchorfile>
+      <anchor>ab1ab0981c6778450a475665a5958801f</anchor>
+      <arglist></arglist>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa20a038f30cb4756f1fc6cca6763efa53">ChooseFirst</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa356b429f7d36cd0017559c549d971da3">ChooseLowestMin</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa8648ed23be60e735c060dfaf91dea38c">ChooseHighestMax</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa2f7b2335ebea02ad66b62210e5e1446a">ChooseMinDomainSize</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa71e59630759dd45e4e49d0f2126b2414">ChooseMaxDomainSize</enumvalue>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>DomainReductionStrategy</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html</anchorfile>
+      <anchor>ae17715e4689c1665ecc8d75f1fd97b9c</anchor>
+      <arglist></arglist>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9ca1875282f148b62ca5496ff62ecf7fcb3">SelectMinValue</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9ca801ed31e8a61b786c0053ba613c9a7e6">SelectMaxValue</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9ca287c7d1e4bb8b247353867425494399e">SelectLowerHalf</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9cabb845bb89078e95ab5b64cd1130474c2">SelectUpperHalf</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9ca1b69d85ba6efd4971b0df87c5188a3b1">SelectMedianValue</enumvalue>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::ConstraintSolver::LocalSearchMetaheuristic::Types</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html</filename>
+    <member kind="enumeration">
+      <type></type>
+      <name>Value</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html</anchorfile>
+      <anchor>a896c037a32087c5c20d97e64a1786880</anchor>
+      <arglist></arglist>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880ac9f88e098f6fe4e4e112eeb05ccb9671">Unset</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a086247a9b57fde6eefee2a0c4752242d">Automatic</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880acb6fff8d60b88e3ae5fe6c65141fc29d">GreedyDescent</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a497dd969cdc61ecfd0418e401b94ceb3">GuidedLocalSearch</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a9e54e50d057e08825382c09877dede7f">SimulatedAnnealing</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a6053a07fb774ef5a566d217916fb3d45">TabuSearch</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880af85ec2ae77c650ad26da12d7a8e11259">GenericTabuSearch</enumvalue>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types::ImprovementSearchLimitParameters</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types::LocalSearchNeighborhoodOperators</class>
+    <member kind="enumeration">
+      <type></type>
+      <name>SchedulingSolver</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html</anchorfile>
+      <anchor>ac9587d7f4c2cce84c8da033c29a0e609</anchor>
+      <arglist></arglist>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html" anchor="ac9587d7f4c2cce84c8da033c29a0e609ac9f88e098f6fe4e4e112eeb05ccb9671">Unset</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html" anchor="ac9587d7f4c2cce84c8da033c29a0e609a4ba4895f8b18979368eaf36c076545b7">Glop</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html" anchor="ac9587d7f4c2cce84c8da033c29a0e609a3f0d4c1058437102dd3ee312cae84476">CpSat</enumvalue>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::FirstSolutionStrategy::Types</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html</filename>
     <member kind="enumeration">
@@ -69975,69 +70025,6 @@
       <arglist></arglist>
       <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html" anchor="a00935459e4b73bd96feed637daa08c81a48ecb2dc57692eca74074d9ad9fd4890">NoCompression</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html" anchor="a00935459e4b73bd96feed637daa08c81af3564e3865c79bf16f847612f41938c3">CompressWithZlib</enumvalue>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types</name>
-    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html</filename>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types::ImprovementSearchLimitParameters</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types::LocalSearchNeighborhoodOperators</class>
-    <member kind="enumeration">
-      <type></type>
-      <name>SchedulingSolver</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html</anchorfile>
-      <anchor>ac9587d7f4c2cce84c8da033c29a0e609</anchor>
-      <arglist></arglist>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html" anchor="ac9587d7f4c2cce84c8da033c29a0e609ac9f88e098f6fe4e4e112eeb05ccb9671">Unset</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html" anchor="ac9587d7f4c2cce84c8da033c29a0e609a4ba4895f8b18979368eaf36c076545b7">Glop</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html" anchor="ac9587d7f4c2cce84c8da033c29a0e609a3f0d4c1058437102dd3ee312cae84476">CpSat</enumvalue>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::ConstraintSolver::LocalSearchMetaheuristic::Types</name>
-    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html</filename>
-    <member kind="enumeration">
-      <type></type>
-      <name>Value</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html</anchorfile>
-      <anchor>a896c037a32087c5c20d97e64a1786880</anchor>
-      <arglist></arglist>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880ac9f88e098f6fe4e4e112eeb05ccb9671">Unset</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a086247a9b57fde6eefee2a0c4752242d">Automatic</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880acb6fff8d60b88e3ae5fe6c65141fc29d">GreedyDescent</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a497dd969cdc61ecfd0418e401b94ceb3">GuidedLocalSearch</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a9e54e50d057e08825382c09877dede7f">SimulatedAnnealing</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a6053a07fb774ef5a566d217916fb3d45">TabuSearch</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880af85ec2ae77c650ad26da12d7a8e11259">GenericTabuSearch</enumvalue>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Sat::DecisionStrategyProto::Types</name>
-    <filename>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html</filename>
-    <class kind="class">Google::OrTools::Sat::DecisionStrategyProto::Types::AffineTransformation</class>
-    <member kind="enumeration">
-      <type></type>
-      <name>VariableSelectionStrategy</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html</anchorfile>
-      <anchor>ab1ab0981c6778450a475665a5958801f</anchor>
-      <arglist></arglist>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa20a038f30cb4756f1fc6cca6763efa53">ChooseFirst</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa356b429f7d36cd0017559c549d971da3">ChooseLowestMin</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa8648ed23be60e735c060dfaf91dea38c">ChooseHighestMax</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa2f7b2335ebea02ad66b62210e5e1446a">ChooseMinDomainSize</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa71e59630759dd45e4e49d0f2126b2414">ChooseMaxDomainSize</enumvalue>
-    </member>
-    <member kind="enumeration">
-      <type></type>
-      <name>DomainReductionStrategy</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html</anchorfile>
-      <anchor>ae17715e4689c1665ecc8d75f1fd97b9c</anchor>
-      <arglist></arglist>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9ca1875282f148b62ca5496ff62ecf7fcb3">SelectMinValue</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9ca801ed31e8a61b786c0053ba613c9a7e6">SelectMaxValue</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9ca287c7d1e4bb8b247353867425494399e">SelectLowerHalf</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9cabb845bb89078e95ab5b64cd1130474c2">SelectUpperHalf</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9ca1b69d85ba6efd4971b0df87c5188a3b1">SelectMedianValue</enumvalue>
     </member>
   </compound>
   <compound kind="class">
@@ -71272,7 +71259,6 @@
     <class kind="class">Google::OrTools::Sat::BoolArgumentProto</class>
     <class kind="class">Google::OrTools::Sat::BoundedLinearExpression</class>
     <class kind="class">Google::OrTools::Sat::CircuitConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::CircuitCoveringConstraintProto</class>
     <class kind="class">Google::OrTools::Sat::Constraint</class>
     <class kind="class">Google::OrTools::Sat::ConstraintProto</class>
     <class kind="class">Google::OrTools::Sat::CpModel</class>

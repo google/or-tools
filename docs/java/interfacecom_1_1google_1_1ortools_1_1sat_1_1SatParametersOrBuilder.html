@@ -598,6 +598,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ac3fef8e4bc3d2d84ef53f24b1965a9a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af580e3f5aa310bb975be3edb2323598b"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#af580e3f5aa310bb975be3edb2323598b">getProbingPeriodAtRoot</a> ()</td></tr>
 <tr class="separator:af580e3f5aa310bb975be3edb2323598b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae44911f8209882b951e7f28e1d43248d"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#ae44911f8209882b951e7f28e1d43248d">hasUseProbingSearch</a> ()</td></tr>
+<tr class="separator:ae44911f8209882b951e7f28e1d43248d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8c8e13e91dc5abe9922c509f0ae16d3d"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#a8c8e13e91dc5abe9922c509f0ae16d3d">getUseProbingSearch</a> ()</td></tr>
+<tr class="separator:a8c8e13e91dc5abe9922c509f0ae16d3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae850a1d29f9e554e917143f0193f254f"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#ae850a1d29f9e554e917143f0193f254f">hasPseudoCostReliabilityThreshold</a> ()</td></tr>
 <tr class="separator:ae850a1d29f9e554e917143f0193f254f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a830446d9b5ec738cc75dc98592372378"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#a830446d9b5ec738cc75dc98592372378">getPseudoCostReliabilityThreshold</a> ()</td></tr>
@@ -4401,6 +4405,29 @@ depending on the problem, turning this off may lead to a faster solution.
 
 </div>
 </div>
+<a id="a8c8e13e91dc5abe9922c509f0ae16d3d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8c8e13e91dc5abe9922c509f0ae16d3d">&#9670;&nbsp;</a></span>getUseProbingSearch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean getUseProbingSearch </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+If true, search will continuously probe Boolean variables, and integer
+variable bounds.
+</pre><p><code>optional bool use_probing_search = 176 [default = false];</code> </p><dl class="section return"><dt>Returns</dt><dd>The useProbingSearch. </dd></dl>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a4beee0511a6240eec01cb4e5ccc27b0c">SatParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a4beee0511a6240eec01cb4e5ccc27b0c">SatParameters</a>.</p>
+
+</div>
+</div>
 <a id="a3543a573e5491ecb5a4ff1fe5eec1a13"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3543a573e5491ecb5a4ff1fe5eec1a13">&#9670;&nbsp;</a></span>getUseRelaxationLns()</h2>
 
@@ -8020,6 +8047,29 @@ depending on the problem, turning this off may lead to a faster solution.
 </pre><p><code>optional bool use_precedences_in_disjunctive_constraint = 74 [default = true];</code> </p><dl class="section return"><dt>Returns</dt><dd>Whether the usePrecedencesInDisjunctiveConstraint field is set. </dd></dl>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a2a6f6950c205c93704ae6572aa4bf99f">SatParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a2a6f6950c205c93704ae6572aa4bf99f">SatParameters</a>.</p>
+
+</div>
+</div>
+<a id="ae44911f8209882b951e7f28e1d43248d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae44911f8209882b951e7f28e1d43248d">&#9670;&nbsp;</a></span>hasUseProbingSearch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean hasUseProbingSearch </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+If true, search will continuously probe Boolean variables, and integer
+variable bounds.
+</pre><p><code>optional bool use_probing_search = 176 [default = false];</code> </p><dl class="section return"><dt>Returns</dt><dd>Whether the useProbingSearch field is set. </dd></dl>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a0857368c4932d66d7aa96eb7d453c29b">SatParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a0857368c4932d66d7aa96eb7d453c29b">SatParameters</a>.</p>
 
 </div>
 </div>

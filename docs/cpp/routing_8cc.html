@@ -125,12 +125,6 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a5848b20f7be62178e0622857cdde1c5c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="routing_8cc.html#a5848b20f7be62178e0622857cdde1c5c">CP_ROUTING_ADD_OPERATOR</a>(operator_type,  cp_operator_type)</td></tr>
-<tr class="separator:a5848b20f7be62178e0622857cdde1c5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a862aa2f3b4a614437818a70af7210e49"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="routing_8cc.html#a862aa2f3b4a614437818a70af7210e49">CP_ROUTING_ADD_OPERATOR2</a>(operator_type,  cp_operator_class)</td></tr>
-<tr class="separator:a862aa2f3b4a614437818a70af7210e49"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8723e0c288f203c5aa308143035b9695"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="routing_8cc.html#a8723e0c288f203c5aa308143035b9695">CP_ROUTING_ADD_CALLBACK_OPERATOR</a>(operator_type,  cp_operator_type)</td></tr>
-<tr class="separator:a8723e0c288f203c5aa308143035b9695"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a29befb522070fbb60d7eac99962701e8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="routing_8cc.html#a29befb522070fbb60d7eac99962701e8">CP_ROUTING_PUSH_OPERATOR</a>(operator_type,  operator_method,  operators)</td></tr>
 <tr class="separator:a29befb522070fbb60d7eac99962701e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -158,124 +152,6 @@ Variables</h2></td></tr>
 <tr class="separator:aa2347e154737220869f298587dfb3dc0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="a8723e0c288f203c5aa308143035b9695"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8723e0c288f203c5aa308143035b9695">&#9670;&nbsp;</a></span>CP_ROUTING_ADD_CALLBACK_OPERATOR</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define CP_ROUTING_ADD_CALLBACK_OPERATOR</td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">operator_type, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">cp_operator_type&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">  <span class="keywordflow">if</span> (CostsAreHomogeneousAcrossVehicles()) {                              \</div>
-<div class="line">    local_search_operators_[operator_type] = solver_-&gt;MakeOperator(       \</div>
-<div class="line">        nexts_,                                                           \</div>
-<div class="line">        [<span class="keyword">this</span>](<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> i, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> j, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> k) {                               \</div>
-<div class="line">          return GetArcCostForVehicle(i, j, k);                           \</div>
-<div class="line">        },                                                                \</div>
-<div class="line">        Solver::cp_operator_type);                                        \</div>
-<div class="line">  } <span class="keywordflow">else</span> {                                                                \</div>
-<div class="line">    local_search_operators_[operator_type] = solver_-&gt;MakeOperator(       \</div>
-<div class="line">        nexts_, vehicle_vars_,                                            \</div>
-<div class="line">        [<span class="keyword">this</span>](<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> i, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> j, <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> k) {                               \</div>
-<div class="line">          return GetArcCostForVehicle(i, j, k);                           \</div>
-<div class="line">        },                                                                \</div>
-<div class="line">        Solver::cp_operator_type);                                        \</div>
-<div class="line">  }</div>
-</div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04559">4559</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
-
-</div>
-</div>
-<a id="a5848b20f7be62178e0622857cdde1c5c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5848b20f7be62178e0622857cdde1c5c">&#9670;&nbsp;</a></span>CP_ROUTING_ADD_OPERATOR</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define CP_ROUTING_ADD_OPERATOR</td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">operator_type, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">cp_operator_type&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">  <span class="keywordflow">if</span> (CostsAreHomogeneousAcrossVehicles()) {                        \</div>
-<div class="line">    local_search_operators_[operator_type] =                        \</div>
-<div class="line">        solver_-&gt;MakeOperator(nexts_, Solver::cp_operator_type);    \</div>
-<div class="line">  } <span class="keywordflow">else</span> {                                                          \</div>
-<div class="line">    local_search_operators_[operator_type] = solver_-&gt;MakeOperator( \</div>
-<div class="line">        nexts_, vehicle_vars_, Solver::cp_operator_type);           \</div>
-<div class="line">  }</div>
-</div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04542">4542</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
-
-</div>
-</div>
-<a id="a862aa2f3b4a614437818a70af7210e49"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a862aa2f3b4a614437818a70af7210e49">&#9670;&nbsp;</a></span>CP_ROUTING_ADD_OPERATOR2</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define CP_ROUTING_ADD_OPERATOR2</td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">operator_type, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">cp_operator_class&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">  local_search_operators_[operator_type] =                             \</div>
-<div class="line">      MakeLocalSearchOperator&lt;cp_operator_class&gt;(                      \</div>
-<div class="line">          solver_.get(), nexts_,                                       \</div>
-<div class="line">          CostsAreHomogeneousAcrossVehicles() ? std::vector&lt;IntVar*&gt;() \</div>
-<div class="line">                                              : vehicle_vars_,         \</div>
-<div class="line">          vehicle_start_class_callback_);</div>
-</div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04551">4551</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
-
-</div>
-</div>
 <a id="a29befb522070fbb60d7eac99962701e8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a29befb522070fbb60d7eac99962701e8">&#9670;&nbsp;</a></span>CP_ROUTING_PUSH_OPERATOR</h2>
 
@@ -312,7 +188,7 @@ Variables</h2></td></tr>
 <div class="line">    operators.push_back(local_search_operators_[operator_type]);            \</div>
 <div class="line">  }</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04751">4751</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l04564">4564</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -359,8 +235,7 @@ Variables</h2></td></tr>
 </div>
 </div><!-- contents -->
 </div><!-- doc-content -->
-<div class="ttc" id="aintegral__types_8h_html_a7cde0074dfd288f2d70c0e035dacb28a"><div class="ttname"><a href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a></div><div class="ttdeci">int64_t int64</div><div class="ttdef"><b>Definition:</b> <a href="integral__types_8h_source.html#l00034">integral_types.h:34</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_html_ab13458305fa2eb87238ff66066eecd5da7149f32738efcef1bf4db3d635d804b0"><div class="ttname"><a href="namespaceoperations__research.html#ab13458305fa2eb87238ff66066eecd5da7149f32738efcef1bf4db3d635d804b0">operations_research::BOOL_TRUE</a></div><div class="ttdeci">@ BOOL_TRUE</div><div class="ttdef"><b>Definition:</b> <a href="optional__boolean_8pb_8h_source.html#l00063">optional_boolean.pb.h:63</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_html_ab13458305fa2eb87238ff66066eecd5da7149f32738efcef1bf4db3d635d804b0"><div class="ttname"><a href="namespaceoperations__research.html#ab13458305fa2eb87238ff66066eecd5da7149f32738efcef1bf4db3d635d804b0">operations_research::BOOL_TRUE</a></div><div class="ttdeci">@ BOOL_TRUE</div><div class="ttdef"><b>Definition:</b> <a href="optional__boolean_8pb_8h_source.html#l00062">optional_boolean.pb.h:62</a></div></div>
 <!-- HTML footer for doxygen 1.8.18-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

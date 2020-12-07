@@ -169,160 +169,161 @@ $(document).ready(function(){initNavTree('sat__decision_8h_source.html',''); ini
 <div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;  <span class="comment">// This changes a bit the polarity heuristics and is controlled from within</span></div>
 <div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;  <span class="comment">// SatRestartPolicy.</span></div>
 <div class="line"><a name="l00080"></a><span class="lineno"><a class="line" href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#a9004867224c2af27a8b06fc439c8a7a4">   80</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#a9004867224c2af27a8b06fc439c8a7a4">SetStablePhase</a>(<span class="keywordtype">bool</span> is_stable) { in_stable_phase_ = is_stable; }</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;  <span class="comment">// This is used to temporarily disable phase_saving when we do some probing</span></div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;  <span class="comment">// during search for instance.</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno"><a class="line" href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#a9db2d9ca018c68d3f84ee946e3603886">   84</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#a9db2d9ca018c68d3f84ee946e3603886">MaybeEnablePhaseSaving</a>(<span class="keywordtype">bool</span> save_phase) {</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    maybe_enable_phase_saving_ = save_phase;</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;  }</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;  <span class="comment">// Gives a hint so the solver tries to find a solution with the given literal</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;  <span class="comment">// set to true. Currently this take precedence over the phase saving heuristic</span></div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;  <span class="comment">// and a variable with a preference will always be branched on according to</span></div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;  <span class="comment">// this preference.</span></div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;  <span class="comment">//</span></div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;  <span class="comment">// The weight is used as a tie-breaker between variable with the same</span></div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;  <span class="comment">// activities. Larger weight will be selected first. A weight of zero is the</span></div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;  <span class="comment">// default value for the other variables.</span></div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;  <span class="comment">//</span></div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;  <span class="comment">// Note(user): Having a lot of different weights may slow down the priority</span></div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;  <span class="comment">// queue operations if there is millions of variables.</span></div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#a955786dcbe82b7c4dc9924a5473ac1e8">SetAssignmentPreference</a>(<a class="code" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> <a class="code" href="optimization_8cc.html#af63dcc00f2023fdf498e0829e6fb8a6b">literal</a>, <span class="keywordtype">double</span> <a class="code" href="pack_8cc.html#ae42ca38a167164c07831993889216903">weight</a>);</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;  <span class="comment">// Returns the vector of the current assignment preferences.</span></div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;  std::vector&lt;std::pair&lt;Literal, double&gt;&gt; <a class="code" href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#a0b5d7f31620ad7b364e7415c47ee5e0d">AllPreferences</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; <span class="keyword">private</span>:</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;  <span class="comment">// Computes an initial variable ordering.</span></div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;  <span class="keywordtype">void</span> InitializeVariableOrdering();</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;  <span class="comment">// Rescales activity value of all variables when one of them reached the max.</span></div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;  <span class="keywordtype">void</span> RescaleVariableActivities(<span class="keywordtype">double</span> scaling_factor);</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160; </div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;  <span class="comment">// Reinitializes the inital polarity of all the variables with an index</span></div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;  <span class="comment">// greater than or equal to the given one.</span></div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;  <span class="keywordtype">void</span> ResetInitialPolarity(<span class="keywordtype">int</span> from, <span class="keywordtype">bool</span> inverted = <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160; </div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;  <span class="comment">// Code used for resetting the initial polarity at the beginning of each</span></div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;  <span class="comment">// phase.</span></div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;  <span class="keywordtype">void</span> RephaseIfNeeded();</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;  <span class="keywordtype">void</span> UseLongestAssignmentAsInitialPolarity();</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;  <span class="keywordtype">void</span> FlipCurrentPolarity();</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;  <span class="keywordtype">void</span> RandomizeCurrentPolarity();</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160; </div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;  <span class="comment">// Adds the given variable to var_ordering_ or updates its priority if it is</span></div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;  <span class="comment">// already present.</span></div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;  <span class="keywordtype">void</span> PqInsertOrUpdate(BooleanVariable <a class="code" href="expr__array_8cc.html#a472a99923cbe11ae7b5a5d157d9ad465">var</a>);</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160; </div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;  <span class="comment">// Singleton model objects.</span></div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;  <span class="keyword">const</span> SatParameters&amp; parameters_;</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;  <span class="keyword">const</span> <a class="code" href="classoperations__research_1_1sat_1_1_trail.html">Trail</a>&amp; trail_;</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;  <a class="code" href="structoperations__research_1_1sat_1_1_model_random_generator.html">ModelRandomGenerator</a>* random_;</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160; </div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;  <span class="comment">// Variable ordering (priority will be adjusted dynamically). queue_elements_</span></div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;  <span class="comment">// holds the elements used by var_ordering_ (it uses pointers).</span></div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;  <span class="comment">//</span></div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;  <span class="comment">// Note that we recover the variable that a WeightedVarQueueElement refers to</span></div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;  <span class="comment">// by its position in the queue_elements_ vector, and we can recover the later</span></div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;  <span class="comment">// using (pointer - &amp;queue_elements_[0]).</span></div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;  <span class="keyword">struct </span>WeightedVarQueueElement {</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    <span class="comment">// Interface for the IntegerPriorityQueue.</span></div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    <span class="keywordtype">int</span> <a class="code" href="namespaceoperations__research_1_1glop.html#abec9e934a51aa2ab519684cc0f446a41">Index</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <a class="code" href="expr__array_8cc.html#a472a99923cbe11ae7b5a5d157d9ad465">var</a>.value(); }</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160; </div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;    <span class="comment">// Priority order. The IntegerPriorityQueue returns the largest element</span></div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;    <span class="comment">// first.</span></div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    <span class="comment">// Note(user): We used to also break ties using the variable index, however</span></div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    <span class="comment">// this has two drawbacks:</span></div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    <span class="comment">// - On problem with many variables, this slow down quite a lot the priority</span></div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    <span class="comment">//   queue operations (which do as little work as possible and hence benefit</span></div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <span class="comment">//   from having the majority of elements with a priority of 0).</span></div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    <span class="comment">// - It seems to be a bad heuristics. One reason could be that the priority</span></div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    <span class="comment">//   queue will automatically diversify the choice of the top variables</span></div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    <span class="comment">//   amongst the ones with the same priority.</span></div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;    <span class="comment">// Note(user): For the same reason as explained above, it is probably a good</span></div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    <span class="comment">// idea not to have too many different values for the tie_breaker field. I</span></div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    <span class="comment">// am not even sure we should have such a field...</span></div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;    <span class="keywordtype">bool</span> operator&lt;(<span class="keyword">const</span> WeightedVarQueueElement&amp; other)<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;      <span class="keywordflow">return</span> <a class="code" href="pack_8cc.html#ae42ca38a167164c07831993889216903">weight</a> &lt; other.weight ||</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;             (<a class="code" href="pack_8cc.html#ae42ca38a167164c07831993889216903">weight</a> == other.weight &amp;&amp; (tie_breaker &lt; other.tie_breaker));</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;    }</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160; </div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    BooleanVariable <a class="code" href="expr__array_8cc.html#a472a99923cbe11ae7b5a5d157d9ad465">var</a>;</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    <span class="keywordtype">float</span> tie_breaker;</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160; </div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;    <span class="comment">// TODO(user): Experiment with float. In the rest of the code, we use</span></div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    <span class="comment">// double, but maybe we don&#39;t need that much precision. Using float here may</span></div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;    <span class="comment">// save memory and make the PQ operations faster.</span></div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    <span class="keywordtype">double</span> <a class="code" href="pack_8cc.html#ae42ca38a167164c07831993889216903">weight</a>;</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;  };</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;  static_assert(<span class="keyword">sizeof</span>(WeightedVarQueueElement) == 16,</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;                <span class="stringliteral">&quot;ERROR_WeightedVarQueueElement_is_not_well_compacted&quot;</span>);</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160; </div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;  <span class="keywordtype">bool</span> var_ordering_is_initialized_ = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;  IntegerPriorityQueue&lt;WeightedVarQueueElement&gt; var_ordering_;</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160; </div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;  <span class="comment">// This is used for the branching heuristic described in &quot;Learning Rate Based</span></div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;  <span class="comment">// Branching Heuristic for SAT solvers&quot;, J.H.Liang, V. Ganesh, P. Poupart,</span></div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;  <span class="comment">// K.Czarnecki, SAT 2016.</span></div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;  <span class="comment">//</span></div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;  <span class="comment">// The entries are sorted by trail index, and one can get the number of</span></div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;  <span class="comment">// conflicts during which a variable at a given trail index i was assigned by</span></div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;  <span class="comment">// summing the entry.count for all entries with a trail index greater than i.</span></div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;  <span class="keyword">struct </span>NumConflictsStackEntry {</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    <span class="keywordtype">int</span> trail_index;</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> count;</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;  };</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> num_conflicts_ = 0;</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;  std::vector&lt;NumConflictsStackEntry&gt; num_conflicts_stack_;</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160; </div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;  <span class="comment">// Whether the priority of the given variable needs to be updated in</span></div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;  <span class="comment">// var_ordering_. Note that this is only accessed for assigned variables and</span></div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;  <span class="comment">// that for efficiency it is indexed by trail indices. If</span></div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;  <span class="comment">// pq_need_update_for_var_at_trail_index_[trail_-&gt;Info(var).trail_index] is</span></div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;  <span class="comment">// true when we untrail var, then either var need to be inserted in the queue,</span></div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;  <span class="comment">// or we need to notify that its priority has changed.</span></div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;  BitQueue64 pq_need_update_for_var_at_trail_index_;</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160; </div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;  <span class="comment">// Increment used to bump the variable activities.</span></div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;  <span class="keywordtype">double</span> variable_activity_increment_ = 1.0;</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160; </div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;  <span class="comment">// Stores variable activity and the number of time each variable was &quot;bumped&quot;.</span></div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;  <span class="comment">// The later is only used with the ERWA heuristic.</span></div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;  <a class="code" href="classgtl_1_1_i_t_i_vector.html">gtl::ITIVector&lt;BooleanVariable, double&gt;</a> activities_;</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;  <a class="code" href="classgtl_1_1_i_t_i_vector.html">gtl::ITIVector&lt;BooleanVariable, double&gt;</a> tie_breakers_;</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;  <a class="code" href="classgtl_1_1_i_t_i_vector.html">gtl::ITIVector&lt;BooleanVariable, int64&gt;</a> num_bumps_;</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160; </div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;  <span class="comment">// If the polarity if forced (externally) we alway use this first.</span></div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;  <a class="code" href="classgtl_1_1_i_t_i_vector.html">gtl::ITIVector&lt;BooleanVariable, bool&gt;</a> has_forced_polarity_;</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;  <a class="code" href="classgtl_1_1_i_t_i_vector.html">gtl::ITIVector&lt;BooleanVariable, bool&gt;</a> forced_polarity_;</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160; </div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;  <span class="comment">// If we are in a stable phase, we follow the current target.</span></div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;  <span class="keywordtype">bool</span> in_stable_phase_ = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;  <span class="keywordtype">int</span> target_length_ = 0;</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;  <a class="code" href="classgtl_1_1_i_t_i_vector.html">gtl::ITIVector&lt;BooleanVariable, bool&gt;</a> has_target_polarity_;</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;  <a class="code" href="classgtl_1_1_i_t_i_vector.html">gtl::ITIVector&lt;BooleanVariable, bool&gt;</a> target_polarity_;</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160; </div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;  <span class="comment">// Otherwise we follow var_polarity_ which is reset at the beginning of</span></div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;  <span class="comment">// each new polarity phase. This is also overwritten by phase saving.</span></div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;  <span class="comment">// Each phase last for an arithmetically increasing number of conflicts.</span></div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;  <a class="code" href="classgtl_1_1_i_t_i_vector.html">gtl::ITIVector&lt;BooleanVariable, bool&gt;</a> var_polarity_;</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;  <span class="keywordtype">bool</span> maybe_enable_phase_saving_ = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> polarity_phase_ = 0;</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> num_conflicts_until_rephase_ = 1000;</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160; </div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;  <span class="comment">// The longest partial assignment since the last reset.</span></div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;  std::vector&lt;Literal&gt; best_partial_assignment_;</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160; </div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;  <span class="comment">// Used in initial polarity computation.</span></div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;  <a class="code" href="classgtl_1_1_i_t_i_vector.html">gtl::ITIVector&lt;BooleanVariable, double&gt;</a> weighted_sign_;</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;};</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160; </div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;}  <span class="comment">// namespace sat</span></div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;}  <span class="comment">// namespace operations_research</span></div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160; </div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;<span class="preprocessor">#endif  // OR_TOOLS_SAT_SAT_DECISION_H_</span></div>
+<div class="line"><a name="l00081"></a><span class="lineno"><a class="line" href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#af5ad6d7123be1d7615358fb819299484">   81</a></span>&#160;  <span class="keywordtype">bool</span> <a class="code" href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#af5ad6d7123be1d7615358fb819299484">InStablePhase</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> in_stable_phase_; }</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;  <span class="comment">// This is used to temporarily disable phase_saving when we do some probing</span></div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;  <span class="comment">// during search for instance.</span></div>
+<div class="line"><a name="l00085"></a><span class="lineno"><a class="line" href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#a9db2d9ca018c68d3f84ee946e3603886">   85</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#a9db2d9ca018c68d3f84ee946e3603886">MaybeEnablePhaseSaving</a>(<span class="keywordtype">bool</span> save_phase) {</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    maybe_enable_phase_saving_ = save_phase;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;  }</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;  <span class="comment">// Gives a hint so the solver tries to find a solution with the given literal</span></div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;  <span class="comment">// set to true. Currently this take precedence over the phase saving heuristic</span></div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;  <span class="comment">// and a variable with a preference will always be branched on according to</span></div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;  <span class="comment">// this preference.</span></div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;  <span class="comment">//</span></div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;  <span class="comment">// The weight is used as a tie-breaker between variable with the same</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;  <span class="comment">// activities. Larger weight will be selected first. A weight of zero is the</span></div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;  <span class="comment">// default value for the other variables.</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;  <span class="comment">//</span></div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;  <span class="comment">// Note(user): Having a lot of different weights may slow down the priority</span></div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;  <span class="comment">// queue operations if there is millions of variables.</span></div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#a955786dcbe82b7c4dc9924a5473ac1e8">SetAssignmentPreference</a>(<a class="code" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> <a class="code" href="optimization_8cc.html#af63dcc00f2023fdf498e0829e6fb8a6b">literal</a>, <span class="keywordtype">double</span> <a class="code" href="pack_8cc.html#ae42ca38a167164c07831993889216903">weight</a>);</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;  <span class="comment">// Returns the vector of the current assignment preferences.</span></div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;  std::vector&lt;std::pair&lt;Literal, double&gt;&gt; <a class="code" href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#a0b5d7f31620ad7b364e7415c47ee5e0d">AllPreferences</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; <span class="keyword">private</span>:</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;  <span class="comment">// Computes an initial variable ordering.</span></div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;  <span class="keywordtype">void</span> InitializeVariableOrdering();</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;  <span class="comment">// Rescales activity value of all variables when one of them reached the max.</span></div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;  <span class="keywordtype">void</span> RescaleVariableActivities(<span class="keywordtype">double</span> scaling_factor);</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;  <span class="comment">// Reinitializes the inital polarity of all the variables with an index</span></div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;  <span class="comment">// greater than or equal to the given one.</span></div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;  <span class="keywordtype">void</span> ResetInitialPolarity(<span class="keywordtype">int</span> from, <span class="keywordtype">bool</span> inverted = <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;  <span class="comment">// Code used for resetting the initial polarity at the beginning of each</span></div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;  <span class="comment">// phase.</span></div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;  <span class="keywordtype">void</span> RephaseIfNeeded();</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;  <span class="keywordtype">void</span> UseLongestAssignmentAsInitialPolarity();</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;  <span class="keywordtype">void</span> FlipCurrentPolarity();</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;  <span class="keywordtype">void</span> RandomizeCurrentPolarity();</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160; </div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;  <span class="comment">// Adds the given variable to var_ordering_ or updates its priority if it is</span></div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;  <span class="comment">// already present.</span></div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;  <span class="keywordtype">void</span> PqInsertOrUpdate(BooleanVariable <a class="code" href="expr__array_8cc.html#a472a99923cbe11ae7b5a5d157d9ad465">var</a>);</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160; </div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;  <span class="comment">// Singleton model objects.</span></div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;  <span class="keyword">const</span> SatParameters&amp; parameters_;</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;  <span class="keyword">const</span> <a class="code" href="classoperations__research_1_1sat_1_1_trail.html">Trail</a>&amp; trail_;</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;  <a class="code" href="structoperations__research_1_1sat_1_1_model_random_generator.html">ModelRandomGenerator</a>* random_;</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;  <span class="comment">// Variable ordering (priority will be adjusted dynamically). queue_elements_</span></div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;  <span class="comment">// holds the elements used by var_ordering_ (it uses pointers).</span></div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;  <span class="comment">//</span></div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;  <span class="comment">// Note that we recover the variable that a WeightedVarQueueElement refers to</span></div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;  <span class="comment">// by its position in the queue_elements_ vector, and we can recover the later</span></div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;  <span class="comment">// using (pointer - &amp;queue_elements_[0]).</span></div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;  <span class="keyword">struct </span>WeightedVarQueueElement {</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    <span class="comment">// Interface for the IntegerPriorityQueue.</span></div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    <span class="keywordtype">int</span> <a class="code" href="namespaceoperations__research_1_1glop.html#abec9e934a51aa2ab519684cc0f446a41">Index</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <a class="code" href="expr__array_8cc.html#a472a99923cbe11ae7b5a5d157d9ad465">var</a>.value(); }</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160; </div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;    <span class="comment">// Priority order. The IntegerPriorityQueue returns the largest element</span></div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    <span class="comment">// first.</span></div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    <span class="comment">// Note(user): We used to also break ties using the variable index, however</span></div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    <span class="comment">// this has two drawbacks:</span></div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    <span class="comment">// - On problem with many variables, this slow down quite a lot the priority</span></div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <span class="comment">//   queue operations (which do as little work as possible and hence benefit</span></div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    <span class="comment">//   from having the majority of elements with a priority of 0).</span></div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    <span class="comment">// - It seems to be a bad heuristics. One reason could be that the priority</span></div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    <span class="comment">//   queue will automatically diversify the choice of the top variables</span></div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    <span class="comment">//   amongst the ones with the same priority.</span></div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    <span class="comment">// Note(user): For the same reason as explained above, it is probably a good</span></div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    <span class="comment">// idea not to have too many different values for the tie_breaker field. I</span></div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;    <span class="comment">// am not even sure we should have such a field...</span></div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    <span class="keywordtype">bool</span> operator&lt;(<span class="keyword">const</span> WeightedVarQueueElement&amp; other)<span class="keyword"> const </span>{</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;      <span class="keywordflow">return</span> <a class="code" href="pack_8cc.html#ae42ca38a167164c07831993889216903">weight</a> &lt; other.weight ||</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;             (<a class="code" href="pack_8cc.html#ae42ca38a167164c07831993889216903">weight</a> == other.weight &amp;&amp; (tie_breaker &lt; other.tie_breaker));</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    }</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160; </div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    BooleanVariable <a class="code" href="expr__array_8cc.html#a472a99923cbe11ae7b5a5d157d9ad465">var</a>;</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    <span class="keywordtype">float</span> tie_breaker;</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160; </div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    <span class="comment">// TODO(user): Experiment with float. In the rest of the code, we use</span></div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;    <span class="comment">// double, but maybe we don&#39;t need that much precision. Using float here may</span></div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    <span class="comment">// save memory and make the PQ operations faster.</span></div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;    <span class="keywordtype">double</span> <a class="code" href="pack_8cc.html#ae42ca38a167164c07831993889216903">weight</a>;</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;  };</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;  static_assert(<span class="keyword">sizeof</span>(WeightedVarQueueElement) == 16,</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;                <span class="stringliteral">&quot;ERROR_WeightedVarQueueElement_is_not_well_compacted&quot;</span>);</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160; </div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;  <span class="keywordtype">bool</span> var_ordering_is_initialized_ = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;  IntegerPriorityQueue&lt;WeightedVarQueueElement&gt; var_ordering_;</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160; </div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;  <span class="comment">// This is used for the branching heuristic described in &quot;Learning Rate Based</span></div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;  <span class="comment">// Branching Heuristic for SAT solvers&quot;, J.H.Liang, V. Ganesh, P. Poupart,</span></div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;  <span class="comment">// K.Czarnecki, SAT 2016.</span></div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;  <span class="comment">//</span></div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;  <span class="comment">// The entries are sorted by trail index, and one can get the number of</span></div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;  <span class="comment">// conflicts during which a variable at a given trail index i was assigned by</span></div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;  <span class="comment">// summing the entry.count for all entries with a trail index greater than i.</span></div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;  <span class="keyword">struct </span>NumConflictsStackEntry {</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    <span class="keywordtype">int</span> trail_index;</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> count;</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;  };</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> num_conflicts_ = 0;</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;  std::vector&lt;NumConflictsStackEntry&gt; num_conflicts_stack_;</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160; </div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;  <span class="comment">// Whether the priority of the given variable needs to be updated in</span></div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;  <span class="comment">// var_ordering_. Note that this is only accessed for assigned variables and</span></div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;  <span class="comment">// that for efficiency it is indexed by trail indices. If</span></div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;  <span class="comment">// pq_need_update_for_var_at_trail_index_[trail_-&gt;Info(var).trail_index] is</span></div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;  <span class="comment">// true when we untrail var, then either var need to be inserted in the queue,</span></div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;  <span class="comment">// or we need to notify that its priority has changed.</span></div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;  BitQueue64 pq_need_update_for_var_at_trail_index_;</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160; </div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;  <span class="comment">// Increment used to bump the variable activities.</span></div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;  <span class="keywordtype">double</span> variable_activity_increment_ = 1.0;</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160; </div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;  <span class="comment">// Stores variable activity and the number of time each variable was &quot;bumped&quot;.</span></div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;  <span class="comment">// The later is only used with the ERWA heuristic.</span></div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;  <a class="code" href="classabsl_1_1_strong_vector.html">absl::StrongVector&lt;BooleanVariable, double&gt;</a> activities_;</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;  <a class="code" href="classabsl_1_1_strong_vector.html">absl::StrongVector&lt;BooleanVariable, double&gt;</a> tie_breakers_;</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;  <a class="code" href="classabsl_1_1_strong_vector.html">absl::StrongVector&lt;BooleanVariable, int64&gt;</a> num_bumps_;</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160; </div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;  <span class="comment">// If the polarity if forced (externally) we alway use this first.</span></div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;  <a class="code" href="classabsl_1_1_strong_vector.html">absl::StrongVector&lt;BooleanVariable, bool&gt;</a> has_forced_polarity_;</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;  <a class="code" href="classabsl_1_1_strong_vector.html">absl::StrongVector&lt;BooleanVariable, bool&gt;</a> forced_polarity_;</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160; </div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;  <span class="comment">// If we are in a stable phase, we follow the current target.</span></div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;  <span class="keywordtype">bool</span> in_stable_phase_ = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;  <span class="keywordtype">int</span> target_length_ = 0;</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;  <a class="code" href="classabsl_1_1_strong_vector.html">absl::StrongVector&lt;BooleanVariable, bool&gt;</a> has_target_polarity_;</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;  <a class="code" href="classabsl_1_1_strong_vector.html">absl::StrongVector&lt;BooleanVariable, bool&gt;</a> target_polarity_;</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160; </div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;  <span class="comment">// Otherwise we follow var_polarity_ which is reset at the beginning of</span></div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;  <span class="comment">// each new polarity phase. This is also overwritten by phase saving.</span></div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;  <span class="comment">// Each phase last for an arithmetically increasing number of conflicts.</span></div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;  <a class="code" href="classabsl_1_1_strong_vector.html">absl::StrongVector&lt;BooleanVariable, bool&gt;</a> var_polarity_;</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;  <span class="keywordtype">bool</span> maybe_enable_phase_saving_ = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> polarity_phase_ = 0;</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;  <a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> num_conflicts_until_rephase_ = 1000;</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160; </div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;  <span class="comment">// The longest partial assignment since the last reset.</span></div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;  std::vector&lt;Literal&gt; best_partial_assignment_;</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160; </div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;  <span class="comment">// Used in initial polarity computation.</span></div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;  <a class="code" href="classabsl_1_1_strong_vector.html">absl::StrongVector&lt;BooleanVariable, double&gt;</a> weighted_sign_;</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;};</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160; </div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;}  <span class="comment">// namespace sat</span></div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;}  <span class="comment">// namespace operations_research</span></div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160; </div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;<span class="preprocessor">#endif  // OR_TOOLS_SAT_SAT_DECISION_H_</span></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <div class="ttc" id="aexpr__array_8cc_html_a472a99923cbe11ae7b5a5d157d9ad465"><div class="ttname"><a href="expr__array_8cc.html#a472a99923cbe11ae7b5a5d157d9ad465">var</a></div><div class="ttdeci">IntVar * var</div><div class="ttdef"><b>Definition:</b> <a href="expr__array_8cc_source.html#l01858">expr_array.cc:1858</a></div></div>
@@ -332,7 +333,6 @@ $(document).ready(function(){initNavTree('sat__decision_8h_source.html',''); ini
 <div class="ttc" id="aclassoperations__research_1_1sat_1_1_sat_decision_policy_html_acf014a334d9412c245c083ce69aa8716"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#acf014a334d9412c245c083ce69aa8716">operations_research::sat::SatDecisionPolicy::NextBranch</a></div><div class="ttdeci">Literal NextBranch()</div><div class="ttdef"><b>Definition:</b> <a href="sat__decision_8cc_source.html#l00336">sat_decision.cc:336</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1sat_1_1_sat_decision_policy_html_a19614231a107b165113595bf8edf60bf"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#a19614231a107b165113595bf8edf60bf">operations_research::sat::SatDecisionPolicy::IncreaseNumVariables</a></div><div class="ttdeci">void IncreaseNumVariables(int num_variables)</div><div class="ttdef"><b>Definition:</b> <a href="sat__decision_8cc_source.html#l00026">sat_decision.cc:26</a></div></div>
 <div class="ttc" id="ainteger__pq_8h_html"><div class="ttname"><a href="integer__pq_8h.html">integer_pq.h</a></div></div>
-<div class="ttc" id="aclassgtl_1_1_i_t_i_vector_html"><div class="ttname"><a href="classgtl_1_1_i_t_i_vector.html">gtl::ITIVector&lt; BooleanVariable, double &gt;</a></div></div>
 <div class="ttc" id="astructoperations__research_1_1sat_1_1_model_random_generator_html"><div class="ttname"><a href="structoperations__research_1_1sat_1_1_model_random_generator.html">operations_research::sat::ModelRandomGenerator</a></div><div class="ttdef"><b>Definition:</b> <a href="sat_2util_8h_source.html#l00033">sat/util.h:33</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1sat_1_1_sat_decision_policy_html_a0b5d7f31620ad7b364e7415c47ee5e0d"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#a0b5d7f31620ad7b364e7415c47ee5e0d">operations_research::sat::SatDecisionPolicy::AllPreferences</a></div><div class="ttdeci">std::vector&lt; std::pair&lt; Literal, double &gt; &gt; AllPreferences() const</div><div class="ttdef"><b>Definition:</b> <a href="sat__decision_8cc_source.html#l00263">sat_decision.cc:263</a></div></div>
 <div class="ttc" id="apack_8cc_html_ae42ca38a167164c07831993889216903"><div class="ttname"><a href="pack_8cc.html#ae42ca38a167164c07831993889216903">weight</a></div><div class="ttdeci">int64 weight</div><div class="ttdef"><b>Definition:</b> <a href="pack_8cc_source.html#l00509">pack.cc:509</a></div></div>
@@ -343,7 +343,7 @@ $(document).ready(function(){initNavTree('sat__decision_8h_source.html',''); ini
 <div class="ttc" id="arandom__engine_8h_html"><div class="ttname"><a href="random__engine_8h.html">random_engine.h</a></div></div>
 <div class="ttc" id="asat__base_8h_html"><div class="ttname"><a href="sat__base_8h.html">sat_base.h</a></div></div>
 <div class="ttc" id="apb__constraint_8h_html"><div class="ttname"><a href="pb__constraint_8h.html">pb_constraint.h</a></div></div>
-<div class="ttc" id="aclassoperations__research_1_1sat_1_1_sat_decision_policy_html_a9db2d9ca018c68d3f84ee946e3603886"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#a9db2d9ca018c68d3f84ee946e3603886">operations_research::sat::SatDecisionPolicy::MaybeEnablePhaseSaving</a></div><div class="ttdeci">void MaybeEnablePhaseSaving(bool save_phase)</div><div class="ttdef"><b>Definition:</b> <a href="sat__decision_8h_source.html#l00084">sat_decision.h:84</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1sat_1_1_sat_decision_policy_html_a9db2d9ca018c68d3f84ee946e3603886"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#a9db2d9ca018c68d3f84ee946e3603886">operations_research::sat::SatDecisionPolicy::MaybeEnablePhaseSaving</a></div><div class="ttdeci">void MaybeEnablePhaseSaving(bool save_phase)</div><div class="ttdef"><b>Definition:</b> <a href="sat__decision_8h_source.html#l00085">sat_decision.h:85</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1sat_1_1_sat_decision_policy_html_a1dc177ee88f0a7ce2e46a032e5c3cf02"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#a1dc177ee88f0a7ce2e46a032e5c3cf02">operations_research::sat::SatDecisionPolicy::ResetDecisionHeuristic</a></div><div class="ttdeci">void ResetDecisionHeuristic()</div><div class="ttdef"><b>Definition:</b> <a href="sat__decision_8cc_source.html#l00126">sat_decision.cc:126</a></div></div>
 <div class="ttc" id="asat__parameters_8pb_8h_html"><div class="ttname"><a href="sat__parameters_8pb_8h.html">sat_parameters.pb.h</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1sat_1_1_model_html"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_model.html">operations_research::sat::Model</a></div><div class="ttdoc">Class that owns everything related to a particular optimization model.</div><div class="ttdef"><b>Definition:</b> <a href="sat_2model_8h_source.html#l00038">sat/model.h:38</a></div></div>
@@ -352,7 +352,9 @@ $(document).ready(function(){initNavTree('sat__decision_8h_source.html',''); ini
 <div class="ttc" id="aclassoperations__research_1_1sat_1_1_sat_decision_policy_html_acf5ac4ce7b95b26c0eadcd6b8cbffe74"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#acf5ac4ce7b95b26c0eadcd6b8cbffe74">operations_research::sat::SatDecisionPolicy::UpdateWeightedSign</a></div><div class="ttdeci">void UpdateWeightedSign(const std::vector&lt; LiteralWithCoeff &gt; &amp;terms, Coefficient rhs)</div><div class="ttdef"><b>Definition:</b> <a href="sat__decision_8cc_source.html#l00277">sat_decision.cc:277</a></div></div>
 <div class="ttc" id="agurobi__interface_8cc_html_a0728f23c9a47655d38e0bf1a2f200bcf"><div class="ttname"><a href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a></div><div class="ttdeci">GRBmodel * model</div><div class="ttdef"><b>Definition:</b> <a href="gurobi__interface_8cc_source.html#l00269">gurobi_interface.cc:269</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1sat_1_1_literal_html"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_literal.html">operations_research::sat::Literal</a></div><div class="ttdef"><b>Definition:</b> <a href="sat__base_8h_source.html#l00064">sat_base.h:64</a></div></div>
+<div class="ttc" id="aclassabsl_1_1_strong_vector_html"><div class="ttname"><a href="classabsl_1_1_strong_vector.html">absl::StrongVector&lt; BooleanVariable, double &gt;</a></div></div>
 <div class="ttc" id="asat_2util_8h_html"><div class="ttname"><a href="sat_2util_8h.html">util.h</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1sat_1_1_sat_decision_policy_html_af5ad6d7123be1d7615358fb819299484"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#af5ad6d7123be1d7615358fb819299484">operations_research::sat::SatDecisionPolicy::InStablePhase</a></div><div class="ttdeci">bool InStablePhase() const</div><div class="ttdef"><b>Definition:</b> <a href="sat__decision_8h_source.html#l00081">sat_decision.h:81</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1sat_1_1_sat_decision_policy_html_aab615de1a3b2016b0a8b8cdf05e9cf0b"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_sat_decision_policy.html#aab615de1a3b2016b0a8b8cdf05e9cf0b">operations_research::sat::SatDecisionPolicy::BumpVariableActivities</a></div><div class="ttdeci">void BumpVariableActivities(const std::vector&lt; Literal &gt; &amp;literals)</div><div class="ttdef"><b>Definition:</b> <a href="sat__decision_8cc_source.html#l00287">sat_decision.cc:287</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1glop_html_abec9e934a51aa2ab519684cc0f446a41"><div class="ttname"><a href="namespaceoperations__research_1_1glop.html#abec9e934a51aa2ab519684cc0f446a41">operations_research::glop::Index</a></div><div class="ttdeci">int32 Index</div><div class="ttdef"><b>Definition:</b> <a href="lp__types_8h_source.html#l00037">lp_types.h:37</a></div></div>
 <div class="ttc" id="aoptimization_8cc_html_af63dcc00f2023fdf498e0829e6fb8a6b"><div class="ttname"><a href="optimization_8cc.html#af63dcc00f2023fdf498e0829e6fb8a6b">literal</a></div><div class="ttdeci">Literal literal</div><div class="ttdef"><b>Definition:</b> <a href="optimization_8cc_source.html#l00084">optimization.cc:84</a></div></div>

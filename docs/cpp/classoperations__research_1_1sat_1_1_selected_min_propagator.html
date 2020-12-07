@@ -98,8 +98,8 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_s
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a787b8ffa051ea6a0b12d13a3d0e7a19d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_selected_min_propagator.html#a787b8ffa051ea6a0b12d13a3d0e7a19d">SelectedMinPropagator</a> (<a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> enforcement_literal, IntegerVariable target, const std::vector&lt; IntegerVariable &gt; &amp;vars, const std::vector&lt; <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> &gt; &amp;selectors, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
-<tr class="separator:a787b8ffa051ea6a0b12d13a3d0e7a19d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa4220fe935e1706a29c8abb1c7b7fe3e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_selected_min_propagator.html#aa4220fe935e1706a29c8abb1c7b7fe3e">SelectedMinPropagator</a> (<a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> enforcement_literal, <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> target, const std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> &gt; &amp;exprs, const std::vector&lt; <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> &gt; &amp;selectors, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
+<tr class="separator:aa4220fe935e1706a29c8abb1c7b7fe3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1fe9b1f2b978c4283e42f12e586eb1e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_selected_min_propagator.html#ac1fe9b1f2b978c4283e42f12e586eb1e">Propagate</a> () final</td></tr>
 <tr class="separator:ac1fe9b1f2b978c4283e42f12e586eb1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1868d977c2e9baed0f16c9ec71d6626e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_selected_min_propagator.html#a1868d977c2e9baed0f16c9ec71d6626e">RegisterWith</a> (<a class="el" href="classoperations__research_1_1sat_1_1_generic_literal_watcher.html">GenericLiteralWatcher</a> *watcher)</td></tr>
@@ -108,8 +108,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aee053ac2dc53cef048aa8e815e9443bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a787b8ffa051ea6a0b12d13a3d0e7a19d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a787b8ffa051ea6a0b12d13a3d0e7a19d">&#9670;&nbsp;</a></span>SelectedMinPropagator()</h2>
+<a id="aa4220fe935e1706a29c8abb1c7b7fe3e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa4220fe935e1706a29c8abb1c7b7fe3e">&#9670;&nbsp;</a></span>SelectedMinPropagator()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -126,14 +126,14 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">IntegerVariable&#160;</td>
+          <td class="paramtype"><a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a>&#160;</td>
           <td class="paramname"><em>target</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::vector&lt; IntegerVariable &gt; &amp;&#160;</td>
-          <td class="paramname"><em>vars</em>, </td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>exprs</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -189,9 +189,9 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="classoperations__research_1_1sat_1_1_linear_programming_constraint.html#aadd64e5df937ad4d29342ef997d6b9fc">LinearProgrammingConstraint</a>, <a class="el" href="classoperations__research_1_1sat_1_1_circuit_covering_propagator.html#a45321337f970685d9847db005c4b3de1">CircuitCoveringPropagator</a>, and <a class="el" href="classoperations__research_1_1sat_1_1_circuit_propagator.html#a45321337f970685d9847db005c4b3de1">CircuitPropagator</a>.</p>
+<p>Reimplemented in <a class="el" href="classoperations__research_1_1sat_1_1_linear_programming_constraint.html#aadd64e5df937ad4d29342ef997d6b9fc">LinearProgrammingConstraint</a>, <a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a45321337f970685d9847db005c4b3de1">SchedulingConstraintHelper</a>, <a class="el" href="classoperations__research_1_1sat_1_1_circuit_covering_propagator.html#a45321337f970685d9847db005c4b3de1">CircuitCoveringPropagator</a>, and <a class="el" href="classoperations__research_1_1sat_1_1_circuit_propagator.html#a45321337f970685d9847db005c4b3de1">CircuitPropagator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01050">1050</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01066">1066</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -240,7 +240,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="scheduling__constraints_8cc_source.html#l00256">256</a> of file <a class="el" href="scheduling__constraints_8cc_source.html">scheduling_constraints.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="scheduling__constraints_8cc_source.html#l00255">255</a> of file <a class="el" href="scheduling__constraints_8cc_source.html">scheduling_constraints.cc</a>.</p>
 
 </div>
 </div>

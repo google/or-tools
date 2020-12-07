@@ -94,7 +94,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_s
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00137">137</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00171">171</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -102,22 +102,30 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a245501f213ec65a6ec229e7c2766316c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4870e1d8502aa3cd24733735ce18452b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a4870e1d8502aa3cd24733735ce18452b">SchedulingConstraintHelper</a> (int num_tasks, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
 <tr class="separator:a4870e1d8502aa3cd24733735ce18452b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac1fe9b1f2b978c4283e42f12e586eb1e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#ac1fe9b1f2b978c4283e42f12e586eb1e">Propagate</a> () final</td></tr>
+<tr class="separator:ac1fe9b1f2b978c4283e42f12e586eb1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a45321337f970685d9847db005c4b3de1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a45321337f970685d9847db005c4b3de1">IncrementalPropagate</a> (const std::vector&lt; int &gt; &amp;watch_indices) final</td></tr>
+<tr class="separator:a45321337f970685d9847db005c4b3de1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ee8ed57254aec3ae99d399bae5b3736"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a6ee8ed57254aec3ae99d399bae5b3736">RegisterWith</a> (<a class="el" href="classoperations__research_1_1sat_1_1_generic_literal_watcher.html">GenericLiteralWatcher</a> *watcher)</td></tr>
+<tr class="separator:a6ee8ed57254aec3ae99d399bae5b3736"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a176d2c659864433ccd869b5fba8d57af"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a176d2c659864433ccd869b5fba8d57af">SetLevel</a> (int level) final</td></tr>
+<tr class="separator:a176d2c659864433ccd869b5fba8d57af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a530425338047af75f0448ffd8ef43d1c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a530425338047af75f0448ffd8ef43d1c">ResetFromSubset</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html">SchedulingConstraintHelper</a> &amp;other, absl::Span&lt; const int &gt; tasks)</td></tr>
 <tr class="separator:a530425338047af75f0448ffd8ef43d1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad9b4a962b743e358f3a7c4b2279f99c8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#ad9b4a962b743e358f3a7c4b2279f99c8">NumTasks</a> () const</td></tr>
 <tr class="separator:ad9b4a962b743e358f3a7c4b2279f99c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeccc78486bd270a6f68f87f4d412ff2c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#aeccc78486bd270a6f68f87f4d412ff2c">SetTimeDirection</a> (bool is_forward)</td></tr>
-<tr class="separator:aeccc78486bd270a6f68f87f4d412ff2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84d83df1877d50258c1a63b83a5315b3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a84d83df1877d50258c1a63b83a5315b3">SynchronizeAndSetTimeDirection</a> (bool is_forward)</td></tr>
+<tr class="separator:a84d83df1877d50258c1a63b83a5315b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afdbd968230d01fa0e91bc15b6f5994e3"><td class="memItemLeft" align="right" valign="top">IntegerValue&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#afdbd968230d01fa0e91bc15b6f5994e3">SizeMin</a> (int t) const</td></tr>
 <tr class="separator:afdbd968230d01fa0e91bc15b6f5994e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afa1aca9725da8adf5c56ea08e7636c32"><td class="memItemLeft" align="right" valign="top">IntegerValue&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#afa1aca9725da8adf5c56ea08e7636c32">SizeMax</a> (int t) const</td></tr>
 <tr class="separator:afa1aca9725da8adf5c56ea08e7636c32"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab3a2a28d08246d8f3432caa1a27811b8"><td class="memItemLeft" align="right" valign="top">IntegerValue&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#ab3a2a28d08246d8f3432caa1a27811b8">StartMin</a> (int t) const</td></tr>
 <tr class="separator:ab3a2a28d08246d8f3432caa1a27811b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad8f69698386f241297b78589c1f57c3e"><td class="memItemLeft" align="right" valign="top">IntegerValue&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#ad8f69698386f241297b78589c1f57c3e">StartMax</a> (int t) const</td></tr>
-<tr class="separator:ad8f69698386f241297b78589c1f57c3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a11b6d6eef1159c1801cfa033778f09db"><td class="memItemLeft" align="right" valign="top">IntegerValue&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a11b6d6eef1159c1801cfa033778f09db">EndMin</a> (int t) const</td></tr>
 <tr class="separator:a11b6d6eef1159c1801cfa033778f09db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad8f69698386f241297b78589c1f57c3e"><td class="memItemLeft" align="right" valign="top">IntegerValue&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#ad8f69698386f241297b78589c1f57c3e">StartMax</a> (int t) const</td></tr>
+<tr class="separator:ad8f69698386f241297b78589c1f57c3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9125ec8126e6035eacce8a5eb52b45c5"><td class="memItemLeft" align="right" valign="top">IntegerValue&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a9125ec8126e6035eacce8a5eb52b45c5">EndMax</a> (int t) const</td></tr>
 <tr class="separator:a9125ec8126e6035eacce8a5eb52b45c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0d7780af676ab4fd1c57e62da9e03686"><td class="memItemLeft" align="right" valign="top">IntegerValue&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a0d7780af676ab4fd1c57e62da9e03686">ShiftedStartMin</a> (int t) const</td></tr>
@@ -172,10 +180,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a1b1aa6fc0495b30c60002421f7640dab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5610313501004888e9070594ae93729f"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_integer_literal.html">IntegerLiteral</a> &gt; *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a5610313501004888e9070594ae93729f">MutableIntegerReason</a> ()</td></tr>
 <tr class="separator:a5610313501004888e9070594ae93729f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a82f2ac210f1875a863bdedfa973bd947"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a82f2ac210f1875a863bdedfa973bd947">IncreaseStartMin</a> (int t, IntegerValue new_min_start)</td></tr>
-<tr class="separator:a82f2ac210f1875a863bdedfa973bd947"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0306e41252d16a6193549becc9ee2af1"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a0306e41252d16a6193549becc9ee2af1">DecreaseEndMax</a> (int t, IntegerValue new_max_end)</td></tr>
-<tr class="separator:a0306e41252d16a6193549becc9ee2af1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7cf01605afaa07af160e933df8433e36"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a7cf01605afaa07af160e933df8433e36">IncreaseStartMin</a> (int t, IntegerValue new_start_min)</td></tr>
+<tr class="separator:a7cf01605afaa07af160e933df8433e36"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9cff7d47d665651c22433d6c793092a8"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a9cff7d47d665651c22433d6c793092a8">DecreaseEndMax</a> (int t, IntegerValue new_start_max)</td></tr>
+<tr class="separator:a9cff7d47d665651c22433d6c793092a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1ce92d1c5015cd62d1c4b64ee117d8aa"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a1ce92d1c5015cd62d1c4b64ee117d8aa">PushTaskAbsence</a> (int t)</td></tr>
 <tr class="separator:a1ce92d1c5015cd62d1c4b64ee117d8aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab8603bd492cd4f0dc0df48dea2e691c5"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#ab8603bd492cd4f0dc0df48dea2e691c5">PushTaskPresence</a> (int t)</td></tr>
@@ -186,14 +194,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a9583bbea958febd24d92742c2f137d22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6ab90cf8345c7b4e9b1e1fb2da7793a2"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a6ab90cf8345c7b4e9b1e1fb2da7793a2">PushIntegerLiteralIfTaskPresent</a> (int t, <a class="el" href="structoperations__research_1_1sat_1_1_integer_literal.html">IntegerLiteral</a> lit)</td></tr>
 <tr class="separator:a6ab90cf8345c7b4e9b1e1fb2da7793a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7f0d3edee343cd0db9701512d8353bc3"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; IntegerVariable &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a7f0d3edee343cd0db9701512d8353bc3">StartVars</a> () const</td></tr>
-<tr class="separator:a7f0d3edee343cd0db9701512d8353bc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a632dc41ac81064c143d9e7b40908c966"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; IntegerVariable &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a632dc41ac81064c143d9e7b40908c966">EndVars</a> () const</td></tr>
-<tr class="separator:a632dc41ac81064c143d9e7b40908c966"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5753d4fb74f7ec5b437bfe17f89eed38"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; IntegerVariable &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a5753d4fb74f7ec5b437bfe17f89eed38">SizeVars</a> () const</td></tr>
-<tr class="separator:a5753d4fb74f7ec5b437bfe17f89eed38"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa0d01b27a9c7193251c8fa6f831d4d16"><td class="memItemLeft" align="right" valign="top">IntegerVariable&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#aa0d01b27a9c7193251c8fa6f831d4d16">SizeVar</a> (int <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) const</td></tr>
-<tr class="separator:aa0d01b27a9c7193251c8fa6f831d4d16"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a98d787780ea13b5862ccb1ca73067da4"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a98d787780ea13b5862ccb1ca73067da4">Starts</a> () const</td></tr>
+<tr class="separator:a98d787780ea13b5862ccb1ca73067da4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:affb6ad259bc1c6bd004308fb3b8a6b05"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#affb6ad259bc1c6bd004308fb3b8a6b05">Ends</a> () const</td></tr>
+<tr class="separator:affb6ad259bc1c6bd004308fb3b8a6b05"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade00ce69e73ccd8470ea0198961da58e"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#ade00ce69e73ccd8470ea0198961da58e">Sizes</a> () const</td></tr>
+<tr class="separator:ade00ce69e73ccd8470ea0198961da58e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac8a0cc4c1cca9aefa21788b096954f31"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#ac8a0cc4c1cca9aefa21788b096954f31">PresenceLiteral</a> (int <a class="el" href="resource_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>) const</td></tr>
 <tr class="separator:ac8a0cc4c1cca9aefa21788b096954f31"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f981878c21fbe2f41a2daf010c93804"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a3f981878c21fbe2f41a2daf010c93804">WatchAllTasks</a> (int id, <a class="el" href="classoperations__research_1_1sat_1_1_generic_literal_watcher.html">GenericLiteralWatcher</a> *watcher, bool watch_start_max=true, bool watch_end_max=true) const</td></tr>
@@ -204,6 +210,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a45166c458e2abe6b33a70184c751d0e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ce9e563527f073b9aac535e63b7f647"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a9ce9e563527f073b9aac535e63b7f647">ImportOtherReasons</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html">SchedulingConstraintHelper</a> &amp;other_helper)</td></tr>
 <tr class="separator:a9ce9e563527f073b9aac535e63b7f647"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a697964c4df6330b5d4720be3658ac35a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html#a697964c4df6330b5d4720be3658ac35a">InPropagationLoop</a> () const</td></tr>
+<tr class="separator:a697964c4df6330b5d4720be3658ac35a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a245501f213ec65a6ec229e7c2766316c"></a>
@@ -232,7 +240,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00053">53</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00065">65</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
@@ -262,7 +270,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00088">88</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00096">96</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
@@ -291,7 +299,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00434">434</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00480">480</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -329,7 +337,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00496">496</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00557">557</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -367,7 +375,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00476">476</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00535">535</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -411,7 +419,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00504">504</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00566">566</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -439,7 +447,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00426">426</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00472">472</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -469,7 +477,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00227">227</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00334">334</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
@@ -497,7 +505,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00442">442</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00488">488</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -535,7 +543,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00450">450</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00496">496</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -573,7 +581,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00468">468</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00513">513</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -611,7 +619,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00460">460</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00504">504</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -638,7 +646,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00288">288</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00345">345</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -665,12 +673,12 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00417">417</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00463">463</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
-<a id="a0306e41252d16a6193549becc9ee2af1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0306e41252d16a6193549becc9ee2af1">&#9670;&nbsp;</a></span>DecreaseEndMax()</h2>
+<a id="a9cff7d47d665651c22433d6c793092a8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9cff7d47d665651c22433d6c793092a8">&#9670;&nbsp;</a></span>DecreaseEndMax()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -685,7 +693,7 @@ Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">IntegerValue&#160;</td>
-          <td class="paramname"><em>new_max_end</em>&#160;</td>
+          <td class="paramname"><em>new_start_max</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -695,7 +703,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00317">317</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00429">429</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
@@ -723,7 +731,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00399">399</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00441">441</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -751,7 +759,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00386">386</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00231">231</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -779,12 +787,12 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00382">382</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00229">229</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
-<a id="a632dc41ac81064c143d9e7b40908c966"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a632dc41ac81064c143d9e7b40908c966">&#9670;&nbsp;</a></span>EndVars()</h2>
+<a id="affb6ad259bc1c6bd004308fb3b8a6b05"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#affb6ad259bc1c6bd004308fb3b8a6b05">&#9670;&nbsp;</a></span>Ends()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -793,7 +801,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const std::vector&lt;IntegerVariable&gt;&amp; EndVars </td>
+          <td class="memname">const std::vector&lt;<a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a>&gt;&amp; Ends </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -806,7 +814,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00262">262</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00320">320</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -826,12 +834,12 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00394">394</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00503">503</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
-<a id="a82f2ac210f1875a863bdedfa973bd947"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a82f2ac210f1875a863bdedfa973bd947">&#9670;&nbsp;</a></span>IncreaseStartMin()</h2>
+<a id="a7cf01605afaa07af160e933df8433e36"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7cf01605afaa07af160e933df8433e36">&#9670;&nbsp;</a></span>IncreaseStartMin()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -846,7 +854,7 @@ Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">IntegerValue&#160;</td>
-          <td class="paramname"><em>new_min_start</em>&#160;</td>
+          <td class="paramname"><em>new_start_min</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -856,7 +864,64 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00311">311</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00424">424</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+
+</div>
+</div>
+<a id="a45321337f970685d9847db005c4b3de1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a45321337f970685d9847db005c4b3de1">&#9670;&nbsp;</a></span>IncrementalPropagate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool IncrementalPropagate </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; int &gt; &amp;&#160;</td>
+          <td class="paramname"><em>watch_indices</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">final</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1sat_1_1_propagator_interface.html#aee053ac2dc53cef048aa8e815e9443bb">PropagatorInterface</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00110">110</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+
+</div>
+</div>
+<a id="a697964c4df6330b5d4720be3658ac35a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a697964c4df6330b5d4720be3658ac35a">&#9670;&nbsp;</a></span>InPropagationLoop()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool InPropagationLoop </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00356">356</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -884,7 +949,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00412">412</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00458">458</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -912,7 +977,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00403">403</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00449">449</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -940,7 +1005,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00407">407</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00453">453</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -967,7 +1032,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00238">238</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00296">296</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -994,7 +1059,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00237">237</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00295">295</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -1021,7 +1086,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00157">157</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00202">202</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -1049,7 +1114,36 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00265">265</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00322">322</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+
+</div>
+</div>
+<a id="ac1fe9b1f2b978c4283e42f12e586eb1e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac1fe9b1f2b978c4283e42f12e586eb1e">&#9670;&nbsp;</a></span>Propagate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Propagate </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">final</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implements <a class="el" href="classoperations__research_1_1sat_1_1_propagator_interface.html#ab355d13060fa36037afa32aa8ddbe62a">PropagatorInterface</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00105">105</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
@@ -1069,7 +1163,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00267">267</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00378">378</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
@@ -1099,7 +1193,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00272">272</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00383">383</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
@@ -1119,7 +1213,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00323">323</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00434">434</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
@@ -1139,7 +1233,27 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00339">339</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00450">450</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+
+</div>
+</div>
+<a id="a6ee8ed57254aec3ae99d399bae5b3736"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ee8ed57254aec3ae99d399bae5b3736">&#9670;&nbsp;</a></span>RegisterWith()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void RegisterWith </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_generic_literal_watcher.html">GenericLiteralWatcher</a> *&#160;</td>
+          <td class="paramname"><em>watcher</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00129">129</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
@@ -1158,7 +1272,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00355">355</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00466">466</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
@@ -1188,7 +1302,37 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00097">97</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00176">176</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+
+</div>
+</div>
+<a id="a176d2c659864433ccd869b5fba8d57af"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a176d2c659864433ccd869b5fba8d57af">&#9670;&nbsp;</a></span>SetLevel()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SetLevel </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>level</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">final</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implements <a class="el" href="classoperations__research_1_1_reversible_interface.html#afa44d4d117123df4ce0208dacd28e914">ReversibleInterface</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00116">116</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
@@ -1226,27 +1370,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00281">281</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
-
-</div>
-</div>
-<a id="aeccc78486bd270a6f68f87f4d412ff2c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeccc78486bd270a6f68f87f4d412ff2c">&#9670;&nbsp;</a></span>SetTimeDirection()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SetTimeDirection </td>
-          <td>(</td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>is_forward</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00143">143</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00338">338</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -1274,7 +1398,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00391">391</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00247">247</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -1302,7 +1426,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00368">368</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00445">445</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -1330,7 +1454,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00362">362</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00224">224</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -1358,12 +1482,12 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00356">356</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00223">223</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
-<a id="aa0d01b27a9c7193251c8fa6f831d4d16"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa0d01b27a9c7193251c8fa6f831d4d16">&#9670;&nbsp;</a></span>SizeVar()</h2>
+<a id="ade00ce69e73ccd8470ea0198961da58e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade00ce69e73ccd8470ea0198961da58e">&#9670;&nbsp;</a></span>Sizes()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1372,35 +1496,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">IntegerVariable SizeVar </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>index</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00264">264</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
-
-</div>
-</div>
-<a id="a5753d4fb74f7ec5b437bfe17f89eed38"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5753d4fb74f7ec5b437bfe17f89eed38">&#9670;&nbsp;</a></span>SizeVars()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const std::vector&lt;IntegerVariable&gt;&amp; SizeVars </td>
+          <td class="memname">const std::vector&lt;<a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a>&gt;&amp; Sizes </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -1413,7 +1509,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00263">263</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00321">321</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -1441,7 +1537,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00395">395</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00437">437</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -1469,7 +1565,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00378">378</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00230">230</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
@@ -1497,12 +1593,12 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00374">374</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00228">228</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
 
 </div>
 </div>
-<a id="a7f0d3edee343cd0db9701512d8353bc3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7f0d3edee343cd0db9701512d8353bc3">&#9670;&nbsp;</a></span>StartVars()</h2>
+<a id="a98d787780ea13b5862ccb1ca73067da4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a98d787780ea13b5862ccb1ca73067da4">&#9670;&nbsp;</a></span>Starts()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1511,7 +1607,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const std::vector&lt;IntegerVariable&gt;&amp; StartVars </td>
+          <td class="memname">const std::vector&lt;<a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a>&gt;&amp; Starts </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -1524,7 +1620,27 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00261">261</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8h_source.html#l00319">319</a> of file <a class="el" href="intervals_8h_source.html">intervals.h</a>.</p>
+
+</div>
+</div>
+<a id="a84d83df1877d50258c1a63b83a5315b3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a84d83df1877d50258c1a63b83a5315b3">&#9670;&nbsp;</a></span>SynchronizeAndSetTimeDirection()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SynchronizeAndSetTimeDirection </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>is_forward</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00234">234</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
@@ -1543,7 +1659,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00194">194</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00302">302</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
@@ -1562,7 +1678,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00181">181</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00289">289</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
@@ -1581,7 +1697,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00169">169</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00277">277</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
@@ -1600,7 +1716,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00206">206</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00314">314</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
@@ -1619,7 +1735,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00157">157</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00265">265</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
@@ -1639,7 +1755,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00404">404</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00513">513</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>
@@ -1681,7 +1797,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00360">360</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="intervals_8cc_source.html#l00471">471</a> of file <a class="el" href="intervals_8cc_source.html">intervals.cc</a>.</p>
 
 </div>
 </div>

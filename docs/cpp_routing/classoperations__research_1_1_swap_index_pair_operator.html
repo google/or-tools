@@ -96,8 +96,8 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_swap_ind
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a3bc7f290704ebc2dc9e8fb3f333a8ecb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_swap_index_pair_operator.html#a3bc7f290704ebc2dc9e8fb3f333a8ecb">SwapIndexPairOperator</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;vars, const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;path_vars, const <a class="el" href="namespaceoperations__research.html#aef7db0bee0a22d1791d040fd3853f3b7">RoutingIndexPairs</a> &amp;index_pairs)</td></tr>
-<tr class="separator:a3bc7f290704ebc2dc9e8fb3f333a8ecb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3f6f3c876b356cd1a0a8c3ff34b944f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_swap_index_pair_operator.html#ae3f6f3c876b356cd1a0a8c3ff34b944f">SwapIndexPairOperator</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;vars, const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;path_vars, std::function&lt; int(int64)&gt; start_empty_path_class, const <a class="el" href="namespaceoperations__research.html#aef7db0bee0a22d1791d040fd3853f3b7">RoutingIndexPairs</a> &amp;index_pairs)</td></tr>
+<tr class="separator:ae3f6f3c876b356cd1a0a8c3ff34b944f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a905e55d3e3b219ed3738af2249d52dcf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_swap_index_pair_operator.html#a905e55d3e3b219ed3738af2249d52dcf">~SwapIndexPairOperator</a> () override</td></tr>
 <tr class="separator:a905e55d3e3b219ed3738af2249d52dcf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2b47576627076cc054924a89a08f69a6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_swap_index_pair_operator.html#a2b47576627076cc054924a89a08f69a6">MakeNextNeighbor</a> (<a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *delta, <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *deltadelta) override</td></tr>
@@ -195,8 +195,8 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:aa8627a7bbb2f34d6156b0fcd3d3abdc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a3bc7f290704ebc2dc9e8fb3f333a8ecb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3bc7f290704ebc2dc9e8fb3f333a8ecb">&#9670;&nbsp;</a></span>SwapIndexPairOperator()</h2>
+<a id="ae3f6f3c876b356cd1a0a8c3ff34b944f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae3f6f3c876b356cd1a0a8c3ff34b944f">&#9670;&nbsp;</a></span>SwapIndexPairOperator()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -212,6 +212,12 @@ Protected Attributes</h2></td></tr>
           <td></td>
           <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;&#160;</td>
           <td class="paramname"><em>path_vars</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::function&lt; int(int64)&gt;&#160;</td>
+          <td class="paramname"><em>start_empty_path_class</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -252,7 +258,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__neighborhoods_8h_source.html#l00289">289</a> of file <a class="el" href="routing__neighborhoods_8h_source.html">routing_neighborhoods.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__neighborhoods_8h_source.html#l00290">290</a> of file <a class="el" href="routing__neighborhoods_8h_source.html">routing_neighborhoods.h</a>.</p>
 
 </div>
 </div>
@@ -432,7 +438,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1_base_object.html#a8eba5d533fa9df4617c1868d3ec2afc4">BaseObject</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing__neighborhoods_8h_source.html#l00293">293</a> of file <a class="el" href="routing__neighborhoods_8h_source.html">routing_neighborhoods.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__neighborhoods_8h_source.html#l00294">294</a> of file <a class="el" href="routing__neighborhoods_8h_source.html">routing_neighborhoods.h</a>.</p>
 
 </div>
 </div>
