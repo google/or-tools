@@ -62,6 +62,7 @@ else
 endif
 
 # All libraries and dependencies
+TEMP_DOTNET_DIR = temp_dotnet
 DOTNET_ORTOOLS_SNK := $(SRC_DIR)/ortools/dotnet/or-tools.snk
 DOTNET_ORTOOLS_SNK_PATH := $(subst /,$S,$(DOTNET_ORTOOLS_SNK))
 DOTNET_ORTOOLS_ASSEMBLY_NAME := Google.OrTools
@@ -479,6 +480,54 @@ build: $(SOURCE) $(SOURCE)proj $(FSHARP_ORTOOLS_NUPKG)
 run: build
 	"$(DOTNET_BIN)" run --no-build --project $(SOURCE_PATH)proj -- $(ARGS)
 endif
+
+DOTNET_SAMPLES := algorithms graph constraint_solver linear_solver sat
+
+define dotnet-sample-target =
+$$(TEMP_DOTNET_DIR)/$1: | $$(TEMP_DOTNET_DIR)
+	-$$(MKDIR) $$(TEMP_DOTNET_DIR)$$S$1
+
+rdotnet_%: \
+ $(DOTNET_ORTOOLS_NUPKG) \
+ $$(SRC_DIR)/ortools/$1/samples/%.cs \
+ $$(SRC_DIR)/ortools/$1/samples/%.csproj \
+ FORCE
+	$(MAKE) run SOURCE=ortools/$1/samples/$$*.cs $$(ARGS)
+endef
+
+$(foreach sample,$(DOTNET_SAMPLES),$(eval $(call dotnet-sample-target,$(sample),$(subst _,,$(sample)))))
+
+DOTNET_EXAMPLES := contrib java
+
+define dotnet-example-target =
+$$(TEMP_DOTNET_DIR)/$1: | $$(TEMP_DOTNET_DIR)
+	-$$(MKDIR) $$(TEMP_DOTNET_DIR)$$S$1
+
+rdotnet_%: \
+ $(DOTNET_ORTOOLS_NUPKG) \
+ $$(SRC_DIR)/examples/$1/%.cs \
+ $$(SRC_DIR)/examples/$1/%.csproj \
+ FORCE
+	$(MAKE) run SOURCE=examples/$1/$$*.cs $$(ARGS)
+endef
+
+$(foreach example,$(DOTNET_EXAMPLES),$(eval $(call dotnet-example-target,$(example))))
+
+DOTNET_TESTS := tests
+
+define dotnet-test-target =
+$$(TEMP_DOTNET_DIR)/$1: | $$(TEMP_DOTNET_DIR)
+	-$$(MKDIR) $$(TEMP_DOTNET_DIR)$$S$1
+
+rdotnet_%: \
+ $(DOTNET_ORTOOLS_NUPKG) \
+ $$(SRC_DIR)/examples/$1/%.cs \
+ $$(SRC_DIR)/examples/$1/%.csproj \
+ FORCE
+	$(MAKE) run_test SOURCE=examples/$1/$$*.cs $$(ARGS)
+endef
+
+$(foreach example,$(DOTNET_TESTS),$(eval $(call dotnet-test-target,$(example))))
 
 #############################
 ##  .NET Examples/Samples  ##
