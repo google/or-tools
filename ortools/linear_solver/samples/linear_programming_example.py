@@ -28,6 +28,8 @@ def LinearProgrammingExample():
     # [START variables]
     x = solver.NumVar(0, solver.infinity(), 'x')
     y = solver.NumVar(0, solver.infinity(), 'y')
+
+    print('Number of variables =', solver.NumVariables())
     # [END variables]
 
     # [START constraints]
@@ -45,6 +47,8 @@ def LinearProgrammingExample():
     constraint2 = solver.Constraint(-solver.infinity(), 2)
     constraint2.SetCoefficient(x, 1)
     constraint2.SetCoefficient(y, -1)
+
+    print('Number of constraints =', solver.NumConstraints())
     # [END constraints]
 
     # [START objective]
@@ -57,19 +61,25 @@ def LinearProgrammingExample():
 
     # Solve the system.
     # [START solve]
-    solver.Solve()
+    status = solver.Solve()
     # [END solve]
+
     # [START print_solution]
-    opt_solution = 3 * x.solution_value() + 4 * y.solution_value()
-    print('Number of variables =', solver.NumVariables())
-    print('Number of constraints =', solver.NumConstraints())
-    # The value of each variable in the solution.
-    print('Solution:')
-    print('x = ', x.solution_value())
-    print('y = ', y.solution_value())
-    # The objective value of the solution.
-    print('Optimal objective value =', opt_solution)
+    if status == pywraplp.Solver.OPTIMAL:
+        print('Solution:')
+        print('Objective value =', solver.Objective().Value())
+        print('x =', x.solution_value())
+        print('y =', y.solution_value())
+    else:
+        print('The problem does not have an optimal solution.')
     # [END print_solution]
+
+    # [START advanced]
+    print('\nAdvanced usage:')
+    print('Problem solved in %f milliseconds' % solver.wall_time())
+    print('Problem solved in %d iterations' % solver.iterations())
+    print('Problem solved in %d branch-and-bound nodes' % solver.nodes())
+    # [END advanced]
 
 
 LinearProgrammingExample()

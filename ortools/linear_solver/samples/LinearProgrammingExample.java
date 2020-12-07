@@ -64,22 +64,25 @@ public class LinearProgrammingExample {
 
     // [START solve]
     final MPSolver.ResultStatus resultStatus = solver.solve();
-    // Check that the problem has an optimal solution.
-    if (resultStatus != MPSolver.ResultStatus.OPTIMAL) {
-      System.err.println("The problem does not have an optimal solution!");
-      return;
-    }
     // [END solve]
 
     // [START print_solution]
-    // The value of each variable in the solution.
-    System.out.println("Solution");
-    System.out.println("x = " + x.solutionValue());
-    System.out.println("y = " + y.solutionValue());
-
-    // The objective value of the solution.
-    System.out.println("Optimal objective value = " + solver.objective().value());
+    if (resultStatus == MPSolver.ResultStatus.OPTIMAL) {
+      System.out.println("Solution:");
+      System.out.println("Objective value = " + objective.value());
+      System.out.println("x = " + x.solutionValue());
+      System.out.println("y = " + y.solutionValue());
+    } else {
+      System.err.println("The problem does not have an optimal solution!");
+    }
     // [END print_solution]
+
+    // [START advanced]
+    System.out.println("\nAdvanced usage:");
+    System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
+    System.out.println("Problem solved in " + solver.iterations() + " iterations");
+    System.out.println("Problem solved in " + solver.nodes() + " branch-and-bound nodes");
+    // [END advanced]
   }
 }
 // [END program]

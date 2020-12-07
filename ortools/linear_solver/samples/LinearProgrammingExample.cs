@@ -26,6 +26,8 @@ public class LinearProgrammingExample
         // [START variables]
         Variable x = solver.MakeNumVar(0.0, double.PositiveInfinity, "x");
         Variable y = solver.MakeNumVar(0.0, double.PositiveInfinity, "y");
+
+        Console.WriteLine("Number of variables = " + solver.NumVariables());
         // [END variables]
 
         // [START constraints]
@@ -43,6 +45,8 @@ public class LinearProgrammingExample
         Constraint c2 = solver.MakeConstraint(double.NegativeInfinity, 2.0);
         c2.SetCoefficient(x, 1);
         c2.SetCoefficient(y, -1);
+
+        Console.WriteLine("Number of constraints = " + solver.NumConstraints());
         // [END constraints]
 
         // [START objective]
@@ -54,19 +58,28 @@ public class LinearProgrammingExample
         // [END objective]
 
         // [START solve]
-        solver.Solve();
+        Solver.ResultStatus resultStatus = solver.Solve();
         // [END solve]
 
         // [START print_solution]
-        Console.WriteLine("Number of variables = " + solver.NumVariables());
-        Console.WriteLine("Number of constraints = " + solver.NumConstraints());
-        // The value of each variable in the solution.
+        // Check that the problem has an optimal solution.
+        if (resultStatus != Solver.ResultStatus.OPTIMAL)
+        {
+            Console.WriteLine("The problem does not have an optimal solution!");
+            return;
+        }
         Console.WriteLine("Solution:");
+        Console.WriteLine("Objective value = " + solver.Objective().Value());
         Console.WriteLine("x = " + x.SolutionValue());
         Console.WriteLine("y = " + y.SolutionValue());
-        // The objective value of the solution.
-        Console.WriteLine("Optimal objective value = " + solver.Objective().Value());
         // [END print_solution]
+
+        // [START advanced]
+        Console.WriteLine("\nAdvanced usage:");
+        Console.WriteLine("Problem solved in " + solver.WallTime() + " milliseconds");
+        Console.WriteLine("Problem solved in " + solver.Iterations() + " iterations");
+        Console.WriteLine("Problem solved in " + solver.Nodes() + " branch-and-bound nodes");
+        // [END advanced]
     }
 }
 // [END program]

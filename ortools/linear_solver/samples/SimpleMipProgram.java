@@ -76,17 +76,17 @@ public class SimpleMipProgram {
       System.out.println("Objective value = " + objective.value());
       System.out.println("x = " + x.solutionValue());
       System.out.println("y = " + y.solutionValue());
-      // [END print_solution]
-
-      // [START advanced]
-      System.out.println("\nAdvanced usage:");
-      System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
-      System.out.println("Problem solved in " + solver.iterations() + " iterations");
-      System.out.println("Problem solved in " + solver.nodes() + " branch-and-bound nodes");
-      // [END advanced]
     } else {
       System.err.println("The problem does not have an optimal solution!");
     }
+    // [END print_solution]
+
+    // [START advanced]
+    System.out.println("\nAdvanced usage:");
+    System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
+    System.out.println("Problem solved in " + solver.iterations() + " iterations");
+    System.out.println("Problem solved in " + solver.nodes() + " branch-and-bound nodes");
+    // [END advanced]
   }
 }
 // [END program]
