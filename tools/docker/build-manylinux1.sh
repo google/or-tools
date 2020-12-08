@@ -184,7 +184,7 @@ do
 
     # Hack wheel file to rename it manylinux1 since manylinux2010 is still not
     # supported by default pip on most distro.
-    FILE=$(find "${EXPORT_ROOT}/ortools-*-${PYTAG}-manylinux2010_x86_64.whl" | head -1)
+    FILE=$(find "${EXPORT_ROOT}"/ortools-*-"${PYTAG}"-manylinux2010_x86_64.whl | head -1)
     echo "Old wheel file to hack: ${FILE}"
 
     # Unpack to hack it
