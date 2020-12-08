@@ -184,18 +184,20 @@ do
 
     # Hack wheel file to rename it manylinux1 since manylinux2010 is still not
     # supported by default pip on most distro.
-    FILE=${EXPORT_ROOT}/ortools-*-${PYTAG}-manylinux2010_x86_64.whl
+    FILE=$(find "${EXPORT_ROOT}/ortools-*-${PYTAG}-manylinux2010_x86_64.whl" | head -1)
     echo "Old wheel file to hack: ${FILE}"
 
     # Unpack to hack it
     unzip "$FILE" -d /tmp
     rm -f "$FILE"
-    WHEEL_FILE=/tmp/ortools-*.dist-info/WHEEL
-    RECORD_FILE=/tmp/ortools-*.dist-info/RECORD
+    WHEEL_FILE=$(find /tmp/ortools-*.dist-info/WHEEL | head -1)
+    echo "WHEEL file to hack: ${WHEEL_FILE}"
+    RECORD_FILE=$(find /tmp/ortools-*.dist-info/RECORD | head -1)
+    echo "RECORD file to hack: ${RECORD_FILE}"
 
     # Save old hash and size, in order to look them up in RECORD
     # see: https://github.com/pypa/pip/blob/c9df690f3b5bb285a855953272e6fe24f69aa08a/src/pip/_internal/wheel.py#L71-L84
-    WHEEL_HASH_CMD="/opt/_internal/cpython-3.8.*/bin/python3 -c \
+    WHEEL_HASH_CMD="/opt/_internal/cpython-3.9.*/bin/python3 -c \
 \"import hashlib;\
 import base64;\
 print(\
