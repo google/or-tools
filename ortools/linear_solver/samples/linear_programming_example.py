@@ -34,29 +34,20 @@ def LinearProgrammingExample():
 
     # [START constraints]
     # Constraint 0: x + 2y <= 14.
-    constraint0 = solver.Constraint(-solver.infinity(), 14)
-    constraint0.SetCoefficient(x, 1)
-    constraint0.SetCoefficient(y, 2)
+    solver.Add(x + 2 * y <= 14.0)
 
     # Constraint 1: 3x - y >= 0.
-    constraint1 = solver.Constraint(0, solver.infinity())
-    constraint1.SetCoefficient(x, 3)
-    constraint1.SetCoefficient(y, -1)
+    solver.Add(3 * x - y >= 0.0)
 
     # Constraint 2: x - y <= 2.
-    constraint2 = solver.Constraint(-solver.infinity(), 2)
-    constraint2.SetCoefficient(x, 1)
-    constraint2.SetCoefficient(y, -1)
+    solver.Add(x - y <= 2.0)
 
     print('Number of constraints =', solver.NumConstraints())
     # [END constraints]
 
     # [START objective]
     # Objective function: 3x + 4y.
-    objective = solver.Objective()
-    objective.SetCoefficient(x, 3)
-    objective.SetCoefficient(y, 4)
-    objective.SetMaximization()
+    solver.Maximize(3 * x + 4 * y)
     # [END objective]
 
     # Solve the system.
