@@ -632,7 +632,7 @@ int main(int argc, char** argv) {
   }
 #endif
 #if defined(USE_SIRIUS)
-  if (FLAGS_colgen_solver == "sirius") {
+  if (absl::GetFlag(FLAGS_colgen_solver) == "sirius") {
 	  solver_type = operations_research::MPSolver::SIRIUS_LINEAR_PROGRAMMING;
 	  found = true;
   }
