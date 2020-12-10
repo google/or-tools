@@ -40,6 +40,9 @@ if(USE_XPRESS)
     list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "XPRESS_PATH=${XPRESS_ROOT}")
   endif()
 endif()
+if(USE_SIRIUS)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_SIRIUS")
+endif()
 
 if(WIN32)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "__WIN32__")
@@ -125,6 +128,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   $<$<BOOL:${USE_SCIP}>:libscip>
   $<$<BOOL:${USE_CPLEX}>:CPLEX::CPLEX>
   $<$<BOOL:${USE_XPRESS}>:XPRESS::XPRESS>
+  $<$<BOOL:${USE_SIRIUS}>:sirius_solver>
   Threads::Threads)
 if(WIN32)
   target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)

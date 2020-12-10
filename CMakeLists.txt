@@ -90,7 +90,6 @@ endif()
 
 # By default only build the C++ library.
 option(BUILD_CXX "Build C++ library" ON)
-option(USE_SIRIUS "Build and use SIRIUS interface" OFF)
 message(STATUS "Build C++ library: ${BUILD_CXX}")
 
 option(BUILD_PYTHON "Build Python Library" OFF)
@@ -99,9 +98,6 @@ option(BUILD_JAVA "Build Java Library" OFF)
 message(STATUS "Build Java: ${BUILD_JAVA}")
 option(BUILD_DOTNET "Build .NET Library" OFF)
 message(STATUS "Build .Net: ${BUILD_DOTNET}")
-message(STATUS "USE_XPRESS: ${USE_XPRESS}")
-message(STATUS "USE_SIRIUS: ${USE_SIRIUS}")
-message(STATUS "USE_CPLEX: ${USE_CPLEX}")
 
 # If wrapper are built, we need to have the install rpath in BINARY_DIR to package
 if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
@@ -206,13 +202,9 @@ message(STATUS "CPLEX support: ${USE_CPLEX}")
 option(USE_XPRESS "Use the XPRESS solver" OFF)
 message(STATUS "XPRESS support: ${USE_XPRESS}")
 
-if (USE_SIRIUS)
-	if(POLICY CMP0074)
-	  cmake_policy(SET CMP0074 NEW)
-	endif()
-	find_package(sirius_solver CONFIG REQUIRED)
-	#add_compile_definitions(USE_SIRIUS) #FIXME
-endif(USE_SIRIUS)
+option(USE_SIRIUS "Build and use SIRIUS interface" OFF)
+message(STATUS "SIRIUS support: ${USE_SIRIUS}")
+
 # Build Needed dependencies
 add_subdirectory(cmake/dependencies dependencies)
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_BINARY_DIR}/dependencies/install)
