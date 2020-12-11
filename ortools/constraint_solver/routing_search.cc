@@ -31,6 +31,7 @@
 #include "ortools/base/small_map.h"
 #include "ortools/base/small_ordered_set.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_lp_scheduling.h"

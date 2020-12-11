@@ -34,6 +34,7 @@
 #include "absl/random/random.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/random.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/bop/bop_types.h"

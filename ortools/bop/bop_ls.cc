@@ -15,6 +15,7 @@
 
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_util.h"
 #include "ortools/sat/boolean_problem.h"
 

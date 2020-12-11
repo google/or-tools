@@ -32,6 +32,7 @@
 #include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/graph/util.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/sat_parameters.pb.h"

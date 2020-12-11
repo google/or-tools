@@ -284,8 +284,8 @@ cc_library(
     deps = [
         ":routing_types",
         "//ortools/base",
-        "//ortools/base:strong_vector",
         "//ortools/base:map_util",
+        "//ortools/base:strong_vector",
         "@com_google_absl//absl/container:flat_hash_set",
     ],
 )

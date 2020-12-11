@@ -22,7 +22,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/random.h"
-#include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"

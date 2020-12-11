@@ -176,7 +176,6 @@
 #include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
@@ -805,7 +804,7 @@ class RoutingModel {
       int type) const;
   const absl::flat_hash_set<int>& GetTemporalTypeIncompatibilitiesOfType(
       int type) const;
-  /// Returns true if any hard (resp. temporal) type incompatibilities have
+  /// Returns true iff any hard (resp. temporal) type incompatibilities have
   /// been added to the model.
   bool HasHardTypeIncompatibilities() const {
     return has_hard_type_incompatibilities_;

@@ -16,6 +16,7 @@
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_fs.h"
 #include "ortools/bop/bop_lns.h"
 #include "ortools/bop/bop_ls.h"

@@ -18,6 +18,7 @@
 
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/basictypes.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/lp_data/lp_types.h"

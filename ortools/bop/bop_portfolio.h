@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BOP_BOP_PORTFOLIO_H_
 #define OR_TOOLS_BOP_BOP_PORTFOLIO_H_
 
+#include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_lns.h"
 #include "ortools/bop/bop_parameters.pb.h"
