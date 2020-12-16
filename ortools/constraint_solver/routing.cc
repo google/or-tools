@@ -42,6 +42,7 @@
 #include "ortools/base/mathutil.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/thorough_hash.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"

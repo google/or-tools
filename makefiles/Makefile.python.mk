@@ -27,9 +27,10 @@ PYTHON_COMPILER ?= python$(UNIX_PYTHON_VER)
 PYTHON_EXECUTABLE := $(shell which $(PYTHON_COMPILER))
 SET_PYTHONPATH = PYTHONPATH=$(OR_TOOLS_PYTHONPATH)
 GEN_MYPY := $(shell command -v protoc-gen-mypy 2> /dev/null)
+endif
+
 ifneq ($(GEN_MYPY),)
 MYPY_OUT=--mypy_out=$(GEN_PATH)
-endif
 endif
 
 # Detect python3

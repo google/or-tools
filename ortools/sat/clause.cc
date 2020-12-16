@@ -21,6 +21,7 @@
 
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/graph/strongly_connected_components.h"
 

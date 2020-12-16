@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BOP_BOP_SOLUTION_H_
 #define OR_TOOLS_BOP_BOP_SOLUTION_H_
 
+#include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_types.h"
 #include "ortools/sat/boolean_problem.h"
 #include "ortools/sat/boolean_problem.pb.h"

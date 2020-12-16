@@ -34,29 +34,20 @@ public class LinearProgrammingExample
 
         // [START constraints]
         // x + 2y <= 14.
-        Constraint c0 = solver.MakeConstraint(double.NegativeInfinity, 14.0);
-        c0.SetCoefficient(x, 1);
-        c0.SetCoefficient(y, 2);
+        solver.Add(x + 2 * y <= 14.0);
 
         // 3x - y >= 0.
-        Constraint c1 = solver.MakeConstraint(0.0, double.PositiveInfinity);
-        c1.SetCoefficient(x, 3);
-        c1.SetCoefficient(y, -1);
+        solver.Add(3 * x - y >= 0.0);
 
         // x - y <= 2.
-        Constraint c2 = solver.MakeConstraint(double.NegativeInfinity, 2.0);
-        c2.SetCoefficient(x, 1);
-        c2.SetCoefficient(y, -1);
+        solver.Add(x - y <= 2.0);
 
         Console.WriteLine("Number of constraints = " + solver.NumConstraints());
         // [END constraints]
 
         // [START objective]
         // Objective function: 3x + 4y.
-        Objective objective = solver.Objective();
-        objective.SetCoefficient(x, 3);
-        objective.SetCoefficient(y, 4);
-        objective.SetMaximization();
+        solver.Maximize(3 * x + 4 * y);
         // [END objective]
 
         // [START solve]
@@ -80,7 +71,6 @@ public class LinearProgrammingExample
         Console.WriteLine("\nAdvanced usage:");
         Console.WriteLine("Problem solved in " + solver.WallTime() + " milliseconds");
         Console.WriteLine("Problem solved in " + solver.Iterations() + " iterations");
-        Console.WriteLine("Problem solved in " + solver.Nodes() + " branch-and-bound nodes");
         // [END advanced]
     }
 }

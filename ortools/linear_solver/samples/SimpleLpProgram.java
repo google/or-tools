@@ -85,7 +85,6 @@ public class SimpleLpProgram {
     System.out.println("\nAdvanced usage:");
     System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
     System.out.println("Problem solved in " + solver.iterations() + " iterations");
-    System.out.println("Problem solved in " + solver.nodes() + " branch-and-bound nodes");
     // [END advanced]
   }
 }
