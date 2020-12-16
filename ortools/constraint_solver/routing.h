@@ -1173,7 +1173,7 @@ class RoutingModel {
   bool IsEnd(int64 index) const { return index >= Size(); }
   /// Returns the vehicle of the given start/end index, and -1 if the given
   /// index is not a vehicle start/end.
-  int VehicleIndex(int index) const { return index_to_vehicle_[index]; }
+  int VehicleIndex(int64 index) const { return index_to_vehicle_[index]; }
   /// Assignment inspection
   /// Returns the variable index of the node directly after the node
   /// corresponding to 'index' in 'assignment'.
