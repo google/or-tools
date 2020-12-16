@@ -3963,7 +3963,7 @@ void GlobalCheapestInsertionFilteredHeuristic::InsertFarthestNodesAsSeeds() {
   // nodes on routes, some previously empty vehicles may now be used, so we
   // update the curator accordingly to ensure it still only stores empty
   // vehicles.
-  DCHECK_NE(empty_vehicle_type_curator_, nullptr);
+  DCHECK(empty_vehicle_type_curator_ != nullptr);
   empty_vehicle_type_curator_->Update(
       [this](int vehicle) { return !VehicleIsEmpty(vehicle); });
 }
