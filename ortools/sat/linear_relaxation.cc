@@ -487,7 +487,7 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
 // TODO(user): Use affine demand.
 void AddCumulativeCut(const std::vector<IntervalVariable>& intervals,
                       const std::vector<IntegerVariable>& demands,
-                      IntegerValue capacity_lower_bound, Model* model,
+                      IntegerValue capacity_upper_bound, Model* model,
                       LinearRelaxation* relaxation) {
   // TODO(user): Keep a map intervals -> helper, or ct_index->helper to avoid
   // creating many helpers for the same constraint.
@@ -543,7 +543,7 @@ void AddCumulativeCut(const std::vector<IntervalVariable>& intervals,
   model->Add(SpanOfIntervals(span_var, intervals));
 
   LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
-  lc.AddTerm(span_size, -capacity_lower_bound);
+  lc.AddTerm(span_size, -capacity_upper_bound);
   for (int i = 0; i < num_intervals; ++i) {
     const IntegerValue demand_lower_bound =
         demands.empty() ? IntegerValue(1)
@@ -590,10 +590,10 @@ void AppendCumulativeRelaxation(const CpModelProto& model_proto,
       mapping->Integers(ct.cumulative().demands());
   std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.cumulative().intervals());
-  const IntegerValue capacity_lower_bound =
-      model->GetOrCreate<IntegerTrail>()->LowerBound(
+  const IntegerValue capacity_upper_bound =
+      model->GetOrCreate<IntegerTrail>()->UpperBound(
           mapping->Integer(ct.cumulative().capacity()));
-  AddCumulativeCut(intervals, demands, capacity_lower_bound, model, relaxation);
+  AddCumulativeCut(intervals, demands, capacity_upper_bound, model, relaxation);
 }
 
 void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
@@ -608,7 +608,7 @@ void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
   std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.no_overlap().intervals());
   AddCumulativeCut(intervals, /*demands=*/{},
-                   /*capacity_lower_bound=*/IntegerValue(1), model, relaxation);
+                   /*capacity_upper_bound=*/IntegerValue(1), model, relaxation);
 }
 
 void AppendMaxRelaxation(IntegerVariable target,
