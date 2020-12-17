@@ -69,8 +69,8 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:int_type",
-        "//ortools/base:strong_vector",
         "//ortools/base:ptr_util",
+        "//ortools/base:strong_vector",
         "//ortools/util:time_limit",
     ],
 )
