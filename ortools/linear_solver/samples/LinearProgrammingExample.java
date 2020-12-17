@@ -21,9 +21,9 @@ import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 // [END import]
 
-/** Simple linear programming example.*/
-public class LinearProgrammingExample {
-  public static void main(String[] args) throws Exception {
+/** Simple linear programming example. */
+public final class LinearProgrammingExample {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // [START solver]
     MPSolver solver = MPSolver.createSolver("GLOP");
@@ -84,5 +84,7 @@ public class LinearProgrammingExample {
     System.out.println("Problem solved in " + solver.iterations() + " iterations");
     // [END advanced]
   }
+
+  private LinearProgrammingExample() {}
 }
 // [END program]

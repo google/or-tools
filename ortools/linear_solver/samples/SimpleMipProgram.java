@@ -23,8 +23,8 @@ import com.google.ortools.linearsolver.MPVariable;
 // [END import]
 
 /** Minimal Mixed Integer Programming example to showcase calling the solver. */
-public class SimpleMipProgram {
-  public static void main(String[] args) throws Exception {
+public final class SimpleMipProgram {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // [START solver]
     // Create the linear solver with the SCIP backend.
@@ -88,5 +88,7 @@ public class SimpleMipProgram {
     System.out.println("Problem solved in " + solver.nodes() + " branch-and-bound nodes");
     // [END advanced]
   }
+
+  private SimpleMipProgram() {}
 }
 // [END program]

@@ -22,9 +22,9 @@ import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 // [END import]
 
-/** Minimal Linear Programming example to showcase calling the solver.*/
-public class BasicExample {
-  public static void main(String[] args) throws Exception {
+/** Minimal Linear Programming example to showcase calling the solver. */
+public final class BasicExample {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // [START solver]
     // Create the linear solver with the GLOP backend.
@@ -67,5 +67,7 @@ public class BasicExample {
     System.out.println("y = " + y.solutionValue());
     // [END print_solution]
   }
+
+  private BasicExample() {}
 }
 // [END program]
