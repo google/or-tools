@@ -47,7 +47,6 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/strong_vector.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/vlog_is_on.h"
@@ -937,7 +936,6 @@ std::function<SatParameters(Model*)> NewSatParameters(
     // of the solver object are created, so that by default they use the given
     // parameters.
     *model->GetOrCreate<SatParameters>() = parameters;
-    model->GetOrCreate<SatSolver>()->SetParameters(parameters);
     return parameters;
   };
 }
@@ -2411,7 +2409,7 @@ class LnsSolver : public SubSolver {
         if (repo.NumSolutions() > 0) {
           base_response.set_status(CpSolverStatus::FEASIBLE);
           const SharedSolutionRepository<int64>::Solution solution =
-              repo.GetRandomBiasedSolution(&random);
+              repo.GetRandomBiasedSolution(random);
           for (const int64 value : solution.variable_values) {
             base_response.add_solution(value);
           }
@@ -2437,7 +2435,7 @@ class LnsSolver : public SubSolver {
       {
         absl::MutexLock mutex_lock(helper_->MutableMutex());
         neighborhood =
-            generator_->Generate(base_response, data.difficulty, &random);
+            generator_->Generate(base_response, data.difficulty, random);
       }
       neighborhood.cp_model.set_name(absl::StrCat("lns_", task_id));
       if (!neighborhood.is_generated) return;
@@ -2479,13 +2477,9 @@ class LnsSolver : public SubSolver {
       // Presolve and solve the LNS fragment.
       CpModelProto mapping_proto;
       std::vector<int> postsolve_mapping;
-      PresolveOptions options;
-      options.log_info = VLOG_IS_ON(3);
-      options.parameters = *local_model.GetOrCreate<SatParameters>();
-      options.time_limit = local_model.GetOrCreate<TimeLimit>();
-      auto context = absl::make_unique<PresolveContext>(&neighborhood.cp_model,
-                                                        &mapping_proto);
-      PresolveCpModel(options, context.get(), &postsolve_mapping);
+      auto context = absl::make_unique<PresolveContext>(
+          VLOG_IS_ON(3), &local_model, &neighborhood.cp_model, &mapping_proto);
+      PresolveCpModel(context.get(), &postsolve_mapping);
 
       // Release the context
       context.reset(nullptr);
@@ -2880,6 +2874,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   UserTimer user_timer;
   wall_timer.Start();
   user_timer.Start();
+  model->GetOrCreate<TimeLimit>()->ResetLimitFromParameters(
+      *model->GetOrCreate<SatParameters>());
   SharedTimeLimit shared_time_limit(model->GetOrCreate<TimeLimit>());
   CpSolverResponse final_response;
 
@@ -2921,6 +2917,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   const SatParameters& params = *model->GetOrCreate<SatParameters>();
   const bool log_search = params.log_search_progress() || VLOG_IS_ON(1);
   LOG_IF(INFO, log_search) << "Parameters: " << params.ShortDebugString();
+  if (log_search && params.use_absl_random()) {
+    model->GetOrCreate<ModelRandomGenerator>()->LogSalt();
+  }
 
   // Always display the final response stats if requested.
   auto display_response_cleanup =
@@ -2989,12 +2988,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   CpModelProto new_cp_model_proto = model_proto;  // Copy.
 
   CpModelProto mapping_proto;
-  PresolveOptions options;
-  options.log_info = log_search;
-  options.parameters = *model->GetOrCreate<SatParameters>();
-  options.time_limit = model->GetOrCreate<TimeLimit>();
-  auto context =
-      absl::make_unique<PresolveContext>(&new_cp_model_proto, &mapping_proto);
+  auto context = absl::make_unique<PresolveContext>(
+      log_search, model, &new_cp_model_proto, &mapping_proto);
 
   bool degraded_assumptions_support = false;
   if (params.num_search_workers() > 1 || model_proto.has_objective()) {
@@ -3021,7 +3016,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   // Do the actual presolve.
   std::vector<int> postsolve_mapping;
-  const bool ok = PresolveCpModel(options, context.get(), &postsolve_mapping);
+  const bool ok = PresolveCpModel(context.get(), &postsolve_mapping);
   if (!ok) {
     LOG(ERROR) << "Error while presolving, likely due to integer overflow.";
     final_response.set_status(CpSolverStatus::MODEL_INVALID);

@@ -15,6 +15,7 @@
 
 #include "absl/container/inlined_vector.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/probing.h"
 #include "ortools/sat/sat_decision.h"

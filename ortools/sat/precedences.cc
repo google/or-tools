@@ -19,6 +19,7 @@
 #include "ortools/base/cleanup.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_constraints.h"
 
@@ -93,6 +94,8 @@ bool PrecedencesPropagator::Propagate() {
 }
 
 bool PrecedencesPropagator::PropagateOutgoingArcs(IntegerVariable var) {
+  CHECK_NE(var, kNoIntegerVariable);
+  if (var >= impacted_arcs_.size()) return true;
   for (const ArcIndex arc_index : impacted_arcs_[var]) {
     const ArcInfo& arc = arcs_[arc_index];
     if (integer_trail_->IsCurrentlyIgnored(arc.head_var)) continue;

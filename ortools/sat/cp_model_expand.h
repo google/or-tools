@@ -24,7 +24,7 @@ namespace sat {
 // simpler constraints.
 // This is different from PresolveCpModel() as there are no reduction or
 // simplification of the model. Furthermore, this expansion is mandatory.
-void ExpandCpModel(PresolveOptions options, PresolveContext* context);
+void ExpandCpModel(PresolveContext* context);
 
 }  // namespace sat
 }  // namespace operations_research

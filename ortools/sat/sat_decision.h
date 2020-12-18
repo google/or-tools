@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "ortools/base/integral_types.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
@@ -24,7 +25,6 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/integer_pq.h"
-#include "ortools/util/random_engine.h"
 
 namespace operations_research {
 namespace sat {

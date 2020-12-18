@@ -118,6 +118,18 @@ class CpModelMapping {
     return RefIsPositive(ref) ? var : NegationOf(var);
   }
 
+  // TODO(user): We could "easily" create an intermediate variable for more
+  // complex linear expression. We could also identify duplicate expressions to
+  // not create two identical integer variable.
+  AffineExpression LoadAffineView(const LinearExpressionProto& exp) const {
+    CHECK_LE(exp.vars().size(), 1);
+    if (exp.vars().empty()) {
+      return AffineExpression(IntegerValue(exp.offset()));
+    }
+    return AffineExpression(Integer(exp.vars(0)), IntegerValue(exp.coeffs(0)),
+                            IntegerValue(exp.offset()));
+  }
+
   IntervalVariable Interval(int i) const {
     CHECK_GE(i, 0);
     CHECK_LT(i, intervals_.size());

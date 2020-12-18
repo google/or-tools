@@ -208,6 +208,13 @@ void PostsolveResponse(const int64 num_variables_in_original_model,
                        const CpModelProto& mapping_proto,
                        const std::vector<int>& postsolve_mapping,
                        CpSolverResponse* response) {
+  // Map back the sufficient assumptions for infeasibility.
+  for (int& ref :
+       *(response->mutable_sufficient_assumptions_for_infeasibility())) {
+    ref = RefIsPositive(ref) ? postsolve_mapping[ref]
+                             : NegatedRef(postsolve_mapping[PositiveRef(ref)]);
+  }
+
   // Abort if no solution or something is wrong.
   if (response->status() != CpSolverStatus::FEASIBLE &&
       response->status() != CpSolverStatus::OPTIMAL) {

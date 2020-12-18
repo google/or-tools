@@ -214,6 +214,7 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
   }
 
   auto* encoder = m->GetOrCreate<IntegerEncoder>();
+  auto* intervals_repository = m->GetOrCreate<IntervalsRepository>();
 
   // Link any variable that has both views.
   for (int i = 0; i < num_proto_variables; ++i) {
@@ -238,13 +239,30 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
       // TODO(user): Fix the constant variable situation. An optional interval
       // with constant start/end or size cannot share the same constant
       // variable if it is used in non-optional situation.
-      intervals_[c] = m->Add(NewOptionalInterval(
-          Integer(ct.interval().start()), Integer(ct.interval().end()),
-          Integer(ct.interval().size()), enforcement_literal));
+      if (ct.interval().has_start_view()) {
+        intervals_[c] = intervals_repository->CreateInterval(
+            LoadAffineView(ct.interval().start_view()),
+            LoadAffineView(ct.interval().end_view()),
+            LoadAffineView(ct.interval().size_view()),
+            enforcement_literal.Index(),
+            /*add_linear_relation=*/false);
+      } else {
+        intervals_[c] = m->Add(NewOptionalInterval(
+            Integer(ct.interval().start()), Integer(ct.interval().end()),
+            Integer(ct.interval().size()), enforcement_literal));
+      }
     } else {
-      intervals_[c] = m->Add(NewInterval(Integer(ct.interval().start()),
-                                         Integer(ct.interval().end()),
-                                         Integer(ct.interval().size())));
+      if (ct.interval().has_start_view()) {
+        intervals_[c] = intervals_repository->CreateInterval(
+            LoadAffineView(ct.interval().start_view()),
+            LoadAffineView(ct.interval().end_view()),
+            LoadAffineView(ct.interval().size_view()), kNoLiteralIndex,
+            /*add_linear_relation=*/false);
+      } else {
+        intervals_[c] = m->Add(NewInterval(Integer(ct.interval().start()),
+                                           Integer(ct.interval().end()),
+                                           Integer(ct.interval().size())));
+      }
     }
     already_loaded_ct_.insert(&ct);
   }

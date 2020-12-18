@@ -23,6 +23,7 @@
 #include "ortools/algorithms/knapsack_solver_for_cuts.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"

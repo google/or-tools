@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_FEASIBILITY_PUMP_H_
 #define OR_TOOLS_SAT_FEASIBILITY_PUMP_H_
 
+#include "ortools/base/strong_vector.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_data_utils.h"

@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 177
+// NEXT TAG: 181
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -357,6 +357,14 @@ message SatParameters {
   // change in the solving algorithm. Running the solver with different seeds
   // enables to have more robust benchmarks when evaluating new features.
   optional int32 random_seed = 31 [default = 1];
+
+  // This is mainly here to test the solver variability. Note that in tests, if
+  // not explicitly set to false, all 3 options will be set to true so that
+  // clients do not rely on the solver returning a specific solution if they are
+  // many equivalent optimal solutions.
+  optional bool permute_variable_randomly = 178 [default = false];
+  optional bool permute_presolve_constraint_order = 179 [default = false];
+  optional bool use_absl_random = 180 [default = false];
 
   // Whether the solver should log the search progress to LOG(INFO).
   optional bool log_search_progress = 41 [default = false];
@@ -942,6 +950,11 @@ message SatParameters {
   // helps on some problems, but not so much on others. It also cost of bit of
   // time to do such polish step.
   optional bool polish_lp_solution = 175 [default = false];
+
+  // Temporary flag util the feature is more mature. This convert intervals to
+  // the newer proto format that support affine start/var/end instead of just
+  // variables. It changes a bit the search and is not always better currently.
+  optional bool convert_intervals = 177 [default = false];
 
   // ==========================================================================
   // MIP -> CP-SAT (i.e. IP with integer coeff) conversion parameters that are

@@ -448,7 +448,10 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
     relaxation->linear_constraints.push_back(constraint.Build());
   } else if (ct.constraint_case() ==
              ConstraintProto::ConstraintCase::kInterval) {
+    // If the interval is using views, then the linear equation is already
+    // present in the model.
     if (linearization_level < 2) return;
+    if (ct.interval().has_start_view()) return;
     const IntegerVariable start = mapping->Integer(ct.interval().start());
     const IntegerVariable size = mapping->Integer(ct.interval().size());
     const IntegerVariable end = mapping->Integer(ct.interval().end());

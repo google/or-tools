@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
@@ -25,7 +26,6 @@
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/adaptative_parameter_value.h"
-#include "ortools/util/random_engine.h"
 
 namespace operations_research {
 namespace sat {
@@ -201,7 +201,7 @@ class NeighborhoodGenerator {
   //
   // This function should be thread-safe.
   virtual Neighborhood Generate(const CpSolverResponse& initial_solution,
-                                double difficulty, random_engine_t* random) = 0;
+                                double difficulty, absl::BitGenRef random) = 0;
 
   // Returns true if the neighborhood generator can generate a neighborhood.
   virtual bool ReadyToGenerate() const;
@@ -345,7 +345,7 @@ class SimpleNeighborhoodGenerator : public NeighborhoodGenerator {
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, random_engine_t* random) final;
+                        double difficulty, absl::BitGenRef random) final;
 };
 
 // Pick a random subset of variables that are constructed by a BFS in the
@@ -358,7 +358,7 @@ class VariableGraphNeighborhoodGenerator : public NeighborhoodGenerator {
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, random_engine_t* random) final;
+                        double difficulty, absl::BitGenRef random) final;
 };
 
 // Pick a random subset of constraint and relax all of their variables. We are a
@@ -371,7 +371,7 @@ class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, random_engine_t* random) final;
+                        double difficulty, absl::BitGenRef random) final;
 };
 
 // Helper method for the scheduling neighborhood generators. Returns the model
@@ -394,7 +394,7 @@ class SchedulingNeighborhoodGenerator : public NeighborhoodGenerator {
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, random_engine_t* random) final;
+                        double difficulty, absl::BitGenRef random) final;
 };
 
 // Similar to SchedulingNeighborhoodGenerator except the set of intervals that
@@ -406,7 +406,7 @@ class SchedulingTimeWindowNeighborhoodGenerator : public NeighborhoodGenerator {
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, random_engine_t* random) final;
+                        double difficulty, absl::BitGenRef random) final;
 };
 
 // Generates a neighborhood by fixing the variables to solutions reported in
@@ -443,7 +443,7 @@ class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
 
   // Both initial solution and difficulty values are ignored.
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, random_engine_t* random) final;
+                        double difficulty, absl::BitGenRef random) final;
 
   // Returns true if the required solutions are available.
   bool ReadyToGenerate() const override;
@@ -465,7 +465,7 @@ class ConsecutiveConstraintsRelaxationNeighborhoodGenerator
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, random_engine_t* random) final;
+                        double difficulty, absl::BitGenRef random) final;
 
   bool IsRelaxationGenerator() const override { return true; }
   bool ReadyToGenerate() const override { return true; }
@@ -485,7 +485,7 @@ class WeightedRandomRelaxationNeighborhoodGenerator
   // Generates the neighborhood as described above. Also stores the removed
   // constraints indices for adjusting the weights.
   Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, random_engine_t* random) final;
+                        double difficulty, absl::BitGenRef random) final;
 
   bool IsRelaxationGenerator() const override { return true; }
   bool ReadyToGenerate() const override { return true; }

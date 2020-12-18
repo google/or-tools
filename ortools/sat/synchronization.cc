@@ -517,7 +517,7 @@ void SharedResponseManager::SetStatsFromModel(Model* model) {
 
 void SharedResponseManager::SetStatsFromModelInternal(Model* model) {
   if (model == nullptr) return;
-  auto* sat_solver = model->Get<SatSolver>();
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
   auto* integer_trail = model->Get<IntegerTrail>();
   best_response_.set_num_booleans(sat_solver->NumVariables());
   best_response_.set_num_branches(sat_solver->num_branches());

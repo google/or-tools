@@ -56,6 +56,7 @@ std::string IntervalsAsString(const Intervals& intervals) {
   for (ClosedInterval interval : intervals) {
     result += interval.DebugString();
   }
+  if (result.empty()) result = "[]";
   return result;
 }
 

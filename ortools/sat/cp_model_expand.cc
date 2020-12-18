@@ -37,8 +37,6 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
     return (void)context->NotifyThatModelIsUnsat();
   }
 
-  // TODO(user): Support sharing constraints in the model across constraints.
-  absl::flat_hash_map<std::tuple<int, int, int, int>, int> precedence_cache;
   const ReservoirConstraintProto& reservoir = ct->reservoir();
   const int num_events = reservoir.times_size();
 
@@ -47,40 +45,6 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
   const auto is_active_literal = [&reservoir, true_literal](int index) {
     if (reservoir.actives_size() == 0) return true_literal;
     return reservoir.actives(index);
-  };
-
-  // x_lesseq_y <=> (x <= y && l_x is true && l_y is true).
-  const auto add_reified_precedence = [&context](int x_lesseq_y, int x, int y,
-                                                 int l_x, int l_y) {
-    // x_lesseq_y => (x <= y) && l_x is true && l_y is true.
-    ConstraintProto* const lesseq = context->working_model->add_constraints();
-    lesseq->add_enforcement_literal(x_lesseq_y);
-    lesseq->mutable_linear()->add_vars(x);
-    lesseq->mutable_linear()->add_vars(y);
-    lesseq->mutable_linear()->add_coeffs(-1);
-    lesseq->mutable_linear()->add_coeffs(1);
-    lesseq->mutable_linear()->add_domain(0);
-    lesseq->mutable_linear()->add_domain(kint64max);
-    if (!context->LiteralIsTrue(l_x)) {
-      context->AddImplication(x_lesseq_y, l_x);
-    }
-    if (!context->LiteralIsTrue(l_y)) {
-      context->AddImplication(x_lesseq_y, l_y);
-    }
-
-    // Not(x_lesseq_y) && l_x && l_y => (x > y)
-    ConstraintProto* const greater = context->working_model->add_constraints();
-    greater->mutable_linear()->add_vars(x);
-    greater->mutable_linear()->add_vars(y);
-    greater->mutable_linear()->add_coeffs(-1);
-    greater->mutable_linear()->add_coeffs(1);
-    greater->mutable_linear()->add_domain(kint64min);
-    greater->mutable_linear()->add_domain(-1);
-
-    // Manages enforcement literal.
-    greater->add_enforcement_literal(NegatedRef(x_lesseq_y));
-    greater->add_enforcement_literal(l_x);
-    greater->add_enforcement_literal(l_y);
   };
 
   int num_positives = 0;
@@ -98,38 +62,21 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
     for (int i = 0; i < num_events - 1; ++i) {
       const int active_i = is_active_literal(i);
       if (context->LiteralIsFalse(active_i)) continue;
-
       const int time_i = reservoir.times(i);
+
       for (int j = i + 1; j < num_events; ++j) {
         const int active_j = is_active_literal(j);
         if (context->LiteralIsFalse(active_j)) continue;
-
         const int time_j = reservoir.times(j);
-        const std::tuple<int, int, int, int> p =
-            std::make_tuple(time_i, time_j, active_i, active_j);
-        const std::tuple<int, int, int, int> rev_p =
-            std::make_tuple(time_j, time_i, active_j, active_i);
-        if (gtl::ContainsKey(precedence_cache, p)) continue;
 
-        const int i_lesseq_j = context->NewBoolVar();
+        const int i_lesseq_j = context->GetOrCreateReifiedPrecedenceLiteral(
+            time_i, time_j, active_i, active_j);
         context->working_model->mutable_variables(i_lesseq_j)
             ->set_name(absl::StrCat(i, " before ", j));
-        precedence_cache[p] = i_lesseq_j;
-        const int j_lesseq_i = context->NewBoolVar();
+        const int j_lesseq_i = context->GetOrCreateReifiedPrecedenceLiteral(
+            time_j, time_i, active_j, active_i);
         context->working_model->mutable_variables(j_lesseq_i)
             ->set_name(absl::StrCat(j, " before ", i));
-
-        precedence_cache[rev_p] = j_lesseq_i;
-        add_reified_precedence(i_lesseq_j, time_i, time_j, active_i, active_j);
-        add_reified_precedence(j_lesseq_i, time_j, time_i, active_j, active_i);
-
-        // Consistency. This is redundant but should improves performance.
-        auto* const bool_or =
-            context->working_model->add_constraints()->mutable_bool_or();
-        bool_or->add_literals(i_lesseq_j);
-        bool_or->add_literals(j_lesseq_i);
-        bool_or->add_literals(NegatedRef(active_i));
-        bool_or->add_literals(NegatedRef(active_j));
       }
     }
 
@@ -153,9 +100,9 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
         if (context->LiteralIsFalse(active_j)) continue;
 
         const int time_j = reservoir.times(j);
-        level->mutable_linear()->add_vars(gtl::FindOrDieNoPrint(
-            precedence_cache,
-            std::make_tuple(time_j, time_i, active_j, active_i)));
+        level->mutable_linear()->add_vars(
+            context->GetOrCreateReifiedPrecedenceLiteral(time_j, time_i,
+                                                         active_j, active_i));
         level->mutable_linear()->add_coeffs(reservoir.demands(j));
       }
 
@@ -1493,11 +1440,14 @@ void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
 
 }  // namespace
 
-void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
+void ExpandCpModel(PresolveContext* context) {
   if (context->ModelIsUnsat()) return;
 
   // Make sure all domains are initialized.
   context->InitializeNewDomains();
+
+  // Clear the precedence cache.
+  context->ClearPrecedenceCache();
 
   const int num_constraints = context->working_model->constraints_size();
   for (int i = 0; i < num_constraints; ++i) {
@@ -1520,7 +1470,7 @@ void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
         ExpandLinMin(ct, context);
         break;
       case ConstraintProto::ConstraintCase::kElement:
-        if (options.parameters.expand_element_constraints()) {
+        if (context->params().expand_element_constraints()) {
           ExpandElement(ct, context);
         }
         break;
@@ -1528,19 +1478,19 @@ void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
         ExpandInverse(ct, context);
         break;
       case ConstraintProto::ConstraintCase::kAutomaton:
-        if (options.parameters.expand_automaton_constraints()) {
+        if (context->params().expand_automaton_constraints()) {
           ExpandAutomaton(ct, context);
         }
         break;
       case ConstraintProto::ConstraintCase::kTable:
         if (ct->table().negated()) {
           ExpandNegativeTable(ct, context);
-        } else if (options.parameters.expand_table_constraints()) {
+        } else if (context->params().expand_table_constraints()) {
           ExpandPositiveTable(ct, context);
         }
         break;
       case ConstraintProto::ConstraintCase::kAllDiff:
-        ExpandAllDiff(options.parameters.expand_alldiff_constraints(), ct,
+        ExpandAllDiff(context->params().expand_alldiff_constraints(), ct,
                       context);
         break;
       default:
@@ -1557,13 +1507,18 @@ void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
 
     // Early exit if the model is unsat.
     if (context->ModelIsUnsat()) {
-      if (VLOG_IS_ON(1) || options.parameters.log_search_progress()) {
+      if (VLOG_IS_ON(1) || context->params().log_search_progress()) {
         LOG(INFO) << "UNSAT after expansion of "
                   << ProtobufShortDebugString(*ct);
       }
       return;
     }
   }
+
+  // The precedence cache can become invalid during presolve as it does not
+  // handle variable substitution. It is safer just to clear it at the end
+  // of the expansion phase.
+  context->ClearPrecedenceCache();
 
   // Make sure the context is consistent.
   context->InitializeNewDomains();

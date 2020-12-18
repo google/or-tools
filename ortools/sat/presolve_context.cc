@@ -16,6 +16,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
 namespace sat {
@@ -386,14 +387,14 @@ bool PresolveContext::ConstraintVariableUsageIsConsistent() {
   for (int v = 0; v < var_to_constraints_.size(); ++v) {
     if (var_to_constraints_[v].contains(kObjectiveConstraint)) {
       ++num_in_objective;
-      if (!objective_map.contains(v)) {
+      if (!objective_map_.contains(v)) {
         LOG(INFO) << "Variable " << v
                   << " is marked as part of the objective but isn't.";
         return false;
       }
     }
   }
-  if (num_in_objective != objective_map.size()) {
+  if (num_in_objective != objective_map_.size()) {
     LOG(INFO) << "Not all variables are marked as part of the objective";
     return false;
   }
@@ -1136,31 +1137,39 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
 void PresolveContext::ReadObjectiveFromProto() {
   const CpObjectiveProto& obj = working_model->objective();
 
-  objective_offset = obj.offset();
-  objective_scaling_factor = obj.scaling_factor();
-  if (objective_scaling_factor == 0.0) {
-    objective_scaling_factor = 1.0;
+  objective_offset_ = obj.offset();
+  objective_scaling_factor_ = obj.scaling_factor();
+  if (objective_scaling_factor_ == 0.0) {
+    objective_scaling_factor_ = 1.0;
   }
   if (!obj.domain().empty()) {
     // We might relax this in CanonicalizeObjective() when we will compute
     // the possible objective domain from the domains of the variables.
-    objective_domain_is_constraining = true;
-    objective_domain = ReadDomainFromProto(obj);
+    objective_domain_is_constraining_ = true;
+    objective_domain_ = ReadDomainFromProto(obj);
   } else {
-    objective_domain_is_constraining = false;
-    objective_domain = Domain::AllValues();
+    objective_domain_is_constraining_ = false;
+    objective_domain_ = Domain::AllValues();
   }
 
-  objective_map.clear();
+  // This is an upper bound of the higher magnitude that can be reach by
+  // summing an objective partial sum. Because of the model validation, this
+  // shouldn't overflow, and we make sure it stays this way.
+  objective_overflow_detection_ = 0;
+
+  objective_map_.clear();
   for (int i = 0; i < obj.vars_size(); ++i) {
     const int ref = obj.vars(i);
     int64 coeff = obj.coeffs(i);
     if (!RefIsPositive(ref)) coeff = -coeff;
     int var = PositiveRef(ref);
 
-    objective_map[var] += coeff;
-    if (objective_map[var] == 0) {
-      objective_map.erase(var);
+    objective_overflow_detection_ +=
+        std::abs(coeff) * std::max(std::abs(MinOf(var)), std::abs(MaxOf(var)));
+
+    objective_map_[var] += coeff;
+    if (objective_map_[var] == 0) {
+      objective_map_.erase(var);
       var_to_constraints_[var].erase(kObjectiveConstraint);
     } else {
       var_to_constraints_[var].insert(kObjectiveConstraint);
@@ -1175,24 +1184,24 @@ bool PresolveContext::CanonicalizeObjective() {
   // Note that the non-deterministic loop is fine, but because we iterate
   // one the map while modifying it, it is safer to do a copy rather than to
   // try to handle that in one pass.
-  tmp_entries.clear();
-  for (const auto& entry : objective_map) {
-    tmp_entries.push_back(entry);
+  tmp_entries_.clear();
+  for (const auto& entry : objective_map_) {
+    tmp_entries_.push_back(entry);
   }
 
   // TODO(user): This is a bit duplicated with the presolve linear code.
   // We also do not propagate back any domain restriction from the objective to
   // the variables if any.
-  for (const auto& entry : tmp_entries) {
+  for (const auto& entry : tmp_entries_) {
     const int var = entry.first;
-    const auto it = objective_map.find(var);
-    if (it == objective_map.end()) continue;
+    const auto it = objective_map_.find(var);
+    if (it == objective_map_.end()) continue;
     const int64 coeff = it->second;
 
     // If a variable only appear in objective, we can fix it!
     // Note that we don't care if it was in affine relation, because if none
     // of the relations are left, then we can still fix it.
-    if (!keep_all_feasible_solutions && !objective_domain_is_constraining &&
+    if (!keep_all_feasible_solutions && !objective_domain_is_constraining_ &&
         ConstraintVariableGraphIsUpToDate() &&
         var_to_constraints_[var].size() == 1 &&
         var_to_constraints_[var].contains(kObjectiveConstraint)) {
@@ -1211,30 +1220,30 @@ bool PresolveContext::CanonicalizeObjective() {
     if (IsFixed(var)) {
       offset_change += coeff * MinOf(var);
       var_to_constraints_[var].erase(kObjectiveConstraint);
-      objective_map.erase(var);
+      objective_map_.erase(var);
       continue;
     }
 
     const AffineRelation::Relation r = GetAffineRelation(var);
     if (r.representative == var) continue;
 
-    objective_map.erase(var);
+    objective_map_.erase(var);
     var_to_constraints_[var].erase(kObjectiveConstraint);
 
     // Do the substitution.
     offset_change += coeff * r.offset;
-    const int64 new_coeff = objective_map[r.representative] += coeff * r.coeff;
+    const int64 new_coeff = objective_map_[r.representative] += coeff * r.coeff;
 
     // Process new term.
     if (new_coeff == 0) {
-      objective_map.erase(r.representative);
+      objective_map_.erase(r.representative);
       var_to_constraints_[r.representative].erase(kObjectiveConstraint);
     } else {
       var_to_constraints_[r.representative].insert(kObjectiveConstraint);
       if (IsFixed(r.representative)) {
         offset_change += new_coeff * MinOf(r.representative);
         var_to_constraints_[r.representative].erase(kObjectiveConstraint);
-        objective_map.erase(r.representative);
+        objective_map_.erase(r.representative);
       }
     }
   }
@@ -1243,12 +1252,12 @@ bool PresolveContext::CanonicalizeObjective() {
   int64 gcd(0);
 
   // We need to sort the entries to be deterministic.
-  tmp_entries.clear();
-  for (const auto& entry : objective_map) {
-    tmp_entries.push_back(entry);
+  tmp_entries_.clear();
+  for (const auto& entry : objective_map_) {
+    tmp_entries_.push_back(entry);
   }
-  std::sort(tmp_entries.begin(), tmp_entries.end());
-  for (const auto& entry : tmp_entries) {
+  std::sort(tmp_entries_.begin(), tmp_entries_.end());
+  for (const auto& entry : tmp_entries_) {
     const int var = entry.first;
     const int64 coeff = entry.second;
     gcd = MathUtil::GCD64(gcd, std::abs(coeff));
@@ -1259,37 +1268,37 @@ bool PresolveContext::CanonicalizeObjective() {
 
   // This is the new domain.
   // Note that the domain never include the offset.
-  objective_domain = objective_domain.AdditionWith(Domain(-offset_change))
-                         .IntersectionWith(implied_domain);
-  objective_domain =
-      objective_domain.SimplifyUsingImpliedDomain(implied_domain);
+  objective_domain_ = objective_domain_.AdditionWith(Domain(-offset_change))
+                          .IntersectionWith(implied_domain);
+  objective_domain_ =
+      objective_domain_.SimplifyUsingImpliedDomain(implied_domain);
 
   // Updat the offset.
-  objective_offset += offset_change;
+  objective_offset_ += offset_change;
 
   // Maybe divide by GCD.
   if (gcd > 1) {
-    for (auto& entry : objective_map) {
+    for (auto& entry : objective_map_) {
       entry.second /= gcd;
     }
-    objective_domain = objective_domain.InverseMultiplicationBy(gcd);
-    objective_offset /= static_cast<double>(gcd);
-    objective_scaling_factor *= static_cast<double>(gcd);
+    objective_domain_ = objective_domain_.InverseMultiplicationBy(gcd);
+    objective_offset_ /= static_cast<double>(gcd);
+    objective_scaling_factor_ *= static_cast<double>(gcd);
   }
 
-  if (objective_domain.IsEmpty()) return false;
+  if (objective_domain_.IsEmpty()) return false;
 
   // Detect if the objective domain do not limit the "optimal" objective value.
   // If this is true, then we can apply any reduction that reduce the objective
   // value without any issues.
-  objective_domain_is_constraining =
+  objective_domain_is_constraining_ =
       !implied_domain
-           .IntersectionWith(Domain(kint64min, objective_domain.Max()))
-           .IsIncludedIn(objective_domain);
+           .IntersectionWith(Domain(kint64min, objective_domain_.Max()))
+           .IsIncludedIn(objective_domain_);
   return true;
 }
 
-void PresolveContext::SubstituteVariableInObjective(
+bool PresolveContext::SubstituteVariableInObjective(
     int var_in_equality, int64 coeff_in_equality,
     const ConstraintProto& equality, std::vector<int>* new_vars_in_objective) {
   CHECK(equality.enforcement_literal().empty());
@@ -1300,10 +1309,28 @@ void PresolveContext::SubstituteVariableInObjective(
   // We can only "easily" substitute if the objective coefficient is a multiple
   // of the one in the constraint.
   const int64 coeff_in_objective =
-      gtl::FindOrDie(objective_map, var_in_equality);
+      gtl::FindOrDie(objective_map_, var_in_equality);
   CHECK_NE(coeff_in_equality, 0);
   CHECK_EQ(coeff_in_objective % coeff_in_equality, 0);
   const int64 multiplier = coeff_in_objective / coeff_in_equality;
+
+  // Abort if the new objective seems to violate our overflow preconditions.
+  int64 change = 0;
+  for (int i = 0; i < equality.linear().vars().size(); ++i) {
+    int var = equality.linear().vars(i);
+    if (PositiveRef(var) == var_in_equality) continue;
+    int64 coeff = equality.linear().coeffs(i);
+    change +=
+        std::abs(coeff) * std::max(std::abs(MinOf(var)), std::abs(MaxOf(var)));
+  }
+  const int64 new_value =
+      CapAdd(CapProd(std::abs(multiplier), change),
+             objective_overflow_detection_ -
+                 std::abs(coeff_in_equality) *
+                     std::max(std::abs(MinOf(var_in_equality)),
+                              std::abs(MaxOf(var_in_equality))));
+  if (new_value == kint64max) return false;
+  objective_overflow_detection_ = new_value;
 
   for (int i = 0; i < equality.linear().vars().size(); ++i) {
     int var = equality.linear().vars(i);
@@ -1314,21 +1341,21 @@ void PresolveContext::SubstituteVariableInObjective(
     }
     if (var == var_in_equality) continue;
 
-    int64& map_ref = objective_map[var];
+    int64& map_ref = objective_map_[var];
     if (map_ref == 0 && new_vars_in_objective != nullptr) {
       new_vars_in_objective->push_back(var);
     }
     map_ref -= coeff * multiplier;
 
     if (map_ref == 0) {
-      objective_map.erase(var);
+      objective_map_.erase(var);
       var_to_constraints_[var].erase(kObjectiveConstraint);
     } else {
       var_to_constraints_[var].insert(kObjectiveConstraint);
     }
   }
 
-  objective_map.erase(var_in_equality);
+  objective_map_.erase(var_in_equality);
   var_to_constraints_[var_in_equality].erase(kObjectiveConstraint);
 
   // Deal with the offset.
@@ -1337,39 +1364,107 @@ void PresolveContext::SubstituteVariableInObjective(
   bool exact = true;
   offset = offset.MultiplicationBy(multiplier, &exact);
   CHECK(exact);
+  CHECK(!offset.IsEmpty());
 
   // Tricky: The objective domain is without the offset, so we need to shift it.
-  objective_offset += static_cast<double>(offset.Min());
-  objective_domain = objective_domain.AdditionWith(Domain(-offset.Min()));
+  objective_offset_ += static_cast<double>(offset.Min());
+  objective_domain_ = objective_domain_.AdditionWith(Domain(-offset.Min()));
 
   // Because we can assume that the constraint we used was constraining
   // (otherwise it would have been removed), the objective domain should be now
   // constraining.
-  objective_domain_is_constraining = true;
+  objective_domain_is_constraining_ = true;
 
-  if (objective_domain.IsEmpty()) {
-    return (void)NotifyThatModelIsUnsat();
+  if (objective_domain_.IsEmpty()) {
+    return NotifyThatModelIsUnsat();
   }
+  return true;
 }
 
 void PresolveContext::WriteObjectiveToProto() const {
   // We need to sort the entries to be deterministic.
   std::vector<std::pair<int, int64>> entries;
-  for (const auto& entry : objective_map) {
+  for (const auto& entry : objective_map_) {
     entries.push_back(entry);
   }
   std::sort(entries.begin(), entries.end());
 
   CpObjectiveProto* mutable_obj = working_model->mutable_objective();
-  mutable_obj->set_offset(objective_offset);
-  mutable_obj->set_scaling_factor(objective_scaling_factor);
-  FillDomainInProto(objective_domain, mutable_obj);
+  mutable_obj->set_offset(objective_offset_);
+  mutable_obj->set_scaling_factor(objective_scaling_factor_);
+  FillDomainInProto(objective_domain_, mutable_obj);
   mutable_obj->clear_vars();
   mutable_obj->clear_coeffs();
   for (const auto& entry : entries) {
     mutable_obj->add_vars(entry.first);
     mutable_obj->add_coeffs(entry.second);
   }
+}
+
+int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(int time_i, int time_j,
+                                                         int active_i,
+                                                         int active_j) {
+  // Sort the active literals.
+  if (active_j < active_i) std::swap(active_i, active_j);
+
+  const std::tuple<int, int, int, int> key =
+      std::make_tuple(time_i, time_j, active_i, active_j);
+  const auto& it = reified_precedences_cache_.find(key);
+  if (it != reified_precedences_cache_.end()) return it->second;
+
+  const int result = NewBoolVar();
+  reified_precedences_cache_[key] = result;
+
+  // result => (time_i <= time_j) && active_i && active_j.
+  ConstraintProto* const lesseq = working_model->add_constraints();
+  lesseq->add_enforcement_literal(result);
+  lesseq->mutable_linear()->add_vars(time_i);
+  lesseq->mutable_linear()->add_vars(time_j);
+  lesseq->mutable_linear()->add_coeffs(-1);
+  lesseq->mutable_linear()->add_coeffs(1);
+  lesseq->mutable_linear()->add_domain(0);
+  lesseq->mutable_linear()->add_domain(kint64max);
+  if (!LiteralIsTrue(active_i)) {
+    AddImplication(result, active_i);
+  }
+  if (!LiteralIsTrue(active_j)) {
+    AddImplication(result, active_j);
+  }
+
+  // Not(result) && active_i && active_j => (time_i > time_j)
+  ConstraintProto* const greater = working_model->add_constraints();
+  greater->mutable_linear()->add_vars(time_i);
+  greater->mutable_linear()->add_vars(time_j);
+  greater->mutable_linear()->add_coeffs(-1);
+  greater->mutable_linear()->add_coeffs(1);
+  greater->mutable_linear()->add_domain(kint64min);
+  greater->mutable_linear()->add_domain(-1);
+
+  // Manages enforcement literal.
+  greater->add_enforcement_literal(NegatedRef(result));
+  greater->add_enforcement_literal(active_i);
+  greater->add_enforcement_literal(active_j);
+
+  // This is redundant but should improves performance.
+  //
+  // If GetOrCreateReifiedPrecedenceLiteral(time_j, time_i, active_j, active_j)
+  // (the reverse precedence) has been called too, then we can link the two
+  // precedence literals, and the two active literals together.
+  const auto& rev_it = reified_precedences_cache_.find(
+      std::make_tuple(time_j, time_i, active_i, active_j));
+  if (rev_it != reified_precedences_cache_.end()) {
+    auto* const bool_or = working_model->add_constraints()->mutable_bool_or();
+    bool_or->add_literals(result);
+    bool_or->add_literals(rev_it->second);
+    bool_or->add_literals(NegatedRef(active_i));
+    bool_or->add_literals(NegatedRef(active_j));
+  }
+
+  return result;
+}
+
+void PresolveContext::ClearPrecedenceCache() {
+  reified_precedences_cache_.clear();
 }
 
 }  // namespace sat

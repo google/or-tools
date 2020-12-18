@@ -19,6 +19,7 @@
 #include <utility>
 
 #include "absl/container/flat_hash_set.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
 

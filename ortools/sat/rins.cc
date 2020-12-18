@@ -46,7 +46,7 @@ void RecordLPRelaxationValues(Model* model) {
 namespace {
 
 std::vector<double> GetLPRelaxationValues(
-    const SharedLPSolutionRepository* lp_solutions, random_engine_t* random) {
+    const SharedLPSolutionRepository* lp_solutions, absl::BitGenRef random) {
   std::vector<double> relaxation_values;
 
   if (lp_solutions == nullptr || lp_solutions->NumSolutions() == 0) {
@@ -66,7 +66,7 @@ std::vector<double> GetLPRelaxationValues(
 
 std::vector<double> GetGeneralRelaxationValues(
     const SharedRelaxationSolutionRepository* relaxation_solutions,
-    random_engine_t* random) {
+    absl::BitGenRef random) {
   std::vector<double> relaxation_values;
 
   if (relaxation_solutions == nullptr ||
@@ -101,7 +101,7 @@ RINSNeighborhood GetRINSNeighborhood(
     const SharedRelaxationSolutionRepository* relaxation_solutions,
     const SharedLPSolutionRepository* lp_solutions,
     SharedIncompleteSolutionManager* incomplete_solutions,
-    random_engine_t* random) {
+    absl::BitGenRef random) {
   RINSNeighborhood rins_neighborhood;
 
   const bool use_only_relaxation_values =

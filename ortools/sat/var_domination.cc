@@ -14,6 +14,7 @@
 #include "ortools/sat/var_domination.h"
 
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_vector.h"
 
 namespace operations_research {
 namespace sat {

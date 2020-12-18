@@ -16,6 +16,7 @@
 #include <utility>
 
 #include "absl/strings/str_format.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/thorough_hash.h"
 #include "ortools/util/saturated_arithmetic.h"
 

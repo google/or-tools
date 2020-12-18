@@ -16,6 +16,7 @@
 
 #include <vector>
 
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/util.h"
 

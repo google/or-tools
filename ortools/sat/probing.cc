@@ -16,6 +16,7 @@
 #include <set>
 
 #include "ortools/base/iterator_adaptors.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/implied_bounds.h"

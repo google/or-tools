@@ -277,8 +277,10 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
+        ":model",
         ":presolve_util",
         ":sat_parameters_cc_proto",
+        ":util",
         "//ortools/base",
         "//ortools/base:int_type",
         "//ortools/base:strong_vector",
@@ -1054,6 +1056,7 @@ cc_library(
         "//ortools/base:stl_util",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:bit_gen_ref",
         "@com_google_protobuf//:protobuf",
     ],
 )

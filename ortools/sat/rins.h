@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/optional.h"
 #include "ortools/sat/integer.h"
@@ -77,7 +78,7 @@ RINSNeighborhood GetRINSNeighborhood(
     const SharedRelaxationSolutionRepository* relaxation_solutions,
     const SharedLPSolutionRepository* lp_solutions,
     SharedIncompleteSolutionManager* incomplete_solutions,
-    random_engine_t* random);
+    absl::BitGenRef random);
 
 // Adds the current LP solution to the pool.
 void RecordLPRelaxationValues(Model* model);

@@ -16,6 +16,7 @@
 
 #include <deque>
 
+#include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -30,14 +31,40 @@ namespace operations_research {
 namespace sat {
 
 // The model "singleton" random engine used in the solver.
-struct ModelRandomGenerator : public random_engine_t {
+//
+// In test, we usually set use_absl_random() so that the sequence is changed at
+// each invocation. This way, clients do not relly on the wrong assumption that
+// a particular optimal solution will be returned if they are many equivalent
+// ones.
+class ModelRandomGenerator : public absl::BitGenRef {
+ public:
   // We seed the strategy at creation only. This should be enough for our use
   // case since the SatParameters is set first before the solver is created. We
   // also never really need to change the seed afterwards, it is just used to
   // diversify solves with identical parameters on different Model objects.
-  explicit ModelRandomGenerator(Model* model) : random_engine_t() {
-    seed(model->GetOrCreate<SatParameters>()->random_seed());
+  explicit ModelRandomGenerator(Model* model)
+      : absl::BitGenRef(deterministic_random_) {
+    const auto& params = *model->GetOrCreate<SatParameters>();
+    deterministic_random_.seed(params.random_seed());
+    if (params.use_absl_random()) {
+      absl_random_ = absl::BitGen(absl::SeedSeq({params.random_seed()}));
+      absl::BitGenRef::operator=(absl::BitGenRef(absl_random_));
+    }
   }
+
+  // This is just used to display ABSL_RANDOM_SALT_OVERRIDE in the log so that
+  // it is possible to reproduce a failure more easily while looking at a solver
+  // log.
+  //
+  // TODO(user): I didn't find a cleaner way to log this.
+  void LogSalt() const {
+    // absl::BitGen(
+    //     absl::MakeTaggedSeedSeq("UNUSED", absl::LogInfoStreamer().stream()));
+  }
+
+ private:
+  random_engine_t deterministic_random_;
+  absl::BitGen absl_random_;
 };
 
 // Randomizes the decision heuristic of the given SatParameters.

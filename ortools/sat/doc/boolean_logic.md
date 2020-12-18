@@ -26,7 +26,7 @@
       * [Product of two Boolean Variables](#product-of-two-boolean-variables)
          * [Python code](#python-code-3)
 
-<!-- Added by: lperron, at: Tue Nov  3 17:33:06 CET 2020 -->
+<!-- Added by: lperron, at: Fri Dec 18 09:46:39 CET 2020 -->
 
 <!--te-->
 

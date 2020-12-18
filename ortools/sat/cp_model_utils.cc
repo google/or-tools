@@ -13,18 +13,12 @@
 
 #include "ortools/sat/cp_model_utils.h"
 
-#include "absl/container/flat_hash_set.h"
 #include "ortools/base/stl_util.h"
 
 namespace operations_research {
 namespace sat {
 
 namespace {
-
-template <typename IntList>
-void AddIndices(const IntList& indices, absl::flat_hash_set<int>* output) {
-  output->insert(indices.begin(), indices.end());
-}
 
 template <typename IntList>
 void AddIndices(const IntList& indices, std::vector<int>* output) {
@@ -124,9 +118,21 @@ IndexReferences GetReferencesUsedByConstraint(const ConstraintProto& ct) {
       AddIndices(ct.automaton().vars(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kInterval:
-      output.variables.push_back(ct.interval().start());
-      output.variables.push_back(ct.interval().end());
-      output.variables.push_back(ct.interval().size());
+      if (ct.interval().has_start_view()) {
+        AddIndices(ct.interval().start_view().vars(), &output.variables);
+      } else {
+        output.variables.push_back(ct.interval().start());
+      }
+      if (ct.interval().has_size_view()) {
+        AddIndices(ct.interval().size_view().vars(), &output.variables);
+      } else {
+        output.variables.push_back(ct.interval().size());
+      }
+      if (ct.interval().has_end_view()) {
+        AddIndices(ct.interval().end_view().vars(), &output.variables);
+      } else {
+        output.variables.push_back(ct.interval().end());
+      }
       break;
     case ConstraintProto::ConstraintCase::kNoOverlap:
       break;
@@ -290,9 +296,21 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
       APPLY_TO_REPEATED_FIELD(automaton, vars);
       break;
     case ConstraintProto::ConstraintCase::kInterval:
-      APPLY_TO_SINGULAR_FIELD(interval, start);
-      APPLY_TO_SINGULAR_FIELD(interval, end);
-      APPLY_TO_SINGULAR_FIELD(interval, size);
+      if (ct->interval().has_start_view()) {
+        APPLY_TO_REPEATED_FIELD(interval, start_view()->mutable_vars);
+      } else {
+        APPLY_TO_SINGULAR_FIELD(interval, start);
+      }
+      if (ct->interval().has_size_view()) {
+        APPLY_TO_REPEATED_FIELD(interval, size_view()->mutable_vars);
+      } else {
+        APPLY_TO_SINGULAR_FIELD(interval, size);
+      }
+      if (ct->interval().has_end_view()) {
+        APPLY_TO_REPEATED_FIELD(interval, end_view()->mutable_vars);
+      } else {
+        APPLY_TO_SINGULAR_FIELD(interval, end);
+      }
       break;
     case ConstraintProto::ConstraintCase::kNoOverlap:
       break;

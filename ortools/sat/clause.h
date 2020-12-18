@@ -25,6 +25,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
@@ -37,7 +38,6 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
-#include "ortools/util/random_engine.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/time_limit.h"
 
@@ -519,7 +519,7 @@ class BinaryImplicationGraph : public SatPropagator {
                              SparseBitset<BooleanVariable>* marked);
   void MinimizeConflictFirstWithTransitiveReduction(
       const Trail& trail, std::vector<Literal>* c,
-      SparseBitset<BooleanVariable>* marked, random_engine_t* random);
+      SparseBitset<BooleanVariable>* marked, absl::BitGenRef random);
 
   // This must only be called at decision level 0 after all the possible
   // propagations. It:

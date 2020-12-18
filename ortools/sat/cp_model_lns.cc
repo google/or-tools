@@ -15,7 +15,6 @@
 
 #include <limits>
 #include <numeric>
-#include <random>
 #include <vector>
 
 #include "ortools/sat/cp_model.pb.h"
@@ -345,12 +344,11 @@ void NeighborhoodGenerator::Synchronize() {
 
 namespace {
 
-template <class Random>
 void GetRandomSubset(double relative_size, std::vector<int>* base,
-                     Random* random) {
+                     absl::BitGenRef random) {
   // TODO(user): we could generate this more efficiently than using random
   // shuffle.
-  std::shuffle(base->begin(), base->end(), *random);
+  std::shuffle(base->begin(), base->end(), random);
   const int target_size = std::round(relative_size * base->size());
   base->resize(target_size);
 }
@@ -359,7 +357,7 @@ void GetRandomSubset(double relative_size, std::vector<int>* base,
 
 Neighborhood SimpleNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
-    random_engine_t* random) {
+    absl::BitGenRef random) {
   std::vector<int> fixed_variables = helper_.ActiveVariables();
   GetRandomSubset(1.0 - difficulty, &fixed_variables, random);
   return helper_.FixGivenVariables(initial_solution, fixed_variables);
@@ -367,7 +365,7 @@ Neighborhood SimpleNeighborhoodGenerator::Generate(
 
 Neighborhood VariableGraphNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
-    random_engine_t* random) {
+    absl::BitGenRef random) {
   const int num_active_vars = helper_.ActiveVariables().size();
   const int num_model_vars = helper_.ModelProto().variables_size();
   const int target_size = std::ceil(difficulty * num_active_vars);
@@ -381,8 +379,7 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
   std::vector<int> visited_variables;
 
   const int first_var =
-      helper_
-          .ActiveVariables()[absl::Uniform<int>(*random, 0, num_active_vars)];
+      helper_.ActiveVariables()[absl::Uniform<int>(random, 0, num_active_vars)];
   visited_variables_set[first_var] = true;
   visited_variables.push_back(first_var);
   relaxed_variables.push_back(first_var);
@@ -400,7 +397,7 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
       }
     }
     // We always randomize to change the partial subgraph explored afterwards.
-    std::shuffle(random_variables.begin(), random_variables.end(), *random);
+    std::shuffle(random_variables.begin(), random_variables.end(), random);
     for (const int var : random_variables) {
       if (relaxed_variables.size() < target_size) {
         visited_variables.push_back(var);
@@ -419,7 +416,7 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
 
 Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
-    random_engine_t* random) {
+    absl::BitGenRef random) {
   const int num_active_vars = helper_.ActiveVariables().size();
   const int num_model_vars = helper_.ModelProto().variables_size();
   const int target_size = std::ceil(difficulty * num_active_vars);
@@ -435,7 +432,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
   std::vector<int> next_constraints;
 
   // Start by a random constraint.
-  next_constraints.push_back(absl::Uniform<int>(*random, 0, num_constraints));
+  next_constraints.push_back(absl::Uniform<int>(random, 0, num_constraints));
   added_constraints[next_constraints.back()] = true;
 
   std::vector<int> random_variables;
@@ -444,7 +441,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
     if (next_constraints.empty()) break;
 
     // Pick a random unprocessed constraint.
-    const int i = absl::Uniform<int>(*random, 0, next_constraints.size());
+    const int i = absl::Uniform<int>(random, 0, next_constraints.size());
     const int contraint_index = next_constraints[i];
     std::swap(next_constraints[i], next_constraints.back());
     next_constraints.pop_back();
@@ -453,7 +450,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
     // possible constraints.
     CHECK_LT(contraint_index, num_constraints);
     random_variables = helper_.ConstraintToVar()[contraint_index];
-    std::shuffle(random_variables.begin(), random_variables.end(), *random);
+    std::shuffle(random_variables.begin(), random_variables.end(), random);
     for (const int var : random_variables) {
       if (visited_variables_set[var]) continue;
       visited_variables_set[var] = true;
@@ -567,7 +564,7 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
 
 Neighborhood SchedulingNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
-    random_engine_t* random) {
+    absl::BitGenRef random) {
   const auto span = helper_.TypeToConstraints(ConstraintProto::kInterval);
   std::vector<int> intervals_to_relax(span.begin(), span.end());
   GetRandomSubset(difficulty, &intervals_to_relax, random);
@@ -578,7 +575,7 @@ Neighborhood SchedulingNeighborhoodGenerator::Generate(
 
 Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
-    random_engine_t* random) {
+    absl::BitGenRef random) {
   std::vector<std::pair<int64, int>> start_interval_pairs;
   for (const int i : helper_.TypeToConstraints(ConstraintProto::kInterval)) {
     const ConstraintProto& interval_ct = helper_.ModelProto().constraints(i);
@@ -592,7 +589,7 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
 
   std::uniform_int_distribution<int> random_var(
       0, start_interval_pairs.size() - relaxed_size - 1);
-  const int random_start_index = random_var(*random);
+  const int random_start_index = random_var(random);
   std::vector<int> intervals_to_relax;
   // TODO(user,user): Consider relaxing more than one time window intervals.
   // This seems to help with Giza models.
@@ -629,7 +626,7 @@ bool RelaxationInducedNeighborhoodGenerator::ReadyToGenerate() const {
 
 Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
-    random_engine_t* random) {
+    absl::BitGenRef random) {
   Neighborhood neighborhood = helper_.FullNeighborhood();
   neighborhood.is_generated = false;
 
@@ -656,7 +653,7 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
   std::bernoulli_distribution random_bool(0.5);
   const bool use_lp_relaxation =
       (lp_solution_available && relaxation_solution_available)
-          ? random_bool(*random)
+          ? random_bool(random)
           : lp_solution_available;
   if (use_lp_relaxation) {
     rins_neighborhood =
@@ -722,7 +719,7 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
 
 Neighborhood ConsecutiveConstraintsRelaxationNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
-    random_engine_t* random) {
+    absl::BitGenRef random) {
   std::vector<int> removable_constraints;
   const int num_constraints = helper_.ModelProto().constraints_size();
   removable_constraints.reserve(num_constraints);
@@ -740,7 +737,7 @@ Neighborhood ConsecutiveConstraintsRelaxationNeighborhoodGenerator::Generate(
       std::round((1.0 - difficulty) * removable_constraints.size());
 
   const int random_start_index =
-      absl::Uniform<int>(*random, 0, removable_constraints.size());
+      absl::Uniform<int>(random, 0, removable_constraints.size());
   std::vector<int> removed_constraints;
   removed_constraints.reserve(target_size);
   int c = random_start_index;
@@ -850,7 +847,7 @@ void WeightedRandomRelaxationNeighborhoodGenerator::
 
 Neighborhood WeightedRandomRelaxationNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
-    random_engine_t* random) {
+    absl::BitGenRef random) {
   const int target_size =
       std::round((1.0 - difficulty) * num_removable_constraints_);
 
@@ -863,7 +860,7 @@ Neighborhood WeightedRandomRelaxationNeighborhoodGenerator::Generate(
   std::uniform_real_distribution<double> random_var(0.0, 1.0);
   for (int c = 0; c < constraint_weights_.size(); ++c) {
     if (constraint_weights_[c] <= 0) continue;
-    const double u = random_var(*random);
+    const double u = random_var(random);
     const double score = std::pow(u, (1 / constraint_weights_[c]));
     constraint_removal_scores.push_back({score, c});
   }

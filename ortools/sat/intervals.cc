@@ -423,11 +423,19 @@ bool SchedulingConstraintHelper::PushIntervalBound(int t, IntegerLiteral lit) {
 
 bool SchedulingConstraintHelper::IncreaseStartMin(int t,
                                                   IntegerValue new_start_min) {
+  if (starts_[t].var == kNoIntegerVariable) {
+    if (new_start_min > starts_[t].constant) return ReportConflict();
+    return true;
+  }
   return PushIntervalBound(t, starts_[t].GreaterOrEqual(new_start_min));
 }
 
 bool SchedulingConstraintHelper::DecreaseEndMax(int t,
                                                 IntegerValue new_end_max) {
+  if (ends_[t].var == kNoIntegerVariable) {
+    if (new_end_max < ends_[t].constant) return ReportConflict();
+    return true;
+  }
   return PushIntervalBound(t, ends_[t].LowerOrEqual(new_end_max));
 }
 

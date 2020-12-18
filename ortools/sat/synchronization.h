@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/integral_types.h"
@@ -29,7 +30,6 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/bitset.h"
-#include "ortools/util/random_engine.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -89,7 +89,7 @@ class SharedSolutionRepository {
   ValueType GetVariableValueInSolution(int var_index, int solution_index) const;
 
   // Returns a random solution biased towards good solutions.
-  Solution GetRandomBiasedSolution(random_engine_t* random) const;
+  Solution GetRandomBiasedSolution(absl::BitGenRef random) const;
 
   // Add a new solution. Note that it will not be added to the pool of solution
   // right away. One must call Synchronize for this to happen.
@@ -401,7 +401,7 @@ ValueType SharedSolutionRepository<ValueType>::GetVariableValueInSolution(
 template <typename ValueType>
 typename SharedSolutionRepository<ValueType>::Solution
 SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
-    random_engine_t* random) const {
+    absl::BitGenRef random) const {
   absl::MutexLock mutex_lock(&mutex_);
   const int64 best_rank = solutions_[0].rank;
 
@@ -426,9 +426,9 @@ SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
 
   int index = 0;
   if (tmp_indices_.empty()) {
-    index = absl::Uniform<int>(*random, 0, solutions_.size());
+    index = absl::Uniform<int>(random, 0, solutions_.size());
   } else {
-    index = tmp_indices_[absl::Uniform<int>(*random, 0, tmp_indices_.size())];
+    index = tmp_indices_[absl::Uniform<int>(random, 0, tmp_indices_.size())];
   }
   solutions_[index].num_selected++;
   return solutions_[index];

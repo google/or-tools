@@ -180,9 +180,42 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
   return false;
 }
 
+std::string ValidateLinearExpression(const CpModelProto& model,
+                                     const LinearExpressionProto& expr) {
+  if (expr.coeffs_size() != expr.vars_size()) {
+    return absl::StrCat("coeffs_size() != vars_size() in linear expression: ",
+                        ProtobufShortDebugString(expr));
+  }
+  if (PossibleIntegerOverflow(model, expr)) {
+    return absl::StrCat("Possible overflow in linear expression: ",
+                        ProtobufShortDebugString(expr));
+  }
+  return "";
+}
+
 std::string ValidateIntervalConstraint(const CpModelProto& model,
                                        const ConstraintProto& ct) {
   const IntervalConstraintProto& arg = ct.interval();
+  int num_view = 0;
+  if (arg.has_start_view()) {
+    ++num_view;
+    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.start_view()));
+  }
+  if (arg.has_size_view()) {
+    ++num_view;
+    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.size_view()));
+  }
+  if (arg.has_end_view()) {
+    ++num_view;
+    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.end_view()));
+  }
+  if (num_view != 0 && num_view != 3) {
+    return absl::StrCat(
+        "Interval must use either the var or the view representation, but not "
+        "both: ",
+        ProtobufShortDebugString(ct));
+  }
+  if (num_view > 0) return "";
   if (arg.size() < 0) {
     const IntegerVariableProto& size_var_proto =
         model.variables(NegatedRef(arg.size()));
@@ -221,19 +254,6 @@ std::string ValidateTableConstraint(const CpModelProto& model,
         "The flat encoding of a table constraint must be a multiple of the "
         "number of variable: ",
         ProtobufDebugString(ct));
-  }
-  return "";
-}
-
-std::string ValidateLinearExpression(const CpModelProto& model,
-                                     const LinearExpressionProto& expr) {
-  if (expr.coeffs_size() != expr.vars_size()) {
-    return absl::StrCat("coeffs_size() != vars_size() in linear expression: ",
-                        ProtobufShortDebugString(expr));
-  }
-  if (PossibleIntegerOverflow(model, expr)) {
-    return absl::StrCat("Possible overflow in linear expression: ",
-                        ProtobufShortDebugString(expr));
   }
   return "";
 }
@@ -326,8 +346,10 @@ std::string ValidateIntModConstraint(const CpModelProto& model,
     return absl::StrCat("An int_mod constraint should have exactly 2 terms: ",
                         ProtobufShortDebugString(ct));
   }
-  const IntegerVariableProto& mod_proto = model.variables(ct.int_mod().vars(1));
-  if (mod_proto.domain(0) <= 0) {
+  const int mod_var = ct.int_mod().vars(1);
+  const IntegerVariableProto& mod_proto = model.variables(PositiveRef(mod_var));
+  if ((RefIsPositive(mod_var) && mod_proto.domain(0) <= 0) ||
+      (!RefIsPositive(mod_var) && mod_proto.domain(0) >= 0)) {
     return absl::StrCat(
         "An int_mod must have a strictly positive modulo argument: ",
         ProtobufShortDebugString(ct));
@@ -369,6 +391,24 @@ std::string ValidateObjective(const CpModelProto& model,
 
 std::string ValidateSearchStrategies(const CpModelProto& model) {
   for (const DecisionStrategyProto& strategy : model.search_strategy()) {
+    const int vss = strategy.variable_selection_strategy();
+    if (vss != DecisionStrategyProto::CHOOSE_FIRST &&
+        vss != DecisionStrategyProto::CHOOSE_LOWEST_MIN &&
+        vss != DecisionStrategyProto::CHOOSE_HIGHEST_MAX &&
+        vss != DecisionStrategyProto::CHOOSE_MIN_DOMAIN_SIZE &&
+        vss != DecisionStrategyProto::CHOOSE_MAX_DOMAIN_SIZE) {
+      return absl::StrCat(
+          "Unknown or unsupported variable_selection_strategy: ", vss);
+    }
+    const int drs = strategy.domain_reduction_strategy();
+    if (drs != DecisionStrategyProto::SELECT_MIN_VALUE &&
+        drs != DecisionStrategyProto::SELECT_MAX_VALUE &&
+        drs != DecisionStrategyProto::SELECT_LOWER_HALF &&
+        drs != DecisionStrategyProto::SELECT_UPPER_HALF &&
+        drs != DecisionStrategyProto::SELECT_MEDIAN_VALUE) {
+      return absl::StrCat("Unknown or unsupported domain_reduction_strategy: ",
+                          drs);
+    }
     for (const int ref : strategy.variables()) {
       if (!VariableReferenceIsValid(model, ref)) {
         return absl::StrCat("Invalid variable reference in strategy: ",
@@ -471,7 +511,6 @@ std::string ValidateCpModel(const CpModelProto& model) {
         }
         break;
       }
-
       case ConstraintProto::ConstraintCase::kInterval:
         support_enforcement = true;
         RETURN_IF_NOT_EMPTY(ValidateIntervalConstraint(model, ct));
@@ -618,7 +657,7 @@ class ConstraintChecker {
     return max == actual_max;
   }
 
-  int64 LinearExpressionValue(const LinearExpressionProto& expr) {
+  int64 LinearExpressionValue(const LinearExpressionProto& expr) const {
     int64 sum = expr.offset();
     const int num_variables = expr.vars_size();
     for (int i = 0; i < num_variables; ++i) {
@@ -684,10 +723,27 @@ class ConstraintChecker {
     return true;
   }
 
+  int64 IntervalStart(const IntervalConstraintProto& interval) const {
+    return interval.has_start_view()
+               ? LinearExpressionValue(interval.start_view())
+               : Value(interval.start());
+  }
+
+  int64 IntervalSize(const IntervalConstraintProto& interval) const {
+    return interval.has_size_view()
+               ? LinearExpressionValue(interval.size_view())
+               : Value(interval.size());
+  }
+
+  int64 IntervalEnd(const IntervalConstraintProto& interval) const {
+    return interval.has_end_view() ? LinearExpressionValue(interval.end_view())
+                                   : Value(interval.end());
+  }
+
   bool IntervalConstraintIsFeasible(const ConstraintProto& ct) {
-    const int64 size = Value(ct.interval().size());
+    const int64 size = IntervalSize(ct.interval());
     if (size < 0) return false;
-    return Value(ct.interval().start()) + size == Value(ct.interval().end());
+    return IntervalStart(ct.interval()) + size == IntervalEnd(ct.interval());
   }
 
   bool NoOverlapConstraintIsFeasible(const CpModelProto& model,
@@ -699,7 +755,7 @@ class ConstraintChecker {
         const IntervalConstraintProto& interval =
             interval_constraint.interval();
         start_durations_pairs.push_back(
-            {Value(interval.start()), Value(interval.size())});
+            {IntervalStart(interval), IntervalSize(interval)});
       }
     }
     std::sort(start_durations_pairs.begin(), start_durations_pairs.end());
@@ -713,12 +769,12 @@ class ConstraintChecker {
 
   bool IntervalsAreDisjoint(const IntervalConstraintProto& interval1,
                             const IntervalConstraintProto& interval2) {
-    return Value(interval1.end()) <= Value(interval2.start()) ||
-           Value(interval2.end()) <= Value(interval1.start());
+    return IntervalEnd(interval1) <= IntervalStart(interval2) ||
+           IntervalEnd(interval2) <= IntervalStart(interval1);
   }
 
   bool IntervalIsEmpty(const IntervalConstraintProto& interval) {
-    return Value(interval.start()) == Value(interval.end());
+    return IntervalStart(interval) == IntervalEnd(interval);
   }
 
   bool NoOverlap2DConstraintIsFeasible(const CpModelProto& model,
@@ -753,11 +809,11 @@ class ConstraintChecker {
         if (!IntervalsAreDisjoint(xi, xj) && !IntervalsAreDisjoint(yi, yj) &&
             !IntervalIsEmpty(xi) && !IntervalIsEmpty(xj) &&
             !IntervalIsEmpty(yi) && !IntervalIsEmpty(yj)) {
-          VLOG(1) << "Interval " << i << "(x=[" << Value(xi.start()) << ", "
-                  << Value(xi.end()) << "], y=[" << Value(yi.start()) << ", "
-                  << Value(yi.end()) << "]) and " << j << "("
-                  << "(x=[" << Value(xj.start()) << ", " << Value(xj.end())
-                  << "], y=[" << Value(yj.start()) << ", " << Value(yj.end())
+          VLOG(1) << "Interval " << i << "(x=[" << IntervalStart(xi) << ", "
+                  << IntervalEnd(xi) << "], y=[" << IntervalStart(yi) << ", "
+                  << IntervalEnd(yi) << "]) and " << j << "("
+                  << "(x=[" << IntervalStart(xj) << ", " << IntervalEnd(xj)
+                  << "], y=[" << IntervalStart(yj) << ", " << IntervalEnd(yj)
                   << "]) are not disjoint.";
           return false;
         }
@@ -778,8 +834,8 @@ class ConstraintChecker {
       if (ConstraintIsEnforced(interval_constraint)) {
         const IntervalConstraintProto& interval =
             interval_constraint.interval();
-        const int64 start = Value(interval.start());
-        const int64 duration = Value(interval.size());
+        const int64 start = IntervalStart(interval);
+        const int64 duration = IntervalSize(interval);
         const int64 demand = Value(ct.cumulative().demands(i));
         for (int64 t = start; t < start + duration; ++t) {
           usage[t] += demand;

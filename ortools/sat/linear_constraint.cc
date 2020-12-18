@@ -14,6 +14,7 @@
 #include "ortools/sat/linear_constraint.h"
 
 #include "ortools/base/mathutil.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 
 namespace operations_research {

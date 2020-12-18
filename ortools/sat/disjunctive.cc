@@ -34,7 +34,9 @@ std::function<void(Model*)> Disjunctive(
     IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
     for (const IntervalVariable var : vars) {
       if (repository->IsOptional(var) || repository->MinSize(var) != 1 ||
-          repository->MaxSize(var) != 1) {
+          repository->MaxSize(var) != 1 ||
+          repository->Start(var).constant != 0 ||
+          repository->Start(var).coeff != 1) {
         is_all_different = false;
         break;
       }

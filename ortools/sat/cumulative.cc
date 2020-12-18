@@ -66,8 +66,7 @@ std::function<void(Model*)> Cumulative(
       // for this.
       if (intervals->MinSize(vars[i]) == 0) {
         enforcement_literals.push_back(encoder->GetOrCreateAssociatedLiteral(
-            IntegerLiteral::GreaterOrEqual(intervals->SizeVar(vars[i]),
-                                           IntegerValue(1))));
+            intervals->Size(vars[i]).GreaterOrEqual(IntegerValue(1))));
       }
 
       if (enforcement_literals.empty()) {

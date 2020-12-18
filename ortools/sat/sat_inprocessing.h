@@ -21,6 +21,7 @@
 #ifndef OR_TOOLS_SAT_SAT_INPROCESSING_H_
 #define OR_TOOLS_SAT_SAT_INPROCESSING_H_
 
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"

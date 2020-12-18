@@ -19,8 +19,10 @@
 
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -33,12 +35,6 @@ namespace sat {
 constexpr int kObjectiveConstraint = -1;
 constexpr int kAffineRelationConstraint = -2;
 constexpr int kAssumptionsConstraint = -3;
-
-struct PresolveOptions {
-  bool log_info = true;
-  SatParameters parameters;
-  TimeLimit* time_limit = nullptr;
-};
 
 class PresolveContext;
 
@@ -71,8 +67,14 @@ class SavedVariable {
 // in-memory domain of each variables and the constraint variable graph.
 class PresolveContext {
  public:
-  explicit PresolveContext(CpModelProto* model, CpModelProto* mapping)
-      : working_model(model), mapping_model(mapping) {}
+  explicit PresolveContext(bool log_info, Model* model, CpModelProto* cp_model,
+                           CpModelProto* mapping)
+      : working_model(cp_model),
+        mapping_model(mapping),
+        log_info_(log_info),
+        params_(*model->GetOrCreate<SatParameters>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()),
+        random_(model->GetOrCreate<ModelRandomGenerator>()) {}
 
   // Helpers to adds new variables to the presolved model.
   int NewIntVar(const Domain& domain);
@@ -288,18 +290,24 @@ class PresolveContext {
   // If new_vars_in_objective is not nullptr, it will be filled with "new"
   // variables that where not in the objective before and are after
   // substitution.
-  void SubstituteVariableInObjective(
+  //
+  // Returns false, if the substitution cannot be done. This is the case if the
+  // model become UNSAT or if doing it will result in an objective that do not
+  // satisfy our overflow preconditions. Note that this can only happen if the
+  // substitued variable is not implied free (i.e. if its domain is smaller than
+  // the implied domain from the equality).
+  bool SubstituteVariableInObjective(
       int var_in_equality, int64 coeff_in_equality,
       const ConstraintProto& equality,
       std::vector<int>* new_vars_in_objective = nullptr);
 
   // Objective getters.
-  const Domain& ObjectiveDomain() const { return objective_domain; }
+  const Domain& ObjectiveDomain() const { return objective_domain_; }
   const absl::flat_hash_map<int, int64>& ObjectiveMap() const {
-    return objective_map;
+    return objective_map_;
   }
   bool ObjectiveDomainIsConstraining() const {
-    return objective_domain_is_constraining;
+    return objective_domain_is_constraining_;
   }
 
   // Advanced usage. This should be called when a variable can be removed from
@@ -333,6 +341,24 @@ class PresolveContext {
       var_to_constraints_[PositiveRef(ref)].insert(kAssumptionsConstraint);
     }
   }
+
+  // The following helper adds the following constraint:
+  //    result <=> (time_i <= time_j && active_i is true && active_j is true)
+  // and returns the (cached) literal result.
+  //
+  // Note that this cache should just be used temporarily and then cleared
+  // with ClearPrecedenceCache() because there is no mechanism to update the
+  // cached literals when literal equivalence are detected.
+  int GetOrCreateReifiedPrecedenceLiteral(int time_i, int time_j, int active_i,
+                                          int active_j);
+
+  // Clear the precedence cache.
+  void ClearPrecedenceCache();
+
+  bool log_info() const { return log_info_; }
+  const SatParameters& params() const { return params_; }
+  TimeLimit* time_limit() { return time_limit_; }
+  ModelRandomGenerator* random() { return random_; }
 
   // For each variables, list the constraints that just enforce a lower bound
   // (resp. upper bound) on that variable. If all the constraints in which a
@@ -417,6 +443,11 @@ class PresolveContext {
   void InsertVarValueEncodingInternal(int literal, int var, int64 value,
                                       bool add_constraints);
 
+  const bool log_info_;
+  const SatParameters& params_;
+  TimeLimit* time_limit_;
+  ModelRandomGenerator* random_;
+
   // Initially false, and set to true on the first inconsistency.
   bool is_unsat = false;
 
@@ -427,12 +458,13 @@ class PresolveContext {
   // the objective in this format in order to have more efficient substitution
   // on large problems (also because the objective is often dense). At the end
   // we re-convert it to its proto form.
-  absl::flat_hash_map<int, int64> objective_map;
-  std::vector<std::pair<int, int64>> tmp_entries;
-  bool objective_domain_is_constraining = false;
-  Domain objective_domain;
-  double objective_offset;
-  double objective_scaling_factor;
+  absl::flat_hash_map<int, int64> objective_map_;
+  int64 objective_overflow_detection_;
+  std::vector<std::pair<int, int64>> tmp_entries_;
+  bool objective_domain_is_constraining_ = false;
+  Domain objective_domain_;
+  double objective_offset_;
+  double objective_scaling_factor_;
 
   // Constraints <-> Variables graph.
   std::vector<std::vector<int>> constraint_to_vars_;
@@ -484,6 +516,12 @@ class PresolveContext {
 
   // Used by SetVariableAsRemoved() and VariableWasRemoved().
   absl::flat_hash_set<int> removed_variables_;
+
+  // Cache for the reified precedence literals created during the expansion of
+  // the reservoir constraint. This cache is only valid during the expansion
+  // phase, and is cleared afterwards.
+  absl::flat_hash_map<std::tuple<int, int, int, int>, int>
+      reified_precedences_cache_;
 };
 
 }  // namespace sat
