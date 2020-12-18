@@ -251,7 +251,7 @@ ConstraintStatus VariableToConstraintStatus(VariableStatus status);
 template <typename IntType, typename T>
 class StrictITIVector : public absl::StrongVector<IntType, T> {
  public:
-  typedef IntType IndexType;  // g++ 4.8.1 needs this.
+  typedef IntType IndexType;
   typedef absl::StrongVector<IntType, T> ParentType;
 // This allows for brace initialization, which is really useful in tests.
 // It is not 'explicit' by design, so one can do vector = {...};

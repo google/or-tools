@@ -26,6 +26,7 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/glop/initial_basis.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_data.h"
@@ -177,14 +178,17 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   }
 
   const bool use_dual = parameters_.use_dual_simplex();
-  VLOG(1) << "------ " << (use_dual ? "Dual simplex." : "Primal simplex.");
-  VLOG(1) << "The matrix has " << compact_matrix_.num_rows() << " rows, "
-          << compact_matrix_.num_cols() << " columns, "
-          << compact_matrix_.num_entries() << " entries.";
+  const bool log_info = parameters_.log_search_progress() || VLOG_IS_ON(1);
+  if (log_info) {
+    LOG(INFO) << "------ " << (use_dual ? "Dual simplex." : "Primal simplex.");
+    LOG(INFO) << "The matrix has " << compact_matrix_.num_rows() << " rows, "
+              << compact_matrix_.num_cols() << " columns, "
+              << compact_matrix_.num_entries() << " entries.";
+  }
 
   // TODO(user): Avoid doing the first phase checks when we know from the
   // incremental solve that the solution is already dual or primal feasible.
-  VLOG(1) << "------ First phase: feasibility.";
+  if (log_info) LOG(INFO) << "------ First phase: feasibility.";
   entering_variable_.SetPricingRule(parameters_.feasibility_rule());
   if (use_dual) {
     if (parameters_.perturb_costs_in_dual_simplex()) {
@@ -238,7 +242,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   entering_variable_.SetPricingRule(parameters_.optimization_rule());
   num_feasibility_iterations_ = num_iterations_;
 
-  VLOG(1) << "------ Second phase: optimization.";
+  if (log_info) LOG(INFO) << "------ Second phase: optimization.";
 
   // Because of shifts or perturbations, we may need to re-run a dual simplex
   // after the primal simplex finished, or the opposite.
@@ -316,8 +320,10 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
       if (reduced_costs_.ComputeMaximumDualResidual() > tolerance ||
           variable_values_.ComputeMaximumPrimalResidual() > tolerance ||
           reduced_costs_.ComputeMaximumDualInfeasibility() > tolerance) {
-        VLOG(1) << "DUAL_UNBOUNDED was reported, but the residual and/or "
-                << "dual infeasibility is above the tolerance";
+        if (log_info) {
+          LOG(INFO) << "DUAL_UNBOUNDED was reported, but the residual and/or "
+                    << "dual infeasibility is above the tolerance";
+        }
       }
       break;
     }
@@ -330,9 +336,11 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
       if (variable_values_.ComputeMaximumPrimalResidual() >
               solution_tolerance ||
           reduced_costs_.ComputeMaximumDualResidual() > solution_tolerance) {
-        VLOG(1) << "OPTIMAL was reported, yet one of the residuals is "
-                   "above the solution feasibility tolerance after the "
-                   "shift/perturbation are removed.";
+        if (log_info) {
+          LOG(INFO) << "OPTIMAL was reported, yet one of the residuals is "
+                       "above the solution feasibility tolerance after the "
+                       "shift/perturbation are removed.";
+        }
         if (parameters_.change_status_to_imprecise()) {
           problem_status_ = ProblemStatus::IMPRECISE;
         }
@@ -349,17 +357,19 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
             reduced_costs_.ComputeMaximumDualInfeasibility();
         if (primal_infeasibility > primal_tolerance &&
             dual_infeasibility > dual_tolerance) {
-          VLOG(1) << "OPTIMAL was reported, yet both of the infeasibility "
-                     "are above the tolerance after the "
-                     "shift/perturbation are removed.";
+          if (log_info) {
+            LOG(INFO) << "OPTIMAL was reported, yet both of the infeasibility "
+                         "are above the tolerance after the "
+                         "shift/perturbation are removed.";
+          }
           if (parameters_.change_status_to_imprecise()) {
             problem_status_ = ProblemStatus::IMPRECISE;
           }
         } else if (primal_infeasibility > primal_tolerance) {
-          VLOG(1) << "Re-optimizing with dual simplex ... ";
+          if (log_info) LOG(INFO) << "Re-optimizing with dual simplex ... ";
           problem_status_ = ProblemStatus::DUAL_FEASIBLE;
         } else if (dual_infeasibility > dual_tolerance) {
-          VLOG(1) << "Re-optimizing with primal simplex ... ";
+          if (log_info) LOG(INFO) << "Re-optimizing with primal simplex ... ";
           problem_status_ = ProblemStatus::PRIMAL_FEASIBLE;
         }
       }
@@ -1292,6 +1302,7 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
 
   // If we couldn't perform a "quick" warm start above, we can at least try to
   // reuse the variable statuses.
+  const bool log_info = parameters_.log_search_progress() || VLOG_IS_ON(1);
   if (solve_from_scratch && !solution_state_.IsEmpty()) {
     // If an external basis has been provided or if the matrix changed, we need
     // to perform more work, e.g., factorize the proposed basis and validate it.
@@ -1315,13 +1326,15 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
     if (InitializeFirstBasis(basis_).ok()) {
       solve_from_scratch = false;
     } else {
-      VLOG(1) << "RevisedSimplex is not using the warm start "
-                 "basis because it is not factorizable.";
+      if (log_info) {
+        LOG(INFO) << "RevisedSimplex is not using the warm start "
+                     "basis because it is not factorizable.";
+      }
     }
   }
 
   if (solve_from_scratch) {
-    VLOG(1) << "Solve from scratch.";
+    if (log_info) LOG(INFO) << "Solve from scratch.";
     basis_factorization_.Clear();
     reduced_costs_.ClearAndRemoveCostShifts();
     primal_edge_norms_.Clear();
@@ -1329,7 +1342,7 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
     dual_pricing_vector_.clear();
     GLOP_RETURN_IF_ERROR(CreateInitialBasis());
   } else {
-    VLOG(1) << "Incremental solve.";
+    if (log_info) LOG(INFO) << "Incremental solve.";
   }
   DCHECK(BasisIsConsistent());
   return Status::OK();
@@ -3073,7 +3086,7 @@ void RevisedSimplex::PropagateParameters() {
 }
 
 void RevisedSimplex::DisplayIterationInfo() const {
-  if (VLOG_IS_ON(1)) {
+  if (parameters_.log_search_progress() || VLOG_IS_ON(1)) {
     const int iter = feasibility_phase_
                          ? num_iterations_
                          : num_iterations_ - num_feasibility_iterations_;
@@ -3087,22 +3100,22 @@ void RevisedSimplex::DisplayIterationInfo() const {
             : (parameters_.use_dual_simplex()
                    ? reduced_costs_.ComputeSumOfDualInfeasibilities()
                    : variable_values_.ComputeSumOfPrimalInfeasibilities());
-    VLOG(1) << (feasibility_phase_ ? "Feasibility" : "Optimization")
-            << " phase, iteration # " << iter
-            << ", objective = " << absl::StrFormat("%.15E", objective);
+    LOG(INFO) << (feasibility_phase_ ? "Feasibility" : "Optimization")
+              << " phase, iteration # " << iter
+              << ", objective = " << absl::StrFormat("%.15E", objective);
   }
 }
 
 void RevisedSimplex::DisplayErrors() const {
-  if (VLOG_IS_ON(1)) {
-    VLOG(1) << "Primal infeasibility (bounds) = "
-            << variable_values_.ComputeMaximumPrimalInfeasibility();
-    VLOG(1) << "Primal residual |A.x - b| = "
-            << variable_values_.ComputeMaximumPrimalResidual();
-    VLOG(1) << "Dual infeasibility (reduced costs) = "
-            << reduced_costs_.ComputeMaximumDualInfeasibility();
-    VLOG(1) << "Dual residual |c_B - y.B| = "
-            << reduced_costs_.ComputeMaximumDualResidual();
+  if (parameters_.log_search_progress() || VLOG_IS_ON(1)) {
+    LOG(INFO) << "Primal infeasibility (bounds) = "
+              << variable_values_.ComputeMaximumPrimalInfeasibility();
+    LOG(INFO) << "Primal residual |A.x - b| = "
+              << variable_values_.ComputeMaximumPrimalResidual();
+    LOG(INFO) << "Dual infeasibility (reduced costs) = "
+              << reduced_costs_.ComputeMaximumDualInfeasibility();
+    LOG(INFO) << "Dual residual |c_B - y.B| = "
+              << reduced_costs_.ComputeMaximumDualResidual();
   }
 }
 

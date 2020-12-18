@@ -35,7 +35,6 @@
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"  // for CHECK*
 #include "ortools/base/macros.h"   // for DISALLOW_COPY_AND_ASSIGN, NULL
-#include "ortools/base/strong_vector.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/sparse.h"
@@ -295,8 +294,9 @@ class LinearProgram {
   // A short string with the problem dimension.
   std::string GetDimensionString() const;
 
-  // A short line with some stats on the objective coefficients.
+  // A short line with some stats on the problem coefficients.
   std::string GetObjectiveStatsString() const;
+  std::string GetBoundsStatsString() const;
 
   // Returns a stringified LinearProgram. We use the LP file format used by
   // lp_solve (see http://lpsolve.sourceforge.net/5.1/index.htm).

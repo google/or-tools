@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_LP_DATA_SPARSE_ROW_H_
 #define OR_TOOLS_LP_DATA_SPARSE_ROW_H_
 
+#include "ortools/base/strong_vector.h"
 #include "ortools/lp_data/sparse_vector.h"
 
 namespace operations_research {

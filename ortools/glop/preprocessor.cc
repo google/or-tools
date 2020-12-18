@@ -16,6 +16,7 @@
 #include <limits>
 
 #include "absl/strings/str_format.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_data_utils.h"
@@ -85,7 +86,9 @@ bool MainLpPreprocessor::Run(LinearProgram* lp) {
       // which has exactly the same meaning for these particular preprocessors.
       if (preprocessors_.size() == old_stack_size) {
         // We use i here because the last pass did nothing.
-        VLOG(1) << "Reached fixed point after presolve pass #" << i;
+        if (parameters_.log_search_progress() || VLOG_IS_ON(1)) {
+          LOG(INFO) << "Reached fixed point after presolve pass #" << i;
+        }
         break;
       }
     }
@@ -143,19 +146,22 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
     return;
   }
 
+  const bool log_info = parameters_.log_search_progress() || VLOG_IS_ON(1);
   if (preprocessor->Run(lp)) {
     const EntryIndex new_num_entries = lp->num_entries();
     const double preprocess_time = time_limit->GetElapsedTime() - start_time;
-    VLOG(1) << absl::StrFormat(
-        "%s(%fs): %d(%d) rows, %d(%d) columns, %d(%d) entries.", name,
-        preprocess_time, lp->num_constraints().value(),
-        (lp->num_constraints() - initial_num_rows_).value(),
-        lp->num_variables().value(),
-        (lp->num_variables() - initial_num_cols_).value(),
-        // static_cast<int64> is needed because the Android port uses int32.
-        static_cast<int64>(new_num_entries.value()),
-        static_cast<int64>(new_num_entries.value() -
-                           initial_num_entries_.value()));
+    if (log_info) {
+      LOG(INFO) << absl::StrFormat(
+          "%s(%fs): %d(%d) rows, %d(%d) columns, %d(%d) entries.", name,
+          preprocess_time, lp->num_constraints().value(),
+          (lp->num_constraints() - initial_num_rows_).value(),
+          lp->num_variables().value(),
+          (lp->num_variables() - initial_num_cols_).value(),
+          // static_cast<int64> is needed because the Android port uses int32.
+          static_cast<int64>(new_num_entries.value()),
+          static_cast<int64>(new_num_entries.value() -
+                             initial_num_entries_.value()));
+    }
     status_ = preprocessor->status();
     preprocessors_.push_back(std::move(preprocessor));
     return;
@@ -163,9 +169,9 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
     // Even if a preprocessor returns false (i.e. no need for postsolve), it
     // can detect an issue with the problem.
     status_ = preprocessor->status();
-    if (status_ != ProblemStatus::INIT) {
-      VLOG(1) << name << " detected that the problem is "
-              << GetProblemStatusString(status_);
+    if (status_ != ProblemStatus::INIT && log_info) {
+      LOG(INFO) << name << " detected that the problem is "
+                << GetProblemStatusString(status_);
     }
   }
 }

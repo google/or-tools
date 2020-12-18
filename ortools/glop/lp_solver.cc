@@ -170,8 +170,12 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
   }
 
   // Make an internal copy of the problem for the preprocessing.
-  VLOG(1) << "Initial problem: " << lp.GetDimensionString();
-  VLOG(1) << "Objective stats: " << lp.GetObjectiveStatsString();
+  const bool log_info = parameters_.log_search_progress() || VLOG_IS_ON(1);
+  if (log_info) {
+    LOG(INFO) << "Initial problem: " << lp.GetDimensionString();
+    LOG(INFO) << "Objective stats: " << lp.GetObjectiveStatsString();
+    LOG(INFO) << "Bounds stats: " << lp.GetBoundsStatsString();
+  }
   current_linear_program_.PopulateFromLinearProgram(lp);
 
   // Preprocess.
@@ -180,8 +184,14 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
 
   const bool postsolve_is_needed = preprocessor.Run(&current_linear_program_);
 
-  VLOG(1) << "Presolved problem: "
-          << current_linear_program_.GetDimensionString();
+  if (log_info) {
+    LOG(INFO) << "Presolved problem: "
+              << current_linear_program_.GetDimensionString();
+    LOG(INFO) << "Objective stats: "
+              << current_linear_program_.GetObjectiveStatsString();
+    LOG(INFO) << "Bounds stats: "
+              << current_linear_program_.GetBoundsStatsString();
+  }
 
   // At this point, we need to initialize a ProblemSolution with the correct
   // size and status.
@@ -200,12 +210,14 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
   const ProblemStatus status = LoadAndVerifySolution(lp, solution);
 
   // LOG some statistics that can be parsed by our benchmark script.
-  VLOG(1) << "status: " << status;
-  VLOG(1) << "objective: " << GetObjectiveValue();
-  VLOG(1) << "iterations: " << GetNumberOfSimplexIterations();
-  VLOG(1) << "time: " << time_limit->GetElapsedTime();
-  VLOG(1) << "deterministic_time: "
-          << time_limit->GetElapsedDeterministicTime();
+  if (log_info) {
+    LOG(INFO) << "status: " << status;
+    LOG(INFO) << "objective: " << GetObjectiveValue();
+    LOG(INFO) << "iterations: " << GetNumberOfSimplexIterations();
+    LOG(INFO) << "time: " << time_limit->GetElapsedTime();
+    LOG(INFO) << "deterministic_time: "
+              << time_limit->GetElapsedDeterministicTime();
+  }
 
   return status;
 }
@@ -271,8 +283,10 @@ Fractional AllowedError(Fractional tolerance, Fractional value) {
 // return status.
 ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
                                               const ProblemSolution& solution) {
+  const bool log_info = parameters_.log_search_progress() || VLOG_IS_ON(1);
+
   if (!IsProblemSolutionConsistent(lp, solution)) {
-    VLOG(1) << "Inconsistency detected in the solution.";
+    if (log_info) LOG(INFO) << "Inconsistency detected in the solution.";
     ResizeSolution(lp.num_constraints(), lp.num_variables());
     return ProblemStatus::ABNORMAL;
   }
@@ -289,12 +303,14 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
   ComputeReducedCosts(lp);
   const Fractional primal_objective_value = ComputeObjective(lp);
   const Fractional dual_objective_value = ComputeDualObjective(lp);
-  VLOG(1) << "Primal objective (before moving primal/dual values) = "
-          << absl::StrFormat("%.15E",
-                             ProblemObjectiveValue(lp, primal_objective_value));
-  VLOG(1) << "Dual objective (before moving primal/dual values) = "
-          << absl::StrFormat("%.15E",
-                             ProblemObjectiveValue(lp, dual_objective_value));
+  if (log_info) {
+    LOG(INFO) << "Primal objective (before moving primal/dual values) = "
+              << absl::StrFormat("%.15E", ProblemObjectiveValue(
+                                              lp, primal_objective_value));
+    LOG(INFO) << "Dual objective (before moving primal/dual values) = "
+              << absl::StrFormat(
+                     "%.15E", ProblemObjectiveValue(lp, dual_objective_value));
+  }
 
   // Eventually move the primal/dual values inside their bounds.
   if (status == ProblemStatus::OPTIMAL &&
@@ -305,8 +321,10 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
 
   // The reported objective to the user.
   problem_objective_value_ = ProblemObjectiveValue(lp, ComputeObjective(lp));
-  VLOG(1) << "Primal objective (after moving primal/dual values) = "
-          << absl::StrFormat("%.15E", problem_objective_value_);
+  if (log_info) {
+    LOG(INFO) << "Primal objective (after moving primal/dual values) = "
+              << absl::StrFormat("%.15E", problem_objective_value_);
+  }
 
   ComputeReducedCosts(lp);
   ComputeConstraintActivities(lp);
@@ -347,15 +365,20 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
       std::max(primal_infeasibility, primal_residual);
   max_absolute_dual_infeasibility_ =
       std::max(dual_infeasibility, dual_residual);
-  VLOG(1) << "Max. primal infeasibility = "
-          << max_absolute_primal_infeasibility_;
-  VLOG(1) << "Max. dual infeasibility = " << max_absolute_dual_infeasibility_;
+  if (log_info) {
+    LOG(INFO) << "Max. primal infeasibility = "
+              << max_absolute_primal_infeasibility_;
+    LOG(INFO) << "Max. dual infeasibility = "
+              << max_absolute_dual_infeasibility_;
+  }
 
   // Now that all the relevant quantities are computed, we check the precision
   // and optimality of the result. See Chvatal pp. 61-62. If any of the tests
   // fail, we return the IMPRECISE status.
   const double objective_error_ub = ComputeMaxExpectedObjectiveError(lp);
-  VLOG(1) << "Objective error <= " << objective_error_ub;
+  if (log_info) {
+    LOG(INFO) << "Objective error <= " << objective_error_ub;
+  }
 
   if (status == ProblemStatus::OPTIMAL &&
       parameters_.provide_strong_optimal_guarantee()) {
@@ -370,11 +393,11 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
                  << "MoveDualValuesWithinBounds().";
     }
     if (rhs_perturbation_is_too_large) {
-      VLOG(1) << "The needed rhs perturbation is too large !!";
+      if (log_info) LOG(INFO) << "The needed rhs perturbation is too large !!";
       status = ProblemStatus::IMPRECISE;
     }
     if (cost_perturbation_is_too_large) {
-      VLOG(1) << "The needed cost perturbation is too large !!";
+      if (log_info) LOG(INFO) << "The needed cost perturbation is too large !!";
       status = ProblemStatus::IMPRECISE;
     }
   }
@@ -385,20 +408,27 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
   if (status == ProblemStatus::OPTIMAL) {
     if (std::abs(primal_objective_value - dual_objective_value) >
         objective_error_ub) {
-      VLOG(1) << "The objective gap of the final solution is too large.";
+      if (log_info) {
+        LOG(INFO) << "The objective gap of the final solution is too large.";
+      }
       status = ProblemStatus::IMPRECISE;
     }
   }
   if ((status == ProblemStatus::OPTIMAL ||
        status == ProblemStatus::PRIMAL_FEASIBLE) &&
       (primal_residual_is_too_large || primal_infeasibility_is_too_large)) {
-    VLOG(1) << "The primal infeasibility of the final solution is too large.";
+    if (log_info) {
+      LOG(INFO)
+          << "The primal infeasibility of the final solution is too large.";
+    }
     status = ProblemStatus::IMPRECISE;
   }
   if ((status == ProblemStatus::OPTIMAL ||
        status == ProblemStatus::DUAL_FEASIBLE) &&
       (dual_residual_is_too_large || dual_infeasibility_is_too_large)) {
-    VLOG(1) << "The dual infeasibility of the final solution is too large.";
+    if (log_info) {
+      LOG(INFO) << "The dual infeasibility of the final solution is too large.";
+    }
     status = ProblemStatus::IMPRECISE;
   }
 
@@ -482,7 +512,8 @@ void LPSolver::MovePrimalValuesWithinBounds(const LinearProgram& lp) {
     primal_values_[col] = std::min(primal_values_[col], upper_bound);
     primal_values_[col] = std::max(primal_values_[col], lower_bound);
   }
-  VLOG(1) << "Max. primal values move = " << error;
+  const bool log_info = parameters_.log_search_progress() || VLOG_IS_ON(1);
+  if (log_info) LOG(INFO) << "Max. primal values move = " << error;
 }
 
 void LPSolver::MoveDualValuesWithinBounds(const LinearProgram& lp) {
@@ -506,7 +537,8 @@ void LPSolver::MoveDualValuesWithinBounds(const LinearProgram& lp) {
     }
     dual_values_[row] = optimization_sign * minimization_dual_value;
   }
-  VLOG(1) << "Max. dual values move = " << error;
+  const bool log_info = parameters_.log_search_progress() || VLOG_IS_ON(1);
+  if (log_info) LOG(INFO) << "Max. dual values move = " << error;
 }
 
 void LPSolver::ResizeSolution(RowIndex num_rows, ColIndex num_cols) {
@@ -549,7 +581,8 @@ void LPSolver::RunRevisedSimplexIfNeeded(ProblemSolution* solution,
           revised_simplex_->GetConstraintStatus(row);
     }
   } else {
-    VLOG(1) << "Error during the revised simplex algorithm.";
+    const bool log_info = parameters_.log_search_progress() || VLOG_IS_ON(1);
+    if (log_info) LOG(INFO) << "Error during the revised simplex algorithm.";
     solution->status = ProblemStatus::ABNORMAL;
   }
 }
@@ -726,7 +759,8 @@ Fractional LPSolver::ComputeMaxCostPerturbationToEnforceOptimality(
           AllowedError(tolerance, lp.objective_coefficients()[col]);
     }
   }
-  VLOG(1) << "Max. cost perturbation = " << max_cost_correction;
+  const bool log_info = parameters_.log_search_progress() || VLOG_IS_ON(1);
+  if (log_info) LOG(INFO) << "Max. cost perturbation = " << max_cost_correction;
   return max_cost_correction;
 }
 
@@ -756,7 +790,8 @@ Fractional LPSolver::ComputeMaxRhsPerturbationToEnforceOptimality(
     max_rhs_correction = std::max(max_rhs_correction, rhs_error);
     *is_too_large |= rhs_error > allowed_error;
   }
-  VLOG(1) << "Max. rhs perturbation = " << max_rhs_correction;
+  const bool log_info = parameters_.log_search_progress() || VLOG_IS_ON(1);
+  if (log_info) LOG(INFO) << "Max. rhs perturbation = " << max_rhs_correction;
   return max_rhs_correction;
 }
 

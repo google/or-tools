@@ -422,26 +422,54 @@ Fractional LinearProgram::GetObjectiveCoefficientForMinimizationVersion(
 }
 
 std::string LinearProgram::GetDimensionString() const {
+  Fractional min_magnitude = 0.0;
+  Fractional max_magnitude = 0.0;
+  matrix_.ComputeMinAndMaxMagnitudes(&min_magnitude, &max_magnitude);
   return absl::StrFormat(
-      "%d rows, %d columns, %d entries", num_constraints().value(),
-      num_variables().value(),
+      "%d rows, %d columns, %d entries with magnitude in [%e, %e]",
+      num_constraints().value(), num_variables().value(),
       // static_cast<int64> is needed because the Android port uses int32.
-      static_cast<int64>(num_entries().value()));
+      static_cast<int64>(num_entries().value()), min_magnitude, max_magnitude);
 }
+
+namespace {
+
+template <typename FractionalValues>
+void UpdateStats(const FractionalValues& values, int64* num_non_zeros,
+                 Fractional* min_value, Fractional* max_value) {
+  for (const Fractional v : values) {
+    if (v == 0 || v == kInfinity || v == -kInfinity) continue;
+    *min_value = std::min(*min_value, v);
+    *max_value = std::max(*max_value, v);
+    ++(*num_non_zeros);
+  }
+}
+
+}  // namespace
 
 std::string LinearProgram::GetObjectiveStatsString() const {
   int64 num_non_zeros = 0;
   Fractional min_value = +kInfinity;
   Fractional max_value = -kInfinity;
-  for (ColIndex col(0); col < objective_coefficients_.size(); ++col) {
-    const Fractional value = objective_coefficients_[col];
-    if (value == 0) continue;
-    min_value = std::min(min_value, value);
-    max_value = std::max(max_value, value);
-    ++num_non_zeros;
-  }
+  UpdateStats(objective_coefficients_, &num_non_zeros, &min_value, &max_value);
   if (num_non_zeros == 0) {
     return "No objective term. This is a pure feasibility problem.";
+  } else {
+    return absl::StrFormat("%d non-zeros, range [%e, %e]", num_non_zeros,
+                           min_value, max_value);
+  }
+}
+
+std::string LinearProgram::GetBoundsStatsString() const {
+  int64 num_non_zeros = 0;
+  Fractional min_value = +kInfinity;
+  Fractional max_value = -kInfinity;
+  UpdateStats(variable_lower_bounds_, &num_non_zeros, &min_value, &max_value);
+  UpdateStats(variable_upper_bounds_, &num_non_zeros, &min_value, &max_value);
+  UpdateStats(constraint_lower_bounds_, &num_non_zeros, &min_value, &max_value);
+  UpdateStats(constraint_upper_bounds_, &num_non_zeros, &min_value, &max_value);
+  if (num_non_zeros == 0) {
+    return "All variables/constraints bounds are zero or +/- infinity.";
   } else {
     return absl::StrFormat("%d non-zeros, range [%e, %e]", num_non_zeros,
                            min_value, max_value);

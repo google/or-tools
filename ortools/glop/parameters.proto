@@ -22,7 +22,7 @@ syntax = "proto2";
 
 package operations_research.glop;
 
-// next id = 61
+// next id = 62
 message GlopParameters {
 
   // Supported algorithms for scaling:
@@ -421,5 +421,10 @@ message GlopParameters {
   // heurisitic or a warm start) is above this threshold, we revert to an all
   // slack basis.
   optional double initial_condition_number_threshold = 59 [default = 1e50];
+
+  // If true, logs the progress of a solve to LOG(INFO). Note that the same
+  // messages can also be turned on by displaying logs at level 1 for the
+  // relevant files.
+  optional bool log_search_progress = 61 [default = false];
 
 }

@@ -15,6 +15,7 @@
 #define OR_TOOLS_LP_DATA_PERMUTATION_H_
 
 #include "absl/random/random.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/util/return_macros.h"
 
