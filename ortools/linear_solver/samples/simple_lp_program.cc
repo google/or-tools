@@ -74,7 +74,6 @@ void SimpleLpProgram() {
   LOG(INFO) << "\nAdvanced usage:";
   LOG(INFO) << "Problem solved in " << solver->wall_time() << " milliseconds";
   LOG(INFO) << "Problem solved in " << solver->iterations() << " iterations";
-            << " branch-and-bound nodes";
   // [END advanced]
 }
 }  // namespace operations_research
