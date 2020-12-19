@@ -655,21 +655,25 @@ solve:
   }
 }
 | SOLVE annotations MINIMIZE argument {
-  CHECK_EQ(Argument::INT_VAR_REF, $4.type);
+  IntegerVariable* obj_var = $4.type == Argument::INT_VAR_REF
+      ? $4.Var() 
+      : model->AddConstant($4.Value());
   if ($2 != nullptr) {
-    model->Minimize($4.Var(), std::move(*$2));
+    model->Minimize(obj_var, std::move(*$2));
     delete $2;
   } else {
-    model->Minimize($4.Var(), std::vector<Annotation>());
+    model->Minimize(obj_var, std::vector<Annotation>());
   }
 }
 | SOLVE annotations MAXIMIZE argument {
-  CHECK_EQ(Argument::INT_VAR_REF, $4.type);
+  IntegerVariable* obj_var = $4.type == Argument::INT_VAR_REF
+      ? $4.Var() 
+      : model->AddConstant($4.Value());
   if ($2 != nullptr) {
-    model->Maximize($4.Var(), std::move(*$2));
+    model->Maximize(obj_var, std::move(*$2));
     delete $2;
   } else {
-    model->Maximize($4.Var(), std::vector<Annotation>());
+    model->Maximize(obj_var, std::vector<Annotation>());
   }
 }
 
