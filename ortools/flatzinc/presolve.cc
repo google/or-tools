@@ -383,7 +383,8 @@ void Presolver::PresolveSimplifyElement(Constraint* ct) {
   }
 
   // Rule 4.
-  if (IsIncreasingAndContiguous(ct->arguments[1].values)) {
+  if (IsIncreasingAndContiguous(ct->arguments[1].values) &&
+      ct->arguments[2].type == Argument::INT_VAR_REF) {
     const int64 start = ct->arguments[1].values.front();
     IntegerVariable* const index = ct->arguments[0].Var();
     IntegerVariable* const target = ct->arguments[2].Var();
