@@ -24,10 +24,10 @@
 #include <string>
 #include <utility>
 
+#include "absl/flags/flag.h"
 #include "absl/memory/memory.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"

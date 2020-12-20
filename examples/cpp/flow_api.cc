@@ -11,7 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/base/commandlineflags.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/max_flow.h"

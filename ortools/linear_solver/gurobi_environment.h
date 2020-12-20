@@ -14,8 +14,8 @@
 #ifndef OR_TOOLS_LINEAR_SOLVER_GUROBI_ENVIRONMENT_H_
 #define OR_TOOLS_LINEAR_SOLVER_GUROBI_ENVIRONMENT_H_
 
+#include "absl/flags/flag.h"
 #include "absl/status/status.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/dynamic_library.h"
 #include "ortools/base/logging.h"
 

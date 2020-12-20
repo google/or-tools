@@ -17,6 +17,7 @@
 #include <limits>
 #include <numeric>
 
+#include "absl/flags/flag.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
@@ -27,7 +28,6 @@
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/algorithms/dynamic_permutation.h"
 #include "ortools/algorithms/sparse_permutation.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/graph/iterators.h"
 #include "ortools/graph/util.h"
 

@@ -17,7 +17,7 @@
 #include <iostream>
 #include <string>
 
-#include "ortools/base/commandlineflags.h"
+#include "absl/flags/flag.h"
 #include "ortools/base/logging.h"
 
 // This file offers logging tool for the flatzinc interpreter.

@@ -16,7 +16,7 @@
 
 #include <vector>
 
-#include "ortools/base/commandlineflags.h"
+#include "absl/flags/declare.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 

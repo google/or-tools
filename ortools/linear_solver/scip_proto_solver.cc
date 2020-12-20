@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/flags/flag.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
@@ -31,7 +32,6 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
 #include "ortools/base/cleanup.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/gscip/legacy_scip_params.h"
 #include "ortools/linear_solver/linear_solver.pb.h"

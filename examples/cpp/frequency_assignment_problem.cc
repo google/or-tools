@@ -51,10 +51,11 @@
 #include <utility>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "examples/cpp/fap_model_printer.h"
 #include "examples/cpp/fap_parser.h"
 #include "examples/cpp/fap_utilities.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"

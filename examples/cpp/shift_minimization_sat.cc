@@ -31,9 +31,10 @@
 #include <string>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/filelineiter.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"

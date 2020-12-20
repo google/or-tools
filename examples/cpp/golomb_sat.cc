@@ -26,8 +26,9 @@
 
 #include <cstdio>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"

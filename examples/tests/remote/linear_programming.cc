@@ -13,7 +13,8 @@
 //
 // Linear programming example that shows how to use the API.
 
-#include "base/commandlineflags.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "base/logging.h"
 #include "linear_solver/linear_solver.h"
 #include "linear_solver/linear_solver.pb.h"

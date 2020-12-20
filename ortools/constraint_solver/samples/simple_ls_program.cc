@@ -16,7 +16,8 @@
 // Neighborhood Search approach, a Local Search approach, and a Local
 // Search with Filter approach.
 
-#include "ortools/base/commandlineflags.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/random.h"

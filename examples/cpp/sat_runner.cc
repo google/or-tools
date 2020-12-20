@@ -18,6 +18,9 @@
 #include <utility>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
@@ -28,7 +31,6 @@
 #include "examples/cpp/sat_cnf_reader.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/algorithms/sparse_permutation.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"

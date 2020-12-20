@@ -32,9 +32,10 @@
 #include <algorithm>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solveri.h"

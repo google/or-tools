@@ -18,11 +18,13 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/str_format.h"
 #include "examples/cpp/parse_dimacs_assignment.h"
 #include "examples/cpp/print_dimacs_assignment.h"
 #include "ortools/algorithms/hungarian.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/graph/ebert_graph.h"

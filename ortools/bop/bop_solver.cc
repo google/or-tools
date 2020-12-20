@@ -16,8 +16,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/flags/flag.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/bop/bop_fs.h"
 #include "ortools/bop/bop_lns.h"
