@@ -23,6 +23,7 @@
 #include <cstddef>
 #include <utility>
 
+#include "absl/flags/flag.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
@@ -32,7 +33,6 @@
 #include "absl/strings/str_replace.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/accurate_sum.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"

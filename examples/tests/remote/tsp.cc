@@ -24,8 +24,9 @@
 // Optionally one can randomly forbid a set of random connections between nodes
 // (forbidden arcs).
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "base/callback.h"
-#include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/join.h"
 #include "base/random.h"

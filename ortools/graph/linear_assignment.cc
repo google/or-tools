@@ -13,7 +13,7 @@
 
 #include "ortools/graph/linear_assignment.h"
 
-#include "ortools/base/commandlineflags.h"
+#include "absl/flags/flag.h"
 
 ABSL_FLAG(int64, assignment_alpha, 5,
           "Divisor for epsilon at each Refine "

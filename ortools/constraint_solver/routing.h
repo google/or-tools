@@ -168,12 +168,12 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/functional/bind_front.h"
 #include "absl/hash/hash.h"
 #include "absl/time/time.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"

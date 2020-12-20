@@ -13,7 +13,7 @@
 
 #include "ortools/graph/assignment.h"
 
-#include "ortools/base/commandlineflags.h"
+#include "absl/flags/flag.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/linear_assignment.h"
 

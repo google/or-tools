@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BASE_VLOG_IS_ON_H_
 #define OR_TOOLS_BASE_VLOG_IS_ON_H_
 
+#include "absl/flags/flag.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/log_severity.h"
 

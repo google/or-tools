@@ -13,7 +13,7 @@
 
 #include "ortools/util/bitset.h"
 
-#include "ortools/base/commandlineflags.h"
+#include "absl/flags/flag.h"
 #include "ortools/base/logging.h"
 
 ABSL_FLAG(int, bitset_small_bitset_count, 8,

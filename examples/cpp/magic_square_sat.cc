@@ -14,8 +14,9 @@
 #include <string>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 

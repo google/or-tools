@@ -28,7 +28,7 @@
 #endif
 #include <vector>
 
-#include "ortools/base/commandlineflags.h"
+#include "absl/flags/declare.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/logging_export.h"

@@ -13,7 +13,8 @@
 
 #include <string>
 
-#include "ortools/base/commandlineflags.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"

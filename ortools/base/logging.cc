@@ -46,8 +46,8 @@
 #include <vector>
 
 #include "absl/debugging/stacktrace.h"
+#include "absl/flags/flag.h"
 #include "absl/time/time.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging_utilities.h"
 #include "ortools/base/raw_logging.h"
 

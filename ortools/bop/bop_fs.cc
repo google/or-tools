@@ -16,11 +16,11 @@
 #include <string>
 #include <vector>
 
+#include "absl/flags/flag.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/algorithms/sparse_permutation.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/lp_data/lp_print_utils.h"

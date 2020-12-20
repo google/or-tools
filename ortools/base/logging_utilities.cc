@@ -141,8 +141,8 @@ static pthread_t g_main_thread_id;
 #include "absl/debugging/failure_signal_handler.h"
 #include "absl/debugging/stacktrace.h"
 #include "absl/debugging/symbolize.h"
+#include "absl/flags/flag.h"
 #include "absl/time/time.h"
-#include "ortools/base/commandlineflags.h"
 
 ABSL_FLAG(bool, symbolize_stacktrace, true,
           "Symbolize the stack trace in the tombstone");

@@ -15,10 +15,11 @@
 #include <cmath>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "absl/strings/match.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wrappers.pb.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/data/jobshop_scheduling.pb.h"

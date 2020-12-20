@@ -17,8 +17,8 @@
 #include <cmath>
 #include <limits>
 
+#include "absl/flags/flag.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/graphs.h"

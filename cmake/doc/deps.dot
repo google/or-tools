@@ -18,13 +18,6 @@ digraph CMakeDeps {
     label = "abseil/abseil-cpp.git";
   }
 
-  subgraph clusterGFlags {
-    GFlags [label="gflags::gflags"];
-
-    color=royalblue;
-    label = "gflags/gflags.git";
-  }
-
   subgraph clusterGLog {
     GLog [label="glog::glog"];
 
@@ -108,7 +101,6 @@ digraph CMakeDeps {
   ZLIB -> Protobuf;
   ZLIB -> Cbc;
   Absl -> Protobuf;
-  GFlags -> GLog;
 }
 @enddot
 # vim tw:0

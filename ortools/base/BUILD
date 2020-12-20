@@ -17,7 +17,6 @@ config_setting(
 cc_library(
     name = "base",
     srcs = [
-        "commandlineflags.cc",
         "logging.cc",
         "logging_utilities.cc",
         "raw_logging.cc",
@@ -26,7 +25,6 @@ cc_library(
     ],
     hdrs = [
         "basictypes.h",
-        "commandlineflags.h",
         "integral_types.h",
         "log_severity.h",
         "logging.h",

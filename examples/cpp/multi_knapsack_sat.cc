@@ -21,7 +21,8 @@
 
 #include <vector>
 
-#include "ortools/base/commandlineflags.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 

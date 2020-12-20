@@ -21,7 +21,7 @@
 
 #include "absl/base/macros.h"
 #include "absl/debugging/stacktrace.h"
-#include "ortools/base/commandlineflags.h"
+#include "absl/flags/flag.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/logging_utilities.h"
 

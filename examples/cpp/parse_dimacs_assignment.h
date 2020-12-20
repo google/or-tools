@@ -25,7 +25,7 @@
 #include <memory>
 #include <string>
 
-#include "ortools/base/commandlineflags.h"
+#include "absl/flags/flag.h"
 #include "ortools/base/filelineiter.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/ebert_graph.h"
