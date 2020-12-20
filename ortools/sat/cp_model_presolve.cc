@@ -120,7 +120,7 @@ bool CpModelPresolver::PresolveEnforcementLiteral(ConstraintProto* ct) {
     if (context_->VariableWithCostIsUniqueAndRemovable(literal)) {
       const int64 obj_coeff =
           gtl::FindOrDie(context_->ObjectiveMap(), PositiveRef(literal));
-      if (RefIsPositive(literal) == obj_coeff > 0) {
+      if (RefIsPositive(literal) == (obj_coeff > 0)) {
         // It is just more advantageous to set it to false!
         context_->UpdateRuleStats("enforcement literal with unique direction");
         CHECK(context_->SetLiteralToFalse(literal));
@@ -1638,16 +1638,15 @@ bool CpModelPresolver::PropagateDomainsInLinear(int c, ConstraintProto* ct) {
     if (rhs.Min() != rhs.Max() &&
         context_->VariableWithCostIsUniqueAndRemovable(var)) {
       const int64 obj_coeff = gtl::FindOrDie(context_->ObjectiveMap(), var);
+      const bool same_sign = (var_coeff > 0) == (obj_coeff > 0);
       bool fixed = false;
-      if ((var_coeff > 0 == obj_coeff > 0) &&
-          RhsCanBeFixedToMin(var_coeff, context_->DomainOf(var),
-                             implied_term_domain, rhs)) {
+      if (same_sign && RhsCanBeFixedToMin(var_coeff, context_->DomainOf(var),
+                                          implied_term_domain, rhs)) {
         rhs = Domain(rhs.Min());
         fixed = true;
       }
-      if ((var_coeff > 0 != obj_coeff > 0) &&
-          RhsCanBeFixedToMax(var_coeff, context_->DomainOf(var),
-                             implied_term_domain, rhs)) {
+      if (!same_sign && RhsCanBeFixedToMax(var_coeff, context_->DomainOf(var),
+                                           implied_term_domain, rhs)) {
         rhs = Domain(rhs.Max());
         fixed = true;
       }
