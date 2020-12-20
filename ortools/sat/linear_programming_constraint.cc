@@ -1879,7 +1879,7 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
           IntTypeAbs(row_bound));
       const IntegerValue limit2 =
           FloorRatio(kMaxWantedCoeff, IntTypeAbs(row_bound));
-      if (*upper_bound > 0 == row_bound > 0) {  // Same sign.
+      if ((*upper_bound > 0) == (row_bound > 0)) {  // Same sign.
         positive_limit = std::min(positive_limit, limit1);
         negative_limit = std::min(negative_limit, limit2);
       } else {
@@ -1947,7 +1947,7 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
       const IntegerValue same_direction_limit(FloorRatio(
           std::max(IntegerValue(0), kMaxWantedCoeff - current_magnitude),
           abs_coef));
-      if (current > 0 == coeff > 0) {  // Same sign.
+      if ((current > 0) == (coeff > 0)) {  // Same sign.
         negative_limit = std::min(negative_limit, other_direction_limit);
         positive_limit = std::min(positive_limit, same_direction_limit);
       } else {
