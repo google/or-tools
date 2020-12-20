@@ -41,21 +41,6 @@ digraph CMake {
         label = "abseil/abseil-cpp.git";
       }
 
-      subgraph clusterGFlags {
-        GFlags [label="gflags::gflags", color=royalblue];
-
-        color=royalblue;
-        label = "gflags/gflags.git";
-      }
-
-      subgraph clusterGLog {
-        GLog [label="glog::glog", color=royalblue];
-
-        color=royalblue;
-        label = "google/glog.git";
-      }
-      GFlags -> GLog;
-
       subgraph clusterProtobuf {
         Protobuf [label="protobuf::libprotobuf", color=royalblue];
 
@@ -137,7 +122,6 @@ digraph CMake {
       //ZLIB -> Protobuf;
       //ZLIB -> Cbc;
       //Absl -> Protobuf;
-      //GFlags -> GLog;
 
       color=grey;
       label = "Dependencies\n(-DBUILD_DEPS=ON)";
@@ -159,8 +143,6 @@ digraph CMake {
       ZLIB -> OR_SRC;
       Absl -> OR_SRC;
       Protobuf -> OR_SRC;
-      GFlags -> OR_SRC;
-      GLog -> OR_SRC;
       ClpSolver -> OR_SRC;
       CbcSolver -> OR_SRC;
       // rendering hack
