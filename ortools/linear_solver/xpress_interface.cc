@@ -147,8 +147,6 @@ class XpressInterface : public MPSolverInterface {
   virtual int64 iterations() const;
   // Number of branch-and-bound nodes. Only available for discrete problems.
   virtual int64 nodes() const;
-  // Best objective bound. Only available for discrete problems.
-  virtual double best_objective_bound() const;
 
   // Returns the basis status of a row.
   virtual MPSolver::BasisStatus row_status(int constraint_index) const;
@@ -746,27 +744,6 @@ int64 XpressInterface::nodes() const {
   }
 }
 
-// Returns the best objective bound. Only available for discrete problems.
-double XpressInterface::best_objective_bound() const {
-  if (mMip) {
-    if (!CheckSolutionIsSynchronized() || !CheckBestObjectiveBoundExists())
-      // trivial_worst_objective_bound() returns sense*infinity,
-      // that is meaningful even for infeasible problems
-      return trivial_worst_objective_bound();
-    if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
-      // For an empty model the best objective bound is just the offset.
-      return solver_->Objective().offset();
-    } else {
-      double value = XPRS_NAN;
-      CHECK_STATUS(XPRSgetdblattrib(mLp, XPRS_BESTBOUND, &value));
-      return value;
-    }
-  } else {
-    LOG(DFATAL) << "Best objective bound only available for discrete problems";
-    return trivial_worst_objective_bound();
-  }
-}
-
 // Transform a XPRESS basis status to an MPSolver basis status.
 MPSolver::BasisStatus XpressInterface::xformBasisStatus(
     int xpress_basis_status) {
@@ -1341,14 +1318,17 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
 
   // Capture objective function value.
   objective_value_ = XPRS_NAN;
+  best_objective_bound_ = XPRS_NAN;
   if (feasible) {
     if (mMip) {
       CHECK_STATUS(XPRSgetdblattrib(mLp, XPRS_MIPOBJVAL, &objective_value_));
+      CHECK_STATUS(XPRSgetdblattrib(mLp, XPRS_BESTBOUND, &best_objective_bound_));
     } else {
       CHECK_STATUS(XPRSgetdblattrib(mLp, XPRS_LPOBJVAL, &objective_value_));
     }
   }
-  VLOG(1) << "objective = " << objective_value_;
+  VLOG(1) << "objective=" << objective_value_
+          << ", bound=" << best_objective_bound_;
 
   // Capture primal and dual solutions
   if (mMip) {
