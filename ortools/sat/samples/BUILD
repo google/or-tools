@@ -1,7 +1,5 @@
 load(":code_samples.bzl", "code_sample_cc")
 
-COPTS=["-std=c++17"]
-
 code_sample_cc(name = "assignment_sat")
 
 code_sample_cc(name = "binpacking_problem_sat")

@@ -7,8 +7,6 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
-COPTS=["-std=c++17"]
-
 proto_library(
     name = "sat_parameters_proto",
     srcs = ["sat_parameters.proto"],
