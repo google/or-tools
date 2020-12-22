@@ -22,4 +22,3 @@ def code_sample_cc(name):
         "//ortools/lp_data",
       ],
   )
-

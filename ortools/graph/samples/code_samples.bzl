@@ -28,4 +28,3 @@ def code_sample_cc(name):
         "//ortools/graph:linear_assignment",
       ],
   )
-

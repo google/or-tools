@@ -18,4 +18,3 @@ def code_sample_cc(name):
         "//ortools/algorithms:knapsack_solver_lib",
       ],
   )
-
