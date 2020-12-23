@@ -36,7 +36,7 @@ namespace sat {
 // variables of the form (i1 + offset <= i2). The offset can be constant or
 // given by the value of a third integer variable. Offsets can also be negative.
 //
-// The algorithm work by mapping the problem onto a graph where the edges carry
+// The algorithm works by mapping the problem onto a graph where the edges carry
 // the offset and the nodes correspond to one of the two bounds of an integer
 // variable (lower_bound or -upper_bound). It then find the fixed point using an
 // incremental variant of the Bellman-Ford(-Tarjan) algorithm.
