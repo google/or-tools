@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""OR-tools solution to the N-queens problem."""
+"""OR-Tools solution to the N-queens problem."""
 import time
 import sys
 from ortools.sat.python import cp_model

@@ -4877,7 +4877,7 @@ class AssignmentContainer {
   }
   void Clear() {
     elements_.clear();
-    if (!elements_map_.empty()) {  /// 2x speedup on OR-tools.
+    if (!elements_map_.empty()) {  /// 2x speedup on OR-Tools.
       elements_map_.clear();
     }
   }

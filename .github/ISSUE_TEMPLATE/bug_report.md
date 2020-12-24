@@ -4,7 +4,7 @@ about: Create a report to help us improve
 ---
 
 
-**What version of OR-tools and what language are you using?**
+**What version of OR-Tools and what language are you using?**
 Version: master/v7.3/v7.2 etc.
 Language: C++/Java/Python/C#
 
