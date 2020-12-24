@@ -724,6 +724,16 @@ class IntegerTrail : public SatPropagator {
       IntegerLiteral i_lit, absl::Span<const Literal> literal_reason,
       absl::Span<const IntegerLiteral> integer_reason);
 
+  // Pushes the given integer literal assuming that the Boolean literal is true.
+  // This can do a few things:
+  // - If lit it true, add it to the reason and push the integer bound.
+  // - If the bound is infeasible, push lit to false.
+  // - If the underlying variable is optional and also controlled by lit, push
+  //   the bound even if lit is not assigned.
+  ABSL_MUST_USE_RESULT bool ConditionalEnqueue(
+      Literal lit, IntegerLiteral i_lit, std::vector<Literal>* literal_reason,
+      std::vector<IntegerLiteral>* integer_reason);
+
   // Same as Enqueue(), but takes an extra argument which if smaller than
   // integer_trail_.size() is interpreted as the trail index of an old Enqueue()
   // that had the same reason as this one. Note that the given Span must still

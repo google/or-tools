@@ -231,5 +231,44 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
   };
 }
 
+std::function<void(Model*)> CumulativeUsingReservoir(
+    const std::vector<IntervalVariable>& vars,
+    const std::vector<AffineExpression>& demands, AffineExpression capacity,
+    SchedulingConstraintHelper* helper) {
+  return [=](Model* model) {
+    if (vars.empty()) return;
+
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+    auto* encoder = model->GetOrCreate<IntegerEncoder>();
+    auto* intervals = model->GetOrCreate<IntervalsRepository>();
+
+    CHECK(integer_trail->IsFixed(capacity));
+    const IntegerValue fixed_capacity(
+        integer_trail->UpperBound(capacity).value());
+
+    std::vector<AffineExpression> times;
+    std::vector<IntegerValue> deltas;
+    std::vector<Literal> presences;
+
+    const int num_tasks = vars.size();
+    for (int t = 0; t < num_tasks; ++t) {
+      CHECK(integer_trail->IsFixed(demands[t]));
+      times.push_back(intervals->StartVar(vars[t]));
+      deltas.push_back(integer_trail->LowerBound(demands[t]));
+      times.push_back(intervals->EndVar(vars[t]));
+      deltas.push_back(-integer_trail->LowerBound(demands[t]));
+      if (intervals->IsOptional(vars[t])) {
+        presences.push_back(intervals->PresenceLiteral(vars[t]));
+        presences.push_back(intervals->PresenceLiteral(vars[t]));
+      } else {
+        presences.push_back(encoder->GetTrueLiteral());
+        presences.push_back(encoder->GetTrueLiteral());
+      }
+    }
+    AddReservoirConstraint(times, deltas, presences, 0, fixed_capacity.value(),
+                           model);
+  };
+}
+
 }  // namespace sat
 }  // namespace operations_research

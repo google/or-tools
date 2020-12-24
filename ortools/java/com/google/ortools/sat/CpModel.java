@@ -499,30 +499,36 @@ public final class CpModel {
   /**
    * Adds {@code Reservoir(times, demands, minLevel, maxLevel)}.
    *
-   * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any non
-   * negative time , it must be between minLevel and maxLevel. Furthermore, this constraints expect
-   * all times variables to be non negative. If the variable times[i] is assigned a value t, then
-   * the current level changes by demands[i] (which is constant) at the time t.
+   * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any times, it
+   * must be between minLevel and maxLevel. If the variable {@code times[i]} is assigned a value t,
+   * and if {@code actives[i]} is true, then the current level changes by {@code demands[i]} (which
+   * is constant) at the time t.
    *
-   * <p>Note that {@code minLevel} can be greater than 0, or {@code maxLevel} can be less than 0. It
-   * just forces some demands to be executed at time 0 to make sure that we are within those bounds
-   * with the executed demands. Therefore, {@code forall t >= 0: minLevel <= sum(demands[i] if
-   * times[i] <= t) <= maxLevel}.
+   * <p>Note that {@code minLevel} must be less than 0, and {@code maxLevel} must be greater than 0.
+   * Therefore, {@code forall t : minLevel <= sum(demands[i] if times[i] <= t) <= maxLevel}.
    *
-   * @param times a list of positive integer variables which specify the time of the filling or
-   *     emptying the reservoir
+   * @param times a list of integer variables which specify the time of the filling or emptying the
+   *     reservoir
    * @param demands a list of integer values that specifies the amount of the emptying or feeling
-   * @param minLevel at any non negative time, the level of the reservoir must be greater of equal
-   *     than the min level
-   * @param maxLevel at any non negative time, the level of the reservoir must be less or equal than
-   *     the max level
+   * @param minLevel at any time, the level of the reservoir must be greater of equal than the min
+   *     level. minLevel must me <= 0.
+   * @param maxLevel at any time, the level of the reservoir must be less or equal than the max
+   *     level. maxLevel must be >= 0.
    * @return an instance of the Constraint class
    * @throws MismatchedArrayLengths if times and demands have different length
+   * @throws IllegalArgumentException if minLevel > 0
+   * @throws IllegalArgumentException if maxLevel < 0
    */
   public Constraint addReservoirConstraint(
       IntVar[] times, long[] demands, long minLevel, long maxLevel) throws MismatchedArrayLengths {
     if (times.length != demands.length) {
       throw new MismatchedArrayLengths("addReservoirConstraint", "times", "demands");
+    }
+    if (minLevel > 0) {
+      throw new IllegalArgumentException("addReservoirConstraint: minLevel must be <= 0");
+    }
+    if (maxLevel < 0) {
+      throw new IllegalArgumentException("addReservoirConstraint: maxLevel must be >= 0");
     }
     Constraint ct = new Constraint(modelBuilder);
     ReservoirConstraintProto.Builder reservoir = ct.getBuilder().getReservoirBuilder();
@@ -549,27 +555,25 @@ public final class CpModel {
   /**
    * Adds {@code Reservoir(times, demands, actives, minLevel, maxLevel)}.
    *
-   * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any non
-   * negative time , it must be between minLevel and maxLevel. Furthermore, this constraints expect
-   * all times variables to be non negative. If actives[i] is true, and if times[i] is assigned a
-   * value t, then the current level changes by demands[i] (which is constant) at the time t.
+   * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any time, it
+   * must be between minLevel and maxLevel. If the variable {@code times[i]} is assigned a value t,
+   * then the current level changes by {@code demands[i]} (which is constant) at the time t.
    *
-   * <p>Note that {@code minLevel} can be greater than 0, or {@code maxLevel} can be less than 0. It
-   * just forces some demands to be executed at time 0 to make sure that we are within those bounds
-   * with the executed demands. Therefore, {@code forall t >= 0: minLevel <= sum(demands[i] *
-   * actives[i] if times[i] <= t) <= maxLevel}.
+   * <p>Note that {@code minLevel} must be less than 0, and {@code maxLevel} must be greater than 0.
+   * Therefore, {@code forall t : minLevel <= sum(demands[i] * actives[i] if times[i] <= t) <=
+   * maxLevel}.
    *
-   * @param times a list of positive integer variables which specify the time of the filling or
-   *     emptying the reservoir
+   * @param times a list of integer variables which specify the time of the filling or emptying the
+   *     reservoir
    * @param demands a list of integer values that specifies the amount of the emptying or feeling
-   * @param actives a list of integer variables that specifies if the operation actually takes
-   *     place.
-   * @param minLevel at any non negative time, the level of the reservoir must be greater of equal
-   *     than the min level
-   * @param maxLevel at any non negative time, the level of the reservoir must be less or equal than
-   *     the max level
+   * @param minLevel at any time, the level of the reservoir must be greater of equal than the min
+   *     level. minLevel must me <= 0.
+   * @param maxLevel at any time, the level of the reservoir must be less or equal than the max
+   *     level. maxLevel must be >= 0.
    * @return an instance of the Constraint class
    * @throws MismatchedArrayLengths if times, demands, or actives have different length
+   * @throws IllegalArgumentException if minLevel > 0
+   * @throws IllegalArgumentException if maxLevel < 0
    */
   public Constraint addReservoirConstraintWithActive(IntVar[] times, long[] demands,
       IntVar[] actives, long minLevel, long maxLevel) throws MismatchedArrayLengths {
@@ -578,6 +582,12 @@ public final class CpModel {
     }
     if (times.length != actives.length) {
       throw new MismatchedArrayLengths("addReservoirConstraint", "times", "actives");
+    }
+    if (minLevel > 0) {
+      throw new IllegalArgumentException("addReservoirConstraint: minLevel must be <= 0");
+    }
+    if (maxLevel < 0) {
+      throw new IllegalArgumentException("addReservoirConstraint: maxLevel must be >= 0");
     }
 
     Constraint ct = new Constraint(modelBuilder);

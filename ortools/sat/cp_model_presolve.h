@@ -99,6 +99,7 @@ class CpModelPresolver {
   bool PresolveRoutes(ConstraintProto* ct);
   bool PresolveCumulative(ConstraintProto* ct);
   bool PresolveNoOverlap(ConstraintProto* ct);
+  bool PresolveReservoir(ConstraintProto* ct);
   bool PresolveAllDiff(ConstraintProto* ct);
   bool PresolveTable(ConstraintProto* ct);
   bool PresolveElement(ConstraintProto* ct);

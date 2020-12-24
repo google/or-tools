@@ -57,6 +57,12 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
     const std::vector<AffineExpression>& demands, AffineExpression capacity,
     SchedulingConstraintHelper* helper = nullptr);
 
+// Another testing code, same assumptions as the CumulativeTimeDecomposition().
+std::function<void(Model*)> CumulativeUsingReservoir(
+    const std::vector<IntervalVariable>& vars,
+    const std::vector<AffineExpression>& demands, AffineExpression capacity,
+    SchedulingConstraintHelper* helper = nullptr);
+
 }  // namespace sat
 }  // namespace operations_research
 

@@ -312,15 +312,19 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
     return absl::StrCat("Times and demands fields must be of the same size: ",
                         ProtobufShortDebugString(ct));
   }
-  for (const int t : ct.reservoir().times()) {
-    const IntegerVariableProto& time = model.variables(t);
-    for (const int64 bound : time.domain()) {
-      if (bound < 0) {
-        return absl::StrCat("Time variables must be >= 0 in constraint ",
-                            ProtobufShortDebugString(ct));
-      }
-    }
+  if (ct.reservoir().min_level() > 0) {
+    return absl::StrCat(
+        "The min level of a reservoir must be <= 0. Please use fixed events to "
+        "setup initial state: ",
+        ProtobufShortDebugString(ct));
   }
+  if (ct.reservoir().max_level() < 0) {
+    return absl::StrCat(
+        "The max level of a reservoir must be >= 0. Please use fixed events to "
+        "setup initial state: ",
+        ProtobufShortDebugString(ct));
+  }
+
   int64 sum_abs = 0;
   for (const int64 demand : ct.reservoir().demands()) {
     sum_abs = CapAdd(sum_abs, std::abs(demand));

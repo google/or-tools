@@ -268,6 +268,7 @@ void LoadIntMaxConstraint(const ConstraintProto& ct, Model* m);
 void LoadNoOverlapConstraint(const ConstraintProto& ct, Model* m);
 void LoadNoOverlap2dConstraint(const ConstraintProto& ct, Model* m);
 void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m);
+void LoadReservoirConstraint(const ConstraintProto& ct, Model* m);
 void LoadElementConstraintBounds(const ConstraintProto& ct, Model* m);
 void LoadElementConstraintAC(const ConstraintProto& ct, Model* m);
 void LoadElementConstraint(const ConstraintProto& ct, Model* m);

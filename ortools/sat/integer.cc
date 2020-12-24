@@ -993,6 +993,35 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
                          integer_trail_.size());
 }
 
+bool IntegerTrail::ConditionalEnqueue(
+    Literal lit, IntegerLiteral i_lit, std::vector<Literal>* literal_reason,
+    std::vector<IntegerLiteral>* integer_reason) {
+  const VariablesAssignment& assignment = trail_->Assignment();
+  if (assignment.LiteralIsFalse(lit)) return true;
+
+  // We can always push var if the optional literal is the same.
+  //
+  // TODO(user): we can also push lit.var if its presence implies lit.
+  if (lit.Index() == OptionalLiteralIndex(i_lit.var)) {
+    return Enqueue(i_lit, *literal_reason, *integer_reason);
+  }
+
+  if (assignment.LiteralIsTrue(lit)) {
+    literal_reason->push_back(lit.Negated());
+    return Enqueue(i_lit, *literal_reason, *integer_reason);
+  }
+
+  if (IntegerLiteralIsFalse(i_lit)) {
+    integer_reason->push_back(
+        IntegerLiteral::LowerOrEqual(i_lit.var, i_lit.bound - 1));
+    EnqueueLiteral(lit.Negated(), *literal_reason, *integer_reason);
+    return true;
+  }
+
+  // We can't push anything in this case.
+  return true;
+}
+
 bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
                            absl::Span<const Literal> literal_reason,
                            absl::Span<const IntegerLiteral> integer_reason,

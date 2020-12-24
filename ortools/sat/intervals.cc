@@ -384,31 +384,12 @@ bool SchedulingConstraintHelper::PushIntegerLiteralIfTaskPresent(
     int t, IntegerLiteral lit) {
   if (IsAbsent(t)) return true;
   AddOtherReason(t);
-
-  // TODO(user): we can also push lit.var if its presence implies the interval
-  // presence.
-  if (IsOptional(t) && integer_trail_->OptionalLiteralIndex(lit.var) !=
-                           reason_for_presence_[t]) {
-    if (IsPresent(t)) {
-      // We can still push, but we do need the presence reason.
-      AddPresenceReason(t);
-    } else {
-      // In this case we cannot push lit.var, but we may detect the interval
-      // absence.
-      if (lit.bound > integer_trail_->UpperBound(lit.var)) {
-        integer_reason_.push_back(
-            IntegerLiteral::LowerOrEqual(lit.var, lit.bound - 1));
-        if (!PushTaskAbsence(t)) return false;
-      }
-      return true;
-    }
-  }
-
   ImportOtherReasons();
-  if (!integer_trail_->Enqueue(lit, literal_reason_, integer_reason_)) {
-    return false;
+  if (IsOptional(t)) {
+    return integer_trail_->ConditionalEnqueue(
+        PresenceLiteral(t), lit, &literal_reason_, &integer_reason_);
   }
-  return true;
+  return integer_trail_->Enqueue(lit, literal_reason_, integer_reason_);
 }
 
 // We also run directly the precedence propagator for this variable so that when

@@ -85,13 +85,16 @@ void PostsolveLinear(const ConstraintProto& ct,
 
   // The postsolve code is a bit involved if there is more than one free
   // variable, we have to postsolve them one by one.
+  //
+  // Note that if there are some not free variable that are not assigned, the
+  // presolve should have made it sure that whatever the value of those
+  // variables the first variable can always be assigned to satisfy the
+  // constraint. In that case, the MultiplicationBy() below might be inexact,
+  // but that should be okay.
   std::vector<Domain> to_add;
   to_add.push_back(Domain(0));
   for (int i = 0; i + 1 < free_vars.size(); ++i) {
-    bool exact = false;
-    Domain term =
-        (*domains)[free_vars[i]].MultiplicationBy(-free_coeffs[i], &exact);
-    CHECK(exact);
+    Domain term = (*domains)[free_vars[i]].MultiplicationBy(-free_coeffs[i]);
     to_add.push_back(term.AdditionWith(to_add.back()));
   }
   for (int i = free_vars.size() - 1; i >= 0; --i) {
@@ -102,6 +105,10 @@ void PostsolveLinear(const ConstraintProto& ct,
     const Domain domain = rhs.AdditionWith(to_add[i])
                               .InverseMultiplicationBy(coeff)
                               .IntersectionWith((*domains)[var]);
+
+    // TODO(user): I am not 100% that the algo here might cover all the presolve
+    // case, so if this fail, it might indicate an issue here and not in the
+    // presolve/solver code.
     CHECK(!domain.IsEmpty()) << ct.ShortDebugString();
     const int64 value = prefer_lower_value[var] ? domain.Min() : domain.Max();
     (*domains)[var] = Domain(value);

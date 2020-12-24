@@ -46,6 +46,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/table.h"
+#include "ortools/sat/timetable.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -1345,6 +1346,26 @@ void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {
   m->Add(Cumulative(intervals, demands, capacity));
 }
 
+void LoadReservoirConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  auto* encoder = m->GetOrCreate<IntegerEncoder>();
+  std::vector<AffineExpression> times;
+  std::vector<IntegerValue> deltas;
+  std::vector<Literal> presences;
+  const int size = ct.reservoir().times().size();
+  for (int i = 0; i < size; ++i) {
+    times.push_back(mapping->Integer(ct.reservoir().times(i)));
+    deltas.push_back(IntegerValue(ct.reservoir().demands(i)));
+    if (!ct.reservoir().actives().empty()) {
+      presences.push_back(mapping->Literal(ct.reservoir().actives(i)));
+    } else {
+      presences.push_back(encoder->GetTrueLiteral());
+    }
+  }
+  AddReservoirConstraint(times, deltas, presences, ct.reservoir().min_level(),
+                         ct.reservoir().max_level(), m);
+}
+
 // If a variable is constant and its value appear in no other variable domains,
 // then the literal encoding the index and the one encoding the target at this
 // value are equivalent.
@@ -1803,6 +1824,9 @@ bool LoadConstraint(const ConstraintProto& ct, Model* m) {
       return true;
     case ConstraintProto::ConstraintProto::kCumulative:
       LoadCumulativeConstraint(ct, m);
+      return true;
+    case ConstraintProto::ConstraintProto::kReservoir:
+      LoadReservoirConstraint(ct, m);
       return true;
     case ConstraintProto::ConstraintProto::kElement:
       LoadElementConstraint(ct, m);

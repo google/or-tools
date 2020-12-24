@@ -1794,9 +1794,22 @@ bool CpModelPresolver::PropagateDomainsInLinear(int c, ConstraintProto* ct) {
 
     // The variable now only appear in its definition and we can remove it
     // because it was implied free.
+    //
+    // Tricky: If the linear constraint contains other variables that are only
+    // used here, then the postsolve needs more info. We do need to indicate
+    // that whatever the value of those other variables, we will have a way to
+    // assign var. We do that by putting it fist.
     CHECK_EQ(context_->VarToConstraints(var).size(), 1);
     context_->MarkVariableAsRemoved(var);
+    const int ct_index = context_->mapping_model->constraints().size();
     *context_->mapping_model->add_constraints() = *ct;
+    LinearConstraintProto* mapping_linear_ct =
+        context_->mapping_model->mutable_constraints(ct_index)
+            ->mutable_linear();
+    std::swap(mapping_linear_ct->mutable_vars()->at(0),
+              mapping_linear_ct->mutable_vars()->at(i));
+    std::swap(mapping_linear_ct->mutable_coeffs()->at(0),
+              mapping_linear_ct->mutable_coeffs()->at(i));
     return RemoveConstraint(ct);
   }
   if (new_bounds) {
@@ -3459,9 +3472,164 @@ bool CpModelPresolver::PresolveAutomaton(ConstraintProto* ct) {
   return false;
 }
 
+bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
+  if (context_->ModelIsUnsat()) return false;
+  if (HasEnforcementLiteral(*ct)) return false;
+
+  bool changed = false;
+
+  ReservoirConstraintProto& mutable_reservoir = *ct->mutable_reservoir();
+  if (mutable_reservoir.actives().empty()) {
+    const int true_literal = context_->GetOrCreateConstantVar(1);
+    for (int i = 0; i < mutable_reservoir.times_size(); ++i) {
+      mutable_reservoir.add_actives(true_literal);
+    }
+    changed = true;
+  }
+
+  const auto& demand_is_null = [&](int i) {
+    return mutable_reservoir.demands(i) == 0 ||
+           context_->LiteralIsFalse(mutable_reservoir.actives(i));
+  };
+
+  // Remove zero demands, and inactive events.
+  int num_zeros = 0;
+  for (int i = 0; i < mutable_reservoir.demands_size(); ++i) {
+    if (demand_is_null(i)) num_zeros++;
+  }
+
+  if (num_zeros > 0) {  // Remove null events
+    changed = true;
+    int new_size = 0;
+    for (int i = 0; i < mutable_reservoir.demands_size(); ++i) {
+      if (demand_is_null(i)) continue;
+      mutable_reservoir.set_demands(new_size, mutable_reservoir.demands(i));
+      mutable_reservoir.set_times(new_size, mutable_reservoir.times(i));
+      mutable_reservoir.set_actives(new_size, mutable_reservoir.actives(i));
+      new_size++;
+    }
+
+    mutable_reservoir.mutable_demands()->Truncate(new_size);
+    mutable_reservoir.mutable_times()->Truncate(new_size);
+    mutable_reservoir.mutable_actives()->Truncate(new_size);
+
+    context_->UpdateRuleStats(
+        "reservoir: remove zero demands or inactive events.");
+  }
+
+  const int num_events = mutable_reservoir.demands_size();
+  int64 gcd = mutable_reservoir.demands().empty()
+                  ? 0
+                  : std::abs(mutable_reservoir.demands(0));
+  int num_positives = 0;
+  int num_negatives = 0;
+  int64 sum_of_demands = 0;
+  int64 max_sum_of_positive_demands = 0;
+  int64 min_sum_of_negative_demands = 0;
+  for (int i = 0; i < num_events; ++i) {
+    const int64 demand = mutable_reservoir.demands(i);
+    sum_of_demands += demand;
+    gcd = MathUtil::GCD64(gcd, std::abs(demand));
+    if (demand > 0) {
+      num_positives++;
+      max_sum_of_positive_demands += demand;
+    } else {
+      DCHECK_LT(demand, 0);
+      num_negatives++;
+      min_sum_of_negative_demands += demand;
+    }
+  }
+
+  if (min_sum_of_negative_demands >= mutable_reservoir.min_level() &&
+      max_sum_of_positive_demands <= mutable_reservoir.max_level()) {
+    context_->UpdateRuleStats("reservoir: always feasible");
+    return RemoveConstraint(ct);
+  }
+
+  if (min_sum_of_negative_demands > mutable_reservoir.max_level() ||
+      max_sum_of_positive_demands < mutable_reservoir.min_level()) {
+    context_->UpdateRuleStats("reservoir: trivially infeasible");
+    return context_->NotifyThatModelIsUnsat();
+  }
+
+  if (min_sum_of_negative_demands > mutable_reservoir.min_level()) {
+    mutable_reservoir.set_min_level(min_sum_of_negative_demands);
+    context_->UpdateRuleStats(
+        "reservoir: increase min_level to reachable value");
+  }
+
+  if (max_sum_of_positive_demands < mutable_reservoir.max_level()) {
+    mutable_reservoir.set_max_level(max_sum_of_positive_demands);
+    context_->UpdateRuleStats("reservoir: reduce max_level to reachable value");
+  }
+
+  if (mutable_reservoir.min_level() <= 0 &&
+      mutable_reservoir.max_level() >= 0 &&
+      (num_positives == 0 || num_negatives == 0)) {
+    // If all demands have the same sign, and if the initial state is
+    // always feasible, we do not care about the order, just the sum.
+    auto* const sum =
+        context_->working_model->add_constraints()->mutable_linear();
+    int64 fixed_contrib = 0;
+    for (int i = 0; i < mutable_reservoir.demands_size(); ++i) {
+      const int64 demand = mutable_reservoir.demands(i);
+      DCHECK_NE(demand, 0);
+
+      const int active = mutable_reservoir.actives(i);
+      if (RefIsPositive(active)) {
+        sum->add_vars(active);
+        sum->add_coeffs(demand);
+      } else {
+        sum->add_vars(PositiveRef(active));
+        sum->add_coeffs(-demand);
+        fixed_contrib += demand;
+      }
+    }
+    sum->add_domain(mutable_reservoir.min_level() - fixed_contrib);
+    sum->add_domain(mutable_reservoir.max_level() - fixed_contrib);
+    context_->UpdateRuleStats("reservoir: converted to linear");
+    return RemoveConstraint(ct);
+  }
+
+  if (gcd > 1) {
+    for (int i = 0; i < mutable_reservoir.demands_size(); ++i) {
+      mutable_reservoir.set_demands(i, mutable_reservoir.demands(i) / gcd);
+    }
+
+    // Adjust min and max levels.
+    //   max level is always rounded down.
+    //   min level is always rounded up.
+    const Domain reduced_domain =
+        Domain({mutable_reservoir.min_level(), mutable_reservoir.max_level()})
+            .InverseMultiplicationBy(gcd);
+    mutable_reservoir.set_min_level(reduced_domain.Min());
+    mutable_reservoir.set_max_level(reduced_domain.Max());
+    context_->UpdateRuleStats("reservoir: simplify demands and levels by gcd.");
+  }
+
+  if (num_positives == 1 && num_negatives > 0) {
+    context_->UpdateRuleStats(
+        "TODO reservoir: one producer, multiple consumers.");
+  }
+
+  absl::flat_hash_set<std::pair<int, int>> time_active_set;
+  for (int i = 0; i < mutable_reservoir.demands_size(); ++i) {
+    const std::pair<int, int> key = std::make_pair(
+        mutable_reservoir.times(i), mutable_reservoir.actives(i));
+    if (time_active_set.contains(key)) {
+      context_->UpdateRuleStats("TODO reservoir: merge synchronized events.");
+      break;
+    } else {
+      time_active_set.insert(key);
+    }
+  }
+
+  return changed;
+}
+
 // TODO(user): It is probably more efficient to keep all the bool_and in a
-// global place during all the presolve, and just output them at the end rather
-// than modifying more than once the proto.
+// global place during all the presolve, and just output them at the end
+// rather than modifying more than once the proto.
 void CpModelPresolver::ExtractBoolAnd() {
   absl::flat_hash_map<int, int> ref_to_bool_and;
   const int num_constraints = context_->working_model->constraints_size();
@@ -4255,6 +4423,8 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       return PresolveRoutes(ct);
     case ConstraintProto::ConstraintCase::kAutomaton:
       return PresolveAutomaton(ct);
+    case ConstraintProto::ConstraintCase::kReservoir:
+      return PresolveReservoir(ct);
     default:
       return false;
   }

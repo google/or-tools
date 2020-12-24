@@ -126,49 +126,6 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
     sum->add_domain(reservoir.max_level());
   }
 
-  // Constrains the reservoir level to be consistent at time 0.
-  // We need to do it only if 0 is not in [min_level..max_level].
-  // Otherwise, the regular propagation will already check it.
-  if (reservoir.min_level() > 0 || reservoir.max_level() < 0) {
-    auto* const sum_at_zero =
-        context->working_model->add_constraints()->mutable_linear();
-    for (int i = 0; i < num_events; ++i) {
-      const int active_i = is_active_literal(i);
-      if (context->LiteralIsFalse(active_i)) continue;
-
-      const int time_i = reservoir.times(i);
-      const int lesseq_0 = context->NewBoolVar();
-
-      // lesseq_0 => (time_i <= 0) && active_i is true
-      ConstraintProto* const lesseq = context->working_model->add_constraints();
-      lesseq->add_enforcement_literal(lesseq_0);
-      lesseq->mutable_linear()->add_vars(time_i);
-      lesseq->mutable_linear()->add_coeffs(1);
-      lesseq->mutable_linear()->add_domain(kint64min);
-      lesseq->mutable_linear()->add_domain(0);
-
-      if (!context->LiteralIsTrue(active_i)) {
-        context->AddImplication(lesseq_0, active_i);
-      }
-
-      // Not(lesseq_0) && active_i => (time_i >= 1)
-      ConstraintProto* const greater =
-          context->working_model->add_constraints();
-      greater->add_enforcement_literal(NegatedRef(lesseq_0));
-      greater->add_enforcement_literal(active_i);
-      greater->mutable_linear()->add_vars(time_i);
-      greater->mutable_linear()->add_coeffs(1);
-      greater->mutable_linear()->add_domain(1);
-      greater->mutable_linear()->add_domain(kint64max);
-
-      // Accumulate in the sum_at_zero constraint.
-      sum_at_zero->add_vars(lesseq_0);
-      sum_at_zero->add_coeffs(reservoir.demands(i));
-    }
-    sum_at_zero->add_domain(reservoir.min_level());
-    sum_at_zero->add_domain(reservoir.max_level());
-  }
-
   ct->Clear();
   context->UpdateRuleStats("reservoir: expanded");
 }
@@ -1441,6 +1398,8 @@ void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
 }  // namespace
 
 void ExpandCpModel(PresolveContext* context) {
+  if (context->params().disable_constraint_expansion()) return;
+
   if (context->ModelIsUnsat()) return;
 
   // Make sure all domains are initialized.
@@ -1455,7 +1414,9 @@ void ExpandCpModel(PresolveContext* context) {
     bool skip = false;
     switch (ct->constraint_case()) {
       case ConstraintProto::ConstraintCase::kReservoir:
-        ExpandReservoir(ct, context);
+        if (context->params().expand_reservoir_constraints()) {
+          ExpandReservoir(ct, context);
+        }
         break;
       case ConstraintProto::ConstraintCase::kIntMod:
         ExpandIntMod(ct, context);
