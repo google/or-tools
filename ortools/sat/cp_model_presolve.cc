@@ -794,10 +794,19 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
 
     if (context_->IsFixed(b)) std::swap(a, b);
     if (context_->IsFixed(a)) {
-      if (b != product) {
+      const int64 min_a = context_->MinOf(a);
+      if (min_a == 0) {  // Fix target to 0.
+        bool domain_modified = false;
+        if (!context_->IntersectDomainWith(product, Domain(0, 0),
+                                           &domain_modified)) {
+          return false;
+        }
+        context_->UpdateRuleStats("int_prod: fix target to zero.");
+        return RemoveConstraint(ct);
+      } else  if (b != product) {
         ConstraintProto* const lin = context_->working_model->add_constraints();
         lin->mutable_linear()->add_vars(b);
-        lin->mutable_linear()->add_coeffs(context_->MinOf(a));
+        lin->mutable_linear()->add_coeffs(min_a);
         lin->mutable_linear()->add_vars(product);
         lin->mutable_linear()->add_coeffs(-1);
         lin->mutable_linear()->add_domain(0);
