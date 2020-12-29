@@ -308,7 +308,6 @@ one just has to feed a profit vector with the 9 profits, a vector of 2
 vectors for weights, and a vector of capacities.
 E.g.:</p>
 <p><strong>Python</strong>:</p>
-<p>.. code-block:: c++</p>
 <pre><code>      profits = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
       weights = [ [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
                   [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
@@ -323,7 +322,6 @@ E.g.:</p>
       profit = solver.Solve()
 </code></pre>
 <p><strong>C++</strong>:</p>
-<p>.. code-block:: c++</p>
 <pre><code>     const std::vector&lt;int64&gt; profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
      const std::vector&lt;std::vector&lt;int64&gt;&gt; weights =
          { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
@@ -337,7 +335,6 @@ E.g.:</p>
      const int64 profit = solver.Solve();
 </code></pre>
 <p><strong>Java</strong>:</p>
-<p>.. code-block:: c++</p>
 <pre><code>    final long[] profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     final long[][] weights = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
            { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
