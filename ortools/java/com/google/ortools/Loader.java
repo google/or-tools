@@ -69,7 +69,15 @@ public class Loader {
       }
     });
 
-    FileSystem fs = FileSystems.newFileSystem(resourceURI, Collections.emptyMap());
+    FileSystem fs;
+    try {
+      fs = FileSystems.newFileSystem(resourceURI, Collections.emptyMap());
+    } catch (FileSystemAlreadyExistsException e) {
+      fs = FileSystems.getFileSystem(resourceURI);
+      if (fs == null) {
+        throw new IllegalArgumentException();
+      }
+    }
     Path p = fs.provider().getPath(resourceURI);
     visitor.accept(p);
     return tempPath;
