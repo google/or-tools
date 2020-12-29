@@ -398,7 +398,7 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Class that owns everything related to a particular optimization model.  <a href="classoperations__research_1_1sat_1_1_model.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_model_random_generator.html">ModelRandomGenerator</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_model_random_generator.html">ModelRandomGenerator</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_multiple_circuit_constraint.html">MultipleCircuitConstraint</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Specialized circuit constraint.  <a href="classoperations__research_1_1sat_1_1_multiple_circuit_constraint.html#details">More...</a><br /></td></tr>
@@ -440,8 +440,6 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html">PresolveContext</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_presolve_options.html">PresolveOptions</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_prober.html">Prober</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_probing_options.html">ProbingOptions</a></td></tr>
@@ -460,6 +458,8 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Specialized reservoir constraint.  <a href="classoperations__research_1_1sat_1_1_reservoir_constraint.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_reservoir_constraint_proto_default_type_internal.html">ReservoirConstraintProtoDefaultTypeInternal</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_reservoir_time_tabling.html">ReservoirTimeTabling</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_restart_policy.html">RestartPolicy</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -924,8 +924,8 @@ Functions</h2></td></tr>
 <tr class="separator:aeaa0c02e25de8ad88ffb65ef88e2eb86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a335172e2d9766dcffea5ff4b1dce2f35"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a335172e2d9766dcffea5ff4b1dce2f35">SolutionIsFeasible</a> (const CpModelProto &amp;<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, const std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt; &amp;variable_values, const CpModelProto *mapping_proto, const std::vector&lt; int &gt; *postsolve_mapping)</td></tr>
 <tr class="separator:a335172e2d9766dcffea5ff4b1dce2f35"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaacbdd1f4563e651ab1b8e8eacabbbe3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aaacbdd1f4563e651ab1b8e8eacabbbe3">ExpandCpModel</a> (<a class="el" href="structoperations__research_1_1sat_1_1_presolve_options.html">PresolveOptions</a> options, <a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html">PresolveContext</a> *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>)</td></tr>
-<tr class="separator:aaacbdd1f4563e651ab1b8e8eacabbbe3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d700795b2500705ef3031ec994fe472"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a4d700795b2500705ef3031ec994fe472">ExpandCpModel</a> (<a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html">PresolveContext</a> *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>)</td></tr>
+<tr class="separator:a4d700795b2500705ef3031ec994fe472"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad57491858f7814f0a03845022b6de35e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1sat_1_1_neighborhood.html">Neighborhood</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ad57491858f7814f0a03845022b6de35e">GenerateSchedulingNeighborhoodForRelaxation</a> (const absl::Span&lt; const int &gt; intervals_to_relax, const CpSolverResponse &amp;initial_solution, const <a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html">NeighborhoodGeneratorHelper</a> &amp;helper)</td></tr>
 <tr class="separator:ad57491858f7814f0a03845022b6de35e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a27da77e2f3fc205f1b3b184db3c9bd77"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a27da77e2f3fc205f1b3b184db3c9bd77">MaybeFullyEncodeMoreVariables</a> (const CpModelProto &amp;<a class="el" href="cp__model__solver_8cc.html#a6ac76d8a372013f67c4973012948ec84">model_proto</a>, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *m)</td></tr>
@@ -960,6 +960,8 @@ Functions</h2></td></tr>
 <tr class="separator:ab716457062d8500d7315cfe29646de6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a50082c82c7d605e10de47911f0485526"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a50082c82c7d605e10de47911f0485526">LoadCumulativeConstraint</a> (const ConstraintProto &amp;<a class="el" href="demon__profiler_8cc.html#a05da18ca9c7b657a4a6ea24e07c9b695">ct</a>, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *m)</td></tr>
 <tr class="separator:a50082c82c7d605e10de47911f0485526"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52207e9726840ee8ec0c88b45995d5b7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a52207e9726840ee8ec0c88b45995d5b7">LoadReservoirConstraint</a> (const ConstraintProto &amp;<a class="el" href="demon__profiler_8cc.html#a05da18ca9c7b657a4a6ea24e07c9b695">ct</a>, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *m)</td></tr>
+<tr class="separator:a52207e9726840ee8ec0c88b45995d5b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4fd8d6c1278c1c56debc553d6170b795"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a4fd8d6c1278c1c56debc553d6170b795">DetectEquivalencesInElementConstraint</a> (const ConstraintProto &amp;<a class="el" href="demon__profiler_8cc.html#a05da18ca9c7b657a4a6ea24e07c9b695">ct</a>, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *m)</td></tr>
 <tr class="separator:a4fd8d6c1278c1c56debc553d6170b795"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af712aad69920521943174c1304a820f6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#af712aad69920521943174c1304a820f6">LoadElementConstraintBounds</a> (const ConstraintProto &amp;<a class="el" href="demon__profiler_8cc.html#a05da18ca9c7b657a4a6ea24e07c9b695">ct</a>, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *m)</td></tr>
@@ -998,8 +1000,8 @@ Functions</h2></td></tr>
 <tr class="separator:a5a473cc8feeff625d0aea55310606f34"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aafe5dc63878ec74bde383ab0bf12bb88"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aafe5dc63878ec74bde383ab0bf12bb88">LogInfoFromContext</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html">PresolveContext</a> *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>)</td></tr>
 <tr class="separator:aafe5dc63878ec74bde383ab0bf12bb88"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a73d5e96e46b72c71a4e21c78b504e567"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a73d5e96e46b72c71a4e21c78b504e567">PresolveCpModel</a> (const <a class="el" href="structoperations__research_1_1sat_1_1_presolve_options.html">PresolveOptions</a> &amp;options, <a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html">PresolveContext</a> *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>, std::vector&lt; int &gt; *postsolve_mapping)</td></tr>
-<tr class="separator:a73d5e96e46b72c71a4e21c78b504e567"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5921e7fd881f9a30b1ccb2c90ed672c8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a5921e7fd881f9a30b1ccb2c90ed672c8">PresolveCpModel</a> (<a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html">PresolveContext</a> *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>, std::vector&lt; int &gt; *postsolve_mapping)</td></tr>
+<tr class="separator:a5921e7fd881f9a30b1ccb2c90ed672c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae82ca1b371f76400eefb8e94246c5fe2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ae82ca1b371f76400eefb8e94246c5fe2">ApplyVariableMapping</a> (const std::vector&lt; int &gt; &amp;mapping, const <a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html">PresolveContext</a> &amp;<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>)</td></tr>
 <tr class="separator:ae82ca1b371f76400eefb8e94246c5fe2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a90650dff7fc501dfe17041e0cb5388fd"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a90650dff7fc501dfe17041e0cb5388fd">FindDuplicateConstraints</a> (const CpModelProto &amp;<a class="el" href="cp__model__solver_8cc.html#a6ac76d8a372013f67c4973012948ec84">model_proto</a>)</td></tr>
@@ -1093,6 +1095,8 @@ Functions</h2></td></tr>
 <tr class="separator:a615085331bd86d852e84f75fcadbeaa1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab521107466b31efd0078a963cdc8d978"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(<a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ab521107466b31efd0078a963cdc8d978">CumulativeTimeDecomposition</a> (const std::vector&lt; IntervalVariable &gt; &amp;vars, const std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> &gt; &amp;demands, <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> <a class="el" href="routing__flow_8cc.html#adf3be22c64f10c0783c0cf277e857adf">capacity</a>, <a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html">SchedulingConstraintHelper</a> *helper)</td></tr>
 <tr class="separator:ab521107466b31efd0078a963cdc8d978"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adf06bba7c940f142f85307687dcdf744"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(<a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#adf06bba7c940f142f85307687dcdf744">CumulativeUsingReservoir</a> (const std::vector&lt; IntervalVariable &gt; &amp;vars, const std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> &gt; &amp;demands, <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> <a class="el" href="routing__flow_8cc.html#adf3be22c64f10c0783c0cf277e857adf">capacity</a>, <a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html">SchedulingConstraintHelper</a> *helper)</td></tr>
+<tr class="separator:adf06bba7c940f142f85307687dcdf744"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae31c8954541d263534ce5d222dce4c8e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ae31c8954541d263534ce5d222dce4c8e">AddCumulativeEnergyConstraint</a> (std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> &gt; energies, <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> <a class="el" href="routing__flow_8cc.html#adf3be22c64f10c0783c0cf277e857adf">capacity</a>, <a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html">SchedulingConstraintHelper</a> *helper, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
 <tr class="separator:ae31c8954541d263534ce5d222dce4c8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05f04a0b896f5070619b4c8c7ef9a69e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a05f04a0b896f5070619b4c8c7ef9a69e">AddCumulativeOverloadChecker</a> (const std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> &gt; &amp;demands, <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> <a class="el" href="routing__flow_8cc.html#adf3be22c64f10c0783c0cf277e857adf">capacity</a>, <a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html">SchedulingConstraintHelper</a> *helper, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
@@ -1441,8 +1445,8 @@ Functions</h2></td></tr>
 <tr class="separator:aff14a4092356fceea657393b7b234b7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a94739087f86f5e1b7679d5371d4d9f4b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a94739087f86f5e1b7679d5371d4d9f4b">TryToLinearizeConstraint</a> (const CpModelProto &amp;<a class="el" href="cp__model__solver_8cc.html#a6ac76d8a372013f67c4973012948ec84">model_proto</a>, const ConstraintProto &amp;<a class="el" href="demon__profiler_8cc.html#a05da18ca9c7b657a4a6ea24e07c9b695">ct</a>, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, int linearization_level, <a class="el" href="structoperations__research_1_1sat_1_1_linear_relaxation.html">LinearRelaxation</a> *relaxation)</td></tr>
 <tr class="separator:a94739087f86f5e1b7679d5371d4d9f4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a68ff1f863724fe79ccef1681c5b6db83"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a68ff1f863724fe79ccef1681c5b6db83">AddCumulativeCut</a> (const std::vector&lt; IntervalVariable &gt; &amp;intervals, const std::vector&lt; IntegerVariable &gt; &amp;demands, IntegerValue capacity_lower_bound, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, <a class="el" href="structoperations__research_1_1sat_1_1_linear_relaxation.html">LinearRelaxation</a> *relaxation)</td></tr>
-<tr class="separator:a68ff1f863724fe79ccef1681c5b6db83"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abec6498a84c8978ed57f9cdfe4a5976c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#abec6498a84c8978ed57f9cdfe4a5976c">AddCumulativeCut</a> (const std::vector&lt; IntervalVariable &gt; &amp;intervals, const std::vector&lt; IntegerVariable &gt; &amp;demands, IntegerValue capacity_upper_bound, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, <a class="el" href="structoperations__research_1_1sat_1_1_linear_relaxation.html">LinearRelaxation</a> *relaxation)</td></tr>
+<tr class="separator:abec6498a84c8978ed57f9cdfe4a5976c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae32ce362cc268798a2365882c1de7894"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ae32ce362cc268798a2365882c1de7894">AppendCumulativeRelaxation</a> (const CpModelProto &amp;<a class="el" href="cp__model__solver_8cc.html#a6ac76d8a372013f67c4973012948ec84">model_proto</a>, const ConstraintProto &amp;<a class="el" href="demon__profiler_8cc.html#a05da18ca9c7b657a4a6ea24e07c9b695">ct</a>, int linearization_level, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, <a class="el" href="structoperations__research_1_1sat_1_1_linear_relaxation.html">LinearRelaxation</a> *relaxation)</td></tr>
 <tr class="separator:ae32ce362cc268798a2365882c1de7894"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acc7b292198fce358615d0295cd1c3078"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#acc7b292198fce358615d0295cd1c3078">AppendNoOverlapRelaxation</a> (const CpModelProto &amp;<a class="el" href="cp__model__solver_8cc.html#a6ac76d8a372013f67c4973012948ec84">model_proto</a>, const ConstraintProto &amp;<a class="el" href="demon__profiler_8cc.html#a05da18ca9c7b657a4a6ea24e07c9b695">ct</a>, int linearization_level, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>, <a class="el" href="structoperations__research_1_1sat_1_1_linear_relaxation.html">LinearRelaxation</a> *relaxation)</td></tr>
@@ -1555,8 +1559,8 @@ Functions</h2></td></tr>
 <tr class="separator:ab89c95fd9e5fe8176a7807d92872972e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a334bf93d91912354ff5d0f161a64c273"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a334bf93d91912354ff5d0f161a64c273">RecordLPRelaxationValues</a> (<a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
 <tr class="separator:a334bf93d91912354ff5d0f161a64c273"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a479e80325010226b59ddd629ebe1f695"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1sat_1_1_r_i_n_s_neighborhood.html">RINSNeighborhood</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a479e80325010226b59ddd629ebe1f695">GetRINSNeighborhood</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html">SharedResponseManager</a> *response_manager, const <a class="el" href="classoperations__research_1_1sat_1_1_shared_relaxation_solution_repository.html">SharedRelaxationSolutionRepository</a> *<a class="el" href="cp__model__solver_8cc.html#a2a2278bd1fb787198e496b7d443a05e8">relaxation_solutions</a>, const <a class="el" href="classoperations__research_1_1sat_1_1_shared_l_p_solution_repository.html">SharedLPSolutionRepository</a> *<a class="el" href="cp__model__solver_8cc.html#a5c52f4ef9698913ed16c67a4a6cec606">lp_solutions</a>, <a class="el" href="classoperations__research_1_1sat_1_1_shared_incomplete_solution_manager.html">SharedIncompleteSolutionManager</a> *<a class="el" href="cp__model__solver_8cc.html#a6bc4d701f71d498e82a3d45adde9a2e4">incomplete_solutions</a>, <a class="el" href="namespaceoperations__research.html#a6743e8c90bbb85a1017486ed70c7d29b">random_engine_t</a> *random)</td></tr>
-<tr class="separator:a479e80325010226b59ddd629ebe1f695"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a51ed0b0b6cfc2ab552a349ba8b8fe5ee"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1sat_1_1_r_i_n_s_neighborhood.html">RINSNeighborhood</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a51ed0b0b6cfc2ab552a349ba8b8fe5ee">GetRINSNeighborhood</a> (const <a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html">SharedResponseManager</a> *response_manager, const <a class="el" href="classoperations__research_1_1sat_1_1_shared_relaxation_solution_repository.html">SharedRelaxationSolutionRepository</a> *<a class="el" href="cp__model__solver_8cc.html#a2a2278bd1fb787198e496b7d443a05e8">relaxation_solutions</a>, const <a class="el" href="classoperations__research_1_1sat_1_1_shared_l_p_solution_repository.html">SharedLPSolutionRepository</a> *<a class="el" href="cp__model__solver_8cc.html#a5c52f4ef9698913ed16c67a4a6cec606">lp_solutions</a>, <a class="el" href="classoperations__research_1_1sat_1_1_shared_incomplete_solution_manager.html">SharedIncompleteSolutionManager</a> *<a class="el" href="cp__model__solver_8cc.html#a6bc4d701f71d498e82a3d45adde9a2e4">incomplete_solutions</a>, absl::BitGenRef random)</td></tr>
+<tr class="separator:a51ed0b0b6cfc2ab552a349ba8b8fe5ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a766cf75290846b2cd9685754d6e26ee7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a766cf75290846b2cd9685754d6e26ee7">DEFINE_INT_TYPE</a> (BooleanVariable, int)</td></tr>
 <tr class="separator:a766cf75290846b2cd9685754d6e26ee7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:add67896a84f6372a648154c5770a0ae0"><td class="memItemLeft" align="right" valign="top">const BooleanVariable&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#add67896a84f6372a648154c5770a0ae0">kNoBooleanVariable</a> (-1)</td></tr>
@@ -1645,6 +1649,8 @@ Functions</h2></td></tr>
 <tr class="memitem:a9fb08d14503090b0fcd0cff9e37013c7"><td class="memItemLeft" align="right" valign="top">template&lt;&gt; </td></tr>
 <tr class="memitem:a9fb08d14503090b0fcd0cff9e37013c7"><td class="memTemplItemLeft" align="right" valign="top">constexpr IntegerValue&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a9fb08d14503090b0fcd0cff9e37013c7">IntegerTypeMinimumValue</a> ()</td></tr>
 <tr class="separator:a9fb08d14503090b0fcd0cff9e37013c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ae82c52c3f9018d3502184c7853865d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a8ae82c52c3f9018d3502184c7853865d">AddReservoirConstraint</a> (std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> &gt; times, std::vector&lt; IntegerValue &gt; deltas, std::vector&lt; <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> &gt; presences, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> min_level, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> max_level, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
+<tr class="separator:a8ae82c52c3f9018d3502184c7853865d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ef3eb1f5fe6506a5e24115f10d724fc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a2ef3eb1f5fe6506a5e24115f10d724fc">MoveOneUnprocessedLiteralLast</a> (const std::set&lt; LiteralIndex &gt; &amp;processed, int relevant_prefix_size, std::vector&lt; <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> &gt; *literals)</td></tr>
 <tr class="separator:a2ef3eb1f5fe6506a5e24115f10d724fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af71bcddf81b886f6c4700c212bacae64"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#af71bcddf81b886f6c4700c212bacae64">CompressTuples</a> (absl::Span&lt; const <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt; domain_sizes, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> any_value, std::vector&lt; std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt;&gt; *tuples)</td></tr>
@@ -2188,8 +2194,8 @@ Variables</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="a68ff1f863724fe79ccef1681c5b6db83"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a68ff1f863724fe79ccef1681c5b6db83">&#9670;&nbsp;</a></span>AddCumulativeCut()</h2>
+<a id="abec6498a84c8978ed57f9cdfe4a5976c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abec6498a84c8978ed57f9cdfe4a5976c">&#9670;&nbsp;</a></span>AddCumulativeCut()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2210,7 +2216,7 @@ Variables</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">IntegerValue&#160;</td>
-          <td class="paramname"><em>capacity_lower_bound</em>, </td>
+          <td class="paramname"><em>capacity_upper_bound</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2232,7 +2238,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__relaxation_8cc_source.html#l00488">488</a> of file <a class="el" href="linear__relaxation_8cc_source.html">linear_relaxation.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__relaxation_8cc_source.html#l00491">491</a> of file <a class="el" href="linear__relaxation_8cc_source.html">linear_relaxation.cc</a>.</p>
 
 </div>
 </div>
@@ -2424,7 +2430,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l01983">1983</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l01984">1984</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -2514,7 +2520,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00336">336</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00337">337</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -2550,7 +2556,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00328">328</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00329">329</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -2663,6 +2669,60 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00110">110</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+
+</div>
+</div>
+<a id="a8ae82c52c3f9018d3502184c7853865d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8ae82c52c3f9018d3502184c7853865d">&#9670;&nbsp;</a></span>AddReservoirConstraint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void AddReservoirConstraint </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> &gt;&#160;</td>
+          <td class="paramname"><em>times</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; IntegerValue &gt;&#160;</td>
+          <td class="paramname"><em>deltas</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> &gt;&#160;</td>
+          <td class="paramname"><em>presences</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td>
+          <td class="paramname"><em>min_level</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td>
+          <td class="paramname"><em>max_level</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *&#160;</td>
+          <td class="paramname"><em>model</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="timetable_8cc_source.html#l00027">27</a> of file <a class="el" href="timetable_8cc_source.html">timetable.cc</a>.</p>
 
 </div>
 </div>
@@ -2826,7 +2886,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__relaxation_8cc_source.html#l00580">580</a> of file <a class="el" href="linear__relaxation_8cc_source.html">linear_relaxation.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__relaxation_8cc_source.html#l00583">583</a> of file <a class="el" href="linear__relaxation_8cc_source.html">linear_relaxation.cc</a>.</p>
 
 </div>
 </div>
@@ -2904,7 +2964,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__relaxation_8cc_source.html#l00785">785</a> of file <a class="el" href="linear__relaxation_8cc_source.html">linear_relaxation.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__relaxation_8cc_source.html#l00788">788</a> of file <a class="el" href="linear__relaxation_8cc_source.html">linear_relaxation.cc</a>.</p>
 
 </div>
 </div>
@@ -2946,7 +3006,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__relaxation_8cc_source.html#l00688">688</a> of file <a class="el" href="linear__relaxation_8cc_source.html">linear_relaxation.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__relaxation_8cc_source.html#l00691">691</a> of file <a class="el" href="linear__relaxation_8cc_source.html">linear_relaxation.cc</a>.</p>
 
 </div>
 </div>
@@ -2994,7 +3054,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__relaxation_8cc_source.html#l00614">614</a> of file <a class="el" href="linear__relaxation_8cc_source.html">linear_relaxation.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__relaxation_8cc_source.html#l00617">617</a> of file <a class="el" href="linear__relaxation_8cc_source.html">linear_relaxation.cc</a>.</p>
 
 </div>
 </div>
@@ -3042,7 +3102,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__relaxation_8cc_source.html#l00599">599</a> of file <a class="el" href="linear__relaxation_8cc_source.html">linear_relaxation.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__relaxation_8cc_source.html#l00602">602</a> of file <a class="el" href="linear__relaxation_8cc_source.html">linear_relaxation.cc</a>.</p>
 
 </div>
 </div>
@@ -3156,7 +3216,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pb__constraint_8cc_source.html#l00102">102</a> of file <a class="el" href="pb__constraint_8cc_source.html">pb_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pb__constraint_8cc_source.html#l00103">103</a> of file <a class="el" href="pb__constraint_8cc_source.html">pb_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -3186,7 +3246,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00743">743</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00744">744</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -3216,7 +3276,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00310">310</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00328">328</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -3246,7 +3306,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00157">157</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00163">163</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -3276,7 +3336,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00221">221</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00227">227</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -3306,7 +3366,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__presolve_8cc_source.html#l05046">5046</a> of file <a class="el" href="cp__model__presolve_8cc_source.html">cp_model_presolve.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__presolve_8cc_source.html#l05344">5344</a> of file <a class="el" href="cp__model__presolve_8cc_source.html">cp_model_presolve.cc</a>.</p>
 
 </div>
 </div>
@@ -3364,7 +3424,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00891">891</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00890">890</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
 
 </div>
 </div>
@@ -3408,7 +3468,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00853">853</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00852">852</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
 
 </div>
 </div>
@@ -3428,7 +3488,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pb__constraint_8cc_source.html#l00135">135</a> of file <a class="el" href="pb__constraint_8cc_source.html">pb_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pb__constraint_8cc_source.html#l00136">136</a> of file <a class="el" href="pb__constraint_8cc_source.html">pb_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -3448,7 +3508,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00151">151</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00152">152</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -3484,7 +3544,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00289">289</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00290">290</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -3520,7 +3580,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00335">335</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00336">336</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -3556,7 +3616,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00369">369</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00370">370</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -3576,7 +3636,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00243">243</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00244">244</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -3596,7 +3656,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00277">277</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00278">278</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -3640,7 +3700,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00862">862</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00861">861</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
 
 </div>
 </div>
@@ -3698,7 +3758,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00208">208</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00209">209</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -3786,7 +3846,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00905">905</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00904">904</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
 
 </div>
 </div>
@@ -3816,7 +3876,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00082">82</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00083">83</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -3912,7 +3972,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00121">121</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00122">122</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -3948,7 +4008,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pb__constraint_8cc_source.html#l00040">40</a> of file <a class="el" href="pb__constraint_8cc_source.html">pb_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pb__constraint_8cc_source.html#l00041">41</a> of file <a class="el" href="pb__constraint_8cc_source.html">pb_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -3984,7 +4044,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pb__constraint_8cc_source.html#l00159">159</a> of file <a class="el" href="pb__constraint_8cc_source.html">pb_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pb__constraint_8cc_source.html#l00160">160</a> of file <a class="el" href="pb__constraint_8cc_source.html">pb_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -4034,7 +4094,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00141">141</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00142">142</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -4064,7 +4124,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00506">506</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00524">524</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -4084,7 +4144,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00133">133</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00134">134</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -4120,7 +4180,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pb__constraint_8cc_source.html#l00177">177</a> of file <a class="el" href="pb__constraint_8cc_source.html">pb_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pb__constraint_8cc_source.html#l00178">178</a> of file <a class="el" href="pb__constraint_8cc_source.html">pb_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -4150,7 +4210,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00346">346</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00347">347</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -4192,7 +4252,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="simplification_8cc_source.html#l01012">1012</a> of file <a class="el" href="simplification_8cc_source.html">simplification.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simplification_8cc_source.html#l01013">1013</a> of file <a class="el" href="simplification_8cc_source.html">simplification.cc</a>.</p>
 
 </div>
 </div>
@@ -4228,7 +4288,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="simplification_8cc_source.html#l01047">1047</a> of file <a class="el" href="simplification_8cc_source.html">simplification.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simplification_8cc_source.html#l01048">1048</a> of file <a class="el" href="simplification_8cc_source.html">simplification.cc</a>.</p>
 
 </div>
 </div>
@@ -4620,7 +4680,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01401">1401</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01411">1411</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -4640,7 +4700,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00373">373</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00391">391</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -4670,7 +4730,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00273">273</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00274">274</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -4850,7 +4910,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00915">915</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00914">914</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -4880,7 +4940,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l01090">1090</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l01089">1089</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -4916,7 +4976,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00643">643</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00642">642</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -4952,7 +5012,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00387">387</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00388">388</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -4974,7 +5034,7 @@ Variables</h2></td></tr>
 
 <p>Returns a string with some statistics on the given <a class="el" href="namespaceoperations__research_1_1sat_1_1_cp_model_proto.html">CpModelProto</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l00151">151</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l00150">150</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -5007,7 +5067,7 @@ Variables</h2></td></tr>
 <p>Returns a string with some statistics on the solver response. </p>
 <p>If the second argument is false, we will just display NA for the objective value instead of zero. It is not really needed but it makes things a bit clearer to see that there is no objective. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l00283">283</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l00282">282</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -5026,7 +5086,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8cc_source.html#l01031">1031</a> of file <a class="el" href="cp__model_8pb_8cc_source.html">cp_model.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8cc_source.html#l01040">1040</a> of file <a class="el" href="cp__model_8pb_8cc_source.html">cp_model.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -5046,7 +5106,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8cc_source.html#l01035">1035</a> of file <a class="el" href="cp__model_8pb_8cc_source.html">cp_model.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8cc_source.html#l01044">1044</a> of file <a class="el" href="cp__model_8pb_8cc_source.html">cp_model.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -5142,7 +5202,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l01817">1817</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l01818">1818</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -5172,7 +5232,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l02410">2410</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l02411">2411</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -5214,7 +5274,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l02197">2197</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l02198">2198</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -5388,7 +5448,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00436">436</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00437">437</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -5430,7 +5490,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l01914">1914</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l01915">1915</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -5460,7 +5520,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l02330">2330</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l02331">2331</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -5490,7 +5550,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l02347">2347</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l02348">2348</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -5532,7 +5592,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l02216">2216</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l02217">2217</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -5574,7 +5634,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l01327">1327</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l01328">1328</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -5610,7 +5670,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l01423">1423</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l01424">1424</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -5742,7 +5802,49 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cumulative_8cc_source.html#l00154">154</a> of file <a class="el" href="cumulative_8cc_source.html">cumulative.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cumulative_8cc_source.html#l00153">153</a> of file <a class="el" href="cumulative_8cc_source.html">cumulative.cc</a>.</p>
+
+</div>
+</div>
+<a id="adf06bba7c940f142f85307687dcdf744"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adf06bba7c940f142f85307687dcdf744">&#9670;&nbsp;</a></span>CumulativeUsingReservoir()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::function&lt; void(<a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *)&gt; CumulativeUsingReservoir </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; IntervalVariable &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vars</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>demands</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html">AffineExpression</a>&#160;</td>
+          <td class="paramname"><em>capacity</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_scheduling_constraint_helper.html">SchedulingConstraintHelper</a> *&#160;</td>
+          <td class="paramname"><em>helper</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cumulative_8cc_source.html#l00234">234</a> of file <a class="el" href="cumulative_8cc_source.html">cumulative.cc</a>.</p>
 
 </div>
 </div>
@@ -5761,7 +5863,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8cc_source.html#l01004">1004</a> of file <a class="el" href="cp__model_8pb_8cc_source.html">cp_model.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8cc_source.html#l01013">1013</a> of file <a class="el" href="cp__model_8pb_8cc_source.html">cp_model.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -5781,7 +5883,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8cc_source.html#l01008">1008</a> of file <a class="el" href="cp__model_8pb_8cc_source.html">cp_model.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8cc_source.html#l01017">1017</a> of file <a class="el" href="cp__model_8pb_8cc_source.html">cp_model.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -5866,7 +5968,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8cc_source.html#l00977">977</a> of file <a class="el" href="cp__model_8pb_8cc_source.html">cp_model.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8cc_source.html#l00986">986</a> of file <a class="el" href="cp__model_8pb_8cc_source.html">cp_model.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -5886,7 +5988,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8cc_source.html#l00981">981</a> of file <a class="el" href="cp__model_8pb_8cc_source.html">cp_model.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8pb_8cc_source.html#l00990">990</a> of file <a class="el" href="cp__model_8pb_8cc_source.html">cp_model.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -6212,7 +6314,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="var__domination_8cc_source.html#l00677">677</a> of file <a class="el" href="var__domination_8cc_source.html">var_domination.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="var__domination_8cc_source.html#l00678">678</a> of file <a class="el" href="var__domination_8cc_source.html">var_domination.cc</a>.</p>
 
 </div>
 </div>
@@ -6242,7 +6344,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01333">1333</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01372">1372</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -6272,7 +6374,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00235">235</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00234">234</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -6344,7 +6446,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="simplification_8cc_source.html#l00978">978</a> of file <a class="el" href="simplification_8cc_source.html">simplification.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simplification_8cc_source.html#l00979">979</a> of file <a class="el" href="simplification_8cc_source.html">simplification.cc</a>.</p>
 
 </div>
 </div>
@@ -6384,7 +6486,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="disjunctive_8cc_source.html#l00153">153</a> of file <a class="el" href="disjunctive_8cc_source.html">disjunctive.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="disjunctive_8cc_source.html#l00155">155</a> of file <a class="el" href="disjunctive_8cc_source.html">disjunctive.cc</a>.</p>
 
 </div>
 </div>
@@ -6404,7 +6506,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="disjunctive_8cc_source.html#l00130">130</a> of file <a class="el" href="disjunctive_8cc_source.html">disjunctive.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="disjunctive_8cc_source.html#l00132">132</a> of file <a class="el" href="disjunctive_8cc_source.html">disjunctive.cc</a>.</p>
 
 </div>
 </div>
@@ -6424,7 +6526,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00188">188</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00189">189</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -6584,7 +6686,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00951">951</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00950">950</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
 
 </div>
 </div>
@@ -6688,7 +6790,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01507">1507</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01517">1517</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -6726,7 +6828,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00927">927</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00926">926</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
 
 </div>
 </div>
@@ -6882,7 +6984,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00877">877</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00876">876</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
 
 </div>
 </div>
@@ -6929,7 +7031,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l01016">1016</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l01015">1015</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
 
 </div>
 </div>
@@ -6948,12 +7050,12 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01960">1960</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01989">1989</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
 
 </div>
 </div>
-<a id="aaacbdd1f4563e651ab1b8e8eacabbbe3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaacbdd1f4563e651ab1b8e8eacabbbe3">&#9670;&nbsp;</a></span>ExpandCpModel()</h2>
+<a id="a4d700795b2500705ef3031ec994fe472"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d700795b2500705ef3031ec994fe472">&#9670;&nbsp;</a></span>ExpandCpModel()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -6961,24 +7063,14 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">void ExpandCpModel </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structoperations__research_1_1sat_1_1_presolve_options.html">PresolveOptions</a>&#160;</td>
-          <td class="paramname"><em>options</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html">PresolveContext</a> *&#160;</td>
-          <td class="paramname"><em>context</em>&#160;</td>
-        </tr>
-        <tr>
+          <td class="paramname"><em>context</em></td><td>)</td>
           <td></td>
-          <td>)</td>
-          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__expand_8cc_source.html#l01496">1496</a> of file <a class="el" href="cp__model__expand_8cc_source.html">cp_model_expand.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__expand_8cc_source.html#l01400">1400</a> of file <a class="el" href="cp__model__expand_8cc_source.html">cp_model_expand.cc</a>.</p>
 
 </div>
 </div>
@@ -7008,7 +7100,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="var__domination_8cc_source.html#l00864">864</a> of file <a class="el" href="var__domination_8cc_source.html">var_domination.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="var__domination_8cc_source.html#l00865">865</a> of file <a class="el" href="var__domination_8cc_source.html">var_domination.cc</a>.</p>
 
 </div>
 </div>
@@ -7044,7 +7136,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00050">50</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00051">51</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -7080,7 +7172,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00486">486</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00487">487</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -7110,7 +7202,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00349">349</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00350">350</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
 
 </div>
 </div>
@@ -7196,7 +7288,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__presolve_8cc_source.html#l05147">5147</a> of file <a class="el" href="cp__model__presolve_8cc_source.html">cp_model_presolve.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__presolve_8cc_source.html#l05445">5445</a> of file <a class="el" href="cp__model__presolve_8cc_source.html">cp_model_presolve.cc</a>.</p>
 
 </div>
 </div>
@@ -7226,7 +7318,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00670">670</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00671">671</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -7262,7 +7354,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00119">119</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00118">118</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -7460,7 +7552,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l01154">1154</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l01153">1153</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -7604,7 +7696,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01570">1570</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01580">1580</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -7652,7 +7744,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l02018">2018</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l02019">2019</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -7682,7 +7774,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00532">532</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00533">533</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -7718,7 +7810,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00475">475</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00472">472</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
@@ -7778,7 +7870,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00335">335</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00336">336</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -7808,7 +7900,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00347">347</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00348">348</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -7874,7 +7966,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01267">1267</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01286">1286</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -7910,7 +8002,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00615">615</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00616">616</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -7940,7 +8032,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00317">317</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00318">318</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -8004,7 +8096,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00249">249</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00250">250</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -8024,12 +8116,12 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00046">46</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00040">40</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
 
 </div>
 </div>
-<a id="a479e80325010226b59ddd629ebe1f695"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a479e80325010226b59ddd629ebe1f695">&#9670;&nbsp;</a></span>GetRINSNeighborhood()</h2>
+<a id="a51ed0b0b6cfc2ab552a349ba8b8fe5ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a51ed0b0b6cfc2ab552a349ba8b8fe5ee">&#9670;&nbsp;</a></span>GetRINSNeighborhood()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -8061,7 +8153,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceoperations__research.html#a6743e8c90bbb85a1017486ed70c7d29b">random_engine_t</a> *&#160;</td>
+          <td class="paramtype">absl::BitGenRef&#160;</td>
           <td class="paramname"><em>random</em>&#160;</td>
         </tr>
         <tr>
@@ -8102,7 +8194,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01685">1685</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01724">1724</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -8144,7 +8236,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00623">623</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00624">624</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -8220,7 +8312,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01478">1478</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01488">1488</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -8422,7 +8514,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01520">1520</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01530">1530</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -8460,7 +8552,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00920">920</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00919">919</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
 
 </div>
 </div>
@@ -8510,7 +8602,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01547">1547</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01557">1557</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -8762,7 +8854,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00360">360</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00361">361</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -8904,7 +8996,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01462">1462</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01472">1472</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -9318,7 +9410,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00171">171</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cuts_8cc_source.html#l00172">172</a> of file <a class="el" href="cuts_8cc_source.html">cuts.cc</a>.</p>
 
 </div>
 </div>
@@ -9338,7 +9430,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00390">390</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00391">391</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -9388,7 +9480,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00292">292</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00293">293</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -9418,7 +9510,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00302">302</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00303">303</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -9516,7 +9608,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01206">1206</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01225">1225</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -9546,7 +9638,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00259">259</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00260">260</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -9576,7 +9668,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l00969">969</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l00988">988</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -9606,7 +9698,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01663">1663</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01702">1702</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -9636,7 +9728,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l00955">955</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l00974">974</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -9666,7 +9758,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00219">219</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00220">220</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -9696,7 +9788,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l00946">946</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l00965">965</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -9726,7 +9818,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l00975">975</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l00994">994</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -9756,7 +9848,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01715">1715</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01754">1754</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -9858,7 +9950,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01740">1740</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01779">1779</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -9888,7 +9980,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01317">1317</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01336">1336</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -9918,7 +10010,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01565">1565</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01604">1604</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -9948,7 +10040,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01443">1443</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01482">1482</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -9978,7 +10070,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01391">1391</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01430">1430</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -10008,7 +10100,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01242">1242</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01261">1261</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -10038,7 +10130,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01292">1292</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01311">1311</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -10068,7 +10160,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01259">1259</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01278">1278</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -10098,7 +10190,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01233">1233</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01252">1252</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -10156,7 +10248,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01055">1055</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01074">1074</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -10224,7 +10316,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01278">1278</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01297">1297</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -10254,7 +10346,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01305">1305</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01324">1324</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -10284,7 +10376,37 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01300">1300</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01319">1319</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+
+</div>
+</div>
+<a id="a52207e9726840ee8ec0c88b45995d5b7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a52207e9726840ee8ec0c88b45995d5b7">&#9670;&nbsp;</a></span>LoadReservoirConstraint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void LoadReservoirConstraint </td>
+          <td>(</td>
+          <td class="paramtype">const ConstraintProto &amp;&#160;</td>
+          <td class="paramname"><em>ct</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *&#160;</td>
+          <td class="paramname"><em>m</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01349">1349</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -10314,7 +10436,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01727">1727</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01766">1766</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -10344,7 +10466,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01642">1642</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l01681">1681</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -10364,7 +10486,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__presolve_8cc_source.html#l04689">4689</a> of file <a class="el" href="cp__model__presolve_8cc_source.html">cp_model_presolve.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__presolve_8cc_source.html#l04981">4981</a> of file <a class="el" href="cp__model__presolve_8cc_source.html">cp_model_presolve.cc</a>.</p>
 
 </div>
 </div>
@@ -10400,7 +10522,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00269">269</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00270">270</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
 
 </div>
 </div>
@@ -10428,7 +10550,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01450">1450</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01460">1460</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -10504,7 +10626,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01492">1492</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01502">1502</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -10568,7 +10690,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00215">215</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00216">216</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -10588,7 +10710,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00635">635</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00636">636</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -10608,7 +10730,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00226">226</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00227">227</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -10696,7 +10818,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l00937">937</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l00956">956</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -10982,7 +11104,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00312">312</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00313">313</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -11057,7 +11179,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01395">1395</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01405">1405</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -11080,7 +11202,7 @@ Variables</h2></td></tr>
 <p>Creates a solution observer with the model with model.Add(NewFeasibleSolutionObserver([](response){...}));. </p>
 <p>The given function will be called on each improving feasible solution found during the search. For a non-optimization problem, if the option to find all solution was set, then this will be called on each new solution. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l00913">913</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l00912">912</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -11108,7 +11230,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01418">1418</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01428">1428</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -11146,7 +11268,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01409">1409</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01419">1419</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -11174,7 +11296,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01427">1427</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01437">1437</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -11538,7 +11660,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l00933">933</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l00932">932</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -11580,7 +11702,7 @@ Variables</h2></td></tr>
 <div class="fragment"><div class="line"><a class="code" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>-&gt;Add(<a class="code" href="namespaceoperations__research_1_1sat.html#a1684fe34484d78336d3cdac55ec6de57">NewSatParameters</a>(parameters_as_string_or_proto))</div>
 </div><!-- fragment --><p> before calling <code><a class="el" href="namespaceoperations__research_1_1sat.html#aa9299de04255b99318446500127d79e1" title="Solves the given CpModelProto.">SolveCpModel()</a></code>. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l00922">922</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l00921">921</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -11638,7 +11760,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00264">264</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00265">265</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -12052,7 +12174,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l01036">1036</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l01035">1035</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
 
 </div>
 </div>
@@ -12182,7 +12304,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00320">320</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00321">321</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -12270,7 +12392,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__postsolve_8cc_source.html#l00144">144</a> of file <a class="el" href="cp__model__postsolve_8cc_source.html">cp_model_postsolve.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__postsolve_8cc_source.html#l00151">151</a> of file <a class="el" href="cp__model__postsolve_8cc_source.html">cp_model_postsolve.cc</a>.</p>
 
 </div>
 </div>
@@ -12300,7 +12422,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__postsolve_8cc_source.html#l00118">118</a> of file <a class="el" href="cp__model__postsolve_8cc_source.html">cp_model_postsolve.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__postsolve_8cc_source.html#l00125">125</a> of file <a class="el" href="cp__model__postsolve_8cc_source.html">cp_model_postsolve.cc</a>.</p>
 
 </div>
 </div>
@@ -12378,12 +12500,12 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__postsolve_8cc_source.html#l00207">207</a> of file <a class="el" href="cp__model__postsolve_8cc_source.html">cp_model_postsolve.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__postsolve_8cc_source.html#l00214">214</a> of file <a class="el" href="cp__model__postsolve_8cc_source.html">cp_model_postsolve.cc</a>.</p>
 
 </div>
 </div>
-<a id="a73d5e96e46b72c71a4e21c78b504e567"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a73d5e96e46b72c71a4e21c78b504e567">&#9670;&nbsp;</a></span>PresolveCpModel()</h2>
+<a id="a5921e7fd881f9a30b1ccb2c90ed672c8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5921e7fd881f9a30b1ccb2c90ed672c8">&#9670;&nbsp;</a></span>PresolveCpModel()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -12391,12 +12513,6 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">bool PresolveCpModel </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="structoperations__research_1_1sat_1_1_presolve_options.html">PresolveOptions</a> &amp;&#160;</td>
-          <td class="paramname"><em>options</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_presolve_context.html">PresolveContext</a> *&#160;</td>
           <td class="paramname"><em>context</em>, </td>
         </tr>
@@ -12414,7 +12530,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__presolve_8cc_source.html#l04710">4710</a> of file <a class="el" href="cp__model__presolve_8cc_source.html">cp_model_presolve.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__presolve_8cc_source.html#l05002">5002</a> of file <a class="el" href="cp__model__presolve_8cc_source.html">cp_model_presolve.cc</a>.</p>
 
 </div>
 </div>
@@ -12498,7 +12614,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="simplification_8cc_source.html#l01128">1128</a> of file <a class="el" href="simplification_8cc_source.html">simplification.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simplification_8cc_source.html#l01129">1129</a> of file <a class="el" href="simplification_8cc_source.html">simplification.cc</a>.</p>
 
 </div>
 </div>
@@ -12528,7 +12644,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00825">825</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00826">826</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -12678,7 +12794,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2util_8h_source.html#l00076">76</a> of file <a class="el" href="sat_2util_8h_source.html">sat/util.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2util_8h_source.html#l00103">103</a> of file <a class="el" href="sat_2util_8h_source.html">sat/util.h</a>.</p>
 
 </div>
 </div>
@@ -12882,7 +12998,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00969">969</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00968">968</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
 
 </div>
 </div>
@@ -12926,7 +13042,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00985">985</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00984">984</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
 
 </div>
 </div>
@@ -12964,7 +13080,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00935">935</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00934">934</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
 
 </div>
 </div>
@@ -13168,7 +13284,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00182">182</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00181">181</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -13188,7 +13304,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00202">202</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00203">203</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -13351,7 +13467,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00666">666</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00685">685</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -13371,7 +13487,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00670">670</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00689">689</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -13456,7 +13572,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00716">716</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00735">735</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -13476,7 +13592,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00720">720</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00739">739</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -13561,7 +13677,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00693">693</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00712">712</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -13581,7 +13697,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00697">697</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00716">716</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -13666,7 +13782,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00641">641</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00660">660</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -13686,7 +13802,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00645">645</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00664">664</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -13771,7 +13887,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00841">841</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00860">860</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -13791,7 +13907,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00845">845</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00864">864</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -13876,7 +13992,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00764">764</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00783">783</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -13896,7 +14012,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00768">768</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00787">787</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -13981,7 +14097,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00787">787</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00806">806</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -14001,7 +14117,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00791">791</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00810">810</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -14086,7 +14202,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00614">614</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00633">633</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -14106,7 +14222,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00618">618</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00637">637</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -14191,7 +14307,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00737">737</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00756">756</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -14211,7 +14327,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00741">741</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00760">760</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -14296,7 +14412,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00810">810</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00829">829</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -14316,7 +14432,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00814">814</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00833">833</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -14401,7 +14517,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00591">591</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00610">610</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -14421,7 +14537,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00595">595</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8cc_source.html#l00614">614</a> of file <a class="el" href="sat__parameters_8pb_8cc_source.html">sat_parameters.pb.cc</a>.</p>
 
 </div>
 </div>
@@ -14577,7 +14693,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00149">149</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__constraint_8cc_source.html#l00150">150</a> of file <a class="el" href="linear__constraint_8cc_source.html">linear_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -14613,7 +14729,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00100">100</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l00099">99</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -14861,7 +14977,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00036">36</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00030">30</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -14891,7 +15007,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pb__constraint_8cc_source.html#l00147">147</a> of file <a class="el" href="pb__constraint_8cc_source.html">pb_constraint.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pb__constraint_8cc_source.html#l00148">148</a> of file <a class="el" href="pb__constraint_8cc_source.html">pb_constraint.cc</a>.</p>
 
 </div>
 </div>
@@ -14933,7 +15049,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="simplification_8cc_source.html#l00930">930</a> of file <a class="el" href="simplification_8cc_source.html">simplification.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simplification_8cc_source.html#l00931">931</a> of file <a class="el" href="simplification_8cc_source.html">simplification.cc</a>.</p>
 
 </div>
 </div>
@@ -15131,7 +15247,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__checker_8cc_source.html#l00989">989</a> of file <a class="el" href="cp__model__checker_8cc_source.html">cp_model_checker.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__checker_8cc_source.html#l01049">1049</a> of file <a class="el" href="cp__model__checker_8cc_source.html">cp_model_checker.cc</a>.</p>
 
 </div>
 </div>
@@ -15153,7 +15269,7 @@ Variables</h2></td></tr>
 
 <p>Solves the given <a class="el" href="namespaceoperations__research_1_1sat_1_1_cp_model_proto.html">CpModelProto</a> and returns an instance of <a class="el" href="namespaceoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l03206">3206</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l03201">3201</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -15191,7 +15307,7 @@ Variables</h2></td></tr>
 <li>model-&gt;Add(NewFeasibleSolutionObserver(observer)); </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l02878">2878</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l02872">2872</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -15297,7 +15413,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l01190">1190</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l01189">1189</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -15333,7 +15449,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l01168">1168</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat_2lp__utils_8cc_source.html#l01167">1167</a> of file <a class="el" href="sat_2lp__utils_8cc_source.html">sat/lp_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -15533,7 +15649,7 @@ Variables</h2></td></tr>
 
 <p>Solves the given <a class="el" href="namespaceoperations__research_1_1sat_1_1_cp_model_proto.html">CpModelProto</a> with the given parameters. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l03211">3211</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l03206">3206</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -15565,7 +15681,7 @@ Variables</h2></td></tr>
 
 <p>Solves the given <a class="el" href="namespaceoperations__research_1_1sat_1_1_cp_model_proto.html">CpModelProto</a> with the given sat parameters as string in JSon format, and returns an instance of <a class="el" href="namespaceoperations__research_1_1sat_1_1_cp_solver_response.html">CpSolverResponse</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l03219">3219</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l03214">3214</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -15607,7 +15723,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="simplification_8cc_source.html#l01246">1246</a> of file <a class="el" href="simplification_8cc_source.html">simplification.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simplification_8cc_source.html#l01247">1247</a> of file <a class="el" href="simplification_8cc_source.html">simplification.cc</a>.</p>
 
 </div>
 </div>
@@ -15915,7 +16031,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00475">475</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00476">476</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -16369,7 +16485,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01456">1456</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01466">1466</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -16389,7 +16505,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00444">444</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00462">462</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -16409,7 +16525,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00429">429</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00447">447</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -16439,7 +16555,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00307">307</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00308">308</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -16459,7 +16575,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00131">131</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="boolean__problem_8cc_source.html#l00132">132</a> of file <a class="el" href="boolean__problem_8cc_source.html">boolean_problem.cc</a>.</p>
 
 </div>
 </div>
@@ -16479,7 +16595,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__checker_8cc_source.html#l00409">409</a> of file <a class="el" href="cp__model__checker_8cc_source.html">cp_model_checker.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__checker_8cc_source.html#l00453">453</a> of file <a class="el" href="cp__model__checker_8cc_source.html">cp_model_checker.cc</a>.</p>
 
 </div>
 </div>
@@ -16507,7 +16623,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l01004">1004</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l01003">1003</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16535,7 +16651,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01470">1470</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01480">1480</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -16563,7 +16679,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00995">995</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00994">994</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
 
 </div>
 </div>
@@ -17544,7 +17660,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00034">34</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00036">36</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -17568,7 +17684,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00035">35</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00037">37</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -17592,7 +17708,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00033">33</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="presolve__context_8h_source.html#l00035">35</a> of file <a class="el" href="presolve__context_8h_source.html">presolve_context.h</a>.</p>
 
 </div>
 </div>
@@ -17608,7 +17724,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00053">53</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__solver_8h_source.html#l00052">52</a> of file <a class="el" href="sat__solver_8h_source.html">sat_solver.h</a>.</p>
 
 </div>
 </div>
@@ -18406,7 +18522,7 @@ Variables</h2></td></tr>
 </div>
 </div><!-- contents -->
 </div><!-- doc-content -->
-<div class="ttc" id="anamespaceoperations__research_1_1sat_html_a1684fe34484d78336d3cdac55ec6de57"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a1684fe34484d78336d3cdac55ec6de57">operations_research::sat::NewSatParameters</a></div><div class="ttdeci">std::function&lt; SatParameters(Model *)&gt; NewSatParameters(const std::string &amp;params)</div><div class="ttdoc">Creates parameters for the solver, which you can add to the model with.</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__solver_8cc_source.html#l00922">cp_model_solver.cc:922</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_1_1sat_html_a1684fe34484d78336d3cdac55ec6de57"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a1684fe34484d78336d3cdac55ec6de57">operations_research::sat::NewSatParameters</a></div><div class="ttdeci">std::function&lt; SatParameters(Model *)&gt; NewSatParameters(const std::string &amp;params)</div><div class="ttdoc">Creates parameters for the solver, which you can add to the model with.</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__solver_8cc_source.html#l00921">cp_model_solver.cc:921</a></div></div>
 <div class="ttc" id="agurobi__interface_8cc_html_a0728f23c9a47655d38e0bf1a2f200bcf"><div class="ttname"><a href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a></div><div class="ttdeci">GRBmodel * model</div><div class="ttdef"><b>Definition:</b> <a href="gurobi__interface_8cc_source.html#l00269">gurobi_interface.cc:269</a></div></div>
 <!-- HTML footer for doxygen 1.8.18-->
 <!-- start footer part -->

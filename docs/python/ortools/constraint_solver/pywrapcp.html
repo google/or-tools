@@ -5090,7 +5090,7 @@ class RoutingModel(object):
 
     def HasHardTypeIncompatibilities(self) -&gt; &#34;bool&#34;:
         r&#34;&#34;&#34;
-        Returns true if any hard (resp. temporal) type incompatibilities have
+        Returns true iff any hard (resp. temporal) type incompatibilities have
         been added to the model.
         &#34;&#34;&#34;
         return _pywrapcp.RoutingModel_HasHardTypeIncompatibilities(self)
@@ -5579,7 +5579,7 @@ class RoutingModel(object):
         r&#34;&#34;&#34; Returns true if &#39;index&#39; represents the last node of a route.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_IsEnd(self, index)
 
-    def VehicleIndex(self, index: &#34;int&#34;) -&gt; &#34;int&#34;:
+    def VehicleIndex(self, index: &#34;int64&#34;) -&gt; &#34;int&#34;:
         r&#34;&#34;&#34;
         Returns the vehicle of the given start/end index, and -1 if the given
         index is not a vehicle start/end.
@@ -16323,7 +16323,7 @@ and end nodes) + number of non-start or end nodes.</p></div>
 
     def HasHardTypeIncompatibilities(self) -&gt; &#34;bool&#34;:
         r&#34;&#34;&#34;
-        Returns true if any hard (resp. temporal) type incompatibilities have
+        Returns true iff any hard (resp. temporal) type incompatibilities have
         been added to the model.
         &#34;&#34;&#34;
         return _pywrapcp.RoutingModel_HasHardTypeIncompatibilities(self)
@@ -16812,7 +16812,7 @@ and end nodes) + number of non-start or end nodes.</p></div>
         r&#34;&#34;&#34; Returns true if &#39;index&#39; represents the last node of a route.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_IsEnd(self, index)
 
-    def VehicleIndex(self, index: &#34;int&#34;) -&gt; &#34;int&#34;:
+    def VehicleIndex(self, index: &#34;int64&#34;) -&gt; &#34;int&#34;:
         r&#34;&#34;&#34;
         Returns the vehicle of the given start/end index, and -1 if the given
         index is not a vehicle start/end.
@@ -18950,7 +18950,7 @@ type.</p></div>
 <span>def <span class="ident">HasHardTypeIncompatibilities</span></span>(<span>self) ‑> bool</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Returns true if any hard (resp. temporal) type incompatibilities have
+<div class="desc"><p>Returns true iff any hard (resp. temporal) type incompatibilities have
 been added to the model.</p></div>
 <details class="source">
 <summary>
@@ -18958,7 +18958,7 @@ been added to the model.</p></div>
 </summary>
 <pre><code class="python">def HasHardTypeIncompatibilities(self) -&gt; &#34;bool&#34;:
     r&#34;&#34;&#34;
-    Returns true if any hard (resp. temporal) type incompatibilities have
+    Returns true iff any hard (resp. temporal) type incompatibilities have
     been added to the model.
     &#34;&#34;&#34;
     return _pywrapcp.RoutingModel_HasHardTypeIncompatibilities(self)</code></pre>
@@ -19994,7 +19994,7 @@ vehicle.</p></div>
 </details>
 </dd>
 <dt id="pywrapcp.RoutingModel.VehicleIndex"><code class="name flex">
-<span>def <span class="ident">VehicleIndex</span></span>(<span>self, index: int) ‑> int</span>
+<span>def <span class="ident">VehicleIndex</span></span>(<span>self, index: int64) ‑> int</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns the vehicle of the given start/end index, and -1 if the given
@@ -20003,7 +20003,7 @@ index is not a vehicle start/end.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def VehicleIndex(self, index: &#34;int&#34;) -&gt; &#34;int&#34;:
+<pre><code class="python">def VehicleIndex(self, index: &#34;int64&#34;) -&gt; &#34;int&#34;:
     r&#34;&#34;&#34;
     Returns the vehicle of the given start/end index, and -1 if the given
     index is not a vehicle start/end.

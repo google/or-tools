@@ -94,7 +94,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_global_c
 <div class="textblock"><p>Filter-based decision builder which builds a solution by inserting nodes at their cheapest position on any route; potentially several routes can be built in parallel. </p>
 <p>The cost of a position is computed from an arc-based cost callback. The node selected for insertion is the one which minimizes insertion cost. If a non null penalty evaluator is passed, making nodes unperformed is also taken into account with the corresponding penalty cost. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03181">3181</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03184">3184</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
@@ -173,6 +173,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:a95f347f8419578337202450136ca78be"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_filtered_heuristic.html#a95f347f8419578337202450136ca78be">StopSearch</a> () override</td></tr>
 <tr class="memdesc:a95f347f8419578337202450136ca78be"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the search must be stopped.  <a href="classoperations__research_1_1_routing_filtered_heuristic.html#a95f347f8419578337202450136ca78be">More...</a><br /></td></tr>
 <tr class="separator:a95f347f8419578337202450136ca78be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aced1b7a7efd9a0ed004335f84b20cd58"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_filtered_heuristic.html#aced1b7a7efd9a0ed004335f84b20cd58">VehicleIsEmpty</a> (int vehicle) const</td></tr>
+<tr class="separator:aced1b7a7efd9a0ed004335f84b20cd58"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7ae7a2033e2a22ad1dedbf2f3ec8745f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_heuristic.html#a7ae7a2033e2a22ad1dedbf2f3ec8745f">ResetSolution</a> ()</td></tr>
 <tr class="memdesc:a7ae7a2033e2a22ad1dedbf2f3ec8745f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resets the data members for a new solution.  <a href="classoperations__research_1_1_int_var_filtered_heuristic.html#a7ae7a2033e2a22ad1dedbf2f3ec8745f">More...</a><br /></td></tr>
 <tr class="separator:a7ae7a2033e2a22ad1dedbf2f3ec8745f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -228,7 +230,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03123">3123</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03126">3126</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -252,7 +254,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03113">3113</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03116">3116</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -328,7 +330,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03210">3210</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03213">3213</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -586,7 +588,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1_int_var_filtered_heuristic.html#a8eba5d533fa9df4617c1868d3ec2afc4">IntVarFilteredHeuristic</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03212">3212</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03215">3215</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1197,6 +1199,34 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="aced1b7a7efd9a0ed004335f84b20cd58"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aced1b7a7efd9a0ed004335f84b20cd58">&#9670;&nbsp;</a></span>VehicleIsEmpty()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool VehicleIsEmpty </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>vehicle</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03093">3093</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="a6743122cc2fc4818b402ba3d484c6ea4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6743122cc2fc4818b402ba3d484c6ea4">&#9670;&nbsp;</a></span>assignment_</h2>
@@ -1242,7 +1272,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03170">3170</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03173">3173</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1266,7 +1296,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03171">3171</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03174">3174</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

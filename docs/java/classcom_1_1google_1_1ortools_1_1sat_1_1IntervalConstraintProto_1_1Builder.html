@@ -91,11 +91,12 @@ $(document).ready(function(){initNavTree('classcom_1_1google_1_1ortools_1_1sat_1
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre>
-This "special" constraint not only enforces (start + size == end) but can
-also be referred by other constraints using this "interval" concept.
+This "special" constraint not only enforces (start + size == end) and (size
+&gt;= 0) but can also be referred by other constraints using this "interval"
+concept.
 </pre><p>Protobuf type</p><div class="fragment"><div class="line">operations_research.sat.IntervalConstraintProto </div>
 </div><!-- fragment --> 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00321">321</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00536">536</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -156,6 +157,70 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af92421b4f2fb5a8215379711ee898e6f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#af92421b4f2fb5a8215379711ee898e6f">clearSize</a> ()</td></tr>
 <tr class="memdesc:af92421b4f2fb5a8215379711ee898e6f"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>int32 size = 3;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#af92421b4f2fb5a8215379711ee898e6f">More...</a><br /></td></tr>
 <tr class="separator:af92421b4f2fb5a8215379711ee898e6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9689ee83fce5a1a003e7364f62d85a59"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a9689ee83fce5a1a003e7364f62d85a59">hasStartView</a> ()</td></tr>
+<tr class="separator:a9689ee83fce5a1a003e7364f62d85a59"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3dac1669cc9a094ddf8eca466295a3a2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a3dac1669cc9a094ddf8eca466295a3a2">getStartView</a> ()</td></tr>
+<tr class="separator:a3dac1669cc9a094ddf8eca466295a3a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3543aea1a5efeaa2be45b58acc10206d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a3543aea1a5efeaa2be45b58acc10206d">setStartView</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a> value)</td></tr>
+<tr class="separator:a3543aea1a5efeaa2be45b58acc10206d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa254acc7db4363f57ad2c656219ae76c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#aa254acc7db4363f57ad2c656219ae76c">setStartView</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html">com.google.ortools.sat.LinearExpressionProto.Builder</a> builderForValue)</td></tr>
+<tr class="separator:aa254acc7db4363f57ad2c656219ae76c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aebe73c191d97bd8252c81cf829ffdbfc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#aebe73c191d97bd8252c81cf829ffdbfc">mergeStartView</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a> value)</td></tr>
+<tr class="separator:aebe73c191d97bd8252c81cf829ffdbfc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a0a8bbb12b640a208717ce46ac2e91e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a6a0a8bbb12b640a208717ce46ac2e91e">clearStartView</a> ()</td></tr>
+<tr class="separator:a6a0a8bbb12b640a208717ce46ac2e91e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af54d27a52d7eb46f01bfd6d467f6e947"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html">com.google.ortools.sat.LinearExpressionProto.Builder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#af54d27a52d7eb46f01bfd6d467f6e947">getStartViewBuilder</a> ()</td></tr>
+<tr class="separator:af54d27a52d7eb46f01bfd6d467f6e947"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d5a4ac7bfad177389c85c7c2066ed1e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProtoOrBuilder.html">com.google.ortools.sat.LinearExpressionProtoOrBuilder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a4d5a4ac7bfad177389c85c7c2066ed1e">getStartViewOrBuilder</a> ()</td></tr>
+<tr class="separator:a4d5a4ac7bfad177389c85c7c2066ed1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad04b65b311ac0cf56524e59d78feab00"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#ad04b65b311ac0cf56524e59d78feab00">hasEndView</a> ()</td></tr>
+<tr class="memdesc:ad04b65b311ac0cf56524e59d78feab00"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>.operations_research.sat.LinearExpressionProto end_view = 5;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#ad04b65b311ac0cf56524e59d78feab00">More...</a><br /></td></tr>
+<tr class="separator:ad04b65b311ac0cf56524e59d78feab00"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf874a87556377c95298e4d734e692e7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#abf874a87556377c95298e4d734e692e7">getEndView</a> ()</td></tr>
+<tr class="memdesc:abf874a87556377c95298e4d734e692e7"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>.operations_research.sat.LinearExpressionProto end_view = 5;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#abf874a87556377c95298e4d734e692e7">More...</a><br /></td></tr>
+<tr class="separator:abf874a87556377c95298e4d734e692e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad49d3cc41cca28c1541b5551d97c16ea"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#ad49d3cc41cca28c1541b5551d97c16ea">setEndView</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a> value)</td></tr>
+<tr class="memdesc:ad49d3cc41cca28c1541b5551d97c16ea"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>.operations_research.sat.LinearExpressionProto end_view = 5;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#ad49d3cc41cca28c1541b5551d97c16ea">More...</a><br /></td></tr>
+<tr class="separator:ad49d3cc41cca28c1541b5551d97c16ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a67feeb974e5f7c9ce3f23a08e875fa4f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a67feeb974e5f7c9ce3f23a08e875fa4f">setEndView</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html">com.google.ortools.sat.LinearExpressionProto.Builder</a> builderForValue)</td></tr>
+<tr class="memdesc:a67feeb974e5f7c9ce3f23a08e875fa4f"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>.operations_research.sat.LinearExpressionProto end_view = 5;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a67feeb974e5f7c9ce3f23a08e875fa4f">More...</a><br /></td></tr>
+<tr class="separator:a67feeb974e5f7c9ce3f23a08e875fa4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a75c9fdc066c3b6efb70a883208207781"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a75c9fdc066c3b6efb70a883208207781">mergeEndView</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a> value)</td></tr>
+<tr class="memdesc:a75c9fdc066c3b6efb70a883208207781"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>.operations_research.sat.LinearExpressionProto end_view = 5;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a75c9fdc066c3b6efb70a883208207781">More...</a><br /></td></tr>
+<tr class="separator:a75c9fdc066c3b6efb70a883208207781"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3a53ebf69a90425e58fd010c19482d1d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a3a53ebf69a90425e58fd010c19482d1d">clearEndView</a> ()</td></tr>
+<tr class="memdesc:a3a53ebf69a90425e58fd010c19482d1d"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>.operations_research.sat.LinearExpressionProto end_view = 5;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a3a53ebf69a90425e58fd010c19482d1d">More...</a><br /></td></tr>
+<tr class="separator:a3a53ebf69a90425e58fd010c19482d1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4fe15cae77d58e148ddb277470f7a41e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html">com.google.ortools.sat.LinearExpressionProto.Builder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a4fe15cae77d58e148ddb277470f7a41e">getEndViewBuilder</a> ()</td></tr>
+<tr class="memdesc:a4fe15cae77d58e148ddb277470f7a41e"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>.operations_research.sat.LinearExpressionProto end_view = 5;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a4fe15cae77d58e148ddb277470f7a41e">More...</a><br /></td></tr>
+<tr class="separator:a4fe15cae77d58e148ddb277470f7a41e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a05f47ebf82df0dc897a16201357ddd99"><td class="memItemLeft" align="right" valign="top"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProtoOrBuilder.html">com.google.ortools.sat.LinearExpressionProtoOrBuilder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a05f47ebf82df0dc897a16201357ddd99">getEndViewOrBuilder</a> ()</td></tr>
+<tr class="memdesc:a05f47ebf82df0dc897a16201357ddd99"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>.operations_research.sat.LinearExpressionProto end_view = 5;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a05f47ebf82df0dc897a16201357ddd99">More...</a><br /></td></tr>
+<tr class="separator:a05f47ebf82df0dc897a16201357ddd99"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c77f162045727b32364f4fafd556862"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a4c77f162045727b32364f4fafd556862">hasSizeView</a> ()</td></tr>
+<tr class="memdesc:a4c77f162045727b32364f4fafd556862"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>.operations_research.sat.LinearExpressionProto size_view = 6;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a4c77f162045727b32364f4fafd556862">More...</a><br /></td></tr>
+<tr class="separator:a4c77f162045727b32364f4fafd556862"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac6a9501a689f77e5d176aa1f308164aa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#ac6a9501a689f77e5d176aa1f308164aa">getSizeView</a> ()</td></tr>
+<tr class="memdesc:ac6a9501a689f77e5d176aa1f308164aa"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>.operations_research.sat.LinearExpressionProto size_view = 6;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#ac6a9501a689f77e5d176aa1f308164aa">More...</a><br /></td></tr>
+<tr class="separator:ac6a9501a689f77e5d176aa1f308164aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5a3a98a429ac27501862463e518ac1f2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a5a3a98a429ac27501862463e518ac1f2">setSizeView</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a> value)</td></tr>
+<tr class="memdesc:a5a3a98a429ac27501862463e518ac1f2"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>.operations_research.sat.LinearExpressionProto size_view = 6;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a5a3a98a429ac27501862463e518ac1f2">More...</a><br /></td></tr>
+<tr class="separator:a5a3a98a429ac27501862463e518ac1f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6101a3dae48d689a79ede5dab1720028"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a6101a3dae48d689a79ede5dab1720028">setSizeView</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html">com.google.ortools.sat.LinearExpressionProto.Builder</a> builderForValue)</td></tr>
+<tr class="memdesc:a6101a3dae48d689a79ede5dab1720028"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>.operations_research.sat.LinearExpressionProto size_view = 6;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a6101a3dae48d689a79ede5dab1720028">More...</a><br /></td></tr>
+<tr class="separator:a6101a3dae48d689a79ede5dab1720028"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5da9b1db14b92ae9bad86ba39add7ef8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a5da9b1db14b92ae9bad86ba39add7ef8">mergeSizeView</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a> value)</td></tr>
+<tr class="memdesc:a5da9b1db14b92ae9bad86ba39add7ef8"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>.operations_research.sat.LinearExpressionProto size_view = 6;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a5da9b1db14b92ae9bad86ba39add7ef8">More...</a><br /></td></tr>
+<tr class="separator:a5da9b1db14b92ae9bad86ba39add7ef8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ace82752085fec1fdec98cbfa032bb0d1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#ace82752085fec1fdec98cbfa032bb0d1">clearSizeView</a> ()</td></tr>
+<tr class="memdesc:ace82752085fec1fdec98cbfa032bb0d1"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>.operations_research.sat.LinearExpressionProto size_view = 6;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#ace82752085fec1fdec98cbfa032bb0d1">More...</a><br /></td></tr>
+<tr class="separator:ace82752085fec1fdec98cbfa032bb0d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4fbafd4f52998e0c15fdd4f8a207f095"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html">com.google.ortools.sat.LinearExpressionProto.Builder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a4fbafd4f52998e0c15fdd4f8a207f095">getSizeViewBuilder</a> ()</td></tr>
+<tr class="memdesc:a4fbafd4f52998e0c15fdd4f8a207f095"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>.operations_research.sat.LinearExpressionProto size_view = 6;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a4fbafd4f52998e0c15fdd4f8a207f095">More...</a><br /></td></tr>
+<tr class="separator:a4fbafd4f52998e0c15fdd4f8a207f095"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac9be4c9bcff274cb71ff54acf4428952"><td class="memItemLeft" align="right" valign="top"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProtoOrBuilder.html">com.google.ortools.sat.LinearExpressionProtoOrBuilder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#ac9be4c9bcff274cb71ff54acf4428952">getSizeViewOrBuilder</a> ()</td></tr>
+<tr class="memdesc:ac9be4c9bcff274cb71ff54acf4428952"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>.operations_research.sat.LinearExpressionProto size_view = 6;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#ac9be4c9bcff274cb71ff54acf4428952">More...</a><br /></td></tr>
+<tr class="separator:ac9be4c9bcff274cb71ff54acf4428952"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac316af0298e9645fc3e5159b0d4464e1"><td class="memItemLeft" align="right" valign="top">.lang.Override final <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#ac316af0298e9645fc3e5159b0d4464e1">setUnknownFields</a> (final com.google.protobuf.UnknownFieldSet unknownFields)</td></tr>
 <tr class="separator:ac316af0298e9645fc3e5159b0d4464e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3e05e91aa90c10970a9aafb7b561e218"><td class="memItemLeft" align="right" valign="top">.lang.Override final <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html#a3e05e91aa90c10970a9aafb7b561e218">mergeUnknownFields</a> (final com.google.protobuf.UnknownFieldSet unknownFields)</td></tr>
@@ -198,7 +263,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00422">422</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00670">670</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -217,7 +282,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00377">377</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00610">610</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -236,7 +301,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00386">386</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00619">619</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -255,7 +320,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00354">354</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00569">569</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -277,7 +342,28 @@ Protected Member Functions</h2></td></tr>
 <p><code>int32 end = 2;</code> </p>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00532">532</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00789">789</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a3a53ebf69a90425e58fd010c19482d1d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3a53ebf69a90425e58fd010c19482d1d">&#9670;&nbsp;</a></span>clearEndView()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a> clearEndView </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>.operations_research.sat.LinearExpressionProto end_view = 5;</code> </p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01162">1162</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -297,7 +383,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00406">406</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00654">654</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -317,7 +403,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00411">411</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00659">659</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -339,7 +425,28 @@ Protected Member Functions</h2></td></tr>
 <p><code>int32 size = 3;</code> </p>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00563">563</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00820">820</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="ace82752085fec1fdec98cbfa032bb0d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ace82752085fec1fdec98cbfa032bb0d1">&#9670;&nbsp;</a></span>clearSizeView()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a> clearSizeView </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>.operations_research.sat.LinearExpressionProto size_view = 6;</code> </p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01281">1281</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -361,7 +468,41 @@ Protected Member Functions</h2></td></tr>
 <p><code>int32 start = 1;</code> </p>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00501">501</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00758">758</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a6a0a8bbb12b640a208717ce46ac2e91e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a0a8bbb12b640a208717ce46ac2e91e">&#9670;&nbsp;</a></span>clearStartView()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a> clearStartView </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+EXPERIMENTAL: This will become the new way to specify an interval.
+Depending on the parameters, the presolve will convert the old way to the
+new way. Do not forget to add an associated linear constraint if you use
+this directly.
+If any of this field is set, then all must be set and the ones above will
+be ignored.
+IMPORTANT: For now, this constraint do not enforce any relations on the
+view, and a linear constraint must be added together with this to enforce
+enforcement =&gt; start_view + size_view == end_view. An enforcement =&gt;
+size_view &gt;=0 might also be needed.
+IMPORTANT: For now, we just support affine relation. We could easily
+create an intermediate variable to support full linear expression, but this
+isn't done currently.
+</pre><p><code>.operations_research.sat.LinearExpressionProto start_view = 4;</code> </p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00995">995</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -380,7 +521,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00396">396</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00644">644</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -399,7 +540,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00372">372</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00605">605</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -426,7 +567,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00326">326</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00541">541</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -445,7 +586,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00367">367</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00600">600</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -469,7 +610,75 @@ Protected Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html#aa624ed70693111a0f855a86846d0028e">IntervalConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00514">514</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00771">771</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="abf874a87556377c95298e4d734e692e7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abf874a87556377c95298e4d734e692e7">&#9670;&nbsp;</a></span>getEndView()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a> getEndView </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>.operations_research.sat.LinearExpressionProto end_view = 5;</code> </p>
+<dl class="section return"><dt>Returns</dt><dd>The endView. </dd></dl>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html#abf874a87556377c95298e4d734e692e7">IntervalConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01104">1104</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a4fe15cae77d58e148ddb277470f7a41e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4fe15cae77d58e148ddb277470f7a41e">&#9670;&nbsp;</a></span>getEndViewBuilder()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html">com.google.ortools.sat.LinearExpressionProto.Builder</a> getEndViewBuilder </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>.operations_research.sat.LinearExpressionProto end_view = 5;</code> </p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01176">1176</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a05f47ebf82df0dc897a16201357ddd99"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a05f47ebf82df0dc897a16201357ddd99">&#9670;&nbsp;</a></span>getEndViewOrBuilder()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProtoOrBuilder.html">com.google.ortools.sat.LinearExpressionProtoOrBuilder</a> getEndViewOrBuilder </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>.operations_research.sat.LinearExpressionProto end_view = 5;</code> </p>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html#a05f47ebf82df0dc897a16201357ddd99">IntervalConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01184">1184</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -493,7 +702,75 @@ Protected Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html#a3c4029b904a61a9873e6d12785ce19a1">IntervalConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00545">545</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00802">802</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="ac6a9501a689f77e5d176aa1f308164aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac6a9501a689f77e5d176aa1f308164aa">&#9670;&nbsp;</a></span>getSizeView()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a> getSizeView </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>.operations_research.sat.LinearExpressionProto size_view = 6;</code> </p>
+<dl class="section return"><dt>Returns</dt><dd>The sizeView. </dd></dl>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html#ac6a9501a689f77e5d176aa1f308164aa">IntervalConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01223">1223</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a4fbafd4f52998e0c15fdd4f8a207f095"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4fbafd4f52998e0c15fdd4f8a207f095">&#9670;&nbsp;</a></span>getSizeViewBuilder()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html">com.google.ortools.sat.LinearExpressionProto.Builder</a> getSizeViewBuilder </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>.operations_research.sat.LinearExpressionProto size_view = 6;</code> </p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01295">1295</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="ac9be4c9bcff274cb71ff54acf4428952"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac9be4c9bcff274cb71ff54acf4428952">&#9670;&nbsp;</a></span>getSizeViewOrBuilder()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProtoOrBuilder.html">com.google.ortools.sat.LinearExpressionProtoOrBuilder</a> getSizeViewOrBuilder </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>.operations_research.sat.LinearExpressionProto size_view = 6;</code> </p>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html#ac9be4c9bcff274cb71ff54acf4428952">IntervalConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01303">1303</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -517,7 +794,197 @@ Protected Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html#a1408176a248f41dbe8735bd3009e0cf5">IntervalConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00483">483</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00740">740</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a3dac1669cc9a094ddf8eca466295a3a2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3dac1669cc9a094ddf8eca466295a3a2">&#9670;&nbsp;</a></span>getStartView()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a> getStartView </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+EXPERIMENTAL: This will become the new way to specify an interval.
+Depending on the parameters, the presolve will convert the old way to the
+new way. Do not forget to add an associated linear constraint if you use
+this directly.
+If any of this field is set, then all must be set and the ones above will
+be ignored.
+IMPORTANT: For now, this constraint do not enforce any relations on the
+view, and a linear constraint must be added together with this to enforce
+enforcement =&gt; start_view + size_view == end_view. An enforcement =&gt;
+size_view &gt;=0 might also be needed.
+IMPORTANT: For now, we just support affine relation. We could easily
+create an intermediate variable to support full linear expression, but this
+isn't done currently.
+</pre><p><code>.operations_research.sat.LinearExpressionProto start_view = 4;</code> </p><dl class="section return"><dt>Returns</dt><dd>The startView. </dd></dl>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html#a3dac1669cc9a094ddf8eca466295a3a2">IntervalConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00873">873</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="af54d27a52d7eb46f01bfd6d467f6e947"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af54d27a52d7eb46f01bfd6d467f6e947">&#9670;&nbsp;</a></span>getStartViewBuilder()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html">com.google.ortools.sat.LinearExpressionProto.Builder</a> getStartViewBuilder </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+EXPERIMENTAL: This will become the new way to specify an interval.
+Depending on the parameters, the presolve will convert the old way to the
+new way. Do not forget to add an associated linear constraint if you use
+this directly.
+If any of this field is set, then all must be set and the ones above will
+be ignored.
+IMPORTANT: For now, this constraint do not enforce any relations on the
+view, and a linear constraint must be added together with this to enforce
+enforcement =&gt; start_view + size_view == end_view. An enforcement =&gt;
+size_view &gt;=0 might also be needed.
+IMPORTANT: For now, we just support affine relation. We could easily
+create an intermediate variable to support full linear expression, but this
+isn't done currently.
+</pre><p><code>.operations_research.sat.LinearExpressionProto start_view = 4;</code> </p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01025">1025</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a4d5a4ac7bfad177389c85c7c2066ed1e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d5a4ac7bfad177389c85c7c2066ed1e">&#9670;&nbsp;</a></span>getStartViewOrBuilder()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProtoOrBuilder.html">com.google.ortools.sat.LinearExpressionProtoOrBuilder</a> getStartViewOrBuilder </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+EXPERIMENTAL: This will become the new way to specify an interval.
+Depending on the parameters, the presolve will convert the old way to the
+new way. Do not forget to add an associated linear constraint if you use
+this directly.
+If any of this field is set, then all must be set and the ones above will
+be ignored.
+IMPORTANT: For now, this constraint do not enforce any relations on the
+view, and a linear constraint must be added together with this to enforce
+enforcement =&gt; start_view + size_view == end_view. An enforcement =&gt;
+size_view &gt;=0 might also be needed.
+IMPORTANT: For now, we just support affine relation. We could easily
+create an intermediate variable to support full linear expression, but this
+isn't done currently.
+</pre><p><code>.operations_research.sat.LinearExpressionProto start_view = 4;</code> </p>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html#a4d5a4ac7bfad177389c85c7c2066ed1e">IntervalConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01049">1049</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="ad04b65b311ac0cf56524e59d78feab00"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad04b65b311ac0cf56524e59d78feab00">&#9670;&nbsp;</a></span>hasEndView()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean hasEndView </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>.operations_research.sat.LinearExpressionProto end_view = 5;</code> </p>
+<dl class="section return"><dt>Returns</dt><dd>Whether the endView field is set. </dd></dl>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html#ad04b65b311ac0cf56524e59d78feab00">IntervalConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01097">1097</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a4c77f162045727b32364f4fafd556862"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4c77f162045727b32364f4fafd556862">&#9670;&nbsp;</a></span>hasSizeView()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean hasSizeView </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>.operations_research.sat.LinearExpressionProto size_view = 6;</code> </p>
+<dl class="section return"><dt>Returns</dt><dd>Whether the sizeView field is set. </dd></dl>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html#a4c77f162045727b32364f4fafd556862">IntervalConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01216">1216</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a9689ee83fce5a1a003e7364f62d85a59"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9689ee83fce5a1a003e7364f62d85a59">&#9670;&nbsp;</a></span>hasStartView()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean hasStartView </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+EXPERIMENTAL: This will become the new way to specify an interval.
+Depending on the parameters, the presolve will convert the old way to the
+new way. Do not forget to add an associated linear constraint if you use
+this directly.
+If any of this field is set, then all must be set and the ones above will
+be ignored.
+IMPORTANT: For now, this constraint do not enforce any relations on the
+view, and a linear constraint must be added together with this to enforce
+enforcement =&gt; start_view + size_view == end_view. An enforcement =&gt;
+size_view &gt;=0 might also be needed.
+IMPORTANT: For now, we just support affine relation. We could easily
+create an intermediate variable to support full linear expression, but this
+isn't done currently.
+</pre><p><code>.operations_research.sat.LinearExpressionProto start_view = 4;</code> </p><dl class="section return"><dt>Returns</dt><dd>Whether the startView field is set. </dd></dl>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html#a9689ee83fce5a1a003e7364f62d85a59">IntervalConstraintProtoOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00850">850</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -544,7 +1011,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00332">332</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00547">547</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -563,7 +1030,29 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00454">454</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00711">711</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a75c9fdc066c3b6efb70a883208207781"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a75c9fdc066c3b6efb70a883208207781">&#9670;&nbsp;</a></span>mergeEndView()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a> mergeEndView </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a>&#160;</td>
+          <td class="paramname"><em>value</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>.operations_research.sat.LinearExpressionProto end_view = 5;</code> </p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01144">1144</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -583,7 +1072,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00437">437</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00685">685</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -613,7 +1102,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00459">459</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00716">716</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -633,7 +1122,64 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00428">428</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00676">676</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a5da9b1db14b92ae9bad86ba39add7ef8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5da9b1db14b92ae9bad86ba39add7ef8">&#9670;&nbsp;</a></span>mergeSizeView()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a> mergeSizeView </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a>&#160;</td>
+          <td class="paramname"><em>value</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>.operations_research.sat.LinearExpressionProto size_view = 6;</code> </p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01263">1263</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="aebe73c191d97bd8252c81cf829ffdbfc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aebe73c191d97bd8252c81cf829ffdbfc">&#9670;&nbsp;</a></span>mergeStartView()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a> mergeStartView </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a>&#160;</td>
+          <td class="paramname"><em>value</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+EXPERIMENTAL: This will become the new way to specify an interval.
+Depending on the parameters, the presolve will convert the old way to the
+new way. Do not forget to add an associated linear constraint if you use
+this directly.
+If any of this field is set, then all must be set and the ones above will
+be ignored.
+IMPORTANT: For now, this constraint do not enforce any relations on the
+view, and a linear constraint must be added together with this to enforce
+enforcement =&gt; start_view + size_view == end_view. An enforcement =&gt;
+size_view &gt;=0 might also be needed.
+IMPORTANT: For now, we just support affine relation. We could easily
+create an intermediate variable to support full linear expression, but this
+isn't done currently.
+</pre><p><code>.operations_research.sat.LinearExpressionProto start_view = 4;</code> </p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00961">961</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -653,7 +1199,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00576">576</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01334">1334</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -682,7 +1228,51 @@ Protected Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00522">522</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00779">779</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="ad49d3cc41cca28c1541b5551d97c16ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad49d3cc41cca28c1541b5551d97c16ea">&#9670;&nbsp;</a></span>setEndView() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a> setEndView </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a>&#160;</td>
+          <td class="paramname"><em>value</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>.operations_research.sat.LinearExpressionProto end_view = 5;</code> </p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01114">1114</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a67feeb974e5f7c9ce3f23a08e875fa4f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a67feeb974e5f7c9ce3f23a08e875fa4f">&#9670;&nbsp;</a></span>setEndView() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a> setEndView </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html">com.google.ortools.sat.LinearExpressionProto.Builder</a>&#160;</td>
+          <td class="paramname"><em>builderForValue</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>.operations_research.sat.LinearExpressionProto end_view = 5;</code> </p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01130">1130</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -712,7 +1302,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00400">400</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00648">648</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -748,7 +1338,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00416">416</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00664">664</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -777,7 +1367,51 @@ Protected Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00553">553</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00810">810</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a5a3a98a429ac27501862463e518ac1f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5a3a98a429ac27501862463e518ac1f2">&#9670;&nbsp;</a></span>setSizeView() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a> setSizeView </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a>&#160;</td>
+          <td class="paramname"><em>value</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>.operations_research.sat.LinearExpressionProto size_view = 6;</code> </p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01233">1233</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a6101a3dae48d689a79ede5dab1720028"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6101a3dae48d689a79ede5dab1720028">&#9670;&nbsp;</a></span>setSizeView() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a> setSizeView </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html">com.google.ortools.sat.LinearExpressionProto.Builder</a>&#160;</td>
+          <td class="paramname"><em>builderForValue</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>.operations_research.sat.LinearExpressionProto size_view = 6;</code> </p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01249">1249</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -806,7 +1440,77 @@ Protected Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00491">491</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00748">748</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="a3543aea1a5efeaa2be45b58acc10206d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3543aea1a5efeaa2be45b58acc10206d">&#9670;&nbsp;</a></span>setStartView() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a> setStartView </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html">com.google.ortools.sat.LinearExpressionProto</a>&#160;</td>
+          <td class="paramname"><em>value</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+EXPERIMENTAL: This will become the new way to specify an interval.
+Depending on the parameters, the presolve will convert the old way to the
+new way. Do not forget to add an associated linear constraint if you use
+this directly.
+If any of this field is set, then all must be set and the ones above will
+be ignored.
+IMPORTANT: For now, this constraint do not enforce any relations on the
+view, and a linear constraint must be added together with this to enforce
+enforcement =&gt; start_view + size_view == end_view. An enforcement =&gt;
+size_view &gt;=0 might also be needed.
+IMPORTANT: For now, we just support affine relation. We could easily
+create an intermediate variable to support full linear expression, but this
+isn't done currently.
+</pre><p><code>.operations_research.sat.LinearExpressionProto start_view = 4;</code> </p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00899">899</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+
+</div>
+</div>
+<a id="aa254acc7db4363f57ad2c656219ae76c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa254acc7db4363f57ad2c656219ae76c">&#9670;&nbsp;</a></span>setStartView() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html">Builder</a> setStartView </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html">com.google.ortools.sat.LinearExpressionProto.Builder</a>&#160;</td>
+          <td class="paramname"><em>builderForValue</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+EXPERIMENTAL: This will become the new way to specify an interval.
+Depending on the parameters, the presolve will convert the old way to the
+new way. Do not forget to add an associated linear constraint if you use
+this directly.
+If any of this field is set, then all must be set and the ones above will
+be ignored.
+IMPORTANT: For now, this constraint do not enforce any relations on the
+view, and a linear constraint must be added together with this to enforce
+enforcement =&gt; start_view + size_view == end_view. An enforcement =&gt;
+size_view &gt;=0 might also be needed.
+IMPORTANT: For now, we just support affine relation. We could easily
+create an intermediate variable to support full linear expression, but this
+isn't done currently.
+</pre><p><code>.operations_research.sat.LinearExpressionProto start_view = 4;</code> </p>
+
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00931">931</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -826,7 +1530,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l00570">570</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntervalConstraintProto_8java_source.html#l01328">1328</a> of file <a class="el" href="IntervalConstraintProto_8java_source.html">IntervalConstraintProto.java</a>.</p>
 
 </div>
 </div>

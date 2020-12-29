@@ -102,8 +102,8 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_c
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a23c196ccae7ce05ad735bd5def5a9052"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_consecutive_constraints_relaxation_neighborhood_generator.html#a23c196ccae7ce05ad735bd5def5a9052">ConsecutiveConstraintsRelaxationNeighborhoodGenerator</a> (<a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html">NeighborhoodGeneratorHelper</a> const *helper, const std::string &amp;<a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator.html#a1d89c28bd42ba9a52da008bb69367171">name</a>)</td></tr>
 <tr class="separator:a23c196ccae7ce05ad735bd5def5a9052"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7606a4d0df011706cbd0540adc7ecd6d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1sat_1_1_neighborhood.html">Neighborhood</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_consecutive_constraints_relaxation_neighborhood_generator.html#a7606a4d0df011706cbd0540adc7ecd6d">Generate</a> (const CpSolverResponse &amp;initial_solution, double <a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator.html#a43616719fac14b34582903ef03d114ac">difficulty</a>, <a class="el" href="namespaceoperations__research.html#a6743e8c90bbb85a1017486ed70c7d29b">random_engine_t</a> *random) final</td></tr>
-<tr class="separator:a7606a4d0df011706cbd0540adc7ecd6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8afb8ece44037532a15303d3533bdced"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1sat_1_1_neighborhood.html">Neighborhood</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_consecutive_constraints_relaxation_neighborhood_generator.html#a8afb8ece44037532a15303d3533bdced">Generate</a> (const CpSolverResponse &amp;initial_solution, double <a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator.html#a43616719fac14b34582903ef03d114ac">difficulty</a>, absl::BitGenRef random) final</td></tr>
+<tr class="separator:a8afb8ece44037532a15303d3533bdced"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a674468b66860a4942dea730f9731c5cf"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_consecutive_constraints_relaxation_neighborhood_generator.html#a674468b66860a4942dea730f9731c5cf">IsRelaxationGenerator</a> () const override</td></tr>
 <tr class="separator:a674468b66860a4942dea730f9731c5cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a18bd97b50e3170dabf1f537e19695054"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_consecutive_constraints_relaxation_neighborhood_generator.html#a18bd97b50e3170dabf1f537e19695054">ReadyToGenerate</a> () const override</td></tr>
@@ -318,8 +318,8 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a7606a4d0df011706cbd0540adc7ecd6d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7606a4d0df011706cbd0540adc7ecd6d">&#9670;&nbsp;</a></span>Generate()</h2>
+<a id="a8afb8ece44037532a15303d3533bdced"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8afb8ece44037532a15303d3533bdced">&#9670;&nbsp;</a></span>Generate()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -342,7 +342,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceoperations__research.html#a6743e8c90bbb85a1017486ed70c7d29b">random_engine_t</a> *&#160;</td>
+          <td class="paramtype">absl::BitGenRef&#160;</td>
           <td class="paramname"><em>random</em>&#160;</td>
         </tr>
         <tr>
@@ -358,9 +358,9 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implements <a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator.html#a12aa03b9a86ac550cd237cab8a24f97f">NeighborhoodGenerator</a>.</p>
+<p>Implements <a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator.html#a09fa0632fb0484300de153adb79f071d">NeighborhoodGenerator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00723">723</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00720">720</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
@@ -388,7 +388,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00259">259</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00258">258</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
@@ -554,7 +554,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00266">266</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00265">265</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>

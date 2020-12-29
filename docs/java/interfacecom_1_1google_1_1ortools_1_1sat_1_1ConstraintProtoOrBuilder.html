@@ -1073,7 +1073,8 @@ The domain of vars[1] must be strictly positive.
 </div><div class="memdoc">
 <pre>
 The int_prod constraint forces the target to equal the product of all
-variables.
+variables. By convention, because we can just remove term equal to one,
+the empty product forces the target to be one.
 TODO(user): Support more than two terms in the product.
 </pre><p><code>.operations_research.sat.IntegerArgumentProto int_prod = 11;</code> </p><dl class="section return"><dt>Returns</dt><dd>The intProd. </dd></dl>
 
@@ -1097,7 +1098,8 @@ TODO(user): Support more than two terms in the product.
 </div><div class="memdoc">
 <pre>
 The int_prod constraint forces the target to equal the product of all
-variables.
+variables. By convention, because we can just remove term equal to one,
+the empty product forces the target to be one.
 TODO(user): Support more than two terms in the product.
 </pre><p><code>.operations_research.sat.IntegerArgumentProto int_prod = 11;</code> </p>
 
@@ -1904,7 +1906,8 @@ The domain of vars[1] must be strictly positive.
 </div><div class="memdoc">
 <pre>
 The int_prod constraint forces the target to equal the product of all
-variables.
+variables. By convention, because we can just remove term equal to one,
+the empty product forces the target to be one.
 TODO(user): Support more than two terms in the product.
 </pre><p><code>.operations_research.sat.IntegerArgumentProto int_prod = 11;</code> </p><dl class="section return"><dt>Returns</dt><dd>Whether the intProd field is set. </dd></dl>
 

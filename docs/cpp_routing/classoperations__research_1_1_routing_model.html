@@ -348,7 +348,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a9d8ead500db4128d0d27f8066d1f8208"><td class="memItemLeft" align="right" valign="top">const absl::flat_hash_set&lt; int &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a9d8ead500db4128d0d27f8066d1f8208">GetTemporalTypeIncompatibilitiesOfType</a> (int type) const</td></tr>
 <tr class="separator:a9d8ead500db4128d0d27f8066d1f8208"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9c58894df747f5498c335a3a8c5c0c88"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a9c58894df747f5498c335a3a8c5c0c88">HasHardTypeIncompatibilities</a> () const</td></tr>
-<tr class="memdesc:a9c58894df747f5498c335a3a8c5c0c88"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if any hard (resp.  <a href="classoperations__research_1_1_routing_model.html#a9c58894df747f5498c335a3a8c5c0c88">More...</a><br /></td></tr>
+<tr class="memdesc:a9c58894df747f5498c335a3a8c5c0c88"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true iff any hard (resp.  <a href="classoperations__research_1_1_routing_model.html#a9c58894df747f5498c335a3a8c5c0c88">More...</a><br /></td></tr>
 <tr class="separator:a9c58894df747f5498c335a3a8c5c0c88"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad19492313b68e5a963af3793aaec8d90"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#ad19492313b68e5a963af3793aaec8d90">HasTemporalTypeIncompatibilities</a> () const</td></tr>
 <tr class="separator:ad19492313b68e5a963af3793aaec8d90"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -538,9 +538,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ae2530e17cabaf267e12929ca0ee1bee0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#ae2530e17cabaf267e12929ca0ee1bee0">IsEnd</a> (int64 index) const</td></tr>
 <tr class="memdesc:ae2530e17cabaf267e12929ca0ee1bee0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if 'index' represents the last node of a route.  <a href="classoperations__research_1_1_routing_model.html#ae2530e17cabaf267e12929ca0ee1bee0">More...</a><br /></td></tr>
 <tr class="separator:ae2530e17cabaf267e12929ca0ee1bee0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abd33c037942b971eeefad43c6022c20e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#abd33c037942b971eeefad43c6022c20e">VehicleIndex</a> (int index) const</td></tr>
-<tr class="memdesc:abd33c037942b971eeefad43c6022c20e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the vehicle of the given start/end index, and -1 if the given index is not a vehicle start/end.  <a href="classoperations__research_1_1_routing_model.html#abd33c037942b971eeefad43c6022c20e">More...</a><br /></td></tr>
-<tr class="separator:abd33c037942b971eeefad43c6022c20e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aafaea10b092d9e8d3f0c8d6caa62172d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#aafaea10b092d9e8d3f0c8d6caa62172d">VehicleIndex</a> (int64 index) const</td></tr>
+<tr class="memdesc:aafaea10b092d9e8d3f0c8d6caa62172d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the vehicle of the given start/end index, and -1 if the given index is not a vehicle start/end.  <a href="classoperations__research_1_1_routing_model.html#aafaea10b092d9e8d3f0c8d6caa62172d">More...</a><br /></td></tr>
+<tr class="separator:aafaea10b092d9e8d3f0c8d6caa62172d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a46a69d9769aa92122c7e5e20f49e3da3"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_model.html#a46a69d9769aa92122c7e5e20f49e3da3">Next</a> (const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;assignment, int64 index) const</td></tr>
 <tr class="memdesc:a46a69d9769aa92122c7e5e20f49e3da3"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classoperations__research_1_1_assignment.html" title="An Assignment is a variable -&gt; domains mapping, used to report solutions to the user.">Assignment</a> inspection Returns the variable index of the node directly after the node corresponding to 'index' in 'assignment'.  <a href="classoperations__research_1_1_routing_model.html#a46a69d9769aa92122c7e5e20f49e3da3">More...</a><br /></td></tr>
 <tr class="separator:a46a69d9769aa92122c7e5e20f49e3da3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -4193,7 +4193,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns true if any hard (resp. </p>
+<p>Returns true iff any hard (resp. </p>
 <p>temporal) type incompatibilities have been added to the model. </p>
 
 <p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00810">810</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
@@ -5978,8 +5978,8 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="abd33c037942b971eeefad43c6022c20e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abd33c037942b971eeefad43c6022c20e">&#9670;&nbsp;</a></span>VehicleIndex()</h2>
+<a id="aafaea10b092d9e8d3f0c8d6caa62172d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aafaea10b092d9e8d3f0c8d6caa62172d">&#9670;&nbsp;</a></span>VehicleIndex()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -5990,7 +5990,7 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">int VehicleIndex </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">int64&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
           <td> const</td>
         </tr>

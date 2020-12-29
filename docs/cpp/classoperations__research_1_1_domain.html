@@ -349,7 +349,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Constructor for the common case of a singleton domain. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00113">113</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00114">114</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -382,7 +382,7 @@ Static Public Member Functions</h2></td></tr>
 <p>Constructor for the common case of a single interval [left, right]. </p>
 <p>If left &gt; right, this will result in the empty domain. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00130">130</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00131">131</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -405,7 +405,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns {x ∈ Int64, ∃ a ∈ D, ∃ b ∈ domain, x = a + b}. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00332">332</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00333">333</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -434,7 +434,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the full domain Int64. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00135">135</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00136">136</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -509,7 +509,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the set Int64 ∖ D. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00245">245</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00246">246</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -531,7 +531,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns true iff value is in <a class="el" href="classoperations__research_1_1_domain.html" title="We call domain any subset of Int64 = [kint64min, kint64max].">Domain</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00221">221</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00222">222</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -555,7 +555,7 @@ Static Public Member Functions</h2></td></tr>
 <p>This behaves as if we replace the set D of non-adjacent integer intervals by the set of floating-point elements in the same intervals.</p>
 <p>For instance, [1, 100] * 2 will be transformed in [2, 200] and not in [2][4][6]...[200] like in <a class="el" href="classoperations__research_1_1_domain.html#a2c39a0f7b7aec3c48a4cef3a4a54e5d5" title="Returns {x ∈ Int64, ∃ e ∈ D, x = e * coeff}.">MultiplicationBy()</a>. Note that this would be similar to a InverseDivisionBy(), but not quite the same because if we look for {x ∈ Int64, ∃ e ∈ D, x / coeff = e}, then we will get [2, 201] in the case above. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00409">409</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00410">410</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -579,7 +579,7 @@ Static Public Member Functions</h2></td></tr>
 <p>This behaves as if we replace the set D of non-adjacent integer intervals by the set of floating-point elements in the same intervals.</p>
 <p>For instance, [1, 100] * 2 will be transformed in [2, 200] and not in [2][4][6]...[200] like in <a class="el" href="classoperations__research_1_1_domain.html#a2c39a0f7b7aec3c48a4cef3a4a54e5d5" title="Returns {x ∈ Int64, ∃ e ∈ D, x = e * coeff}.">MultiplicationBy()</a>. Note that this would be similar to a InverseDivisionBy(), but not quite the same because if we look for {x ∈ Int64, ∃ e ∈ D, x / coeff = e}, then we will get [2, 201] in the case above. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00397">397</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00398">398</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -602,7 +602,7 @@ Static Public Member Functions</h2></td></tr>
 <p>Returns {x ∈ Int64, ∃ e ∈ D, x = e / coeff}. </p>
 <p>For instance Domain(1, 7).DivisionBy(2) == Domain(0, 3). </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00428">428</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00429">429</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -651,7 +651,7 @@ Static Public Member Functions</h2></td></tr>
 <p>Returns the value of a fixed domain. </p>
 <p><a class="el" href="classoperations__research_1_1_domain.html#a826a01cb8175850ff6e5b833e4689959" title="Returns true iff the domain is reduced to a single value.">IsFixed()</a> must be true. This is the same as <a class="el" href="classoperations__research_1_1_domain.html#a53e9735282c0bf0769962bd1b6a643bc" title="Returns the min value of the domain.">Min()</a> or <a class="el" href="classoperations__research_1_1_domain.html#a5fa627799e723b650fe562b05e1fef5f" title="Returns the max value of the domain.">Max()</a> but allows for amore readable code and also crash in debug mode if called on a non fixed domain. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00216">216</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00217">217</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -674,7 +674,7 @@ Static Public Member Functions</h2></td></tr>
 <p>Thus the domain {0, 1, 2, 5, 8, 9, 10} will return <a href="as a C++ std::vector&lt;int64&gt;, as a java or C# long[], as
 a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00517">517</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00518">518</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -705,7 +705,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 <p>This method is available in Python, Java and .NET. </p>
 <p>It allows building a <a class="el" href="classoperations__research_1_1_domain.html" title="We call domain any subset of Int64 = [kint64min, kint64max].">Domain</a> object from a flattened list of intervals (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python). </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00170">170</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00171">171</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -735,7 +735,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 
 <p>Same as <a class="el" href="classoperations__research_1_1_domain.html#a99f2a0dc67792cdc74b4792055b083d3" title="Creates a domain from the union of an unsorted list of intervals.">FromIntervals()</a> for a flattened representation (start, end, start, end, ...). </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00158">158</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00159">159</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -765,7 +765,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 
 <p>Creates a domain from the union of an unsorted list of intervals. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00150">150</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00151">151</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -796,7 +796,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 <p>Creates a domain from the union of an unsorted list of integer values. </p>
 <p>Input values may be repeated, with no consequence on the output </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00137">137</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00138">138</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -827,7 +827,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 <p>This method is available in Python, Java and .NET. </p>
 <p>It allows building a <a class="el" href="classoperations__research_1_1_domain.html" title="We call domain any subset of Int64 = [kint64min, kint64max].">Domain</a> object from a list of intervals (long[][] in Java and .NET, [[0, 2], [5, 5], [8, 10]] in python). </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00174">174</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00175">175</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -876,7 +876,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 
 <p>Returns the intersection of D and domain. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00282">282</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00283">283</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -926,7 +926,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 <p>Returns {x ∈ Int64, ∃ e ∈ D, x * coeff = e}. </p>
 <p>For instance Domain(1, 7).InverseMultiplicationBy(2) == Domain(1, 3). </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00441">441</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00442">442</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -947,7 +947,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 
 <p>Returns true if this is the empty set. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00190">190</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00191">191</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -969,7 +969,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 <p>Returns true iff the domain is reduced to a single value. </p>
 <p>The domain must not be empty. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00192">192</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00193">193</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -991,7 +991,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 
 <p>Returns true iff D is included in the given domain. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00232">232</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00233">233</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -1013,7 +1013,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 <p>Returns the max value of the domain. </p>
 <p>The domain must not be empty. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00211">211</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00212">212</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -1035,7 +1035,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 <p>Returns the min value of the domain. </p>
 <p>The domain must not be empty. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00206">206</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00207">207</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -1069,7 +1069,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 <p>Note that because the resulting domain will only contains multiple of coeff, the size of intervals.size() can become really large. If it is larger than a fixed constant, exact will be set to false and the result will be set to ContinuousMultiplicationBy(coeff).</p>
 <p>Note that if you multiply by a negative coeff, kint64min will be dropped from the result even if it was here due to how this is implemented. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00361">361</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00362">362</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -1091,7 +1091,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 <p>Returns {x ∈ Int64, ∃ e ∈ D, x = -e}. </p>
 <p>Note in particular that if the negation of Int64 is not Int64 but Int64 \ {kint64min} !! </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00261">261</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00262">262</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -1171,7 +1171,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 
 <p>Lexicographic order on the <a class="el" href="classoperations__research_1_1_domain.html#a990d3e7957d45a6f940612ca59ed0d80">intervals()</a> representation. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00526">526</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00527">527</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -1308,7 +1308,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 
 <p>If <a class="el" href="classoperations__research_1_1_domain.html#a3dcbf23ccbed61ee64ec08a934f57a9c" title="Basic read-only std::vector&lt;&gt; wrapping to view a Domain as a sorted list of non-adjacent intervals.">NumIntervals()</a> is too large, this return a superset of the domain. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00353">353</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00354">354</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -1337,7 +1337,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 </ul>
 <p>Note that <b>domain.SimplifyUsingImpliedDomain(domain)</b> will just return [domain.Min(), domain.Max()]. This is meant to be applied to the right-hand side of a constraint to make its propagation more efficient. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00469">469</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00470">470</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -1359,7 +1359,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 <p>Returns the number of elements in the domain. </p>
 <p>It is capped at kint64max </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00194">194</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00195">195</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -1380,7 +1380,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 
 <p>Returns a compact string of a vector of intervals like "[1,4][6][10,20]". </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00541">541</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00542">542</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>
@@ -1402,7 +1402,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 
 <p>Returns the union of D and domain. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00321">321</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8cc_source.html#l00322">322</a> of file <a class="el" href="sorted__interval__list_8cc_source.html">sorted_interval_list.cc</a>.</p>
 
 </div>
 </div>

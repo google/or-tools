@@ -87,8 +87,10 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_vehicle_
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02882">2882</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<div class="textblock"><p>Helper class that manages vehicles. </p>
+<p>This class is based on the <a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_type_container.html" title="Struct used to sort and store vehicles by their type.">RoutingModel::VehicleTypeContainer</a> that sorts and stores vehicles based on their "type". </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02883">2883</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -98,14 +100,19 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aa3c0b35c06027c12fb62729bc65046e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf6083fc320b50822c395a662729074b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_vehicle_type_curator.html#acf6083fc320b50822c395a662729074b">Type</a> (int vehicle) const</td></tr>
 <tr class="separator:acf6083fc320b50822c395a662729074b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a372de693ad40b3f42839c8ec6ac845f4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_vehicle_type_curator.html#a372de693ad40b3f42839c8ec6ac845f4">Reset</a> ()</td></tr>
-<tr class="separator:a372de693ad40b3f42839c8ec6ac845f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6ef3cb01016d055de4e16b51b2bb658b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_vehicle_type_curator.html#a6ef3cb01016d055de4e16b51b2bb658b">GetVehicleOfType</a> (int type) const</td></tr>
-<tr class="separator:a6ef3cb01016d055de4e16b51b2bb658b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a814500d3b9447208c46bd15c6f95f96d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_vehicle_type_curator.html#a814500d3b9447208c46bd15c6f95f96d">Reset</a> (const std::function&lt; bool(int)&gt; &amp;store_vehicle)</td></tr>
+<tr class="memdesc:a814500d3b9447208c46bd15c6f95f96d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resets the vehicles stored, storing only vehicles from the vehicle_type_container_ for which store_vehicle() returns true.  <a href="classoperations__research_1_1_vehicle_type_curator.html#a814500d3b9447208c46bd15c6f95f96d">More...</a><br /></td></tr>
+<tr class="separator:a814500d3b9447208c46bd15c6f95f96d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a14dcf3d10159ae170c79ac9cac11cf5b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_vehicle_type_curator.html#a14dcf3d10159ae170c79ac9cac11cf5b">Update</a> (const std::function&lt; bool(int)&gt; &amp;remove_vehicle)</td></tr>
+<tr class="memdesc:a14dcf3d10159ae170c79ac9cac11cf5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Goes through all the currently stored vehicles and removes vehicles for which remove_vehicle() returns true.  <a href="classoperations__research_1_1_vehicle_type_curator.html#a14dcf3d10159ae170c79ac9cac11cf5b">More...</a><br /></td></tr>
+<tr class="separator:a14dcf3d10159ae170c79ac9cac11cf5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae273572e5466d452e207c045ee242b4a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_vehicle_type_curator.html#ae273572e5466d452e207c045ee242b4a">GetLowestFixedCostVehicleOfType</a> (int type) const</td></tr>
+<tr class="separator:ae273572e5466d452e207c045ee242b4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa123637b2421ea2dfb8515c9fe057e32"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_vehicle_type_curator.html#aa123637b2421ea2dfb8515c9fe057e32">ReinjectVehicleOfClass</a> (int vehicle, int vehicle_class, int64 fixed_cost)</td></tr>
 <tr class="separator:aa123637b2421ea2dfb8515c9fe057e32"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8360af13786a2277106e9c70b94eb6c6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_vehicle_type_curator.html#a8360af13786a2277106e9c70b94eb6c6">GetCompatibleVehicleOfType</a> (int type, std::function&lt; bool(int)&gt; vehicle_is_compatible)</td></tr>
-<tr class="separator:a8360af13786a2277106e9c70b94eb6c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a45677f6e20ca94acd146ce5e5088ef08"><td class="memItemLeft" align="right" valign="top">std::pair&lt; int, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_vehicle_type_curator.html#a45677f6e20ca94acd146ce5e5088ef08">GetCompatibleVehicleOfType</a> (int type, std::function&lt; bool(int)&gt; vehicle_is_compatible, std::function&lt; bool(int)&gt; stop_and_return_vehicle)</td></tr>
+<tr class="memdesc:a45677f6e20ca94acd146ce5e5088ef08"><td class="mdescLeft">&#160;</td><td class="mdescRight">Searches for the best compatible vehicle of the given type, i.e.  <a href="classoperations__research_1_1_vehicle_type_curator.html#a45677f6e20ca94acd146ce5e5088ef08">More...</a><br /></td></tr>
+<tr class="separator:a45677f6e20ca94acd146ce5e5088ef08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a6b5135fd0df7429d4b75c59930086166"></a>
@@ -132,19 +139,19 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02884">2884</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02885">2885</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a8360af13786a2277106e9c70b94eb6c6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8360af13786a2277106e9c70b94eb6c6">&#9670;&nbsp;</a></span>GetCompatibleVehicleOfType()</h2>
+<a id="a45677f6e20ca94acd146ce5e5088ef08"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a45677f6e20ca94acd146ce5e5088ef08">&#9670;&nbsp;</a></span>GetCompatibleVehicleOfType()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int GetCompatibleVehicleOfType </td>
+          <td class="memname">std::pair&lt;int, int&gt; GetCompatibleVehicleOfType </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>type</em>, </td>
@@ -153,7 +160,13 @@ Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">std::function&lt; bool(int)&gt;&#160;</td>
-          <td class="paramname"><em>vehicle_is_compatible</em>&#160;</td>
+          <td class="paramname"><em>vehicle_is_compatible</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::function&lt; bool(int)&gt;&#160;</td>
+          <td class="paramname"><em>stop_and_return_vehicle</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -163,10 +176,13 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Searches for the best compatible vehicle of the given type, i.e. </p>
+<p>the first vehicle v of type 'type' for which vehicle_is_compatible(v) returns true. If a compatible <em>vehicle</em> is found, its index is removed from vehicles_per_vehicle_class_ and the function returns {vehicle, -1}. If for some <em>vehicle</em> 'stop_and_return_vehicle' returns true before a compatible vehicle is found, the function simply returns {-1, vehicle}. Returns {-1, -1} if no compatible vehicle is found and the stopping condition is never met. </p>
+
 </div>
 </div>
-<a id="a6ef3cb01016d055de4e16b51b2bb658b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6ef3cb01016d055de4e16b51b2bb658b">&#9670;&nbsp;</a></span>GetVehicleOfType()</h2>
+<a id="ae273572e5466d452e207c045ee242b4a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae273572e5466d452e207c045ee242b4a">&#9670;&nbsp;</a></span>GetLowestFixedCostVehicleOfType()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -175,7 +191,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int GetVehicleOfType </td>
+          <td class="memname">int GetLowestFixedCostVehicleOfType </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>type</em></td><td>)</td>
@@ -189,7 +205,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02905">2905</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02901">2901</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -216,7 +232,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02888">2888</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02889">2889</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -259,35 +275,29 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+<p>Add the vehicle class entry to the set (it was removed when vehicles_per_vehicle_class_[vehicle_class] got empty).</p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02917">2917</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02913">2913</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
-<a id="a372de693ad40b3f42839c8ec6ac845f4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a372de693ad40b3f42839c8ec6ac845f4">&#9670;&nbsp;</a></span>Reset()</h2>
+<a id="a814500d3b9447208c46bd15c6f95f96d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a814500d3b9447208c46bd15c6f95f96d">&#9670;&nbsp;</a></span>Reset()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">void Reset </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype">const std::function&lt; bool(int)&gt; &amp;&#160;</td>
+          <td class="paramname"><em>store_vehicle</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02892">2892</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Resets the vehicles stored, storing only vehicles from the vehicle_type_container_ for which store_vehicle() returns true. </p>
 
 </div>
 </div>
@@ -315,7 +325,27 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02890">2890</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02891">2891</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+
+</div>
+</div>
+<a id="a14dcf3d10159ae170c79ac9cac11cf5b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a14dcf3d10159ae170c79ac9cac11cf5b">&#9670;&nbsp;</a></span>Update()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Update </td>
+          <td>(</td>
+          <td class="paramtype">const std::function&lt; bool(int)&gt; &amp;&#160;</td>
+          <td class="paramname"><em>remove_vehicle</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Goes through all the currently stored vehicles and removes vehicles for which remove_vehicle() returns true. </p>
 
 </div>
 </div>

@@ -180,6 +180,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:adfce09ac65fc660f8a4f019f4072c6a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05e837bb93eeabbbd94e8f690dd59d32"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_integer_trail.html#a05e837bb93eeabbbd94e8f690dd59d32">Enqueue</a> (<a class="el" href="structoperations__research_1_1sat_1_1_integer_literal.html">IntegerLiteral</a> i_lit, absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> &gt; literal_reason, absl::Span&lt; const <a class="el" href="structoperations__research_1_1sat_1_1_integer_literal.html">IntegerLiteral</a> &gt; integer_reason)</td></tr>
 <tr class="separator:a05e837bb93eeabbbd94e8f690dd59d32"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad2f3825d33cbc805d2f490d324bd363c"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_integer_trail.html#ad2f3825d33cbc805d2f490d324bd363c">ConditionalEnqueue</a> (<a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> lit, <a class="el" href="structoperations__research_1_1sat_1_1_integer_literal.html">IntegerLiteral</a> i_lit, std::vector&lt; <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> &gt; *literal_reason, std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_integer_literal.html">IntegerLiteral</a> &gt; *integer_reason)</td></tr>
+<tr class="separator:ad2f3825d33cbc805d2f490d324bd363c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acdeefac05f25e9e8af2595a0db84d510"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_integer_trail.html#acdeefac05f25e9e8af2595a0db84d510">Enqueue</a> (<a class="el" href="structoperations__research_1_1sat_1_1_integer_literal.html">IntegerLiteral</a> i_lit, absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> &gt; literal_reason, absl::Span&lt; const <a class="el" href="structoperations__research_1_1sat_1_1_integer_literal.html">IntegerLiteral</a> &gt; integer_reason, int trail_index_with_same_reason)</td></tr>
 <tr class="separator:acdeefac05f25e9e8af2595a0db84d510"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7e67b1a0a1bd85ebda676d32f87538fb"><td class="memItemLeft" align="right" valign="top">ABSL_MUST_USE_RESULT bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_integer_trail.html#a7e67b1a0a1bd85ebda676d32f87538fb">Enqueue</a> (<a class="el" href="structoperations__research_1_1sat_1_1_integer_literal.html">IntegerLiteral</a> i_lit, <a class="el" href="classoperations__research_1_1sat_1_1_integer_trail.html#a49ff19c4851c879436507391ea8dd675">LazyReasonFunction</a> lazy_reason)</td></tr>
@@ -253,7 +255,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00750">750</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00760">760</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -407,7 +409,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01699">1699</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01728">1728</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
 
 </div>
 </div>
@@ -453,6 +455,48 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="ad2f3825d33cbc805d2f490d324bd363c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad2f3825d33cbc805d2f490d324bd363c">&#9670;&nbsp;</a></span>ConditionalEnqueue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ConditionalEnqueue </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a>&#160;</td>
+          <td class="paramname"><em>lit</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structoperations__research_1_1sat_1_1_integer_literal.html">IntegerLiteral</a>&#160;</td>
+          <td class="paramname"><em>i_lit</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classoperations__research_1_1sat_1_1_literal.html">Literal</a> &gt; *&#160;</td>
+          <td class="paramname"><em>literal_reason</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="structoperations__research_1_1sat_1_1_integer_literal.html">IntegerLiteral</a> &gt; *&#160;</td>
+          <td class="paramname"><em>integer_reason</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l00996">996</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
+
+</div>
+</div>
 <a id="a6554c3addb8705b1ba60140a175de110"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6554c3addb8705b1ba60140a175de110">&#9670;&nbsp;</a></span>CurrentBranchHadAnIncompletePropagation()</h2>
 
@@ -468,7 +512,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01157">1157</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01186">1186</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
 
 </div>
 </div>
@@ -546,7 +590,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l00996">996</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01025">1025</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
 
 </div>
 </div>
@@ -576,7 +620,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01004">1004</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01033">1033</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
 
 </div>
 </div>
@@ -612,7 +656,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01058">1058</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01087">1087</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
 
 </div>
 </div>
@@ -661,7 +705,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01161">1161</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01190">1190</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
 
 </div>
 </div>
@@ -708,7 +752,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00847">847</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00857">857</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -735,7 +779,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00820">820</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00830">830</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -774,7 +818,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01118">1118</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01147">1147</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
 
 </div>
 </div>
@@ -802,7 +846,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01327">1327</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01337">1337</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -830,7 +874,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01323">1323</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01333">1333</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -886,7 +930,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01308">1308</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01318">1318</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -914,7 +958,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01291">1291</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01301">1301</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -942,7 +986,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01343">1343</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01353">1353</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -1026,7 +1070,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01333">1333</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01343">1343</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -1054,7 +1098,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01338">1338</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01348">1348</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -1082,7 +1126,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01297">1297</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01307">1307</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -1110,7 +1154,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01283">1283</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01293">1293</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -1138,7 +1182,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01313">1313</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01323">1323</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -1206,7 +1250,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01541">1541</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01570">1570</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
 
 </div>
 </div>
@@ -1225,7 +1269,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01128">1128</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01157">1157</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
 
 </div>
 </div>
@@ -1252,7 +1296,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00777">777</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00787">787</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -1279,7 +1323,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00781">781</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00791">791</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -1506,7 +1550,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1sat_1_1_sat_propagator.html#a3891e18b248df125102b1c0f4c0b6691">SatPropagator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01679">1679</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01708">1708</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
 
 </div>
 </div>
@@ -1526,7 +1570,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01533">1533</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8cc_source.html#l01562">1562</a> of file <a class="el" href="integer_8cc_source.html">integer.cc</a>.</p>
 
 </div>
 </div>
@@ -1554,7 +1598,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00816">816</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00826">826</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -1582,7 +1626,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00786">786</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00796">796</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -1702,7 +1746,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00801">801</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00811">811</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -1740,7 +1784,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00793">793</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00803">803</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -1815,7 +1859,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00778">778</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00788">788</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -1913,7 +1957,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01303">1303</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01313">1313</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -1941,7 +1985,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01287">1287</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01297">1297</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -1969,7 +2013,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01318">1318</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l01328">1328</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>
@@ -1997,7 +2041,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00810">810</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integer_8h_source.html#l00820">820</a> of file <a class="el" href="integer_8h_source.html">integer.h</a>.</p>
 
 </div>
 </div>

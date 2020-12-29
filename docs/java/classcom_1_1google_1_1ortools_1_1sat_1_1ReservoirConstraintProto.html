@@ -94,21 +94,19 @@ $(document).ready(function(){initNavTree('classcom_1_1google_1_1ortools_1_1sat_1
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre>
 Maintain a reservoir level within bounds. The water level starts at 0, and at
-any time &gt;= 0, it must be within min_level, and max_level. Furthermore, this
-constraints expect all times variables to be &gt;= 0.
+any time, it must be within [min_level, max_level].
 If the variable actives[i] is true, and if the variable times[i] is assigned
 a value t, then the current level changes by demands[i] (which is constant)
-at the time t.
-Note that level min can be &gt; 0, or level max can be &lt; 0. It just forces
-some demands to be executed at time 0 to make sure that we are within those
-bounds with the executed demands. Therefore, at any time t &gt;= 0:
+at the time t. Therefore, at any time t:
      sum(demands[i] * actives[i] if times[i] &lt;= t) in [min_level, max_level]
+Note that min level must be &lt;= 0, and the max level must be &gt;= 0. Please use
+fixed demands to simulate initial state.
 The array of boolean variables 'actives', if defined, indicates which actions
 are actually performed. If this array is not defined, then it is assumed that
 all actions will be performed.
 </pre><p>Protobuf type</p><div class="fragment"><div class="line">operations_research.sat.ReservoirConstraintProto </div>
 </div><!-- fragment --> 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00025">25</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00023">23</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
@@ -238,7 +236,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00434">434</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00432">432</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -269,7 +267,7 @@ literals.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#ab8f8716b171ef2d2e39c2b0efe5ee9ea">ReservoirConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00322">322</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00320">320</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -293,7 +291,7 @@ literals.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a7109eae5d06e6b1bf36f6189efc0327b">ReservoirConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00310">310</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00308">308</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -317,7 +315,7 @@ literals.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a8e869e1be883e4a2e9ae022766d0b61a">ReservoirConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00299">299</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00297">297</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -344,7 +342,7 @@ literals.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l01203">1203</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l01199">1199</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -363,7 +361,7 @@ literals.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l01228">1228</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l01224">1224</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -394,7 +392,7 @@ constants, can be negative.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#aa450ad21ed07572cab0c1d4a359ccb49">ReservoirConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00282">282</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00280">280</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -418,7 +416,7 @@ constants, can be negative.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a56151962c4fee5a1b099f9916d04fd93">ReservoirConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00270">270</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00268">268</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -442,7 +440,7 @@ constants, can be negative.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a9295ef5809efd285abdcdb86a423ef93">ReservoirConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00259">259</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00257">257</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -469,7 +467,7 @@ constants, can be negative.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00173">173</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00171">171</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -493,7 +491,7 @@ constants, can be negative.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a5504f487a57a46ecf23358afc71865d6">ReservoirConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00203">203</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00201">201</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -517,7 +515,7 @@ constants, can be negative.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a155fa3945685a7e3be9ae83528042535">ReservoirConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00192">192</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00190">190</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -536,7 +534,7 @@ constants, can be negative.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l01223">1223</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l01219">1219</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -555,7 +553,7 @@ constants, can be negative.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00373">373</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00371">371</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -586,7 +584,7 @@ variables.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#ac57ab268d9b34f8ef606faa81bc116c6">ReservoirConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00242">242</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00240">240</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -610,7 +608,7 @@ variables.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a2907532d1a8bc74dec064e49e9906523">ReservoirConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00230">230</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00228">228</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -634,7 +632,7 @@ variables.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProtoOrBuilder.html#a0c4aabcb3a88161a739be4f13f0a3fc4">ReservoirConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00219">219</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00217">217</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -653,7 +651,7 @@ variables.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00049">49</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00047">47</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -672,7 +670,7 @@ variables.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00458">458</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00456">456</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -699,7 +697,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00179">179</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00177">177</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -718,7 +716,7 @@ variables.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00329">329</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00327">327</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -745,7 +743,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00559">559</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00557">557</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -773,7 +771,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00562">562</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00560">560</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -792,7 +790,7 @@ variables.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00558">558</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00556">556</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -820,7 +818,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00572">572</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00570">570</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -848,7 +846,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00042">42</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00040">40</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -876,7 +874,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00531">531</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00529">529</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -914,7 +912,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00536">536</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00534">534</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -942,7 +940,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00509">509</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00507">507</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -980,7 +978,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00513">513</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00511">511</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1008,7 +1006,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00498">498</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00496">496</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1046,7 +1044,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00503">503</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00501">501</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1074,7 +1072,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00543">543</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00541">541</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1112,7 +1110,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00549">549</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00547">547</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1140,7 +1138,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00519">519</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00517">517</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1178,7 +1176,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00524">524</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00522">522</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1206,7 +1204,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00487">487</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00485">485</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1244,7 +1242,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00492">492</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00490">490</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1271,7 +1269,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l01218">1218</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l01214">1214</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1290,7 +1288,7 @@ variables.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00566">566</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00564">564</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1310,7 +1308,7 @@ variables.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00339">339</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00337">337</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1335,7 +1333,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00287">287</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00285">285</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1359,7 +1357,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00247">247</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00245">245</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1383,7 +1381,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00196">196</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00194">194</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1407,7 +1405,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00185">185</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00183">183</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1431,7 +1429,7 @@ variables.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00207">207</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReservoirConstraintProto_8java_source.html#l00205">205</a> of file <a class="el" href="ReservoirConstraintProto_8java_source.html">ReservoirConstraintProto.java</a>.</p>
 
 </div>
 </div>

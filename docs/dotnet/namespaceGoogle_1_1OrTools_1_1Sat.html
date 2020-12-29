@@ -146,7 +146,7 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">An integer variable.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1IntegerVariableProto.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html">IntervalConstraintProto</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This "special" constraint not only enforces (start + size == end) but can also be referred by other constraints using this "interval" concept.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This "special" constraint not only enforces (start + size == end) and (size &gt;= 0) but can also be referred by other constraints using this "interval" concept.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1IntervalVar.html">IntervalVar</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -165,12 +165,13 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html">LinearExpr</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1LinearExpressionProto.html">LinearExpressionProto</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Some constraints supports linear expression instead of just using a reference to a variable.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1LinearExpressionProto.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1NoOverlap2DConstraintProto.html">NoOverlap2DConstraintProto</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The boxes defined by [start_x, end_x) * [start_y, end_y) cannot overlap.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1NoOverlap2DConstraintProto.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1NoOverlapConstraintProto.html">NoOverlapConstraintProto</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">All the intervals (index of <a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html" title="This &quot;special&quot; constraint not only enforces (start + size == end) but can also be referred by other c...">IntervalConstraintProto</a>) must be disjoint.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1NoOverlapConstraintProto.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">All the intervals (index of <a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html" title="This &quot;special&quot; constraint not only enforces (start + size == end) and (size &gt;= 0) but can also be ref...">IntervalConstraintProto</a>) must be disjoint.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1NoOverlapConstraintProto.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1NotBooleanVariable.html">NotBooleanVariable</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -254,7 +255,7 @@ Enumerations</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l00182">182</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l00187">187</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>

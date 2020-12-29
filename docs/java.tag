@@ -11381,6 +11381,90 @@
     </member>
     <member kind="function">
       <type>.lang.Override boolean</type>
+      <name>hasPermuteVariableRandomly</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a2209a698eb950c5016b8c9e247995d55</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getPermuteVariableRandomly</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a706dfff558c02ef19e6ae004a8f17e4e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setPermuteVariableRandomly</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>ac13704c4dbf86ee7cc8eb5f59a5b3b99</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearPermuteVariableRandomly</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>ac1e03f9baae8677f120eda0730b6e5d6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasPermutePresolveConstraintOrder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>af07ca763ffb6e575ea2bf1e814008f71</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getPermutePresolveConstraintOrder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a282c77ec77cec4fb34967fbce042b3c2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setPermutePresolveConstraintOrder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a3dacb0e5789611efb8d1ce93855fb200</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearPermutePresolveConstraintOrder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a1276ef8a180f4774512c0ac847ffdf9b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasUseAbslRandom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a8fb2dd3fe26e8bc4f4da4b263f5c9658</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getUseAbslRandom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>ac5dd6ff15dea3cd5a65f3d6b4e67d9f8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setUseAbslRandom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>aad6a2d7bab44ded0010c443c36caa22f</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearUseAbslRandom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>abf8a6bde0095ecc5cf33c3f11479b386</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
       <name>hasLogSearchProgress</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>af305e18966b587331357a480787b3b68</anchor>
@@ -11965,6 +12049,62 @@
       <name>clearExpandAlldiffConstraints</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>ac928831d236e0d01de38281d2b459184</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasExpandReservoirConstraints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>ac19a8352cd9a9bc0a1154178f4945b12</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getExpandReservoirConstraints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a6757904ee664600376018c47fd568173</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setExpandReservoirConstraints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a116f7c0b792e56810de5edd356ed7888</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearExpandReservoirConstraints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a20971d4170d4878584789b10bd08bdcc</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasDisableConstraintExpansion</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>aa51064da2b93188e24fb2c8af515f124</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getDisableConstraintExpansion</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a1f725acfe40e08174099d04a7646ed7a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setDisableConstraintExpansion</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a88e98e3806fbc6c9bebc678168c2ea43</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearDisableConstraintExpansion</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a310f08289079d60a7b4eed92c15678bb</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -14149,6 +14289,34 @@
       <name>clearPolishLpSolution</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>ae874594192aee4eacfd8b12780e58e2e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasConvertIntervals</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a407ec1fd42127bad64d42b1dbdb0a4f3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getConvertIntervals</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>ab443246ec469092694e257b7b025a11c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setConvertIntervals</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a5548ad49a4e8867ab8064b581f0b5ebb</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearConvertIntervals</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a6098060379887185ebf9ea472d3f1a66</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -28705,6 +28873,174 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
+      <type>boolean</type>
+      <name>hasStartView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>a9689ee83fce5a1a003e7364f62d85a59</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.LinearExpressionProto</type>
+      <name>getStartView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>a3dac1669cc9a094ddf8eca466295a3a2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setStartView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>a3543aea1a5efeaa2be45b58acc10206d</anchor>
+      <arglist>(com.google.ortools.sat.LinearExpressionProto value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setStartView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>aa254acc7db4363f57ad2c656219ae76c</anchor>
+      <arglist>(com.google.ortools.sat.LinearExpressionProto.Builder builderForValue)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>mergeStartView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>aebe73c191d97bd8252c81cf829ffdbfc</anchor>
+      <arglist>(com.google.ortools.sat.LinearExpressionProto value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearStartView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>a6a0a8bbb12b640a208717ce46ac2e91e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.LinearExpressionProto.Builder</type>
+      <name>getStartViewBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>af54d27a52d7eb46f01bfd6d467f6e947</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.LinearExpressionProtoOrBuilder</type>
+      <name>getStartViewOrBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>a4d5a4ac7bfad177389c85c7c2066ed1e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasEndView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>ad04b65b311ac0cf56524e59d78feab00</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.LinearExpressionProto</type>
+      <name>getEndView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>abf874a87556377c95298e4d734e692e7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setEndView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>ad49d3cc41cca28c1541b5551d97c16ea</anchor>
+      <arglist>(com.google.ortools.sat.LinearExpressionProto value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setEndView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>a67feeb974e5f7c9ce3f23a08e875fa4f</anchor>
+      <arglist>(com.google.ortools.sat.LinearExpressionProto.Builder builderForValue)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>mergeEndView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>a75c9fdc066c3b6efb70a883208207781</anchor>
+      <arglist>(com.google.ortools.sat.LinearExpressionProto value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearEndView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>a3a53ebf69a90425e58fd010c19482d1d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.LinearExpressionProto.Builder</type>
+      <name>getEndViewBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>a4fe15cae77d58e148ddb277470f7a41e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.LinearExpressionProtoOrBuilder</type>
+      <name>getEndViewOrBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>a05f47ebf82df0dc897a16201357ddd99</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasSizeView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>a4c77f162045727b32364f4fafd556862</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.LinearExpressionProto</type>
+      <name>getSizeView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>ac6a9501a689f77e5d176aa1f308164aa</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setSizeView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>a5a3a98a429ac27501862463e518ac1f2</anchor>
+      <arglist>(com.google.ortools.sat.LinearExpressionProto value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setSizeView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>a6101a3dae48d689a79ede5dab1720028</anchor>
+      <arglist>(com.google.ortools.sat.LinearExpressionProto.Builder builderForValue)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>mergeSizeView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>a5da9b1db14b92ae9bad86ba39add7ef8</anchor>
+      <arglist>(com.google.ortools.sat.LinearExpressionProto value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearSizeView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>ace82752085fec1fdec98cbfa032bb0d1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.LinearExpressionProto.Builder</type>
+      <name>getSizeViewBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>a4fbafd4f52998e0c15fdd4f8a207f095</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.LinearExpressionProtoOrBuilder</type>
+      <name>getSizeViewOrBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
+      <anchor>ac9be4c9bcff274cb71ff54acf4428952</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>.lang.Override final Builder</type>
       <name>setUnknownFields</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto_1_1Builder.html</anchorfile>
@@ -39515,6 +39851,69 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasStartView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>a6957062567fd59909cc0c4e725ed39e2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.LinearExpressionProto</type>
+      <name>getStartView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>a9f8f4e88b77d887de8ec6886f330da1d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.LinearExpressionProtoOrBuilder</type>
+      <name>getStartViewOrBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>ae82d506772e75fd869bfb068de404041</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasEndView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>a410ad2d9480ffd94de8fa73fd8b99e85</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.LinearExpressionProto</type>
+      <name>getEndView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>a81ece80ba83ee7d791941691a7e31123</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.LinearExpressionProtoOrBuilder</type>
+      <name>getEndViewOrBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>ad40af8c6c3683985a23c2606416625e0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasSizeView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>a0d5a654c8aabde384e3ae4107c1ea634</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.LinearExpressionProto</type>
+      <name>getSizeView</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>a00b29560f3c74f12267bae967a9f1bae</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.LinearExpressionProtoOrBuilder</type>
+      <name>getSizeViewOrBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>ac0f81d64dd7fd2d736893198a13916f0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>.lang.Override final boolean</type>
       <name>isInitialized</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
@@ -39717,6 +40116,27 @@
       <anchor>a95f84a8a6b196abca9afca22f907acc3</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>START_VIEW_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>ac1bdc5d5b008a898d224f9d025c88632</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>END_VIEW_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>a7045fb19b103dd68aa7ce68fa62ca672</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>SIZE_VIEW_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>a58f75e0ffe39fed7e01c38c4e4ab1987</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function" protection="protected">
       <type>.lang.Override java.lang.Object</type>
       <name>newInstance</name>
@@ -39761,6 +40181,69 @@
       <name>getSize</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html</anchorfile>
       <anchor>a3c4029b904a61a9873e6d12785ce19a1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasStartView</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html</anchorfile>
+      <anchor>a9689ee83fce5a1a003e7364f62d85a59</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.LinearExpressionProto</type>
+      <name>getStartView</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html</anchorfile>
+      <anchor>a3dac1669cc9a094ddf8eca466295a3a2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.LinearExpressionProtoOrBuilder</type>
+      <name>getStartViewOrBuilder</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html</anchorfile>
+      <anchor>a4d5a4ac7bfad177389c85c7c2066ed1e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasEndView</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html</anchorfile>
+      <anchor>ad04b65b311ac0cf56524e59d78feab00</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.LinearExpressionProto</type>
+      <name>getEndView</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html</anchorfile>
+      <anchor>abf874a87556377c95298e4d734e692e7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.LinearExpressionProtoOrBuilder</type>
+      <name>getEndViewOrBuilder</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html</anchorfile>
+      <anchor>a05f47ebf82df0dc897a16201357ddd99</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasSizeView</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html</anchorfile>
+      <anchor>a4c77f162045727b32364f4fafd556862</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.LinearExpressionProto</type>
+      <name>getSizeView</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html</anchorfile>
+      <anchor>ac6a9501a689f77e5d176aa1f308164aa</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.LinearExpressionProtoOrBuilder</type>
+      <name>getSizeViewOrBuilder</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1IntervalConstraintProtoOrBuilder.html</anchorfile>
+      <anchor>ac9be4c9bcff274cb71ff54acf4428952</anchor>
       <arglist>()</arglist>
     </member>
   </compound>
@@ -63250,8 +63733,8 @@
       <type>int</type>
       <name>VehicleIndex</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
-      <anchor>a74adc8ac8ccf37f2f991039b5c793eef</anchor>
-      <arglist>(int index)</arglist>
+      <anchor>a0a275fe11ecbb21ef428d83f61831305</anchor>
+      <arglist>(long index)</arglist>
     </member>
     <member kind="function">
       <type>long</type>
@@ -66019,6 +66502,48 @@
     </member>
     <member kind="function">
       <type>.lang.Override boolean</type>
+      <name>hasPermuteVariableRandomly</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a2209a698eb950c5016b8c9e247995d55</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getPermuteVariableRandomly</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a706dfff558c02ef19e6ae004a8f17e4e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasPermutePresolveConstraintOrder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>af07ca763ffb6e575ea2bf1e814008f71</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getPermutePresolveConstraintOrder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a282c77ec77cec4fb34967fbce042b3c2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasUseAbslRandom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a8fb2dd3fe26e8bc4f4da4b263f5c9658</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getUseAbslRandom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ac5dd6ff15dea3cd5a65f3d6b4e67d9f8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
       <name>hasLogSearchProgress</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>af305e18966b587331357a480787b3b68</anchor>
@@ -66309,6 +66834,34 @@
       <name>getExpandAlldiffConstraints</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a4c2096d5b6d90ef8af54331197b38b64</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasExpandReservoirConstraints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ac19a8352cd9a9bc0a1154178f4945b12</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getExpandReservoirConstraints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a6757904ee664600376018c47fd568173</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasDisableConstraintExpansion</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>aa51064da2b93188e24fb2c8af515f124</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getDisableConstraintExpansion</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a1f725acfe40e08174099d04a7646ed7a</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -67405,6 +67958,20 @@
     </member>
     <member kind="function">
       <type>.lang.Override boolean</type>
+      <name>hasConvertIntervals</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a407ec1fd42127bad64d42b1dbdb0a4f3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getConvertIntervals</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ab443246ec469092694e257b7b025a11c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
       <name>hasMipMaxBound</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>ac474c1483feef7c96b8aa023ed7795c0</anchor>
@@ -68007,6 +68574,27 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
+      <name>PERMUTE_VARIABLE_RANDOMLY_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>addc088d7f55f4e2f5d0c43d4e493ace4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>PERMUTE_PRESOLVE_CONSTRAINT_ORDER_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a64382f8c88bb9f771cb22ed912c79832</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>USE_ABSL_RANDOM_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ab428c844513d644f37aae8652babc17e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
       <name>LOG_SEARCH_PROGRESS_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a607bb6350e0367f9f0a099ac7b42f5ae</anchor>
@@ -68150,6 +68738,20 @@
       <name>EXPAND_ALLDIFF_CONSTRAINTS_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a87b345212582366d89bb60f84b9f2665</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>EXPAND_RESERVOIR_CONSTRAINTS_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>afe5aedc5aebe588eb1c9eaa28f4e78b7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>DISABLE_CONSTRAINT_EXPANSION_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>af7ecc98b6d59a6a555a74c3b5f7d7712</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -68696,6 +69298,13 @@
       <name>POLISH_LP_SOLUTION_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a7ff44ff10a52f35ccd533b5c668457c1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>CONVERT_INTERVALS_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a9ca93be4e58620f98b20da049913bd6d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -69467,6 +70076,48 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasPermuteVariableRandomly</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a098718f7c0d22cec4e9ec76479288989</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getPermuteVariableRandomly</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a3b7a88e6c3450c45902ff07eab65b54b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasPermutePresolveConstraintOrder</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a5749ba377825c0e8ca7ed494b8e9cb1d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getPermutePresolveConstraintOrder</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a4b0828a1c85116a5166d1d81d6213bd5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasUseAbslRandom</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>ac368fa8332a6a39d370b774c9a884760</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getUseAbslRandom</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a78055605dc6033e7d1b2c67a9e0fc895</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasLogSearchProgress</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>a1f8b4403fa2a1324a99e98c5e82b7365</anchor>
@@ -69757,6 +70408,34 @@
       <name>getExpandAlldiffConstraints</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>a73fd4472b5c57fb093f5baca000af042</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasExpandReservoirConstraints</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>ad2b0a9f577da0e5a9ed702f845ccfaeb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getExpandReservoirConstraints</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a4e1709b579776cc1c9f57ab09fdf3868</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasDisableConstraintExpansion</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>ae97f344c20df79abb1211b33a9f6c1df</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getDisableConstraintExpansion</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a3a46b0ed3230e281b22a3669a3e73e6b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -70849,6 +71528,20 @@
       <name>getPolishLpSolution</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>a46b41a39eaf50403964c909ca2ca4140</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasConvertIntervals</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>acd6046bf70a7dd89c43ca011aa34330a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getConvertIntervals</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>aed60ddb2ef6ab2d70254acecc96d5e76</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">

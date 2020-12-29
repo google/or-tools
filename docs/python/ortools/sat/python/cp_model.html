@@ -1101,37 +1101,47 @@ class CpModel(object):
         &#34;&#34;&#34;Adds Reservoir(times, demands, min_level, max_level).
 
     Maintains a reservoir level within bounds. The water level starts at 0, and
-    at any time &gt;= 0, it must be between min_level and max_level. Furthermore,
-    this constraint expects all times variables to be &gt;= 0.
+    at any time, it must be between min_level and max_level.
+
     If the variable `times[i]` is assigned a value t, then the current level
     changes by `demands[i]`, which is constant, at time t.
 
-    Note that level min can be &gt; 0, or level max can be &lt; 0. It just forces
-    some demands to be executed at time 0 to make sure that we are within those
-    bounds with the executed demands. Therefore, at any time t &gt;= 0:
+     Note that min level must be &lt;= 0, and the max level must be &gt;= 0. Please
+     use fixed demands to simulate initial state.
 
-        sum(demands[i] if times[i] &lt;= t) in [min_level, max_level]
+     Therefore, at any time:
+         sum(demands[i] if times[i] &lt;= t) in [min_level, max_level]
 
     Args:
-      times: A list of positive integer variables which specify the time of the
+      times: A list of integer variables which specify the time of the
         filling or emptying the reservoir.
       demands: A list of integer values that specifies the amount of the
         emptying or filling.
-      min_level: At any time &gt;= 0, the level of the reservoir must be greater of
+      min_level: At any time, the level of the reservoir must be greater or
         equal than the min level.
-      max_level: At any time &gt;= 0, the level of the reservoir must be less or
-        equal than the max level.
+      max_level: At any time, the level of the reservoir must be less or equal
+        than the max level.
 
     Returns:
       An instance of the `Constraint` class.
 
     Raises:
       ValueError: if max_level &lt; min_level.
+
+      ValueError: if max_level &lt; 0.
+
+      ValueError: if min_level &gt; 0
     &#34;&#34;&#34;
 
         if max_level &lt; min_level:
             return ValueError(
                 &#39;Reservoir constraint must have a max_level &gt;= min_level&#39;)
+
+        if max_level &lt; 0:
+            return ValueError(&#39;Reservoir constraint must have a max_level &gt;= 0&#39;)
+
+        if min_level &gt; 0:
+            return ValueError(&#39;Reservoir constraint must have a min_level &lt;= 0&#39;)
 
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
@@ -1145,45 +1155,55 @@ class CpModel(object):
                                          min_level, max_level):
         &#34;&#34;&#34;Adds Reservoir(times, demands, actives, min_level, max_level).
 
-    Maintain a reservoir level within bounds. The water level starts at 0, and
-    at
-    any time &gt;= 0, it must be within min_level, and max_level. Furthermore, this
-    constraints expect all times variables to be &gt;= 0.
-    If `actives[i]` is true, and if `times[i]` is assigned a value t, then the
-    level of the reservoir changes by `demands[i]`, which is constant, at
-    time t.
+    Maintains a reservoir level within bounds. The water level starts at 0, and
+    at any time, it must be between min_level and max_level.
 
-    Note that level_min can be &gt; 0, or level_max can be &lt; 0. It just forces
-    some demands to be executed at time 0 to make sure that we are within those
-    bounds with the executed demands. Therefore, at any time t &gt;= 0:
+    If the variable `times[i]` is assigned a value t, and `actives[i]` is
+    `True`, then the current level changes by `demands[i]`, which is constant,
+    at time t.
 
-        sum(demands[i] * actives[i] if times[i] &lt;= t) in [min_level, max_level]
+     Note that min level must be &lt;= 0, and the max level must be &gt;= 0. Please
+     use fixed demands to simulate initial state.
+
+     Therefore, at any time:
+         sum(demands[i] * actives[i] if times[i] &lt;= t) in [min_level, max_level]
+
 
     The array of boolean variables &#39;actives&#39;, if defined, indicates which
     actions are actually performed.
 
     Args:
-      times: A list of positive integer variables which specify the time of the
+      times: A list of integer variables which specify the time of the
         filling or emptying the reservoir.
       demands: A list of integer values that specifies the amount of the
         emptying or filling.
       actives: a list of boolean variables. They indicates if the
         emptying/refilling events actually take place.
-      min_level: At any time &gt;= 0, the level of the reservoir must be greater of
+      min_level: At any time, the level of the reservoir must be greater or
         equal than the min level.
-      max_level: At any time &gt;= 0, the level of the reservoir must be less or
-        equal than the max level.
+      max_level: At any time, the level of the reservoir must be less or equal
+        than the max level.
 
     Returns:
       An instance of the `Constraint` class.
 
     Raises:
       ValueError: if max_level &lt; min_level.
+
+      ValueError: if max_level &lt; 0.
+
+      ValueError: if min_level &gt; 0
     &#34;&#34;&#34;
 
         if max_level &lt; min_level:
             return ValueError(
                 &#39;Reservoir constraint must have a max_level &gt;= min_level&#39;)
+
+        if max_level &lt; 0:
+            return ValueError(&#39;Reservoir constraint must have a max_level &gt;= 0&#39;)
+
+        if min_level &gt; 0:
+            return ValueError(&#39;Reservoir constraint must have a min_level &lt;= 0&#39;)
 
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
@@ -2546,37 +2566,47 @@ Returns:
         &#34;&#34;&#34;Adds Reservoir(times, demands, min_level, max_level).
 
     Maintains a reservoir level within bounds. The water level starts at 0, and
-    at any time &gt;= 0, it must be between min_level and max_level. Furthermore,
-    this constraint expects all times variables to be &gt;= 0.
+    at any time, it must be between min_level and max_level.
+
     If the variable `times[i]` is assigned a value t, then the current level
     changes by `demands[i]`, which is constant, at time t.
 
-    Note that level min can be &gt; 0, or level max can be &lt; 0. It just forces
-    some demands to be executed at time 0 to make sure that we are within those
-    bounds with the executed demands. Therefore, at any time t &gt;= 0:
+     Note that min level must be &lt;= 0, and the max level must be &gt;= 0. Please
+     use fixed demands to simulate initial state.
 
-        sum(demands[i] if times[i] &lt;= t) in [min_level, max_level]
+     Therefore, at any time:
+         sum(demands[i] if times[i] &lt;= t) in [min_level, max_level]
 
     Args:
-      times: A list of positive integer variables which specify the time of the
+      times: A list of integer variables which specify the time of the
         filling or emptying the reservoir.
       demands: A list of integer values that specifies the amount of the
         emptying or filling.
-      min_level: At any time &gt;= 0, the level of the reservoir must be greater of
+      min_level: At any time, the level of the reservoir must be greater or
         equal than the min level.
-      max_level: At any time &gt;= 0, the level of the reservoir must be less or
-        equal than the max level.
+      max_level: At any time, the level of the reservoir must be less or equal
+        than the max level.
 
     Returns:
       An instance of the `Constraint` class.
 
     Raises:
       ValueError: if max_level &lt; min_level.
+
+      ValueError: if max_level &lt; 0.
+
+      ValueError: if min_level &gt; 0
     &#34;&#34;&#34;
 
         if max_level &lt; min_level:
             return ValueError(
                 &#39;Reservoir constraint must have a max_level &gt;= min_level&#39;)
+
+        if max_level &lt; 0:
+            return ValueError(&#39;Reservoir constraint must have a max_level &gt;= 0&#39;)
+
+        if min_level &gt; 0:
+            return ValueError(&#39;Reservoir constraint must have a min_level &lt;= 0&#39;)
 
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
@@ -2590,45 +2620,55 @@ Returns:
                                          min_level, max_level):
         &#34;&#34;&#34;Adds Reservoir(times, demands, actives, min_level, max_level).
 
-    Maintain a reservoir level within bounds. The water level starts at 0, and
-    at
-    any time &gt;= 0, it must be within min_level, and max_level. Furthermore, this
-    constraints expect all times variables to be &gt;= 0.
-    If `actives[i]` is true, and if `times[i]` is assigned a value t, then the
-    level of the reservoir changes by `demands[i]`, which is constant, at
-    time t.
+    Maintains a reservoir level within bounds. The water level starts at 0, and
+    at any time, it must be between min_level and max_level.
 
-    Note that level_min can be &gt; 0, or level_max can be &lt; 0. It just forces
-    some demands to be executed at time 0 to make sure that we are within those
-    bounds with the executed demands. Therefore, at any time t &gt;= 0:
+    If the variable `times[i]` is assigned a value t, and `actives[i]` is
+    `True`, then the current level changes by `demands[i]`, which is constant,
+    at time t.
 
-        sum(demands[i] * actives[i] if times[i] &lt;= t) in [min_level, max_level]
+     Note that min level must be &lt;= 0, and the max level must be &gt;= 0. Please
+     use fixed demands to simulate initial state.
+
+     Therefore, at any time:
+         sum(demands[i] * actives[i] if times[i] &lt;= t) in [min_level, max_level]
+
 
     The array of boolean variables &#39;actives&#39;, if defined, indicates which
     actions are actually performed.
 
     Args:
-      times: A list of positive integer variables which specify the time of the
+      times: A list of integer variables which specify the time of the
         filling or emptying the reservoir.
       demands: A list of integer values that specifies the amount of the
         emptying or filling.
       actives: a list of boolean variables. They indicates if the
         emptying/refilling events actually take place.
-      min_level: At any time &gt;= 0, the level of the reservoir must be greater of
+      min_level: At any time, the level of the reservoir must be greater or
         equal than the min level.
-      max_level: At any time &gt;= 0, the level of the reservoir must be less or
-        equal than the max level.
+      max_level: At any time, the level of the reservoir must be less or equal
+        than the max level.
 
     Returns:
       An instance of the `Constraint` class.
 
     Raises:
       ValueError: if max_level &lt; min_level.
+
+      ValueError: if max_level &lt; 0.
+
+      ValueError: if min_level &gt; 0
     &#34;&#34;&#34;
 
         if max_level &lt; min_level:
             return ValueError(
                 &#39;Reservoir constraint must have a max_level &gt;= min_level&#39;)
+
+        if max_level &lt; 0:
+            return ValueError(&#39;Reservoir constraint must have a max_level &gt;= 0&#39;)
+
+        if min_level &gt; 0:
+            return ValueError(&#39;Reservoir constraint must have a min_level &lt;= 0&#39;)
 
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
@@ -3994,29 +4034,27 @@ Returns:
 <dd>
 <div class="desc"><p>Adds Reservoir(times, demands, min_level, max_level).</p>
 <p>Maintains a reservoir level within bounds. The water level starts at 0, and
-at any time &gt;= 0, it must be between min_level and max_level. Furthermore,
-this constraint expects all times variables to be &gt;= 0.
-If the variable <code>times[i]</code> is assigned a value t, then the current level
+at any time, it must be between min_level and max_level.</p>
+<p>If the variable <code>times[i]</code> is assigned a value t, then the current level
 changes by <code>demands[i]</code>, which is constant, at time t.</p>
-<p>Note that level min can be &gt; 0, or level max can be &lt; 0. It just forces
-some demands to be executed at time 0 to make sure that we are within those
-bounds with the executed demands. Therefore, at any time t &gt;= 0:</p>
-<pre><code>sum(demands[i] if times[i] &lt;= t) in [min_level, max_level]
-</code></pre>
+<p>Note that min level must be &lt;= 0, and the max level must be &gt;= 0. Please
+use fixed demands to simulate initial state.</p>
+<p>Therefore, at any time:
+sum(demands[i] if times[i] &lt;= t) in [min_level, max_level]</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>times</code></strong></dt>
-<dd>A list of positive integer variables which specify the time of the
+<dd>A list of integer variables which specify the time of the
 filling or emptying the reservoir.</dd>
 <dt><strong><code>demands</code></strong></dt>
 <dd>A list of integer values that specifies the amount of the
 emptying or filling.</dd>
 <dt><strong><code>min_level</code></strong></dt>
-<dd>At any time &gt;= 0, the level of the reservoir must be greater of
+<dd>At any time, the level of the reservoir must be greater or
 equal than the min level.</dd>
 <dt><strong><code>max_level</code></strong></dt>
-<dd>At any time &gt;= 0, the level of the reservoir must be less or
-equal than the max level.</dd>
+<dd>At any time, the level of the reservoir must be less or equal
+than the max level.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <p>An instance of the <code><a title="cp_model.Constraint" href="#cp_model.Constraint">Constraint</a></code> class.</p>
@@ -4024,6 +4062,10 @@ equal than the max level.</dd>
 <dl>
 <dt><code>ValueError</code></dt>
 <dd>if max_level &lt; min_level.</dd>
+<dt><code>ValueError</code></dt>
+<dd>if max_level &lt; 0.</dd>
+<dt><code>ValueError</code></dt>
+<dd>if min_level &gt; 0</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -4033,37 +4075,47 @@ equal than the max level.</dd>
     &#34;&#34;&#34;Adds Reservoir(times, demands, min_level, max_level).
 
 Maintains a reservoir level within bounds. The water level starts at 0, and
-at any time &gt;= 0, it must be between min_level and max_level. Furthermore,
-this constraint expects all times variables to be &gt;= 0.
+at any time, it must be between min_level and max_level.
+
 If the variable `times[i]` is assigned a value t, then the current level
 changes by `demands[i]`, which is constant, at time t.
 
-Note that level min can be &gt; 0, or level max can be &lt; 0. It just forces
-some demands to be executed at time 0 to make sure that we are within those
-bounds with the executed demands. Therefore, at any time t &gt;= 0:
+ Note that min level must be &lt;= 0, and the max level must be &gt;= 0. Please
+ use fixed demands to simulate initial state.
 
-    sum(demands[i] if times[i] &lt;= t) in [min_level, max_level]
+ Therefore, at any time:
+     sum(demands[i] if times[i] &lt;= t) in [min_level, max_level]
 
 Args:
-  times: A list of positive integer variables which specify the time of the
+  times: A list of integer variables which specify the time of the
     filling or emptying the reservoir.
   demands: A list of integer values that specifies the amount of the
     emptying or filling.
-  min_level: At any time &gt;= 0, the level of the reservoir must be greater of
+  min_level: At any time, the level of the reservoir must be greater or
     equal than the min level.
-  max_level: At any time &gt;= 0, the level of the reservoir must be less or
-    equal than the max level.
+  max_level: At any time, the level of the reservoir must be less or equal
+    than the max level.
 
 Returns:
   An instance of the `Constraint` class.
 
 Raises:
   ValueError: if max_level &lt; min_level.
+
+  ValueError: if max_level &lt; 0.
+
+  ValueError: if min_level &gt; 0
 &#34;&#34;&#34;
 
     if max_level &lt; min_level:
         return ValueError(
             &#39;Reservoir constraint must have a max_level &gt;= min_level&#39;)
+
+    if max_level &lt; 0:
+        return ValueError(&#39;Reservoir constraint must have a max_level &gt;= 0&#39;)
+
+    if min_level &gt; 0:
+        return ValueError(&#39;Reservoir constraint must have a min_level &lt;= 0&#39;)
 
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
@@ -4079,24 +4131,21 @@ Raises:
 </code></dt>
 <dd>
 <div class="desc"><p>Adds Reservoir(times, demands, actives, min_level, max_level).</p>
-<p>Maintain a reservoir level within bounds. The water level starts at 0, and
-at
-any time &gt;= 0, it must be within min_level, and max_level. Furthermore, this
-constraints expect all times variables to be &gt;= 0.
-If <code>actives[i]</code> is true, and if <code>times[i]</code> is assigned a value t, then the
-level of the reservoir changes by <code>demands[i]</code>, which is constant, at
-time t.</p>
-<p>Note that level_min can be &gt; 0, or level_max can be &lt; 0. It just forces
-some demands to be executed at time 0 to make sure that we are within those
-bounds with the executed demands. Therefore, at any time t &gt;= 0:</p>
-<pre><code>sum(demands[i] * actives[i] if times[i] &lt;= t) in [min_level, max_level]
-</code></pre>
+<p>Maintains a reservoir level within bounds. The water level starts at 0, and
+at any time, it must be between min_level and max_level.</p>
+<p>If the variable <code>times[i]</code> is assigned a value t, and <code>actives[i]</code> is
+<code>True</code>, then the current level changes by <code>demands[i]</code>, which is constant,
+at time t.</p>
+<p>Note that min level must be &lt;= 0, and the max level must be &gt;= 0. Please
+use fixed demands to simulate initial state.</p>
+<p>Therefore, at any time:
+sum(demands[i] * actives[i] if times[i] &lt;= t) in [min_level, max_level]</p>
 <p>The array of boolean variables 'actives', if defined, indicates which
 actions are actually performed.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>times</code></strong></dt>
-<dd>A list of positive integer variables which specify the time of the
+<dd>A list of integer variables which specify the time of the
 filling or emptying the reservoir.</dd>
 <dt><strong><code>demands</code></strong></dt>
 <dd>A list of integer values that specifies the amount of the
@@ -4105,11 +4154,11 @@ emptying or filling.</dd>
 <dd>a list of boolean variables. They indicates if the
 emptying/refilling events actually take place.</dd>
 <dt><strong><code>min_level</code></strong></dt>
-<dd>At any time &gt;= 0, the level of the reservoir must be greater of
+<dd>At any time, the level of the reservoir must be greater or
 equal than the min level.</dd>
 <dt><strong><code>max_level</code></strong></dt>
-<dd>At any time &gt;= 0, the level of the reservoir must be less or
-equal than the max level.</dd>
+<dd>At any time, the level of the reservoir must be less or equal
+than the max level.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <p>An instance of the <code><a title="cp_model.Constraint" href="#cp_model.Constraint">Constraint</a></code> class.</p>
@@ -4117,6 +4166,10 @@ equal than the max level.</dd>
 <dl>
 <dt><code>ValueError</code></dt>
 <dd>if max_level &lt; min_level.</dd>
+<dt><code>ValueError</code></dt>
+<dd>if max_level &lt; 0.</dd>
+<dt><code>ValueError</code></dt>
+<dd>if min_level &gt; 0</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -4126,45 +4179,55 @@ equal than the max level.</dd>
                                      min_level, max_level):
     &#34;&#34;&#34;Adds Reservoir(times, demands, actives, min_level, max_level).
 
-Maintain a reservoir level within bounds. The water level starts at 0, and
-at
-any time &gt;= 0, it must be within min_level, and max_level. Furthermore, this
-constraints expect all times variables to be &gt;= 0.
-If `actives[i]` is true, and if `times[i]` is assigned a value t, then the
-level of the reservoir changes by `demands[i]`, which is constant, at
-time t.
+Maintains a reservoir level within bounds. The water level starts at 0, and
+at any time, it must be between min_level and max_level.
 
-Note that level_min can be &gt; 0, or level_max can be &lt; 0. It just forces
-some demands to be executed at time 0 to make sure that we are within those
-bounds with the executed demands. Therefore, at any time t &gt;= 0:
+If the variable `times[i]` is assigned a value t, and `actives[i]` is
+`True`, then the current level changes by `demands[i]`, which is constant,
+at time t.
 
-    sum(demands[i] * actives[i] if times[i] &lt;= t) in [min_level, max_level]
+ Note that min level must be &lt;= 0, and the max level must be &gt;= 0. Please
+ use fixed demands to simulate initial state.
+
+ Therefore, at any time:
+     sum(demands[i] * actives[i] if times[i] &lt;= t) in [min_level, max_level]
+
 
 The array of boolean variables &#39;actives&#39;, if defined, indicates which
 actions are actually performed.
 
 Args:
-  times: A list of positive integer variables which specify the time of the
+  times: A list of integer variables which specify the time of the
     filling or emptying the reservoir.
   demands: A list of integer values that specifies the amount of the
     emptying or filling.
   actives: a list of boolean variables. They indicates if the
     emptying/refilling events actually take place.
-  min_level: At any time &gt;= 0, the level of the reservoir must be greater of
+  min_level: At any time, the level of the reservoir must be greater or
     equal than the min level.
-  max_level: At any time &gt;= 0, the level of the reservoir must be less or
-    equal than the max level.
+  max_level: At any time, the level of the reservoir must be less or equal
+    than the max level.
 
 Returns:
   An instance of the `Constraint` class.
 
 Raises:
   ValueError: if max_level &lt; min_level.
+
+  ValueError: if max_level &lt; 0.
+
+  ValueError: if min_level &gt; 0
 &#34;&#34;&#34;
 
     if max_level &lt; min_level:
         return ValueError(
             &#39;Reservoir constraint must have a max_level &gt;= min_level&#39;)
+
+    if max_level &lt; 0:
+        return ValueError(&#39;Reservoir constraint must have a max_level &gt;= 0&#39;)
+
+    if min_level &gt; 0:
+        return ValueError(&#39;Reservoir constraint must have a min_level &lt;= 0&#39;)
 
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]

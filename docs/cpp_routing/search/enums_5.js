@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['intervalstrategy_5501',['IntervalStrategy',['../classoperations__research_1_1_solver.html#a3a64940761b306c816e00e077906952f',1,'operations_research::Solver']]],
-  ['intvaluestrategy_5502',['IntValueStrategy',['../classoperations__research_1_1_solver.html#a45c5a2dd0d47110ef5b00408854d8d84',1,'operations_research::Solver']]],
-  ['intvarstrategy_5503',['IntVarStrategy',['../classoperations__research_1_1_solver.html#ab7ab23bc58ea40dc03a5418ddbce7601',1,'operations_research::Solver']]]
+  ['intervalstrategy_5505',['IntervalStrategy',['../classoperations__research_1_1_solver.html#a3a64940761b306c816e00e077906952f',1,'operations_research::Solver']]],
+  ['intvaluestrategy_5506',['IntValueStrategy',['../classoperations__research_1_1_solver.html#a45c5a2dd0d47110ef5b00408854d8d84',1,'operations_research::Solver']]],
+  ['intvarstrategy_5507',['IntVarStrategy',['../classoperations__research_1_1_solver.html#ab7ab23bc58ea40dc03a5418ddbce7601',1,'operations_research::Solver']]]
 ];

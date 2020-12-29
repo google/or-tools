@@ -43,7 +43,7 @@
 <area shape="rect" id="node42" href="$classcom_1_1google_1_1ortools_1_1sat_1_1InverseConstraintProto_1_1Builder.html" title=" " alt="" coords="526,4958,747,4985"/>
 <area shape="rect" id="node43" href="$classcom_1_1google_1_1ortools_1_1sat_1_1LinearArgumentProto_1_1Builder.html" title="Protobuf type." alt="" coords="531,5059,742,5086"/>
 <area shape="rect" id="node44" href="$classcom_1_1google_1_1ortools_1_1sat_1_1LinearConstraintProto_1_1Builder.html" title=" " alt="" coords="530,5161,743,5187"/>
-<area shape="rect" id="node45" href="$classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html" title="Protobuf type." alt="" coords="528,5262,745,5289"/>
+<area shape="rect" id="node45" href="$classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html" title=" " alt="" coords="528,5262,745,5289"/>
 <area shape="rect" id="node46" href="$classcom_1_1google_1_1ortools_1_1sat_1_1NoOverlap2DConstraintProto_1_1Builder.html" title=" " alt="" coords="529,5364,744,5405"/>
 <area shape="rect" id="node47" href="$classcom_1_1google_1_1ortools_1_1sat_1_1NoOverlapConstraintProto_1_1Builder.html" title=" " alt="" coords="539,5,735,47"/>
 <area shape="rect" id="node48" href="$classcom_1_1google_1_1ortools_1_1sat_1_1PartialVariableAssignment_1_1Builder.html" title=" " alt="" coords="538,71,735,112"/>
@@ -95,7 +95,7 @@
 <area shape="rect" id="node94" href="$classcom_1_1google_1_1ortools_1_1sat_1_1InverseConstraintProto.html" title=" " alt="" coords="551,5110,722,5137"/>
 <area shape="rect" id="node95" href="$classcom_1_1google_1_1ortools_1_1sat_1_1LinearArgumentProto.html" title="Protobuf type." alt="" coords="557,5211,717,5238"/>
 <area shape="rect" id="node96" href="$classcom_1_1google_1_1ortools_1_1sat_1_1LinearConstraintProto.html" title=" " alt="" coords="555,5313,718,5339"/>
-<area shape="rect" id="node97" href="$classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html" title="Protobuf type." alt="" coords="553,5430,720,5457"/>
+<area shape="rect" id="node97" href="$classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html" title=" " alt="" coords="553,5430,720,5457"/>
 <area shape="rect" id="node98" href="$classcom_1_1google_1_1ortools_1_1sat_1_1NoOverlap2DConstraintProto.html" title=" " alt="" coords="531,5481,742,5507"/>
 <area shape="rect" id="node99" href="$classcom_1_1google_1_1ortools_1_1sat_1_1NoOverlapConstraintProto.html" title=" " alt="" coords="541,137,733,163"/>
 <area shape="rect" id="node100" href="$classcom_1_1google_1_1ortools_1_1sat_1_1PartialVariableAssignment.html" title=" " alt="" coords="540,305,733,331"/>

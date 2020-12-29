@@ -16230,6 +16230,27 @@
       <anchor>a4b8d71a8ca57ba4be3eb4964b0db9572</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>StartViewFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>a8be9092500463bb1eb4018c80c8d0390</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>EndViewFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>af6195a63ed99af341a93bf585736ee0c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>SizeViewFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>ab87a3f96ba168fe75243b543b3d5186c</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="property" static="yes">
       <type>static pb::MessageParser&lt; IntervalConstraintProto &gt;</type>
       <name>Parser</name>
@@ -16263,6 +16284,27 @@
       <name>Size</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
       <anchor>af06eb7b9b70be91dadd4f12ebcaed796</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>global::Google.OrTools.Sat.LinearExpressionProto</type>
+      <name>StartView</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>a5e0ee61a5cdef993acd8bd37f93b5946</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>global::Google.OrTools.Sat.LinearExpressionProto</type>
+      <name>EndView</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>a7cc0ea5a086ce67663c97b0dfd84b584</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>global::Google.OrTools.Sat.LinearExpressionProto</type>
+      <name>SizeView</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>ae00b75962b94ba24be8780bf5855537c</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -47718,8 +47760,8 @@
       <type>static int</type>
       <name>RoutingModel_VehicleIndex</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
-      <anchor>a3fe247e44660e22baf0b903e66594bb2</anchor>
-      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2)</arglist>
+      <anchor>a2d8a671019fdf5aa7132ba8b57f0aef0</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, long jarg2)</arglist>
     </member>
     <member kind="function">
       <type>static long</type>
@@ -57874,8 +57916,8 @@
       <type>int</type>
       <name>VehicleIndex</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
-      <anchor>a74adc8ac8ccf37f2f991039b5c793eef</anchor>
-      <arglist>(int index)</arglist>
+      <anchor>a0a275fe11ecbb21ef428d83f61831305</anchor>
+      <arglist>(long index)</arglist>
     </member>
     <member kind="function">
       <type>long</type>
