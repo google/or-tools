@@ -369,5 +369,33 @@ namespace Google.OrTools.Tests
             Assert.True(model.ExportToFile("test_model_dotnet.pbtxt"));
             Console.WriteLine("Model written to file");
         }
+
+        [Fact]
+        public void SolveFromString()
+        {
+            string model_str = @"
+            { 
+              ""variables"": [
+                { ""name"": ""C"", ""domain"": [ ""1"", ""9"" ] },
+                { ""name"": ""P"", ""domain"": [ ""0"", ""9"" ] },
+                { ""name"": ""I"", ""domain"": [ ""1"", ""9"" ] },
+                { ""name"": ""S"", ""domain"": [ ""0"", ""9"" ] },
+                { ""name"": ""F"", ""domain"": [ ""1"", ""9"" ] },
+                { ""name"": ""U"", ""domain"": [ ""0"", ""9"" ] },
+                { ""name"": ""N"", ""domain"": [ ""0"", ""9"" ] },
+                { ""name"": ""T"", ""domain"": [ ""1"", ""9"" ] },
+                { ""name"": ""R"", ""domain"": [ ""0"", ""9"" ] },
+                { ""name"": ""E"", ""domain"": [ ""0"", ""9"" ] }
+              ],
+              ""constraints"": [
+                { ""allDiff"": { ""vars"": [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ] } },
+                { ""linear"": { ""vars"": [ 6, 5, 9, 4, 3, 7, 8, 2, 0, 1 ], ""coeffs"": [ ""1"", ""0"", ""-1"", ""100"", ""1"", ""-1000"", ""-100"", ""10"", ""10"", ""1"" ], ""domain"": [ ""0"", ""0"" ] } }
+              ]
+            }";
+            CpModelProto model = Google.Protobuf.JsonParser.Default.Parse<CpModelProto>(model_str);
+
+            CpSolverResponse response = SatHelper.Solve(model);
+            Console.WriteLine(response);
+        }
     }
 } // namespace Google.OrTools.Tests
