@@ -69,8 +69,7 @@ class BaseKnapsackSolver;
  * E.g.:
 
   \b Python:
-
-  \code
+  \code{.py}
       profits = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
       weights = [ [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
                   [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
@@ -86,8 +85,7 @@ class BaseKnapsackSolver;
   \endcode
 
   \b C++:
-
-  \code
+  \code{.cpp}
      const std::vector<int64> profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
      const std::vector<std::vector<int64>> weights =
          { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
@@ -102,8 +100,7 @@ class BaseKnapsackSolver;
   \endcode
 
   \b Java:
-
-  \code
+  \code{.java}
     final long[] profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     final long[][] weights = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
            { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
