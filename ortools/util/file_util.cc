@@ -17,6 +17,7 @@
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"
+#include "google/protobuf/util/json_util.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/file.h"
@@ -70,6 +71,11 @@ bool ReadFileToProto(absl::string_view filename,
     VLOG(1) << "ReadFileToProto(): input is a text proto";
     return true;
   }
+  if (google::protobuf::util::JsonStringToMessage(
+         data, proto, google::protobuf::util::JsonParseOptions()).ok()) {
+    VLOG(1) << "ReadFileToProto(): input is a json proto";
+    return true;
+  }
   LOG(WARNING) << "Could not parse protocol buffer";
   return false;
 }
@@ -97,6 +103,17 @@ bool WriteProtoToFile(absl::string_view filename,
         LOG(WARNING) << "Printing to string failed.";
         return false;
       }
+      break;
+    case ProtoWriteFormat::kJson:
+      google::protobuf::util::JsonPrintOptions options;
+      options.add_whitespace = true;
+      options.always_print_primitive_fields = true;
+      options.preserve_proto_field_names = true;
+      if (!google::protobuf::util::MessageToJsonString(proto, &output_string, options).ok()) {
+        LOG(WARNING) << "Printing to stream failed.";
+        return false;
+      }
+      file_type_suffix = ".json";
       break;
   }
   std::string output_filename(filename);
