@@ -73,8 +73,14 @@ bool ReadFileToProto(absl::string_view filename,
   }
   if (google::protobuf::util::JsonStringToMessage(
          data, proto, google::protobuf::util::JsonParseOptions()).ok()) {
-    VLOG(1) << "ReadFileToProto(): input is a json proto";
-    return true;
+    constexpr int kMaxJsonToBinaryShrinkFactor = 30;
+    if (proto->ByteSizeLong() < data.size() / kMaxJsonToBinaryShrinkFactor) {
+      VLOG(1) << "ReadFileToProto(): input is probably JSON, but probably not"
+                 " of the right proto";
+    } else {
+      VLOG(1) << "ReadFileToProto(): input is a proto JSON";
+      return true;
+    }
   }
   LOG(WARNING) << "Could not parse protocol buffer";
   return false;
