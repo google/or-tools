@@ -20,17 +20,22 @@
 ///
 /// Here is a very simple Constraint Programming problem:
 ///
-///   Knowing that we see 56 legs and 20 heads, how many pheasants and rabbits
-///   are we looking at?
+///   If we see 56 legs and 20 heads, how many two-legged pheasants
+///   and four-legged rabbits are we looking at?
 ///
 /// Here is some simple Constraint Programming code to find out:
 ///
 ///   void pheasant() {
 ///     Solver s("pheasant");
+///     // Create integer variables to represent the number of pheasants and
+///     // rabbits, with a minimum of 0 and a maximum of 20.
 ///     IntVar* const p = s.MakeIntVar(0, 20, "pheasant"));
 ///     IntVar* const r = s.MakeIntVar(0, 20, "rabbit"));
-///     IntExpr* const legs = s.MakeSum(s.MakeProd(p, 2), s.MakeProd(r, 4));
+///     // The number of heads is the sum of pheasants and rabbits.
 ///     IntExpr* const heads = s.MakeSum(p, r);
+///     // The number of legs is the sum of pheasants * 2 and rabbits * 4.
+///     IntExpr* const legs = s.MakeSum(s.MakeProd(p, 2), s.MakeProd(r, 4));
+///     // Constraints: the number of legs is 56 and heads is 20.
 ///     Constraint* const ct_legs = s.MakeEquality(legs, 56);
 ///     Constraint* const ct_heads = s.MakeEquality(heads, 20);
 ///     s.AddConstraint(ct_legs);
