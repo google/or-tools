@@ -21,6 +21,7 @@
 
 #include <vector>
 
+#include "absl/flags/flag.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
@@ -49,7 +50,7 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
   const int num_items = scaling * kNumItems;
   const int num_bins = scaling;
 
-  std::vector<std::vector<BoolVar> > items_in_bins(num_bins);
+  std::vector<std::vector<BoolVar>> items_in_bins(num_bins);
   for (int b = 0; b < num_bins; ++b) {
     for (int i = 0; i < num_items; ++i) {
       items_in_bins[b].push_back(builder.NewBoolVar());

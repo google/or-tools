@@ -16,6 +16,7 @@
 #include <numeric>
 #include <vector>
 
+#include "absl/flags/flag.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_join.h"
@@ -118,8 +119,7 @@ void Solve(const std::vector<int64>& durations,
 
   // TODO(user): We can't set an objective upper bound with the current cp_model
   // interface, so we can't use heuristic or absl::GetFlag(FLAGS_upper_bound)
-  // here. The best is
-  // probably to provide a "solution hint" instead.
+  // here. The best is probably to provide a "solution hint" instead.
   //
   // Set a known upper bound (or use the flag). This has a bigger impact than
   // can be expected at first:
@@ -176,7 +176,7 @@ void Solve(const std::vector<int64>& durations,
     for (int i = 0; i < num_tasks; ++i) {
       const int64 end = SolutionIntegerMin(r, task_ends[i]);
       CHECK_EQ(end, SolutionIntegerMax(r, task_ends[i]));
-      objective += weights[i] * std::max<int64>(0ll, end - due_dates[i]);
+      objective += weights[i] * std::max<int64>(int64{0}, end - due_dates[i]);
     }
     LOG(INFO) << "Cost " << objective;
 

@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/flags/flag.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
@@ -239,6 +240,7 @@ int Run() {
 
     // The SAT competition requires a particular exit code and since we don't
     // really use it for any other purpose, we comply.
+    if (response.status() == CpSolverStatus::OPTIMAL) return 10;
     if (response.status() == CpSolverStatus::FEASIBLE) return 10;
     if (response.status() == CpSolverStatus::INFEASIBLE) return 20;
     return EXIT_SUCCESS;
@@ -300,7 +302,7 @@ int Run() {
     CHECK(!absl::GetFlag(FLAGS_reduce_memory_usage)) << "incompatible";
     CHECK(!absl::GetFlag(FLAGS_presolve)) << "incompatible";
     LOG(INFO) << "Finding symmetries of the problem.";
-    std::vector<std::unique_ptr<SparsePermutation> > generators;
+    std::vector<std::unique_ptr<SparsePermutation>> generators;
     FindLinearBooleanProblemSymmetries(problem, &generators);
     std::unique_ptr<SymmetryPropagator> propagator(new SymmetryPropagator);
     for (int i = 0; i < generators.size(); ++i) {
@@ -366,7 +368,7 @@ int Run() {
   if (result == SatSolver::FEASIBLE) {
     if (absl::GetFlag(FLAGS_fu_malik) || absl::GetFlag(FLAGS_linear_scan) ||
         absl::GetFlag(FLAGS_wpm1) || absl::GetFlag(FLAGS_core_enc)) {
-      printf("s OPTIMUM FOUND\n");
+      absl::PrintF("s OPTIMUM FOUND\n");
       CHECK(!solution.empty());
       const Coefficient objective = ComputeObjectiveValue(problem, solution);
       scaled_best_bound = AddOffsetAndScaleObjectiveValue(problem, objective);
@@ -377,13 +379,13 @@ int Run() {
         problem = original_problem;
       }
     } else {
-      printf("s SATISFIABLE\n");
+      absl::PrintF("s SATISFIABLE\n");
     }
 
     // Check and output the solution.
     CHECK(IsAssignmentValid(problem, solution));
     if (absl::GetFlag(FLAGS_output_cnf_solution)) {
-      printf("v %s\n", SolutionString(problem, solution).c_str());
+      absl::PrintF("v %s\n", SolutionString(problem, solution));
     }
     if (!absl::GetFlag(FLAGS_output).empty()) {
       CHECK(!absl::GetFlag(FLAGS_reduce_memory_usage)) << "incompatible";
@@ -400,36 +402,32 @@ int Run() {
     }
   }
   if (result == SatSolver::INFEASIBLE) {
-    printf("s UNSATISFIABLE\n");
+    absl::PrintF("s UNSATISFIABLE\n");
   }
 
   // Print status.
-  printf("c status: %s\n", SatStatusString(result).c_str());
+  absl::PrintF("c status: %s\n", SatStatusString(result));
 
   // Print objective value.
   if (solution.empty()) {
-    printf("c objective: na\n");
-    printf("c best bound: na\n");
+    absl::PrintF("c objective: na\n");
+    absl::PrintF("c best bound: na\n");
   } else {
     const Coefficient objective = ComputeObjectiveValue(problem, solution);
-    printf("c objective: %.16g\n",
-           AddOffsetAndScaleObjectiveValue(problem, objective));
-    printf("c best bound: %.16g\n", scaled_best_bound);
+    absl::PrintF("c objective: %.16g\n",
+                 AddOffsetAndScaleObjectiveValue(problem, objective));
+    absl::PrintF("c best bound: %.16g\n", scaled_best_bound);
   }
 
   // Print final statistics.
-  printf("c booleans: %d\n", solver->NumVariables());
+  absl::PrintF("c booleans: %d\n", solver->NumVariables());
   absl::PrintF("c conflicts: %d\n", solver->num_failures());
   absl::PrintF("c branches: %d\n", solver->num_branches());
   absl::PrintF("c propagations: %d\n", solver->num_propagations());
-  printf("c walltime: %f\n", wall_timer.Get());
-  printf("c usertime: %f\n", user_timer.Get());
-  printf("c deterministic_time: %f\n", solver->deterministic_time());
+  absl::PrintF("c walltime: %f\n", wall_timer.Get());
+  absl::PrintF("c usertime: %f\n", user_timer.Get());
+  absl::PrintF("c deterministic_time: %f\n", solver->deterministic_time());
 
-  // The SAT competition requires a particular exit code and since we don't
-  // really use it for any other purpose, we comply.
-  if (result == SatSolver::FEASIBLE) return 10;
-  if (result == SatSolver::INFEASIBLE) return 20;
   return EXIT_SUCCESS;
 }
 

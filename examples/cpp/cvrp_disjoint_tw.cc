@@ -24,6 +24,7 @@
 
 #include <vector>
 
+#include "absl/random/random.h"
 #include "examples/cpp/cvrptw_lib.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
@@ -34,7 +35,6 @@
 #include "ortools/constraint_solver/routing_parameters.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 
-using operations_research::ACMRandom;
 using operations_research::Assignment;
 using operations_research::DefaultRoutingSearchParameters;
 using operations_research::GetSeed;
@@ -73,8 +73,7 @@ int main(int argc, char** argv) {
       << "Specify a non-null vehicle fleet size.";
   // VRP of size absl::GetFlag(FLAGS_vrp_size).
   // Nodes are indexed from 0 to absl::GetFlag(FLAGS_vrp_orders), the starts and
-  // ends of
-  // the routes are at node 0.
+  // ends of the routes are at node 0.
   const RoutingIndexManager::NodeIndex kDepot(0);
   RoutingIndexManager manager(absl::GetFlag(FLAGS_vrp_orders) + 1,
                               absl::GetFlag(FLAGS_vrp_vehicles), kDepot);
@@ -109,8 +108,8 @@ int main(int argc, char** argv) {
       routing.RegisterTransitCallback([&demand, &manager](int64 i, int64 j) {
         return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
-      kNullCapacitySlack, kVehicleCapacity, /*fix_start_cumul_to_zero=*/true,
-      kCapacity);
+      kNullCapacitySlack, kVehicleCapacity,
+      /*fix_start_cumul_to_zero=*/true, kCapacity);
 
   // Adding time dimension constraints.
   const int64 kTimePerDemandUnit = 300;
@@ -132,12 +131,12 @@ int main(int argc, char** argv) {
 
   // Adding disjoint time windows.
   Solver* solver = routing.solver();
-  ACMRandom randomizer(
+  std::mt19937 randomizer(
       GetSeed(absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed)));
   for (int order = 1; order < manager.num_nodes(); ++order) {
     std::vector<int64> forbid_points(2 * absl::GetFlag(FLAGS_vrp_windows), 0);
     for (int i = 0; i < forbid_points.size(); ++i) {
-      forbid_points[i] = randomizer.Uniform(kHorizon);
+      forbid_points[i] = absl::Uniform<int32_t>(randomizer, 0, kHorizon);
     }
     std::sort(forbid_points.begin(), forbid_points.end());
     std::vector<int64> forbid_starts(1, 0);
