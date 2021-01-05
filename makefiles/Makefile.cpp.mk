@@ -88,6 +88,12 @@ $(GEN_DIR)/ortools/sat: | $(GEN_DIR)/ortools
 $(GEN_DIR)/ortools/util: | $(GEN_DIR)/ortools
 	-$(MKDIR) $(GEN_PATH)$Sortools$Sutil
 
+$(GEN_DIR)/examples: | $(GEN_DIR)
+	-$(MKDIR) $(GEN_PATH)$Sexamples
+
+$(GEN_DIR)/examples/cpp: | $(GEN_DIR)/examples
+	-$(MKDIR) $(GEN_PATH)$Sexamples$Scpp
+
 $(BIN_DIR):
 	-$(MKDIR) $(BIN_DIR)
 
@@ -339,6 +345,41 @@ $(BIN_DIR)/%$E: $(OBJ_DIR)/%.$O $(OR_TOOLS_LIBS) | $(BIN_DIR)
 
 rcc_%: $(BIN_DIR)/%$E FORCE
 	$(BIN_DIR)$S$*$E $(ARGS)
+
+##################################
+##  Course scheduling example   ##
+##################################
+
+examples/cpp/course_scheduling.proto: ;
+
+$(CC_GEN_DIR)/course_scheduling.pb.cc: \
+ $(SRC_DIR)/examples/cpp/course_scheduling.proto | $(GEN_DIR)/examples/cpp
+	$(PROTOC) --proto_path=$(INC_DIR) $(PROTOBUF_PROTOC_INC) --cpp_out=$(GEN_PATH) $(SRC_DIR)/examples/cpp/course_scheduling.proto
+
+$(CC_GEN_DIR)/course_scheduling.pb.h: \
+  $(CC_GEN_DIR)/course_scheduling.pb.cc
+	$(TOUCH) $(GEN_PATH)$Scourse_scheduling.pb.h
+
+$(OBJ_DIR)/course_scheduling.$O: $(CC_EX_DIR)/course_scheduling.cc $(CC_EX_DIR)/course_scheduling.h $(CC_GEN_DIR)/course_scheduling.pb.h $(OR_TOOLS_LIBS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Scourse_scheduling.cc $(OBJ_OUT)$(OBJ_DIR)$Scourse_scheduling.$O
+
+$(OBJ_DIR)/course_scheduling_run.$O: $(CC_EX_DIR)/course_scheduling_run.cc $(CC_EX_DIR)/course_scheduling.h $(CC_GEN_DIR)/course_scheduling.pb.h $(OR_TOOLS_LIBS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Scourse_scheduling_run.cc $(OBJ_OUT)$(OBJ_DIR)$Scourse_scheduling_run.$O
+
+
+$(OBJ_DIR)/course_scheduling.pb.$O: $(CC_GEN_DIR)/course_scheduling.pb.cc $(CC_GEN_DIR)/course_scheduling.pb.h $(OR_TOOLS_LIBS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c $(CC_GEN_PATH)$Scourse_scheduling.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Scourse_scheduling.pb.$O
+
+$(BIN_DIR)/course_scheduling$E: $(OBJ_DIR)/course_scheduling.$O $(OBJ_DIR)/course_scheduling_run.$O $(OBJ_DIR)/course_scheduling.pb.$O $(OR_TOOLS_LIBS) | $(BIN_DIR)
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Scourse_scheduling.$O $(OBJ_DIR)$Scourse_scheduling_run.$O $(OBJ_DIR)$Scourse_scheduling.pb.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scourse_scheduling$E
+
+rcc_course_scheduling: $(BIN_DIR)/course_scheduling$E FORCE
+	$(BIN_DIR)$S$*$E $(ARGS)
+
+
+##################################
+##  Test targets                ##
+##################################
 
 .PHONY: test_cc_algorithms_samples # Build and Run all C++ Algorithms Samples (located in ortools/algorithms/samples)
 test_cc_algorithms_samples: \

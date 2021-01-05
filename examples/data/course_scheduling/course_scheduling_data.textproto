@@ -1,0 +1,4211 @@
+display_name: "fake_course_scheduling_data"
+days_count: 1
+daily_time_slot_count: 7
+courses {
+  display_name: "Algebra"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 8
+  teacher_indices: 0
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "Geometry"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 15
+  teacher_indices: 0
+  teacher_indices: 1
+  teacher_section_counts: 3
+  teacher_section_counts: 2
+}
+courses {
+  display_name: "Algebra II"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 15
+  teacher_indices: 1
+  teacher_indices: 2
+  teacher_section_counts: 3
+  teacher_section_counts: 3
+}
+courses {
+  display_name: "Precalculus"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 15
+  teacher_indices: 2
+  teacher_indices: 3
+  teacher_section_counts: 2
+  teacher_section_counts: 4
+}
+courses {
+  display_name: "AB Calculus"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 12
+  teacher_indices: 4
+  teacher_indices: 0
+  teacher_section_counts: 3
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "BC Calculus"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 10
+  teacher_indices: 4
+  teacher_section_counts: 2
+}
+courses {
+  display_name: "AP Statistics"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 8
+  teacher_indices: 3
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "English I"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 15
+  teacher_indices: 5
+  teacher_indices: 6
+  teacher_section_counts: 4
+  teacher_section_counts: 2
+}
+courses {
+  display_name: "English II"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 15
+  teacher_indices: 5
+  teacher_indices: 6
+  teacher_indices: 7
+  teacher_section_counts: 1
+  teacher_section_counts: 3
+  teacher_section_counts: 2
+}
+courses {
+  display_name: "English III"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 15
+  teacher_indices: 7
+  teacher_indices: 8
+  teacher_indices: 9
+  teacher_section_counts: 3
+  teacher_section_counts: 1
+  teacher_section_counts: 2
+}
+courses {
+  display_name: "English IV"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 15
+  teacher_indices: 8
+  teacher_indices: 9
+  teacher_section_counts: 4
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "AP English"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 15
+  teacher_indices: 9
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "Modern History I"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 25
+  min_capacity: 15
+  teacher_indices: 10
+  teacher_indices: 12
+  teacher_section_counts: 4
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "Modern History II"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 25
+  min_capacity: 15
+  teacher_indices: 10
+  teacher_indices: 12
+  teacher_section_counts: 1
+  teacher_section_counts: 4
+}
+courses {
+  display_name: "US History"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 25
+  min_capacity: 15
+  teacher_indices: 11
+  teacher_section_counts: 3
+}
+courses {
+  display_name: "AP US History"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 25
+  min_capacity: 15
+  teacher_indices: 11
+  teacher_section_counts: 2
+}
+courses {
+  display_name: "Euro History"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 25
+  min_capacity: 15
+  teacher_indices: 13
+  teacher_section_counts: 3
+}
+courses {
+  display_name: "AP Euro History"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 15
+  teacher_indices: 13
+  teacher_section_counts: 2
+}
+courses {
+  display_name: "Biology"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 15
+  teacher_indices: 14
+  teacher_indices: 15
+  teacher_section_counts: 4
+  teacher_section_counts: 2
+}
+courses {
+  display_name: "AP Biology"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 0
+  teacher_indices: 14
+  teacher_indices: 15
+  teacher_section_counts: 1
+  teacher_section_counts: 2
+}
+courses {
+  display_name: "Chemistry"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 15
+  teacher_indices: 16
+  teacher_indices: 17
+  teacher_section_counts: 5
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "AP Chemistry"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 0
+  teacher_indices: 17
+  teacher_section_counts: 3
+}
+courses {
+  display_name: "Physics"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 15
+  teacher_indices: 18
+  teacher_section_counts: 4
+}
+courses {
+  display_name: "AP Physics"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 25
+  min_capacity: 0
+  teacher_indices: 18
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "Anatomy"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 0
+  teacher_indices: 15
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "Spanish I"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 0
+  teacher_indices: 19
+  teacher_indices: 22
+  teacher_section_counts: 1
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "Spanish II"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 10
+  teacher_indices: 20
+  teacher_indices: 22
+  teacher_section_counts: 1
+  teacher_section_counts: 2
+}
+courses {
+  display_name: "Spanish III"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 10
+  teacher_indices: 19
+  teacher_indices: 22
+  teacher_section_counts: 2
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "Spanish IV"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 10
+  teacher_indices: 19
+  teacher_indices: 21
+  teacher_section_counts: 2
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "Spanish V"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 10
+  teacher_indices: 21
+  teacher_section_counts: 3
+}
+courses {
+  display_name: "AP Spanish Language"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 0
+  teacher_indices: 21
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "AP Spanish Literature"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 0
+  teacher_indices: 22
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "French I"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 0
+  teacher_indices: 20
+  teacher_section_counts: 2
+}
+courses {
+  display_name: "French II"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 10
+  teacher_indices: 20
+  teacher_indices: 24
+  teacher_section_counts: 1
+  teacher_section_counts: 2
+}
+courses {
+  display_name: "French III"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 10
+  teacher_indices: 20
+  teacher_indices: 24
+  teacher_section_counts: 1
+  teacher_section_counts: 2
+}
+courses {
+  display_name: "French IV"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 10
+  teacher_indices: 23
+  teacher_indices: 24
+  teacher_section_counts: 2
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "French V"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 8
+  teacher_indices: 23
+  teacher_section_counts: 2
+}
+courses {
+  display_name: "AP French Language"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 0
+  teacher_indices: 23
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "Latin I"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 0
+  teacher_indices: 25
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "Latin II"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 15
+  teacher_indices: 25
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "Latin III"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 7
+  teacher_indices: 25
+  teacher_indices: 26
+  teacher_section_counts: 1
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "Latin IV"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 7
+  teacher_indices: 26
+  teacher_section_counts: 2
+}
+courses {
+  display_name: "Latin V"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 0
+  teacher_indices: 26
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "AP Latin"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 20
+  min_capacity: 0
+  teacher_indices: 26
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "Art I"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 50
+  min_capacity: 0
+  teacher_indices: 27
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "Art II"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 50
+  min_capacity: 0
+  teacher_indices: 27
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "Art III"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 50
+  min_capacity: 0
+  teacher_indices: 27
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "Art IV"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 50
+  min_capacity: 0
+  teacher_indices: 27
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "PE"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 40
+  min_capacity: 0
+  teacher_indices: 28
+  teacher_section_counts: 3
+}
+courses {
+  display_name: "Drama"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 50
+  min_capacity: 0
+  teacher_indices: 29
+  teacher_section_counts: 2
+}
+courses {
+  display_name: "Music"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 50
+  min_capacity: 0
+  teacher_indices: 30
+  teacher_section_counts: 1
+}
+courses {
+  display_name: "Dance"
+  meetings_count: 1
+  consecutive_slots_count: 1
+  max_capacity: 40
+  min_capacity: 0
+  teacher_indices: 31
+  teacher_section_counts: 2
+}
+teachers {
+  display_name: "Math 0"
+}
+teachers {
+  display_name: "Math 1"
+}
+teachers {
+  display_name: "Math 2"
+}
+teachers {
+  display_name: "Math 3"
+}
+teachers {
+  display_name: "Math 4"
+}
+teachers {
+  display_name: "English 0"
+}
+teachers {
+  display_name: "English 1"
+}
+teachers {
+  display_name: "English 2"
+}
+teachers {
+  display_name: "English 3"
+}
+teachers {
+  display_name: "English 4"
+}
+teachers {
+  display_name: "History 0"
+}
+teachers {
+  display_name: "History 1"
+}
+teachers {
+  display_name: "History 2"
+}
+teachers {
+  display_name: "History 3"
+}
+teachers {
+  display_name: "Science 0"
+}
+teachers {
+  display_name: "Science 1"
+}
+teachers {
+  display_name: "Science 2"
+}
+teachers {
+  display_name: "Science 3"
+}
+teachers {
+  display_name: "Science 4"
+}
+teachers {
+  display_name: "Language 0"
+}
+teachers {
+  display_name: "Language 1"
+}
+teachers {
+  display_name: "Language 2"
+}
+teachers {
+  display_name: "Language 3"
+}
+teachers {
+  display_name: "Language 4"
+}
+teachers {
+  display_name: "Language 5"
+}
+teachers {
+  display_name: "Language 6"
+}
+teachers {
+  display_name: "Language 7"
+}
+teachers {
+  display_name: "Art 0"
+}
+teachers {
+  display_name: "Extra 0"
+}
+teachers {
+  display_name: "Extra 1"
+}
+teachers {
+  display_name: "Extra 2"
+}
+teachers {
+  display_name: "Extra 3"
+}
+students {
+  display_name: "Fresh 0"
+  course_indices: 2
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 50
+}
+students {
+  display_name: "Fresh 1"
+  course_indices: 2
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 50
+}
+students {
+  display_name: "Fresh 2"
+  course_indices: 2
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 50
+}
+students {
+  display_name: "Fresh 3"
+  course_indices: 2
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 50
+}
+students {
+  display_name: "Fresh 4"
+  course_indices: 2
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 50
+}
+students {
+  display_name: "Fresh 5"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 50
+}
+students {
+  display_name: "Fresh 6"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 50
+}
+students {
+  display_name: "Fresh 7"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 50
+}
+students {
+  display_name: "Fresh 8"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 50
+}
+students {
+  display_name: "Fresh 9"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 50
+}
+students {
+  display_name: "Fresh 10"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 51
+}
+students {
+  display_name: "Fresh 11"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 51
+}
+students {
+  display_name: "Fresh 12"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 51
+}
+students {
+  display_name: "Fresh 13"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 51
+}
+students {
+  display_name: "Fresh 14"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 51
+}
+students {
+  display_name: "Fresh 15"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 51
+}
+students {
+  display_name: "Fresh 16"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 51
+}
+students {
+  display_name: "Fresh 17"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 51
+}
+students {
+  display_name: "Fresh 18"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 51
+}
+students {
+  display_name: "Fresh 19"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 51
+}
+students {
+  display_name: "Fresh 20"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 51
+}
+students {
+  display_name: "Fresh 21"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 51
+}
+students {
+  display_name: "Fresh 22"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 51
+}
+students {
+  display_name: "Fresh 23"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 51
+}
+students {
+  display_name: "Fresh 24"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 51
+}
+students {
+  display_name: "Fresh 25"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 26"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 27"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 28"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 29"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 30"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 31"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 32"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 33"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 34"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 35"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 36"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 37"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 38"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 39"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 40"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 25
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 41"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 25
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 42"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 25
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 43"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 25
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 44"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 25
+  course_indices: 49
+}
+students {
+  display_name: "Fresh 45"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 25
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 46"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 25
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 47"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 25
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 48"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 25
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 49"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 25
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 50"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 51"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 52"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 53"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 54"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 55"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 56"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 57"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 58"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 59"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 60"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 61"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 62"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 63"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 64"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 65"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 66"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 67"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 68"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 69"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 48
+}
+students {
+  display_name: "Fresh 70"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 71"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 72"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 73"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 74"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 33
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 75"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 32
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 76"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 32
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 77"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 32
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 78"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 32
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 79"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 32
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 80"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 32
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 81"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 32
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 82"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 32
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 83"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 32
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 84"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 32
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 85"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 39
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 86"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 39
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 87"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 39
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 88"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 39
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 89"
+  course_indices: 1
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 39
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 90"
+  course_indices: 0
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 39
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 91"
+  course_indices: 0
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 39
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 92"
+  course_indices: 0
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 39
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 93"
+  course_indices: 0
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 39
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 94"
+  course_indices: 0
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 39
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 95"
+  course_indices: 0
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 39
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 96"
+  course_indices: 0
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 39
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 97"
+  course_indices: 0
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 38
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 98"
+  course_indices: 0
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 38
+  course_indices: 44
+}
+students {
+  display_name: "Fresh 99"
+  course_indices: 0
+  course_indices: 7
+  course_indices: 12
+  course_indices: 18
+  course_indices: 38
+  course_indices: 44
+}
+students {
+  display_name: "Soph 0"
+  course_indices: 3
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 50
+}
+students {
+  display_name: "Soph 1"
+  course_indices: 3
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 50
+}
+students {
+  display_name: "Soph 2"
+  course_indices: 3
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 50
+}
+students {
+  display_name: "Soph 3"
+  course_indices: 3
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 50
+}
+students {
+  display_name: "Soph 4"
+  course_indices: 3
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 50
+}
+students {
+  display_name: "Soph 5"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 50
+}
+students {
+  display_name: "Soph 6"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 50
+}
+students {
+  display_name: "Soph 7"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 50
+}
+students {
+  display_name: "Soph 8"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 50
+}
+students {
+  display_name: "Soph 9"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 50
+}
+students {
+  display_name: "Soph 10"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 51
+}
+students {
+  display_name: "Soph 11"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 27
+  course_indices: 51
+}
+students {
+  display_name: "Soph 12"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 51
+}
+students {
+  display_name: "Soph 13"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 51
+}
+students {
+  display_name: "Soph 14"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 51
+}
+students {
+  display_name: "Soph 15"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 51
+}
+students {
+  display_name: "Soph 16"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 51
+}
+students {
+  display_name: "Soph 17"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 51
+}
+students {
+  display_name: "Soph 18"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 51
+}
+students {
+  display_name: "Soph 19"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 51
+}
+students {
+  display_name: "Soph 20"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 51
+}
+students {
+  display_name: "Soph 21"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 51
+}
+students {
+  display_name: "Soph 22"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 51
+}
+students {
+  display_name: "Soph 23"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 51
+}
+students {
+  display_name: "Soph 24"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 51
+}
+students {
+  display_name: "Soph 25"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Soph 26"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Soph 27"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Soph 28"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Soph 29"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Soph 30"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Soph 31"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Soph 32"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Soph 33"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Soph 34"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Soph 35"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Soph 36"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Soph 37"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Soph 38"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Soph 39"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Soph 40"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Soph 41"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Soph 42"
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Soph 43"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Soph 44"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 26
+  course_indices: 49
+}
+students {
+  display_name: "Soph 45"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 26
+  course_indices: 48
+}
+students {
+  display_name: "Soph 46"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 26
+  course_indices: 48
+}
+students {
+  display_name: "Soph 47"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 26
+  course_indices: 48
+}
+students {
+  display_name: "Soph 48"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 26
+  course_indices: 48
+}
+students {
+  display_name: "Soph 49"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 26
+  course_indices: 48
+}
+students {
+  display_name: "Soph 50"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 51"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 52"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 53"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 54"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 55"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 56"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 57"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 58"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 59"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 60"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 61"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 62"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 63"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 64"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 65"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 66"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 67"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 68"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 69"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 48
+}
+students {
+  display_name: "Soph 70"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 45
+}
+students {
+  display_name: "Soph 71"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 45
+}
+students {
+  display_name: "Soph 72"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 45
+}
+students {
+  display_name: "Soph 73"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 45
+}
+students {
+  display_name: "Soph 74"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 34
+  course_indices: 45
+}
+students {
+  display_name: "Soph 75"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 33
+  course_indices: 45
+}
+students {
+  display_name: "Soph 76"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 33
+  course_indices: 45
+}
+students {
+  display_name: "Soph 77"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 33
+  course_indices: 45
+}
+students {
+  display_name: "Soph 78"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 33
+  course_indices: 45
+}
+students {
+  display_name: "Soph 79"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 33
+  course_indices: 45
+}
+students {
+  display_name: "Soph 80"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 33
+  course_indices: 45
+}
+students {
+  display_name: "Soph 81"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 33
+  course_indices: 45
+}
+students {
+  display_name: "Soph 82"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 33
+  course_indices: 45
+}
+students {
+  display_name: "Soph 83"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 33
+  course_indices: 45
+}
+students {
+  display_name: "Soph 84"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 33
+  course_indices: 45
+}
+students {
+  display_name: "Soph 85"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 40
+  course_indices: 45
+}
+students {
+  display_name: "Soph 86"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 40
+  course_indices: 45
+}
+students {
+  display_name: "Soph 87"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 40
+  course_indices: 45
+}
+students {
+  display_name: "Soph 88"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 40
+  course_indices: 45
+}
+students {
+  display_name: "Soph 89"
+  course_indices: 2
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 40
+  course_indices: 45
+}
+students {
+  display_name: "Soph 90"
+  course_indices: 1
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 40
+  course_indices: 45
+}
+students {
+  display_name: "Soph 91"
+  course_indices: 1
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 40
+  course_indices: 45
+}
+students {
+  display_name: "Soph 92"
+  course_indices: 1
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 40
+  course_indices: 45
+}
+students {
+  display_name: "Soph 93"
+  course_indices: 1
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 40
+  course_indices: 45
+}
+students {
+  display_name: "Soph 94"
+  course_indices: 1
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 40
+  course_indices: 45
+}
+students {
+  display_name: "Soph 95"
+  course_indices: 1
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 40
+  course_indices: 45
+}
+students {
+  display_name: "Soph 96"
+  course_indices: 1
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 40
+  course_indices: 45
+}
+students {
+  display_name: "Soph 97"
+  course_indices: 1
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 39
+  course_indices: 45
+}
+students {
+  display_name: "Soph 98"
+  course_indices: 1
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 39
+  course_indices: 45
+}
+students {
+  display_name: "Soph 99"
+  course_indices: 1
+  course_indices: 8
+  course_indices: 13
+  course_indices: 20
+  course_indices: 39
+  course_indices: 45
+}
+
+students {
+  display_name: "Jun 0"
+  course_indices: 5
+  course_indices: 9
+  course_indices: 14
+  course_indices: 19
+  course_indices: 30
+  course_indices: 50
+}
+students {
+  display_name: "Jun 1"
+  course_indices: 5
+  course_indices: 9
+  course_indices: 14
+  course_indices: 19
+  course_indices: 30
+  course_indices: 50
+}
+students {
+  display_name: "Jun 2"
+  course_indices: 5
+  course_indices: 9
+  course_indices: 14
+  course_indices: 19
+  course_indices: 30
+  course_indices: 50
+}
+students {
+  display_name: "Jun 3"
+  course_indices: 5
+  course_indices: 9
+  course_indices: 14
+  course_indices: 19
+  course_indices: 30
+  course_indices: 50
+}
+students {
+  display_name: "Jun 4"
+  course_indices: 5
+  course_indices: 9
+  course_indices: 14
+  course_indices: 19
+  course_indices: 30
+  course_indices: 50
+}
+students {
+  display_name: "Jun 5"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 19
+  course_indices: 28
+  course_indices: 50
+}
+students {
+  display_name: "Jun 6"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 19
+  course_indices: 28
+  course_indices: 50
+}
+students {
+  display_name: "Jun 7"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 19
+  course_indices: 28
+  course_indices: 50
+}
+students {
+  display_name: "Jun 8"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 19
+  course_indices: 28
+  course_indices: 50
+}
+students {
+  display_name: "Jun 9"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 19
+  course_indices: 28
+  course_indices: 50
+}
+students {
+  display_name: "Jun 10"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 19
+  course_indices: 28
+  course_indices: 51
+}
+students {
+  display_name: "Jun 11"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 19
+  course_indices: 28
+  course_indices: 51
+}
+students {
+  display_name: "Jun 12"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 19
+  course_indices: 28
+  course_indices: 51
+}
+students {
+  display_name: "Jun 13"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 19
+  course_indices: 28
+  course_indices: 51
+}
+students {
+  display_name: "Jun 14"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 19
+  course_indices: 28
+  course_indices: 51
+}
+students {
+  display_name: "Jun 15"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 21
+  course_indices: 28
+  course_indices: 51
+}
+students {
+  display_name: "Jun 16"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 21
+  course_indices: 28
+  course_indices: 51
+}
+students {
+  display_name: "Jun 17"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 21
+  course_indices: 28
+  course_indices: 51
+}
+students {
+  display_name: "Jun 18"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 21
+  course_indices: 28
+  course_indices: 51
+}
+students {
+  display_name: "Jun 19"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 21
+  course_indices: 28
+  course_indices: 51
+}
+students {
+  display_name: "Jun 20"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 21
+  course_indices: 28
+  course_indices: 51
+}
+students {
+  display_name: "Jun 21"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 21
+  course_indices: 28
+  course_indices: 51
+}
+students {
+  display_name: "Jun 22"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 21
+  course_indices: 28
+  course_indices: 51
+}
+students {
+  display_name: "Jun 23"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 21
+  course_indices: 28
+  course_indices: 51
+}
+students {
+  display_name: "Jun 24"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 21
+  course_indices: 28
+  course_indices: 51
+}
+students {
+  display_name: "Jun 25"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 21
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Jun 26"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 21
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Jun 27"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 21
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Jun 28"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 21
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Jun 29"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 21
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Jun 30"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 22
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Jun 31"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 22
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Jun 32"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 22
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Jun 33"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 22
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Jun 34"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 22
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Jun 35"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 22
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Jun 36"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 22
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Jun 37"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 22
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Jun 38"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 22
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Jun 39"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 22
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Jun 40"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 22
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Jun 41"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 22
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Jun 42"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 22
+  course_indices: 49
+}
+students {
+  display_name: "Jun 43"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 22
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Jun 44"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 15
+  course_indices: 22
+  course_indices: 27
+  course_indices: 49
+}
+students {
+  display_name: "Jun 45"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 27
+  course_indices: 48
+}
+students {
+  display_name: "Jun 46"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 27
+  course_indices: 48
+}
+students {
+  display_name: "Jun 47"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 27
+  course_indices: 48
+}
+students {
+  display_name: "Jun 48"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 27
+  course_indices: 48
+}
+students {
+  display_name: "Jun 49"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 27
+  course_indices: 48
+}
+students {
+  display_name: "Jun 50"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 51"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 52"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 53"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 54"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 55"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 56"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 57"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 58"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 59"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 60"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 61"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 62"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 63"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 64"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 65"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 66"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 67"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 68"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 69"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 48
+}
+students {
+  display_name: "Jun 70"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 46
+}
+students {
+  display_name: "Jun 71"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 46
+}
+students {
+  display_name: "Jun 72"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 46
+}
+students {
+  display_name: "Jun 73"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 46
+}
+students {
+  display_name: "Jun 74"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 35
+  course_indices: 46
+}
+students {
+  display_name: "Jun 75"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 34
+  course_indices: 46
+}
+students {
+  display_name: "Jun 76"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 34
+  course_indices: 46
+}
+students {
+  display_name: "Jun 77"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 34
+  course_indices: 46
+}
+students {
+  display_name: "Jun 78"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 34
+  course_indices: 46
+}
+students {
+  display_name: "Jun 79"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 34
+  course_indices: 46
+}
+students {
+  display_name: "Jun 80"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 34
+  course_indices: 46
+}
+students {
+  display_name: "Jun 81"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 34
+  course_indices: 46
+}
+students {
+  display_name: "Jun 82"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 34
+  course_indices: 46
+}
+students {
+  display_name: "Jun 83"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 34
+  course_indices: 46
+}
+students {
+  display_name: "Jun 84"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 34
+  course_indices: 46
+}
+students {
+  display_name: "Jun 85"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 41
+  course_indices: 46
+}
+students {
+  display_name: "Jun 86"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 41
+  course_indices: 46
+}
+students {
+  display_name: "Jun 87"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 41
+  course_indices: 46
+}
+students {
+  display_name: "Jun 88"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 41
+  course_indices: 46
+}
+students {
+  display_name: "Jun 89"
+  course_indices: 3
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 41
+  course_indices: 46
+}
+students {
+  display_name: "Jun 90"
+  course_indices: 2
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 41
+  course_indices: 46
+}
+students {
+  display_name: "Jun 91"
+  course_indices: 2
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 41
+  course_indices: 46
+}
+students {
+  display_name: "Jun 92"
+  course_indices: 2
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 41
+  course_indices: 46
+}
+students {
+  display_name: "Jun 93"
+  course_indices: 2
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 41
+  course_indices: 46
+}
+students {
+  display_name: "Jun 94"
+  course_indices: 2
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 41
+  course_indices: 46
+}
+students {
+  display_name: "Jun 95"
+  course_indices: 2
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 41
+  course_indices: 46
+}
+students {
+  display_name: "Jun 96"
+  course_indices: 2
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 41
+  course_indices: 46
+}
+students {
+  display_name: "Jun 97"
+  course_indices: 2
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 40
+  course_indices: 46
+}
+students {
+  display_name: "Jun 98"
+  course_indices: 2
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 40
+  course_indices: 46
+}
+students {
+  display_name: "Jun 99"
+  course_indices: 2
+  course_indices: 9
+  course_indices: 14
+  course_indices: 22
+  course_indices: 40
+  course_indices: 46
+}
+students {
+  display_name: "Sen 0"
+  course_indices: 6
+  course_indices: 11
+  course_indices: 16
+  course_indices: 23
+  course_indices: 31
+  course_indices: 50
+}
+students {
+  display_name: "Sen 1"
+  course_indices: 6
+  course_indices: 11
+  course_indices: 16
+  course_indices: 23
+  course_indices: 31
+  course_indices: 50
+}
+students {
+  display_name: "Sen 2"
+  course_indices: 6
+  course_indices: 11
+  course_indices: 16
+  course_indices: 23
+  course_indices: 31
+  course_indices: 50
+}
+students {
+  display_name: "Sen 3"
+  course_indices: 6
+  course_indices: 11
+  course_indices: 16
+  course_indices: 23
+  course_indices: 31
+  course_indices: 50
+}
+students {
+  display_name: "Sen 4"
+  course_indices: 6
+  course_indices: 11
+  course_indices: 16
+  course_indices: 23
+  course_indices: 31
+  course_indices: 50
+}
+students {
+  display_name: "Sen 5"
+  course_indices: 6
+  course_indices: 11
+  course_indices: 17
+  course_indices: 21
+  course_indices: 29
+  course_indices: 50
+}
+students {
+  display_name: "Sen 6"
+  course_indices: 6
+  course_indices: 11
+  course_indices: 17
+  course_indices: 21
+  course_indices: 29
+  course_indices: 50
+}
+students {
+  display_name: "Sen 7"
+  course_indices: 6
+  course_indices: 11
+  course_indices: 17
+  course_indices: 21
+  course_indices: 29
+  course_indices: 50
+}
+students {
+  display_name: "Sen 8"
+  course_indices: 6
+  course_indices: 11
+  course_indices: 17
+  course_indices: 21
+  course_indices: 29
+  course_indices: 50
+}
+students {
+  display_name: "Sen 9"
+  course_indices: 6
+  course_indices: 11
+  course_indices: 17
+  course_indices: 21
+  course_indices: 29
+  course_indices: 50
+}
+students {
+  display_name: "Sen 10"
+  course_indices: 5
+  course_indices: 11
+  course_indices: 17
+  course_indices: 24
+  course_indices: 29
+  course_indices: 51
+}
+students {
+  display_name: "Sen 11"
+  course_indices: 5
+  course_indices: 11
+  course_indices: 17
+  course_indices: 24
+  course_indices: 29
+  course_indices: 51
+}
+students {
+  display_name: "Sen 12"
+  course_indices: 5
+  course_indices: 11
+  course_indices: 17
+  course_indices: 24
+  course_indices: 29
+  course_indices: 51
+}
+students {
+  display_name: "Sen 13"
+  course_indices: 5
+  course_indices: 11
+  course_indices: 17
+  course_indices: 24
+  course_indices: 29
+  course_indices: 51
+}
+students {
+  display_name: "Sen 14"
+  course_indices: 5
+  course_indices: 11
+  course_indices: 17
+  course_indices: 24
+  course_indices: 29
+  course_indices: 51
+}
+students {
+  display_name: "Sen 15"
+  course_indices: 5
+  course_indices: 11
+  course_indices: 17
+  course_indices: 19
+  course_indices: 29
+  course_indices: 51
+}
+students {
+  display_name: "Sen 16"
+  course_indices: 5
+  course_indices: 11
+  course_indices: 17
+  course_indices: 19
+  course_indices: 29
+  course_indices: 51
+}
+students {
+  display_name: "Sen 17"
+  course_indices: 5
+  course_indices: 10
+  course_indices: 17
+  course_indices: 19
+  course_indices: 29
+  course_indices: 51
+}
+students {
+  display_name: "Sen 18"
+  course_indices: 5
+  course_indices: 10
+  course_indices: 17
+  course_indices: 19
+  course_indices: 29
+  course_indices: 51
+}
+students {
+  display_name: "Sen 19"
+  course_indices: 5
+  course_indices: 10
+  course_indices: 17
+  course_indices: 19
+  course_indices: 29
+  course_indices: 51
+}
+students {
+  display_name: "Sen 20"
+  course_indices: 5
+  course_indices: 10
+  course_indices: 17
+  course_indices: 19
+  course_indices: 29
+  course_indices: 51
+}
+students {
+  display_name: "Sen 21"
+  course_indices: 5
+  course_indices: 10
+  course_indices: 17
+  course_indices: 19
+  course_indices: 29
+  course_indices: 51
+}
+students {
+  display_name: "Sen 22"
+  course_indices: 5
+  course_indices: 10
+  course_indices: 17
+  course_indices: 19
+  course_indices: 29
+  course_indices: 51
+}
+students {
+  display_name: "Sen 23"
+  course_indices: 5
+  course_indices: 10
+  course_indices: 17
+  course_indices: 19
+  course_indices: 29
+  course_indices: 51
+}
+students {
+  display_name: "Sen 24"
+  course_indices: 5
+  course_indices: 10
+  course_indices: 17
+  course_indices: 19
+  course_indices: 29
+  course_indices: 51
+}
+students {
+  display_name: "Sen 25"
+  course_indices: 5
+  course_indices: 10
+  course_indices: 17
+  course_indices: 23
+  course_indices: 29
+  course_indices: 49
+}
+students {
+  display_name: "Sen 26"
+  course_indices: 5
+  course_indices: 10
+  course_indices: 17
+  course_indices: 23
+  course_indices: 29
+  course_indices: 49
+}
+students {
+  display_name: "Sen 27"
+  course_indices: 5
+  course_indices: 10
+  course_indices: 17
+  course_indices: 23
+  course_indices: 29
+  course_indices: 49
+}
+students {
+  display_name: "Sen 28"
+  course_indices: 5
+  course_indices: 10
+  course_indices: 17
+  course_indices: 23
+  course_indices: 29
+  course_indices: 49
+}
+students {
+  display_name: "Sen 29"
+  course_indices: 5
+  course_indices: 10
+  course_indices: 17
+  course_indices: 23
+  course_indices: 29
+  course_indices: 49
+}
+students {
+  display_name: "Sen 30"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 17
+  course_indices: 24
+  course_indices: 29
+  course_indices: 49
+}
+students {
+  display_name: "Sen 31"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 17
+  course_indices: 24
+  course_indices: 29
+  course_indices: 49
+}
+students {
+  display_name: "Sen 32"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 17
+  course_indices: 24
+  course_indices: 29
+  course_indices: 49
+}
+students {
+  display_name: "Sen 33"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 17
+  course_indices: 24
+  course_indices: 29
+  course_indices: 49
+}
+students {
+  display_name: "Sen 34"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 17
+  course_indices: 24
+  course_indices: 29
+  course_indices: 49
+}
+students {
+  display_name: "Sen 35"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 17
+  course_indices: 24
+  course_indices: 29
+  course_indices: 49
+}
+students {
+  display_name: "Sen 36"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 17
+  course_indices: 24
+  course_indices: 29
+  course_indices: 49
+}
+students {
+  display_name: "Sen 37"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 17
+  course_indices: 24
+  course_indices: 29
+  course_indices: 49
+}
+students {
+  display_name: "Sen 38"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 17
+  course_indices: 24
+  course_indices: 29
+  course_indices: 49
+}
+students {
+  display_name: "Sen 39"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 17
+  course_indices: 24
+  course_indices: 29
+  course_indices: 49
+}
+students {
+  display_name: "Sen 40"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Sen 41"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Sen 42"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Sen 43"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Sen 44"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 28
+  course_indices: 49
+}
+students {
+  display_name: "Sen 45"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 28
+  course_indices: 48
+}
+students {
+  display_name: "Sen 46"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 28
+  course_indices: 48
+}
+students {
+  display_name: "Sen 47"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 28
+  course_indices: 48
+}
+students {
+  display_name: "Sen 48"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 28
+  course_indices: 48
+}
+students {
+  display_name: "Sen 49"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 28
+  course_indices: 48
+}
+students {
+  display_name: "Sen 50"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 37
+  course_indices: 48
+}
+students {
+  display_name: "Sen 51"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 37
+  course_indices: 48
+}
+students {
+  display_name: "Sen 52"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 37
+  course_indices: 48
+}
+students {
+  display_name: "Sen 53"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 37
+  course_indices: 48
+}
+students {
+  display_name: "Sen 54"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 37
+  course_indices: 48
+}
+students {
+  display_name: "Sen 55"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 36
+  course_indices: 48
+}
+students {
+  display_name: "Sen 56"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 36
+  course_indices: 48
+}
+students {
+  display_name: "Sen 57"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 36
+  course_indices: 48
+}
+students {
+  display_name: "Sen 58"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 36
+  course_indices: 48
+}
+students {
+  display_name: "Sen 59"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 36
+  course_indices: 48
+}
+students {
+  display_name: "Sen 60"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 36
+  course_indices: 48
+}
+students {
+  display_name: "Sen 61"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 36
+  course_indices: 48
+}
+students {
+  display_name: "Sen 62"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 36
+  course_indices: 48
+}
+students {
+  display_name: "Sen 63"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 36
+  course_indices: 48
+}
+students {
+  display_name: "Sen 64"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 21
+  course_indices: 36
+  course_indices: 48
+}
+students {
+  display_name: "Sen 65"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 36
+  course_indices: 48
+}
+students {
+  display_name: "Sen 66"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 36
+  course_indices: 48
+}
+students {
+  display_name: "Sen 67"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 36
+  course_indices: 48
+}
+students {
+  display_name: "Sen 68"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 36
+  course_indices: 48
+}
+students {
+  display_name: "Sen 69"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 36
+  course_indices: 48
+}
+students {
+  display_name: "Sen 70"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 36
+  course_indices: 47
+}
+students {
+  display_name: "Sen 71"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 36
+  course_indices: 47
+}
+students {
+  display_name: "Sen 72"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 36
+  course_indices: 47
+}
+students {
+  display_name: "Sen 73"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 36
+  course_indices: 47
+}
+students {
+  display_name: "Sen 74"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 36
+  course_indices: 47
+}
+students {
+  display_name: "Sen 75"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 35
+  course_indices: 47
+}
+students {
+  display_name: "Sen 76"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 35
+  course_indices: 47
+}
+students {
+  display_name: "Sen 77"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 35
+  course_indices: 47
+}
+students {
+  display_name: "Sen 78"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 35
+  course_indices: 47
+}
+students {
+  display_name: "Sen 79"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 35
+  course_indices: 47
+}
+students {
+  display_name: "Sen 80"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 35
+  course_indices: 47
+}
+students {
+  display_name: "Sen 81"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 35
+  course_indices: 47
+}
+students {
+  display_name: "Sen 82"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 35
+  course_indices: 47
+}
+students {
+  display_name: "Sen 83"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 35
+  course_indices: 47
+}
+students {
+  display_name: "Sen 84"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 19
+  course_indices: 35
+  course_indices: 47
+}
+students {
+  display_name: "Sen 85"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 23
+  course_indices: 43
+  course_indices: 47
+}
+students {
+  display_name: "Sen 86"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 23
+  course_indices: 43
+  course_indices: 47
+}
+students {
+  display_name: "Sen 87"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 23
+  course_indices: 43
+  course_indices: 47
+}
+students {
+  display_name: "Sen 88"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 23
+  course_indices: 43
+  course_indices: 47
+}
+students {
+  display_name: "Sen 89"
+  course_indices: 4
+  course_indices: 10
+  course_indices: 16
+  course_indices: 23
+  course_indices: 43
+  course_indices: 47
+}
+students {
+  display_name: "Sen 90"
+  course_indices: 3
+  course_indices: 10
+  course_indices: 16
+  course_indices: 23
+  course_indices: 42
+  course_indices: 47
+}
+students {
+  display_name: "Sen 91"
+  course_indices: 3
+  course_indices: 10
+  course_indices: 16
+  course_indices: 23
+  course_indices: 42
+  course_indices: 47
+}
+students {
+  display_name: "Sen 92"
+  course_indices: 3
+  course_indices: 10
+  course_indices: 16
+  course_indices: 23
+  course_indices: 42
+  course_indices: 47
+}
+students {
+  display_name: "Sen 93"
+  course_indices: 3
+  course_indices: 10
+  course_indices: 16
+  course_indices: 23
+  course_indices: 42
+  course_indices: 47
+}
+students {
+  display_name: "Sen 94"
+  course_indices: 3
+  course_indices: 10
+  course_indices: 16
+  course_indices: 23
+  course_indices: 42
+  course_indices: 47
+}
+students {
+  display_name: "Sen 95"
+  course_indices: 3
+  course_indices: 10
+  course_indices: 16
+  course_indices: 23
+  course_indices: 42
+  course_indices: 47
+}
+students {
+  display_name: "Sen 96"
+  course_indices: 3
+  course_indices: 10
+  course_indices: 16
+  course_indices: 23
+  course_indices: 42
+  course_indices: 47
+}
+students {
+  display_name: "Sen 97"
+  course_indices: 3
+  course_indices: 10
+  course_indices: 16
+  course_indices: 23
+  course_indices: 41
+  course_indices: 47
+}
+students {
+  display_name: "Sen 98"
+  course_indices: 3
+  course_indices: 10
+  course_indices: 16
+  course_indices: 23
+  course_indices: 41
+  course_indices: 47
+}
+students {
+  display_name: "Sen 99"
+  course_indices: 3
+  course_indices: 10
+  course_indices: 16
+  course_indices: 23
+  course_indices: 41
+  course_indices: 47
+}
+
