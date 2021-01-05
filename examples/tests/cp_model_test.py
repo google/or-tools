@@ -619,6 +619,20 @@ class CpModelTest(unittest.TestCase):
         ct = model.Add(a+b >= 5)
         self.assertTrue(model.ExportToFile('test_model_python.pbtxt'))
 
+    def testProductIsNull(self):
+        print('testProductIsNull')
+        model = cp_model.CpModel()
+
+        a = model.NewIntVar(0, 10, 'a')
+        b = model.NewIntVar(0, 8, 'b')
+        p = model.NewIntVar(0, 80, 'p')
+
+        model.AddMultiplicationEquality(p, [a, b])
+        model.Add(p == 0)
+        solver = cp_model.CpSolver()
+        status = solver.Solve(model)
+        self.assertEqual(status, cp_model.OPTIMAL)
+
 
 if __name__ == '__main__':
     unittest.main()
