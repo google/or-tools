@@ -2879,7 +2879,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   SharedTimeLimit shared_time_limit(model->GetOrCreate<TimeLimit>());
 #if defined(_MSC_VER)
   std::unique_ptr<CpSolverResponse> final_response_ptr(new CpSolverResponse());
-  CpSolverResponse& final_response = &final_reponse_ptr.get();
+  CpSolverResponse& final_response = &final_response_ptr.get();
 #else
   CpSolverResponse final_response;
 #endif
