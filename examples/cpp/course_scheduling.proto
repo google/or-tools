@@ -15,8 +15,6 @@ syntax = "proto3";
 
 package operations_research;
 
-import "google/api/field_behavior.proto";
-
 // Information required to create a schedule for a school system.
 message CourseSchedulingModel {
   // Schedule name, used only for logging purposes.
@@ -24,11 +22,11 @@ message CourseSchedulingModel {
 
   // The number of days in a schedule rotation. If the school system uses a
   // block schedule, this value should be 1.
-  int32 days_count = 2 [(google.api.field_behavior) = REQUIRED];
+  int32 days_count = 2;
 
   // The number of time slots each day in a schedule rotation. If the school
   // system uses a block schedule, this value is the number of blocks.
-  int32 daily_time_slot_count = 3 [(google.api.field_behavior) = REQUIRED];
+  int32 daily_time_slot_count = 3;
 
   // List of courses that need to be scheduled.
   repeated Course courses = 4;
@@ -49,8 +47,7 @@ message CourseSchedulingResult {
   string message = 1;
 
   // Status of the solver.
-  CourseSchedulingResultStatus solver_status = 2
-      [(google.api.field_behavior) = REQUIRED];
+  CourseSchedulingResultStatus solver_status = 2;
 
   // List of the time slot and room assignments for each section of a course.
   repeated ClassAssignment class_assignments = 3;
@@ -61,14 +58,14 @@ message CourseSchedulingResult {
 
 message ClassAssignment {
   // Index of the course in the CourseSchedulingModel.
-  int32 course_index = 1 [(google.api.field_behavior) = REQUIRED];
+  int32 course_index = 1;
 
   // Specific section of the course in the CourseSchedulingModel.
-  int32 section_number = 2 [(google.api.field_behavior) = REQUIRED];
+  int32 section_number = 2;
 
   // Time slots that this class has been assigned to in the
   // CourseSchedulingModel.
-  repeated int32 time_slots = 3 [(google.api.field_behavior) = REQUIRED];
+  repeated int32 time_slots = 3;
 
   // Indices of the rooms that the class is assigned to in the
   // CourseSchedulingModel. If this is not empty, then the number of indices
@@ -78,17 +75,17 @@ message ClassAssignment {
 
 message StudentAssignment {
   // Index of the student in the CourseSchedulingModel.
-  int32 student_index = 1 [(google.api.field_behavior) = REQUIRED];
+  int32 student_index = 1;
 
   // Course indices in the CourseSchedulingModel that this student has been
   // assigned to. The number of indices must match the number of section
   // indices.
-  repeated int32 course_indices = 2 [(google.api.field_behavior) = REQUIRED];
+  repeated int32 course_indices = 2;
 
   // Section indices for each Course in the CourseSchedulingModel this this
   // student has been assigned to. The number of indices must match the number
   // of course indices.
-  repeated int32 section_indices = 3 [(google.api.field_behavior) = REQUIRED];
+  repeated int32 section_indices = 3;
 }
 
 message Course {
@@ -99,11 +96,11 @@ message Course {
   // schedule rotation. Each section of the course meets no more than once a
   // day. If the school system uses a block schedule, then this value should
   // be 1.
-  int32 meetings_count = 2 [(google.api.field_behavior) = REQUIRED];
+  int32 meetings_count = 2;
 
   // The maximum number of students for this course. This value can be equal to
   // +Infinity to encode a course has no maximum capacity.
-  int32 max_capacity = 3 [(google.api.field_behavior) = REQUIRED];
+  int32 max_capacity = 3;
 
   // The minimum number of students for this course.
   int32 min_capacity = 4;
@@ -111,7 +108,7 @@ message Course {
   // The number of consecutive time slots that each section of this course needs
   // to be scheduled for. This value can only be 1 or 2. If the value is 2, then
   // 2 consecutive time slots in a day counts as 1 meeting time for the section.
-  int32 consecutive_slots_count = 5 [(google.api.field_behavior) = REQUIRED];
+  int32 consecutive_slots_count = 5;
 
   // List of indices for the teachers of this course. We are assuming that each
   // teacher teaches separately. Must have the same number of elements as the
@@ -152,7 +149,7 @@ message Room {
   string display_name = 1;
 
   // Maximum number of students that can fit into this room.
-  int32 capacity = 2 [(google.api.field_behavior) = REQUIRED];
+  int32 capacity = 2;
 }
 
 // Status returned by the solver.

@@ -166,7 +166,7 @@ CourseSchedulingResult CourseSchedulingSolver::Solve(
   if (!validation_status.ok()) {
     result.set_solver_status(
         CourseSchedulingResultStatus::SOLVER_MODEL_INVALID);
-    result.set_message(validation_status.message());
+    result.set_message(std::string(validation_status.message()));
     return result;
   }
 
@@ -181,7 +181,7 @@ CourseSchedulingResult CourseSchedulingSolver::Solve(
   const auto verifier_status = VerifyCourseSchedulingResult(model, result);
   if (!verifier_status.ok()) {
     result.set_solver_status(CourseSchedulingResultStatus::ABNORMAL);
-    result.set_message(verifier_status.message());
+    result.set_message(std::string(verifier_status.message()));
   }
 
   return result;

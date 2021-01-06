@@ -24,9 +24,11 @@
 #include "examples/cpp/course_scheduling.h"
 #include "examples/cpp/course_scheduling.pb.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/file.h"
 #include "ortools/base/timer.h"
 
-ABSL_FLAG(std::string, input, "",
+ABSL_FLAG(std::string, input,
+          "examples/data/course_scheduling/course_scheduling_data.textproto",
           "Input file containing a CourseSchedulingModel in text format.");
 
 namespace operations_research {
@@ -102,6 +104,8 @@ void Main() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  google::InitGoogleLogging(argv[0]);
+  absl::SetFlag(&FLAGS_logtostderr, true);
   absl::ParseCommandLine(argc, argv);
   operations_research::Main();
   return EXIT_SUCCESS;
