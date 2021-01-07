@@ -46,13 +46,13 @@ foreach(PROTO_FILE IN LISTS proto_dotnet_files)
   add_custom_command(
     OUTPUT ${PROTO_DOTNET}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/dotnet/${PROTO_DIR}
-    COMMAND protobuf::protoc
+    COMMAND ${PROTOC_PRG}
     "--proto_path=${PROJECT_SOURCE_DIR}"
     ${PROTO_DIRS}
     "--csharp_out=${PROJECT_BINARY_DIR}/dotnet/${PROTO_DIR}"
     "--csharp_opt=file_extension=.pb.cs"
     ${PROTO_FILE}
-    DEPENDS ${PROTO_FILE} protobuf::protoc
+    DEPENDS ${PROTO_FILE} ${PROTOC_PRG}
     COMMENT "Generate C# protocol buffer for ${PROTO_FILE}"
     VERBATIM)
   list(APPEND PROTO_DOTNETS ${PROTO_DOTNET})

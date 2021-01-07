@@ -85,12 +85,12 @@ foreach(PROTO_FILE IN LISTS proto_java_files)
   add_custom_command(
     OUTPUT ${PROTO_JAVA}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${PROTO_OUT}
-    COMMAND protobuf::protoc
+    COMMAND ${PROTOC_PRG}
     "--proto_path=${PROJECT_SOURCE_DIR}"
     ${PROTO_DIRS}
     "--java_out=${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT}/src/main/java"
     ${PROTO_FILE}
-    DEPENDS ${PROTO_FILE} protobuf::protoc
+    DEPENDS ${PROTO_FILE} ${PROTOC_PRG}
     COMMENT "Generate Java protocol buffer for ${PROTO_FILE}"
     VERBATIM)
   list(APPEND PROTO_JAVAS ${PROTO_JAVA})
