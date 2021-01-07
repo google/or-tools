@@ -231,6 +231,7 @@ check_type_size("int *" SIZEOF_INT_P LANGUAGE CXX)
 message(STATUS "Found int * size: ${SIZEOF_INT_P}")
 cmake_pop_check_state()
 
+include(host)
 include(deps)
 include(cpp)
 include(flatzinc)
