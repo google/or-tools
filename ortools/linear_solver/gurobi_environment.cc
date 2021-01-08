@@ -68,6 +68,7 @@ std::function<int(GRBenv*, GRBmodel**, const char*, int numvars, double*,
                   double*, double*, char*, char**)>
     GRBnewmodel = nullptr;
 std::function<int(GRBmodel*)> GRBoptimize = nullptr;
+std::function<int(GRBenv *dest, GRBenv *src)> GRBcopyparams = nullptr;
 std::function<int(GRBenv*, const char*)> GRBreadparams = nullptr;
 std::function<int(GRBenv*)> GRBresetparams = nullptr;
 std::function<int(GRBmodel*, const char*, int, char)> GRBsetcharattrelement =
@@ -158,6 +159,7 @@ void LoadGurobiFunctions() {
   gurobi_dynamic_library->GetFunction(&GRBloadenv, NAMEOF(GRBloadenv));
   gurobi_dynamic_library->GetFunction(&GRBnewmodel, NAMEOF(GRBnewmodel));
   gurobi_dynamic_library->GetFunction(&GRBoptimize, NAMEOF(GRBoptimize));
+  gurobi_dynamic_library->GetFunction(&GRBcopyparams, NAMEOF(GRBcopyparams));
   gurobi_dynamic_library->GetFunction(&GRBreadparams, NAMEOF(GRBreadparams));
   gurobi_dynamic_library->GetFunction(&GRBresetparams, NAMEOF(GRBresetparams));
   gurobi_dynamic_library->GetFunction(&GRBsetcharattrelement,

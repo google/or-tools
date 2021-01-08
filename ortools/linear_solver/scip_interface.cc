@@ -24,6 +24,7 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/optional.h"
+#include "ortools/base/cleanup.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
@@ -39,6 +40,7 @@
 #include "ortools/linear_solver/scip_proto_solver.h"
 #include "scip/cons_indicator.h"
 #include "scip/scip.h"
+#include "scip/scip_copy.h"
 #include "scip/scip_param.h"
 #include "scip/scip_prob.h"
 #include "scip/scipdefplugins.h"
@@ -108,7 +110,12 @@ class SCIPInterface : public MPSolverInterface {
   }
 
   bool InterruptSolve() override {
-    if (scip_ == nullptr) return true;  // NOTE(user): Is this weird?
+    const absl::MutexLock lock(&hold_interruptions_mutex_);
+    if (scip_ == nullptr) {
+      LOG_IF(DFATAL, status_.ok()) << "scip_ is null is unexpected here, since "
+                                      "status_ did not report any error";
+      return true;
+    }
     return SCIPinterruptSolve(scip_) == SCIP_OKAY;
   }
 
@@ -173,7 +180,10 @@ class SCIPInterface : public MPSolverInterface {
   void SetSolution(SCIP_SOL* solution);
 
   absl::Status CreateSCIP();
-  void DeleteSCIP();
+  // Deletes variables and constraints from scip_ and reset scip_ to null. If
+  // return_scip is false, deletes the SCIP object; if true, returns it (but
+  // scip_ is still set to null).
+  SCIP* DeleteSCIP(bool return_scip = false);
 
   // SCIP has many internal checks (many of which are numerical) that can fail
   // during various phases: upon startup, when loading the model, when solving,
@@ -193,6 +203,11 @@ class SCIPInterface : public MPSolverInterface {
   EmptyStruct constraint_data_for_handler_;
   bool branching_priority_reset_ = false;
   bool callback_reset_ = false;
+
+  // Mutex that is held to prevent InterruptSolve() to call SCIPinterruptSolve()
+  // when scip_ is being built. It also prevents rebuilding scip_ until
+  // SCIPinterruptSolve() has returned.
+  mutable absl::Mutex hold_interruptions_mutex_;
 };
 
 class ScipConstraintHandlerForMPCallback
@@ -206,13 +221,29 @@ class ScipConstraintHandlerForMPCallback
   std::vector<CallbackRangeConstraint> SeparateIntegerSolution(
       const ScipConstraintHandlerContext& context, const EmptyStruct&) override;
 
+  MPCallback* const mp_callback() const { return mp_callback_; }
+
  private:
   std::vector<CallbackRangeConstraint> SeparateSolution(
       const ScipConstraintHandlerContext& context,
       const bool at_integer_solution);
 
-  MPCallback* mp_callback_;
+  MPCallback* const mp_callback_;
 };
+
+#define RETURN_IF_ALREADY_IN_ERROR_STATE                             \
+  do {                                                               \
+    if (!status_.ok()) {                                             \
+      VLOG_EVERY_N(1, 10) << "Early abort: SCIP is in error state."; \
+      return;                                                        \
+    }                                                                \
+  } while (false)
+
+#define RETURN_AND_STORE_IF_SCIP_ERROR(x) \
+  do {                                    \
+    status_ = SCIP_TO_STATUS(x);          \
+    if (!status_.ok()) return;            \
+  } while (false)
 
 SCIPInterface::SCIPInterface(MPSolver* solver)
     : MPSolverInterface(solver), scip_(nullptr) {
@@ -222,10 +253,30 @@ SCIPInterface::SCIPInterface(MPSolver* solver)
 SCIPInterface::~SCIPInterface() { DeleteSCIP(); }
 
 void SCIPInterface::Reset() {
-  DeleteSCIP();
+  // We hold calls to SCIPinterruptSolve() until the new scip_ is fully built.
+  const absl::MutexLock lock(&hold_interruptions_mutex_);
+
+  // Remove existing one but keep it alive to copy parameters from it.
+  SCIP* old_scip = DeleteSCIP(/*return_scip=*/true);
+  const auto scip_deleter = absl::MakeCleanup(
+      [&old_scip]() { CHECK_EQ(SCIPfree(&old_scip), SCIP_OKAY); });
+
   scip_constraint_handler_.reset();
-  status_ = CreateSCIP();
   ResetExtractionInformation();
+
+  // Install the new one.
+  status_ = CreateSCIP();
+  if (!status_.ok()) {
+    return;
+  }
+
+  // Copy all existing parameters from the previous SCIP to the new one. This
+  // ensures that if a user calls multiple times
+  // SetSolverSpecificParametersAsString() and then Reset() is called, we still
+  // take into account all parameters. Note though that at the end of Solve(),
+  // parameters are reset so after Solve() has been called, only the last set
+  // parameters are kept.
+  RETURN_AND_STORE_IF_SCIP_ERROR(SCIPcopyParamSettings(old_scip, scip_));
 }
 
 absl::Status SCIPInterface::CreateSCIP() {
@@ -253,7 +304,7 @@ absl::Status SCIPInterface::CreateSCIP() {
   return absl::OkStatus();
 }
 
-void SCIPInterface::DeleteSCIP() {
+SCIP* SCIPInterface::DeleteSCIP(bool return_scip) {
   // NOTE(user): DeleteSCIP() shouldn't "give up" mid-stage if it fails, since
   // it might be the user's chance to reset the solver to start fresh without
   // errors. The current code isn't perfect, since some CHECKs() remain, but
@@ -267,23 +318,14 @@ void SCIPInterface::DeleteSCIP() {
     CHECK_EQ(SCIPreleaseCons(scip_, &scip_constraints_[j]), SCIP_OKAY);
   }
   scip_constraints_.clear();
-  CHECK_EQ(SCIPfree(&scip_), SCIP_OKAY);
+
+  SCIP* old_scip = scip_;
   scip_ = nullptr;
+  if (!return_scip) {
+    CHECK_EQ(SCIPfree(&old_scip), SCIP_OKAY);
+  }
+  return old_scip;
 }
-
-#define RETURN_IF_ALREADY_IN_ERROR_STATE                             \
-  do {                                                               \
-    if (!status_.ok()) {                                             \
-      VLOG_EVERY_N(1, 10) << "Early abort: SCIP is in error state."; \
-      return;                                                        \
-    }                                                                \
-  } while (false)
-
-#define RETURN_AND_STORE_IF_SCIP_ERROR(x) \
-  do {                                    \
-    status_ = SCIP_TO_STATUS(x);          \
-    if (!status_.ok()) return;            \
-  } while (false)
 
 // Not cached.
 void SCIPInterface::SetOptimizationDirection(bool maximize) {
@@ -662,7 +704,13 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   ExtractModel();
   VLOG(1) << absl::StrFormat("Model built in %s.",
                              absl::FormatDuration(timer.GetDuration()));
-  if (callback_ != nullptr) {
+  if (scip_constraint_handler_ != nullptr) {
+    // When the value of `callback_` is changed, `callback_reset_` is set and
+    // code above you call Reset() that should have cleared
+    // `scip_constraint_handler_`. Here we assert that if this has not happened
+    // then `callback_` value has not changed.
+    CHECK_EQ(scip_constraint_handler_->mp_callback(), callback_);
+  } else if (callback_ != nullptr) {
     scip_constraint_handler_ =
         absl::make_unique<ScipConstraintHandlerForMPCallback>(callback_);
     RegisterConstraintHandler<EmptyStruct>(scip_constraint_handler_.get(),

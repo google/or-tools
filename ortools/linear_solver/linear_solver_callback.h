@@ -17,15 +17,16 @@
 #define OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_CALLBACK_H_
 
 #include <string>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "ortools/base/integral_types.h"
 
 namespace operations_research {
 
-class MPVariable;
 class LinearExpr;
 class LinearRange;
+class MPVariable;
 
 // The current state of the solver when the callback is invoked.
 //

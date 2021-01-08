@@ -329,6 +329,7 @@ void GLOPInterface::SetStartingLpBasis(
 
 void GLOPInterface::SetParameters(const MPSolverParameters& param) {
   parameters_.Clear();
+  parameters_.set_log_search_progress(!quiet_);
   SetCommonParameters(param);
   SetScalingMode(param.GetIntegerParam(MPSolverParameters::SCALING));
 }

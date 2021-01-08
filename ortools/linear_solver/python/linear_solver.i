@@ -310,6 +310,7 @@ PY_CONVERT(MPVariable);
 %newobject operations_research::MPSolver::CreateSolver;
 %unignore operations_research::MPSolver::CreateSolver;
 %unignore operations_research::MPSolver::ParseAndCheckSupportForProblemType;
+
 %unignore operations_research::MPSolver::Solve;
 %unignore operations_research::MPSolver::VerifySolution;
 %unignore operations_research::MPSolver::infinity;

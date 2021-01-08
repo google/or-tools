@@ -1782,21 +1782,10 @@ class MPSolverInterface {
   // solver-specific and is the same as the corresponding solver configuration
   // file format. Returns true if the operation was successful.
   //
-  // The default implementation of this method stores the parameters in a
-  // temporary file and calls ReadParameterFile to import the parameter file
-  // into the solver. Solvers that support passing the parameters directly can
-  // override this method to skip the temporary file logic.
+  // Default implementation returns true if the input is empty. It returns false
+  // and logs a WARNING if the input is not empty.
   virtual bool SetSolverSpecificParametersAsString(
       const std::string& parameters);
-
-  // Reads a solver-specific file of parameters and set them.
-  // Returns true if there was no errors.
-  virtual bool ReadParameterFile(const std::string& filename);
-
-  // Returns a file extension like ".tmp", this is needed because some solvers
-  // require a given extension for the ReadParameterFile() filename and we need
-  // to know it to generate a temporary parameter file.
-  virtual std::string ValidFileExtensionForParameterFile() const;
 
   // Sets the scaling mode.
   virtual void SetScalingMode(int value) = 0;

@@ -1784,49 +1784,13 @@ absl::Status MPSolverInterface::SetNumThreads(int num_threads) {
 
 bool MPSolverInterface::SetSolverSpecificParametersAsString(
     const std::string& parameters) {
-  // Note(user): this method needs to return a success/failure boolean
-  // immediately, so we also perform the actual parameter parsing right away.
-  // Some implementations will keep them forever and won't need to re-parse
-  // them; some (eg. Gurobi) need to re-parse the parameters every time they do
-  // Solve(). We just store the parameters string anyway.
-  //
-  // Note(user): This is not implemented on Android because there is no
-  // temporary directory to write files to without a pointer to the Java
-  // environment.
-  if (parameters.empty()) return true;
+  if (parameters.empty()) {
+    return true;
+  }
 
-  std::string extension = ValidFileExtensionForParameterFile();
-  std::string filename;
-  bool no_error_so_far = PortableTemporaryFile(nullptr, &filename);
-  filename += extension;
-  if (no_error_so_far) {
-    no_error_so_far = PortableFileSetContents(filename, parameters).ok();
-  }
-  if (no_error_so_far) {
-    no_error_so_far = ReadParameterFile(filename);
-    // We need to clean up the file even if ReadParameterFile() returned
-    // false. In production we can continue even if the deletion failed.
-    if (!PortableDeleteFile(filename).ok()) {
-      LOG(DFATAL) << "Couldn't delete temporary parameters file: " << filename;
-    }
-  }
-  if (!no_error_so_far) {
-    LOG(WARNING) << "Error in SetSolverSpecificParametersAsString() "
-                 << "for solver type: "
-                 << ProtoEnumToString<MPModelRequest::SolverType>(
-                        static_cast<MPModelRequest::SolverType>(
-                            solver_->ProblemType()));
-  }
-  return no_error_so_far;
-}
-
-bool MPSolverInterface::ReadParameterFile(const std::string& filename) {
-  LOG(WARNING) << "ReadParameterFile() not supported by this solver.";
+  LOG(WARNING) << "SetSolverSpecificParametersAsString() not supported by "
+               << SolverVersion();
   return false;
-}
-
-std::string MPSolverInterface::ValidFileExtensionForParameterFile() const {
-  return ".tmp";
 }
 
 // ---------- MPSolverParameters ----------

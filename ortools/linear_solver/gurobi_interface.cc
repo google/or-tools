@@ -145,6 +145,7 @@ class GurobiInterface : public MPSolverInterface {
   }
 
   bool InterruptSolve() override {
+    const absl::MutexLock lock(&hold_interruptions_mutex_);
     if (model_ != nullptr) GRBterminate(model_);
     return true;
   }
@@ -204,9 +205,6 @@ class GurobiInterface : public MPSolverInterface {
   void SetScalingMode(int value) override;
   void SetLpAlgorithm(int value) override;
 
-  bool ReadParameterFile(const std::string& filename) override;
-  std::string ValidFileExtensionForParameterFile() const override;
-
   MPSolver::BasisStatus TransformGRBVarBasisStatus(
       int gurobi_basis_status) const;
   MPSolver::BasisStatus TransformGRBConstraintBasisStatus(
@@ -255,6 +253,11 @@ class GurobiInterface : public MPSolverInterface {
   int num_gurobi_linear_cons_ = 0;
   // See the implementation note at the top of file on incrementalism.
   bool had_nonincremental_change_ = false;
+
+  // Mutex is held to prevent InterruptSolve() to call GRBterminate() when
+  // model_ is not completely built. It also prevents model_ to be changed
+  // during the execution of GRBterminate().
+  mutable absl::Mutex hold_interruptions_mutex_;
 };
 
 namespace {
@@ -621,7 +624,10 @@ GurobiInterface::~GurobiInterface() {
 // ------ Model modifications and extraction -----
 
 void GurobiInterface::Reset() {
-  CheckedGurobiCall(GRBfreemodel(model_));
+  // We hold calls to GRBterminate() until the new model_ is ready.
+  const absl::MutexLock lock(&hold_interruptions_mutex_);
+
+  GRBmodel* old_model = model_;
   CheckedGurobiCall(GRBnewmodel(env_, &model_, solver_->name_.c_str(),
                                 0,          // numvars
                                 nullptr,    // obj
@@ -629,6 +635,20 @@ void GurobiInterface::Reset() {
                                 nullptr,    // ub
                                 nullptr,    // vtype
                                 nullptr));  // varnames
+
+  // Copy all existing parameters from the previous model to the new one. This
+  // ensures that if a user calls multiple times
+  // SetSolverSpecificParametersAsString() and then Reset() is called, we still
+  // take into account all parameters.
+  //
+  // The current code only reapplies the parameters stored in
+  // solver_specific_parameter_string_ at the start of the solve; other
+  // parameters set by previous calls are only kept in the Gurobi model.
+  CheckedGurobiCall(GRBcopyparams(GRBgetenv(model_), GRBgetenv(old_model)));
+
+  CheckedGurobiCall(GRBfreemodel(old_model));
+  old_model = nullptr;
+
   ResetExtractionInformation();
   mp_var_to_gurobi_var_.clear();
   mp_cons_to_gurobi_linear_cons_.clear();
@@ -1357,15 +1377,6 @@ void GurobiInterface::Write(const std::string& filename) {
   if (status) {
     LOG(WARNING) << "Failed to write MIP." << GRBgeterrormsg(env_);
   }
-}
-
-bool GurobiInterface::ReadParameterFile(const std::string& filename) {
-  // A non-zero return value indicates that a problem occurred.
-  return GRBreadparams(GRBgetenv(model_), filename.c_str()) == 0;
-}
-
-std::string GurobiInterface::ValidFileExtensionForParameterFile() const {
-  return ".prm";
 }
 
 MPSolverInterface* BuildGurobiInterface(bool mip, MPSolver* const solver) {

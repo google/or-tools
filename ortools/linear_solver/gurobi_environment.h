@@ -72,6 +72,7 @@ extern std::function<int(GRBenv*, GRBmodel**, const char*, int numvars, double*,
 extern std::function<int(GRBmodel*)> GRBoptimize;
 extern std::function<int(GRBenv*, const char*)> GRBreadparams;
 extern std::function<int(GRBenv*)> GRBresetparams;
+extern std::function<int(GRBenv *dest, GRBenv *src)> GRBcopyparams;
 extern std::function<int(GRBmodel*, const char*, int, char)>
     GRBsetcharattrelement;
 extern std::function<int(GRBmodel*, const char*, double)> GRBsetdblattr;
