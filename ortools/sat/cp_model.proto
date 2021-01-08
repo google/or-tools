@@ -558,7 +558,7 @@ enum CpSolverStatus {
   // detailed error by calling ValidateCpModel(model_proto).
   MODEL_INVALID = 1;
 
-  // A feasible solution as been found. But the search was stopped before we
+  // A feasible solution has been found. But the search was stopped before we
   // could prove optimality or before we enumerated all solutions of a
   // feasibility problem (if asked).
   FEASIBLE = 2;

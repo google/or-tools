@@ -2878,6 +2878,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       *model->GetOrCreate<SatParameters>());
   SharedTimeLimit shared_time_limit(model->GetOrCreate<TimeLimit>());
 #if defined(_MSC_VER)
+  // On windows, The final_response is optimized out in the return part, and is
+  // swapped out before the cleanup callback is called. A workaround is to
+  // create a unique ptr that will forbid this optimization.
   std::unique_ptr<CpSolverResponse> final_response_ptr(new CpSolverResponse());
   CpSolverResponse& final_response = *final_response_ptr.get();
 #else
@@ -3093,8 +3096,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
   if (!observers.empty()) {
     shared_response_manager.AddSolutionCallback(
-        [&model_proto, &observers, &wall_timer, &user_timer,
-         &postprocess_solution, &shared_time_limit](
+        [&model_proto, &observers, &postprocess_solution](
             const CpSolverResponse& response_of_presolved_problem) {
           CpSolverResponse response = response_of_presolved_problem;
           postprocess_solution(&response);
@@ -3112,6 +3114,23 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
           }
         });
   }
+
+  // If specified, we load the initial objective domain right away in the
+  // response manager. Note that the presolve will always fill it with the
+  // trivial min/max value if the user left it empty. This avoids to display
+  // [-infinity, infinity] for the initial objective search space.
+  if (new_cp_model_proto.has_objective()) {
+    const Domain domain = ReadDomainFromProto(new_cp_model_proto.objective());
+    if (!domain.IsEmpty()) {
+      shared_response_manager.UpdateInnerObjectiveBounds(
+          "initial domain", IntegerValue(domain.Min()),
+          IntegerValue(domain.Max()));
+    }
+  }
+
+  // Start counting the primal integral from the current determistic time and
+  // initial objective domain gap that we just filled.
+  shared_response_manager.UpdatePrimalIntegral();
 
 #if !defined(__PORTABLE_PLATFORM__)
   if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
@@ -3170,6 +3189,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       LOG(INFO) << absl::StrFormat("*** starting to load the model at %.2fs",
                                    wall_timer.Get());
     }
+    shared_response_manager.SetUpdatePrimalIntegralOnEachChange(true);
     LoadCpModel(new_cp_model_proto, &shared_response_manager, model);
     shared_response_manager.LoadDebugSolution(model);
     if (log_search) {

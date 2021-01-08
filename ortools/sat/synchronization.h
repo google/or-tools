@@ -215,6 +215,9 @@ class SharedResponseManager {
   // particular instance. Or to evaluate how efficient our LNS code is improving
   // solution.
   //
+  // Note: The integral will start counting on the first UpdatePrimalIntegral()
+  // call, since before the difference is assumed to be zero.
+  //
   // Important: To report a proper deterministic integral, we only update it
   // on UpdatePrimalIntegral() which should be called in the main subsolver
   // synchronization loop.
@@ -224,6 +227,11 @@ class SharedResponseManager {
   // (like if the optimal cost is zero), so I prefer this version.
   double PrimalIntegral() const;
   void UpdatePrimalIntegral();
+
+  // Sets this to true to have the "real" but non-deterministic primal integral.
+  // If this is true, then there is no need to manually call
+  // UpdatePrimalIntegral() but it is not an issue to do so.
+  void SetUpdatePrimalIntegralOnEachChange(bool set);
 
   // Updates the inner objective bounds.
   void UpdateInnerObjectiveBounds(const std::string& worker_info,
@@ -291,6 +299,7 @@ class SharedResponseManager {
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void SetStatsFromModelInternal(Model* model)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  void UpdatePrimalIntegralInternal() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   const bool log_updates_;
   const bool enumerate_all_solutions_;
@@ -317,7 +326,9 @@ class SharedResponseManager {
   IntegerValue synchronized_inner_objective_upper_bound_
       ABSL_GUARDED_BY(mutex_) = IntegerValue(kint64max);
 
+  bool update_integral_on_each_change_ ABSL_GUARDED_BY(mutex_) = false;
   double primal_integral_ ABSL_GUARDED_BY(mutex_) = 0.0;
+  double last_absolute_gap_ ABSL_GUARDED_BY(mutex_) = 0.0;
   double last_primal_integral_time_stamp_ ABSL_GUARDED_BY(mutex_) = 0.0;
 
   int next_callback_id_ ABSL_GUARDED_BY(mutex_) = 0;

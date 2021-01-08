@@ -60,8 +60,9 @@ def MinimalJobshopSat():
             end_var = model.NewIntVar(0, horizon, 'end' + suffix)
             interval_var = model.NewIntervalVar(start_var, duration, end_var,
                                                 'interval' + suffix)
-            all_tasks[job_id, task_id] = task_type(
-                start=start_var, end=end_var, interval=interval_var)
+            all_tasks[job_id, task_id] = task_type(start=start_var,
+                                                   end=end_var,
+                                                   interval=interval_var)
             machine_to_intervals[machine].append(interval_var)
     # [END variables]
 
@@ -101,11 +102,11 @@ def MinimalJobshopSat():
             for task_id, task in enumerate(job):
                 machine = task[0]
                 assigned_jobs[machine].append(
-                    assigned_task_type(
-                        start=solver.Value(all_tasks[job_id, task_id].start),
-                        job=job_id,
-                        index=task_id,
-                        duration=task[1]))
+                    assigned_task_type(start=solver.Value(
+                        all_tasks[job_id, task_id].start),
+                                       job=job_id,
+                                       index=task_id,
+                                       duration=task[1]))
 
         # Create per machine output lines.
         output = ''

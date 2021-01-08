@@ -1706,7 +1706,7 @@ bool CpModelPresolver::PropagateDomainsInLinear(int c, ConstraintProto* ct) {
 
     // Can we perform some substitution?
     //
-    // TODO(user): there is no guarante we will not miss some since we might
+    // TODO(user): there is no guarantee we will not miss some since we might
     // not reprocess a constraint once other have been deleted.
 
     // Skip affine constraint. It is more efficient to substitute them lazily
