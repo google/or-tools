@@ -21,6 +21,7 @@
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/util/json_util.h"
 #include "ortools/base/file.h"
+#include "ortools/base/gzipstring.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 
