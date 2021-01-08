@@ -85,13 +85,13 @@ foreach(PROTO_FILE IN LISTS proto_py_files)
   #message(STATUS "protoc py: ${PROTO_PY}")
   add_custom_command(
     OUTPUT ${PROTO_PY}
-    COMMAND protobuf::protoc
+    COMMAND ${PROTOC_PRG}
     "--proto_path=${PROJECT_SOURCE_DIR}"
     ${PROTO_DIRS}
     "--python_out=${PROJECT_BINARY_DIR}/python"
     "--mypy_out=${PROJECT_BINARY_DIR}/python"
     ${PROTO_FILE}
-    DEPENDS ${PROTO_FILE} protobuf::protoc
+    DEPENDS ${PROTO_FILE} ${PROTOC_PRG}
     COMMENT "Generate Python protocol buffer for ${PROTO_FILE}"
     VERBATIM)
   list(APPEND PROTO_PYS ${PROTO_PY})

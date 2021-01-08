@@ -53,6 +53,8 @@ lib
 bin
 packages
 build/
+build_cmake/
+build_cross/
 examples/data/vector_packing
 examples/data/rcpsp
 examples/data/binpacking
