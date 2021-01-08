@@ -167,6 +167,13 @@ absl::Status GetContents(const absl::string_view& filename, std::string* output,
     if (file != NULL) {
       const int64 size = file->Size();
       if (file->ReadToString(output, size) == size) return absl::OkStatus();
+#if defined(_MSC_VER)
+      file->Close();
+      // Retry in binary mode.
+      File* file = File::Open(filename, "rb");
+      const int64 b_size = file->Size();
+      if (file->ReadToString(output, b_size) == b_size) return absl::OkStatus();
+#endif  // _MSC_VER
     }
   }
   return absl::Status(absl::StatusCode::kInvalidArgument,
