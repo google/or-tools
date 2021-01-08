@@ -17,9 +17,9 @@
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"
-#include "google/protobuf/util/json_util.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
+#include "google/protobuf/util/json_util.h"
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
@@ -72,7 +72,8 @@ bool ReadFileToProto(absl::string_view filename,
     return true;
   }
   if (google::protobuf::util::JsonStringToMessage(
-         data, proto, google::protobuf::util::JsonParseOptions()).ok()) {
+          data, proto, google::protobuf::util::JsonParseOptions())
+          .ok()) {
     constexpr int kMaxJsonToBinaryShrinkFactor = 30;
     if (proto->ByteSizeLong() < data.size() / kMaxJsonToBinaryShrinkFactor) {
       VLOG(1) << "ReadFileToProto(): input is probably JSON, but probably not"
@@ -115,7 +116,9 @@ bool WriteProtoToFile(absl::string_view filename,
       options.add_whitespace = true;
       options.always_print_primitive_fields = true;
       options.preserve_proto_field_names = true;
-      if (!google::protobuf::util::MessageToJsonString(proto, &output_string, options).ok()) {
+      if (!google::protobuf::util::MessageToJsonString(proto, &output_string,
+                                                       options)
+               .ok()) {
         LOG(WARNING) << "Printing to stream failed.";
         return false;
       }
