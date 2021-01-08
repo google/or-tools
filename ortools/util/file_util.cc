@@ -103,9 +103,6 @@ bool WriteProtoToFile(absl::string_view filename,
                       const google::protobuf::Message& proto,
                       ProtoWriteFormat proto_write_format, bool gzipped,
                       bool append_extension_to_file_name) {
-  // Note that gzipped files are currently not supported.
-  gzipped = false;
-
   std::string file_type_suffix;
   std::string output_string;
   google::protobuf::io::StringOutputStream stream(&output_string);
@@ -136,6 +133,12 @@ bool WriteProtoToFile(absl::string_view filename,
       }
       file_type_suffix = ".json";
       break;
+  }
+  if (gzipped) {
+    std::string gzip_string;
+    GzipString(output_string, &gzip_string);
+    output_string.swap(gzip_string);
+    file_type_suffix += ".gz";
   }
   std::string output_filename(filename);
   if (append_extension_to_file_name) output_filename += file_type_suffix;

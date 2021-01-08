@@ -20,43 +20,84 @@
 #include "zlib.h"
 
 bool GunzipString(const std::string& str, std::string* out) {
-  z_stream zs;  // z_stream is zlib's control structure
+  z_stream zs;
   zs.zalloc = Z_NULL;
   zs.zfree = Z_NULL;
   zs.opaque = Z_NULL;
   zs.next_in = Z_NULL;
   zs.avail_in = 0;
   zs.next_out = Z_NULL;
-  constexpr int window_bits = 15 + 32;
-  if (inflateInit2(&zs, window_bits) != Z_OK) {
+  if (inflateInit2(&zs, /*window_bits=*/15 + 32) != Z_OK) {
     return false;
   }
 
   zs.next_in = (Bytef*)str.data();
   zs.avail_in = str.size();
 
-  int ret;
-  char outbuffer[32768];
+  int status;
+  char buffer[32768];
 
   // Decompress string by block.
   do {
-    zs.next_out = reinterpret_cast<Bytef*>(outbuffer);
-    zs.avail_out = sizeof(outbuffer);
+    zs.next_out = reinterpret_cast<Bytef*>(buffer);
+    zs.avail_out = sizeof(buffer);
 
-    ret = inflate(&zs, 0);
+    status = inflate(&zs, 0);
 
     if (out->size() < zs.total_out) {
-      out->append(outbuffer, zs.total_out - out->size());
+      out->append(buffer, zs.total_out - out->size());
     }
-  } while (ret == Z_OK);
+  } while (status == Z_OK);
 
   inflateEnd(&zs);
 
-  if (ret != Z_STREAM_END) {  // an error occurred that was not EOF
+  if (status != Z_STREAM_END) {  // an error occurred that was not EOF
+    VLOG(1) << "Exception during zlib decompression: (" << status << ") "
+            << zs.msg;
     return false;
   }
 
   return true;
+}
+
+void GzipString(absl::string_view uncompressed, std::string* compressed) {
+  z_stream zs;
+  zs.zalloc = Z_NULL;
+  zs.zfree = Z_NULL;
+  zs.opaque = Z_NULL;
+  zs.next_in = Z_NULL;
+  zs.avail_in = 0;
+  zs.next_out = Z_NULL;
+
+  if (deflateInit(&zs, Z_BEST_COMPRESSION) != Z_OK) {
+    VLOG(1) << "Cannot initialize zlib compression.";
+    return;
+  }
+
+  zs.next_in = (Bytef*)uncompressed.data();
+  zs.avail_in = uncompressed.size();  // set the z_stream's input
+
+  int status;
+  char buffer[32768];
+
+  // compress block by block.
+  do {
+    zs.next_out = reinterpret_cast<Bytef*>(buffer);
+    zs.avail_out = sizeof(buffer);
+
+    status = deflate(&zs, Z_FINISH);
+
+    if (compressed->size() < zs.total_out) {
+      compressed->append(buffer, zs.total_out - compressed->size());
+    }
+  } while (status == Z_OK);
+
+  deflateEnd(&zs);
+
+  if (status != Z_STREAM_END) {  // an error occurred that was not EOF
+    VLOG(1) << "Exception during zlib compression: (" << status << ") "
+            << zs.msg;
+  }
 }
 
 #endif  // OR_TOOLS_BASE_GZIPSTRING_H_
