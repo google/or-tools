@@ -2,12 +2,13 @@
 
 set -euo pipefail
 
-#export TOOLCHAIN=NATIVE
+#./tools/cross_compile.sh --help
+
+#export PROJECT=or-tools
+export PROJECT=glop
 #export TARGET=x86_64
-#export QEMU_ARCH=DISABLED
-
-export TOOLCHAIN=LINARO
 export TARGET=aarch64-linux-gnu
-export QEMU_ARCH=aarch64
 
-./tools/cross_compile_glop.sh
+./tools/cross_compile.sh qemu
+./tools/cross_compile.sh build
+./tools/cross_compile.sh run_test
