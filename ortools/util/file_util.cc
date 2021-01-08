@@ -31,7 +31,11 @@ using ::google::protobuf::TextFormat;
 absl::StatusOr<std::string> ReadFileToString(absl::string_view filename) {
   std::string contents;
   RETURN_IF_ERROR(file::GetContents(filename, &contents, file::Defaults()));
-  // Note that gzipped files are currently not supported.
+  // Try decompressing it.
+  {
+    std::string uncompressed;
+    if (GunzipString(contents, &uncompressed)) contents.swap(uncompressed);
+  }
   return contents;
 }
 
@@ -39,7 +43,14 @@ bool ReadFileToProto(absl::string_view filename,
                      google::protobuf::Message* proto) {
   std::string data;
   CHECK_OK(file::GetContents(filename, &data, file::Defaults()));
-  // Note that gzipped files are currently not supported.
+  // Try decompressing it.
+  {
+    std::string uncompressed;
+    if (GunzipString(data, &uncompressed)) {
+      VLOG(1) << "ReadFileToProto(): input is gzipped";
+      data.swap(uncompressed);
+    }
+  }
   // Try binary format first, then text format, then JSON, then proto3 JSON,
   // then give up.
   // For some of those, like binary format and proto3 JSON, we perform

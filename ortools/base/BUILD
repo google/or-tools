@@ -394,3 +394,9 @@ cc_library(
     }),
     deps = [":base"],
 )
+
+cc_library(
+    name = "gzipstring",
+    hdrs = ["gzipstring.h"],
+    deps = [":base"],
+)
