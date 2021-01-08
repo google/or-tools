@@ -542,7 +542,7 @@ static const yytype_int16 yyrline[] = {
     411, 412, 413, 420, 421, 428, 429, 430, 433, 434, 437, 438, 439, 444,
     445, 448, 449, 450, 455, 456, 457, 462, 463, 467, 468, 474, 478, 484,
     485, 488, 500, 501, 504, 505, 506, 507, 508, 513, 544, 561, 586, 595,
-    599, 602, 603, 606, 607, 608, 609, 619, 628, 634, 649, 657, 666};
+    599, 602, 603, 606, 607, 608, 609, 619, 628, 634, 649, 657, 668};
 #endif
 
 /** Accessing symbol of state STATE.  */
@@ -2397,38 +2397,38 @@ yyreduce:
     case 95: /* solve: SOLVE annotations MINIMIZE argument  */
 #line 657 "./ortools/flatzinc/parser.yy"
     {
-      IntegerVariable* obj_var = (yyvsp[0].arg).type == Argument::INT_VAR_REF
-          ? (yyvsp[0].arg).Var() 
-          : model->AddConstant(yyvsp[0].arg.Value());
+      IntegerVariable* obj_var =
+          (yyvsp[0].arg).type == Argument::INT_VAR_REF
+              ? (yyvsp[0].arg).Var()
+              : model->AddConstant((yyvsp[0].arg).Value());
       if ((yyvsp[-2].annotations) != nullptr) {
-        model->Minimize(obj_var,
-                        std::move(*(yyvsp[-2].annotations)));
+        model->Minimize(obj_var, std::move(*(yyvsp[-2].annotations)));
         delete (yyvsp[-2].annotations);
       } else {
         model->Minimize(obj_var, std::vector<Annotation>());
       }
     }
-#line 2410 "./ortools/flatzinc/parser.tab.cc"
+#line 2412 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 96: /* solve: SOLVE annotations MAXIMIZE argument  */
-#line 666 "./ortools/flatzinc/parser.yy"
+#line 668 "./ortools/flatzinc/parser.yy"
     {
-      IntegerVariable* obj_var = (yyvsp[0].arg).type == Argument::INT_VAR_REF
-          ? (yyvsp[0].arg).Var() 
-          : model->AddConstant(yyvsp[0].arg.Value());
+      IntegerVariable* obj_var =
+          (yyvsp[0].arg).type == Argument::INT_VAR_REF
+              ? (yyvsp[0].arg).Var()
+              : model->AddConstant((yyvsp[0].arg).Value());
       if ((yyvsp[-2].annotations) != nullptr) {
-        model->Maximize(obj_var,
-                        std::move(*(yyvsp[-2].annotations)));
+        model->Maximize(obj_var, std::move(*(yyvsp[-2].annotations)));
         delete (yyvsp[-2].annotations);
       } else {
         model->Maximize(obj_var, std::vector<Annotation>());
       }
     }
-#line 2424 "./ortools/flatzinc/parser.tab.cc"
+#line 2428 "./ortools/flatzinc/parser.tab.cc"
     break;
 
-#line 2428 "./ortools/flatzinc/parser.tab.cc"
+#line 2432 "./ortools/flatzinc/parser.tab.cc"
 
     default:
       break;
@@ -2621,4 +2621,4 @@ yyreturn:
   return yyresult;
 }
 
-#line 676 "./ortools/flatzinc/parser.yy"
+#line 680 "./ortools/flatzinc/parser.yy"

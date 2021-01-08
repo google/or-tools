@@ -656,7 +656,7 @@ solve:
 }
 | SOLVE annotations MINIMIZE argument {
   IntegerVariable* obj_var = $4.type == Argument::INT_VAR_REF
-      ? $4.Var() 
+      ? $4.Var()
       : model->AddConstant($4.Value());
   if ($2 != nullptr) {
     model->Minimize(obj_var, std::move(*$2));
@@ -667,7 +667,7 @@ solve:
 }
 | SOLVE annotations MAXIMIZE argument {
   IntegerVariable* obj_var = $4.type == Argument::INT_VAR_REF
-      ? $4.Var() 
+      ? $4.Var()
       : model->AddConstant($4.Value());
   if ($2 != nullptr) {
     model->Maximize(obj_var, std::move(*$2));
