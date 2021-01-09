@@ -183,6 +183,7 @@ function expand_codescape_config() {
 
 function build() {
   cd "${PROJECT_DIR}" || exit 2
+  clean_build
 
   # CMake Configuration
   set -x
@@ -201,9 +202,25 @@ function run_test() {
   fi
   install_qemu
   RUN_CMD="${QEMU_INSTALL}/bin/qemu-${QEMU_ARCH} ${QEMU_ARGS[*]}"
-  for test_binary in "${BUILD_DIR}"/test/*_test; do
-    ${RUN_CMD} "${test_binary}"
-  done
+
+  cd "${BUILD_DIR}" || exit 2
+  set -x
+  case ${PROJECT} in
+    glop)
+      ${RUN_CMD} bin/simple_glop_program ;;
+    or-tools)
+      for test_binary in \
+        "${BUILD_DIR}"/bin/simple_* \
+        "${BUILD_DIR}"/bin/*tsp* \
+        "${BUILD_DIR}"/bin/*vrp*; do
+        ${RUN_CMD} "${test_binary}"
+      done
+      ;;
+    *)
+      >&2 echo "Unknown PROJECT '${PROJECT}'..."
+      exit 1 ;;
+  esac
+  set +x
 }
 
 function usage() {
@@ -244,7 +261,7 @@ function main() {
   declare -r PROJECT_DIR="$(cd -P -- "$(dirname -- "$0")/.." && pwd -P)"
   declare -r ARCHIVE_DIR="${PROJECT_DIR}/build_cross/archives"
   declare -r BUILD_DIR="${PROJECT_DIR}/build_cross/${TARGET}"
-  declare -r TOOLCHAIN_FILE=${BUILD_DIR}/toolchain.cmake
+  declare -r TOOLCHAIN_FILE=${ARCHIVE_DIR}/toolchain_${TARGET}.cmake
 
   echo "Project: '${PROJECT}'"
   echo "Target: '${TARGET}'"
@@ -266,24 +283,20 @@ function main() {
   esac
   declare -a CMAKE_ADDITIONAL_ARGS=()
 
+  declare -a QEMU_ARGS=()
   case ${TARGET} in
     x86_64)
-      clean_build
       declare -r QEMU_ARCH=x86_64 ;;
     aarch64-linux-gnu)
-      clean_build
       expand_linaro_config
       declare -r QEMU_ARCH=aarch64 ;;
     aarch64_be-linux-gnu)
-      clean_build
       expand_linaro_config
       declare -r QEMU_ARCH=DISABLED ;;
     mips64)
-      clean_build
       expand_codescape_config
       declare -r QEMU_ARCH=mips64 ;;
     mips64el)
-      clean_build
       expand_codescape_config
       declare -r QEMU_ARCH=mips64el ;;
     *)
@@ -291,10 +304,11 @@ function main() {
       exit 1 ;;
   esac
   declare -r QEMU_INSTALL=${ARCHIVE_DIR}/qemu
-  declare -a QEMU_ARGS=()
 
   if [[ -n ${1-} ]]; then
     case $1 in
+      toolchain)
+        exit ;;
       build)
         build ;;
       qemu)
