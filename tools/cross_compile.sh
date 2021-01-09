@@ -52,17 +52,20 @@ function install_qemu() {
     --prefix=${QEMU_INSTALL} \
     --target-list=${QEMU_TARGET} \
     --audio-drv-list= \
-    --disable-docs \
-    --disable-sdl \
-    --disable-gtk \
-    --disable-vte \
     --disable-brlapi \
-    --disable-opengl \
-    --disable-virglrenderer \
-    --disable-gnutls \
-    --disable-gcrypt \
-    --disable-nettle \
+    --disable-curl \
     --disable-curses \
+    --disable-docs \
+    --disable-gcrypt \
+    --disable-gnutls \
+    --disable-gtk \
+    --disable-libnfs \
+    --disable-libssh \
+    --disable-nettle \
+    --disable-opengl \
+    --disable-sdl \
+    --disable-virglrenderer \
+    --disable-vte \
     --enable-modules
 
   # --static Not supported on Archlinux
