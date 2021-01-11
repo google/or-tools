@@ -382,8 +382,8 @@ $$(arm_targets): arm_$1_%: docker/arm/$1.Dockerfile
 	${DOCKER_BUILD_CMD} --target=$$* --tag ${IMAGE}:$$@ -f $$< ..
 
 save_arm_targets = $(addprefix save_arm_$1_, $(STEPS))
-.PHONY: $(save_arm_targets)
-$(save_arm_targets): save_arm_$1_%: cache/arm/docker_$1_%.tar
+.PHONY: $$(save_arm_targets)
+$$(save_arm_targets): save_arm_$1_%: cache/arm/docker_$1_%.tar
 cache/arm/docker_$1_%.tar: arm_$1_%
 	@rm -f $$@
 	mkdir -p cache/arm
