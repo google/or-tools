@@ -168,6 +168,7 @@ absl::Status GetContents(const absl::string_view& filename, std::string* output,
       const int64 size = file->Size();
       if (file->ReadToString(output, size) == size) return absl::OkStatus();
 #if defined(_MSC_VER)
+      // On windows, binary files needs to be opened with the "rb" flags.
       file->Close();
       // Retry in binary mode.
       File* file = File::Open(filename, "rb");
