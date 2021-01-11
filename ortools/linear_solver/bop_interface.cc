@@ -127,7 +127,10 @@ MPSolver::ResultStatus BopInterface::Solve(const MPSolverParameters& param) {
   // Check whenever the solve has already been stopped by the user.
   if (interrupt_solver_) {
     Reset();
-    return MPSolver::NOT_SOLVED;
+    // linear_solver.cc as DCHECK_EQ that interface_->result_status_ is the same
+    // as the status returned by interface_->Solve().
+    result_status_ = MPSolver::NOT_SOLVED;
+    return result_status_;
   }
 
   // Reset extraction as this interface is not incremental yet.
