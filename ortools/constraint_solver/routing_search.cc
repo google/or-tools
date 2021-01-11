@@ -6026,8 +6026,10 @@ bool ChristofidesFilteredHeuristic::BuildSolutionInternal() {
             ChristofidesPathSolver<int64, int64, int, Cost>::MatchingAlgorithm::
                 MINIMUM_WEIGHT_MATCHING);
       }
-      path_per_cost_class[cost_class] =
-          christofides_solver.TravelingSalesmanPath();
+      if (christofides_solver.Solve()) {
+        path_per_cost_class[cost_class] =
+            christofides_solver.TravelingSalesmanPath();
+      }
     }
   }
   // TODO(user): Investigate if sorting paths per cost improves solutions.
@@ -6035,6 +6037,7 @@ bool ChristofidesFilteredHeuristic::BuildSolutionInternal() {
     const int64 cost_class =
         model()->GetCostClassIndexOfVehicle(vehicle).value();
     const std::vector<int>& path = path_per_cost_class[cost_class];
+    if (path.empty()) continue;
     DCHECK_EQ(0, path[0]);
     DCHECK_EQ(0, path.back());
     // Extend route from start.
