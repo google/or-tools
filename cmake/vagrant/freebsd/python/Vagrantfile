@@ -95,6 +95,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "devel", type: "shell", inline:<<-SHELL
   set -x
+  echo 'export PATH=/home/root/.local/bin:$PATH' >> /home/root/.bashrc
   cd project
   ls
   SHELL
