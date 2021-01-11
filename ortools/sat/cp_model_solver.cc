@@ -935,6 +935,11 @@ std::function<SatParameters(Model*)> NewSatParameters(
     // Tricky: It is important to initialize the model parameters before any
     // of the solver object are created, so that by default they use the given
     // parameters.
+    //
+    // TODO(user): A notable exception to this is the TimeLimit which is
+    // currently not initializing itself from the SatParameters in the model. It
+    // will also starts counting from the time of its creation. It will be good
+    // to find a solution that is less error prone.
     *model->GetOrCreate<SatParameters>() = parameters;
     return parameters;
   };
@@ -1836,10 +1841,9 @@ void PostsolveResponseWithFullSolver(
   // impose a time limit or copy some of the parameters passed by the user.
   Model postsolve_model;
   {
-    SatParameters params;
+    SatParameters& params = *postsolve_model.GetOrCreate<SatParameters>();
     params.set_linearization_level(0);
     params.set_cp_model_probing_level(0);
-    postsolve_model.Add(operations_research::sat::NewSatParameters(params));
   }
 
   std::unique_ptr<TimeLimit> time_limit(TimeLimit::Infinite());
@@ -2123,7 +2127,7 @@ class FullProblemSolver : public SubSolver {
         split_in_chunks_(split_in_chunks),
         local_model_(absl::make_unique<Model>(name)) {
     // Setup the local model parameters and time limit.
-    local_model_->Add(NewSatParameters(local_parameters));
+    *(local_model_->GetOrCreate<SatParameters>()) = local_parameters;
     shared_->time_limit->UpdateLocalLimit(
         local_model_->GetOrCreate<TimeLimit>());
 
@@ -2264,7 +2268,7 @@ class FeasibilityPumpSolver : public SubSolver {
         shared_(shared),
         local_model_(absl::make_unique<Model>(name_)) {
     // Setup the local model parameters and time limit.
-    local_model_->Add(NewSatParameters(local_parameters));
+    *(local_model_->GetOrCreate<SatParameters>()) = local_parameters;
     shared_->time_limit->UpdateLocalLimit(
         local_model_->GetOrCreate<TimeLimit>());
 
@@ -2468,8 +2472,9 @@ class LnsSolver : public SubSolver {
       }
 
       Model local_model;
-      local_model.Add(NewSatParameters(local_params));
+      *(local_model.GetOrCreate<SatParameters>()) = local_params;
       TimeLimit* local_time_limit = local_model.GetOrCreate<TimeLimit>();
+      local_time_limit->ResetLimitFromParameters(local_params);
       shared_->time_limit->UpdateLocalLimit(local_time_limit);
 
       const int64 num_neighborhood_model_vars =
@@ -2874,9 +2879,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   UserTimer user_timer;
   wall_timer.Start();
   user_timer.Start();
-  model->GetOrCreate<TimeLimit>()->ResetLimitFromParameters(
-      *model->GetOrCreate<SatParameters>());
-  SharedTimeLimit shared_time_limit(model->GetOrCreate<TimeLimit>());
+
 #if defined(_MSC_VER)
   // On windows, The final_response is optimized out in the return part, and is
   // swapped out before the cleanup callback is called. A workaround is to
@@ -2912,9 +2915,16 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     CHECK(google::protobuf::TextFormat::ParseFromString(
         absl::GetFlag(FLAGS_cp_model_params), &flag_params));
     params.MergeFrom(flag_params);
-    model->Add(NewSatParameters(params));
+    *(model->GetOrCreate<SatParameters>()) = params;
   }
+#endif  // __PORTABLE_PLATFORM__
 
+  // Initialize the time limit from the parameters.
+  model->GetOrCreate<TimeLimit>()->ResetLimitFromParameters(
+      *model->GetOrCreate<SatParameters>());
+  SharedTimeLimit shared_time_limit(model->GetOrCreate<TimeLimit>());
+
+#if !defined(__PORTABLE_PLATFORM__)
   // Register SIGINT handler if requested by the parameters.
   SigintHandler handler;
   if (model->GetOrCreate<SatParameters>()->catch_sigint_signal()) {
