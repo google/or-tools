@@ -361,7 +361,8 @@ Domain Domain::RelaxIfTooComplex() const {
 
 Domain Domain::MultiplicationBy(int64 coeff, bool* exact) const {
   if (exact != nullptr) *exact = true;
-  if (intervals_.empty() || coeff == 0) return {};
+  if (intervals_.empty()) return {};
+  if (coeff == 0) return Domain(0);
 
   const int64 abs_coeff = std::abs(coeff);
   const int64 size_if_non_trivial = abs_coeff > 1 ? Size() : 0;
