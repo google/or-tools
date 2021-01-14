@@ -7,6 +7,7 @@
 ## Introduction
 <nav for="bazel"> |
 <a href="#deps">Dependencies</a> |
+<a href="#build">Compilation</a> |
 <a href="#integration">Integration</a> |
 <a href="doc/ci.md">CI</a> |
 </nav>
@@ -18,7 +19,8 @@ you can download it for free from <https://bazel.build/>.
 **warning: Currently OR-Tools Bazel doesn't support Python, Java nor .Net,
 please use the Makefile or CMake based build instead.**
 
-## [Dependencies](#deps)
+<a name="deps"></a>
+## Dependencies
 OR-Tools depends on severals mandatory libraries.
 
 * Google Abseil-cpp,
@@ -28,10 +30,13 @@ OR-Tools depends on severals mandatory libraries.
 * SCIP,
 * GLPK (GNU Linear Programming Kit)
 
+<a name="build"></a>
 ## Compilation
 You must compile OR-Tools using C++17:
 * on UNIX: `--cxxopt=-std=c++17`
 * on Windows when using MSVC: `--cxxopt="-std:c++17"`
 
-## [Integrating OR-Tools in your Bazel Project](#integration)
-TODO
+<a name="integration"></a>
+## Integrating OR-Tools in your Bazel Project
+You can take a look at the template project:
+[or-tools/bazel\_or-tools](https://github.com/or-tools/bazel_or-tools).
