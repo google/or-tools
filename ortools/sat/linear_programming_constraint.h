@@ -289,8 +289,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // will still be exact as it will work for any set of multiplier.
   std::vector<std::pair<glop::RowIndex, IntegerValue>> ScaleLpMultiplier(
       bool take_objective_into_account,
-      const glop::DenseColumn& dense_lp_multipliers, glop::Fractional* scaling,
-      int max_pow = 62) const;
+      const std::vector<std::pair<glop::RowIndex, double>>& lp_multipliers,
+      glop::Fractional* scaling, int max_pow = 62) const;
 
   // Computes from an integer linear combination of the integer rows of the LP a
   // new constraint of the form "sum terms <= upper_bound". All computation are
@@ -372,10 +372,14 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // This epsilon is related to the precision of the value/reduced_cost returned
   // by the LP once they have been scaled back into the CP domain. So for large
   // domain or cost coefficient, we may have some issues.
-  static const double kCpEpsilon;
+  static constexpr double kCpEpsilon = 1e-4;
 
   // Same but at the LP scale.
-  static const double kLpEpsilon;
+  static constexpr double kLpEpsilon = 1e-6;
+
+  // Anything coming from the LP with a magnitude below that will be assumed to
+  // be zero.
+  static constexpr double kZeroTolerance = 1e-12;
 
   // Class responsible for managing all possible constraints that may be part
   // of the LP.
@@ -415,6 +419,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<IntegerValue> tmp_var_ubs_;
   std::vector<glop::RowIndex> tmp_slack_rows_;
   std::vector<IntegerValue> tmp_slack_bounds_;
+
+  // Used by ScaleLpMultiplier().
+  mutable std::vector<std::pair<glop::RowIndex, double>> tmp_cp_multipliers_;
 
   // Structures used for mirroring IntegerVariables inside the underlying LP
   // solver: an integer variable var is mirrored by mirror_lp_variable_[var].

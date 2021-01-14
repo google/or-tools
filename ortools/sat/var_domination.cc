@@ -514,17 +514,24 @@ std::string VarDomination::DominationDebugString(IntegerVariable var) const {
   return result;
 }
 
-void DualBoundStrengthening::CannotDecrease(absl::Span<const int> refs) {
+// TODO(user): No need to set locking_ct_index_[var] if num_locks_[var] > 1
+void DualBoundStrengthening::CannotDecrease(absl::Span<const int> refs,
+                                            int ct_index) {
   for (const int ref : refs) {
     const IntegerVariable var = RefToIntegerVariable(ref);
     can_freely_decrease_until_[var] = kMaxIntegerValue;
+    num_locks_[var]++;
+    locking_ct_index_[var] = ct_index;
   }
 }
 
-void DualBoundStrengthening::CannotIncrease(absl::Span<const int> refs) {
+void DualBoundStrengthening::CannotIncrease(absl::Span<const int> refs,
+                                            int ct_index) {
   for (const int ref : refs) {
     const IntegerVariable var = RefToIntegerVariable(ref);
     can_freely_decrease_until_[NegationOf(var)] = kMaxIntegerValue;
+    num_locks_[NegationOf(var)]++;
+    locking_ct_index_[NegationOf(var)] = ct_index;
   }
 }
 
@@ -533,6 +540,8 @@ void DualBoundStrengthening::CannotMove(absl::Span<const int> refs) {
     const IntegerVariable var = RefToIntegerVariable(ref);
     can_freely_decrease_until_[var] = kMaxIntegerValue;
     can_freely_decrease_until_[NegationOf(var)] = kMaxIntegerValue;
+    num_locks_[var]++;
+    num_locks_[NegationOf(var)]++;
   }
 }
 
@@ -558,6 +567,7 @@ void DualBoundStrengthening::ProcessLinearConstraint(
 
     // lb side.
     if (min_activity < lb_limit) {
+      num_locks_[var]++;
       if (min_activity + term_diff < lb_limit) {
         can_freely_decrease_until_[var] = kMaxIntegerValue;
       } else {
@@ -572,12 +582,14 @@ void DualBoundStrengthening::ProcessLinearConstraint(
 
     if (is_objective) {
       // We never want to increase the objective value.
+      num_locks_[NegationOf(var)]++;
       can_freely_decrease_until_[NegationOf(var)] = kMaxIntegerValue;
       continue;
     }
 
     // ub side.
     if (max_activity > ub_limit) {
+      num_locks_[NegationOf(var)]++;
       if (max_activity - term_diff > ub_limit) {
         can_freely_decrease_until_[NegationOf(var)] = kMaxIntegerValue;
       } else {
@@ -652,6 +664,62 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
       CHECK(context->IntersectDomainWith(var, Domain(new_lb, new_ub)));
     }
   }
+
+  // If (a => b) is the only constraint blocking a literal a in the up
+  // direction, then we can set a == b !
+  //
+  // TODO(user): We can deal with more general situation. For instance an at
+  // most one that is the only blocking constraint can become an exactly one.
+  std::vector<bool> processed(num_vars, false);
+  for (int positive_ref = 0; positive_ref < num_vars; ++positive_ref) {
+    if (processed[positive_ref]) continue;
+    if (context->IsFixed(positive_ref)) continue;
+    const IntegerVariable var = RefToIntegerVariable(positive_ref);
+    int ct_index = -1;
+    if (num_locks_[var] == 1 && locking_ct_index_[var] != -1) {
+      ct_index = locking_ct_index_[var];
+    } else if (num_locks_[NegationOf(var)] == 1 &&
+               locking_ct_index_[NegationOf(var)] != -1) {
+      ct_index = locking_ct_index_[NegationOf(var)];
+    } else {
+      continue;
+    }
+    const ConstraintProto& ct = context->working_model->constraints(ct_index);
+    if (ct.constraint_case() != ConstraintProto::kBoolAnd) continue;
+    if (ct.enforcement_literal().size() != 1) continue;
+
+    // Recover a => b where a is having an unique up_lock (i.e this constraint).
+    // Note that if many implications are encoded in the same bool_and, we have
+    // to be careful that a is appearing in just one of them.
+    int a = ct.enforcement_literal(0);
+    int b = 1;
+    if (PositiveRef(a) == positive_ref &&
+        num_locks_[RefToIntegerVariable(NegatedRef(a))] == 1) {
+      // Here, we can only add the equivalence if the literal is the only
+      // on the lhs, otherwise there is actually more lock.
+      if (ct.bool_and().literals().size() != 1) continue;
+      b = ct.bool_and().literals(0);
+    } else {
+      bool found = false;
+      b = NegatedRef(ct.enforcement_literal(0));
+      for (const int lhs : ct.bool_and().literals()) {
+        if (PositiveRef(lhs) == positive_ref &&
+            num_locks_[RefToIntegerVariable(lhs)] == 1) {
+          found = true;
+          a = NegatedRef(lhs);
+          break;
+        }
+      }
+      CHECK(found);
+    }
+    CHECK_EQ(num_locks_[RefToIntegerVariable(NegatedRef(a))], 1);
+
+    processed[PositiveRef(a)] = true;
+    processed[PositiveRef(b)] = true;
+    context->StoreBooleanEqualityRelation(a, b);
+    context->UpdateRuleStats("dual: enforced equivalence");
+  }
+
   return true;
 }
 
@@ -724,7 +792,7 @@ void DetectDominanceRelations(
     for (int c = 0; c < num_constraints; ++c) {
       const ConstraintProto& ct = cp_model.constraints(c);
       if (phase == 0) {
-        dual_bound_strengthening->CannotIncrease(ct.enforcement_literal());
+        dual_bound_strengthening->CannotIncrease(ct.enforcement_literal(), c);
       }
       switch (ct.constraint_case()) {
         case ConstraintProto::kBoolOr:
@@ -737,7 +805,8 @@ void DetectDominanceRelations(
           break;
         case ConstraintProto::kBoolAnd:
           if (phase == 0) {
-            dual_bound_strengthening->CannotDecrease(ct.bool_and().literals());
+            dual_bound_strengthening->CannotDecrease(ct.bool_and().literals(),
+                                                     c);
           }
 
           // We process it like n clauses.

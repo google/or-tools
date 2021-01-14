@@ -47,9 +47,6 @@ using glop::ColIndex;
 using glop::Fractional;
 using glop::RowIndex;
 
-const double LinearProgrammingConstraint::kCpEpsilon = 1e-4;
-const double LinearProgrammingConstraint::kLpEpsilon = 1e-6;
-
 void ScatteredIntegerVector::ClearAndResize(int size) {
   if (is_sparse_) {
     for (const glop::ColIndex col : non_zeros_) {
@@ -955,12 +952,21 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
                                     extra_info);
 }
 
+// TODO(user): This can be still too slow on some problems like
+// 30_70_45_05_100.mps.gz. Not this actual function, but the set of computation
+// it triggers. We should add heuristics to abort earlier if a cut is not
+// promising. Or only test a few positions and not all rows.
 void LinearProgrammingConstraint::AddCGCuts() {
   const RowIndex num_rows = lp_data_.num_constraints();
+  std::vector<std::pair<RowIndex, double>> lp_multipliers;
+  std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
   for (RowIndex row(0); row < num_rows; ++row) {
     ColIndex basis_col = simplex_.GetBasis(row);
     const Fractional lp_value = GetVariableValueAtCpScale(basis_col);
 
+    // Only consider fractional basis element. We ignore element that are close
+    // to an integer to reduce the amount of positions we try.
+    //
     // TODO(user): We could just look at the diff with std::floor() in the hope
     // that when we are just under an integer, the exact computation below will
     // also be just under it.
@@ -972,29 +978,43 @@ void LinearProgrammingConstraint::AddCGCuts() {
 
     if (time_limit_->LimitReached()) break;
 
-    const glop::ScatteredRow& lambda = simplex_.GetUnitRowLeftInverse(row);
-    glop::DenseColumn lp_multipliers(num_rows, 0.0);
+    // TODO(user): Avoid code duplication between the sparse/dense path.
     double magnitude = 0.0;
-    int num_non_zeros = 0;
-    for (RowIndex row(0); row < num_rows; ++row) {
-      lp_multipliers[row] = lambda.values[glop::RowToColIndex(row)];
-      if (std::abs(lp_multipliers[row]) < 1e-12) {
-        lp_multipliers[row] = 0.0;
-        continue;
-      }
+    lp_multipliers.clear();
+    const glop::ScatteredRow& lambda = simplex_.GetUnitRowLeftInverse(row);
+    if (lambda.non_zeros.empty()) {
+      for (RowIndex row(0); row < num_rows; ++row) {
+        const double value = lambda.values[glop::RowToColIndex(row)];
+        if (std::abs(value) < kZeroTolerance) continue;
 
-      // There should be no BASIC status, but they could be imprecision
-      // in the GetUnitRowLeftInverse() code? not sure, so better be safe.
-      const auto status = simplex_.GetConstraintStatus(row);
-      if (status == glop::ConstraintStatus::BASIC) {
-        VLOG(1) << "BASIC row not expected! " << lp_multipliers[row];
-        lp_multipliers[row] = 0.0;
-      }
+        // There should be no BASIC status, but they could be imprecision
+        // in the GetUnitRowLeftInverse() code? not sure, so better be safe.
+        const auto status = simplex_.GetConstraintStatus(row);
+        if (status == glop::ConstraintStatus::BASIC) {
+          VLOG(1) << "BASIC row not expected! " << value;
+          continue;
+        }
 
-      magnitude = std::max(magnitude, std::abs(lp_multipliers[row]));
-      if (lp_multipliers[row] != 0.0) ++num_non_zeros;
+        magnitude = std::max(magnitude, std::abs(value));
+        lp_multipliers.push_back({row, value});
+      }
+    } else {
+      for (const ColIndex col : lambda.non_zeros) {
+        const RowIndex row = glop::ColToRowIndex(col);
+        const double value = lambda.values[col];
+        if (std::abs(value) < kZeroTolerance) continue;
+
+        const auto status = simplex_.GetConstraintStatus(row);
+        if (status == glop::ConstraintStatus::BASIC) {
+          VLOG(1) << "BASIC row not expected! " << value;
+          continue;
+        }
+
+        magnitude = std::max(magnitude, std::abs(value));
+        lp_multipliers.push_back({row, value});
+      }
     }
-    if (num_non_zeros == 0) continue;
+    if (lp_multipliers.empty()) continue;
 
     Fractional scaling;
     for (int i = 0; i < 2; ++i) {
@@ -1003,14 +1023,14 @@ void LinearProgrammingConstraint::AddCGCuts() {
         //
         // TODO(user): Maybe add an heuristic to know beforehand which sign to
         // use?
-        for (RowIndex row(0); row < num_rows; ++row) {
-          lp_multipliers[row] = -lp_multipliers[row];
+        for (std::pair<RowIndex, double>& p : lp_multipliers) {
+          p.second = -p.second;
         }
       }
 
       // TODO(user): We use a lower value here otherwise we might run into
       // overflow while computing the cut. This should be fixable.
-      const std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers =
+      integer_multipliers =
           ScaleLpMultiplier(/*take_objective_into_account=*/false,
                             lp_multipliers, &scaling, /*max_pow=*/52);
       AddCutFromConstraints("CG", integer_multipliers);
@@ -1750,20 +1770,20 @@ void LinearProgrammingConstraint::SetImpliedLowerBoundReason(
   integer_trail_->RemoveLevelZeroBounds(&integer_reason_);
 }
 
-// TODO(user): Provide a sparse interface.
 std::vector<std::pair<RowIndex, IntegerValue>>
 LinearProgrammingConstraint::ScaleLpMultiplier(
     bool take_objective_into_account,
-    const glop::DenseColumn& dense_lp_multipliers, Fractional* scaling,
-    int max_pow) const {
+    const std::vector<std::pair<RowIndex, double>>& lp_multipliers,
+    Fractional* scaling, int max_pow) const {
   double max_sum = 0.0;
-  std::vector<std::pair<RowIndex, Fractional>> cp_multipliers;
-  for (RowIndex row(0); row < dense_lp_multipliers.size(); ++row) {
-    const Fractional lp_multi = dense_lp_multipliers[row];
+  tmp_cp_multipliers_.clear();
+  for (const std::pair<RowIndex, double>& p : lp_multipliers) {
+    const RowIndex row = p.first;
+    const Fractional lp_multi = p.second;
 
     // We ignore small values since these are likely errors and will not
     // contribute much to the new lp constraint anyway.
-    if (std::abs(lp_multi) < 1e-12) continue;
+    if (std::abs(lp_multi) < kZeroTolerance) continue;
 
     // Remove trivial bad cases.
     //
@@ -1779,7 +1799,7 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
     }
 
     const Fractional cp_multi = scaler_.UnscaleDualValue(row, lp_multi);
-    cp_multipliers.push_back({row, cp_multi});
+    tmp_cp_multipliers_.push_back({row, cp_multi});
     max_sum += ToDouble(infinity_norms_[row]) * std::abs(cp_multi);
   }
 
@@ -1809,7 +1829,7 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
   // Scale the multipliers by *scaling.
   //
   // TODO(user): Maybe use int128 to avoid overflow?
-  for (const auto entry : cp_multipliers) {
+  for (const auto entry : tmp_cp_multipliers_) {
     const IntegerValue coeff(std::round(entry.second * (*scaling)));
     if (coeff != 0) integer_multipliers.push_back({entry.first, coeff});
   }
@@ -2015,9 +2035,11 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
   //
   // TODO(user): Provide and use a sparse API in Glop to get the duals.
   const RowIndex num_rows = simplex_.GetProblemNumRows();
-  glop::DenseColumn lp_multipliers(num_rows);
+  std::vector<std::pair<RowIndex, double>> lp_multipliers;
   for (RowIndex row(0); row < num_rows; ++row) {
-    lp_multipliers[row] = -simplex_.GetDualValue(row);
+    const double value = -simplex_.GetDualValue(row);
+    if (std::abs(value) < kZeroTolerance) continue;
+    lp_multipliers.push_back({row, value});
   }
 
   Fractional scaling;
@@ -2073,9 +2095,16 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
 
 bool LinearProgrammingConstraint::FillExactDualRayReason() {
   Fractional scaling;
+  const glop::DenseColumn ray = simplex_.GetDualRay();
+  std::vector<std::pair<RowIndex, double>> lp_multipliers;
+  for (RowIndex row(0); row < ray.size(); ++row) {
+    const double value = ray[row];
+    if (std::abs(value) < kZeroTolerance) continue;
+    lp_multipliers.push_back({row, value});
+  }
   std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers =
-      ScaleLpMultiplier(/*take_objective_into_account=*/false,
-                        simplex_.GetDualRay(), &scaling);
+      ScaleLpMultiplier(/*take_objective_into_account=*/false, lp_multipliers,
+                        &scaling);
 
   IntegerValue new_constraint_ub;
   if (!ComputeNewLinearConstraint(integer_multipliers, &tmp_scattered_vector_,

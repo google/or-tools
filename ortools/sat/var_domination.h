@@ -213,11 +213,13 @@ class DualBoundStrengthening {
   // This must be called before processing the constraints.
   void Reset(int num_variables) {
     can_freely_decrease_until_.assign(2 * num_variables, kMinIntegerValue);
+    num_locks_.assign(2 * num_variables, 0);
+    locking_ct_index_.assign(2 * num_variables, -1);
   }
 
   // All constraints should be mapped to one of more call to these functions.
-  void CannotDecrease(absl::Span<const int> refs);
-  void CannotIncrease(absl::Span<const int> refs);
+  void CannotDecrease(absl::Span<const int> refs, int ct_index = -1);
+  void CannotIncrease(absl::Span<const int> refs, int ct_index = -1);
   void CannotMove(absl::Span<const int> refs);
 
   // Most of the logic here deals with linear constraints.
@@ -229,6 +231,11 @@ class DualBoundStrengthening {
 
   // Once ALL constraints have been processed, call this to fix variables or
   // reduce their domain if possible.
+  //
+  // Note that this also tighten some constraint that are the only one blocking
+  // in one direction. Currently we only do that for implication, so that if we
+  // have two Booleans such that a + b <= 1 we transform that to = 1 and we
+  // remove one variable since we have now an equivalence relation.
   bool Strengthen(PresolveContext* context);
 
   // The given ref can always freely decrease until the returned value.
@@ -246,6 +253,14 @@ class DualBoundStrengthening {
 
   // Starts with kMaxIntegerValue, and decrease as constraints are processed.
   absl::StrongVector<IntegerVariable, IntegerValue> can_freely_decrease_until_;
+
+  // How many times can_freely_decrease_until_[var] was set by a constraints.
+  // If only one constraint is blocking, we can do more presolve.
+  absl::StrongVector<IntegerVariable, int64> num_locks_;
+
+  // If num_locks_[var] == 1, this will be the unique constraint that block var
+  // in this direction. Note that it can be set to -1 if this wasn't recorded.
+  absl::StrongVector<IntegerVariable, int64> locking_ct_index_;
 };
 
 // Detect the variable dominance relations within the given model. Note that

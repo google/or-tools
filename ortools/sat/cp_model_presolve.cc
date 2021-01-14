@@ -4908,7 +4908,8 @@ void CpModelPresolver::PresolveToFixPoint() {
   if (context_->ModelIsUnsat()) return;
 
   // Detect & exploit dominance between variables, or variables that can move
-  // freely in one direction.
+  // freely in one direction. Or variables that are just blocked by one
+  // constraint in one direction.
   //
   // TODO(user): We can support assumptions but we need to not cut them out of
   // the feasible region.
@@ -4918,6 +4919,11 @@ void CpModelPresolver::PresolveToFixPoint() {
     DualBoundStrengthening dual_bound_strengthening;
     DetectDominanceRelations(*context_, &var_dom, &dual_bound_strengthening);
     if (!dual_bound_strengthening.Strengthen(context_)) return;
+
+    // TODO(user): The Strengthen() function above might make some inequality
+    // tight. Currently, because we only do that for implication, this will not
+    // change who dominate who, but in general we should process the new
+    // constraint direction before calling this.
     if (!ExploitDominanceRelations(var_dom, context_)) return;
   }
 
