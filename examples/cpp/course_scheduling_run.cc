@@ -21,6 +21,8 @@
 
 #include <cstdlib>
 
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "examples/cpp/course_scheduling.h"
 #include "examples/cpp/course_scheduling.pb.h"
 #include "ortools/base/commandlineflags.h"

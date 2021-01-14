@@ -18,6 +18,8 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/str_format.h"
 #include "examples/cpp/parse_dimacs_assignment.h"
 #include "examples/cpp/print_dimacs_assignment.h"
@@ -186,7 +188,7 @@ int main(int argc, char* argv[]) {
   } else {
     usage = absl::StrFormat(kUsageTemplate, argv[0]);
   }
-  absl::SetProgramUsageMessage(usage);
+  google::InitGoogleLogging(usage.c_str());
   absl::ParseCommandLine(argc, argv);
 
   if (argc < 2) {

@@ -58,7 +58,7 @@ class OpbReader {
   // Since the problem name is not stored in the cnf format, we infer it from
   // the file name.
   static std::string ExtractProblemName(const std::string& filename) {
-    const int found = filename.find_last_of("/");
+    const int found = filename.find_last_of('/');
     const std::string problem_name =
         found != std::string::npos ? filename.substr(found + 1) : filename;
     return problem_name;

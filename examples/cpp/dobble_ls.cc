@@ -30,8 +30,11 @@
 // search operators and local search filters.
 
 #include <algorithm>
+#include <cstdlib>
 #include <vector>
 
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
@@ -722,21 +725,20 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
     filters.push_back(solver.RevAlloc(new DobbleFilter(
         all_card_symbol_vars, num_cards, num_symbols, num_symbols_per_card)));
   }
-
+  LocalSearchFilterManager* ls_manager =
+      solver.RevAlloc(new LocalSearchFilterManager(std::move(filters)));
   // Main decision builder that regroups the first solution decision
   // builder and the combination of local search operators and
   // filters.
-  LocalSearchFilterManager* filter_manager =
-      solver.RevAlloc(new LocalSearchFilterManager(filters));
   DecisionBuilder* const final_db = solver.MakeLocalSearchPhase(
       all_card_symbol_vars, build_db,
       solver.MakeLocalSearchPhaseParameters(
           objective_var, solver.ConcatenateOperators(operators, true),
           nullptr,  // Sub decision builder, not needed here.
           nullptr,  // Limit the search for improving move, we will stop
-          // the exploration of the local search at the first
-          // improving solution (first accept).
-          filter_manager));
+                    // the exploration of the local search at the first
+                    // improving solution (first accept).
+          ls_manager));
 
   std::vector<SearchMonitor*> monitors;
   // Optimize var search monitor.
@@ -748,8 +750,8 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
   monitors.push_back(log);
 
   // Search limit.
-  SearchLimit* const time_limit = solver.MakeLimit(
-      absl::GetFlag(FLAGS_time_limit_in_ms), kint64max, kint64max, kint64max);
+  SearchLimit* const time_limit = solver.MakeTimeLimit(
+      absl::Milliseconds(absl::GetFlag(FLAGS_time_limit_in_ms)));
   monitors.push_back(time_limit);
 
   // And solve!
@@ -758,6 +760,7 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
   // These constants comes directly from the dobble game.
   // There are actually 55 cards, but we can create up to 57 cards.

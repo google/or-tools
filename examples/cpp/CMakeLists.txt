@@ -13,6 +13,7 @@ include(GNUInstallDirs)
 foreach(EXECUTABLE IN ITEMS
   constraint_programming_cp
   costas_array_sat
+  cryptarithm_sat
   cvrp_disjoint_tw
   cvrptw
   cvrptw_with_breaks
@@ -29,6 +30,7 @@ foreach(EXECUTABLE IN ITEMS
   linear_assignment_api
   linear_programming
   linear_solver_protocol_buffers
+  magic_sequence_sat
   magic_square_sat
   max_flow
   min_cost_flow

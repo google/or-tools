@@ -17,6 +17,8 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_join.h"
@@ -253,6 +255,7 @@ void ParseAndSolve() {
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
+  google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
   if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";

@@ -24,6 +24,8 @@
 
 #include <vector>
 
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/random/random.h"
 #include "examples/cpp/cvrptw_lib.h"
 #include "google/protobuf/text_format.h"
@@ -66,6 +68,7 @@ const int64 kMaxNodesPerGroup = 10;
 const int64 kSameVehicleCost = 1000;
 
 int main(int argc, char** argv) {
+  google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_orders))
       << "Specify an instance size greater than 0.";

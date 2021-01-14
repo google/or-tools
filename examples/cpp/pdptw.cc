@@ -36,9 +36,14 @@
 // Reads data in the format defined by Li & Lim
 // (https://www.sintef.no/projectweb/top/pdptw/li-lim-benchmark/documentation/).
 
+#include <cmath>
 #include <utility>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
 #include "google/protobuf/text_format.h"
@@ -134,7 +139,7 @@ std::vector<IntVar*> GetTabuVars(std::vector<IntVar*> existing_vars,
   return vars;
 }
 
-// Outputs a solution to the current model in a std::string.
+// Outputs a solution to the current model in a string.
 std::string VerboseOutput(const RoutingModel& routing,
                           const RoutingIndexManager& manager,
                           const Assignment& assignment,
@@ -185,8 +190,7 @@ std::string VerboseOutput(const RoutingModel& routing,
 
 namespace {
 // An inefficient but convenient method to parse a whitespace-separated list
-// of integers. Returns true iff the input std::string was entirely valid and
-// parsed.
+// of integers. Returns true iff the input string was entirely valid and parsed.
 bool SafeParseInt64Array(const std::string& str,
                          std::vector<int64>* parsed_int) {
   std::istringstream input(str);
@@ -390,6 +394,7 @@ bool LoadAndSolve(const std::string& pdp_file,
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
+  google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
   operations_research::RoutingModelParameters model_parameters =
       operations_research::DefaultRoutingModelParameters();

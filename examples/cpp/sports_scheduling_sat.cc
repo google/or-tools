@@ -43,6 +43,8 @@
 // We also introduces a variable at_home[d][i] which is true if team i
 // plays any opponent at home on day d.
 
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -323,8 +325,8 @@ static const char kUsage[] =
     "There is no output besides the debug LOGs of the solver.";
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);  
   absl::SetFlag(&FLAGS_logtostderr, true);
+  google::InitGoogleLogging(kUsage);
   absl::ParseCommandLine(argc, argv);
   CHECK_EQ(0, absl::GetFlag(FLAGS_num_teams) % 2)
       << "The number of teams must be even";

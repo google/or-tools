@@ -27,20 +27,21 @@
 
 #include <vector>
 
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
+#include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "examples/cpp/cvrptw_lib.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/random.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
 #include "ortools/constraint_solver/routing_parameters.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 
-using operations_research::ACMRandom;
 using operations_research::Assignment;
 using operations_research::DefaultRoutingSearchParameters;
 using operations_research::FirstSolutionStrategy;
@@ -69,6 +70,7 @@ const char* kTime = "Time";
 const char* kCapacity = "Capacity";
 
 int main(int argc, char** argv) {
+  google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_orders))
       << "Specify an instance size greater than 0.";
@@ -76,8 +78,7 @@ int main(int argc, char** argv) {
       << "Specify a non-null vehicle fleet size.";
   // VRP of size absl::GetFlag(FLAGS_vrp_size).
   // Nodes are indexed from 0 to absl::GetFlag(FLAGS_vrp_orders), the starts and
-  // ends of
-  // the routes are at node 0.
+  // ends of the routes are at node 0.
   const RoutingIndexManager::NodeIndex kDepot(0);
   RoutingIndexManager manager(absl::GetFlag(FLAGS_vrp_orders) + 1,
                               absl::GetFlag(FLAGS_vrp_vehicles), kDepot);
@@ -117,8 +118,8 @@ int main(int argc, char** argv) {
       routing.RegisterTransitCallback([&demand, &manager](int64 i, int64 j) {
         return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
-      kNullCapacitySlack, kVehicleCapacity, /*fix_start_cumul_to_zero=*/true,
-      kCapacity);
+      kNullCapacitySlack, kVehicleCapacity,
+      /*fix_start_cumul_to_zero=*/true, kCapacity);
 
   // Adding time dimension constraints.
   const int64 kTimePerDemandUnit = 300;
@@ -139,11 +140,12 @@ int main(int argc, char** argv) {
   RoutingDimension* const time_dimension = routing.GetMutableDimension(kTime);
 
   // Adding time windows.
-  ACMRandom randomizer(
+  std::mt19937 randomizer(
       GetSeed(absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed)));
   const int64 kTWDuration = 5 * 3600;
   for (int order = 1; order < manager.num_nodes(); ++order) {
-    const int64 start = randomizer.Uniform(kHorizon - kTWDuration);
+    const int64 start =
+        absl::Uniform<int32_t>(randomizer, 0, kHorizon - kTWDuration);
     time_dimension->CumulVar(order)->SetRange(start, start + kTWDuration);
     routing.AddToAssignment(time_dimension->SlackVar(order));
   }
@@ -173,7 +175,7 @@ int main(int argc, char** argv) {
       service_times[node] = kTimePerDemandUnit * demand.Demand(index, index);
     }
   }
-  const std::vector<std::vector<int> > break_data = {
+  const std::vector<std::vector<int>> break_data = {
       {/*start_min*/ 11, /*start_max*/ 13, /*duration*/ 2400},
       {/*start_min*/ 10, /*start_max*/ 15, /*duration*/ 1800},
       {/*start_min*/ 10, /*start_max*/ 15, /*duration*/ 1800}};

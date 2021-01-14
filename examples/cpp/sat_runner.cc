@@ -19,6 +19,8 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
@@ -443,9 +445,9 @@ int main(int argc, char** argv) {
   // By default, we want to show how the solver progress. Note that this needs
   // to be set before InitGoogle() which has the nice side-effect of allowing
   // the user to override it.
-  absl::SetProgramUsageMessage(kUsage);
-  absl::ParseCommandLine(argc, argv);
-  google::InitGoogleLogging(argv[0]);
+  absl::SetFlag(&FLAGS_vmodule, "cp_model_solver=1");
+  gflags::SetUsageMessage(kUsage);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   absl::SetFlag(&FLAGS_alsologtostderr, true);
   return operations_research::sat::Run();
 }

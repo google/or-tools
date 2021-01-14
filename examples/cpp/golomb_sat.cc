@@ -26,8 +26,11 @@
 
 #include <cstdio>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
+#include "absl/strings/str_format.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
@@ -97,8 +100,8 @@ void GolombRuler(int size) {
   if (response.status() == CpSolverStatus::OPTIMAL) {
     const int64 result = SolutionIntegerValue(response, ticks.back());
     const int64 num_failures = response.num_conflicts();
-    printf("N = %d, optimal length = %lld (conflicts:%lld, time=%f s)\n", size,
-           result, num_failures, response.wall_time());
+    absl::PrintF("N = %d, optimal length = %d (conflicts:%d, time=%f s)\n",
+                 size, result, num_failures, response.wall_time());
     if (size - 1 < kKnownSolutions) {
       CHECK_EQ(result, kBestSolutions[size - 1]);
     }
@@ -116,7 +119,10 @@ void GolombRuler(int size) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  absl::SetFlag(&FLAGS_logtostderr, true);
+  google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
+
   if (absl::GetFlag(FLAGS_size) != 0) {
     operations_research::sat::GolombRuler(absl::GetFlag(FLAGS_size));
   } else {

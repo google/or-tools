@@ -18,6 +18,8 @@
 #include <cstdio>
 #include <string>
 
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"

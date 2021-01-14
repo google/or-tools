@@ -21,19 +21,20 @@
 
 #include <vector>
 
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
+#include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "examples/cpp/cvrptw_lib.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/random.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
 #include "ortools/constraint_solver/routing_parameters.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 
-using operations_research::ACMRandom;
 using operations_research::Assignment;
 using operations_research::DefaultRoutingSearchParameters;
 using operations_research::GetSeed;
@@ -63,6 +64,7 @@ const char* kTime = "Time";
 const char* kCapacity = "Capacity";
 
 int main(int argc, char** argv) {
+  google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_stops))
       << "Specify an instance size greater than 0.";
@@ -109,8 +111,8 @@ int main(int argc, char** argv) {
       routing.RegisterTransitCallback([&demand, &manager](int64 i, int64 j) {
         return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
-      kNullCapacitySlack, kVehicleCapacity, /*fix_start_cumul_to_zero=*/true,
-      kCapacity);
+      kNullCapacitySlack, kVehicleCapacity,
+      /*fix_start_cumul_to_zero=*/true, kCapacity);
 
   // Adding time dimension constraints.
   const int64 kStopTime = 300;
@@ -128,11 +130,12 @@ int main(int argc, char** argv) {
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie(kTime);
 
   // Adding time windows, for the sake of simplicty same for each stop.
-  ACMRandom randomizer(
+  std::mt19937 randomizer(
       GetSeed(absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed)));
   const int64 kTWDuration = 5 * 3600;
   for (int stop = 0; stop < absl::GetFlag(FLAGS_vrp_stops); ++stop) {
-    const int64 start = randomizer.Uniform(kHorizon - kTWDuration);
+    const int64 start =
+        absl::Uniform<int32_t>(randomizer, 0, kHorizon - kTWDuration);
     for (int stop_order = 0;
          stop_order < absl::GetFlag(FLAGS_vrp_orders_per_stop); ++stop_order) {
       const int order =

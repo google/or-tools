@@ -21,16 +21,18 @@
 // This example contains two separate implementations. CostasHard()
 // uses hard constraints, whereas CostasSoft() uses a minimizer to
 // minimize the number of duplicates.
+
 #include <ctime>
 #include <set>
 #include <utility>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/random.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 
@@ -102,11 +104,13 @@ void CostasHard(const int dim) {
   // Check that the pairwise difference is unique
   for (int i = 1; i < dim; ++i) {
     std::vector<IntVar> subset;
-    Domain diff(-dim, dim);
+    Domain difference_domain(-dim, dim);
 
     for (int j = 0; j < dim - i; ++j) {
-      subset.push_back(cp_model.NewIntVar(diff));
-      cp_model.AddEquality(LinearExpr::Sum({subset[j], vars[j]}), vars[j + i]);
+      IntVar diff = cp_model.NewIntVar(difference_domain);
+      subset.push_back(diff);
+      cp_model.AddEquality(
+          diff, LinearExpr::ScalProd({vars[j + i], vars[j]}, {1, -1}));
     }
 
     cp_model.AddAllDifferent(subset);
@@ -118,7 +122,7 @@ void CostasHard(const int dim) {
   }
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
 
-  if (response.status() == CpSolverStatus::FEASIBLE) {
+  if (response.status() == CpSolverStatus::OPTIMAL) {
     std::vector<int64> costas_matrix;
     std::string output;
 
@@ -142,8 +146,8 @@ void CostasBool(const int dim) {
   CpModelBuilder cp_model;
 
   // create the variables
-  std::vector<std::vector<BoolVar> > vars(dim);
-  std::vector<std::vector<BoolVar> > transposed_vars(dim);
+  std::vector<std::vector<BoolVar>> vars(dim);
+  std::vector<std::vector<BoolVar>> transposed_vars(dim);
   for (int i = 0; i < dim; ++i) {
     for (int j = 0; j < dim; ++j) {
       const BoolVar var = cp_model.NewBoolVar();
@@ -213,8 +217,8 @@ void CostasBoolSoft(const int dim) {
   CpModelBuilder cp_model;
 
   // create the variables
-  std::vector<std::vector<BoolVar> > vars(dim);
-  std::vector<std::vector<BoolVar> > transposed_vars(dim);
+  std::vector<std::vector<BoolVar>> vars(dim);
+  std::vector<std::vector<BoolVar>> transposed_vars(dim);
   for (int i = 0; i < dim; ++i) {
     for (int j = 0; j < dim; ++j) {
       const BoolVar var = cp_model.NewBoolVar();
@@ -294,7 +298,10 @@ void CostasBoolSoft(const int dim) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  absl::SetFlag(&FLAGS_logtostderr, true);
+  google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
+
   int min = 1;
   int max = 10;
 

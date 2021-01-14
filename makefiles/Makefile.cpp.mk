@@ -483,6 +483,7 @@ test_cc_contrib: ;
 .PHONY: test_cc_cpp # Build and Run all C++ Examples (located in ortools/examples/cpp)
 test_cc_cpp: \
  rcc_costas_array_sat \
+ rcc_cryptarithm_sat \
  rcc_cvrp_disjoint_tw \
  rcc_cvrptw \
  rcc_cvrptw_with_breaks \
@@ -492,6 +493,7 @@ test_cc_cpp: \
  rcc_flow_api \
  rcc_linear_assignment_api \
  rcc_linear_solver_protocol_buffers \
+ rcc_magic_sequence_sat \
  rcc_magic_square_sat \
  rcc_nqueens \
  rcc_random_tsp \

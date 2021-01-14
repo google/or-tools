@@ -51,6 +51,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "examples/cpp/fap_model_printer.h"
 #include "examples/cpp/fap_parser.h"
 #include "examples/cpp/fap_utilities.h"
@@ -331,7 +333,7 @@ bool ConstraintImpactComparator(FapConstraint constraint1,
 }
 
 int64 ValueEvaluator(
-    absl::flat_hash_map<int64, std::pair<int64, int64> >* value_evaluator_map,
+    absl::flat_hash_map<int64, std::pair<int64, int64>>* value_evaluator_map,
     int64 variable_index, int64 value) {
   CHECK(value_evaluator_map != nullptr);
   // Evaluate the choice. Smaller ranking denotes a better choice.
@@ -344,7 +346,7 @@ int64 ValueEvaluator(
   }
 
   // Update the history of assigned values and their rankings of each variable.
-  absl::flat_hash_map<int64, std::pair<int64, int64> >::iterator it;
+  absl::flat_hash_map<int64, std::pair<int64, int64>>::iterator it;
   int64 new_value = value;
   int64 new_ranking = ranking;
   if ((it = value_evaluator_map->find(variable_index)) !=
@@ -489,8 +491,8 @@ void CreateAdditionalMonitors(OptimizeVar* const objective, Solver* solver,
   if (absl::GetFlag(FLAGS_time_limit_in_ms) != 0) {
     LOG(INFO) << "Adding time limit of "
               << absl::GetFlag(FLAGS_time_limit_in_ms) << " ms.";
-    SearchLimit* const limit = solver->MakeLimit(
-        absl::GetFlag(FLAGS_time_limit_in_ms), kint64max, kint64max, kint64max);
+    SearchLimit* const limit = solver->MakeTimeLimit(
+        absl::Milliseconds(absl::GetFlag(FLAGS_time_limit_in_ms)));
     monitors->push_back(limit);
   }
 
@@ -581,7 +583,7 @@ void HardFapSolver(const std::map<int, FapVariable>& data_variables,
   ChooseVariableStrategy(&variable_strategy);
   // Choose the value selection strategy.
   DecisionBuilder* db;
-  absl::flat_hash_map<int64, std::pair<int64, int64> > history;
+  absl::flat_hash_map<int64, std::pair<int64, int64>> history;
   if (absl::GetFlag(FLAGS_value_evaluator) == "value_evaluator") {
     LOG(INFO) << "Using ValueEvaluator for value selection strategy.";
     Solver::IndexEvaluator2 index_evaluator2 = [&history](int64 var,
@@ -856,6 +858,7 @@ void SolveProblem(const std::map<int, FapVariable>& variables,
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
 
   CHECK(!absl::GetFlag(FLAGS_directory).empty())
