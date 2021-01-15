@@ -95,25 +95,28 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "devel", type: "shell", inline:<<-SHELL
   set -x
-  echo 'export PATH=${HOME}/.local/bin:$PATH' >> ${HOME}/.bashrc
+  export PATH=${HOME}/.local/bin:"$PATH"
   cd project
   ls
   SHELL
 
   config.vm.provision "configure", type: "shell", inline:<<-SHELL
   set -x
+  export PATH=${HOME}/.local/bin:"$PATH"
   cd project
   cmake -S. -Bbuild -DBUILD_PYTHON=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
   SHELL
 
   config.vm.provision "build", type: "shell", inline:<<-SHELL
   set -x
+  export PATH=${HOME}/.local/bin:"$PATH"
   cd project
   cmake --build build -v
   SHELL
 
   config.vm.provision "test", type: "shell", inline:<<-SHELL
   set -x
+  export PATH=${HOME}/.local/bin:"$PATH"
   cd project
   cmake --build build --target test -v
   SHELL
