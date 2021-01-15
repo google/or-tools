@@ -285,6 +285,17 @@ cc_binary(
 )
 
 cc_binary(
+    name = "magic_sequence_sat",
+    srcs = ["magic_sequence_sat.cc"],
+    deps = [
+        "//ortools/base",
+        "@com_google_absl//absl/strings",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+    ],
+)
+
+cc_binary(
     name = "magic_square_sat",
     srcs = ["magic_square_sat.cc"],
     deps = [
@@ -325,6 +336,17 @@ cc_binary(
         "//ortools/lp_data:mps_reader",
         "//ortools/util:proto_tools",
         "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_binary(
+    name = "multi_knapsack_sat",
+    srcs = ["multi_knapsack_sat.cc"],
+    deps = [
+        "//ortools/base",
+        "@com_google_absl//absl/strings",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
     ],
 )
 

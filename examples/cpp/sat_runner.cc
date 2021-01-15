@@ -199,6 +199,7 @@ int Run() {
   }
 
   // Parse the --params flag.
+  parameters.set_log_search_progress(true);
   if (!absl::GetFlag(FLAGS_params).empty()) {
     CHECK(google::protobuf::TextFormat::MergeFromString(
         absl::GetFlag(FLAGS_params), &parameters))
@@ -445,9 +446,8 @@ int main(int argc, char** argv) {
   // By default, we want to show how the solver progress. Note that this needs
   // to be set before InitGoogle() which has the nice side-effect of allowing
   // the user to override it.
-  absl::SetFlag(&FLAGS_vmodule, "cp_model_solver=1");
-  gflags::SetUsageMessage(kUsage);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  google::InitGoogleLogging(kUsage);
+  absl::ParseCommandLine(argc, argv);
   absl::SetFlag(&FLAGS_alsologtostderr, true);
   return operations_research::sat::Run();
 }
