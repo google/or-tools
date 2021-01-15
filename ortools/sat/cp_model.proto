@@ -274,7 +274,7 @@ message AutomatonConstraintProto {
   repeated int32 vars = 7;
 }
 
-// Next id: 29
+// Next id: 30
 message ConstraintProto {
   // For debug/logging only. Can be empty.
   string name = 1;
@@ -303,16 +303,36 @@ message ConstraintProto {
     // The bool_and constraint forces all of the literals to be true.
     //
     // This is a "redundant" constraint in the sense that this can easily be
-    // encoded with many bool_or. It is just more space efficient and handled
-    // slightly differently internally.
+    // encoded with many bool_or or at_most_one. It is just more space efficient
+    // and handled slightly differently internally.
     BoolArgumentProto bool_and = 4;
 
     // The at_most_one constraint enforces that no more than one literal is
-    // true at the same time. Note that an at most one constraint of length n
-    // could be encoded with n bool_and constraint with n-1 term on the right
-    // hand side. So in a sense, this constraint contribute directly to the
-    // "implication-graph" or the 2-SAT part of the model.
+    // true at the same time.
+    //
+    // Note that an at most one constraint of length n could be encoded with n
+    // bool_and constraint with n-1 term on the right hand side. So in a sense,
+    // this constraint contribute directly to the "implication-graph" or the
+    // 2-SAT part of the model.
+    //
+    // This constraint does not support enforcement_literal. Just use a linear
+    // constraint if you need to enforce it. You also do not need to use it
+    // directly, we will extract it from the model in most situations.
     BoolArgumentProto at_most_one = 26;
+
+    // The exactly_one constraint force exactly one literal to true and no more.
+    //
+    // Anytime a bool_or (it could have been called at_least_one) is included
+    // into an at_most_one, then the bool_or is actually an exactly one
+    // constraint, and the extra literal in the at_most_one can be set to false.
+    // So in this sense, this constraint is not really needed. it is just here
+    // for a better description of the problem structure and to facilitate some
+    // algorithm.
+    //
+    // This constraint does not support enforcement_literal. Just use a linear
+    // constraint if you need to enforce it. You also do not need to use it
+    // directly, we will extract it from the model in most situations.
+    BoolArgumentProto exactly_one = 29;
 
     // The bool_xor constraint forces an odd number of the literals to be true.
     BoolArgumentProto bool_xor = 5;

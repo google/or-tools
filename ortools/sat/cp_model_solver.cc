@@ -179,6 +179,9 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     } else if (ct.constraint_case() ==
                ConstraintProto::ConstraintCase::kAtMostOne) {
       name_to_num_literals[name] += ct.at_most_one().literals().size();
+    } else if (ct.constraint_case() ==
+               ConstraintProto::ConstraintCase::kExactlyOne) {
+      name_to_num_literals[name] += ct.exactly_one().literals().size();
     }
 
     if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear &&

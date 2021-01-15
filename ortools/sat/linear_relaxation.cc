@@ -367,6 +367,15 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       at_most_one.push_back(mapping->Literal(ref));
     }
     relaxation->at_most_ones.push_back(at_most_one);
+  } else if (ct.constraint_case() ==
+             ConstraintProto::ConstraintCase::kExactlyOne) {
+    if (linearization_level < 2) return;
+    if (HasEnforcementLiteral(ct)) return;
+    LinearConstraintBuilder lc(model, IntegerValue(1), IntegerValue(1));
+    for (const int ref : ct.exactly_one().literals()) {
+      CHECK(lc.AddLiteralTerm(mapping->Literal(ref), IntegerValue(1)));
+    }
+    relaxation->linear_constraints.push_back(lc.Build());
   } else if (ct.constraint_case() == ConstraintProto::ConstraintCase::kIntMax) {
     if (HasEnforcementLiteral(ct)) return;
     const IntegerVariable target = mapping->Integer(ct.int_max().target());

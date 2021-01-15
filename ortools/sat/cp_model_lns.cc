@@ -791,6 +791,7 @@ WeightedRandomRelaxationNeighborhoodGenerator::
       case ConstraintProto::kInverse:
       case ConstraintProto::kReservoir:
       case ConstraintProto::kAtMostOne:
+      case ConstraintProto::kExactlyOne:
         constraint_weights_.push_back(1.0);
         num_removable_constraints_++;
         break;

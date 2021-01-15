@@ -257,6 +257,7 @@ bool LoadConstraint(const ConstraintProto& ct, Model* m);
 void LoadBoolOrConstraint(const ConstraintProto& ct, Model* m);
 void LoadBoolAndConstraint(const ConstraintProto& ct, Model* m);
 void LoadAtMostOneConstraint(const ConstraintProto& ct, Model* m);
+void LoadExactlyOneConstraint(const ConstraintProto& ct, Model* m);
 void LoadBoolXorConstraint(const ConstraintProto& ct, Model* m);
 void LoadLinearConstraint(const ConstraintProto& ct, Model* m);
 void LoadAllDiffConstraint(const ConstraintProto& ct, Model* m);

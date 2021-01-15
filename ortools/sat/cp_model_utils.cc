@@ -49,6 +49,9 @@ IndexReferences GetReferencesUsedByConstraint(const ConstraintProto& ct) {
     case ConstraintProto::ConstraintCase::kAtMostOne:
       AddIndices(ct.at_most_one().literals(), &output.literals);
       break;
+    case ConstraintProto::ConstraintCase::kExactlyOne:
+      AddIndices(ct.exactly_one().literals(), &output.literals);
+      break;
     case ConstraintProto::ConstraintCase::kBoolXor:
       AddIndices(ct.bool_xor().literals(), &output.literals);
       break;
@@ -173,6 +176,9 @@ void ApplyToAllLiteralIndices(const std::function<void(int*)>& f,
     case ConstraintProto::ConstraintCase::kAtMostOne:
       APPLY_TO_REPEATED_FIELD(at_most_one, literals);
       break;
+    case ConstraintProto::ConstraintCase::kExactlyOne:
+      APPLY_TO_REPEATED_FIELD(exactly_one, literals);
+      break;
     case ConstraintProto::ConstraintCase::kBoolXor:
       APPLY_TO_REPEATED_FIELD(bool_xor, literals);
       break;
@@ -232,6 +238,8 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
     case ConstraintProto::ConstraintCase::kBoolAnd:
       break;
     case ConstraintProto::ConstraintCase::kAtMostOne:
+      break;
+    case ConstraintProto::ConstraintCase::kExactlyOne:
       break;
     case ConstraintProto::ConstraintCase::kBoolXor:
       break;
@@ -334,6 +342,8 @@ void ApplyToAllIntervalIndices(const std::function<void(int*)>& f,
       break;
     case ConstraintProto::ConstraintCase::kAtMostOne:
       break;
+    case ConstraintProto::ConstraintCase::kExactlyOne:
+      break;
     case ConstraintProto::ConstraintCase::kBoolXor:
       break;
     case ConstraintProto::ConstraintCase::kIntDiv:
@@ -397,6 +407,8 @@ std::string ConstraintCaseName(
       return "kBoolAnd";
     case ConstraintProto::ConstraintCase::kAtMostOne:
       return "kAtMostOne";
+    case ConstraintProto::ConstraintCase::kExactlyOne:
+      return "kExactlyOne";
     case ConstraintProto::ConstraintCase::kBoolXor:
       return "kBoolXor";
     case ConstraintProto::ConstraintCase::kIntDiv:
@@ -467,6 +479,8 @@ std::vector<int> UsedIntervals(const ConstraintProto& ct) {
     case ConstraintProto::ConstraintCase::kBoolAnd:
       break;
     case ConstraintProto::ConstraintCase::kAtMostOne:
+      break;
+    case ConstraintProto::ConstraintCase::kExactlyOne:
       break;
     case ConstraintProto::ConstraintCase::kBoolXor:
       break;

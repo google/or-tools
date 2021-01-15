@@ -991,6 +991,12 @@ void LoadAtMostOneConstraint(const ConstraintProto& ct, Model* m) {
   m->Add(AtMostOneConstraint(mapping->Literals(ct.at_most_one().literals())));
 }
 
+void LoadExactlyOneConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  CHECK(!HasEnforcementLiteral(ct)) << "Not supported.";
+  m->Add(ExactlyOneConstraint(mapping->Literals(ct.exactly_one().literals())));
+}
+
 void LoadBoolXorConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   CHECK(!HasEnforcementLiteral(ct)) << "Not supported.";
@@ -1788,6 +1794,9 @@ bool LoadConstraint(const ConstraintProto& ct, Model* m) {
       return true;
     case ConstraintProto::ConstraintCase::kAtMostOne:
       LoadAtMostOneConstraint(ct, m);
+      return true;
+    case ConstraintProto::ConstraintCase::kExactlyOne:
+      LoadExactlyOneConstraint(ct, m);
       return true;
     case ConstraintProto::ConstraintCase::kBoolXor:
       LoadBoolXorConstraint(ct, m);

@@ -837,6 +837,13 @@ void DetectDominanceRelations(
                                                     ct.at_most_one().literals(),
                                                     /*coeffs=*/{});
           break;
+        case ConstraintProto::kExactlyOne:
+          if (phase == 0) {
+            dual_bound_strengthening->CannotMove(ct.exactly_one().literals());
+          }
+          var_domination->ActivityShouldNotChange(ct.exactly_one().literals(),
+                                                  /*coeffs=*/{});
+          break;
         case ConstraintProto::kLinear: {
           FillMinMaxActivity(context, ct.linear(), &min_activity,
                              &max_activity);

@@ -635,6 +635,14 @@ class ConstraintChecker {
     return num_true_literals <= 1;
   }
 
+  bool ExactlyOneConstraintIsFeasible(const ConstraintProto& ct) {
+    int num_true_literals = 0;
+    for (const int lit : ct.exactly_one().literals()) {
+      if (LiteralIsTrue(lit)) ++num_true_literals;
+    }
+    return num_true_literals == 1;
+  }
+
   bool BoolXorConstraintIsFeasible(const ConstraintProto& ct) {
     int sum = 0;
     for (const int lit : ct.bool_xor().literals()) {
@@ -1084,6 +1092,9 @@ bool SolutionIsFeasible(const CpModelProto& model,
         break;
       case ConstraintProto::ConstraintCase::kAtMostOne:
         is_feasible = checker.AtMostOneConstraintIsFeasible(ct);
+        break;
+      case ConstraintProto::ConstraintCase::kExactlyOne:
+        is_feasible = checker.ExactlyOneConstraintIsFeasible(ct);
         break;
       case ConstraintProto::ConstraintCase::kBoolXor:
         is_feasible = checker.BoolXorConstraintIsFeasible(ct);

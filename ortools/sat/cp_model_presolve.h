@@ -113,6 +113,7 @@ class CpModelPresolver {
   bool PresolveIntAbs(ConstraintProto* ct);
   bool PresolveBoolXor(ConstraintProto* ct);
   bool PresolveAtMostOne(ConstraintProto* ct);
+  bool PresolveExactlyOne(ConstraintProto* ct);
   bool PresolveBoolAnd(ConstraintProto* ct);
   bool PresolveBoolOr(ConstraintProto* ct);
   bool PresolveEnforcementLiteral(ConstraintProto* ct);

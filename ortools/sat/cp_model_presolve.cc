@@ -381,6 +381,13 @@ bool CpModelPresolver::PresolveAtMostOne(ConstraintProto* ct) {
       continue;
     }
 
+    // TODO(user): Most situation are already dealt with by the dual presolve
+    // code in var_domination.cc, so maybe we don't need it here.
+    if (context_->VariableIsUniqueAndRemovable(literal) ||
+        context_->VariableWithCostIsUniqueAndRemovable(literal)) {
+      context_->UpdateRuleStats("TODO at_most_one: singleton");
+    }
+
     context_->tmp_literals.push_back(literal);
   }
   if (context_->tmp_literals.empty()) {
@@ -394,6 +401,85 @@ bool CpModelPresolver::PresolveAtMostOne(ConstraintProto* ct) {
       ct->mutable_at_most_one()->add_literals(lit);
     }
     context_->UpdateRuleStats("at_most_one: removed literals");
+  }
+  return changed;
+}
+
+// TODO(user): This is really close to the at most one code. Try to remove
+// duplication.
+bool CpModelPresolver::PresolveExactlyOne(ConstraintProto* ct) {
+  if (context_->ModelIsUnsat()) return false;
+  CHECK(!HasEnforcementLiteral(*ct));
+
+  {
+    // Size one: fix variable.
+    const auto& literals = ct->exactly_one().literals();
+    if (literals.size() == 1) {
+      context_->UpdateRuleStats("exactly_one: size one");
+      if (!context_->SetLiteralToTrue(literals[0])) return false;
+      return RemoveConstraint(ct);
+    }
+
+    // Size two: Equivalence.
+    if (literals.size() == 2) {
+      context_->UpdateRuleStats("exactly_one: size two");
+      context_->StoreBooleanEqualityRelation(literals[0],
+                                             NegatedRef(literals[1]));
+      return RemoveConstraint(ct);
+    }
+  }
+
+  // Fix to false any duplicate literals.
+  std::sort(ct->mutable_exactly_one()->mutable_literals()->begin(),
+            ct->mutable_exactly_one()->mutable_literals()->end());
+  int previous = kint32max;
+  for (const int literal : ct->exactly_one().literals()) {
+    if (literal == previous) {
+      if (!context_->SetLiteralToFalse(literal)) return true;
+      context_->UpdateRuleStats("exactly_one: duplicate literals");
+    }
+    previous = literal;
+  }
+
+  // Remove fixed variables.
+  bool changed = false;
+  context_->tmp_literals.clear();
+  for (const int literal : ct->exactly_one().literals()) {
+    if (context_->LiteralIsTrue(literal)) {
+      context_->UpdateRuleStats("exactly_one: satisfied");
+      for (const int other : ct->exactly_one().literals()) {
+        if (other != literal) {
+          if (!context_->SetLiteralToFalse(other)) return true;
+        }
+      }
+      return RemoveConstraint(ct);
+    }
+
+    if (context_->LiteralIsFalse(literal)) {
+      changed = true;
+      continue;
+    }
+
+    // TODO(user): We could remove the variable, and leave an at most one on
+    // the other. Even if there is an objective on this variable, we could
+    // transfer the cost to the other.
+    if (context_->VariableIsUniqueAndRemovable(literal) ||
+        context_->VariableWithCostIsUniqueAndRemovable(literal)) {
+      context_->UpdateRuleStats("TODO exactly_one: singleton");
+    }
+
+    context_->tmp_literals.push_back(literal);
+  }
+  if (context_->tmp_literals.empty()) {
+    return context_->NotifyThatModelIsUnsat("exactly_one: empty or all false");
+  }
+
+  if (changed) {
+    ct->mutable_exactly_one()->mutable_literals()->Clear();
+    for (const int lit : context_->tmp_literals) {
+      ct->mutable_exactly_one()->add_literals(lit);
+    }
+    context_->UpdateRuleStats("exactly_one: removed literals");
   }
   return changed;
 }
@@ -2161,14 +2247,10 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
              min_sum + 2 * min_coeff > rhs_domain.Max() &&
              min_sum + max_coeff <= rhs_domain.Max()) {
     context_->UpdateRuleStats("linear: positive equal one");
-    ConstraintProto* at_least_one = context_->working_model->add_constraints();
-    ConstraintProto* at_most_one = context_->working_model->add_constraints();
-    at_least_one->set_name(ct->name());
-    at_most_one->set_name(ct->name());
+    ConstraintProto* exactly_one = context_->working_model->add_constraints();
+    exactly_one->set_name(ct->name());
     for (int i = 0; i < num_vars; ++i) {
-      at_least_one->mutable_bool_or()->add_literals(
-          arg.coeffs(i) > 0 ? arg.vars(i) : NegatedRef(arg.vars(i)));
-      at_most_one->mutable_at_most_one()->add_literals(
+      exactly_one->mutable_exactly_one()->add_literals(
           arg.coeffs(i) > 0 ? arg.vars(i) : NegatedRef(arg.vars(i)));
     }
     context_->UpdateNewConstraintsVariableUsage();
@@ -2179,14 +2261,10 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
              max_sum - 2 * min_coeff < rhs_domain.Min() &&
              max_sum - max_coeff >= rhs_domain.Min()) {
     context_->UpdateRuleStats("linear: negative equal one");
-    ConstraintProto* at_least_one = context_->working_model->add_constraints();
-    ConstraintProto* at_most_one = context_->working_model->add_constraints();
-    at_least_one->set_name(ct->name());
-    at_most_one->set_name(ct->name());
+    ConstraintProto* exactly_one = context_->working_model->add_constraints();
+    exactly_one->set_name(ct->name());
     for (int i = 0; i < num_vars; ++i) {
-      at_least_one->mutable_bool_or()->add_literals(
-          arg.coeffs(i) > 0 ? NegatedRef(arg.vars(i)) : arg.vars(i));
-      at_most_one->mutable_at_most_one()->add_literals(
+      exactly_one->mutable_exactly_one()->add_literals(
           arg.coeffs(i) > 0 ? NegatedRef(arg.vars(i)) : arg.vars(i));
     }
     context_->UpdateNewConstraintsVariableUsage();
@@ -2839,15 +2917,18 @@ namespace {
 
 // Returns the sorted list of literals for given bool_or or at_most_one
 // constraint.
-std::vector<int> GetLiteralsFromSetPPCConstraint(ConstraintProto* ct) {
+std::vector<int> GetLiteralsFromSetPPCConstraint(const ConstraintProto& ct) {
   std::vector<int> sorted_literals;
-  if (ct->constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne) {
-    for (const int literal : ct->at_most_one().literals()) {
+  if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
+    for (const int literal : ct.at_most_one().literals()) {
       sorted_literals.push_back(literal);
     }
-  } else if (ct->constraint_case() ==
-             ConstraintProto::ConstraintCase::kBoolOr) {
-    for (const int literal : ct->bool_or().literals()) {
+  } else if (ct.constraint_case() == ConstraintProto::kBoolOr) {
+    for (const int literal : ct.bool_or().literals()) {
+      sorted_literals.push_back(literal);
+    }
+  } else if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+    for (const int literal : ct.exactly_one().literals()) {
       sorted_literals.push_back(literal);
     }
   }
@@ -3770,6 +3851,8 @@ void CpModelPresolver::Probe() {
   }
 }
 
+// TODO(user): What to do with the at_most_one/exactly_one constraints?
+// currently we do not take them into account here.
 void CpModelPresolver::PresolvePureSatPart() {
   // TODO(user,user): Reenable some SAT presolve with
   // keep_all_feasible_solutions set to true.
@@ -4233,6 +4316,10 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
   }
 }
 
+// TODO(user): Should we take into account the exactly_one constraints? note
+// that such constraint cannot be extended. If if a literal implies two literals
+// at one inside an exactly one constraint then it must be false. Similarly if
+// it implies all literals at zero inside the exactly one.
 void CpModelPresolver::TransformIntoMaxCliques() {
   if (context_->ModelIsUnsat()) return;
 
@@ -4348,6 +4435,8 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       return PresolveBoolAnd(ct);
     case ConstraintProto::ConstraintCase::kAtMostOne:
       return PresolveAtMostOne(ct);
+    case ConstraintProto::ConstraintCase::kExactlyOne:
+      return PresolveExactlyOne(ct);
     case ConstraintProto::ConstraintCase::kBoolXor:
       return PresolveBoolXor(ct);
     case ConstraintProto::ConstraintCase::kIntMax:
@@ -4434,46 +4523,82 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
   }
 }
 
+// We deal with all the all 3 x 3 possible types of inclusion.
+//
+// Returns false iff the model is UNSAT.
 bool CpModelPresolver::ProcessSetPPCSubset(
     int c1, int c2, const std::vector<int>& c2_minus_c1,
     const std::vector<int>& original_constraint_index,
-    std::vector<bool>* marked_for_removal) {
+    std::vector<bool>* removed) {
   if (context_->ModelIsUnsat()) return false;
-  CHECK(!(*marked_for_removal)[c1]);
-  CHECK(!(*marked_for_removal)[c2]);
+
+  CHECK(!(*removed)[c1]);
+  CHECK(!(*removed)[c2]);
+
   ConstraintProto* ct1 = context_->working_model->mutable_constraints(
       original_constraint_index[c1]);
   ConstraintProto* ct2 = context_->working_model->mutable_constraints(
       original_constraint_index[c2]);
-  if (ct1->constraint_case() == ConstraintProto::ConstraintCase::kBoolOr &&
-      ct2->constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne) {
-    // fix extras in c2 to 0
+
+  if ((ct1->constraint_case() == ConstraintProto::kBoolOr ||
+       ct1->constraint_case() == ConstraintProto::kExactlyOne) &&
+      (ct2->constraint_case() == ConstraintProto::kAtMostOne ||
+       ct2->constraint_case() == ConstraintProto::kExactlyOne)) {
+    context_->UpdateRuleStats("setppc: bool_or in at_most_one.");
+
+    // Fix extras in c2 to 0, note that these will be removed from the
+    // constraint later.
     for (const int literal : c2_minus_c1) {
-      if (!context_->SetLiteralToFalse(literal)) return true;
+      if (!context_->SetLiteralToFalse(literal)) return false;
       context_->UpdateRuleStats("setppc: fixed variables");
     }
+
+    // Change c2 to exactly_one if not already.
+    if (ct2->constraint_case() != ConstraintProto::kExactlyOne) {
+      ConstraintProto copy = *ct2;
+      (*ct2->mutable_exactly_one()->mutable_literals()) =
+          copy.at_most_one().literals();
+    }
+
+    // Remove c1.
+    (*removed)[c1] = true;
+    ct1->Clear();
+    context_->UpdateConstraintVariableUsage(original_constraint_index[c1]);
     return true;
   }
-  if (ct1->constraint_case() == ct2->constraint_case()) {
-    if (ct1->constraint_case() == ConstraintProto::ConstraintCase::kBoolOr) {
-      (*marked_for_removal)[c2] = true;
-      context_->UpdateRuleStats("setppc: removed dominated constraints");
-      return false;
-    }
-    CHECK_EQ(ct1->constraint_case(),
-             ConstraintProto::ConstraintCase::kAtMostOne);
-    (*marked_for_removal)[c1] = true;
+
+  if ((ct1->constraint_case() == ConstraintProto::kBoolOr ||
+       ct1->constraint_case() == ConstraintProto::kExactlyOne) &&
+      ct2->constraint_case() == ConstraintProto::kBoolOr) {
     context_->UpdateRuleStats("setppc: removed dominated constraints");
-    return false;
+
+    (*removed)[c2] = true;
+    ct2->Clear();
+    context_->UpdateConstraintVariableUsage(original_constraint_index[c2]);
+    return true;
   }
-  return false;
+
+  if (ct1->constraint_case() == ConstraintProto::kAtMostOne &&
+      (ct2->constraint_case() == ConstraintProto::kAtMostOne ||
+       ct2->constraint_case() == ConstraintProto::kExactlyOne)) {
+    context_->UpdateRuleStats("setppc: removed dominated constraints");
+    (*removed)[c1] = true;
+    ct1->Clear();
+    context_->UpdateConstraintVariableUsage(original_constraint_index[c1]);
+    return true;
+  }
+
+  // We can't deduce anything in the last remaining case:
+  // ct1->constraint_case() == ConstraintProto::kAtMostOne &&
+  // ct2->constraint_case() == ConstraintProto::kBoolOr
+
+  return true;
 }
 
 // TODO(user,user): TransformIntoMaxCliques() convert the bool_and to
 // at_most_one, but maybe also duplicating them into bool_or would allow this
 // function to do more presolving.
 bool CpModelPresolver::ProcessSetPPC() {
-  bool changed = false;
   const int num_constraints = context_->working_model->constraints_size();
 
   // Signatures of all the constraints. In the signature the bit i is 1 if it
@@ -4488,10 +4613,8 @@ bool CpModelPresolver::ProcessSetPPC() {
   // vector of constraint indices in which literal 'l' or 'neg(l)' appears.
   std::vector<std::vector<int>> literals_to_constraints;
 
-  // vector of booleans indicating if the constraint is marked for removal. Note
-  // that we don't remove constraints while processing them but remove all the
-  // marked ones at the end.
-  std::vector<bool> marked_for_removal;
+  // vector of booleans indicating if the constraint was already removed.
+  std::vector<bool> removed;
 
   // The containers above use the local indices for setppc constraints. We store
   // the original constraint indices corresponding to those local indices here.
@@ -4503,7 +4626,8 @@ bool CpModelPresolver::ProcessSetPPC() {
   for (int c = 0; c < num_constraints; ++c) {
     ConstraintProto* ct = context_->working_model->mutable_constraints(c);
     if (ct->constraint_case() == ConstraintProto::ConstraintCase::kBoolOr ||
-        ct->constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne) {
+        ct->constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne ||
+        ct->constraint_case() == ConstraintProto::ConstraintCase::kExactlyOne) {
       // Because TransformIntoMaxCliques() can detect literal equivalence
       // relation, we make sure the constraints are presolved before being
       // inspected.
@@ -4513,8 +4637,9 @@ bool CpModelPresolver::ProcessSetPPC() {
       if (context_->ModelIsUnsat()) return false;
     }
     if (ct->constraint_case() == ConstraintProto::ConstraintCase::kBoolOr ||
-        ct->constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne) {
-      constraint_literals.push_back(GetLiteralsFromSetPPCConstraint(ct));
+        ct->constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne ||
+        ct->constraint_case() == ConstraintProto::ConstraintCase::kExactlyOne) {
+      constraint_literals.push_back(GetLiteralsFromSetPPCConstraint(*ct));
 
       uint64 signature = 0;
       for (const int literal : constraint_literals.back()) {
@@ -4528,7 +4653,7 @@ bool CpModelPresolver::ProcessSetPPC() {
             num_setppc_constraints);
       }
       signatures.push_back(signature);
-      marked_for_removal.push_back(false);
+      removed.push_back(false);
       original_constraint_index.push_back(c);
       num_setppc_constraints++;
     }
@@ -4540,19 +4665,18 @@ bool CpModelPresolver::ProcessSetPPC() {
   for (const std::vector<int>& literal_to_constraints :
        literals_to_constraints) {
     for (int index1 = 0; index1 < literal_to_constraints.size(); ++index1) {
-      if (context_->time_limit()->LimitReached()) {
-        return changed;
-      }
+      if (context_->time_limit()->LimitReached()) return true;
+
       const int c1 = literal_to_constraints[index1];
-      if (marked_for_removal[c1]) continue;
+      if (removed[c1]) continue;
       const std::vector<int>& c1_literals = constraint_literals[c1];
-      ConstraintProto* ct1 = context_->working_model->mutable_constraints(
-          original_constraint_index[c1]);
+
       for (int index2 = index1 + 1; index2 < literal_to_constraints.size();
            ++index2) {
         const int c2 = literal_to_constraints[index2];
-        if (marked_for_removal[c2]) continue;
-        if (marked_for_removal[c1]) break;
+        if (removed[c2]) continue;
+        if (removed[c1]) break;
+
         // TODO(user): This should not happen. Investigate.
         if (c1 == c2) continue;
 
@@ -4563,21 +4687,17 @@ bool CpModelPresolver::ProcessSetPPC() {
         }
         compared_constraints.insert({c1, c2});
 
-        // Hard limit on number of comparisions to avoid spending too much time
+        // Hard limit on number of comparisons to avoid spending too much time
         // here.
-        if (compared_constraints.size() >= 50000) return changed;
+        if (compared_constraints.size() >= 50000) return true;
 
         const bool smaller = (signatures[c1] & ~signatures[c2]) == 0;
         const bool larger = (signatures[c2] & ~signatures[c1]) == 0;
-
-        if (!(smaller || larger)) {
-          continue;
-        }
+        if (!(smaller || larger)) continue;
 
         // Check if literals in c1 is subset of literals in c2 or vice versa.
         const std::vector<int>& c2_literals = constraint_literals[c2];
-        ConstraintProto* ct2 = context_->working_model->mutable_constraints(
-            original_constraint_index[c2]);
+
         // TODO(user): Try avoiding computation of set differences if
         // possible.
         std::vector<int> c1_minus_c2;
@@ -4585,43 +4705,22 @@ bool CpModelPresolver::ProcessSetPPC() {
         std::vector<int> c2_minus_c1;
         gtl::STLSetDifference(c2_literals, c1_literals, &c2_minus_c1);
 
-        if (c1_minus_c2.empty() && c2_minus_c1.empty()) {
-          if (ct1->constraint_case() == ct2->constraint_case()) {
-            marked_for_removal[c2] = true;
-            context_->UpdateRuleStats("setppc: removed redundant constraints");
+        if (c1_minus_c2.empty()) {  // c1 included in c2.
+          if (!ProcessSetPPCSubset(c1, c2, c2_minus_c1,
+                                   original_constraint_index, &removed)) {
+            return false;
           }
-        } else if (c1_minus_c2.empty()) {
-          if (ProcessSetPPCSubset(c1, c2, c2_minus_c1,
-                                  original_constraint_index,
-                                  &marked_for_removal)) {
-            context_->UpdateConstraintVariableUsage(
-                original_constraint_index[c1]);
-            context_->UpdateConstraintVariableUsage(
-                original_constraint_index[c2]);
-          }
-        } else if (c2_minus_c1.empty()) {
-          if (ProcessSetPPCSubset(c2, c1, c1_minus_c2,
-                                  original_constraint_index,
-                                  &marked_for_removal)) {
-            context_->UpdateConstraintVariableUsage(
-                original_constraint_index[c1]);
-            context_->UpdateConstraintVariableUsage(
-                original_constraint_index[c2]);
+        } else if (c2_minus_c1.empty()) {  // c2 included in c1.
+          if (!ProcessSetPPCSubset(c2, c1, c1_minus_c2,
+                                   original_constraint_index, &removed)) {
+            return false;
           }
         }
       }
     }
   }
-  for (int c = 0; c < num_setppc_constraints; ++c) {
-    if (marked_for_removal[c]) {
-      ConstraintProto* ct = context_->working_model->mutable_constraints(
-          original_constraint_index[c]);
-      changed = RemoveConstraint(ct);
-      context_->UpdateConstraintVariableUsage(original_constraint_index[c]);
-    }
-  }
 
-  return changed;
+  return true;
 }
 
 void CpModelPresolver::TryToSimplifyDomain(int var) {
@@ -5078,6 +5177,9 @@ bool CpModelPresolver::Presolve() {
         break;
       case ConstraintProto::ConstraintCase::kAtMostOne:
         PresolveAtMostOne(ct);
+        break;
+      case ConstraintProto::ConstraintCase::kExactlyOne:
+        PresolveExactlyOne(ct);
         break;
       case ConstraintProto::ConstraintCase::kLinear:
         CanonicalizeLinear(ct);
