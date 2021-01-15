@@ -35,9 +35,9 @@ def flexible_jobshop():
     # Data part.
     jobs = [ # task = (processing_time, machine_id)
         [ # Job 0
-            [(3, 0), (1, 1), (5, 2)], # task 0 with 3 alternative
-            [(2, 0), (4, 1), (6, 2)], # task 1 with 3 alternative
-            [(2, 0), (3, 1), (1, 2)], # task 2 with 3 alternative
+            [(3, 0), (1, 1), (5, 2)], # task 0 with 3 alternatives
+            [(2, 0), (4, 1), (6, 2)], # task 1 with 3 alternatives
+            [(2, 0), (3, 1), (1, 2)], # task 2 with 3 alternatives
         ],
         [ # Job 1
             [(2, 0), (3, 1), (4, 2)],
