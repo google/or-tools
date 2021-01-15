@@ -14,6 +14,7 @@
 #include "ortools/graph/topologicalsorter.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <map>
 #include <queue>
 #include <string>
@@ -42,8 +43,9 @@ void PopTop(std::priority_queue<int, C, F>* q, int* top) {
 template <bool stable_sort>
 void DenseIntTopologicalSorterTpl<stable_sort>::AddNode(int node_index) {
   CHECK(!TraversalStarted()) << "Cannot add nodes after starting traversal";
+  CHECK_GE(node_index, 0) << "Index must not be negative";
 
-  if (node_index >= adjacency_lists_.size()) {
+  if (static_cast<std::size_t>(node_index) >= adjacency_lists_.size()) {
     adjacency_lists_.resize(node_index + 1);
   }
 }
@@ -122,7 +124,7 @@ bool DenseIntTopologicalSorterTpl<stable_sort>::GetNext(
   adj_list.swap(adjacency_lists_[*next_node_index]);
 
   // Add new orphan nodes to nodes_with_zero_indegree_.
-  for (int i = 0; i < adj_list.size(); ++i) {
+  for (std::size_t i = 0; i < adj_list.size(); ++i) {
     if (--indegree_[adj_list[i]] == 0) {
       nodes_with_zero_indegree_.push(adj_list[i]);
     }
@@ -175,7 +177,7 @@ int DenseIntTopologicalSorterTpl<stable_sort>::RemoveDuplicates(
   int num_duplicates_removed = 0;
   for (std::vector<AdjacencyList>::iterator list = lists->begin();
        list != lists->end(); ++list) {
-    if (list->size() < skip_lists_smaller_than) {
+    if (list->size() < static_cast<std::size_t>(skip_lists_smaller_than)) {
       continue;
     }
     num_duplicates_removed += list->size();
@@ -228,7 +230,7 @@ void DenseIntTopologicalSorterTpl<stable_sort>::ExtractCycle(
   struct DfsState {
     int node;
     // Points at the first child node that we did *not* yet look at.
-    int adj_list_index;
+    std::size_t adj_list_index;
     explicit DfsState(int _node) : node(_node), adj_list_index(0) {}
   };
   std::vector<DfsState> dfs_stack;
