@@ -447,7 +447,7 @@ bool PresolveContext::AddRelation(int x, int y, int64 c, int64 o,
 void PresolveContext::ExploitFixedDomain(int var) {
   CHECK(RefIsPositive(var));
   CHECK(IsFixed(var));
-  const int min = MinOf(var);
+  const int64 min = MinOf(var);
   if (gtl::ContainsKey(constant_to_ref_, min)) {
     const int rep = constant_to_ref_[min].Get(this);
     if (RefIsPositive(rep)) {
