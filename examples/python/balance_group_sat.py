@@ -159,6 +159,7 @@ def main():
     model.Minimize(e)
 
     solver = cp_model.CpSolver()
+    solver.parameters.num_search_workers = 8
     solution_printer = SolutionPrinter(values, colors, all_groups, all_items,
                                        item_in_group)
     status = solver.SolveWithSolutionCallback(model, solution_printer)
