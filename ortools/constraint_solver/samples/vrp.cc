@@ -131,6 +131,14 @@ void Vrp() {
   routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index);
   // [END arc_cost]
 
+  // Add Distance constraint.
+  // [START distance_constraint]
+  routing.AddDimension(transit_callback_index, 0, 3000,
+        true,  // start cumul to zero
+        "Distance");
+  routing.GetMutableDimension("Distance")->SetGlobalSpanCostCoefficient(100);
+  // [END distance_constraint]
+
   // Setting first solution heuristic.
   // [START parameters]
   RoutingSearchParameters searchParameters = DefaultRoutingSearchParameters();

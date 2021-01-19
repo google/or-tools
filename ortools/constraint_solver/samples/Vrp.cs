@@ -112,6 +112,15 @@ public class Vrp
         // [START arc_cost]
         routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
         // [END arc_cost]
+		
+        // Add Distance constraint.
+        // [START distance_constraint]
+        routing.AddDimension(transitCallbackIndex, 0, 3000,
+                             true, // start cumul to zero
+                             "Distance");
+        RoutingDimension distanceDimension = routing.GetMutableDimension("Distance");
+        distanceDimension.SetGlobalSpanCostCoefficient(100);
+        // [END distance_constraint]
 
         // Setting first solution heuristic.
         // [START parameters]

@@ -17,6 +17,7 @@ package com.google.ortools.constraintsolver.samples;
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
+import com.google.ortools.constraintsolver.RoutingDimension;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
@@ -115,6 +116,15 @@ public class Vrp {
     // [START arc_cost]
     routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
+    
+    // Add distance constraint.
+    // [START distance_constraint]
+    routing.addDimension(transitCallbackIndex, 0, 3000,
+            true, // start cumul to zero
+            "Distance");
+    RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
+    distanceDimension.setGlobalSpanCostCoefficient(100);
+    // [END distance_constraint]
 
     // Setting first solution heuristic.
     // [START parameters]
