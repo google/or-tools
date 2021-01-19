@@ -144,7 +144,7 @@ public class BalanceGroupSat
         model.Minimize(e);
 
         var solver = new CpSolver();
-        solver.StringParameters = "";
+        solver.StringParameters = "num_search_workers:8";
 
         var solutionPrinter = new SolutionPrinter(values, colors, allGroups, allItems, itemInGroup);
 
