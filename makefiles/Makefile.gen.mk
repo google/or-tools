@@ -247,7 +247,7 @@ objs/util/file_util.$O: ortools/util/file_util.cc ortools/util/file_util.h \
  ortools/base/commandlineflags.h ortools/base/log_severity.h \
  ortools/base/logging_export.h ortools/base/macros.h \
  ortools/base/vlog_is_on.h ortools/base/recordio.h \
- ortools/base/status_macros.h | $(OBJ_DIR)/util
+ ortools/base/gzipstring.h ortools/base/status_macros.h | $(OBJ_DIR)/util
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sutil$Sfile_util.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sfile_util.$O
 
 objs/util/fp_utils.$O: ortools/util/fp_utils.cc ortools/util/fp_utils.h \
@@ -1611,9 +1611,11 @@ objs/sat/cp_model_loader.$O: ortools/sat/cp_model_loader.cc \
  ortools/base/mathutil.h ortools/sat/linear_constraint.h \
  ortools/sat/precedences.h ortools/base/stl_util.h \
  ortools/sat/all_different.h ortools/sat/circuit.h \
- ortools/sat/cumulative.h ortools/sat/diffn.h ortools/sat/disjunctive.h \
- ortools/sat/theta_tree.h ortools/sat/implied_bounds.h \
- ortools/sat/table.h ortools/sat/timetable.h | $(OBJ_DIR)/sat
+ ortools/sat/cp_model_symmetries.h \
+ ortools/algorithms/sparse_permutation.h ortools/sat/cumulative.h \
+ ortools/sat/diffn.h ortools/sat/disjunctive.h ortools/sat/theta_tree.h \
+ ortools/sat/implied_bounds.h ortools/sat/symmetry.h ortools/sat/table.h \
+ ortools/sat/timetable.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_loader.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_loader.$O
 
 objs/sat/cp_model_objective.$O: ortools/sat/cp_model_objective.cc \
@@ -1750,6 +1752,7 @@ objs/sat/cp_model_symmetries.$O: ortools/sat/cp_model_symmetries.cc \
  ortools/base/log_severity.h ortools/base/logging_export.h \
  ortools/base/macros.h ortools/base/vlog_is_on.h \
  ortools/gen/ortools/sat/cp_model.pb.h \
+ ortools/gen/ortools/sat/sat_parameters.pb.h \
  ortools/algorithms/find_graph_symmetries.h \
  ortools/algorithms/dynamic_partition.h \
  ortools/algorithms/dynamic_permutation.h ortools/graph/graph.h \
@@ -4176,7 +4179,7 @@ objs/constraint_solver/routing.$O: ortools/constraint_solver/routing.cc \
  ortools/base/integral_types.h ortools/base/logging.h \
  ortools/base/commandlineflags.h ortools/base/log_severity.h \
  ortools/base/logging_export.h ortools/base/macros.h \
- ortools/base/vlog_is_on.h ortools/base/hash.h \
+ ortools/base/vlog_is_on.h ortools/base/hash.h ortools/base/mathutil.h \
  ortools/constraint_solver/constraint_solver.h ortools/base/map_util.h \
  ortools/base/sysinfo.h ortools/base/timer.h \
  ortools/gen/ortools/constraint_solver/routing_parameters.pb.h \
@@ -4216,9 +4219,8 @@ objs/constraint_solver/routing.$O: ortools/constraint_solver/routing.cc \
  ortools/gen/ortools/sat/sat_parameters.pb.h ortools/sat/util.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
  ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/range_query_function.h ortools/base/mathutil.h \
- ortools/base/protoutil.h ortools/base/stl_util.h \
- ortools/base/thorough_hash.h \
+ ortools/util/range_query_function.h ortools/base/protoutil.h \
+ ortools/base/stl_util.h ortools/base/thorough_hash.h \
  ortools/constraint_solver/routing_lp_scheduling.h ortools/sat/cp_model.h \
  ortools/gen/ortools/sat/cp_model.pb.h ortools/sat/cp_model_solver.h \
  ortools/sat/cp_model_utils.h \
@@ -4239,7 +4241,7 @@ objs/constraint_solver/routing_breaks.$O: \
  ortools/base/integral_types.h ortools/base/logging.h \
  ortools/base/commandlineflags.h ortools/base/log_severity.h \
  ortools/base/logging_export.h ortools/base/macros.h \
- ortools/base/vlog_is_on.h ortools/base/hash.h \
+ ortools/base/vlog_is_on.h ortools/base/hash.h ortools/base/mathutil.h \
  ortools/constraint_solver/constraint_solver.h ortools/base/map_util.h \
  ortools/base/sysinfo.h ortools/base/timer.h \
  ortools/gen/ortools/constraint_solver/routing_parameters.pb.h \
@@ -4310,7 +4312,7 @@ objs/constraint_solver/routing_flow.$O: \
  ortools/base/integral_types.h ortools/base/logging.h \
  ortools/base/commandlineflags.h ortools/base/log_severity.h \
  ortools/base/logging_export.h ortools/base/macros.h \
- ortools/base/vlog_is_on.h ortools/base/hash.h \
+ ortools/base/vlog_is_on.h ortools/base/hash.h ortools/base/mathutil.h \
  ortools/constraint_solver/constraint_solver.h ortools/base/map_util.h \
  ortools/base/sysinfo.h ortools/base/timer.h \
  ortools/gen/ortools/constraint_solver/routing_parameters.pb.h \
@@ -4351,8 +4353,7 @@ objs/constraint_solver/routing_flow.$O: \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
  ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
  ortools/util/range_query_function.h \
- ortools/constraint_solver/routing_lp_scheduling.h \
- ortools/base/mathutil.h ortools/sat/cp_model.h \
+ ortools/constraint_solver/routing_lp_scheduling.h ortools/sat/cp_model.h \
  ortools/gen/ortools/sat/cp_model.pb.h ortools/sat/cp_model_solver.h \
  ortools/sat/cp_model_utils.h ortools/graph/min_cost_flow.h \
  ortools/graph/ebert_graph.h ortools/util/permutation.h \
@@ -4444,7 +4445,7 @@ objs/constraint_solver/routing_neighborhoods.$O: \
  ortools/constraint_solver/constraint_solveri.h ortools/util/vector_map.h \
  ortools/constraint_solver/routing.h \
  ortools/base/adjustable_priority_queue-inl.h \
- ortools/base/adjustable_priority_queue.h \
+ ortools/base/adjustable_priority_queue.h ortools/base/mathutil.h \
  ortools/constraint_solver/routing_index_manager.h \
  ortools/base/strong_vector.h ortools/base/int_type.h \
  ortools/constraint_solver/routing_types.h ortools/glop/lp_solver.h \
@@ -4503,7 +4504,7 @@ objs/constraint_solver/routing_sat.$O: \
  ortools/base/integral_types.h ortools/base/logging.h \
  ortools/base/commandlineflags.h ortools/base/log_severity.h \
  ortools/base/logging_export.h ortools/base/macros.h \
- ortools/base/vlog_is_on.h ortools/base/hash.h \
+ ortools/base/vlog_is_on.h ortools/base/hash.h ortools/base/mathutil.h \
  ortools/constraint_solver/constraint_solver.h ortools/base/map_util.h \
  ortools/base/sysinfo.h ortools/base/timer.h \
  ortools/gen/ortools/constraint_solver/routing_parameters.pb.h \
@@ -4570,7 +4571,7 @@ objs/constraint_solver/routing_search.$O: \
  ortools/util/sorted_interval_list.h ortools/util/tuple_set.h \
  ortools/util/vector_map.h ortools/constraint_solver/routing.h \
  ortools/base/adjustable_priority_queue-inl.h \
- ortools/base/adjustable_priority_queue.h \
+ ortools/base/adjustable_priority_queue.h ortools/base/mathutil.h \
  ortools/constraint_solver/routing_index_manager.h \
  ortools/constraint_solver/routing_types.h ortools/glop/lp_solver.h \
  ortools/gen/ortools/glop/parameters.pb.h ortools/glop/preprocessor.h \
@@ -4599,8 +4600,7 @@ objs/constraint_solver/routing_search.$O: \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
  ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
  ortools/util/range_query_function.h \
- ortools/constraint_solver/routing_lp_scheduling.h \
- ortools/base/mathutil.h ortools/sat/cp_model.h \
+ ortools/constraint_solver/routing_lp_scheduling.h ortools/sat/cp_model.h \
  ortools/gen/ortools/sat/cp_model.pb.h ortools/sat/cp_model_solver.h \
  ortools/sat/cp_model_utils.h ortools/graph/christofides.h \
  ortools/graph/eulerian_path.h ortools/graph/minimum_spanning_tree.h \
