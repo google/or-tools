@@ -4509,11 +4509,15 @@ void RoutingModel::CreateNeighborhoodOperators(
       [this, &parameters]() {
         using Heuristic = GlobalCheapestInsertionFilteredHeuristic;
         Heuristic::GlobalCheapestInsertionParameters ls_gci_parameters = {
-            /* is_sequential */ false,
-            /* farthest_seeds_ratio */ 0.0,
-            parameters.cheapest_insertion_ls_operator_neighbors_ratio(),
-            /* use_neighbors_ratio_for_initialization */ true,
-            parameters.cheapest_insertion_add_unperformed_entries()};
+            .is_sequential = false,
+            .farthest_seeds_ratio = 0.0,
+            .neighbors_ratio =
+                parameters.cheapest_insertion_ls_operator_neighbors_ratio(),
+            .min_neighbors =
+                parameters.cheapest_insertion_ls_operator_min_neighbors(),
+            .use_neighbors_ratio_for_initialization = true,
+            .add_unperformed_entries =
+                parameters.cheapest_insertion_add_unperformed_entries()};
         return absl::make_unique<Heuristic>(
             this, absl::bind_front(&RoutingModel::GetArcCostForVehicle, this),
             absl::bind_front(&RoutingModel::UnperformedPenaltyOrValue, this, 0),
@@ -5157,11 +5161,18 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
   // Parallel/Sequential Global cheapest insertion
   GlobalCheapestInsertionFilteredHeuristic::GlobalCheapestInsertionParameters
       gci_parameters = {
-          /* is_sequential */ false,
-          search_parameters.cheapest_insertion_farthest_seeds_ratio(),
-          search_parameters.cheapest_insertion_first_solution_neighbors_ratio(),
-          /* use_neighbors_ratio_for_initialization */ false,
-          search_parameters.cheapest_insertion_add_unperformed_entries()};
+          .is_sequential = false,
+          .farthest_seeds_ratio =
+              search_parameters.cheapest_insertion_farthest_seeds_ratio(),
+          .neighbors_ratio =
+              search_parameters
+                  .cheapest_insertion_first_solution_neighbors_ratio(),
+          .min_neighbors =
+              search_parameters
+                  .cheapest_insertion_first_solution_min_neighbors(),
+          .use_neighbors_ratio_for_initialization = false,
+          .add_unperformed_entries =
+              search_parameters.cheapest_insertion_add_unperformed_entries()};
   for (bool is_sequential : {false, true}) {
     FirstSolutionStrategy::Value first_solution_strategy =
         is_sequential ? FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION

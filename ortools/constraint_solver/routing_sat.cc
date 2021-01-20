@@ -251,7 +251,7 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel& model,
   }
 
   // The following flow constraints seem to be necessary with the Route
-  // constraint, greatly improving preformance due to stronger LP relaxation
+  // constraint, greatly improving performance due to stronger LP relaxation
   // (supposedly).
   // TODO(user): Remove these constraints when the Route constraint handles
   // LP relaxations properly.
@@ -261,9 +261,13 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel& model,
     ct->add_domain(0);
     for (int node = 0; node < num_nodes; ++node) {
       if (model.IsStart(node) || model.IsEnd(node)) continue;
-      ct->add_vars(gtl::FindOrDie(arc_vars, {depot, node}));
+      int* const depot_node_var = gtl::FindOrNull(arc_vars, {depot, node});
+      if (depot_node_var == nullptr) continue;
+      ct->add_vars(*depot_node_var);
       ct->add_coeffs(1);
-      ct->add_vars(gtl::FindOrDie(arc_vars, {node, depot}));
+      int* const node_depot_var = gtl::FindOrNull(arc_vars, {node, depot});
+      if (node_depot_var == nullptr) continue;
+      ct->add_vars(*node_depot_var);
       ct->add_coeffs(-1);
     }
   }
@@ -276,7 +280,9 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel& model,
         std::min(model.vehicles(), model.GetMaximumNumberOfActiveVehicles()));
     for (int node = 0; node < num_nodes; ++node) {
       if (model.IsStart(node) || model.IsEnd(node)) continue;
-      ct->add_vars(gtl::FindOrDie(arc_vars, {depot, node}));
+      int* const var = gtl::FindOrNull(arc_vars, {depot, node});
+      if (var == nullptr) continue;
+      ct->add_vars(*var);
       ct->add_coeffs(1);
     }
   }
@@ -297,7 +303,9 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel& model,
         head = depot;
         depot_added = true;
       }
-      ct->add_vars(gtl::FindOrDie(arc_vars, {tail, head}));
+      int* const var = gtl::FindOrNull(arc_vars, {tail, head});
+      if (var == nullptr) continue;
+      ct->add_vars(*var);
       ct->add_coeffs(1);
     }
   }
@@ -311,7 +319,9 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel& model,
       if (model.IsEnd(head)) continue;
       if (tail == head) continue;
       if (model.IsStart(tail) && tail != depot) continue;
-      ct->add_vars(gtl::FindOrDie(arc_vars, {tail, head}));
+      int* const var = gtl::FindOrNull(arc_vars, {tail, head});
+      if (var == nullptr) continue;
+      ct->add_vars(*var);
       ct->add_coeffs(1);
     }
   }

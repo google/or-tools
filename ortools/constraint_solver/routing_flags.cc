@@ -173,6 +173,7 @@ void SetFirstSolutionStrategyFromFlags(RoutingSearchParameters* parameters) {
       absl::GetFlag(FLAGS_cheapest_insertion_farthest_seeds_ratio));
   parameters->set_cheapest_insertion_first_solution_neighbors_ratio(
       absl::GetFlag(FLAGS_cheapest_insertion_first_solution_neighbors_ratio));
+  parameters->set_cheapest_insertion_first_solution_min_neighbors(1);
 }
 
 void SetLocalSearchMetaheuristicFromFlags(RoutingSearchParameters* parameters) {
@@ -202,6 +203,7 @@ void AddLocalSearchNeighborhoodOperatorsFromFlags(
     RoutingSearchParameters* parameters) {
   CHECK(parameters != nullptr);
   parameters->set_cheapest_insertion_ls_operator_neighbors_ratio(1.0);
+  parameters->set_cheapest_insertion_ls_operator_min_neighbors(1);
   RoutingSearchParameters::LocalSearchNeighborhoodOperators* const
       local_search_operators = parameters->mutable_local_search_operators();
 

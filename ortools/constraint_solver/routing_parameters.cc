@@ -52,7 +52,9 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "savings_parallel_routes: false "
       "cheapest_insertion_farthest_seeds_ratio: 0 "
       "cheapest_insertion_first_solution_neighbors_ratio: 1 "
+      "cheapest_insertion_first_solution_min_neighbors: 1 "
       "cheapest_insertion_ls_operator_neighbors_ratio: 1 "
+      "cheapest_insertion_ls_operator_min_neighbors: 1 "
       "cheapest_insertion_add_unperformed_entries: false "
       "local_search_operators {"
       "  use_relocate: BOOL_TRUE"
@@ -200,11 +202,27 @@ std::string FindErrorInRoutingSearchParameters(
     }
   }
   {
+    const int32 min_neighbors =
+        search_parameters.cheapest_insertion_first_solution_min_neighbors();
+    if (min_neighbors < 1) {
+      return StrCat("Invalid cheapest_insertion_first_solution_min_neighbors: ",
+                    min_neighbors, ". Must be greater or equal to 1.");
+    }
+  }
+  {
     const double ratio =
         search_parameters.cheapest_insertion_ls_operator_neighbors_ratio();
     if (std::isnan(ratio) || ratio <= 0 || ratio > 1) {
       return StrCat("Invalid cheapest_insertion_ls_operator_neighbors_ratio: ",
                     ratio);
+    }
+  }
+  {
+    const int32 min_neighbors =
+        search_parameters.cheapest_insertion_ls_operator_min_neighbors();
+    if (min_neighbors < 1) {
+      return StrCat("Invalid cheapest_insertion_ls_operator_min_neighbors: ",
+                    min_neighbors, ". Must be greater or equal to 1.");
     }
   }
   {

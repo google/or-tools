@@ -177,6 +177,7 @@
 #include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
@@ -3191,11 +3192,15 @@ class GlobalCheapestInsertionFilteredHeuristic
     /// starting the cheapest insertion.
     double farthest_seeds_ratio;
     /// If neighbors_ratio < 1 then for each node only this ratio of its
-    /// neighbors leading to the smallest arc costs are considered.
+    /// neighbors leading to the smallest arc costs are considered for
+    /// insertions, with a minimum of 'min_neighbors':
+    /// num_closest_neighbors = max(min_neighbors, neighbors_ratio*N),
+    /// where N is the number of non-start/end nodes in the model.
     double neighbors_ratio;
-    /// If true, only closest neighbors (see neighbors_ratio) are considered
-    /// as insertion positions during initialization. Otherwise, all possible
-    /// insertion positions are considered.
+    int64 min_neighbors;
+    /// If true, only closest neighbors (see neighbors_ratio and min_neighbors)
+    /// are considered as insertion positions during initialization. Otherwise,
+    /// all possible insertion positions are considered.
     bool use_neighbors_ratio_for_initialization;
     /// If true, entries are created for making the nodes/pairs unperformed, and
     /// when the cost of making a node unperformed is lower than all insertions,
@@ -3448,6 +3453,12 @@ class GlobalCheapestInsertionFilteredHeuristic
 
   int64 NumNonStartEndNodes() const {
     return model()->Size() - model()->vehicles();
+  }
+
+  int64 NumNeighbors() const {
+    return std::max(gci_params_.min_neighbors,
+                    MathUtil::FastInt64Round(gci_params_.neighbors_ratio *
+                                             NumNonStartEndNodes()));
   }
 
   void ResetVehicleIndices() override {

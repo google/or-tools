@@ -26,8 +26,8 @@ import com.google.protobuf.Duration;
 import java.util.logging.Logger;
 // [END import]
 
-/** Minimal VRP.*/
-public class VrpCapacity {
+/** Minimal VRP. */
+public final class VrpCapacity {
   private static final Logger logger = Logger.getLogger(VrpCapacity.class.getName());
 
   // [START data_model]
@@ -160,5 +160,7 @@ public class VrpCapacity {
     printSolution(data, routing, manager, solution);
     // [END print_solution]
   }
+
+  private VrpCapacity() {}
 }
 // [END program]

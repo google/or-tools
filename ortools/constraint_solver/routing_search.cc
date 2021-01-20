@@ -3352,12 +3352,9 @@ GlobalCheapestInsertionFilteredHeuristic::
       empty_vehicle_type_curator_(nullptr) {
   CHECK_GT(gci_params_.neighbors_ratio, 0);
   CHECK_LE(gci_params_.neighbors_ratio, 1);
+  CHECK_GE(gci_params_.min_neighbors, 1);
 
-  const int64 num_non_start_end_nodes = NumNonStartEndNodes();
-  const int64 num_neighbors =
-      std::max(1.0, gci_params_.neighbors_ratio * num_non_start_end_nodes);
-
-  if (num_neighbors >= num_non_start_end_nodes - 1) {
+  if (NumNeighbors() >= NumNonStartEndNodes() - 1) {
     // All nodes are neighbors, so we set the neighbors_ratio to 1 to avoid
     // unnecessary computations in the code.
     gci_params_.neighbors_ratio = 1;
@@ -3378,12 +3375,10 @@ void GlobalCheapestInsertionFilteredHeuristic::ComputeNeighborhoods() {
   }
 
   // TODO(user): Refactor the neighborhood computations in RoutingModel.
-  const int64 num_non_start_end_nodes = NumNonStartEndNodes();
-  const int64 num_neighbors =
-      std::max(1.0, gci_params_.neighbors_ratio * num_non_start_end_nodes);
+  const int64 num_neighbors = NumNeighbors();
   // If num_neighbors was greater or equal num_non_start_end_nodes - 1,
   // gci_params_.neighbors_ratio should have been set to 1.
-  DCHECK_LT(num_neighbors, num_non_start_end_nodes - 1);
+  DCHECK_LT(num_neighbors, NumNonStartEndNodes() - 1);
 
   const RoutingModel& routing_model = *model();
   const int64 size = routing_model.Size();
