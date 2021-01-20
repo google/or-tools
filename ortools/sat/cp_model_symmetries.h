@@ -20,6 +20,7 @@
 
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -28,8 +29,16 @@ namespace sat {
 // generator is a permutation of the integer range [0, n) where n is the number
 // of variables of the problem. They are permutations of the (index
 // representation of the) problem variables.
+//
+// TODO(user): On SAT problems it is more powerful to detect permutations also
+// involving the negation of the problem variables. So that we could find a
+// symmetry x <-> not(y) for instance.
+//
+// TODO(user): As long as we only exploit symmetry involving only Boolean
+// variables we can make this code more efficient by not detecting symmetries
+// involing integer variable.
 void FindCpModelSymmetries(
-    const CpModelProto& problem,
+    const SatParameters& params, const CpModelProto& problem,
     std::vector<std::unique_ptr<SparsePermutation>>* generators,
     double time_limit_seconds = std::numeric_limits<double>::infinity());
 

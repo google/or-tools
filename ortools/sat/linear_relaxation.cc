@@ -302,6 +302,14 @@ void AppendEnforcedLinearExpression(
   }
 }
 
+bool AllLiteralsHaveViews(const IntegerEncoder& encoder,
+                          const std::vector<Literal>& literals) {
+  for (const Literal lit : literals) {
+    if (!encoder.LiteralOrNegationHasView(lit)) return false;
+  }
+  return true;
+}
+
 }  // namespace
 
 // Add a linear relaxation of the CP constraint to the set of linear
@@ -319,6 +327,7 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
   CHECK_EQ(model->GetOrCreate<SatSolver>()->CurrentDecisionLevel(), 0);
   DCHECK_GT(linearization_level, 0);
   auto* mapping = model->GetOrCreate<CpModelMapping>();
+  const auto& encoder = *model->GetOrCreate<IntegerEncoder>();
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr) {
     if (linearization_level < 2) return;
     LinearConstraintBuilder lc(model, IntegerValue(1), kMaxIntegerValue);
@@ -362,20 +371,24 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
   } else if (ct.constraint_case() ==
              ConstraintProto::ConstraintCase::kAtMostOne) {
     if (HasEnforcementLiteral(ct)) return;
-    std::vector<Literal> at_most_one;
-    for (const int ref : ct.at_most_one().literals()) {
-      at_most_one.push_back(mapping->Literal(ref));
-    }
-    relaxation->at_most_ones.push_back(at_most_one);
+    relaxation->at_most_ones.push_back(
+        mapping->Literals(ct.at_most_one().literals()));
   } else if (ct.constraint_case() ==
              ConstraintProto::ConstraintCase::kExactlyOne) {
-    if (linearization_level < 2) return;
     if (HasEnforcementLiteral(ct)) return;
-    LinearConstraintBuilder lc(model, IntegerValue(1), IntegerValue(1));
-    for (const int ref : ct.exactly_one().literals()) {
-      CHECK(lc.AddLiteralTerm(mapping->Literal(ref), IntegerValue(1)));
+    const std::vector<Literal> literals =
+        mapping->Literals(ct.exactly_one().literals());
+    if (linearization_level >= 2 || AllLiteralsHaveViews(encoder, literals)) {
+      LinearConstraintBuilder lc(model, IntegerValue(1), IntegerValue(1));
+      for (const Literal lit : literals) {
+        CHECK(lc.AddLiteralTerm(lit, IntegerValue(1)));
+      }
+      relaxation->linear_constraints.push_back(lc.Build());
+    } else if (linearization_level == 1) {
+      // We just encode the at most one part that might be partially linearized
+      // later.
+      relaxation->at_most_ones.push_back(literals);
     }
-    relaxation->linear_constraints.push_back(lc.Build());
   } else if (ct.constraint_case() == ConstraintProto::ConstraintCase::kIntMax) {
     if (HasEnforcementLiteral(ct)) return;
     const IntegerVariable target = mapping->Integer(ct.int_max().target());

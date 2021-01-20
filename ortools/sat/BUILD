@@ -221,6 +221,7 @@ cc_library(
         ":circuit",
         ":cp_constraints",
         ":cp_model_cc_proto",
+        ":cp_model_symmetries",
         ":cp_model_utils",
         ":cumulative",
         ":diffn",
@@ -235,6 +236,7 @@ cc_library(
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":sat_solver",
+        ":symmetry",
         ":table",
         "//ortools/base",
         "//ortools/base:file",
@@ -1305,6 +1307,7 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
+        ":sat_parameters_cc_proto",
         "//ortools/algorithms:find_graph_symmetries",
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base:hash",

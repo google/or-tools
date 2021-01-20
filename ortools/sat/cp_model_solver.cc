@@ -621,8 +621,7 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
     if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCircuit) {
       for (const int ref : ct.circuit().literals()) {
         const Literal l = mapping->Literal(ref);
-        if (encoder->GetLiteralView(l) == kNoIntegerVariable &&
-            encoder->GetLiteralView(l.Negated()) == kNoIntegerVariable) {
+        if (!encoder->LiteralOrNegationHasView(l)) {
           m->Add(NewIntegerVariableFromLiteral(l));
         }
       }
@@ -640,9 +639,7 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
       if (trail->Assignment().LiteralIsAssigned(literal)) {
         // Create a view to the constant 0 or 1.
         m->Add(NewIntegerVariableFromLiteral(literal));
-      } else if (encoder->GetLiteralView(literal) == kNoIntegerVariable &&
-                 encoder->GetLiteralView(literal.Negated()) ==
-                     kNoIntegerVariable) {
+      } else if (!encoder->LiteralOrNegationHasView(literal)) {
         ok = false;
         break;
       }
@@ -1200,6 +1197,7 @@ void LoadBaseModel(const CpModelProto& model_proto,
        model_proto.search_strategy().empty());
   mapping->CreateVariables(model_proto, view_all_booleans_as_integers, model);
   mapping->DetectOptionalVariables(model_proto, model);
+  mapping->DetectAndLoadBooleanSymmetries(model_proto, model);
   mapping->ExtractEncoding(model_proto, model);
   mapping->PropagateEncodingFromEquivalenceRelations(model_proto, model);
 

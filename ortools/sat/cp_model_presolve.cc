@@ -5548,7 +5548,8 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
 std::vector<int> FindDuplicateConstraints(const CpModelProto& model_proto) {
   std::vector<int> result;
 
-  // We use a map hash: serialized_constraint_proto -> constraint index.
+  // We use a map hash: serialized_constraint_proto hash -> constraint index.
+  ConstraintProto copy;
   absl::flat_hash_map<int64, int> equiv_constraints;
 
   std::string s;
@@ -5558,14 +5559,22 @@ std::vector<int> FindDuplicateConstraints(const CpModelProto& model_proto) {
         ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) {
       continue;
     }
-    s = model_proto.constraints(c).SerializeAsString();
+
+    // We ignore names when comparing constraints.
+    //
+    // TODO(user): This is not particularly efficient.
+    copy = model_proto.constraints(c);
+    copy.clear_name();
+    s = copy.SerializeAsString();
+
     const int64 hash = std::hash<std::string>()(s);
     const auto insert = equiv_constraints.insert({hash, c});
     if (!insert.second) {
       // Already present!
       const int other_c_with_same_hash = insert.first->second;
-      if (s ==
-          model_proto.constraints(other_c_with_same_hash).SerializeAsString()) {
+      copy = model_proto.constraints(other_c_with_same_hash);
+      copy.clear_name();
+      if (s == copy.SerializeAsString()) {
         result.push_back(c);
       }
     }

@@ -114,11 +114,13 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
     return node;
   };
 
+  std::vector<int64> tmp_key;
   for (int v = 0; v < num_variables; ++v) {
     const IntegerVariableProto& variable = problem.variables(v);
-    std::vector<int64> key = {VARIABLE_NODE, objective_by_var[v]};
-    Append(variable.domain(), &key);
-    CHECK_EQ(v, new_node(key));
+    tmp_key = {VARIABLE_NODE, objective_by_var[v]};
+    Append(variable.domain(), &tmp_key);
+    CHECK_EQ(v, new_node(tmp_key));
+
     // Make sure the graph contains all the variable nodes, even if no edges are
     // attached to them through constraints.
     graph->AddNode(v);
@@ -128,14 +130,37 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
     graph->AddArc(node_1, node_2);
     graph->AddArc(node_2, node_1);
   };
-  auto add_literal_edge = [&add_edge, &new_node](int ref, int constraint_node) {
+
+  // We will create a bunch of nodes linked to a variable node. Only one node
+  // per (var, type) will be required so we cache them to not create more node
+  // than necessary.
+  absl::flat_hash_map<std::vector<int64>, int, VectorHash> secondary_var_nodes;
+  auto get_secondary_var_node = [&new_node, &add_edge, &secondary_var_nodes,
+                                 &tmp_key](int var_node,
+                                           absl::Span<const int64> type) {
+    tmp_key.assign(type.begin(), type.end());
+    tmp_key.push_back(var_node);
+    const auto insert = secondary_var_nodes.insert({tmp_key, 0});
+    if (!insert.second) return insert.first->second;
+
+    tmp_key.pop_back();
+    const int secondary_node = new_node(tmp_key);
+    add_edge(var_node, secondary_node);
+    insert.first->second = secondary_node;
+    return secondary_node;
+  };
+
+  auto add_literal_edge = [&add_edge, &get_secondary_var_node](
+                              int ref, int constraint_node) {
     const int variable_node = PositiveRef(ref);
     if (RefIsPositive(ref)) {
+      // For all coefficients equal to one, which are the most common, we
+      // can optimize the size of the graph by omitting the coefficient
+      // node altogether.
       add_edge(variable_node, constraint_node);
     } else {
-      const int coefficient_node = new_node({CONSTRAINT_COEFFICIENT_NODE, -1});
-
-      add_edge(variable_node, coefficient_node);
+      const int coefficient_node = get_secondary_var_node(
+          variable_node, {CONSTRAINT_COEFFICIENT_NODE, -1});
       add_edge(coefficient_node, constraint_node);
     }
   };
@@ -163,10 +188,8 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
             // node altogether.
             add_edge(variable_node, constraint_node);
           } else {
-            const int coefficient_node =
-                new_node({CONSTRAINT_COEFFICIENT_NODE, coeff});
-
-            add_edge(variable_node, coefficient_node);
+            const int coefficient_node = get_secondary_var_node(
+                variable_node, {CONSTRAINT_COEFFICIENT_NODE, coeff});
             add_edge(coefficient_node, constraint_node);
           }
         }
@@ -179,6 +202,20 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         }
         break;
       }
+      case ConstraintProto::kAtMostOne: {
+        CHECK_EQ(constraint_node, new_node(key));
+        for (const int ref : constraint.at_most_one().literals()) {
+          add_literal_edge(ref, constraint_node);
+        }
+        break;
+      }
+      case ConstraintProto::kExactlyOne: {
+        CHECK_EQ(constraint_node, new_node(key));
+        for (const int ref : constraint.exactly_one().literals()) {
+          add_literal_edge(ref, constraint_node);
+        }
+        break;
+      }
       case ConstraintProto::kBoolXor: {
         CHECK_EQ(constraint_node, new_node(key));
         for (const int ref : constraint.bool_xor().literals()) {
@@ -186,6 +223,11 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         }
         break;
       }
+
+      // TODO(user): We could directly connect variable node together to
+      // deal more efficiently with this constraint. Make sure not to create
+      // multi-arc since I am not sure the symmetry code works with these
+      // though.
       case ConstraintProto::kBoolAnd: {
         if (constraint.enforcement_literal_size() == 0) {
           // All literals are true in this case.
@@ -215,22 +257,22 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
       default: {
         // If the model contains any non-supported constraints, return an empty
         // graph.
-        // TODO(user): support other types of constraints.
+        //
+        // TODO(user): support other types of constraints. Or at least, we
+        // could associate to them an unique node so that their variables can
+        // appear in no symmetry.
         LOG(ERROR) << "Unsupported constraint type "
-                   << constraint.constraint_case();
+                   << ConstraintCaseName(constraint.constraint_case());
         return nullptr;
       }
     }
 
-    if (constraint.constraint_case() != ConstraintProto::kBoolAnd &&
-        constraint.enforcement_literal_size() > 0) {
-      const int ref = constraint.enforcement_literal(0);
-      const int enforcement_literal_node = PositiveRef(ref);
-      const int enforcement_type_node =
-          new_node({ENFORCEMENT_LITERAL, RefIsPositive(ref)});
-
-      add_edge(constraint_node, enforcement_type_node);
-      add_edge(enforcement_type_node, enforcement_literal_node);
+    if (constraint.constraint_case() != ConstraintProto::kBoolAnd) {
+      for (const int ref : constraint.enforcement_literal()) {
+        const int enforcement_node = get_secondary_var_node(
+            PositiveRef(ref), {ENFORCEMENT_LITERAL, RefIsPositive(ref)});
+        add_edge(constraint_node, enforcement_node);
+      }
     }
   }
 
@@ -241,9 +283,10 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 }  // namespace
 
 void FindCpModelSymmetries(
-    const CpModelProto& problem,
+    const SatParameters& params, const CpModelProto& problem,
     std::vector<std::unique_ptr<SparsePermutation>>* generators,
     double time_limit_seconds) {
+  const bool log_info = params.log_search_progress() || VLOG_IS_ON(1);
   CHECK(generators != nullptr);
   generators->clear();
 
@@ -254,20 +297,30 @@ void FindCpModelSymmetries(
       GenerateGraphForSymmetryDetection<Graph>(problem, &equivalence_classes));
   if (graph == nullptr) return;
 
-  LOG(INFO) << "Graph has " << graph->num_nodes() << " nodes and "
-            << graph->num_arcs() / 2 << " edges.";
+  if (log_info) {
+    LOG(INFO) << "Graph has " << graph->num_nodes() << " nodes and "
+              << graph->num_arcs() / 2 << " edges.";
+  }
+  if (graph->num_nodes() == 0) return;
 
   GraphSymmetryFinder symmetry_finder(*graph, /*is_undirected=*/true);
   std::vector<int> factorized_automorphism_group_size;
-  CHECK_OK(symmetry_finder.FindSymmetries(time_limit_seconds,
-                                          &equivalence_classes, generators,
-                                          &factorized_automorphism_group_size));
+  const absl::Status status = symmetry_finder.FindSymmetries(
+      time_limit_seconds, &equivalence_classes, generators,
+      &factorized_automorphism_group_size);
+
+  // TODO(user): Change the API to not return an error when the time limit is
+  // reached.
+  if (log_info && !status.ok()) {
+    LOG(INFO) << "GraphSymmetryFinder error: " << status.message();
+  }
 
   // Remove from the permutations the part not concerning the variables.
   // Note that some permutations may become empty, which means that we had
   // duplicate constraints.
   double average_support_size = 0.0;
   int num_generators = 0;
+  int num_duplicate_constraints = 0;
   for (int i = 0; i < generators->size(); ++i) {
     SparsePermutation* permutation = (*generators)[i].get();
     std::vector<int> to_delete;
@@ -285,19 +338,26 @@ void FindCpModelSymmetries(
         }
       }
     }
+
     permutation->RemoveCycles(to_delete);
     if (!permutation->Support().empty()) {
       average_support_size += permutation->Support().size();
       swap((*generators)[num_generators], (*generators)[i]);
       ++num_generators;
     } else {
-      LOG(INFO) << "The model contains duplicate constraints!";
+      ++num_duplicate_constraints;
     }
   }
   generators->resize(num_generators);
   average_support_size /= num_generators;
-  LOG(INFO) << "# of generators: " << num_generators;
-  LOG(INFO) << "Average support size: " << average_support_size;
+  if (log_info) {
+    LOG(INFO) << "# of generators: " << num_generators;
+    LOG(INFO) << "Average support size: " << average_support_size;
+    if (num_duplicate_constraints > 0) {
+      LOG(INFO) << "The model contains " << num_duplicate_constraints
+                << " duplicate constraints !";
+    }
+  }
 }
 
 }  // namespace sat

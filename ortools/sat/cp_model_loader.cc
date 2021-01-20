@@ -32,6 +32,7 @@
 #include "ortools/sat/circuit.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_symmetries.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cumulative.h"
 #include "ortools/sat/diffn.h"
@@ -45,6 +46,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/symmetry.h"
 #include "ortools/sat/table.h"
 #include "ortools/sat/timetable.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -266,6 +268,60 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
       }
     }
     already_loaded_ct_.insert(&ct);
+  }
+}
+
+void CpModelMapping::DetectAndLoadBooleanSymmetries(
+    const CpModelProto& model_proto, Model* m) {
+  const SatParameters& params = *m->GetOrCreate<SatParameters>();
+  if (!params.detect_symmetries()) return;
+
+  // TODO(user): Use a deterministic time limit.
+  std::vector<std::unique_ptr<SparsePermutation>> generators;
+  FindCpModelSymmetries(params, model_proto, &generators,
+                        /*time_limit_seconds=*/1.0);
+  if (generators.empty()) return;
+
+  auto* sat_solver = m->GetOrCreate<SatSolver>();
+  auto* symmetry_handler = m->GetOrCreate<SymmetryPropagator>();
+  sat_solver->AddPropagator(symmetry_handler);
+  const int num_literals = 2 * sat_solver->NumVariables();
+
+  for (const auto& perm : generators) {
+    bool all_bool = true;
+    for (const int var : perm->Support()) {
+      if (!IsBoolean(var)) {
+        all_bool = false;
+        break;
+      }
+    }
+    if (!all_bool) continue;
+
+    // Convert the variable symmetry to a "literal" one.
+    auto literal_permutation =
+        absl::make_unique<SparsePermutation>(num_literals);
+    const int num_cycle = perm->NumCycles();
+    for (int i = 0; i < num_cycle; ++i) {
+      for (const int var : perm->Cycle(i)) {
+        literal_permutation->AddToCurrentCycle(Literal(var).Index().value());
+      }
+      literal_permutation->CloseCurrentCycle();
+
+      // Note that we also need to add the corresponding cycle for the negated
+      // literals.
+      for (const int var : perm->Cycle(i)) {
+        literal_permutation->AddToCurrentCycle(
+            Literal(var).NegatedIndex().value());
+      }
+      literal_permutation->CloseCurrentCycle();
+    }
+    symmetry_handler->AddSymmetry(std::move(literal_permutation));
+  }
+
+  const bool log_info = VLOG_IS_ON(1) || params.log_search_progress();
+  if (log_info) {
+    LOG(INFO) << "Added " << symmetry_handler->num_permutations()
+              << " symmetry to the SAT solver.";
   }
 }
 

@@ -194,6 +194,8 @@ void SymmetryPropagator::Permute(int index, absl::Span<const Literal> input,
   SCOPED_TIME_STAT(&stats_);
 
   // Initialize tmp_literal_mapping_ (resize it if needed).
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, permutations_.size());
   const SparsePermutation& permutation = *(permutations_[index].get());
   if (permutation.Size() > tmp_literal_mapping_.size()) {
     tmp_literal_mapping_.resize(permutation.Size());
@@ -211,12 +213,16 @@ void SymmetryPropagator::Permute(int index, absl::Span<const Literal> input,
 
   // Permute the input into the output.
   output->clear();
-  for (Literal literal : input) {
-    output->push_back(tmp_literal_mapping_[literal.Index()]);
+  for (const Literal literal : input) {
+    if (literal.Index() < tmp_literal_mapping_.size()) {
+      output->push_back(tmp_literal_mapping_[literal.Index()]);
+    } else {
+      output->push_back(literal);
+    }
   }
 
   // Clean up.
-  for (int e : permutation.Support()) {
+  for (const int e : permutation.Support()) {
     tmp_literal_mapping_[LiteralIndex(e)] = Literal(LiteralIndex(e));
   }
 }

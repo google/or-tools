@@ -685,6 +685,11 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
       continue;
     }
     const ConstraintProto& ct = context->working_model->constraints(ct_index);
+    if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
+      context->UpdateRuleStats("TODO dual: tighten at most one");
+      continue;
+    }
+
     if (ct.constraint_case() != ConstraintProto::kBoolAnd) continue;
     if (ct.enforcement_literal().size() != 1) continue;
 
@@ -831,7 +836,7 @@ void DetectDominanceRelations(
         case ConstraintProto::kAtMostOne:
           if (phase == 0) {
             dual_bound_strengthening->CannotIncrease(
-                ct.at_most_one().literals());
+                ct.at_most_one().literals(), c);
           }
           var_domination->ActivityShouldNotIncrease(ct.enforcement_literal(),
                                                     ct.at_most_one().literals(),
@@ -997,6 +1002,11 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
 
     if (!ct.enforcement_literal().empty()) continue;
 
+    // TODO(user): Also deal with exactly one.
+    // TODO(user): More generally, combine with probing? if a dominated variable
+    // implies one of its dominant to zero, then it can be set to zero. It seems
+    // adding the implication below should have the same effect? but currently
+    // it requires a lot of presolve rounds.
     if (ct.constraint_case() == ConstraintProto::kAtMostOne) {
       for (const int ref : ct.at_most_one().literals()) {
         in_constraints[VarDomination::RefToIntegerVariable(ref)] = true;

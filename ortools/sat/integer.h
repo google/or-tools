@@ -422,6 +422,13 @@ class IntegerEncoder {
     return literal_view_[lit.Index()];
   }
 
+  // If this is true, then a literal can be linearized with an affine expression
+  // involving an integer variable.
+  const bool LiteralOrNegationHasView(Literal lit) const {
+    return GetLiteralView(lit) != kNoIntegerVariable ||
+           GetLiteralView(lit.Negated()) != kNoIntegerVariable;
+  }
+
   // Returns a Boolean literal associated with a bound lower than or equal to
   // the one of the given IntegerLiteral. If the given IntegerLiteral is true,
   // then the returned literal should be true too. Returns kNoLiteralIndex if no
