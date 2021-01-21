@@ -240,10 +240,14 @@ DESCRIPTION
 OPTIONS
 \t-h --help: show this help text
 
-EXAMPLE
+EXAMPLES
+* Using export:
 export PROJECT=glop
 export TARGET=aarch64-linux-gnu
-$0"
+$0
+
+* One-liner:
+PROJECT=or-tools TARGET=aarch64-linux-gnu $0"
 }
 
 # Main
