@@ -6,6 +6,7 @@
     <EnableDefaultItems>false</EnableDefaultItems>
     <!-- see https://github.com/dotnet/docs/issues/12237 -->
     <RollForward>LatestMajor</RollForward>
+    <RestoreSources>../../packages;$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
     <AssemblyName>Google.OrTools.vrptw_fixed_penalty</AssemblyName>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
@@ -18,6 +19,6 @@
 
   <ItemGroup>
     <Compile Include="vrptw_fixed_penalty.cs" />
-    <PackageReference Include="Google.OrTools" Version="8.1.*" />
+    <PackageReference Include="Google.OrTools" Version="8.2.*" />
   </ItemGroup>
 </Project>

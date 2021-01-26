@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['knapsacksolver_2ecs_5512',['KnapsackSolver.cs',['../KnapsackSolver_8cs.html',1,'']]]
+  ['knapsacksolver_2ecs_5535',['KnapsackSolver.cs',['../KnapsackSolver_8cs.html',1,'']]]
 ];

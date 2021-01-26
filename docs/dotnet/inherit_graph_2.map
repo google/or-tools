@@ -12,7 +12,7 @@
 <area shape="rect" id="node11" href="$classGoogle_1_1OrTools_1_1Sat_1_1AutomatonConstraintProto.html" title="This constraint forces a sequence of variables to be accepted by an automaton." alt="" coords="195,824,389,851"/>
 <area shape="rect" id="node12" href="$classGoogle_1_1OrTools_1_1Sat_1_1BoolArgumentProto.html" title="Argument of the constraints of the form OP(literals)." alt="" coords="217,875,367,901"/>
 <area shape="rect" id="node13" href="$classGoogle_1_1OrTools_1_1Sat_1_1CircuitConstraintProto.html" title="The circuit constraint is defined on a graph where the arc presence are controlled by literals." alt="" coords="209,925,375,952"/>
-<area shape="rect" id="node14" href="$classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" title="Next id: 29" alt="" coords="231,976,353,1003"/>
+<area shape="rect" id="node14" href="$classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" title="Next id: 30" alt="" coords="231,976,353,1003"/>
 <area shape="rect" id="node15" href="$classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html" title="A constraint programming problem." alt="" coords="235,1027,349,1053"/>
 <area shape="rect" id="node16" href="$classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html" title="Optimization objective." alt="" coords="225,1077,359,1104"/>
 <area shape="rect" id="node17" href="$classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html" title="The response returned by a solver trying to solve a CpModelProto." alt="" coords="221,1128,363,1155"/>

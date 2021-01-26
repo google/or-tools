@@ -27,17 +27,17 @@
 <area shape="rect" id="node21" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperator.html" title=" " alt="" coords="677,261,919,288"/>
 <area shape="rect" id="node24" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html" title="An Assignment is a variable &#45;&gt; domains mapping, used &#160;to report solutions to the user." alt="" coords="459,361,558,388"/>
 <area shape="rect" id="node25" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html" title="A constraint is the main modeling object." alt="" coords="464,412,553,439"/>
-<area shape="rect" id="node31" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html" title="Interval variables are often used in scheduling." alt="" coords="462,463,555,489"/>
-<area shape="rect" id="node32" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in &#160;constraint programming." alt="" coords="475,513,543,540"/>
+<area shape="rect" id="node31" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in &#160;constraint programming." alt="" coords="475,463,543,489"/>
+<area shape="rect" id="node35" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html" title="Interval variables are often used in scheduling." alt="" coords="462,513,555,540"/>
 <area shape="rect" id="node36" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVar.html" title="A sequence variable is a variable whose domain is a set of possible &#160;orderings of the interval variab..." alt="" coords="455,564,562,591"/>
 <area shape="rect" id="node26" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CastConstraint.html" title="Cast constraints are special channeling constraints designed &#160;to keep a variable in sync with an expr..." alt="" coords="739,312,857,339"/>
 <area shape="rect" id="node27" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DisjunctiveConstraint.html" title=" " alt="" coords="717,363,879,389"/>
 <area shape="rect" id="node28" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalVehicleBreaksConstraint.html" title="GlobalVehicleBreaksConstraint ensures breaks constraints are enforced on &#160;all vehicles in the dimensi..." alt="" coords="687,413,909,440"/>
 <area shape="rect" id="node29" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Pack.html" title=" " alt="" coords="772,464,824,491"/>
 <area shape="rect" id="node30" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRegulationsConstraint.html" title="The following constraint ensures that incompatibilities and requirements &#160;between types are respected..." alt="" coords="700,515,896,541"/>
-<area shape="rect" id="node33" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseIntExpr.html" title="This is the base class for all expressions that are not variables." alt="" coords="748,565,848,592"/>
-<area shape="rect" id="node34" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html" title="The class IntVar is a subset of IntExpr." alt="" coords="768,616,828,643"/>
-<area shape="rect" id="node35" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BooleanVar.html" title=" " alt="" coords="972,616,1068,643"/>
+<area shape="rect" id="node32" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseIntExpr.html" title="This is the base class for all expressions that are not variables." alt="" coords="748,565,848,592"/>
+<area shape="rect" id="node33" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html" title="The class IntVar is a subset of IntExpr." alt="" coords="768,616,828,643"/>
+<area shape="rect" id="node34" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BooleanVar.html" title=" " alt="" coords="972,616,1068,643"/>
 <area shape="rect" id="node39" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMonitor.html" title=" " alt="" coords="433,615,584,641"/>
 <area shape="rect" id="node40" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1OptimizeVar.html" title="This class encapsulates an objective." alt="" coords="457,665,560,692"/>
 <area shape="rect" id="node41" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationMonitor.html" title=" " alt="" coords="433,716,584,743"/>

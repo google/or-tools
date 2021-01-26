@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
-<tagfile doxygen_version="1.8.20">
+<tagfile doxygen_version="1.9.1">
   <compound kind="file">
     <name>Assignment.cs</name>
     <path>/home/mizux/work/master/ortools/gen/ortools/constraint_solver/</path>
@@ -6636,124 +6636,10 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::LinearSolver::Constraint</name>
-    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</filename>
-    <member kind="function">
-      <type>void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>string</type>
-      <name>Name</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a26f76217e5014e355033cfe094fcc168</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetCoefficient</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>accb6f7442b6b1f579e607835c9c4b73a</anchor>
-      <arglist>(Variable var, double coeff)</arglist>
-    </member>
-    <member kind="function">
-      <type>double</type>
-      <name>GetCoefficient</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>ab567ef6289bfbb3c3596c120283a3fc5</anchor>
-      <arglist>(Variable var)</arglist>
-    </member>
-    <member kind="function">
-      <type>double</type>
-      <name>Lb</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>af426860d2823fa5cceac6055c7bf301e</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>double</type>
-      <name>Ub</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a6f8a363969c7e14fb25fa7724dc245e1</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetLb</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a6014cf998860d04211115246a59641e1</anchor>
-      <arglist>(double lb)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetUb</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a6035628c277896af3b288ecc64b6835b</anchor>
-      <arglist>(double ub)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetBounds</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a02bfb5cd5deeb2d5149f6976ee0456d6</anchor>
-      <arglist>(double lb, double ub)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>IsLazy</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a6193adc6012f81986b2b8065123d70a1</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetIsLazy</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a6543ebfd3d2eea989634870bf746ff5a</anchor>
-      <arglist>(bool laziness)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>Index</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>aabeb89fa1068ac3b51e6c180561b400d</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>double</type>
-      <name>DualValue</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>afd6ce55a8de1d40ae23b1c72fc6244cf</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Solver.BasisStatus</type>
-      <name>BasisStatus</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>afc32fa59be94007072a914557fd4dab8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" virtualness="virtual">
-      <type>virtual void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
-      <arglist>(bool disposing)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>bool</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::Constraint</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</filename>
+    <base>Google::OrTools::ConstraintSolver::PropagationBaseObject</base>
+    <base>Google::OrTools::ConstraintSolver::IConstraintWithStatus</base>
     <base>Google::OrTools::ConstraintSolver::PropagationBaseObject</base>
     <base>Google::OrTools::ConstraintSolver::IConstraintWithStatus</base>
     <member kind="function">
@@ -7178,6 +7064,122 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>Google::OrTools::LinearSolver::Constraint</name>
+    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</filename>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>string</type>
+      <name>Name</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>a26f76217e5014e355033cfe094fcc168</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetCoefficient</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>accb6f7442b6b1f579e607835c9c4b73a</anchor>
+      <arglist>(Variable var, double coeff)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>GetCoefficient</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>ab567ef6289bfbb3c3596c120283a3fc5</anchor>
+      <arglist>(Variable var)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>Lb</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>af426860d2823fa5cceac6055c7bf301e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>Ub</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>a6f8a363969c7e14fb25fa7724dc245e1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetLb</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>a6014cf998860d04211115246a59641e1</anchor>
+      <arglist>(double lb)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetUb</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>a6035628c277896af3b288ecc64b6835b</anchor>
+      <arglist>(double ub)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetBounds</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>a02bfb5cd5deeb2d5149f6976ee0456d6</anchor>
+      <arglist>(double lb, double ub)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>IsLazy</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>a6193adc6012f81986b2b8065123d70a1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetIsLazy</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>a6543ebfd3d2eea989634870bf746ff5a</anchor>
+      <arglist>(bool laziness)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>Index</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>aabeb89fa1068ac3b51e6c180561b400d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>DualValue</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>afd6ce55a8de1d40ae23b1c72fc6244cf</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Solver.BasisStatus</type>
+      <name>BasisStatus</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>afc32fa59be94007072a914557fd4dab8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>Google::OrTools::Sat::Constraint</name>
     <filename>classGoogle_1_1OrTools_1_1Sat_1_1Constraint.html</filename>
     <member kind="function">
@@ -7507,6 +7509,7 @@
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281ea515faed08882212df5018a3eacd002b6">BoolOr</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281ea261878dd037f1da40e3e4e0c4d9f082e">BoolAnd</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281ea1cd430b5659fd77fa2a3be2e5c7ab91a">AtMostOne</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281ea768350734ac36483590a781b33b6e9f9">ExactlyOne</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281ea98109c65144890f8bde5f1a841abec7c">BoolXor</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281eaa5d35925ece129f234796229b8f6c1c0">IntDiv</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" anchor="add031c8a971ab43db9a0ecb0cbe3281ea7da807a0fbf8011fe03c6bf8e43e7204">IntMod</enumvalue>
@@ -7646,6 +7649,13 @@
       <name>AtMostOneFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>ac3608c3e48eb8c6e8b9dfb673dfb2002</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>ExactlyOneFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
+      <anchor>a7a33aef97bea0d4d3ff1fa71e3423d3f</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -7842,6 +7852,13 @@
       <name>AtMostOne</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a1802b75d81bbcdc0595720358c6c385b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>global::Google.OrTools.Sat.BoolArgumentProto??</type>
+      <name>ExactlyOne</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html</anchorfile>
+      <anchor>af8c9c803561f368036a6998b041c8bb2</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -13606,256 +13623,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::LinearSolver::Int64Vector</name>
-    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</filename>
-    <class kind="class">Google::OrTools::LinearSolver::Int64Vector::Int64VectorEnumerator</class>
-    <member kind="function">
-      <type>void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a6a49be260c8004de3e132a6ab45572e7</anchor>
-      <arglist>(global::System.Collections.IEnumerable c)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ad4667d4b8f13130fe31654d53966f402</anchor>
-      <arglist>(global::System.Collections.Generic.IEnumerable&lt; long &gt; c)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>af7f404fe2f0b77489ca3577321a5ff94</anchor>
-      <arglist>(long[] array)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a864e771b3e40d6fc7a9c5516e45e4ec3</anchor>
-      <arglist>(long[] array, int arrayIndex)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a9e8ff310cc3c27b59e4106f850ceaddf</anchor>
-      <arglist>(int index, long[] array, int arrayIndex, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>long[]</type>
-      <name>ToArray</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>aac5141816359b1f2e374b9f1356cf734</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Int64VectorEnumerator</type>
-      <name>GetEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ae04db1268d449f52e48e7a9438c71133</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Clear</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Add</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ad949437cf1764aade5c7cbd8fa1c3166</anchor>
-      <arglist>(long x)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a168c7db87ed48a1dcd19a820777c8588</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a6a9e1be5830bb86d1685684806b1e2a0</anchor>
-      <arglist>(Int64Vector other)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a22b1c99dbcaab231c739f7065ef53d72</anchor>
-      <arglist>(int capacity)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a95bd186cde6219880908b76539a33cc2</anchor>
-      <arglist>(Int64Vector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>Int64Vector</type>
-      <name>GetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a23e49836eb5994aab1368bd5941eb51f</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Insert</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a416ba24ab2201269f8a88f4387c08466</anchor>
-      <arglist>(int index, long x)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>InsertRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a0b4a425bb17806845a83bfd79a751c3f</anchor>
-      <arglist>(int index, Int64Vector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveAt</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
-      <arglist>(int index)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a5be311234f0316371a033933cfa86db2</anchor>
-      <arglist>(int index, Int64Vector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>Contains</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ab613fee6b08a7ec8047fd89a9f903d43</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>IndexOf</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ad76f98ad1530aa6d37aa16a8b8edfa55</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>LastIndexOf</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a300b9003c478a3c63d9a3fc7569109dc</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>Remove</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a18fdf2670c2e0bf3e42aa86d370c47ef</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Int64Vector</type>
-      <name>Repeat</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a583c1ef8f0b3432dc556fb875e523816</anchor>
-      <arglist>(long value, int count)</arglist>
-    </member>
-    <member kind="function" protection="protected" virtualness="virtual">
-      <type>virtual void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
-      <arglist>(bool disposing)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>bool</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsFixedSize</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsReadOnly</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>long</type>
-      <name>this[int index]</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a079ebfe25f43ff6a4f4714f4abf56bba</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Capacity</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Count</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>aad462966ed963f892117056de1eba502</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsSynchronized</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
-      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>Google::OrTools::Algorithms::Int64Vector</name>
     <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</filename>
     <class kind="class">Google::OrTools::Algorithms::Int64Vector::Int64VectorEnumerator</class>
@@ -14101,256 +13868,6 @@
       <type>bool</type>
       <name>IsSynchronized</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector.html</anchorfile>
-      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Util::Int64Vector</name>
-    <filename>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</filename>
-    <class kind="class">Google::OrTools::Util::Int64Vector::Int64VectorEnumerator</class>
-    <member kind="function">
-      <type>void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a6a49be260c8004de3e132a6ab45572e7</anchor>
-      <arglist>(global::System.Collections.IEnumerable c)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>ad4667d4b8f13130fe31654d53966f402</anchor>
-      <arglist>(global::System.Collections.Generic.IEnumerable&lt; long &gt; c)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>af7f404fe2f0b77489ca3577321a5ff94</anchor>
-      <arglist>(long[] array)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a864e771b3e40d6fc7a9c5516e45e4ec3</anchor>
-      <arglist>(long[] array, int arrayIndex)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a9e8ff310cc3c27b59e4106f850ceaddf</anchor>
-      <arglist>(int index, long[] array, int arrayIndex, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>long[]</type>
-      <name>ToArray</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>aac5141816359b1f2e374b9f1356cf734</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Int64VectorEnumerator</type>
-      <name>GetEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>ae04db1268d449f52e48e7a9438c71133</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Clear</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Add</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>ad949437cf1764aade5c7cbd8fa1c3166</anchor>
-      <arglist>(long x)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a168c7db87ed48a1dcd19a820777c8588</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a6a9e1be5830bb86d1685684806b1e2a0</anchor>
-      <arglist>(Int64Vector other)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64Vector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a22b1c99dbcaab231c739f7065ef53d72</anchor>
-      <arglist>(int capacity)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a95bd186cde6219880908b76539a33cc2</anchor>
-      <arglist>(Int64Vector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>Int64Vector</type>
-      <name>GetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a23e49836eb5994aab1368bd5941eb51f</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Insert</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a416ba24ab2201269f8a88f4387c08466</anchor>
-      <arglist>(int index, long x)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>InsertRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a0b4a425bb17806845a83bfd79a751c3f</anchor>
-      <arglist>(int index, Int64Vector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveAt</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
-      <arglist>(int index)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a5be311234f0316371a033933cfa86db2</anchor>
-      <arglist>(int index, Int64Vector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>Contains</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>ab613fee6b08a7ec8047fd89a9f903d43</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>IndexOf</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>ad76f98ad1530aa6d37aa16a8b8edfa55</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>LastIndexOf</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a300b9003c478a3c63d9a3fc7569109dc</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>Remove</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a18fdf2670c2e0bf3e42aa86d370c47ef</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Int64Vector</type>
-      <name>Repeat</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a583c1ef8f0b3432dc556fb875e523816</anchor>
-      <arglist>(long value, int count)</arglist>
-    </member>
-    <member kind="function" protection="protected" virtualness="virtual">
-      <type>virtual void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
-      <arglist>(bool disposing)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>bool</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsFixedSize</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsReadOnly</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>long</type>
-      <name>this[int index]</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a079ebfe25f43ff6a4f4714f4abf56bba</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Capacity</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Count</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
-      <anchor>aad462966ed963f892117056de1eba502</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsSynchronized</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
       <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
       <arglist></arglist>
     </member>
@@ -14606,6 +14123,545 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>Google::OrTools::LinearSolver::Int64Vector</name>
+    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</filename>
+    <class kind="class">Google::OrTools::LinearSolver::Int64Vector::Int64VectorEnumerator</class>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a6a49be260c8004de3e132a6ab45572e7</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>ad4667d4b8f13130fe31654d53966f402</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; long &gt; c)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>af7f404fe2f0b77489ca3577321a5ff94</anchor>
+      <arglist>(long[] array)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a864e771b3e40d6fc7a9c5516e45e4ec3</anchor>
+      <arglist>(long[] array, int arrayIndex)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a9e8ff310cc3c27b59e4106f850ceaddf</anchor>
+      <arglist>(int index, long[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>long[]</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>aac5141816359b1f2e374b9f1356cf734</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Int64VectorEnumerator</type>
+      <name>GetEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>ae04db1268d449f52e48e7a9438c71133</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Clear</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Add</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>ad949437cf1764aade5c7cbd8fa1c3166</anchor>
+      <arglist>(long x)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a168c7db87ed48a1dcd19a820777c8588</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a6a9e1be5830bb86d1685684806b1e2a0</anchor>
+      <arglist>(Int64Vector other)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a22b1c99dbcaab231c739f7065ef53d72</anchor>
+      <arglist>(int capacity)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a95bd186cde6219880908b76539a33cc2</anchor>
+      <arglist>(Int64Vector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>Int64Vector</type>
+      <name>GetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a23e49836eb5994aab1368bd5941eb51f</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Insert</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a416ba24ab2201269f8a88f4387c08466</anchor>
+      <arglist>(int index, long x)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>InsertRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a0b4a425bb17806845a83bfd79a751c3f</anchor>
+      <arglist>(int index, Int64Vector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveAt</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a5be311234f0316371a033933cfa86db2</anchor>
+      <arglist>(int index, Int64Vector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>ab613fee6b08a7ec8047fd89a9f903d43</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>IndexOf</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>ad76f98ad1530aa6d37aa16a8b8edfa55</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>LastIndexOf</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a300b9003c478a3c63d9a3fc7569109dc</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Remove</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a18fdf2670c2e0bf3e42aa86d370c47ef</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Int64Vector</type>
+      <name>Repeat</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a583c1ef8f0b3432dc556fb875e523816</anchor>
+      <arglist>(long value, int count)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsFixedSize</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsReadOnly</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>long</type>
+      <name>this[int index]</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a079ebfe25f43ff6a4f4714f4abf56bba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Capacity</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Count</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>aad462966ed963f892117056de1eba502</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsSynchronized</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64Vector.html</anchorfile>
+      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Util::Int64Vector</name>
+    <filename>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</filename>
+    <class kind="class">Google::OrTools::Util::Int64Vector::Int64VectorEnumerator</class>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a6a49be260c8004de3e132a6ab45572e7</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>ad4667d4b8f13130fe31654d53966f402</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; long &gt; c)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>af7f404fe2f0b77489ca3577321a5ff94</anchor>
+      <arglist>(long[] array)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a864e771b3e40d6fc7a9c5516e45e4ec3</anchor>
+      <arglist>(long[] array, int arrayIndex)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a9e8ff310cc3c27b59e4106f850ceaddf</anchor>
+      <arglist>(int index, long[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>long[]</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>aac5141816359b1f2e374b9f1356cf734</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Int64VectorEnumerator</type>
+      <name>GetEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>ae04db1268d449f52e48e7a9438c71133</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Clear</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Add</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>ad949437cf1764aade5c7cbd8fa1c3166</anchor>
+      <arglist>(long x)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a168c7db87ed48a1dcd19a820777c8588</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a6a9e1be5830bb86d1685684806b1e2a0</anchor>
+      <arglist>(Int64Vector other)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a22b1c99dbcaab231c739f7065ef53d72</anchor>
+      <arglist>(int capacity)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a95bd186cde6219880908b76539a33cc2</anchor>
+      <arglist>(Int64Vector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>Int64Vector</type>
+      <name>GetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a23e49836eb5994aab1368bd5941eb51f</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Insert</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a416ba24ab2201269f8a88f4387c08466</anchor>
+      <arglist>(int index, long x)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>InsertRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a0b4a425bb17806845a83bfd79a751c3f</anchor>
+      <arglist>(int index, Int64Vector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveAt</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a5be311234f0316371a033933cfa86db2</anchor>
+      <arglist>(int index, Int64Vector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>ab613fee6b08a7ec8047fd89a9f903d43</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>IndexOf</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>ad76f98ad1530aa6d37aa16a8b8edfa55</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>LastIndexOf</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a300b9003c478a3c63d9a3fc7569109dc</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Remove</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a18fdf2670c2e0bf3e42aa86d370c47ef</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Int64Vector</type>
+      <name>Repeat</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a583c1ef8f0b3432dc556fb875e523816</anchor>
+      <arglist>(long value, int count)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsFixedSize</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsReadOnly</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>long</type>
+      <name>this[int index]</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a079ebfe25f43ff6a4f4714f4abf56bba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Capacity</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Count</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>aad462966ed963f892117056de1eba502</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsSynchronized</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64Vector.html</anchorfile>
+      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Algorithms::Int64Vector::Int64VectorEnumerator</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>Int64VectorEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
+      <anchor>aee4964ae714b19adc31fd9cb2fded47f</anchor>
+      <arglist>(Int64Vector collection)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>MoveNext</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
+      <anchor>ad5316c283894d57be1450edab878aed0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reset</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
+      <anchor>a372de693ad40b3f42839c8ec6ac845f4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="property">
+      <type>long</type>
+      <name>Current</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
+      <anchor>ae0cbc115a66699ead8d93fddccf271ef</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::Int64Vector::Int64VectorEnumerator</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Int64Vector_1_1Int64VectorEnumerator.html</filename>
     <member kind="function">
@@ -14723,41 +14779,224 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Algorithms::Int64Vector::Int64VectorEnumerator</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</filename>
-    <member kind="function">
-      <type></type>
-      <name>Int64VectorEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
-      <anchor>aee4964ae714b19adc31fd9cb2fded47f</anchor>
-      <arglist>(Int64Vector collection)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>MoveNext</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
-      <anchor>ad5316c283894d57be1450edab878aed0</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reset</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
-      <anchor>a372de693ad40b3f42839c8ec6ac845f4</anchor>
-      <arglist>()</arglist>
-    </member>
+    <name>Google::OrTools::Algorithms::Int64VectorVector</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</filename>
+    <class kind="class">Google::OrTools::Algorithms::Int64VectorVector::Int64VectorVectorEnumerator</class>
     <member kind="function">
       <type>void</type>
       <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
       <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64VectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>aa4e1218343e463f5f899d4dabd17d75d</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64VectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a97082d691c3ac39ed1328141b1c03c1b</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; Int64Vector &gt; c)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>aab470cd15c2491146c4bd82c1c32628e</anchor>
+      <arglist>(Int64Vector[] array)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>aa78674e378deb48dfeb3682280a43c15</anchor>
+      <arglist>(Int64Vector[] array, int arrayIndex)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a54cad1de1fee640a41791b1ff49ed327</anchor>
+      <arglist>(int index, Int64Vector[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>Int64Vector[]</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a3518712c5b9cf1a09552c550fc1ffe5e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Int64VectorVectorEnumerator</type>
+      <name>GetEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>affe2a474d8ea951f5111f38a144fcbb4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Clear</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Add</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a70061e8f961ae224b4f9bc97d03dc006</anchor>
+      <arglist>(Int64Vector x)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64VectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>ac29f248ef12130ecefd853146e93ac56</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64VectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a749e441c4728c2cbfe07f58e284ef964</anchor>
+      <arglist>(Int64VectorVector other)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Int64VectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a6e51de2ec9b31594c9dc6a5ab1aef90a</anchor>
+      <arglist>(int capacity)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>ab89a4c7e823605cd8a1d9bc4afedac80</anchor>
+      <arglist>(Int64VectorVector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>Int64VectorVector</type>
+      <name>GetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>ad66371058d32d6823490b279d84adc59</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Insert</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>ab750a1b9314a73aa9f522daeaf130652</anchor>
+      <arglist>(int index, Int64Vector x)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>InsertRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>acac24388a81156ec7ad8ed74428bdba7</anchor>
+      <arglist>(int index, Int64VectorVector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveAt</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a8ecee415e6348798c10e6ba9a89fd8de</anchor>
+      <arglist>(int index, Int64VectorVector values)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Int64VectorVector</type>
+      <name>Repeat</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a89f2dd9f5a449e5028c7b513c96b25d6</anchor>
+      <arglist>(Int64Vector value, int count)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="property">
-      <type>long</type>
-      <name>Current</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64Vector_1_1Int64VectorEnumerator.html</anchorfile>
-      <anchor>ae0cbc115a66699ead8d93fddccf271ef</anchor>
+      <type>bool</type>
+      <name>IsFixedSize</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsReadOnly</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>Int64Vector</type>
+      <name>this[int index]</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a0ae915dc21e94fb0ad3e53e34df91777</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Capacity</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Count</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>aad462966ed963f892117056de1eba502</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsSynchronized</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
+      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -15428,262 +15667,40 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Algorithms::Int64VectorVector</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</filename>
-    <class kind="class">Google::OrTools::Algorithms::Int64VectorVector::Int64VectorVectorEnumerator</class>
-    <member kind="function">
-      <type>void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64VectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>aa4e1218343e463f5f899d4dabd17d75d</anchor>
-      <arglist>(global::System.Collections.IEnumerable c)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64VectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a97082d691c3ac39ed1328141b1c03c1b</anchor>
-      <arglist>(global::System.Collections.Generic.IEnumerable&lt; Int64Vector &gt; c)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>aab470cd15c2491146c4bd82c1c32628e</anchor>
-      <arglist>(Int64Vector[] array)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>aa78674e378deb48dfeb3682280a43c15</anchor>
-      <arglist>(Int64Vector[] array, int arrayIndex)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a54cad1de1fee640a41791b1ff49ed327</anchor>
-      <arglist>(int index, Int64Vector[] array, int arrayIndex, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>Int64Vector[]</type>
-      <name>ToArray</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a3518712c5b9cf1a09552c550fc1ffe5e</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Int64VectorVectorEnumerator</type>
-      <name>GetEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>affe2a474d8ea951f5111f38a144fcbb4</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Clear</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Add</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a70061e8f961ae224b4f9bc97d03dc006</anchor>
-      <arglist>(Int64Vector x)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64VectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>ac29f248ef12130ecefd853146e93ac56</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64VectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a749e441c4728c2cbfe07f58e284ef964</anchor>
-      <arglist>(Int64VectorVector other)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>Int64VectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a6e51de2ec9b31594c9dc6a5ab1aef90a</anchor>
-      <arglist>(int capacity)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>ab89a4c7e823605cd8a1d9bc4afedac80</anchor>
-      <arglist>(Int64VectorVector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>Int64VectorVector</type>
-      <name>GetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>ad66371058d32d6823490b279d84adc59</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Insert</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>ab750a1b9314a73aa9f522daeaf130652</anchor>
-      <arglist>(int index, Int64Vector x)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>InsertRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>acac24388a81156ec7ad8ed74428bdba7</anchor>
-      <arglist>(int index, Int64VectorVector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveAt</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
-      <arglist>(int index)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a8ecee415e6348798c10e6ba9a89fd8de</anchor>
-      <arglist>(int index, Int64VectorVector values)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Int64VectorVector</type>
-      <name>Repeat</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a89f2dd9f5a449e5028c7b513c96b25d6</anchor>
-      <arglist>(Int64Vector value, int count)</arglist>
-    </member>
-    <member kind="function" protection="protected" virtualness="virtual">
-      <type>virtual void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
-      <arglist>(bool disposing)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>bool</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsFixedSize</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsReadOnly</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>Int64Vector</type>
-      <name>this[int index]</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a0ae915dc21e94fb0ad3e53e34df91777</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Capacity</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Count</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>aad462966ed963f892117056de1eba502</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsSynchronized</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector.html</anchorfile>
-      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::LinearSolver::Int64VectorVector::Int64VectorVectorEnumerator</name>
-    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</filename>
+    <name>Google::OrTools::Algorithms::Int64VectorVector::Int64VectorVectorEnumerator</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</filename>
     <member kind="function">
       <type></type>
       <name>Int64VectorVectorEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
       <anchor>a54c1e4d98a58129ce7291654a685ff8e</anchor>
       <arglist>(Int64VectorVector collection)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>MoveNext</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
       <anchor>ad5316c283894d57be1450edab878aed0</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>Reset</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
       <anchor>a372de693ad40b3f42839c8ec6ac845f4</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
       <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="property">
       <type>Int64Vector</type>
       <name>Current</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
       <anchor>af75fd7b0112445ab143de51a22c28f77</anchor>
       <arglist></arglist>
     </member>
@@ -15728,6 +15745,45 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>Google::OrTools::LinearSolver::Int64VectorVector::Int64VectorVectorEnumerator</name>
+    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>Int64VectorVectorEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchor>a54c1e4d98a58129ce7291654a685ff8e</anchor>
+      <arglist>(Int64VectorVector collection)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>MoveNext</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchor>ad5316c283894d57be1450edab878aed0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reset</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchor>a372de693ad40b3f42839c8ec6ac845f4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="property">
+      <type>Int64Vector</type>
+      <name>Current</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
+      <anchor>af75fd7b0112445ab143de51a22c28f77</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>Google::OrTools::Util::Int64VectorVector::Int64VectorVectorEnumerator</name>
     <filename>classGoogle_1_1OrTools_1_1Util_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</filename>
     <member kind="function">
@@ -15762,45 +15818,6 @@
       <type>Int64Vector</type>
       <name>Current</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
-      <anchor>af75fd7b0112445ab143de51a22c28f77</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Algorithms::Int64VectorVector::Int64VectorVectorEnumerator</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</filename>
-    <member kind="function">
-      <type></type>
-      <name>Int64VectorVectorEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
-      <anchor>a54c1e4d98a58129ce7291654a685ff8e</anchor>
-      <arglist>(Int64VectorVector collection)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>MoveNext</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
-      <anchor>ad5316c283894d57be1450edab878aed0</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reset</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
-      <anchor>a372de693ad40b3f42839c8ec6ac845f4</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
-      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="property">
-      <type>Int64Vector</type>
-      <name>Current</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1Int64VectorVector_1_1Int64VectorVectorEnumerator.html</anchorfile>
       <anchor>af75fd7b0112445ab143de51a22c28f77</anchor>
       <arglist></arglist>
     </member>
@@ -17661,6 +17678,7 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::IntExpr</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</filename>
+    <base>Google::OrTools::ConstraintSolver::PropagationBaseObject</base>
     <base>Google::OrTools::ConstraintSolver::PropagationBaseObject</base>
     <member kind="function">
       <type>IntExpr</type>
@@ -19574,31 +19592,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Sat::IntVarArrayHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1Sat_1_1IntVarArrayHelper.html</filename>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>Sum</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVarArrayHelper.html</anchorfile>
-      <anchor>a6ec79ce60e8bb4a2d2620b6e1249c5c3</anchor>
-      <arglist>(this IntVar[] vars)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>ScalProd</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVarArrayHelper.html</anchorfile>
-      <anchor>ada2ac7afc8181ca0d7fc2e62384c2729</anchor>
-      <arglist>(this IntVar[] vars, int[] coeffs)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>ScalProd</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVarArrayHelper.html</anchorfile>
-      <anchor>a05d86afc13c4d0feee0a6f9c4a465a8a</anchor>
-      <arglist>(this IntVar[] vars, long[] coeffs)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::IntVarArrayHelper</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarArrayHelper.html</filename>
     <member kind="function" static="yes">
@@ -19733,6 +19726,31 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarArrayHelper.html</anchorfile>
       <anchor>a84681f91fead396baa53981fd5c1eb7a</anchor>
       <arglist>(this IntVar[,] vars)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Sat::IntVarArrayHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1Sat_1_1IntVarArrayHelper.html</filename>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>Sum</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVarArrayHelper.html</anchorfile>
+      <anchor>a6ec79ce60e8bb4a2d2620b6e1249c5c3</anchor>
+      <arglist>(this IntVar[] vars)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>ScalProd</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVarArrayHelper.html</anchorfile>
+      <anchor>ada2ac7afc8181ca0d7fc2e62384c2729</anchor>
+      <arglist>(this IntVar[] vars, int[] coeffs)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>ScalProd</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1IntVarArrayHelper.html</anchorfile>
+      <anchor>a05d86afc13c4d0feee0a6f9c4a465a8a</anchor>
+      <arglist>(this IntVar[] vars, long[] coeffs)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -19936,6 +19954,7 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::IntVarIterator</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarIterator.html</filename>
+    <base>Google::OrTools::ConstraintSolver::BaseObject</base>
     <base>Google::OrTools::ConstraintSolver::BaseObject</base>
     <member kind="function">
       <type>IntVarEnumerator</type>
@@ -21041,6 +21060,256 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>Google::OrTools::Algorithms::IntVector</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</filename>
+    <class kind="class">Google::OrTools::Algorithms::IntVector::IntVectorEnumerator</class>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>ad17b6850840a4490e96af830a3d15317</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a48a8f4f1dd460c4cb6c11aec8307e5f5</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; int &gt; c)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>aa6dd687fe1b77023a954666a5a3ff2ae</anchor>
+      <arglist>(int[] array)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a1df185c6765e85707b6692072815d13e</anchor>
+      <arglist>(int[] array, int arrayIndex)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>ab11d342b7d2d62a6d010eeb835bd7131</anchor>
+      <arglist>(int index, int[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>int[]</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>afc0100af38a989438338f8cefc426dd2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVectorEnumerator</type>
+      <name>GetEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>acce47eab8f90d4fd2b3fc4b92d54ce47</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Clear</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Add</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a9107ed9f8c3a6f1474565e552d1f6b0b</anchor>
+      <arglist>(int x)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a3b5791460a8d60c4be3511ad3723bf7f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a17607481a58e45f080dcb3545c39e11b</anchor>
+      <arglist>(IntVector other)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a6ae5527df773d1820c6d3e93e1bf93d1</anchor>
+      <arglist>(int capacity)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a6015f2e70d5406093f7b94e852c2ffce</anchor>
+      <arglist>(IntVector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVector</type>
+      <name>GetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a6ee302ce4ce9dae79c46e7968ebab4eb</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Insert</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>ae07f898d1e88769c7f59c2ccdfcdbbe5</anchor>
+      <arglist>(int index, int x)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>InsertRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a702829153a47b2572f8a9f7815199e64</anchor>
+      <arglist>(int index, IntVector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveAt</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>ae6041d2fe2b15700013f812e6be9446f</anchor>
+      <arglist>(int index, IntVector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>aa114e804f0ccb93b71e8a21b2330c4d7</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>IndexOf</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>adf370c95b19f298ac46467b5eeb115f1</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>LastIndexOf</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>ab15a3f5e29c3f28c3e59dd12643ba7f5</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Remove</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a3aa6c7ce9741b5a9c0d42145ca84f03e</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static IntVector</type>
+      <name>Repeat</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a4b316347bdd8897d82e08676147d5b19</anchor>
+      <arglist>(int value, int count)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsFixedSize</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsReadOnly</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>this[int index]</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a88cc3d44636fba7acba737ef32eae1df</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Capacity</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Count</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>aad462966ed963f892117056de1eba502</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsSynchronized</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::IntVector</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVector.html</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::IntVector::IntVectorEnumerator</class>
@@ -21791,252 +22060,41 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Algorithms::IntVector</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</filename>
-    <class kind="class">Google::OrTools::Algorithms::IntVector::IntVectorEnumerator</class>
+    <name>Google::OrTools::Algorithms::IntVector::IntVectorEnumerator</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>IntVectorEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
+      <anchor>a00063467843745cac6c2e44fc123ceb3</anchor>
+      <arglist>(IntVector collection)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>MoveNext</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
+      <anchor>ad5316c283894d57be1450edab878aed0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reset</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
+      <anchor>a372de693ad40b3f42839c8ec6ac845f4</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="function">
       <type>void</type>
       <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
       <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
       <arglist>()</arglist>
     </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>ad17b6850840a4490e96af830a3d15317</anchor>
-      <arglist>(global::System.Collections.IEnumerable c)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a48a8f4f1dd460c4cb6c11aec8307e5f5</anchor>
-      <arglist>(global::System.Collections.Generic.IEnumerable&lt; int &gt; c)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>aa6dd687fe1b77023a954666a5a3ff2ae</anchor>
-      <arglist>(int[] array)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a1df185c6765e85707b6692072815d13e</anchor>
-      <arglist>(int[] array, int arrayIndex)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>ab11d342b7d2d62a6d010eeb835bd7131</anchor>
-      <arglist>(int index, int[] array, int arrayIndex, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>int[]</type>
-      <name>ToArray</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>afc0100af38a989438338f8cefc426dd2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>IntVectorEnumerator</type>
-      <name>GetEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>acce47eab8f90d4fd2b3fc4b92d54ce47</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Clear</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Add</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a9107ed9f8c3a6f1474565e552d1f6b0b</anchor>
-      <arglist>(int x)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a3b5791460a8d60c4be3511ad3723bf7f</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a17607481a58e45f080dcb3545c39e11b</anchor>
-      <arglist>(IntVector other)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a6ae5527df773d1820c6d3e93e1bf93d1</anchor>
-      <arglist>(int capacity)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a6015f2e70d5406093f7b94e852c2ffce</anchor>
-      <arglist>(IntVector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>IntVector</type>
-      <name>GetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a6ee302ce4ce9dae79c46e7968ebab4eb</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Insert</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>ae07f898d1e88769c7f59c2ccdfcdbbe5</anchor>
-      <arglist>(int index, int x)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>InsertRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a702829153a47b2572f8a9f7815199e64</anchor>
-      <arglist>(int index, IntVector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveAt</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
-      <arglist>(int index)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>ae6041d2fe2b15700013f812e6be9446f</anchor>
-      <arglist>(int index, IntVector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>Contains</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>aa114e804f0ccb93b71e8a21b2330c4d7</anchor>
-      <arglist>(int value)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>IndexOf</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>adf370c95b19f298ac46467b5eeb115f1</anchor>
-      <arglist>(int value)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>LastIndexOf</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>ab15a3f5e29c3f28c3e59dd12643ba7f5</anchor>
-      <arglist>(int value)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>Remove</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a3aa6c7ce9741b5a9c0d42145ca84f03e</anchor>
-      <arglist>(int value)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static IntVector</type>
-      <name>Repeat</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a4b316347bdd8897d82e08676147d5b19</anchor>
-      <arglist>(int value, int count)</arglist>
-    </member>
-    <member kind="function" protection="protected" virtualness="virtual">
-      <type>virtual void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
-      <arglist>(bool disposing)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>bool</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsFixedSize</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsReadOnly</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
-      <arglist></arglist>
-    </member>
     <member kind="property">
       <type>int</type>
-      <name>this[int index]</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a88cc3d44636fba7acba737ef32eae1df</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Capacity</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Count</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>aad462966ed963f892117056de1eba502</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsSynchronized</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector.html</anchorfile>
-      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
+      <name>Current</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
+      <anchor>a10c0a18b79ec08c16b06575d07564a5f</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -22119,45 +22177,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Algorithms::IntVector::IntVectorEnumerator</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</filename>
-    <member kind="function">
-      <type></type>
-      <name>IntVectorEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
-      <anchor>a00063467843745cac6c2e44fc123ceb3</anchor>
-      <arglist>(IntVector collection)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>MoveNext</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
-      <anchor>ad5316c283894d57be1450edab878aed0</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reset</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
-      <anchor>a372de693ad40b3f42839c8ec6ac845f4</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
-      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Current</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
-      <anchor>a10c0a18b79ec08c16b06575d07564a5f</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>Google::OrTools::Util::IntVector::IntVectorEnumerator</name>
     <filename>classGoogle_1_1OrTools_1_1Util_1_1IntVector_1_1IntVectorEnumerator.html</filename>
     <member kind="function">
@@ -22193,6 +22212,228 @@
       <name>Current</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1IntVector_1_1IntVectorEnumerator.html</anchorfile>
       <anchor>a10c0a18b79ec08c16b06575d07564a5f</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Algorithms::IntVectorVector</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</filename>
+    <class kind="class">Google::OrTools::Algorithms::IntVectorVector::IntVectorVectorEnumerator</class>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>adee1dcdd926029ad73b417dc4a2f132c</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a77bc59de2bdc251d450034d128b65d91</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; IntVector &gt; c)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>afcf815b72fd02bc71cf77d682a4d4d9b</anchor>
+      <arglist>(IntVector[] array)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a7c2ecbd3b6d1185e7a372c62b8a03586</anchor>
+      <arglist>(IntVector[] array, int arrayIndex)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a1fa514a297b0b009f2e6201ab8ed77ea</anchor>
+      <arglist>(int index, IntVector[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVector[]</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>ae3653e0143110b760a3c56563df175ad</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVectorVectorEnumerator</type>
+      <name>GetEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a1bc2bce5de676b39892075979cba59d5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Clear</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Add</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>abd9a721b5fa16c3b187d6873aee52bd7</anchor>
+      <arglist>(IntVector x)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a0629b07ba010d53e61ea88aab8cd0f7c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a987746cb1a1095e839067197e9a77be1</anchor>
+      <arglist>(IntVectorVector other)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a59e575f75f9cce2c06cb08f6061d3990</anchor>
+      <arglist>(int capacity)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a03270dfc11507b7a3936e9d59049c922</anchor>
+      <arglist>(IntVectorVector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVectorVector</type>
+      <name>GetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a81cbb75f46a3361fdccda5585e7257b3</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Insert</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>ad09d6b96777bc25a957f403205268dbb</anchor>
+      <arglist>(int index, IntVector x)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>InsertRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>abd53c11dd489025397e9c7aab54b7e2c</anchor>
+      <arglist>(int index, IntVectorVector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveAt</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>ab81e84f36e1f3879566a09bc3d087c0d</anchor>
+      <arglist>(int index, IntVectorVector values)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static IntVectorVector</type>
+      <name>Repeat</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a4c53efc451b44f9c88fd7597257ab3f4</anchor>
+      <arglist>(IntVector value, int count)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsFixedSize</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsReadOnly</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>IntVector</type>
+      <name>this[int index]</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a340cfa1eac903b4119cf7e84c49fae5b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Capacity</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Count</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>aad462966ed963f892117056de1eba502</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsSynchronized</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
+      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -22858,228 +23099,6 @@
       <type>bool</type>
       <name>IsSynchronized</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1IntVectorVector.html</anchorfile>
-      <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Algorithms::IntVectorVector</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</filename>
-    <class kind="class">Google::OrTools::Algorithms::IntVectorVector::IntVectorVectorEnumerator</class>
-    <member kind="function">
-      <type>void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a6e2d745cdb7a7b983f861ed6a9a541a7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>adee1dcdd926029ad73b417dc4a2f132c</anchor>
-      <arglist>(global::System.Collections.IEnumerable c)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a77bc59de2bdc251d450034d128b65d91</anchor>
-      <arglist>(global::System.Collections.Generic.IEnumerable&lt; IntVector &gt; c)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>afcf815b72fd02bc71cf77d682a4d4d9b</anchor>
-      <arglist>(IntVector[] array)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a7c2ecbd3b6d1185e7a372c62b8a03586</anchor>
-      <arglist>(IntVector[] array, int arrayIndex)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CopyTo</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a1fa514a297b0b009f2e6201ab8ed77ea</anchor>
-      <arglist>(int index, IntVector[] array, int arrayIndex, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>IntVector[]</type>
-      <name>ToArray</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>ae3653e0143110b760a3c56563df175ad</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>IntVectorVectorEnumerator</type>
-      <name>GetEnumerator</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a1bc2bce5de676b39892075979cba59d5</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Clear</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>aa71d36872f416feaa853788a7a7a7ef8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Add</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>abd9a721b5fa16c3b187d6873aee52bd7</anchor>
-      <arglist>(IntVector x)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a0629b07ba010d53e61ea88aab8cd0f7c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a987746cb1a1095e839067197e9a77be1</anchor>
-      <arglist>(IntVectorVector other)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>IntVectorVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a59e575f75f9cce2c06cb08f6061d3990</anchor>
-      <arglist>(int capacity)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a03270dfc11507b7a3936e9d59049c922</anchor>
-      <arglist>(IntVectorVector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>IntVectorVector</type>
-      <name>GetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a81cbb75f46a3361fdccda5585e7257b3</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Insert</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>ad09d6b96777bc25a957f403205268dbb</anchor>
-      <arglist>(int index, IntVector x)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>InsertRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>abd53c11dd489025397e9c7aab54b7e2c</anchor>
-      <arglist>(int index, IntVectorVector values)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveAt</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>ad7c925d24a4e07389d2331e0508618ea</anchor>
-      <arglist>(int index)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>RemoveRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>ab8469187c24ee20858b41527b2f5e687</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>ae1b551cc51c9d556342b27b466a7c7cb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>Reverse</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>af6cbf16084ead2a02440396e021b9b46</anchor>
-      <arglist>(int index, int count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetRange</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>ab81e84f36e1f3879566a09bc3d087c0d</anchor>
-      <arglist>(int index, IntVectorVector values)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static IntVectorVector</type>
-      <name>Repeat</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a4c53efc451b44f9c88fd7597257ab3f4</anchor>
-      <arglist>(IntVector value, int count)</arglist>
-    </member>
-    <member kind="function" protection="protected" virtualness="virtual">
-      <type>virtual void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a8ad4348ef0f9969025bab397e7e27e26</anchor>
-      <arglist>(bool disposing)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>bool</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>abc050282310ee35f8b4bac77b6103375</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsFixedSize</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a8ec7d7c5cd2656150a6237ce80df4d20</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsReadOnly</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>ad1b02f19e753582b3c5f9ed71bb0318a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>IntVector</type>
-      <name>this[int index]</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a340cfa1eac903b4119cf7e84c49fae5b</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Capacity</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>a5ad7f82470f145a0d6ae871ff7b623f3</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>int</type>
-      <name>Count</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
-      <anchor>aad462966ed963f892117056de1eba502</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="property">
-      <type>bool</type>
-      <name>IsSynchronized</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1IntVectorVector.html</anchorfile>
       <anchor>a94b969d24485ca893c76b3323b3326f4</anchor>
       <arglist></arglist>
     </member>
@@ -58639,9 +58658,23 @@
     </member>
     <member kind="variable" static="yes">
       <type>const int</type>
+      <name>CheapestInsertionFirstSolutionMinNeighborsFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
+      <anchor>a62637ef063f9febdb517da5a7c4195c5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
       <name>CheapestInsertionLsOperatorNeighborsRatioFieldNumber</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a784efc9c5c87c3f4e6e22eb396fdccac</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>CheapestInsertionLsOperatorMinNeighborsFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
+      <anchor>aa4022761c923ba22a587b4843bef822e</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -58911,10 +58944,24 @@
       <arglist></arglist>
     </member>
     <member kind="property">
+      <type>int</type>
+      <name>CheapestInsertionFirstSolutionMinNeighbors</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
+      <anchor>a2296add9a20327b3f8acf22d73984643</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
       <type>double</type>
       <name>CheapestInsertionLsOperatorNeighborsRatio</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a3a279e9a369f045603d6cbe5dcb00225</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>CheapestInsertionLsOperatorMinNeighbors</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html</anchorfile>
+      <anchor>aac0b2cb227111e97495abd4169ee82e2</anchor>
       <arglist></arglist>
     </member>
     <member kind="property">
@@ -67542,6 +67589,179 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>Google::OrTools::LinearSolver::SumArray</name>
+    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1SumArray.html</filename>
+    <base>Google::OrTools::LinearSolver::LinearExpr</base>
+    <member kind="function">
+      <type></type>
+      <name>SumArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1SumArray.html</anchorfile>
+      <anchor>ab1c05097812e66d7a51d48aede3e7400</anchor>
+      <arglist>(LinearExpr[] array)</arglist>
+    </member>
+    <member kind="function">
+      <type>override double</type>
+      <name>DoVisit</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1SumArray.html</anchorfile>
+      <anchor>a26fe502d425290a10e641b18607aa64c</anchor>
+      <arglist>(Dictionary&lt; Variable, double &gt; coefficients, double multiplier)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>Visit</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a433055f200c844a61e58cef630c03fcf</anchor>
+      <arglist>(Dictionary&lt; Variable, double &gt; coefficients)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a548d26025ce5842b43ca805b99646416</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>abd413258d303116f1dfef91f64eb1c2b</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a8dce68ee7a75412eefc193e25cce2359</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator-</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a84a0cd8a12a4114a5be319387837f019</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator-</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>aec3ffacd07d8d90bb255fca7931aa212</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator-</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ae10ffffedef48bf520a489f2612cbba5</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator-</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a532c2d44559645b8247bd747f7ff9035</anchor>
+      <arglist>(LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator*</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a6ab27638ca270e8e0db700d696c723b1</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator*</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ae5884c17893b758739964ec63d15816e</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator/</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a6a2565dc62093400d0faf4daad8f3a2f</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator==</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>adf02d4173330d1866540b5f5ac7f4633</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator==</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a48270aeb3c2bf7d5a67a99aaa7f99579</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Equality</type>
+      <name>operator==</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ac2814e3f58b3724aca29b3e1487cd90a</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator!=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ae69414683801db2310c4191e55d46a65</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator!=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a3124bbb1585a9f54c584fdbd79757250</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Equality</type>
+      <name>operator!=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a9353d050cc6d4a6ad9f92c70243ea28f</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator&lt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>aaa5c8ed01cf652f6b12a1d9432104838</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator&lt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a02ec90c34fea15807c2d4a04a8f4a23d</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator&gt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ac7089bc88944bdd4b9500a89c8c78beb</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator&gt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ae15dfa4bb4e721b3aedf0f22c71b534b</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static implicit</type>
+      <name>operator LinearExpr</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>aacf833e03b58cf1fbd1e65300ede9ba9</anchor>
+      <arglist>(Variable a)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>Google::OrTools::Sat::SumArray</name>
     <filename>classGoogle_1_1OrTools_1_1Sat_1_1SumArray.html</filename>
     <base>Google::OrTools::Sat::LinearExpr</base>
@@ -67866,179 +68086,6 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html</anchorfile>
       <anchor>a075e1e3c9dd399cef584d7338cc37938</anchor>
       <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::LinearSolver::SumArray</name>
-    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1SumArray.html</filename>
-    <base>Google::OrTools::LinearSolver::LinearExpr</base>
-    <member kind="function">
-      <type></type>
-      <name>SumArray</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1SumArray.html</anchorfile>
-      <anchor>ab1c05097812e66d7a51d48aede3e7400</anchor>
-      <arglist>(LinearExpr[] array)</arglist>
-    </member>
-    <member kind="function">
-      <type>override double</type>
-      <name>DoVisit</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1SumArray.html</anchorfile>
-      <anchor>a26fe502d425290a10e641b18607aa64c</anchor>
-      <arglist>(Dictionary&lt; Variable, double &gt; coefficients, double multiplier)</arglist>
-    </member>
-    <member kind="function">
-      <type>double</type>
-      <name>Visit</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a433055f200c844a61e58cef630c03fcf</anchor>
-      <arglist>(Dictionary&lt; Variable, double &gt; coefficients)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator+</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a548d26025ce5842b43ca805b99646416</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator+</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>abd413258d303116f1dfef91f64eb1c2b</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator+</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a8dce68ee7a75412eefc193e25cce2359</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a84a0cd8a12a4114a5be319387837f019</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>aec3ffacd07d8d90bb255fca7931aa212</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae10ffffedef48bf520a489f2612cbba5</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a532c2d44559645b8247bd747f7ff9035</anchor>
-      <arglist>(LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator*</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a6ab27638ca270e8e0db700d696c723b1</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator*</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae5884c17893b758739964ec63d15816e</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator/</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a6a2565dc62093400d0faf4daad8f3a2f</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator==</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>adf02d4173330d1866540b5f5ac7f4633</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator==</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a48270aeb3c2bf7d5a67a99aaa7f99579</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Equality</type>
-      <name>operator==</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ac2814e3f58b3724aca29b3e1487cd90a</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator!=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae69414683801db2310c4191e55d46a65</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator!=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a3124bbb1585a9f54c584fdbd79757250</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Equality</type>
-      <name>operator!=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a9353d050cc6d4a6ad9f92c70243ea28f</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator&lt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>aaa5c8ed01cf652f6b12a1d9432104838</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator&lt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a02ec90c34fea15807c2d4a04a8f4a23d</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ac7089bc88944bdd4b9500a89c8c78beb</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae15dfa4bb4e721b3aedf0f22c71b534b</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static implicit</type>
-      <name>operator LinearExpr</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>aacf833e03b58cf1fbd1e65300ede9ba9</anchor>
-      <arglist>(Variable a)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -68395,102 +68442,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE::SWIGExceptionHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</filename>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>ExceptionDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a2f7b42fc9e57300a8dea7054b35cf1b9</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>ExceptionArgumentDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a11886f6ea7069976960a49740509e6cf</anchor>
-      <arglist>(string message, string paramName)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacks_operations_research_linear_solver</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a9514dd03c52ea4b929bed32e2011ef50</anchor>
-      <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_linear_solver</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a343877a57000420d1077e5437bb40617</anchor>
-      <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Sat::operations_research_satPINVOKE::SWIGExceptionHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</filename>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>ExceptionDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a2f7b42fc9e57300a8dea7054b35cf1b9</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>ExceptionArgumentDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a11886f6ea7069976960a49740509e6cf</anchor>
-      <arglist>(string message, string paramName)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacks_operations_research_sat</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>afb4f6f52c0222fa64641456cb3c2e751</anchor>
-      <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_sat</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a4750ee724c66933ae09a0579798fa07c</anchor>
-      <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Util::operations_research_utilPINVOKE::SWIGExceptionHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</filename>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>ExceptionDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a2f7b42fc9e57300a8dea7054b35cf1b9</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>ExceptionArgumentDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a11886f6ea7069976960a49740509e6cf</anchor>
-      <arglist>(string message, string paramName)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacks_operations_research_util</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a3499bfc42273fc9989c5b708a5ef127a</anchor>
-      <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_util</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a015665ed9a89e4fea348f9d6e94414b3</anchor>
-      <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>Google::OrTools::Algorithms::operations_research_algorithmsPINVOKE::SWIGExceptionHelper</name>
     <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</filename>
     <member kind="function">
@@ -68587,28 +68538,99 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::ConstraintSolver::operations_research_constraint_solverPINVOKE::SWIGPendingException</name>
-    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGPendingException.html</filename>
-    <member kind="function" static="yes">
+    <name>Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE::SWIGExceptionHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</filename>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>ExceptionDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a2f7b42fc9e57300a8dea7054b35cf1b9</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>ExceptionArgumentDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a11886f6ea7069976960a49740509e6cf</anchor>
+      <arglist>(string message, string paramName)</arglist>
+    </member>
+    <member kind="function">
       <type>static void</type>
-      <name>Set</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a82baf4e1ebc3af6128595ba8a17034c6</anchor>
-      <arglist>(global::System.Exception e)</arglist>
+      <name>SWIGRegisterExceptionCallbacks_operations_research_linear_solver</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a9514dd03c52ea4b929bed32e2011ef50</anchor>
+      <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
     </member>
-    <member kind="function" static="yes">
-      <type>static global::System.Exception</type>
-      <name>Retrieve</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a99561aa89dd816ba2dd85af036e32227</anchor>
-      <arglist>()</arglist>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_linear_solver</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a343877a57000420d1077e5437bb40617</anchor>
+      <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
     </member>
-    <member kind="property" static="yes">
-      <type>static bool</type>
-      <name>Pending</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
-      <arglist></arglist>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Sat::operations_research_satPINVOKE::SWIGExceptionHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</filename>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>ExceptionDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a2f7b42fc9e57300a8dea7054b35cf1b9</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>ExceptionArgumentDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a11886f6ea7069976960a49740509e6cf</anchor>
+      <arglist>(string message, string paramName)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterExceptionCallbacks_operations_research_sat</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>afb4f6f52c0222fa64641456cb3c2e751</anchor>
+      <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_sat</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a4750ee724c66933ae09a0579798fa07c</anchor>
+      <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Util::operations_research_utilPINVOKE::SWIGExceptionHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</filename>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>ExceptionDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a2f7b42fc9e57300a8dea7054b35cf1b9</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>ExceptionArgumentDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a11886f6ea7069976960a49740509e6cf</anchor>
+      <arglist>(string message, string paramName)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterExceptionCallbacks_operations_research_util</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a3499bfc42273fc9989c5b708a5ef127a</anchor>
+      <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_util</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a015665ed9a89e4fea348f9d6e94414b3</anchor>
+      <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -68637,26 +68659,26 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE::SWIGPendingException</name>
-    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</filename>
+    <name>Google::OrTools::ConstraintSolver::operations_research_constraint_solverPINVOKE::SWIGPendingException</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGPendingException.html</filename>
     <member kind="function" static="yes">
       <type>static void</type>
       <name>Set</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
       <anchor>a82baf4e1ebc3af6128595ba8a17034c6</anchor>
       <arglist>(global::System.Exception e)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static global::System.Exception</type>
       <name>Retrieve</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
       <anchor>a99561aa89dd816ba2dd85af036e32227</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="property" static="yes">
       <type>static bool</type>
       <name>Pending</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
       <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
       <arglist></arglist>
     </member>
@@ -68682,6 +68704,31 @@
       <type>static bool</type>
       <name>Pending</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE::SWIGPendingException</name>
+    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</filename>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>Set</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a82baf4e1ebc3af6128595ba8a17034c6</anchor>
+      <arglist>(global::System.Exception e)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static global::System.Exception</type>
+      <name>Retrieve</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a99561aa89dd816ba2dd85af036e32227</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="property" static="yes">
+      <type>static bool</type>
+      <name>Pending</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
       <anchor>a7c98814d2667a9273c95e975fd320b6c</anchor>
       <arglist></arglist>
     </member>
@@ -68737,6 +68784,42 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>Google::OrTools::Algorithms::operations_research_algorithmsPINVOKE::SWIGStringHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html</filename>
+    <member kind="function">
+      <type>delegate string</type>
+      <name>SWIGStringDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>a09806292f70eb61f70057ee6fd528c34</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterStringCallback_operations_research_algorithms</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>abae544aa94ecba5f3bb316e1cebba97f</anchor>
+      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::ConstraintSolver::operations_research_constraint_solverPINVOKE::SWIGStringHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGStringHelper.html</filename>
+    <member kind="function">
+      <type>delegate string</type>
+      <name>SWIGStringDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>a09806292f70eb61f70057ee6fd528c34</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterStringCallback_operations_research_constraint_solver</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>ac9adff8a435815a9ef0bd8865c012bcf</anchor>
+      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>Google::OrTools::Graph::operations_research_graphPINVOKE::SWIGStringHelper</name>
     <filename>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGStringHelper.html</filename>
     <member kind="function">
@@ -68751,6 +68834,24 @@
       <name>SWIGRegisterStringCallback_operations_research_graph</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGStringHelper.html</anchorfile>
       <anchor>a6cd5f5702d713b53ce34ef5079c50682</anchor>
+      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE::SWIGStringHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGStringHelper.html</filename>
+    <member kind="function">
+      <type>delegate string</type>
+      <name>SWIGStringDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>a09806292f70eb61f70057ee6fd528c34</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterStringCallback_operations_research_linear_solver</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>aef4f16365d83b1d89815a95ef48a0003</anchor>
       <arglist>(SWIGStringDelegate stringDelegate)</arglist>
     </member>
   </compound>
@@ -68787,60 +68888,6 @@
       <name>SWIGRegisterStringCallback_operations_research_util</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGStringHelper.html</anchorfile>
       <anchor>a50fcf56fc9d5220e2a190ad58881e4af</anchor>
-      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE::SWIGStringHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGStringHelper.html</filename>
-    <member kind="function">
-      <type>delegate string</type>
-      <name>SWIGStringDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>a09806292f70eb61f70057ee6fd528c34</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterStringCallback_operations_research_linear_solver</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>aef4f16365d83b1d89815a95ef48a0003</anchor>
-      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::ConstraintSolver::operations_research_constraint_solverPINVOKE::SWIGStringHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGStringHelper.html</filename>
-    <member kind="function">
-      <type>delegate string</type>
-      <name>SWIGStringDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>a09806292f70eb61f70057ee6fd528c34</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterStringCallback_operations_research_constraint_solver</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>ac9adff8a435815a9ef0bd8865c012bcf</anchor>
-      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Algorithms::operations_research_algorithmsPINVOKE::SWIGStringHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html</filename>
-    <member kind="function">
-      <type>delegate string</type>
-      <name>SWIGStringDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>a09806292f70eb61f70057ee6fd528c34</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterStringCallback_operations_research_algorithms</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>abae544aa94ecba5f3bb316e1cebba97f</anchor>
       <arglist>(SWIGStringDelegate stringDelegate)</arglist>
     </member>
   </compound>
@@ -69967,32 +70014,43 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Sat::DecisionStrategyProto::Types</name>
-    <filename>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html</filename>
-    <class kind="class">Google::OrTools::Sat::DecisionStrategyProto::Types::AffineTransformation</class>
+    <name>Google::OrTools::ConstraintSolver::ConstraintSolverParameters::Types</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html</filename>
     <member kind="enumeration">
       <type></type>
-      <name>VariableSelectionStrategy</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html</anchorfile>
-      <anchor>ab1ab0981c6778450a475665a5958801f</anchor>
+      <name>TrailCompression</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html</anchorfile>
+      <anchor>a00935459e4b73bd96feed637daa08c81</anchor>
       <arglist></arglist>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa20a038f30cb4756f1fc6cca6763efa53">ChooseFirst</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa356b429f7d36cd0017559c549d971da3">ChooseLowestMin</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa8648ed23be60e735c060dfaf91dea38c">ChooseHighestMax</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa2f7b2335ebea02ad66b62210e5e1446a">ChooseMinDomainSize</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa71e59630759dd45e4e49d0f2126b2414">ChooseMaxDomainSize</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html" anchor="a00935459e4b73bd96feed637daa08c81a48ecb2dc57692eca74074d9ad9fd4890">NoCompression</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html" anchor="a00935459e4b73bd96feed637daa08c81af3564e3865c79bf16f847612f41938c3">CompressWithZlib</enumvalue>
     </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::ConstraintSolver::FirstSolutionStrategy::Types</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html</filename>
     <member kind="enumeration">
       <type></type>
-      <name>DomainReductionStrategy</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html</anchorfile>
-      <anchor>ae17715e4689c1665ecc8d75f1fd97b9c</anchor>
+      <name>Value</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html</anchorfile>
+      <anchor>a896c037a32087c5c20d97e64a1786880</anchor>
       <arglist></arglist>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9ca1875282f148b62ca5496ff62ecf7fcb3">SelectMinValue</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9ca801ed31e8a61b786c0053ba613c9a7e6">SelectMaxValue</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9ca287c7d1e4bb8b247353867425494399e">SelectLowerHalf</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9cabb845bb89078e95ab5b64cd1130474c2">SelectUpperHalf</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9ca1b69d85ba6efd4971b0df87c5188a3b1">SelectMedianValue</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880ac9f88e098f6fe4e4e112eeb05ccb9671">Unset</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a086247a9b57fde6eefee2a0c4752242d">Automatic</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880afabfac3f293171b27129b62f01763ea5">PathCheapestArc</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a1e0911afce171548016e1262ca4cfc78">PathMostConstrainedArc</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880aa5ffc082c74d7f8c702155a6efce4cf4">EvaluatorStrategy</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880aab0da0e987457927aebb5111d5d32c12">Savings</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a8e9014ddfce21beb1b3cd7da888cbdea">Sweep</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a6c8581a1eb3b87228f884a7c05f0c34e">Christofides</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a1d6156004a7044ffd2929ad295beb903">AllUnperformed</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880ade71c45f580d33ad42d2adfc24cb4e95">BestInsertion</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a7a02e970bff8e147c24df62820ab6b83">ParallelCheapestInsertion</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880afe9e99a60a3db81b85536bc3e66d2957">SequentialCheapestInsertion</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a64c868f9c5a4ff2fd61a48e64f633cc1">LocalCheapestInsertion</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a0830ffde34397bae96ca6d7301dfbb3a">GlobalCheapestArc</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880ad8f6fc249fb502b8ad0fb30eea3e67c7">LocalCheapestArc</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880abde1196f82e1896a9b57b7a13c796967">FirstUnboundMinValue</enumvalue>
     </member>
   </compound>
   <compound kind="class">
@@ -70030,43 +70088,32 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::ConstraintSolver::FirstSolutionStrategy::Types</name>
-    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html</filename>
+    <name>Google::OrTools::Sat::DecisionStrategyProto::Types</name>
+    <filename>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html</filename>
+    <class kind="class">Google::OrTools::Sat::DecisionStrategyProto::Types::AffineTransformation</class>
     <member kind="enumeration">
       <type></type>
-      <name>Value</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html</anchorfile>
-      <anchor>a896c037a32087c5c20d97e64a1786880</anchor>
+      <name>VariableSelectionStrategy</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html</anchorfile>
+      <anchor>ab1ab0981c6778450a475665a5958801f</anchor>
       <arglist></arglist>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880ac9f88e098f6fe4e4e112eeb05ccb9671">Unset</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a086247a9b57fde6eefee2a0c4752242d">Automatic</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880afabfac3f293171b27129b62f01763ea5">PathCheapestArc</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a1e0911afce171548016e1262ca4cfc78">PathMostConstrainedArc</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880aa5ffc082c74d7f8c702155a6efce4cf4">EvaluatorStrategy</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880aab0da0e987457927aebb5111d5d32c12">Savings</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a8e9014ddfce21beb1b3cd7da888cbdea">Sweep</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a6c8581a1eb3b87228f884a7c05f0c34e">Christofides</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a1d6156004a7044ffd2929ad295beb903">AllUnperformed</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880ade71c45f580d33ad42d2adfc24cb4e95">BestInsertion</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a7a02e970bff8e147c24df62820ab6b83">ParallelCheapestInsertion</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880afe9e99a60a3db81b85536bc3e66d2957">SequentialCheapestInsertion</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a64c868f9c5a4ff2fd61a48e64f633cc1">LocalCheapestInsertion</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880a0830ffde34397bae96ca6d7301dfbb3a">GlobalCheapestArc</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880ad8f6fc249fb502b8ad0fb30eea3e67c7">LocalCheapestArc</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a896c037a32087c5c20d97e64a1786880abde1196f82e1896a9b57b7a13c796967">FirstUnboundMinValue</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa20a038f30cb4756f1fc6cca6763efa53">ChooseFirst</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa356b429f7d36cd0017559c549d971da3">ChooseLowestMin</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa8648ed23be60e735c060dfaf91dea38c">ChooseHighestMax</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa2f7b2335ebea02ad66b62210e5e1446a">ChooseMinDomainSize</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ab1ab0981c6778450a475665a5958801fa71e59630759dd45e4e49d0f2126b2414">ChooseMaxDomainSize</enumvalue>
     </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::ConstraintSolver::ConstraintSolverParameters::Types</name>
-    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html</filename>
     <member kind="enumeration">
       <type></type>
-      <name>TrailCompression</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html</anchorfile>
-      <anchor>a00935459e4b73bd96feed637daa08c81</anchor>
+      <name>DomainReductionStrategy</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html</anchorfile>
+      <anchor>ae17715e4689c1665ecc8d75f1fd97b9c</anchor>
       <arglist></arglist>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html" anchor="a00935459e4b73bd96feed637daa08c81a48ecb2dc57692eca74074d9ad9fd4890">NoCompression</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters_1_1Types.html" anchor="a00935459e4b73bd96feed637daa08c81af3564e3865c79bf16f847612f41938c3">CompressWithZlib</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9ca1875282f148b62ca5496ff62ecf7fcb3">SelectMinValue</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9ca801ed31e8a61b786c0053ba613c9a7e6">SelectMaxValue</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9ca287c7d1e4bb8b247353867425494399e">SelectLowerHalf</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9cabb845bb89078e95ab5b64cd1130474c2">SelectUpperHalf</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types.html" anchor="ae17715e4689c1665ecc8d75f1fd97b9ca1b69d85ba6efd4971b0df87c5188a3b1">SelectMedianValue</enumvalue>
     </member>
   </compound>
   <compound kind="class">
@@ -71064,12 +71111,36 @@
   <compound kind="namespace">
     <name>Google::OrTools::ConstraintSolver</name>
     <filename>namespaceGoogle_1_1OrTools_1_1ConstraintSolver.html</filename>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntArrayHelper</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntervalVarArrayHelper</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntVarArrayHelper</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntVarVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::SearchMonitorVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::DecisionBuilderVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntervalVarVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::SequenceVarVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchOperatorVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchFilterVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::SymmetryBreakerVector</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::NetDecisionBuilder</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::NetDecision</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::NetDemon</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::NetConstraint</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntVarEnumerator</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntVarIterator</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::Solver</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntExpr</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::Constraint</class>
+    <class kind="interface">Google::OrTools::ConstraintSolver::IConstraintWithStatus</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::BaseEquality</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::WrappedConstraint</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::IntExprEquality</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::ConstraintEquality</class>
     <class kind="class">Google::OrTools::ConstraintSolver::Assignment</class>
     <class kind="class">Google::OrTools::ConstraintSolver::AssignmentElement</class>
     <class kind="class">Google::OrTools::ConstraintSolver::AssignmentIntContainer</class>
     <class kind="class">Google::OrTools::ConstraintSolver::AssignmentIntervalContainer</class>
     <class kind="class">Google::OrTools::ConstraintSolver::AssignmentSequenceContainer</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::BaseEquality</class>
     <class kind="class">Google::OrTools::ConstraintSolver::BaseIntExpr</class>
     <class kind="class">Google::OrTools::ConstraintSolver::BaseLns</class>
     <class kind="class">Google::OrTools::ConstraintSolver::BaseObject</class>
@@ -71077,56 +71148,34 @@
     <class kind="class">Google::OrTools::ConstraintSolver::BooleanVar</class>
     <class kind="class">Google::OrTools::ConstraintSolver::CastConstraint</class>
     <class kind="class">Google::OrTools::ConstraintSolver::ChangeValue</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::Constraint</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::ConstraintEquality</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::ConstraintSolverParameters</class>
     <class kind="class">Google::OrTools::ConstraintSolver::CPFeasibilityFilter</class>
     <class kind="class">Google::OrTools::ConstraintSolver::Decision</class>
     <class kind="class">Google::OrTools::ConstraintSolver::DecisionBuilder</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::DecisionBuilderVector</class>
     <class kind="class">Google::OrTools::ConstraintSolver::DecisionVisitor</class>
     <class kind="class">Google::OrTools::ConstraintSolver::DefaultPhaseParameters</class>
     <class kind="class">Google::OrTools::ConstraintSolver::Demon</class>
     <class kind="class">Google::OrTools::ConstraintSolver::DisjunctiveConstraint</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::FirstSolutionStrategy</class>
     <class kind="class">Google::OrTools::ConstraintSolver::GlobalVehicleBreaksConstraint</class>
-    <class kind="interface">Google::OrTools::ConstraintSolver::IConstraintWithStatus</class>
     <class kind="class">Google::OrTools::ConstraintSolver::ImprovementSearchLimit</class>
     <class kind="class">Google::OrTools::ConstraintSolver::Int64Vector</class>
     <class kind="class">Google::OrTools::ConstraintSolver::Int64VectorVector</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntArrayHelper</class>
     <class kind="class">Google::OrTools::ConstraintSolver::IntervalVar</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntervalVarArrayHelper</class>
     <class kind="class">Google::OrTools::ConstraintSolver::IntervalVarElement</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntervalVarVector</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntExpr</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntExprEquality</class>
     <class kind="class">Google::OrTools::ConstraintSolver::IntTupleSet</class>
     <class kind="class">Google::OrTools::ConstraintSolver::IntVar</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntVarArrayHelper</class>
     <class kind="class">Google::OrTools::ConstraintSolver::IntVarElement</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntVarEnumerator</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntVarIterator</class>
     <class kind="class">Google::OrTools::ConstraintSolver::IntVarLocalSearchFilter</class>
     <class kind="class">Google::OrTools::ConstraintSolver::IntVarLocalSearchOperator</class>
     <class kind="class">Google::OrTools::ConstraintSolver::IntVarLocalSearchOperatorTemplate</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::IntVarVector</class>
     <class kind="class">Google::OrTools::ConstraintSolver::IntVector</class>
     <class kind="class">Google::OrTools::ConstraintSolver::IntVectorVector</class>
     <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchFilter</class>
     <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchFilterManager</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchFilterVector</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchMetaheuristic</class>
     <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchMonitor</class>
     <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchOperator</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchOperatorVector</class>
     <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchPhaseParameters</class>
     <class kind="class">Google::OrTools::ConstraintSolver::ModelCache</class>
     <class kind="class">Google::OrTools::ConstraintSolver::ModelVisitor</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::NetConstraint</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::NetDecision</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::NetDecisionBuilder</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::NetDemon</class>
     <class kind="class">Google::OrTools::ConstraintSolver::operations_research_constraint_solver</class>
     <class kind="class">Google::OrTools::ConstraintSolver::operations_research_constraint_solverPINVOKE</class>
     <class kind="class">Google::OrTools::ConstraintSolver::OptimizeVar</class>
@@ -71135,39 +71184,37 @@
     <class kind="class">Google::OrTools::ConstraintSolver::PropagationBaseObject</class>
     <class kind="class">Google::OrTools::ConstraintSolver::PropagationMonitor</class>
     <class kind="class">Google::OrTools::ConstraintSolver::RegularLimit</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::RegularLimitParameters</class>
     <class kind="class">Google::OrTools::ConstraintSolver::RevBool</class>
     <class kind="class">Google::OrTools::ConstraintSolver::RevInteger</class>
     <class kind="class">Google::OrTools::ConstraintSolver::RevPartialSequence</class>
     <class kind="class">Google::OrTools::ConstraintSolver::RoutingDimension</class>
     <class kind="class">Google::OrTools::ConstraintSolver::RoutingEnumsReflection</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::FirstSolutionStrategy</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchMetaheuristic</class>
     <class kind="class">Google::OrTools::ConstraintSolver::RoutingIndexManager</class>
     <class kind="class">Google::OrTools::ConstraintSolver::RoutingModel</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModelParameters</class>
     <class kind="class">Google::OrTools::ConstraintSolver::RoutingModelVisitor</class>
     <class kind="class">Google::OrTools::ConstraintSolver::RoutingParametersReflection</class>
     <class kind="class">Google::OrTools::ConstraintSolver::RoutingSearchParameters</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RoutingModelParameters</class>
     <class kind="class">Google::OrTools::ConstraintSolver::SearchLimit</class>
     <class kind="class">Google::OrTools::ConstraintSolver::SearchLimitReflection</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::RegularLimitParameters</class>
     <class kind="class">Google::OrTools::ConstraintSolver::SearchLog</class>
     <class kind="class">Google::OrTools::ConstraintSolver::SearchMonitor</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::SearchMonitorVector</class>
     <class kind="class">Google::OrTools::ConstraintSolver::SequenceVar</class>
     <class kind="class">Google::OrTools::ConstraintSolver::SequenceVarElement</class>
     <class kind="class">Google::OrTools::ConstraintSolver::SequenceVarLocalSearchOperator</class>
     <class kind="class">Google::OrTools::ConstraintSolver::SequenceVarLocalSearchOperatorTemplate</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::SequenceVarVector</class>
     <class kind="class">Google::OrTools::ConstraintSolver::SolutionCollector</class>
     <class kind="class">Google::OrTools::ConstraintSolver::SolutionPool</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::Solver</class>
     <class kind="class">Google::OrTools::ConstraintSolver::SolverParametersReflection</class>
+    <class kind="class">Google::OrTools::ConstraintSolver::ConstraintSolverParameters</class>
     <class kind="class">Google::OrTools::ConstraintSolver::SymmetryBreaker</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::SymmetryBreakerVector</class>
     <class kind="class">Google::OrTools::ConstraintSolver::TypeIncompatibilityChecker</class>
     <class kind="class">Google::OrTools::ConstraintSolver::TypeRegulationsChecker</class>
     <class kind="class">Google::OrTools::ConstraintSolver::TypeRegulationsConstraint</class>
     <class kind="class">Google::OrTools::ConstraintSolver::TypeRequirementChecker</class>
-    <class kind="class">Google::OrTools::ConstraintSolver::WrappedConstraint</class>
     <member kind="function">
       <type>delegate string</type>
       <name>VoidToString</name>
@@ -71268,77 +71315,77 @@
     <filename>namespaceGoogle_1_1OrTools_1_1LinearSolver.html</filename>
     <class kind="class">Google::OrTools::LinearSolver::Constraint</class>
     <class kind="class">Google::OrTools::LinearSolver::DoubleVector</class>
-    <class kind="class">Google::OrTools::LinearSolver::Equality</class>
     <class kind="class">Google::OrTools::LinearSolver::Int64Vector</class>
     <class kind="class">Google::OrTools::LinearSolver::Int64VectorVector</class>
     <class kind="class">Google::OrTools::LinearSolver::IntVector</class>
     <class kind="class">Google::OrTools::LinearSolver::IntVectorVector</class>
-    <class kind="class">Google::OrTools::LinearSolver::LinearConstraint</class>
-    <class kind="class">Google::OrTools::LinearSolver::LinearExpr</class>
-    <class kind="class">Google::OrTools::LinearSolver::LinearExprArrayHelper</class>
     <class kind="class">Google::OrTools::LinearSolver::MPConstraintVector</class>
     <class kind="class">Google::OrTools::LinearSolver::MPSolverParameters</class>
     <class kind="class">Google::OrTools::LinearSolver::MPVariableVector</class>
     <class kind="class">Google::OrTools::LinearSolver::Objective</class>
     <class kind="class">Google::OrTools::LinearSolver::operations_research_linear_solver</class>
     <class kind="class">Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE</class>
-    <class kind="class">Google::OrTools::LinearSolver::ProductCst</class>
-    <class kind="class">Google::OrTools::LinearSolver::RangeConstraint</class>
     <class kind="class">Google::OrTools::LinearSolver::Solver</class>
+    <class kind="class">Google::OrTools::LinearSolver::Variable</class>
+    <class kind="class">Google::OrTools::LinearSolver::LinearConstraint</class>
+    <class kind="class">Google::OrTools::LinearSolver::RangeConstraint</class>
+    <class kind="class">Google::OrTools::LinearSolver::Equality</class>
+    <class kind="class">Google::OrTools::LinearSolver::VarEquality</class>
+    <class kind="class">Google::OrTools::LinearSolver::LinearExpr</class>
+    <class kind="class">Google::OrTools::LinearSolver::LinearExprArrayHelper</class>
+    <class kind="class">Google::OrTools::LinearSolver::ProductCst</class>
+    <class kind="class">Google::OrTools::LinearSolver::SumCst</class>
+    <class kind="class">Google::OrTools::LinearSolver::VarWrapper</class>
     <class kind="class">Google::OrTools::LinearSolver::Sum</class>
     <class kind="class">Google::OrTools::LinearSolver::SumArray</class>
-    <class kind="class">Google::OrTools::LinearSolver::SumCst</class>
     <class kind="class">Google::OrTools::LinearSolver::SumVarArray</class>
-    <class kind="class">Google::OrTools::LinearSolver::VarEquality</class>
-    <class kind="class">Google::OrTools::LinearSolver::Variable</class>
-    <class kind="class">Google::OrTools::LinearSolver::VarWrapper</class>
   </compound>
   <compound kind="namespace">
     <name>Google::OrTools::Sat</name>
     <filename>namespaceGoogle_1_1OrTools_1_1Sat.html</filename>
-    <class kind="class">Google::OrTools::Sat::AllDifferentConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::AutomatonConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::BoolArgumentProto</class>
-    <class kind="class">Google::OrTools::Sat::BoundedLinearExpression</class>
-    <class kind="class">Google::OrTools::Sat::CircuitConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::Constraint</class>
-    <class kind="class">Google::OrTools::Sat::ConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::CpModel</class>
-    <class kind="class">Google::OrTools::Sat::CpModelProto</class>
     <class kind="class">Google::OrTools::Sat::CpModelReflection</class>
-    <class kind="class">Google::OrTools::Sat::CpObjectiveProto</class>
-    <class kind="class">Google::OrTools::Sat::CpSolver</class>
-    <class kind="class">Google::OrTools::Sat::CpSolverResponse</class>
-    <class kind="class">Google::OrTools::Sat::CpSolverSolutionCallback</class>
-    <class kind="class">Google::OrTools::Sat::CumulativeConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::DecisionStrategyProto</class>
-    <class kind="class">Google::OrTools::Sat::ElementConstraintProto</class>
-    <class kind="interface">Google::OrTools::Sat::ILiteral</class>
-    <class kind="class">Google::OrTools::Sat::IntegerArgumentProto</class>
     <class kind="class">Google::OrTools::Sat::IntegerVariableProto</class>
-    <class kind="class">Google::OrTools::Sat::IntervalConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::IntervalVar</class>
-    <class kind="class">Google::OrTools::Sat::IntVar</class>
-    <class kind="class">Google::OrTools::Sat::IntVarArrayHelper</class>
-    <class kind="class">Google::OrTools::Sat::InverseConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::LinearArgumentProto</class>
-    <class kind="class">Google::OrTools::Sat::LinearConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::LinearExpr</class>
+    <class kind="class">Google::OrTools::Sat::BoolArgumentProto</class>
+    <class kind="class">Google::OrTools::Sat::IntegerArgumentProto</class>
     <class kind="class">Google::OrTools::Sat::LinearExpressionProto</class>
-    <class kind="class">Google::OrTools::Sat::NoOverlap2DConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::LinearArgumentProto</class>
+    <class kind="class">Google::OrTools::Sat::AllDifferentConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::LinearConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::ElementConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::IntervalConstraintProto</class>
     <class kind="class">Google::OrTools::Sat::NoOverlapConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::NotBooleanVariable</class>
-    <class kind="class">Google::OrTools::Sat::ObjectiveSolutionPrinter</class>
+    <class kind="class">Google::OrTools::Sat::NoOverlap2DConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::CumulativeConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::ReservoirConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::CircuitConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::RoutesConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::TableConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::InverseConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::AutomatonConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::ConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::CpObjectiveProto</class>
+    <class kind="class">Google::OrTools::Sat::DecisionStrategyProto</class>
+    <class kind="class">Google::OrTools::Sat::PartialVariableAssignment</class>
+    <class kind="class">Google::OrTools::Sat::CpModelProto</class>
+    <class kind="class">Google::OrTools::Sat::CpSolverResponse</class>
     <class kind="class">Google::OrTools::Sat::operations_research_sat</class>
     <class kind="class">Google::OrTools::Sat::operations_research_satPINVOKE</class>
-    <class kind="class">Google::OrTools::Sat::PartialVariableAssignment</class>
-    <class kind="class">Google::OrTools::Sat::ProductCst</class>
-    <class kind="class">Google::OrTools::Sat::ReservoirConstraintProto</class>
-    <class kind="class">Google::OrTools::Sat::RoutesConstraintProto</class>
     <class kind="class">Google::OrTools::Sat::SatHelper</class>
     <class kind="class">Google::OrTools::Sat::SolutionCallback</class>
+    <class kind="class">Google::OrTools::Sat::Constraint</class>
+    <class kind="class">Google::OrTools::Sat::CpModel</class>
+    <class kind="class">Google::OrTools::Sat::CpSolver</class>
+    <class kind="class">Google::OrTools::Sat::IntVarArrayHelper</class>
+    <class kind="interface">Google::OrTools::Sat::ILiteral</class>
+    <class kind="class">Google::OrTools::Sat::LinearExpr</class>
+    <class kind="class">Google::OrTools::Sat::ProductCst</class>
     <class kind="class">Google::OrTools::Sat::SumArray</class>
-    <class kind="class">Google::OrTools::Sat::TableConstraintProto</class>
+    <class kind="class">Google::OrTools::Sat::IntVar</class>
+    <class kind="class">Google::OrTools::Sat::NotBooleanVariable</class>
+    <class kind="class">Google::OrTools::Sat::BoundedLinearExpression</class>
+    <class kind="class">Google::OrTools::Sat::IntervalVar</class>
+    <class kind="class">Google::OrTools::Sat::CpSolverSolutionCallback</class>
+    <class kind="class">Google::OrTools::Sat::ObjectiveSolutionPrinter</class>
     <member kind="enumeration">
       <type></type>
       <name>CpSolverStatus</name>

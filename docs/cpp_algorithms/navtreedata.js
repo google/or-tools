@@ -25,8 +25,45 @@
 var NAVTREE =
 [
   [ "Algorithms", "index.html", [
-    [ "Namespaces", "namespaces.html", null ],
-    [ "Classes", "annotated.html", null ],
+    [ "Namespaces", "namespaces.html", [
+      [ "DenseDoublyLinkedList", "classoperations__research_1_1_dense_doubly_linked_list.html", "classoperations__research_1_1_dense_doubly_linked_list" ],
+      [ "DynamicPartition", "classoperations__research_1_1_dynamic_partition.html", "classoperations__research_1_1_dynamic_partition" ],
+      [ "MergingPartition", "classoperations__research_1_1_merging_partition.html", "classoperations__research_1_1_merging_partition" ],
+      [ "DynamicPermutation", "classoperations__research_1_1_dynamic_permutation.html", "classoperations__research_1_1_dynamic_permutation" ],
+      [ "GraphSymmetryFinder", "classoperations__research_1_1_graph_symmetry_finder.html", "classoperations__research_1_1_graph_symmetry_finder" ],
+      [ "KnapsackSolver", "classoperations__research_1_1_knapsack_solver.html", "classoperations__research_1_1_knapsack_solver" ],
+      [ "KnapsackAssignment", "structoperations__research_1_1_knapsack_assignment.html", "structoperations__research_1_1_knapsack_assignment" ],
+      [ "KnapsackItem", "structoperations__research_1_1_knapsack_item.html", "structoperations__research_1_1_knapsack_item" ],
+      [ "KnapsackSearchNode", "classoperations__research_1_1_knapsack_search_node.html", "classoperations__research_1_1_knapsack_search_node" ],
+      [ "KnapsackSearchPath", "classoperations__research_1_1_knapsack_search_path.html", "classoperations__research_1_1_knapsack_search_path" ],
+      [ "KnapsackState", "classoperations__research_1_1_knapsack_state.html", "classoperations__research_1_1_knapsack_state" ],
+      [ "KnapsackPropagator", "classoperations__research_1_1_knapsack_propagator.html", "classoperations__research_1_1_knapsack_propagator" ],
+      [ "KnapsackCapacityPropagator", "classoperations__research_1_1_knapsack_capacity_propagator.html", "classoperations__research_1_1_knapsack_capacity_propagator" ],
+      [ "BaseKnapsackSolver", "classoperations__research_1_1_base_knapsack_solver.html", "classoperations__research_1_1_base_knapsack_solver" ],
+      [ "KnapsackGenericSolver", "classoperations__research_1_1_knapsack_generic_solver.html", "classoperations__research_1_1_knapsack_generic_solver" ],
+      [ "SparsePermutation", "classoperations__research_1_1_sparse_permutation.html", "classoperations__research_1_1_sparse_permutation" ],
+      [ "KnapsackItemPtr", "namespaceoperations__research.html#ada7d9b46f657c6053a197273a85043a7", null ],
+      [ "MaximizeLinearAssignment", "namespaceoperations__research.html#ada8ccc36ef736b10ce389fbd347c4282", null ],
+      [ "MinimizeLinearAssignment", "namespaceoperations__research.html#a9c61bb2d6de0894f19675e2110458877", null ]
+    ] ],
+    [ "Classes", "annotated.html", [
+      [ "DenseDoublyLinkedList", "classoperations__research_1_1_dense_doubly_linked_list.html", "classoperations__research_1_1_dense_doubly_linked_list" ],
+      [ "DynamicPartition", "classoperations__research_1_1_dynamic_partition.html", "classoperations__research_1_1_dynamic_partition" ],
+      [ "MergingPartition", "classoperations__research_1_1_merging_partition.html", "classoperations__research_1_1_merging_partition" ],
+      [ "DynamicPermutation", "classoperations__research_1_1_dynamic_permutation.html", "classoperations__research_1_1_dynamic_permutation" ],
+      [ "GraphSymmetryFinder", "classoperations__research_1_1_graph_symmetry_finder.html", "classoperations__research_1_1_graph_symmetry_finder" ],
+      [ "KnapsackSolver", "classoperations__research_1_1_knapsack_solver.html", "classoperations__research_1_1_knapsack_solver" ],
+      [ "KnapsackAssignment", "structoperations__research_1_1_knapsack_assignment.html", "structoperations__research_1_1_knapsack_assignment" ],
+      [ "KnapsackItem", "structoperations__research_1_1_knapsack_item.html", "structoperations__research_1_1_knapsack_item" ],
+      [ "KnapsackSearchNode", "classoperations__research_1_1_knapsack_search_node.html", "classoperations__research_1_1_knapsack_search_node" ],
+      [ "KnapsackSearchPath", "classoperations__research_1_1_knapsack_search_path.html", "classoperations__research_1_1_knapsack_search_path" ],
+      [ "KnapsackState", "classoperations__research_1_1_knapsack_state.html", "classoperations__research_1_1_knapsack_state" ],
+      [ "KnapsackPropagator", "classoperations__research_1_1_knapsack_propagator.html", "classoperations__research_1_1_knapsack_propagator" ],
+      [ "KnapsackCapacityPropagator", "classoperations__research_1_1_knapsack_capacity_propagator.html", "classoperations__research_1_1_knapsack_capacity_propagator" ],
+      [ "BaseKnapsackSolver", "classoperations__research_1_1_base_knapsack_solver.html", "classoperations__research_1_1_base_knapsack_solver" ],
+      [ "KnapsackGenericSolver", "classoperations__research_1_1_knapsack_generic_solver.html", "classoperations__research_1_1_knapsack_generic_solver" ],
+      [ "SparsePermutation", "classoperations__research_1_1_sparse_permutation.html", "classoperations__research_1_1_sparse_permutation" ]
+    ] ],
     [ "Files", "files.html", null ]
   ] ]
 ];

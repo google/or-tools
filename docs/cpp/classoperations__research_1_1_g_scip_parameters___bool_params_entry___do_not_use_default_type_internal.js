@@ -1,0 +1,4 @@
+var classoperations__research_1_1_g_scip_parameters___bool_params_entry___do_not_use_default_type_internal =
+[
+    [ "_instance", "classoperations__research_1_1_g_scip_parameters___bool_params_entry___do_not_use_default_type_internal.html#a08540632b4164cd4285fdb1d3aa35bca", null ]
+];

@@ -8,5 +8,5 @@ var searchData=
   ['getroot_42',['GetRoot',['../classoperations__research_1_1_merging_partition.html#ae3df79e84e453454062c2c3789b7828e',1,'operations_research::MergingPartition']]],
   ['getrootandcompresspath_43',['GetRootAndCompressPath',['../classoperations__research_1_1_merging_partition.html#ac64dbed5d9196b941f3f53862f77309d',1,'operations_research::MergingPartition']]],
   ['graph_44',['Graph',['../classoperations__research_1_1_graph_symmetry_finder.html#a84f705240fd04d39747187079208d4bf',1,'operations_research::GraphSymmetryFinder']]],
-  ['graphsymmetryfinder_45',['GraphSymmetryFinder',['../classoperations__research_1_1_graph_symmetry_finder.html',1,'GraphSymmetryFinder'],['../classoperations__research_1_1_graph_symmetry_finder.html#af0ae1a4d86cfcf11128fe60ea0f8d20b',1,'operations_research::GraphSymmetryFinder::GraphSymmetryFinder()']]]
+  ['graphsymmetryfinder_45',['GraphSymmetryFinder',['../classoperations__research_1_1_graph_symmetry_finder.html#af0ae1a4d86cfcf11128fe60ea0f8d20b',1,'operations_research::GraphSymmetryFinder::GraphSymmetryFinder()'],['../classoperations__research_1_1_graph_symmetry_finder.html',1,'GraphSymmetryFinder']]]
 ];
