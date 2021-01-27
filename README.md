@@ -75,6 +75,7 @@ This software suite is composed of the following components:
     *   [linear_solver](ortools/linear_solver) Linear solver wrapper.
         *   [samples](ortools/linear_solver/samples) Carefully crafted samples.
     *   [glop](ortools/glop) Google linear solver.
+        *   [samples](ortools/glop/samples) Carefully crafted samples.
     *   [lp_data](ortools/lp_data) Data structures for linear models.
     *   [constraint_solver](ortools/constraint_solver) Constraint and Routing
         solver.

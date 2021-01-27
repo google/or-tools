@@ -993,8 +993,8 @@ class IntVarLocalSearchHandler {
 /// derived C++ class.
 // TODO(user): find a way to move this code back to the .i file, where it
 /// belongs.
-/// In python, we use a allow-list to expose the API. This list must also be extended
-/// here.
+/// In python, we use an allow-list to expose the API. This list must also
+/// be extended here.
 #if defined(SWIGPYTHON)
 // clang-format off
 %unignore VarLocalSearchOperator<IntVar, int64,
