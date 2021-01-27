@@ -33,6 +33,7 @@ OR-Tools depends on severals mandatory libraries.
 <a name="build"></a>
 ## Compilation
 You must compile OR-Tools using C++17:
+
 * on UNIX: `--cxxopt=-std=c++17`
 * on Windows when using MSVC: `--cxxopt="-std:c++17"`
 
