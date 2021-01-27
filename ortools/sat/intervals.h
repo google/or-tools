@@ -424,7 +424,7 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   std::vector<Literal> literal_reason_;
   std::vector<IntegerLiteral> integer_reason_;
 
-  // Optional 'slave' helper used in the diffn constraint.
+  // Optional 'proxy' helper used in the diffn constraint.
   SchedulingConstraintHelper* other_helper_ = nullptr;
   IntegerValue event_for_other_helper_;
   std::vector<bool> already_added_to_other_reasons_;
