@@ -1,4 +1,3 @@
-<summary>
 This directory contains data structures and algorithms for graph and
 network flow problems.
 
@@ -8,7 +7,6 @@ It contains in particular:
 - well-tuned algorithms (for example shortest paths and Hamiltonian paths.)
 - hard-to-find algorithms (Hamiltonian paths, push-relabel flow algorithms.)
 - other, more common algorithm, that are useful to use with EbertGraph.
-</summary>
 
 Graph representations:
 - ebert_graph.h: Entry point for a directed graph class.
@@ -25,7 +23,7 @@ Paths:
   algorithm (Does not need ebert_graph.h or digraph.h.)
 
 Graph decompositions:
-- connectivity.h: Entry point for computing connected components in an
+- connected_components.h: Entry point for computing connected components in an
   undirected graph. (Does not need ebert_graph.h or digraph.h.)
 
 - strongly_connected_components.h: Entry point for computing the strongly
@@ -44,16 +42,11 @@ Flow algorithms:
 - max_flow.h: Entry point for computing maximum flows on directed graphs with
   arc capacities, based on a push-relabel algorithm of Goldberg and Tarjan.
 
-- min_cost_flow.h: Entry point for computing minimun-cost flows on directed
+- min_cost_flow.h: Entry point for computing minimum-cost flows on directed
   graphs with arc capacities, arc costs, and supplies/demands at nodes, based on
   a push-relabel algorithm of Goldberg and Tarjan.
 
 - flow.swig: SWIG instructions to wrap the C++ library in Python and Java.
 
-C++ examples are available in the examples directory alongside the
-graph directory.
-
-Python examples are available in the python directory alongside the
-graph library.
-
-Java examples are available in the examples/com/google/ortools directory.
+C++, Python, Javan and .Net samples are available in the [samples](samples)
+directory.
