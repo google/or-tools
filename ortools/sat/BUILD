@@ -305,6 +305,7 @@ cc_library(
         ":cp_model_expand",
         ":cp_model_loader",
         ":cp_model_objective",
+        ":cp_model_symmetries",
         ":cp_model_utils",
         ":presolve_context",
         ":presolve_util",
@@ -562,6 +563,17 @@ cc_library(
         "//ortools/base:strong_vector",
         "//ortools/util:stats",
         "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "symmetry_util",
+    srcs = ["symmetry_util.cc"],
+    hdrs = ["symmetry_util.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/algorithms:dynamic_partition",
+        "//ortools/algorithms:sparse_permutation",
     ],
 )
 
@@ -1307,7 +1319,9 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
+        ":presolve_context",
         ":sat_parameters_cc_proto",
+        ":symmetry_util",
         "//ortools/algorithms:find_graph_symmetries",
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base:hash",

@@ -43,6 +43,7 @@
 #include "ortools/sat/cp_model_expand.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_objective.h"
+#include "ortools/sat/cp_model_symmetries.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/probing.h"
@@ -341,34 +342,57 @@ bool CpModelPresolver::PresolveBoolAnd(ConstraintProto* ct) {
   return changed;
 }
 
-bool CpModelPresolver::PresolveAtMostOne(ConstraintProto* ct) {
-  if (context_->ModelIsUnsat()) return false;
-  CHECK(!HasEnforcementLiteral(*ct));
+bool CpModelPresolver::PresolveAtMostOrExactlyOne(ConstraintProto* ct) {
+  const bool is_at_most_one =
+      ct->constraint_case() == ConstraintProto::kAtMostOne;
+  const std::string name = is_at_most_one ? "at_most_one: " : "exactly_one: ";
+  auto* literals = is_at_most_one
+                       ? ct->mutable_at_most_one()->mutable_literals()
+                       : ct->mutable_exactly_one()->mutable_literals();
 
-  // An at most one with just one literal is always satisfied.
-  if (ct->at_most_one().literals_size() == 1) {
-    context_->UpdateRuleStats("at_most_one: size one");
-    return RemoveConstraint(ct);
-  }
-
-  // Fix to false any duplicate literals.
-  std::sort(ct->mutable_at_most_one()->mutable_literals()->begin(),
-            ct->mutable_at_most_one()->mutable_literals()->end());
-  int previous = kint32max;
-  for (const int literal : ct->at_most_one().literals()) {
-    if (literal == previous) {
+  // Deal with duplicate variable reference.
+  context_->tmp_literal_set.clear();
+  for (const int literal : *literals) {
+    if (context_->tmp_literal_set.contains(literal)) {
       if (!context_->SetLiteralToFalse(literal)) return true;
-      context_->UpdateRuleStats("at_most_one: duplicate literals");
+      context_->UpdateRuleStats(absl::StrCat(name, "duplicate literals"));
     }
-    previous = literal;
+    if (context_->tmp_literal_set.contains(NegatedRef(literal))) {
+      int num_positive = 0;
+      int num_negative = 0;
+      for (const int other : *literals) {
+        if (PositiveRef(other) != PositiveRef(literal)) {
+          if (!context_->SetLiteralToFalse(other)) return true;
+          context_->UpdateRuleStats(absl::StrCat(name, "x and not(x)"));
+        } else {
+          if (other == literal) {
+            ++num_positive;
+          } else {
+            ++num_negative;
+          }
+        }
+      }
+
+      // This is tricky for the case where the at most one reduce to (lit,
+      // not(lit), not(lit)) for instance.
+      if (num_positive > 1 && !context_->SetLiteralToFalse(literal)) {
+        return true;
+      }
+      if (num_negative > 1 && !context_->SetLiteralToTrue(literal)) {
+        return true;
+      }
+      return RemoveConstraint(ct);
+    }
+    context_->tmp_literal_set.insert(literal);
   }
 
+  // Remove fixed variables.
   bool changed = false;
   context_->tmp_literals.clear();
-  for (const int literal : ct->at_most_one().literals()) {
+  for (const int literal : *literals) {
     if (context_->LiteralIsTrue(literal)) {
-      context_->UpdateRuleStats("at_most_one: satisfied");
-      for (const int other : ct->at_most_one().literals()) {
+      context_->UpdateRuleStats(absl::StrCat(name, "satisfied"));
+      for (const int other : *literals) {
         if (other != literal) {
           if (!context_->SetLiteralToFalse(other)) return true;
         }
@@ -385,102 +409,71 @@ bool CpModelPresolver::PresolveAtMostOne(ConstraintProto* ct) {
     // code in var_domination.cc, so maybe we don't need it here.
     if (context_->VariableIsUniqueAndRemovable(literal) ||
         context_->VariableWithCostIsUniqueAndRemovable(literal)) {
-      context_->UpdateRuleStats("TODO at_most_one: singleton");
+      context_->UpdateRuleStats("TODO [exactly/at_most]_one: singleton");
     }
 
     context_->tmp_literals.push_back(literal);
   }
-  if (context_->tmp_literals.empty()) {
-    context_->UpdateRuleStats("at_most_one: all false");
-    return RemoveConstraint(ct);
-  }
 
   if (changed) {
-    ct->mutable_at_most_one()->mutable_literals()->Clear();
+    literals->Clear();
     for (const int lit : context_->tmp_literals) {
-      ct->mutable_at_most_one()->add_literals(lit);
+      literals->Add(lit);
     }
-    context_->UpdateRuleStats("at_most_one: removed literals");
+    context_->UpdateRuleStats(absl::StrCat(name, "removed literals"));
   }
   return changed;
 }
 
-// TODO(user): This is really close to the at most one code. Try to remove
-// duplication.
+bool CpModelPresolver::PresolveAtMostOne(ConstraintProto* ct) {
+  if (context_->ModelIsUnsat()) return false;
+  CHECK(!HasEnforcementLiteral(*ct));
+  const bool changed = PresolveAtMostOrExactlyOne(ct);
+  if (ct->constraint_case() != ConstraintProto::kAtMostOne) return changed;
+
+  // Size zero: ok.
+  const auto& literals = ct->at_most_one().literals();
+  if (literals.empty()) {
+    context_->UpdateRuleStats("at_most_one: empty or all false");
+    return RemoveConstraint(ct);
+  }
+
+  // Size one: always satisfied.
+  if (literals.size() == 1) {
+    context_->UpdateRuleStats("at_most_one: size one");
+    return RemoveConstraint(ct);
+  }
+
+  return changed;
+}
+
 bool CpModelPresolver::PresolveExactlyOne(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   CHECK(!HasEnforcementLiteral(*ct));
+  const bool changed = PresolveAtMostOrExactlyOne(ct);
+  if (ct->constraint_case() != ConstraintProto::kExactlyOne) return changed;
 
-  {
-    // Size one: fix variable.
-    const auto& literals = ct->exactly_one().literals();
-    if (literals.size() == 1) {
-      context_->UpdateRuleStats("exactly_one: size one");
-      if (!context_->SetLiteralToTrue(literals[0])) return false;
-      return RemoveConstraint(ct);
-    }
-
-    // Size two: Equivalence.
-    if (literals.size() == 2) {
-      context_->UpdateRuleStats("exactly_one: size two");
-      context_->StoreBooleanEqualityRelation(literals[0],
-                                             NegatedRef(literals[1]));
-      return RemoveConstraint(ct);
-    }
-  }
-
-  // Fix to false any duplicate literals.
-  std::sort(ct->mutable_exactly_one()->mutable_literals()->begin(),
-            ct->mutable_exactly_one()->mutable_literals()->end());
-  int previous = kint32max;
-  for (const int literal : ct->exactly_one().literals()) {
-    if (literal == previous) {
-      if (!context_->SetLiteralToFalse(literal)) return true;
-      context_->UpdateRuleStats("exactly_one: duplicate literals");
-    }
-    previous = literal;
-  }
-
-  // Remove fixed variables.
-  bool changed = false;
-  context_->tmp_literals.clear();
-  for (const int literal : ct->exactly_one().literals()) {
-    if (context_->LiteralIsTrue(literal)) {
-      context_->UpdateRuleStats("exactly_one: satisfied");
-      for (const int other : ct->exactly_one().literals()) {
-        if (other != literal) {
-          if (!context_->SetLiteralToFalse(other)) return true;
-        }
-      }
-      return RemoveConstraint(ct);
-    }
-
-    if (context_->LiteralIsFalse(literal)) {
-      changed = true;
-      continue;
-    }
-
-    // TODO(user): We could remove the variable, and leave an at most one on
-    // the other. Even if there is an objective on this variable, we could
-    // transfer the cost to the other.
-    if (context_->VariableIsUniqueAndRemovable(literal) ||
-        context_->VariableWithCostIsUniqueAndRemovable(literal)) {
-      context_->UpdateRuleStats("TODO exactly_one: singleton");
-    }
-
-    context_->tmp_literals.push_back(literal);
-  }
-  if (context_->tmp_literals.empty()) {
+  // Size zero: UNSAT.
+  const auto& literals = ct->exactly_one().literals();
+  if (literals.empty()) {
     return context_->NotifyThatModelIsUnsat("exactly_one: empty or all false");
   }
 
-  if (changed) {
-    ct->mutable_exactly_one()->mutable_literals()->Clear();
-    for (const int lit : context_->tmp_literals) {
-      ct->mutable_exactly_one()->add_literals(lit);
-    }
-    context_->UpdateRuleStats("exactly_one: removed literals");
+  // Size one: fix variable.
+  if (literals.size() == 1) {
+    context_->UpdateRuleStats("exactly_one: size one");
+    if (!context_->SetLiteralToTrue(literals[0])) return false;
+    return RemoveConstraint(ct);
   }
+
+  // Size two: Equivalence.
+  if (literals.size() == 2) {
+    context_->UpdateRuleStats("exactly_one: size two");
+    context_->StoreBooleanEqualityRelation(literals[0],
+                                           NegatedRef(literals[1]));
+    return RemoveConstraint(ct);
+  }
+
   return changed;
 }
 
@@ -4348,6 +4341,7 @@ void CpModelPresolver::TransformIntoMaxCliques() {
       if (ct->enforcement_literal().size() != 1) continue;
       const Literal enforcement = convert(ct->enforcement_literal(0));
       for (const int ref : ct->bool_and().literals()) {
+        if (ref == ct->enforcement_literal(0)) continue;
         cliques.push_back({enforcement, convert(ref).Negated()});
       }
       if (RemoveConstraint(ct)) {
@@ -4401,6 +4395,9 @@ void CpModelPresolver::TransformIntoMaxCliques() {
             NegatedRef(literal.Variable().value()));
       }
     }
+
+    // Make sure we do not have duplicate variable reference.
+    PresolveAtMostOne(ct);
   }
   context_->UpdateNewConstraintsVariableUsage();
   if (num_new_cliques != num_old_cliques) {
@@ -5219,8 +5216,7 @@ bool CpModelPresolver::Presolve() {
 
     // TODO(user): do that and the pure-SAT part below more than once.
     if (context_->params().cp_model_probing_level() > 0) {
-      if (context_->time_limit() == nullptr ||
-          !context_->time_limit()->LimitReached()) {
+      if (!context_->time_limit()->LimitReached()) {
         Probe();
         PresolveToFixPoint();
       }
@@ -5230,8 +5226,7 @@ bool CpModelPresolver::Presolve() {
     // Note that because this can only remove/fix variable not used in the other
     // part of the problem, there is no need to redo more presolve afterwards.
     if (context_->params().cp_model_use_sat_presolve()) {
-      if (context_->time_limit() == nullptr ||
-          !context_->time_limit()->LimitReached()) {
+      if (!context_->time_limit()->LimitReached()) {
         PresolvePureSatPart();
       }
     }
@@ -5258,9 +5253,16 @@ bool CpModelPresolver::Presolve() {
 
     if (iter == 0) TransformIntoMaxCliques();
 
+    // TODO(user): Decide where is the best place for this. Fow now we do it
+    // after max clique to get all the bool_and converted to at most ones.
+    if (context_->params().detect_symmetries() && !context_->ModelIsUnsat() &&
+        !context_->time_limit()->LimitReached() &&
+        !context_->keep_all_feasible_solutions) {
+      DetectAndExploitSymmetriesInPresolve(context_);
+    }
+
     // Process set packing, partitioning and covering constraint.
-    if (context_->time_limit() == nullptr ||
-        !context_->time_limit()->LimitReached()) {
+    if (!context_->time_limit()->LimitReached()) {
       ProcessSetPPC();
       ExtractBoolAnd();
 

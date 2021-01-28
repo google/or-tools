@@ -20,6 +20,7 @@
 
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
@@ -30,6 +31,9 @@ namespace sat {
 // of variables of the problem. They are permutations of the (index
 // representation of the) problem variables.
 //
+// Note that we ignore the variables that appear in no constraint, instead of
+// outputing the full symmetry group involving them.
+//
 // TODO(user): On SAT problems it is more powerful to detect permutations also
 // involving the negation of the problem variables. So that we could find a
 // symmetry x <-> not(y) for instance.
@@ -37,10 +41,18 @@ namespace sat {
 // TODO(user): As long as we only exploit symmetry involving only Boolean
 // variables we can make this code more efficient by not detecting symmetries
 // involing integer variable.
+//
+// TODO(user): Make the limit deterministic.
 void FindCpModelSymmetries(
     const SatParameters& params, const CpModelProto& problem,
     std::vector<std::unique_ptr<SparsePermutation>>* generators,
     double time_limit_seconds = std::numeric_limits<double>::infinity());
+
+// Basic implementation of some symmetry breaking during presolve.
+//
+// Currently this just try to fix variables by detecting symmetries between
+// Booleans in bool_and, at_most_one or exactly_one constraints.
+bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context);
 
 }  // namespace sat
 }  // namespace operations_research

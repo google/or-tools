@@ -710,7 +710,7 @@ NewOptionalIntervalWithVariableSize(int64 min_start, int64 max_end,
 
 // This requires that all the alternatives are optional tasks.
 inline std::function<void(Model*)> IntervalWithAlternatives(
-    IntervalVariable main, const std::vector<IntervalVariable>& members) {
+    IntervalVariable parent, const std::vector<IntervalVariable>& members) {
   return [=](Model* model) {
     auto* integer_trail = model->GetOrCreate<IntegerTrail>();
     auto* intervals = model->GetOrCreate<IntervalsRepository>();
@@ -725,9 +725,9 @@ inline std::function<void(Model*)> IntervalWithAlternatives(
       const Literal is_present = intervals->PresenceLiteral(member);
       sat_ct.push_back({is_present, Coefficient(1)});
       model->Add(
-          Equality(model->Get(StartVar(main)), model->Get(StartVar(member))));
+          Equality(model->Get(StartVar(parent)), model->Get(StartVar(member))));
       model->Add(
-          Equality(model->Get(EndVar(main)), model->Get(EndVar(member))));
+          Equality(model->Get(EndVar(parent)), model->Get(EndVar(member))));
 
       // TODO(user): IsOneOf() only work for members with fixed size.
       // Generalize to an "int_var_element" constraint.
@@ -735,12 +735,12 @@ inline std::function<void(Model*)> IntervalWithAlternatives(
       presences.push_back(is_present);
       sizes.push_back(intervals->MinSize(member));
     }
-    if (intervals->SizeVar(main) != kNoIntegerVariable) {
-      model->Add(IsOneOf(intervals->SizeVar(main), presences, sizes));
+    if (intervals->SizeVar(parent) != kNoIntegerVariable) {
+      model->Add(IsOneOf(intervals->SizeVar(parent), presences, sizes));
     }
     model->Add(BooleanLinearConstraint(1, 1, &sat_ct));
 
-    // Propagate from the candidate bounds to the main interval ones.
+    // Propagate from the candidate bounds to the parent interval ones.
     {
       std::vector<IntegerVariable> starts;
       starts.reserve(members.size());
@@ -748,7 +748,7 @@ inline std::function<void(Model*)> IntervalWithAlternatives(
         starts.push_back(intervals->StartVar(member));
       }
       model->Add(
-          PartialIsOneOfVar(intervals->StartVar(main), starts, presences));
+          PartialIsOneOfVar(intervals->StartVar(parent), starts, presences));
     }
     {
       std::vector<IntegerVariable> ends;
@@ -756,7 +756,7 @@ inline std::function<void(Model*)> IntervalWithAlternatives(
       for (const IntervalVariable member : members) {
         ends.push_back(intervals->EndVar(member));
       }
-      model->Add(PartialIsOneOfVar(intervals->EndVar(main), ends, presences));
+      model->Add(PartialIsOneOfVar(intervals->EndVar(parent), ends, presences));
     }
   };
 }
