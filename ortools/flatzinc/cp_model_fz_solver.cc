@@ -545,19 +545,19 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     auto* arg = ct->mutable_all_diff();
     for (const int var : LookupVars(fz_ct.arguments[0])) arg->add_vars(var);
   } else if (fz_ct.type == "fzn_circuit" || fz_ct.type == "fzn_subcircuit") {
-    // detect fully instantiated (sub)circuit constraints.
+    // Try to auto-detect if it is zero or one based.
     bool found_zero = false;
     bool found_size = false;
-    int size = 0;
-    if (fz_ct.arguments[0].variables.empty() && !fz_ct.arguments[0].values.empty()) {
-      // Try to auto-detect if it is zero or one based.
+    int64 size = 0;
+    if (fz_ct.arguments[0].variables.empty() &&
+        !fz_ct.arguments[0].values.empty()) {
+      // Fully instantiated (sub)circuit constraints.
       size = fz_ct.arguments[0].values.size();
       for (const int64 value : fz_ct.arguments[0].values) {
         if (value == 0) found_zero = true;
         if (value == size) found_size = true;
       }
     } else {
-      // Try to auto-detect if it is zero or one based.
       size = fz_ct.arguments[0].variables.size();
       for (fz::IntegerVariable* const var : fz_ct.arguments[0].variables) {
         if (var->domain.Min() == 0) found_zero = true;
@@ -566,15 +566,14 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     }
 
     const bool is_one_based = !found_zero || found_size;
-    const int min_index = is_one_based ? 1 : 0;
-    const int max_index = min_index + size - 1;
-
+    const int64 min_index = is_one_based ? 1 : 0;
+    const int64 max_index = min_index + size - 1;
     // The arc-based mutable circuit.
     auto* circuit_arg = ct->mutable_circuit();
 
     // We fully encode all variables so we can use the literal based circuit.
     // TODO(user): avoid fully encoding more than once?
-    int index = min_index;
+    int64 index = min_index;
     const bool is_circuit = (fz_ct.type == "fzn_circuit");
     for (const int var : LookupVars(fz_ct.arguments[0])) {
       Domain domain = ReadDomainFromProto(proto.variables(var));
