@@ -8,12 +8,16 @@ help_doc:
 
 # Main target
 .PHONY: doc # Create doxygen and python documentation.
-doc: doxy-doc python-doc
+doc: doxy-doc python-doc java-doc
 
 .PHONY: doxy-doc # Create doxygen ref documentation.
 doxy-doc: cc python java dotnet
 	bash -c "command -v doxygen"
 	python3 tools/doc/gen_ref_doc.py
+
+.PHONY: java-doc # Create Javadoc ref documentation.
+java-doc: java
+	tools/doc/gen_javadoc.sh
 
 .PHONY: python-doc # Create python documentation.
 python-doc:
