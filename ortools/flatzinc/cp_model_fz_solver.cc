@@ -142,7 +142,6 @@ std::vector<int> CpModelProtoWithMapping::LookupVars(
     for (int64 value : argument.values) {
       result.push_back(LookupConstant(value));
     }
-
   } else if (argument.type == fz::Argument::INT_VALUE) {
     result.push_back(LookupConstant(argument.Value()));
   } else {
@@ -546,17 +545,29 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     auto* arg = ct->mutable_all_diff();
     for (const int var : LookupVars(fz_ct.arguments[0])) arg->add_vars(var);
   } else if (fz_ct.type == "fzn_circuit" || fz_ct.type == "fzn_subcircuit") {
-    // Try to auto-detect if it is zero or one based.
+    // detect fully instantiated (sub)circuit constraints.
     bool found_zero = false;
     bool found_size = false;
-    const int size = fz_ct.arguments[0].variables.size();
-    for (fz::IntegerVariable* const var : fz_ct.arguments[0].variables) {
-      if (var->domain.Min() == 0) found_zero = true;
-      if (var->domain.Max() == size) found_size = true;
+    int size = 0;
+    if (fz_ct.arguments[0].variables.empty() && !fz_ct.arguments[0].values.empty()) {
+      // Try to auto-detect if it is zero or one based.
+      size = fz_ct.arguments[0].values.size();
+      for (const int64 value : fz_ct.arguments[0].values) {
+        if (value == 0) found_zero = true;
+        if (value == size) found_size = true;
+      }
+    } else {
+      // Try to auto-detect if it is zero or one based.
+      size = fz_ct.arguments[0].variables.size();
+      for (fz::IntegerVariable* const var : fz_ct.arguments[0].variables) {
+        if (var->domain.Min() == 0) found_zero = true;
+        if (var->domain.Max() == size) found_size = true;
+      }
     }
+
     const bool is_one_based = !found_zero || found_size;
     const int min_index = is_one_based ? 1 : 0;
-    const int max_index = min_index + fz_ct.arguments[0].variables.size() - 1;
+    const int max_index = min_index + size - 1;
 
     // The arc-based mutable circuit.
     auto* circuit_arg = ct->mutable_circuit();
