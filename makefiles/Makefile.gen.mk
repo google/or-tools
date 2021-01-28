@@ -1614,7 +1614,9 @@ objs/sat/cp_model_loader.$O: ortools/sat/cp_model_loader.cc \
  ortools/sat/precedences.h ortools/base/stl_util.h \
  ortools/sat/all_different.h ortools/sat/circuit.h \
  ortools/sat/cp_model_symmetries.h \
- ortools/algorithms/sparse_permutation.h ortools/sat/cumulative.h \
+ ortools/algorithms/sparse_permutation.h ortools/sat/presolve_context.h \
+ ortools/sat/presolve_util.h ortools/util/affine_relation.h \
+ ortools/base/iterator_adaptors.h ortools/sat/cumulative.h \
  ortools/sat/diffn.h ortools/sat/disjunctive.h ortools/sat/theta_tree.h \
  ortools/sat/implied_bounds.h ortools/sat/symmetry.h ortools/sat/table.h \
  ortools/sat/timetable.h | $(OBJ_DIR)/sat
@@ -1664,9 +1666,11 @@ objs/sat/cp_model_presolve.$O: ortools/sat/cp_model_presolve.cc \
  ortools/sat/intervals.h ortools/sat/cp_constraints.h \
  ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
  ortools/sat/precedences.h ortools/sat/cp_model_objective.h \
- ortools/sat/probing.h ortools/sat/implied_bounds.h \
- ortools/sat/simplification.h ortools/base/adjustable_priority_queue.h \
- ortools/sat/var_domination.h ortools/algorithms/dynamic_partition.h | $(OBJ_DIR)/sat
+ ortools/sat/cp_model_symmetries.h \
+ ortools/algorithms/sparse_permutation.h ortools/sat/probing.h \
+ ortools/sat/implied_bounds.h ortools/sat/simplification.h \
+ ortools/base/adjustable_priority_queue.h ortools/sat/var_domination.h \
+ ortools/algorithms/dynamic_partition.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_presolve.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_presolve.$O
 
 objs/sat/cp_model_search.$O: ortools/sat/cp_model_search.cc \
@@ -1753,15 +1757,20 @@ objs/sat/cp_model_symmetries.$O: ortools/sat/cp_model_symmetries.cc \
  ortools/base/commandlineflags.h ortools/base/integral_types.h \
  ortools/base/log_severity.h ortools/base/logging_export.h \
  ortools/base/macros.h ortools/base/vlog_is_on.h \
- ortools/gen/ortools/sat/cp_model.pb.h \
- ortools/gen/ortools/sat/sat_parameters.pb.h \
- ortools/algorithms/find_graph_symmetries.h \
+ ortools/gen/ortools/sat/cp_model.pb.h ortools/sat/presolve_context.h \
+ ortools/sat/cp_model_utils.h ortools/util/sorted_interval_list.h \
+ ortools/sat/model.h ortools/base/map_util.h ortools/base/typeid.h \
+ ortools/sat/presolve_util.h ortools/base/int_type.h \
+ ortools/base/strong_vector.h ortools/util/bitset.h \
+ ortools/gen/ortools/sat/sat_parameters.pb.h ortools/sat/util.h \
+ ortools/sat/sat_base.h ortools/util/random_engine.h \
+ ortools/util/affine_relation.h ortools/base/iterator_adaptors.h \
+ ortools/util/time_limit.h ortools/base/timer.h ortools/base/basictypes.h \
+ ortools/util/running_stat.h ortools/algorithms/find_graph_symmetries.h \
  ortools/algorithms/dynamic_partition.h \
  ortools/algorithms/dynamic_permutation.h ortools/graph/graph.h \
- ortools/graph/iterators.h ortools/util/stats.h ortools/base/timer.h \
- ortools/base/basictypes.h ortools/util/time_limit.h \
- ortools/util/running_stat.h ortools/base/hash.h ortools/base/map_util.h \
- ortools/sat/cp_model_utils.h ortools/util/sorted_interval_list.h | $(OBJ_DIR)/sat
+ ortools/graph/iterators.h ortools/util/stats.h ortools/base/hash.h \
+ ortools/sat/symmetry_util.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_symmetries.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_symmetries.$O
 
 objs/sat/cp_model_utils.$O: ortools/sat/cp_model_utils.cc \
@@ -2636,15 +2645,12 @@ objs/sat/symmetry.$O: ortools/sat/symmetry.cc ortools/sat/symmetry.h \
  ortools/base/timer.h ortools/base/basictypes.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Ssymmetry.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssymmetry.$O
 
-objs/sat/symmetry_util.$O: ortools/sat/symmetry_util.cc ortools/sat/symmetry_util.h \
- ortools/algorithms/sparse_permutation.h ortools/base/logging.h \
- ortools/base/commandlineflags.h ortools/base/integral_types.h \
- ortools/base/log_severity.h ortools/base/logging_export.h \
- ortools/base/macros.h ortools/base/vlog_is_on.h \
- ortools/base/strong_vector.h ortools/base/int_type.h \
- ortools/sat/sat_base.h ortools/sat/model.h ortools/base/map_util.h \
- ortools/base/typeid.h ortools/util/bitset.h ortools/util/stats.h \
- ortools/base/timer.h ortools/base/basictypes.h | $(OBJ_DIR)/sat
+objs/sat/symmetry_util.$O: ortools/sat/symmetry_util.cc \
+ ortools/sat/symmetry_util.h ortools/algorithms/sparse_permutation.h \
+ ortools/base/logging.h ortools/base/commandlineflags.h \
+ ortools/base/integral_types.h ortools/base/log_severity.h \
+ ortools/base/logging_export.h ortools/base/macros.h \
+ ortools/base/vlog_is_on.h ortools/algorithms/dynamic_partition.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Ssymmetry_util.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssymmetry_util.$O
 
 objs/sat/synchronization.$O: ortools/sat/synchronization.cc \
@@ -4963,3 +4969,4 @@ $(GEN_DIR)/ortools/gscip/gscip.pb.h: \
 $(OBJ_DIR)/gscip/gscip.pb.$O: \
  $(GEN_DIR)/ortools/gscip/gscip.pb.cc | $(OBJ_DIR)/gscip
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sgscip$Sgscip.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sgscip$Sgscip.pb.$O
+
