@@ -44,10 +44,10 @@ class IdGenerator {
  public:
   IdGenerator() {}
 
-  // If the key was never seen before, then generate a new id, otherwise return
-  // the previously generated id.
-  int GetId(const std::vector<int64>& key) {
-    return gtl::LookupOrInsert(&id_map_, key, id_map_.size());
+  // If the color was never seen before, then generate a new id, otherwise
+  // return the previously generated id.
+  int GetId(const std::vector<int64>& color) {
+    return gtl::LookupOrInsert(&id_map_, color, id_map_.size());
   }
 
   int NextFreeId() const { return id_map_.size(); }
@@ -91,173 +91,177 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 
   const int num_variables = problem.variables_size();
   auto graph = absl::make_unique<Graph>();
-  initial_equivalence_classes->clear();
+
+  // Each node will be created with a given color. Two nodes of different color
+  // can never be send one into another by a symmetry. The first element of
+  // the color vector will always be the NodeType.
+  //
+  // TODO(user): Using a full int64 for storing 3 values is not great. We
+  // can optimize this at the price of a bit more code.
   enum NodeType {
     VARIABLE_NODE,
+    VAR_COEFFICIENT_NODE,
     CONSTRAINT_NODE,
-    CONSTRAINT_COEFFICIENT_NODE,
-    ENFORCEMENT_LITERAL
   };
-  IdGenerator id_generator;
+  IdGenerator color_id_generator;
+  initial_equivalence_classes->clear();
+  auto new_node = [&initial_equivalence_classes,
+                   &color_id_generator](const std::vector<int64>& color) {
+    // Since we add nodes one by one, initial_equivalence_classes->size() gives
+    // the number of nodes at any point, which we use as the next node index.
+    const int node = initial_equivalence_classes->size();
+    initial_equivalence_classes->push_back(color_id_generator.GetId(color));
+    return node;
+  };
 
   // For two variables to be in the same equivalence class, they need to have
   // the same objective coefficient, and the same possible bounds.
+  //
+  // TODO(user): We could ignore the objective coefficients, and just make sure
+  // that when we break symmetry amongst variables, we choose the possibility
+  // with the smallest cost?
   std::vector<int64> objective_by_var(num_variables, 0);
   for (int i = 0; i < problem.objective().vars_size(); ++i) {
     objective_by_var[problem.objective().vars(i)] =
         problem.objective().coeffs(i);
   }
 
-  auto new_node = [&initial_equivalence_classes,
-                   &id_generator](const std::vector<int64>& key) {
-    // Since we add nodes one by one, initial_equivalence_classes->size() gives
-    // the number of nodes at any point, which we use as the next node index.
-    const int node = initial_equivalence_classes->size();
-    initial_equivalence_classes->push_back(id_generator.GetId(key));
-    return node;
-  };
-
-  std::vector<int64> tmp_key;
+  // Create one node for each variable. Note that the code rely on the fact that
+  // the index of a VARIABLE_NODE type is the same as the variable index.
+  std::vector<int64> tmp_color;
   for (int v = 0; v < num_variables; ++v) {
-    tmp_key = {VARIABLE_NODE, objective_by_var[v]};
-    Append(problem.variables(v).domain(), &tmp_key);
-
-    // Note that the code rely on the fact that the index of a VARIABLE_NODE
-    // type is the same as the variable index.
-    CHECK_EQ(v, new_node(tmp_key));
+    tmp_color = {VARIABLE_NODE, objective_by_var[v]};
+    Append(problem.variables(v).domain(), &tmp_color);
+    CHECK_EQ(v, new_node(tmp_color));
 
     // Make sure the graph contains all the variable nodes, even if no edges are
     // attached to them through constraints.
     graph->AddNode(v);
   }
 
-  auto add_edge = [&graph](int node_1, int node_2) {
-    graph->AddArc(node_1, node_2);
-    graph->AddArc(node_2, node_1);
-  };
+  // We will lazily create "coefficient nodes" that correspond to a variable
+  // with a given coefficient.
+  absl::flat_hash_map<std::pair<int64, int64>, int> coefficient_nodes;
+  auto get_coefficient_node = [&new_node, &graph, &coefficient_nodes,
+                               &tmp_color](int var, int64 coeff) {
+    const int var_node = var;
+    DCHECK(RefIsPositive(var));
 
-  // We will create a bunch of nodes linked to a variable node. Only one node
-  // per (var, type) will be required so we cache them to not create more node
-  // than necessary.
-  absl::flat_hash_map<std::vector<int64>, int, VectorHash> secondary_var_nodes;
-  auto get_secondary_var_node = [&new_node, &add_edge, &secondary_var_nodes,
-                                 &tmp_key](int var_node,
-                                           absl::Span<const int64> type) {
-    tmp_key.assign(type.begin(), type.end());
-    tmp_key.push_back(var_node);
-    const auto insert = secondary_var_nodes.insert({tmp_key, 0});
+    // For a coefficient of one, which are the most common, we can optimize the
+    // size of the graph by omitting the coefficient node altogether and using
+    // directly the var_node in this case.
+    if (coeff == 1) return var_node;
+
+    const auto insert =
+        coefficient_nodes.insert({std::make_pair(var, coeff), 0});
     if (!insert.second) return insert.first->second;
 
-    tmp_key.pop_back();
-    const int secondary_node = new_node(tmp_key);
-    add_edge(var_node, secondary_node);
+    tmp_color = {VAR_COEFFICIENT_NODE, coeff};
+    const int secondary_node = new_node(tmp_color);
+    graph->AddArc(var_node, secondary_node);
     insert.first->second = secondary_node;
     return secondary_node;
   };
 
-  auto add_literal_edge = [&add_edge, &get_secondary_var_node](
-                              int ref, int constraint_node) {
-    const int variable_node = PositiveRef(ref);
-    if (RefIsPositive(ref)) {
-      // For all coefficients equal to one, which are the most common, we
-      // can optimize the size of the graph by omitting the coefficient
-      // node altogether.
-      add_edge(variable_node, constraint_node);
-    } else {
-      const int coefficient_node = get_secondary_var_node(
-          variable_node, {CONSTRAINT_COEFFICIENT_NODE, -1});
-      add_edge(coefficient_node, constraint_node);
-    }
+  // For a literal we use the same as a coefficient 1 or -1. We can do that
+  // because literal and (var, coefficient) never appear together in the same
+  // constraint.
+  auto get_literal_node = [&get_coefficient_node](int ref) {
+    return get_coefficient_node(PositiveRef(ref), RefIsPositive(ref) ? 1 : -1);
+  };
+
+  // Because the implication can be numerous, we encode them without constraints
+  // node by using an arc from the lhs to the rhs. Note that we also always add
+  // the other direction. We use a set to remove duplicates both for efficiency
+  // and to not artificially break symmetries by using multi-arcs.
+  absl::flat_hash_set<std::pair<int, int>> implications;
+  auto add_implication = [&get_literal_node, &graph, &implications](int ref_a,
+                                                                    int ref_b) {
+    const auto insert = implications.insert({ref_a, ref_b});
+    if (!insert.second) return;
+    graph->AddArc(get_literal_node(ref_a), get_literal_node(ref_b));
+
+    // Always add the other side.
+    implications.insert({NegatedRef(ref_b), NegatedRef(ref_a)});
+    graph->AddArc(get_literal_node(NegatedRef(ref_b)),
+                  get_literal_node(NegatedRef(ref_a)));
   };
 
   // Add constraints to the graph.
   for (const ConstraintProto& constraint : problem.constraints()) {
     const int constraint_node = initial_equivalence_classes->size();
-    std::vector<int64> key = {CONSTRAINT_NODE, constraint.constraint_case()};
+    std::vector<int64> color = {CONSTRAINT_NODE, constraint.constraint_case()};
 
     switch (constraint.constraint_case()) {
       case ConstraintProto::CONSTRAINT_NOT_SET:
         break;
       case ConstraintProto::kLinear: {
-        Append(constraint.linear().domain(), &key);
-        CHECK_EQ(constraint_node, new_node(key));
-
+        // TODO(user): We can use the same trick as for the implications to
+        // encode relations of the form coeff * var_a <= coeff * var_b without
+        // creating a constraint node by directly adding an arc between the two
+        // var coefficient nodes.
+        Append(constraint.linear().domain(), &color);
+        CHECK_EQ(constraint_node, new_node(color));
         for (int i = 0; i < constraint.linear().vars_size(); ++i) {
-          if (constraint.linear().coeffs(i) == 0) continue;
           const int ref = constraint.linear().vars(i);
           const int variable_node = PositiveRef(ref);
           const int64 coeff = RefIsPositive(ref)
                                   ? constraint.linear().coeffs(i)
                                   : -constraint.linear().coeffs(i);
-          if (coeff == 1) {
-            // For all coefficients equal to one, which are the most common, we
-            // can optimize the size of the graph by omitting the coefficient
-            // node altogether.
-            add_edge(variable_node, constraint_node);
-          } else {
-            const int coefficient_node = get_secondary_var_node(
-                variable_node, {CONSTRAINT_COEFFICIENT_NODE, coeff});
-            add_edge(coefficient_node, constraint_node);
-          }
+          graph->AddArc(get_coefficient_node(variable_node, coeff),
+                        constraint_node);
         }
         break;
       }
       case ConstraintProto::kBoolOr: {
-        CHECK_EQ(constraint_node, new_node(key));
+        CHECK_EQ(constraint_node, new_node(color));
         for (const int ref : constraint.bool_or().literals()) {
-          add_literal_edge(ref, constraint_node);
+          graph->AddArc(get_literal_node(ref), constraint_node);
         }
         break;
       }
       case ConstraintProto::kAtMostOne: {
-        CHECK_EQ(constraint_node, new_node(key));
+        if (constraint.at_most_one().literals().size() == 2) {
+          // Treat it as an implication to avoid creating a node.
+          add_implication(constraint.at_most_one().literals(0),
+                          NegatedRef(constraint.at_most_one().literals(1)));
+          break;
+        }
+
+        CHECK_EQ(constraint_node, new_node(color));
         for (const int ref : constraint.at_most_one().literals()) {
-          add_literal_edge(ref, constraint_node);
+          graph->AddArc(get_literal_node(ref), constraint_node);
         }
         break;
       }
       case ConstraintProto::kExactlyOne: {
-        CHECK_EQ(constraint_node, new_node(key));
+        CHECK_EQ(constraint_node, new_node(color));
         for (const int ref : constraint.exactly_one().literals()) {
-          add_literal_edge(ref, constraint_node);
+          graph->AddArc(get_literal_node(ref), constraint_node);
         }
         break;
       }
       case ConstraintProto::kBoolXor: {
-        CHECK_EQ(constraint_node, new_node(key));
+        CHECK_EQ(constraint_node, new_node(color));
         for (const int ref : constraint.bool_xor().literals()) {
-          add_literal_edge(ref, constraint_node);
+          graph->AddArc(get_literal_node(ref), constraint_node);
         }
         break;
       }
-
-      // TODO(user): We could directly connect variable node together to
-      // deal more efficiently with this constraint. Make sure not to create
-      // multi-arc since I am not sure the symmetry code works with these
-      // though.
       case ConstraintProto::kBoolAnd: {
-        if (constraint.enforcement_literal_size() == 0) {
-          // All literals are true in this case.
-          CHECK_EQ(constraint_node, new_node(key));
-          for (const int ref : constraint.bool_and().literals()) {
-            add_literal_edge(ref, constraint_node);
-          }
-          break;
+        // The other cases should be presolved before this is called.
+        // TODO(user): not 100% true, this happen on rmatr200-p5, Fix.
+        if (constraint.enforcement_literal_size() != 1) {
+          VLOG(1) << "BoolAnd with multiple enforcement literal are not "
+                     "supported in symmetry code:"
+                  << constraint.ShortDebugString();
+          return nullptr;
         }
 
-        // To make the BoolAnd constraint more generic in the graph, we expand
-        // it into a set of BoolOr constraints where
-        //   not(enforcement_literal) OR literal = true
-        // for all constraint's literals. This is equivalent to
-        //   enforcement_literal => literal
-        // for all literals.
-        std::vector<int64> key = {CONSTRAINT_NODE, ConstraintProto::kBoolOr};
-        const int non_enforcement_literal =
-            NegatedRef(constraint.enforcement_literal(0));
-        for (const int literal : constraint.bool_and().literals()) {
-          const int constraint_node = new_node(key);
-          add_literal_edge(non_enforcement_literal, constraint_node);
-          add_literal_edge(literal, constraint_node);
+        CHECK_EQ(constraint.enforcement_literal_size(), 1);
+        const int ref_a = constraint.enforcement_literal(0);
+        for (const int ref_b : constraint.bool_and().literals()) {
+          add_implication(ref_a, ref_b);
         }
         break;
       }
@@ -274,11 +278,13 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
       }
     }
 
+    // For enforcement, we use a similar trick than for the implications.
+    // Because all our constraint arcs are in the direction var_node to
+    // constraint_node, we just use the reverse direction for the enforcement
+    // part. This way we can reuse the same get_literal_node() function.
     if (constraint.constraint_case() != ConstraintProto::kBoolAnd) {
       for (const int ref : constraint.enforcement_literal()) {
-        const int enforcement_node = get_secondary_var_node(
-            PositiveRef(ref), {ENFORCEMENT_LITERAL, RefIsPositive(ref)});
-        add_edge(constraint_node, enforcement_node);
+        graph->AddArc(constraint_node, get_literal_node(ref));
       }
     }
   }
@@ -294,7 +300,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   //
   // TODO(user): It will probably be more efficient to not even create these
   // nodes, but we will need a mapping to know the variable <-> node index.
-  int next_id = id_generator.NextFreeId();
+  int next_id = color_id_generator.NextFreeId();
   for (int i = 0; i < num_variables; ++i) {
     if ((*graph)[i].empty()) {
       (*initial_equivalence_classes)[i] = next_id++;
@@ -319,7 +325,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 void FindCpModelSymmetries(
     const SatParameters& params, const CpModelProto& problem,
     std::vector<std::unique_ptr<SparsePermutation>>* generators,
-    double time_limit_seconds) {
+    double deterministic_limit) {
   const bool log_info = params.log_search_progress() || VLOG_IS_ON(1);
   CHECK(generators != nullptr);
   generators->clear();
@@ -333,15 +339,17 @@ void FindCpModelSymmetries(
 
   if (log_info) {
     LOG(INFO) << "Graph for symmetry has " << graph->num_nodes()
-              << " nodes and " << graph->num_arcs() / 2 << " edges.";
+              << " nodes and " << graph->num_arcs() << " arcs.";
   }
   if (graph->num_nodes() == 0) return;
 
-  GraphSymmetryFinder symmetry_finder(*graph, /*is_undirected=*/true);
+  GraphSymmetryFinder symmetry_finder(*graph, /*is_undirected=*/false);
   std::vector<int> factorized_automorphism_group_size;
+  std::unique_ptr<TimeLimit> time_limit =
+      TimeLimit::FromDeterministicTime(deterministic_limit);
   const absl::Status status = symmetry_finder.FindSymmetries(
-      time_limit_seconds, &equivalence_classes, generators,
-      &factorized_automorphism_group_size);
+      &equivalence_classes, generators, &factorized_automorphism_group_size,
+      time_limit.get());
 
   // TODO(user): Change the API to not return an error when the time limit is
   // reached.
@@ -384,12 +392,17 @@ void FindCpModelSymmetries(
   }
   generators->resize(num_generators);
   average_support_size /= num_generators;
-  if (log_info && num_generators > 0) {
-    LOG(INFO) << "# of generators: " << num_generators;
-    LOG(INFO) << "Average support size: " << average_support_size;
-    if (num_duplicate_constraints > 0) {
-      LOG(INFO) << "The model contains " << num_duplicate_constraints
-                << " duplicate constraints !";
+  if (log_info) {
+    LOG(INFO) << "Symmetry computation done. time: "
+              << time_limit->GetElapsedTime()
+              << " dtime: " << time_limit->GetElapsedDeterministicTime();
+    if (num_generators > 0) {
+      LOG(INFO) << "# of generators: " << num_generators;
+      LOG(INFO) << "Average support size: " << average_support_size;
+      if (num_duplicate_constraints > 0) {
+        LOG(INFO) << "The model contains " << num_duplicate_constraints
+                  << " duplicate constraints !";
+      }
     }
   }
 }
@@ -463,7 +476,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
 
   // Collect the at most ones.
   //
-  // Note(user): This relies on the fact that the pointer remain stable when
+  // Note(user): This relies on the fact that the pointers remain stable when
   // we adds new constraints. It should be the case, but it is a bit unsafe.
   // On the other hand it is annoying to deal with both cases below.
   std::vector<const google::protobuf::RepeatedField<int32>*> at_most_ones;
@@ -496,7 +509,8 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     }
   }
 
-  while (!orbitope.empty() && !orbitope[0].empty()) {
+  while (!orbitope.empty() && orbitope[0].size() > 1) {
+    const int num_cols = orbitope[0].size();
     const std::vector<int> orbits = GetOrbitopeOrbits(num_vars, orbitope);
 
     // Because in the orbitope case, we have a full symmetry group of the
@@ -528,25 +542,39 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     // Note(user): On the miplib, only 1/ happens currently. Not sure with LNS
     // though.
     std::vector<bool> all_equivalent_rows(orbitope.size(), false);
-    std::vector<bool> at_most_one_one(orbitope.size(), false);
-    std::vector<bool> at_most_one_zero(orbitope.size(), false);
 
+    // The result described above can be generalized if an at most one intersect
+    // many of the orbitope rows, each in at leat two positions. We will track
+    // the set of best rows on which we have an at most one (or at most one
+    // zero) on all their entries.
+    bool at_most_one_in_best_rows;  // The alternative is at most one zero.
+    int64 best_score = 0;
+    std::vector<int> best_rows;
+
+    std::vector<int> rows_in_at_most_one;
     for (const google::protobuf::RepeatedField<int32>* literals :
          at_most_ones) {
       tmp_to_clear.clear();
-      int num_in_intersections = 0;
       for (const int literal : *literals) {
         if (context->IsFixed(literal)) continue;
         const int var = PositiveRef(literal);
         const int rep = orbits[var];
         if (rep == -1) continue;
 
-        ++num_in_intersections;
         if (tmp_sizes[rep] == 0) tmp_to_clear.push_back(rep);
         tmp_sizes[rep]++;
         if (RefIsPositive(literal)) tmp_num_positive[rep]++;
       }
 
+      int num_positive_direction = 0;
+      int num_negative_direction = 0;
+
+      // An at most one touching two positions in an orbitope row can possibly
+      // be extended, depending if it has singleton intersection swith other
+      // rows and where.
+      bool possible_extension = false;
+
+      rows_in_at_most_one.clear();
       for (const int row : tmp_to_clear) {
         const int size = tmp_sizes[row];
         const int num_positive = tmp_num_positive[row];
@@ -555,37 +583,55 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         tmp_num_positive[row] = 0;
 
         if (num_positive > 1 && num_negative == 0) {
-          at_most_one_one[row] = true;
+          if (size < num_cols) possible_extension = true;
+          rows_in_at_most_one.push_back(row);
+          ++num_positive_direction;
         } else if (num_positive == 0 && num_negative > 1) {
-          at_most_one_zero[row] = true;
+          if (size < num_cols) possible_extension = true;
+          rows_in_at_most_one.push_back(row);
+          ++num_negative_direction;
         } else if (num_positive > 0 && num_negative > 0) {
           all_equivalent_rows[row] = true;
         }
+      }
 
-        // We might be able to presolve more in these cases.
-        if (at_most_one_zero[row] || at_most_one_one[row] ||
-            all_equivalent_rows[row]) {
-          if (tmp_to_clear.size() > 1) {
-            context->UpdateRuleStats(
-                "TODO symmetry: at most one across orbits.");
-          } else if (size < orbitope[0].size()) {
-            context->UpdateRuleStats(
-                "TODO symmetry: at most one can be extended");
-          }
-        }
+      if (possible_extension) {
+        context->UpdateRuleStats(
+            "TODO symmetry: possible at most one extension.");
+      }
+
+      if (num_positive_direction > 0 && num_negative_direction > 0) {
+        return context->NotifyThatModelIsUnsat("Symmetry and at most ones");
+      }
+      const bool direction = num_positive_direction > 0;
+
+      // Because of symmetry, the choice of the column shouldn't matter (they
+      // will all appear in the same number of constraints of the same types),
+      // however we prefer to fix the variables that seems to touch more
+      // constraints.
+      //
+      // TODO(user): maybe we should simplify the constraint using the variable
+      // we fix before choosing the next row to break symmetry on. If there are
+      // multiple row involved, we could also take the intersection instead of
+      // probably counting the same constraints more than once.
+      int64 score = 0;
+      for (const int row : rows_in_at_most_one) {
+        score +=
+            context->VarToConstraints(PositiveRef(orbitope[row][0])).size();
+      }
+      if (score > best_score) {
+        at_most_one_in_best_rows = direction;
+        best_score = score;
+        best_rows = rows_in_at_most_one;
       }
     }
 
-    // Heuristically choose a "best" row/col to "distinguish" and break the
-    // symmetry on.
-    int best_row = 0;
-    int best_col = 0;
-    int best_score = 0;
-    bool fix_others_to_zero = true;
+    // Mark all the equivalence.
+    // Note that this operation do not change the symmetry group.
+    //
+    // TODO(user): We could remove these rows from the orbitope. Note that
+    // currently this never happen on the miplib (maybe in LNS though).
     for (int i = 0; i < all_equivalent_rows.size(); ++i) {
-      const int num_cols = orbitope[i].size();
-
-      // Note that this operation do not change the symmetry group.
       if (all_equivalent_rows[i]) {
         for (int j = 1; j < num_cols; ++j) {
           context->StoreBooleanEqualityRelation(orbitope[i][0], orbitope[i][j]);
@@ -593,94 +639,68 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
           if (context->ModelIsUnsat()) return false;
         }
       }
-
-      // Because of symmetry, the choice of the column shouldn't matter (they
-      // will all appear in the same number of constraints of the same types),
-      // however we prefer to fix a variable that seems to touch more
-      // constraints.
-      //
-      // TODO(user): maybe we should simplify the constraint using the variable
-      // we fix before choosing the next row to break symmetry on.
-      const int row_score =
-          context->VarToConstraints(PositiveRef(orbitope[i][0])).size();
-
-      // TODO(user): If one variable make the line already fixed, we should just
-      // ignore this row. Not too important as actually this shouldn't happen
-      // because we never compute symmetries involving fixed variables. But in
-      // the future, fixing some literal might have some side effects and fix
-      // others.
-      if (at_most_one_one[i] && row_score > best_score) {
-        best_col = 0;
-        for (int j = 0; j < num_cols; ++j) {
-          if (context->LiteralIsTrue(orbitope[i][j])) {
-            best_col = j;
-            break;
-          }
-        }
-        best_row = i;
-        best_score = row_score;
-        fix_others_to_zero = true;
-      }
-      if (at_most_one_zero[i] && row_score > best_score) {
-        best_col = 0;
-        for (int j = 0; j < num_cols; ++j) {
-          if (context->LiteralIsFalse(orbitope[i][j])) {
-            best_col = j;
-            break;
-          }
-        }
-        best_row = i;
-        best_score = row_score;
-        fix_others_to_zero = false;
-      }
     }
 
-    if (best_score == 0) break;
-    for (int j = 1; j < orbitope[best_row].size(); ++j) {
-      if (fix_others_to_zero) {
-        context->UpdateRuleStats("symmetry: fixed to false");
-        if (!context->SetLiteralToFalse(orbitope[best_row][j])) return false;
-      } else {
-        context->UpdateRuleStats("symmetry: fixed to true");
-        if (!context->SetLiteralToTrue(orbitope[best_row][j])) return false;
-      }
-    }
-
-    // We add the symmetry breaking inequalities: best_var >= all other var
-    // in orbit. That is not(best_var) => not(other) for Booleans. We only add
-    // them if we didn't fix any variable just above.
+    // Break the symmetry on our set of best rows by picking one columns
+    // and setting all the other entries to zero or one. Note that the at most
+    // one applies to all entries in all rows.
     //
-    // TODO(user): Add the inequality for non-Boolean too? Also note that this
-    // code only run if the code above is disabled. It is here for testing
-    // alternatives. In particular, if there is no at most one, we cannot fix
-    // n-1 variables, but we can still add inequalities.
-    const int best_var = orbitope[best_row][best_col];
-    const bool maximize_best_var = fix_others_to_zero;
-    if (context->CanBeUsedAsLiteral(best_var) && !context->IsFixed(best_var)) {
-      ConstraintProto* ct = context->working_model->add_constraints();
-      ct->add_enforcement_literal(maximize_best_var ? NegatedRef(best_var)
-                                                    : best_var);
-      for (const int other : orbitope[best_row]) {
-        if (other == best_var) continue;
-        if (context->IsFixed(other)) continue;
-        ct->mutable_bool_and()->add_literals(
-            maximize_best_var ? NegatedRef(other) : other);
-        context->UpdateRuleStats("symmetry: added implication");
-      }
-      context->UpdateNewConstraintsVariableUsage();
+    // TODO(user): We don't have any at most one relation on this orbitope,
+    // but we could still add symmetry breaking inequality by picking any matrix
+    // entry and making it the largest/lowest value on its row. This also work
+    // for non-Booleans.
+    if (best_score == 0) {
+      context->UpdateRuleStats(
+          "TODO symmetry: add symmetry breaking inequalities?");
+      break;
     }
 
-    // Remove the column of best_var.
-    CHECK_NE(best_col, -1);
+    // If our symmetry group is valid, they cannot be any variable already
+    // fixed to one (or zero if !at_most_one_in_best_rows). Otherwise all would
+    // be fixed to one and the problem would be unsat.
+    for (const int i : best_rows) {
+      for (int j = 0; j < num_cols; ++j) {
+        const int var = orbitope[i][j];
+        if ((at_most_one_in_best_rows && context->LiteralIsTrue(var)) ||
+            (!at_most_one_in_best_rows && context->LiteralIsFalse(var))) {
+          return context->NotifyThatModelIsUnsat("Symmetry and at most one");
+        }
+      }
+    }
+
+    // We have an at most one on a set of rows, we will pick a column, and set
+    // all other entries on these rows to zero.
+    //
+    // TODO(user): All choices should be equivalent, but double check?
+    const int best_col = 0;
+    for (const int i : best_rows) {
+      for (int j = 0; j < num_cols; ++j) {
+        if (j == best_col) continue;
+        const int var = orbitope[i][j];
+        if (at_most_one_in_best_rows) {
+          context->UpdateRuleStats("symmetry: fixed to false");
+          if (!context->SetLiteralToFalse(var)) return false;
+        } else {
+          context->UpdateRuleStats("symmetry: fixed to true");
+          if (!context->SetLiteralToTrue(var)) return false;
+        }
+      }
+    }
+
+    // Remove all best rows.
+    for (const int i : best_rows) orbitope[i].clear();
+    int new_size = 0;
+    for (int i = 0; i < orbitope.size(); ++i) {
+      if (!orbitope[i].empty()) orbitope[new_size++] = orbitope[i];
+    }
+    CHECK_LT(new_size, orbitope.size());
+    orbitope.resize(new_size);
+
+    // Remove best_col.
     for (int i = 0; i < orbitope.size(); ++i) {
       std::swap(orbitope[i][best_col], orbitope[i].back());
       orbitope[i].pop_back();
     }
-
-    // We also remove the line of best_var since heuristicially, it is better to
-    // not add symmetries involving any of the variable on this line.
-    std::swap(orbitope[best_row], orbitope.back());
-    orbitope.pop_back();
   }
 
   return true;

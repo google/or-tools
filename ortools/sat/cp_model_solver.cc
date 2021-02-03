@@ -1197,7 +1197,14 @@ void LoadBaseModel(const CpModelProto& model_proto,
        model_proto.search_strategy().empty());
   mapping->CreateVariables(model_proto, view_all_booleans_as_integers, model);
   mapping->DetectOptionalVariables(model_proto, model);
-  mapping->DetectAndLoadBooleanSymmetries(model_proto, model);
+
+  // TODO(user): The core algo and symmetries seems to be problematic in some
+  // cases. See for instance: neos-691058.mps.gz. This is probably because as
+  // we modify the model, our symmetry might be wrong? investigate.
+  if (!parameters.optimize_with_core()) {
+    mapping->DetectAndLoadBooleanSymmetries(model_proto, model);
+  }
+
   mapping->ExtractEncoding(model_proto, model);
   mapping->PropagateEncodingFromEquivalenceRelations(model_proto, model);
 
@@ -2760,15 +2767,19 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       // Each will have their own metrics.
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           absl::make_unique<SimpleNeighborhoodGenerator>(
-              helper, absl::StrCat("rnd_lns_", local_params.name())),
+              helper, absl::StrCat("rnd_var_lns_", local_params.name())),
+          local_params, helper, &shared));
+      subsolvers.push_back(absl::make_unique<LnsSolver>(
+          absl::make_unique<SimpleConstraintNeighborhoodGenerator>(
+              helper, absl::StrCat("rnd_cst_lns_", local_params.name())),
           local_params, helper, &shared));
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           absl::make_unique<VariableGraphNeighborhoodGenerator>(
-              helper, absl::StrCat("var_lns_", local_params.name())),
+              helper, absl::StrCat("graph_var_lns_", local_params.name())),
           local_params, helper, &shared));
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           absl::make_unique<ConstraintGraphNeighborhoodGenerator>(
-              helper, absl::StrCat("cst_lns_", local_params.name())),
+              helper, absl::StrCat("graph_cst_lns_", local_params.name())),
           local_params, helper, &shared));
 
       if (!helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty()) {

@@ -111,14 +111,30 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // presolve?
   var_to_constraint_.assign(model_proto_.variables_size(), {});
   constraint_to_var_.assign(model_proto_.constraints_size(), {});
+  const auto register_var = [&](int var, int ct_index) {
+    DCHECK(RefIsPositive(var));
+    if (IsConstant(var)) return;
+    var_to_constraint_[var].push_back(ct_index);
+    constraint_to_var_[ct_index].push_back(var);
+    CHECK_GE(var, 0);
+    CHECK_LT(var, model_proto_.variables_size());
+  };
+
   for (int ct_index = 0; ct_index < model_proto_.constraints_size();
        ++ct_index) {
     for (const int var : UsedVariables(model_proto_.constraints(ct_index))) {
-      if (IsConstant(var)) continue;
-      var_to_constraint_[var].push_back(ct_index);
-      constraint_to_var_[ct_index].push_back(var);
-      CHECK_GE(var, 0);
-      CHECK_LT(var, model_proto_.variables_size());
+      register_var(var, ct_index);
+    }
+
+    // We replace intervals by their underlying integer variables.
+    if (parameters_.lns_expand_intervals_in_constraint_graph()) {
+      for (const int interval :
+           UsedIntervals(model_proto_.constraints(ct_index))) {
+        for (const int var :
+             UsedVariables(model_proto_.constraints(interval))) {
+          register_var(var, ct_index);
+        }
+      }
     }
   }
 
@@ -177,6 +193,37 @@ Neighborhood NeighborhoodGeneratorHelper::FullNeighborhood() const {
   *neighborhood.cp_model.mutable_variables() =
       model_proto_with_only_variables_.variables();
   return neighborhood;
+}
+
+std::vector<int> NeighborhoodGeneratorHelper::GetActiveIntervals(
+    const CpSolverResponse& initial_solution) const {
+  std::vector<int> active_intervals;
+  for (const int i : TypeToConstraints(ConstraintProto::kInterval)) {
+    const ConstraintProto& interval_ct = ModelProto().constraints(i);
+    // We only look at intervals that are performed in the solution. The
+    // unperformed intervals should be automatically freed during the generation
+    // phase.
+    if (interval_ct.enforcement_literal().size() == 1) {
+      const int enforcement_ref = interval_ct.enforcement_literal(0);
+      const int enforcement_var = PositiveRef(enforcement_ref);
+      const int value = initial_solution.solution(enforcement_var);
+      if (RefIsPositive(enforcement_ref) == (value == 0)) {
+        continue;
+      }
+    }
+
+    // We filter out fixed intervals. Because of presolve, if there is an
+    // enforcement literal, it cannot be fixed.
+    if (interval_ct.enforcement_literal().empty() &&
+        IsConstant(PositiveRef(interval_ct.interval().start())) &&
+        IsConstant(PositiveRef(interval_ct.interval().size())) &&
+        IsConstant(PositiveRef(interval_ct.interval().end()))) {
+      continue;
+    }
+
+    active_intervals.push_back(i);
+  }
+  return active_intervals;
 }
 
 Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
@@ -363,6 +410,47 @@ Neighborhood SimpleNeighborhoodGenerator::Generate(
   return helper_.FixGivenVariables(initial_solution, fixed_variables);
 }
 
+Neighborhood SimpleConstraintNeighborhoodGenerator::Generate(
+    const CpSolverResponse& initial_solution, double difficulty,
+    absl::BitGenRef random) {
+  std::vector<int> active_constraints;
+  for (int ct = 0; ct < helper_.ModelProto().constraints_size(); ++ct) {
+    if (helper_.ModelProto().constraints(ct).constraint_case() ==
+        ConstraintProto::CONSTRAINT_NOT_SET) {
+      continue;
+    }
+    active_constraints.push_back(ct);
+  }
+
+  const int num_active_vars = helper_.ActiveVariables().size();
+  const int num_model_vars = helper_.ModelProto().variables_size();
+  const int target_size = std::ceil(difficulty * num_active_vars);
+  const int num_constraints = helper_.ConstraintToVar().size();
+  if (num_constraints == 0 || target_size == num_active_vars) {
+    return helper_.FullNeighborhood();
+  }
+  CHECK_GT(target_size, 0);
+
+  std::shuffle(active_constraints.begin(), active_constraints.end(), random);
+
+  std::vector<bool> visited_variables_set(num_model_vars, false);
+  std::vector<int> relaxed_variables;
+
+  for (const int constraint_index : active_constraints) {
+    CHECK_LT(constraint_index, num_constraints);
+    for (const int var : helper_.ConstraintToVar()[constraint_index]) {
+      if (visited_variables_set[var]) continue;
+      visited_variables_set[var] = true;
+      if (helper_.IsActive(var)) {
+        relaxed_variables.push_back(var);
+        if (relaxed_variables.size() == target_size) break;
+      }
+    }
+    if (relaxed_variables.size() == target_size) break;
+  }
+  return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
+}
+
 Neighborhood VariableGraphNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
@@ -442,14 +530,14 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
 
     // Pick a random unprocessed constraint.
     const int i = absl::Uniform<int>(random, 0, next_constraints.size());
-    const int contraint_index = next_constraints[i];
+    const int constraint_index = next_constraints[i];
     std::swap(next_constraints[i], next_constraints.back());
     next_constraints.pop_back();
 
     // Add all the variable of this constraint and increase the set of next
     // possible constraints.
-    CHECK_LT(contraint_index, num_constraints);
-    random_variables = helper_.ConstraintToVar()[contraint_index];
+    CHECK_LT(constraint_index, num_constraints);
+    random_variables = helper_.ConstraintToVar()[constraint_index];
     std::shuffle(random_variables.begin(), random_variables.end(), random);
     for (const int var : random_variables) {
       if (visited_variables_set[var]) continue;
@@ -494,20 +582,25 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
     const int enforcement_var = PositiveRef(enforcement_ref);
     const int value = initial_solution.solution(enforcement_var);
 
+    // If the interval is not enforced, we just relax it. If it belongs to an
+    // exactly one constraint, and the enforced interval is not relaxed, then
+    // propagation will force this interval to stay not enforced. Otherwise,
+    // LNS will be able to change which interval will be enforced among all
+    // alternatives.
+    if (RefIsPositive(enforcement_ref) == (value == 0)) {
+      ignored_intervals.insert(i);
+      continue;
+    }
+
     // Fix the value.
     neighborhood.cp_model.mutable_variables(enforcement_var)->clear_domain();
     neighborhood.cp_model.mutable_variables(enforcement_var)->add_domain(value);
     neighborhood.cp_model.mutable_variables(enforcement_var)->add_domain(value);
-
-    // If the interval is ignored, skip for the loop below as there is no
-    // point adding precedence on it.
-    if (RefIsPositive(enforcement_ref) == (value == 0)) {
-      ignored_intervals.insert(i);
-    }
   }
 
   for (const int c : helper.TypeToConstraints(ConstraintProto::kNoOverlap)) {
-    // Sort all non-relaxed intervals of this constraint by current start time.
+    // Sort all non-relaxed intervals of this constraint by current start
+    // time.
     std::vector<std::pair<int64, int>> start_interval_pairs;
     for (const int i :
          neighborhood.cp_model.constraints(c).no_overlap().intervals()) {
@@ -565,8 +658,8 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
 Neighborhood SchedulingNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
-  const auto span = helper_.TypeToConstraints(ConstraintProto::kInterval);
-  std::vector<int> intervals_to_relax(span.begin(), span.end());
+  std::vector<int> intervals_to_relax =
+      helper_.GetActiveIntervals(initial_solution);
   GetRandomSubset(difficulty, &intervals_to_relax, random);
 
   return GenerateSchedulingNeighborhoodForRelaxation(intervals_to_relax,
@@ -577,9 +670,8 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
   std::vector<std::pair<int64, int>> start_interval_pairs;
-  for (const int i : helper_.TypeToConstraints(ConstraintProto::kInterval)) {
+  for (const int i : helper_.GetActiveIntervals(initial_solution)) {
     const ConstraintProto& interval_ct = helper_.ModelProto().constraints(i);
-
     const int start_var = interval_ct.interval().start();
     const int64 start_value = initial_solution.solution(start_var);
     start_interval_pairs.push_back({start_value, i});

@@ -41,12 +41,10 @@ namespace sat {
 // TODO(user): As long as we only exploit symmetry involving only Boolean
 // variables we can make this code more efficient by not detecting symmetries
 // involing integer variable.
-//
-// TODO(user): Make the limit deterministic.
 void FindCpModelSymmetries(
     const SatParameters& params, const CpModelProto& problem,
     std::vector<std::unique_ptr<SparsePermutation>>* generators,
-    double time_limit_seconds = std::numeric_limits<double>::infinity());
+    double deterministic_limit = std::numeric_limits<double>::infinity());
 
 // Basic implementation of some symmetry breaking during presolve.
 //

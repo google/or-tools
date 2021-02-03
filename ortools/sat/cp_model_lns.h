@@ -121,6 +121,13 @@ class NeighborhoodGeneratorHelper : public SubSolver {
     return absl::MakeSpan(type_to_constraints_[type]);
   }
 
+  // Returns the list of indices of active interval constraints according
+  // to the initial_solution and the parameter lns_focus_on_performed_intervals.
+  // If true, this method returns the list of performed intervals in the
+  // solution. If false, it returns all intervals of the model.
+  std::vector<int> GetActiveIntervals(
+      const CpSolverResponse& initial_solution) const;
+
   // The initial problem.
   // Note that the domain of the variables are not updated here.
   const CpModelProto& ModelProto() const { return model_proto_; }
@@ -348,6 +355,18 @@ class SimpleNeighborhoodGenerator : public NeighborhoodGenerator {
                         double difficulty, absl::BitGenRef random) final;
 };
 
+// Pick a random subset of constraints and relax all the variables of these
+// constraints. Note that to satisfy the difficulty, we might not relax all the
+// variable of the "last" constraint.
+class SimpleConstraintNeighborhoodGenerator : public NeighborhoodGenerator {
+ public:
+  explicit SimpleConstraintNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      : NeighborhoodGenerator(name, helper) {}
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, absl::BitGenRef random) final;
+};
+
 // Pick a random subset of variables that are constructed by a BFS in the
 // variable <-> constraint graph. That is, pick a random variable, then all the
 // variable connected by some constraint to the first one, and so on. The
@@ -362,7 +381,7 @@ class VariableGraphNeighborhoodGenerator : public NeighborhoodGenerator {
 };
 
 // Pick a random subset of constraint and relax all of their variables. We are a
-// bit smarter than this because after the first contraint is selected, we only
+// bit smarter than this because after the first constraint is selected, we only
 // select constraints that share at least one variable with the already selected
 // constraints. The variable from the "last" constraint are selected randomly.
 class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {

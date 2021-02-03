@@ -705,9 +705,8 @@ void FindLinearBooleanProblemSymmetries(
                                       /*is_undirected=*/true);
   std::vector<int> factorized_automorphism_group_size;
   // TODO(user): inject the appropriate time limit here.
-  CHECK_OK(symmetry_finder.FindSymmetries(
-      /*time_limit_seconds=*/std::numeric_limits<double>::infinity(),
-      &equivalence_classes, generators, &factorized_automorphism_group_size));
+  CHECK_OK(symmetry_finder.FindSymmetries(&equivalence_classes, generators,
+                                          &factorized_automorphism_group_size));
 
   // Remove from the permutations the part not concerning the literals.
   // Note that some permutation may becomes empty, which means that we had
