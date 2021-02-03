@@ -672,8 +672,8 @@ namespace operations_research {
 			if (!mRstat) {
 				int const rows = SRSgetnbrows(mLp);
 				unique_ptr<char[]> data(new char[rows]);
-				mRstat.swap(data);
 				char * ptrToData = data.get();
+				mRstat.swap(data);
 				CHECK_STATUS(SRSgetrowbasisstatus(mLp, &ptrToData));
 			}
 		}
