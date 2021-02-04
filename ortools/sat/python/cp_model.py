@@ -1539,8 +1539,13 @@ class CpModel(object):
                             ' is not a boolean variable')
 
     def AddHint(self, var, value):
+        """Adds 'var == value' as a hint to the solver."""
         self.__model.solution_hint.vars.append(self.GetOrMakeIndex(var))
         self.__model.solution_hint.values.append(value)
+
+    def ClearHints(self):
+        del self.__model.solution_hint.vars[:]
+        del self.__model.solution_hint.values[:]
 
 
 def EvaluateLinearExpr(expression, solution):
