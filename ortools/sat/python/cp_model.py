@@ -1601,7 +1601,7 @@ class CpSolver(object):
 
     def __init__(self):
         self.__model = None
-        self.__solution = None
+        self.__solution: cp_model_pb2.CpSolverResponse = None
         self.parameters = sat_parameters_pb2.SatParameters()
 
     def Solve(self, model):
