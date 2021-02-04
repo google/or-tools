@@ -557,6 +557,7 @@ test_python_constraint_solver_samples: \
  rpy_vrp_resources \
  rpy_vrp_starts_ends \
  rpy_vrp_time_windows \
+ rpy_vrp_tokens \
  rpy_vrp_with_time_limit \
  \
  rpy_vrpgs \
