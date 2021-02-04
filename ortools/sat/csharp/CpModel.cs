@@ -615,6 +615,19 @@ namespace Google.OrTools.Sat
             model_.SolutionHint.Values.Add(value);
         }
 
+        public void AddAssumption(ILiteral lit)
+        {
+            model_.Assumptions.Add(lit.GetIndex());
+        }
+
+        public void AddAssumptions(IEnumerable<ILiteral> literals)
+        {
+            foreach (ILiteral lit in literals)
+            {
+                AddAssumption(lit);
+            }
+        }
+
         // Internal methods.
 
         void SetObjective(LinearExpr obj, bool minimize)

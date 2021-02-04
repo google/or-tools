@@ -966,6 +966,18 @@ public final class CpModel {
     modelBuilder.getSolutionHintBuilder().addValues(value);
   }
 
+  /** Adds variable as assumption */
+  public void addAssumption(Literal lit) {
+    modelBuilder.addAssumptions(lit.getIndex());
+  }
+
+  /** Adds multiple variables to the assumptions */
+  public void addAssumptions(Literal[] literals) {
+    for (Literal lit : literals) {
+      addAssumption(lit);
+    }
+  }
+
   // Objective.
 
   /** Adds a minimization objective of a linear expression. */

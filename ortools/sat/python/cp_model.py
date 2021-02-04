@@ -1544,8 +1544,17 @@ class CpModel(object):
         self.__model.solution_hint.values.append(value)
 
     def ClearHints(self):
-        del self.__model.solution_hint.vars[:]
-        del self.__model.solution_hint.values[:]
+        self.__model.ClearField("solution_hint")
+
+    def AddAssumption(self, lit):
+        self.__model.assumptions.append(self.GetOrMakeBooleanIndex(lit))
+
+    def AddAssumptions(self, literals):
+        for lit in literals:
+            self.AddAssumption(lit)
+
+    def ClearAssumptions(self):
+        self.__model.ClearField("assumptions")
 
 
 def EvaluateLinearExpr(expression, solution):
@@ -1707,6 +1716,10 @@ class CpSolver(object):
     def ResponseProto(self):
         """Returns the response object."""
         return self.__solution
+
+    def SufficientAssumptionsForInfeasibility(self):
+        """Returns the indices of the infeasible assumptions."""
+        return self.__solution.sufficient_assumptions_for_infeasibility
 
 
 class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
