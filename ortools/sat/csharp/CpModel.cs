@@ -615,6 +615,11 @@ namespace Google.OrTools.Sat
             model_.SolutionHint.Values.Add(value);
         }
 
+        public void ClearHints()
+        {
+            model_.SolutionHint = null;
+        }
+
         public void AddAssumption(ILiteral lit)
         {
             model_.Assumptions.Add(lit.GetIndex());
@@ -626,6 +631,11 @@ namespace Google.OrTools.Sat
             {
                 AddAssumption(lit);
             }
+        }
+
+        public void ClearAssumptions()
+        {
+            model_.Assumptions.Clear();
         }
 
         // Internal methods.

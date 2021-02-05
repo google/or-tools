@@ -966,6 +966,11 @@ public final class CpModel {
     modelBuilder.getSolutionHintBuilder().addValues(value);
   }
 
+  /** Remove all solution hints */
+  public void clearHints() {
+    modelBuilder.clearSolutionHint();
+  }
+
   /** Adds variable as assumption */
   public void addAssumption(Literal lit) {
     modelBuilder.addAssumptions(lit.getIndex());
@@ -976,6 +981,11 @@ public final class CpModel {
     for (Literal lit : literals) {
       addAssumption(lit);
     }
+  }
+
+  /** Remove all solution hints */
+  public void clearAssumptions() {
+    modelBuilder.clearAssumptions();
   }
 
   // Objective.
