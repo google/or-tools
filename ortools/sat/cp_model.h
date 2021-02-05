@@ -862,13 +862,13 @@ class CpModelBuilder {
   /// Remove all hints.
   void ClearHints();
 
-  /// Adds a variable to the assumptions.
+  /// Adds a literal to the model as assumptions.
   void AddAssumption(BoolVar lit);
 
-  /// Adds multiple variables to the assumptions.
+  /// Adds multiple literals to the model as assumptions.
   void AddAssumptions(absl::Span<const BoolVar> literals);
 
-  /// Remove all assumptions.
+  /// Remove all assumptions from the model.
   void ClearAssumptions();
 
   // TODO(user) : add MapDomain?

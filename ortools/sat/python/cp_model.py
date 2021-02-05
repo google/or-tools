@@ -1547,13 +1547,16 @@ class CpModel(object):
         self.__model.ClearField("solution_hint")
 
     def AddAssumption(self, lit):
+        """Add the literal 'lit' to the model as assumptions."""
         self.__model.assumptions.append(self.GetOrMakeBooleanIndex(lit))
 
     def AddAssumptions(self, literals):
+        """Add the literals to the model as assumptions."""
         for lit in literals:
             self.AddAssumption(lit)
 
     def ClearAssumptions(self):
+        """Remove all assumptions from the model."""
         self.__model.ClearField("assumptions")
 
 

@@ -971,19 +971,19 @@ public final class CpModel {
     modelBuilder.clearSolutionHint();
   }
 
-  /** Adds variable as assumption */
+  /** Adds a literal to the model as assumption */
   public void addAssumption(Literal lit) {
     modelBuilder.addAssumptions(lit.getIndex());
   }
 
-  /** Adds multiple variables to the assumptions */
+  /** Adds multiple literals to the model as assumptions */
   public void addAssumptions(Literal[] literals) {
     for (Literal lit : literals) {
       addAssumption(lit);
     }
   }
 
-  /** Remove all solution hints */
+  /** Remove all assumptions from the model */
   public void clearAssumptions() {
     modelBuilder.clearAssumptions();
   }
