@@ -576,6 +576,7 @@ test_dotnet_linear_solver_samples:
 .PHONY: test_dotnet_sat_samples # Build and Run all .Net SAT Samples (located in ortools/sat/samples)
 test_dotnet_sat_samples:
 	$(MAKE) run SOURCE=ortools/sat/samples/AssignmentSat.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/AssumptionsSampleSat.cs
 	$(MAKE) run SOURCE=ortools/sat/samples/BinPackingProblemSat.cs
 	$(MAKE) run SOURCE=ortools/sat/samples/BoolOrSampleSat.cs
 	$(MAKE) run SOURCE=ortools/sat/samples/ChannelingSampleSat.cs

@@ -796,6 +796,24 @@ void CpModelBuilder::AddHint(IntVar var, int64 value) {
   cp_model_.mutable_solution_hint()->add_values(value);
 }
 
+void CpModelBuilder::ClearHints() {
+  cp_model_.mutable_solution_hint()->Clear();
+}
+
+void CpModelBuilder::AddAssumption(BoolVar lit) {
+  cp_model_.mutable_assumptions()->Add(lit.index_);
+}
+
+void CpModelBuilder::AddAssumptions(absl::Span<const BoolVar> literals) {
+  for (const BoolVar& lit : literals) {
+    cp_model_.mutable_assumptions()->Add(lit.index_);
+  }
+}
+
+void CpModelBuilder::ClearAssumptions() {
+  cp_model_.mutable_assumptions()->Clear();
+}
+
 int64 SolutionIntegerValue(const CpSolverResponse& r, const LinearExpr& expr) {
   int64 result = expr.constant();
   for (int i = 0; i < expr.variables().size(); ++i) {

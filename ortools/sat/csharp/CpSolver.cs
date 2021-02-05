@@ -185,6 +185,11 @@ namespace Google.OrTools.Sat
             return response_.WallTime;
         }
 
+        public IList<int> SufficientAssumptionsForInfeasibility()
+        {
+            return response_.SufficientAssumptionsForInfeasibility;
+        }
+
         private CpModelProto model_;
         private CpSolverResponse response_;
         string string_parameters_;

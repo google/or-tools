@@ -115,6 +115,10 @@ public final class CpSolver {
     return solveResponse.getUserTime();
   }
 
+  public java.util.List<Integer> sufficientAssumptionsForInfeasibility() {
+    return solveResponse.getSufficientAssumptionsForInfeasibilityList();
+  }
+
   /** Returns the builder of the parameters of the SAT solver for modification. */
   public SatParameters.Builder getParameters() {
     return solveParameters;

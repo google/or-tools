@@ -431,6 +431,7 @@ test_cc_constraint_solver_samples: \
 .PHONY: test_cc_sat_samples # Build and Run all C++ Sat Samples (located in ortools/sat/samples)
 test_cc_sat_samples: \
  rcc_assignment_sat \
+ rcc_assumptions_sample_sat \
  rcc_binpacking_problem_sat \
  rcc_bool_or_sample_sat \
  rcc_channeling_sample_sat \
