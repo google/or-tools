@@ -35,18 +35,21 @@ public class AssumptionsSampleSat {
     // [START variables]
     IntVar x = model.newIntVar(0, 10, "x");
     IntVar y = model.newIntVar(0, 10, "y");
-    IntVar a = model.newBoolVar("a");
-    IntVar b = model.newBoolVar("b");
+    IntVar z = model.newIntVar(0, 10, "z");
+    Literal a = model.newBoolVar("a");
+    Literal b = model.newBoolVar("b");
+    Literal c = model.newBoolVar("c");
     // [END variables]
 
     // Creates the constraints.
     // [START constraints]
-    model.addGreaterThan(x, 10).onlyEnforceIf(a);
-    model.addLessOrEqual(y, 10).onlyEnforceIf(b);
+    model.addGreaterThan(x, y).onlyEnforceIf(a);
+    model.addGreaterThan(y, z).onlyEnforceIf(b);
+    model.addGreaterThan(z, x).onlyEnforceIf(c);
     // [END constraints]
 
     // Add assumptions
-    model.addAssumptions(new Literal[] {a, b});
+    model.addAssumptions(new Literal[] {a, b, c});
 
     // Create a solver and solve the model.
     // [START solve]

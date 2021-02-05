@@ -27,23 +27,28 @@ void AssumptionsSampleSat() {
   const Domain domain(0, 10);
   const IntVar x = cp_model.NewIntVar(domain).WithName("x");
   const IntVar y = cp_model.NewIntVar(domain).WithName("y");
+  const IntVar z = cp_model.NewIntVar(domain).WithName("z");
   const BoolVar a = cp_model.NewBoolVar().WithName("a");
   const BoolVar b = cp_model.NewBoolVar().WithName("b");
+  const BoolVar c = cp_model.NewBoolVar().WithName("c");
   // [END variables]
 
   // [START constraints]
-  cp_model.AddGreaterThan(x, 10).OnlyEnforceIf(a);
-  cp_model.AddLessOrEqual(y, 10).OnlyEnforceIf(b);
+  cp_model.AddGreaterThan(x, y).OnlyEnforceIf(a);
+  cp_model.AddGreaterThan(y, z).OnlyEnforceIf(b);
+  cp_model.AddGreaterThan(z, x).OnlyEnforceIf(c);
   // [END constraints]
 
   // Add assumptions
-  cp_model.AddAssumptions({a, b});
+  cp_model.AddAssumptions({a, b, c});
 
   // Solving part.
   // [START solve]
   const CpSolverResponse response = Solve(cp_model.Build());
   LOG(INFO) << CpSolverResponseStats(response);
-  LOG(INFO) << response.sufficient_assumptions_for_infeasibility()[0];
+  for (const int index : response.sufficient_assumptions_for_infeasibility()) {
+    LOG(INFO) << index;
+  }
   // [END solve]
 }
 

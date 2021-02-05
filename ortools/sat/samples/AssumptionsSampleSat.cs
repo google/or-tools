@@ -28,18 +28,21 @@ public class AssumptionsSampleSat
         // [START variables]
         IntVar x = model.NewIntVar(0, 10, "x");
         IntVar y = model.NewIntVar(0, 10, "y");
-        IntVar a = model.NewBoolVar("a");
-        IntVar b = model.NewBoolVar("b");
+        IntVar z = model.NewIntVar(0, 10, "z");
+        ILiteral a = model.NewBoolVar("a");
+        ILiteral b = model.NewBoolVar("b");
+        ILiteral c = model.NewBoolVar("c");
         // [END variables]
 
         // Creates the constraints.
         // [START constraints]
-        model.Add(x > 10).OnlyEnforceIf(a);
-        model.Add(y <= 10).OnlyEnforceIf(b);
+        model.Add(x > y).OnlyEnforceIf(a);
+        model.Add(y > z).OnlyEnforceIf(b);
+        model.Add(z > x).OnlyEnforceIf(c);
         // [END constraints]
 
         // Add assumptions
-        model.AddAssumptions(new ILiteral[] { a, b });
+        model.AddAssumptions(new ILiteral[] { a, b, c });
 
         // Creates a solver and solves the model.
         // [START solve]

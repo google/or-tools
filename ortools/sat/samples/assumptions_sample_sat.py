@@ -27,18 +27,21 @@ def AssumptionsSampleSat():
     # [START variables]
     x = model.NewIntVar(0, 10, 'x')
     y = model.NewIntVar(0, 10, 'y')
+    z = model.NewIntVar(0, 10, 'z')
     a = model.NewBoolVar('a')
     b = model.NewBoolVar('b')
+    c = model.NewBoolVar('c')
     # [END variables]
 
     # Creates the constraints.
     # [START constraints]
-    model.Add(x > 10).OnlyEnforceIf(a)
-    model.Add(y <= 10).OnlyEnforceIf(b)
+    model.Add(x > y).OnlyEnforceIf(a)
+    model.Add(y > z).OnlyEnforceIf(b)
+    model.Add(z > x).OnlyEnforceIf(c)
     # [END constraints]
 
     # Add assumptions
-    model.AddAssumptions([a, b])
+    model.AddAssumptions([a, b, c])
 
     # Creates a solver and solves.
     # [START solve]
