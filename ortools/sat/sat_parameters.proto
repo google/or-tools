@@ -966,8 +966,10 @@ message SatParameters {
   optional bool convert_intervals = 177 [default = false];
 
   // Whether we try to automatically detect the symmetries in a model and
-  // exploit them.
-  optional bool detect_symmetries = 183 [default = false];
+  // exploit them. Currently, at level 1 we detect them in presolve and try
+  // to fix Booleans. At level 2, we also do some form of dynamic symmetry
+  // breaking during search.
+  optional int32 symmetry_level = 183 [default = 0];
 
   // ==========================================================================
   // MIP -> CP-SAT (i.e. IP with integer coeff) conversion parameters that are

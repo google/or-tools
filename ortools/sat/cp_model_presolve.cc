@@ -5255,7 +5255,7 @@ bool CpModelPresolver::Presolve() {
 
     // TODO(user): Decide where is the best place for this. Fow now we do it
     // after max clique to get all the bool_and converted to at most ones.
-    if (context_->params().detect_symmetries() && !context_->ModelIsUnsat() &&
+    if (context_->params().symmetry_level() > 0 && !context_->ModelIsUnsat() &&
         !context_->time_limit()->LimitReached() &&
         !context_->keep_all_feasible_solutions) {
       DetectAndExploitSymmetriesInPresolve(context_);

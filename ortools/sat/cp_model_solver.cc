@@ -61,6 +61,7 @@
 #include "ortools/sat/cp_model_postsolve.h"
 #include "ortools/sat/cp_model_presolve.h"
 #include "ortools/sat/cp_model_search.h"
+#include "ortools/sat/cp_model_symmetries.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/drat_checker.h"
@@ -1201,8 +1202,8 @@ void LoadBaseModel(const CpModelProto& model_proto,
   // TODO(user): The core algo and symmetries seems to be problematic in some
   // cases. See for instance: neos-691058.mps.gz. This is probably because as
   // we modify the model, our symmetry might be wrong? investigate.
-  if (!parameters.optimize_with_core()) {
-    mapping->DetectAndLoadBooleanSymmetries(model_proto, model);
+  if (!parameters.optimize_with_core() && parameters.symmetry_level() > 1) {
+    mapping->LoadBooleanSymmetries(model_proto, model);
   }
 
   mapping->ExtractEncoding(model_proto, model);
@@ -2469,6 +2470,7 @@ class LnsSolver : public SubSolver {
       local_params.set_stop_after_first_solution(false);
       local_params.set_log_search_progress(false);
       local_params.set_cp_model_probing_level(0);
+      local_params.set_symmetry_level(0);
 
       if (absl::GetFlag(FLAGS_cp_model_dump_lns)) {
         const std::string name =
@@ -3107,6 +3109,10 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   // Delete the context.
   context.reset(nullptr);
+
+  if (params.symmetry_level() > 1) {
+    DetectAndAddSymmetryToProto(params, &new_cp_model_proto);
+  }
 
   SharedResponseManager shared_response_manager(
       log_search, params.enumerate_all_solutions(), &new_cp_model_proto,

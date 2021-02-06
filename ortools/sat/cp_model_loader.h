@@ -80,12 +80,12 @@ class CpModelMapping {
   // Automatically detect optional variables.
   void DetectOptionalVariables(const CpModelProto& model_proto, Model* m);
 
-  // Experimental. Detects symmetries of the model, and if they only involve
-  // Booleans, add the corresponding symmetries to the solver. We only have the
-  // code for Booleans, it is why we currently ignore symmetries involving
-  // integer variables.
-  void DetectAndLoadBooleanSymmetries(const CpModelProto& model_proto,
-                                      Model* m);
+  // Experimental. Loads the symmetry form the proto symmetry field, as long as
+  // they only involve Booleans.
+  //
+  // TODO(user): We currently only have the code for Booleans, it is why we
+  // currently ignore symmetries involving integer variables.
+  void LoadBooleanSymmetries(const CpModelProto& model_proto, Model* m);
 
   // Extract the encodings (IntegerVariable <-> Booleans) present in the model.
   // This effectively load some linear constraints of size 1 that will be marked

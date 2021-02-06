@@ -230,6 +230,12 @@ message RoutesConstraintProto {
   // Experimental. The demands for each node, and the maximum capacity for each
   // route. Note that this is currently only used for the LP relaxation and one
   // need to add the corresponding constraint to enforce this outside of the LP.
+  //
+  // TODO(user): Ideally, we should be able to extract any dimension like these
+  // (i.e. capacity, route_length, etc..) automatically from the encoding. The
+  // classical way to encode that is to have "current_capacity" variables along
+  // the route and linear equations of the form:
+  //   arc_literal => (current_capacity_tail + demand <= current_capacity_head)
   repeated int32 demands = 4;
   int64 capacity = 5;
 }
@@ -515,6 +521,53 @@ message PartialVariableAssignment {
   repeated int64 values = 2;
 }
 
+// A permutation of integers encoded as a list of cycles, hence the "sparse"
+// format. The image of an element cycle[i] is cycle[(i + 1) % cycle_length].
+message SparsePermutationProto {
+  // Each cycle is listed one after the other in the support field.
+  // The size of each cycle is given (in order) in the cycle_sizes field.
+  repeated int32 support = 1;
+  repeated int32 cycle_sizes = 2;
+}
+
+// A dense matrix of numbers encoded in a flat way, row by row.
+// That is matrix[i][j] = entries[i * num_cols + j];
+message DenseMatrixProto {
+  int32 num_rows = 1;
+  int32 num_cols = 2;
+  repeated int32 entries = 3;
+}
+
+// Experimental. For now, this is meant to be used by the solver and not filled
+// by clients.
+//
+// Hold symmetry information about the set of feasible solutions. If we permute
+// the variable values of any feasible solution using one of the permutation
+// described here, we should always get another feasible solution.
+//
+// We usually also enforce that the objective of the new solution is the same.
+//
+// The group of permutations encoded here is usually computed from the encoding
+// of the model, so it is not meant to be a complete representation of the
+// feasible solution symmetries, just a valid subgroup.
+message SymmetryProto {
+  // A list of variable indices permutations that leave the feasible space of
+  // solution invariant. Usually, we only encode a set of generators of the
+  // group.
+  repeated SparsePermutationProto permutations = 1;
+
+  // An orbitope is a special symmetry structure of the solution space. If the
+  // variable indices are arranged in a matrix (with no duplicates), then any
+  // permutation of the columns will be a valid permutation of the feasible
+  // space.
+  //
+  // This arise quite often. The typical example is a graph coloring problem
+  // where for each node i, you have j booleans to indicate its color. If the
+  // variables color_of_i_is_j are arranged in a matrix[i][j], then any columns
+  // permutations leave the problem invariant.
+  repeated DenseMatrixProto orbitopes = 2;
+}
+
 // A constraint programming problem.
 message CpModelProto {
   // For debug/logging only. Can be empty.
@@ -566,6 +619,13 @@ message CpModelProto {
   // Such infeasibility explanation will be available in the
   // sufficient_assumptions_for_infeasibility response field.
   repeated int32 assumptions = 7;
+
+  // For now, this is not meant to be filled by a client writing a model, but
+  // by our preprocessing step.
+  //
+  // Information about the symmetries of the feasible solution space.
+  // These usually leaves the objective invariant.
+  SymmetryProto symmetry = 8;
 }
 
 // The status returned by a solver trying to solve a CpModelProto.

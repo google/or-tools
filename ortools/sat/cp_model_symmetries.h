@@ -46,6 +46,10 @@ void FindCpModelSymmetries(
     std::vector<std::unique_ptr<SparsePermutation>>* generators,
     double deterministic_limit = std::numeric_limits<double>::infinity());
 
+// Detects symmetries and fill the symmetry field.
+void DetectAndAddSymmetryToProto(const SatParameters& params,
+                                 CpModelProto* proto);
+
 // Basic implementation of some symmetry breaking during presolve.
 //
 // Currently this just try to fix variables by detecting symmetries between

@@ -32,7 +32,6 @@
 #include "ortools/sat/circuit.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_symmetries.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cumulative.h"
 #include "ortools/sat/diffn.h"
@@ -271,25 +270,20 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
   }
 }
 
-void CpModelMapping::DetectAndLoadBooleanSymmetries(
-    const CpModelProto& model_proto, Model* m) {
+void CpModelMapping::LoadBooleanSymmetries(const CpModelProto& model_proto,
+                                           Model* m) {
   const SatParameters& params = *m->GetOrCreate<SatParameters>();
-  if (!params.detect_symmetries()) return;
-
-  // TODO(user): Use a deterministic time limit.
-  std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries(params, model_proto, &generators,
-                        /*time_limit_seconds=*/1.0);
-  if (generators.empty()) return;
+  const SymmetryProto symmetry = model_proto.symmetry();
+  if (symmetry.permutations().empty()) return;
 
   auto* sat_solver = m->GetOrCreate<SatSolver>();
   auto* symmetry_handler = m->GetOrCreate<SymmetryPropagator>();
   sat_solver->AddPropagator(symmetry_handler);
   const int num_literals = 2 * sat_solver->NumVariables();
 
-  for (const auto& perm : generators) {
+  for (const SparsePermutationProto& perm : symmetry.permutations()) {
     bool all_bool = true;
-    for (const int var : perm->Support()) {
+    for (const int var : perm.support()) {
       if (!IsBoolean(var)) {
         all_bool = false;
         break;
@@ -300,16 +294,22 @@ void CpModelMapping::DetectAndLoadBooleanSymmetries(
     // Convert the variable symmetry to a "literal" one.
     auto literal_permutation =
         absl::make_unique<SparsePermutation>(num_literals);
-    const int num_cycle = perm->NumCycles();
+    int support_index = 0;
+    const int num_cycle = perm.cycle_sizes().size();
     for (int i = 0; i < num_cycle; ++i) {
-      for (const int var : perm->Cycle(i)) {
+      const int size = perm.cycle_sizes(i);
+      const int saved_support_index = support_index;
+      for (int j = 0; j < size; ++j) {
+        const int var = perm.support(support_index++);
         literal_permutation->AddToCurrentCycle(Literal(var).Index().value());
       }
       literal_permutation->CloseCurrentCycle();
 
       // Note that we also need to add the corresponding cycle for the negated
       // literals.
-      for (const int var : perm->Cycle(i)) {
+      support_index = saved_support_index;
+      for (int j = 0; j < size; ++j) {
+        const int var = perm.support(support_index++);
         literal_permutation->AddToCurrentCycle(
             Literal(var).NegatedIndex().value());
       }
