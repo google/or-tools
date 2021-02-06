@@ -1439,7 +1439,7 @@ void Solver::Init() {
   optimization_direction_ = NOT_SET;
   timer_ = absl::make_unique<ClockTimer>();
   searches_.assign(1, new Search(this, 0));
-  fail_stamp_ = GG_ULONGLONG(1);
+  fail_stamp_ = uint64_t{1};
   balancing_decision_ = absl::make_unique<BalancingDecision>();
   fail_intercept_ = nullptr;
   true_constraint_ = nullptr;

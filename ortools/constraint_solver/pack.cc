@@ -113,7 +113,7 @@ Pack::Pack(Solver* const s, const std::vector<IntVar*>& vars,
       forced_(bins_ + 1),
       removed_(bins_ + 1),
       holes_(vars_.size()),
-      stamp_(GG_ULONGLONG(0)),
+      stamp_(uint64_t{0}),
       demon_(nullptr),
       in_process_(false) {
   for (int i = 0; i < vars_.size(); ++i) {

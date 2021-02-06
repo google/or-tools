@@ -410,7 +410,7 @@ class SmallRevBitSet {
   /// Returns the number of bits set to one.
   int64 Cardinality() const;
   /// Is bitset null?
-  bool IsCardinalityZero() const { return bits_.Value() == GG_ULONGLONG(0); }
+  bool IsCardinalityZero() const { return bits_.Value() == uint64_t{0}; }
   /// Does it contains only one bit set?
   bool IsCardinalityOne() const {
     return (bits_.Value() != 0) && !(bits_.Value() & (bits_.Value() - 1));

@@ -20,7 +20,7 @@
 
 namespace operations_research {
 namespace internal {
-inline uint64 OneBit64(int pos) { return GG_ULONGLONG(1) << pos; }
+inline uint64 OneBit64(int pos) { return uint64_t{1} << pos; }
 inline uint64 BitPos64(uint64 pos) { return (pos & 63); }
 inline uint64 BitOffset64(uint64 pos) { return (pos >> 6); }
 inline uint64 BitLength64(uint64 size) { return ((size + 63) >> 6); }

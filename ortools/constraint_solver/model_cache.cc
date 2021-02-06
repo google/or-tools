@@ -57,7 +57,7 @@ bool IsEqual(const std::vector<T*>& a1, const std::vector<T*>& a2) {
 template <class A1, class A2>
 uint64 Hash2(const A1& a1, const A2& a2) {
   uint64 a = Hash1(a1);
-  uint64 b = GG_ULONGLONG(0xe08c1d668b756f82);  // more of the golden ratio
+  uint64 b = uint64_t{0xe08c1d668b756f82};  // more of the golden ratio
   uint64 c = Hash1(a2);
   mix(a, b, c);
   return c;

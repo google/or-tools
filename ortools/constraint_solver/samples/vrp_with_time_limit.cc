@@ -15,6 +15,7 @@
 // [START import]
 #include <vector>
 
+#include "google/protobuf/duration.pb.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
@@ -89,9 +90,9 @@ void VrpGlobalSpan() {
   // Add Distance constraint.
   // [START distance_constraint]
   routing.AddDimension(transit_callback_index,
-                       /*slack=*/0,
-                       /*horizon=*/3000,
-                       /*start_cumul_to_zero=*/true, "Distance");
+                       /*slack_max=*/0,
+                       /*capacity=*/3000,
+                       /*fix_start_cumul_to_zero=*/true, "Distance");
   const RoutingDimension& distance_dimension =
       routing.GetDimensionOrDie("Distance");
   const_cast<RoutingDimension&>(distance_dimension)

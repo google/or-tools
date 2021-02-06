@@ -101,7 +101,7 @@ inline uint32 Hash32NumWithSeed(uint32 num, uint32 c) {
 }
 
 inline uint64 Hash64NumWithSeed(uint64 num, uint64 c) {
-  uint64 b = GG_ULONGLONG(0xe08c1d668b756f82);  // More of the golden ratio.
+  uint64 b = uint64_t{0xe08c1d668b756f82};  // More of the golden ratio.
   operations_research::mix(num, b, c);
   return c;
 }
@@ -148,7 +148,7 @@ struct hash<std::array<T, N>> {
 namespace util_hash {
 
 inline uint64 Hash(uint64 num, uint64 c) {
-  uint64 b = GG_ULONGLONG(0xe08c1d668b756f82);  // More of the golden ratio.
+  uint64 b = uint64_t{0xe08c1d668b756f82};  // More of the golden ratio.
   operations_research::mix(num, b, c);
   return c;
 }

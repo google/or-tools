@@ -1636,7 +1636,7 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     bits_ = new uint64[bsize_];
     stamps_ = new uint64[bsize_];
     for (int i = 0; i < bsize_; ++i) {
-      bits_[i] = GG_ULONGLONG(0);
+      bits_[i] = uint64_t{0};
       stamps_[i] = s->stamp() - 1;
     }
     for (int i = 0; i < sorted_values.size(); ++i) {
@@ -1808,7 +1808,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
  public:
   SmallBitSet(Solver* const s, int64 vmin, int64 vmax)
       : BitSet(s),
-        bits_(GG_ULONGLONG(0)),
+        bits_(uint64_t{0}),
         stamp_(s->stamp() - 1),
         omin_(vmin),
         omax_(vmax),
@@ -1820,7 +1820,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
   SmallBitSet(Solver* const s, const std::vector<int64>& sorted_values,
               int64 vmin, int64 vmax)
       : BitSet(s),
-        bits_(GG_ULONGLONG(0)),
+        bits_(uint64_t{0}),
         stamp_(s->stamp() - 1),
         omin_(vmin),
         omax_(vmax),
@@ -1855,7 +1855,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
 
     // Create the mask and compute new bits
     const uint64 new_bits = bits_ & OneRange64(nmin - omin_, cmax - omin_);
-    if (new_bits != GG_ULONGLONG(0)) {
+    if (new_bits != uint64_t{0}) {
       // Compute new size and new min
       size_.SetValue(solver_, BitCount64(new_bits));
       if (bit(nmin)) {  // Common case, the new min is inside the bitset
@@ -1879,7 +1879,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
 
     // Create the mask and compute new_bits
     const uint64 new_bits = bits_ & OneRange64(cmin - omin_, nmax - omin_);
-    if (new_bits != GG_ULONGLONG(0)) {
+    if (new_bits != uint64_t{0}) {
       // Compute new size and new min
       size_.SetValue(solver_, BitCount64(new_bits));
       if (bit(nmax)) {  // Common case, the new max is inside the bitset
@@ -6258,7 +6258,7 @@ class LinkExprAndDomainIntVar : public CastConstraint {
         expr_(expr),
         cached_min_(kint64min),
         cached_max_(kint64max),
-        fail_stamp_(GG_ULONGLONG(0)) {}
+        fail_stamp_(uint64_t{0}) {}
 
   ~LinkExprAndDomainIntVar() override {}
 

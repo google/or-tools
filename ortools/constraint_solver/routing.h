@@ -2575,11 +2575,10 @@ class RoutingDimension {
   bool HasBreakConstraints() const;
 #if !defined(SWIGPYTHON)
   /// Deprecated, sets pre_travel(i, j) = node_visit_transit[i]
-  /// and post_travel(i, j) = group_delays(i, j).
-  void SetBreakIntervalsOfVehicle(
-      std::vector<IntervalVar*> breaks, int vehicle,
-      std::vector<int64> node_visit_transits,
-      std::function<int64(int64, int64)> group_delays);
+  /// and post_travel(i, j) = delays(i, j).
+  void SetBreakIntervalsOfVehicle(std::vector<IntervalVar*> breaks, int vehicle,
+                                  std::vector<int64> node_visit_transits,
+                                  std::function<int64(int64, int64)> delays);
 
   /// Returns the break intervals set by SetBreakIntervalsOfVehicle().
   const std::vector<IntervalVar*>& GetBreakIntervalsOfVehicle(

@@ -149,7 +149,7 @@ void RevBitSet::ClearAll(Solver* const solver) {
   for (int offset = 0; offset < length_; ++offset) {
     if (bits_[offset]) {
       Save(solver, offset);
-      bits_[offset] = GG_ULONGLONG(0);
+      bits_[offset] = uint64_t{0};
     }
   }
 }

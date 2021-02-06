@@ -40,27 +40,18 @@ typedef uint64_t uint64;
 
 // long long macros to be used because gcc and vc++ use different suffixes,
 // and different size specifiers in format strings
-#undef GG_LONGLONG
-#undef GG_ULONGLONG
-
-#define GG_LONGLONG(x) INT64_C(x)
-#define GG_ULONGLONG(x) UINT64_C(x)
-
-static const uint8 kuint8max = static_cast<uint8>(0xFF);
-static const uint16 kuint16max = static_cast<uint16>(0xFFFF);
-static const uint32 kuint32max = static_cast<uint32>(0xFFFFFFFF);
-static const uint64 kuint64max =
-    static_cast<uint64>(GG_LONGLONG(0xFFFFFFFFFFFFFFFF));
-static const int8 kint8min = static_cast<int8>(0x80);
-static const int8 kint8max = static_cast<int8>(0x7F);
-static const int16 kint16min = static_cast<int16>(0x8000);
-static const int16 kint16max = static_cast<int16>(0x7FFF);
-static const int32 kint32min = static_cast<int32>(0x80000000);
-static const int32 kint32max = static_cast<int32>(0x7FFFFFFF);
-static const int64 kint64min =
-    static_cast<int64>(GG_LONGLONG(0x8000000000000000));
-static const int64 kint64max =
-    static_cast<int64>(GG_LONGLONG(0x7FFFFFFFFFFFFFFF));
+static const uint8 kuint8max = UINT8_MAX;
+static const uint16 kuint16max = UINT16_MAX;
+static const uint32 kuint32max = UINT32_MAX;
+static const uint64 kuint64max = UINT64_MAX;
+static const int8 kint8min = INT8_MIN;
+static const int8 kint8max = INT8_MAX;
+static const int16 kint16min = INT16_MIN;
+static const int16 kint16max = INT16_MAX;
+static const int32 kint32min = INT32_MIN;
+static const int32 kint32max = INT32_MAX;
+static const int64 kint64min = INT64_MIN;
+static const int64 kint64max = INT64_MAX;
 
 #ifdef STLPORT
 #include <cstdio>

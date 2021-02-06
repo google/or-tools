@@ -6833,13 +6833,14 @@ void RoutingDimension::SetBreakIntervalsOfVehicle(
 void RoutingDimension::SetBreakIntervalsOfVehicle(
     std::vector<IntervalVar*> breaks, int vehicle,
     std::vector<int64> node_visit_transits,
-    std::function<int64(int64, int64)> group_delays) {
+    std::function<int64(int64, int64)> delays) {
   if (breaks.empty()) return;
   const int visit_evaluator = model()->RegisterTransitCallback(
       [node_visit_transits](int64 from, int64 to) {
         return node_visit_transits[from];
       });
-  const int delay_evaluator = model()->RegisterTransitCallback(group_delays);
+  const int delay_evaluator =
+      model()->RegisterTransitCallback(std::move(delays));
   SetBreakIntervalsOfVehicle(std::move(breaks), vehicle, visit_evaluator,
                              delay_evaluator);
 }

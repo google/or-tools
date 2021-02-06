@@ -224,14 +224,14 @@ int64 IntTupleSet::Data::Fingerprint(const std::vector<T>& tuple) const {
       return tuple[0];
     case 2: {
       uint64 x = tuple[0];
-      uint64 y = GG_ULONGLONG(0xe08c1d668b756f82);
+      uint64 y = uint64_t{0xe08c1d668b756f82};
       uint64 z = tuple[1];
       mix(x, y, z);
       return z;
     }
     default: {
       uint64 x = tuple[0];
-      uint64 y = GG_ULONGLONG(0xe08c1d668b756f82);
+      uint64 y = uint64_t{0xe08c1d668b756f82};
       for (int i = 1; i < tuple.size(); ++i) {
         uint64 z = tuple[i];
         mix(x, y, z);

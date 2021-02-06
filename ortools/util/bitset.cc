@@ -54,7 +54,7 @@ namespace operations_research {
     }                                                                         \
   }
 
-BIT_COUNT_RANGE(64, GG_ULONGLONG(0))
+BIT_COUNT_RANGE(64, uint64_t{0})
 BIT_COUNT_RANGE(32, 0U)
 
 #undef BIT_COUNT_RANGE

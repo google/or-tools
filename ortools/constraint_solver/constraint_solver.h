@@ -3302,7 +3302,7 @@ class Demon : public BaseObject {
  public:
   /// This indicates the priority of a demon. Immediate demons are treated
   /// separately and corresponds to variables.
-  Demon() : stamp_(GG_ULONGLONG(0)) {}
+  Demon() : stamp_(uint64_t{0}) {}
   ~Demon() override {}
 
   /// This is the main callback of the demon.

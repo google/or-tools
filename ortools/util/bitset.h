@@ -30,20 +30,20 @@ namespace operations_research {
 // Basic bit operations
 
 // Useful constants: word and double word will all bits set.
-static const uint64 kAllBits64 = GG_ULONGLONG(0xFFFFFFFFFFFFFFFF);
-static const uint64 kAllBitsButLsb64 = GG_ULONGLONG(0xFFFFFFFFFFFFFFFE);
+static const uint64 kAllBits64 = uint64_t{0xFFFFFFFFFFFFFFFF};
+static const uint64 kAllBitsButLsb64 = uint64_t{0xFFFFFFFFFFFFFFFE};
 static const uint32 kAllBits32 = 0xFFFFFFFFU;
 
 // Returns a word with only bit pos set.
-inline uint64 OneBit64(int pos) { return GG_ULONGLONG(1) << pos; }
+inline uint64 OneBit64(int pos) { return uint64_t{1} << pos; }
 inline uint32 OneBit32(int pos) { return 1U << pos; }
 
 // Returns the number of bits set in n.
 inline uint64 BitCount64(uint64 n) {
-  const uint64 m1 = GG_ULONGLONG(0x5555555555555555);
-  const uint64 m2 = GG_ULONGLONG(0x3333333333333333);
-  const uint64 m4 = GG_ULONGLONG(0x0F0F0F0F0F0F0F0F);
-  const uint64 h01 = GG_ULONGLONG(0x0101010101010101);
+  const uint64 m1 = uint64_t{0x5555555555555555};
+  const uint64 m2 = uint64_t{0x3333333333333333};
+  const uint64 m4 = uint64_t{0x0F0F0F0F0F0F0F0F};
+  const uint64 h01 = uint64_t{0x0101010101010101};
   n -= (n >> 1) & m1;
   n = (n & m2) + ((n >> 2) & m2);
   n = (n + (n >> 4)) & m4;
@@ -79,7 +79,7 @@ inline int LeastSignificantBitPosition64Fast(uint64 n) {
 #endif
 
 inline int LeastSignificantBitPosition64DeBruijn(uint64 n) {
-  static const uint64 kSeq = GG_ULONGLONG(0x0218a392dd5fb34f);
+  static const uint64 kSeq = uint64_t{0x0218a392dd5fb34f};
   static const int kTab[64] = {
       // initialized by 'kTab[(kSeq << i) >> 58] = i
       0,  1,  2,  7,  3,  13, 8,  19, 4,  25, 14, 28, 9,  52, 20, 58,
@@ -399,9 +399,7 @@ int32 UnsafeMostSignificantBitPosition32(const uint32* const bitset,
                                          uint32 start, uint32 end);
 
 // Returns a mask with the bits pos % 64 and (pos ^ 1) % 64 sets.
-inline uint64 TwoBitsFromPos64(uint64 pos) {
-  return GG_ULONGLONG(3) << (pos & 62);
-}
+inline uint64 TwoBitsFromPos64(uint64 pos) { return uint64_t{3} << (pos & 62); }
 
 // This class is like an ITIVector<IndexType, bool> except that it provides a
 // more efficient way to iterate over the positions set to true. It achieves
