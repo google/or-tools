@@ -89,6 +89,9 @@ class LinearConstraintManager {
 
   // The objective is used as one of the criterion to score cuts.
   // The more a cut is parallel to the objective, the better its score is.
+  //
+  // Currently this should only be called once per IntegerVariable (Checked). It
+  // is easy to support dynamic modification if it becomes needed.
   void SetObjectiveCoefficient(IntegerVariable var, IntegerValue coeff);
 
   // Heuristic to decides what LP is best solved next. The given lp_solution
@@ -198,10 +201,12 @@ class LinearConstraintManager {
   // Total deterministic time spent in this class.
   double dtime_ = 0.0;
 
-  // Dense representation of the objective coeffs indexed by positive variables
-  // indices. It contains 0.0 where the variables does not appear in the
-  // objective.
-  absl::StrongVector<IntegerVariable, double> dense_objective_coeffs_;
+  // Sparse representation of the objective coeffs indexed by positive variables
+  // indices. Important: We cannot use a dense representation here in the corner
+  // case where we have many indepedent LPs. Alternatively, we could share a
+  // dense vector between all LinearConstraintManager.
+  double sum_of_squared_objective_coeffs_ = 0.0;
+  absl::flat_hash_map<IntegerVariable, double> objective_map_;
 
   TimeLimit* time_limit_;
   Model* model_;

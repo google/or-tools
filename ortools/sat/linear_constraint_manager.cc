@@ -170,11 +170,7 @@ void LinearConstraintManager::ComputeObjectiveParallelism(
   CHECK(objective_is_defined_);
   // lazy computation of objective norm.
   if (!objective_norm_computed_) {
-    double sum = 0.0;
-    for (const double coeff : dense_objective_coeffs_) {
-      sum += coeff * coeff;
-    }
-    objective_l2_norm_ = std::sqrt(sum);
+    objective_l2_norm_ = std::sqrt(sum_of_squared_objective_coeffs_);
     objective_norm_computed_ = true;
   }
   CHECK_GT(objective_l2_norm_, 0.0);
@@ -189,11 +185,9 @@ void LinearConstraintManager::ComputeObjectiveParallelism(
   double unscaled_objective_parallelism = 0.0;
   for (int i = 0; i < lc.vars.size(); ++i) {
     const IntegerVariable var = lc.vars[i];
-    DCHECK(VariableIsPositive(var));
-    if (var < dense_objective_coeffs_.size()) {
-      unscaled_objective_parallelism +=
-          ToDouble(lc.coeffs[i]) * dense_objective_coeffs_[var];
-    }
+    const auto it = objective_map_.find(var);
+    if (it == objective_map_.end()) continue;
+    unscaled_objective_parallelism += it->second * ToDouble(lc.coeffs[i]);
   }
   const double objective_parallelism =
       unscaled_objective_parallelism /
@@ -307,10 +301,11 @@ void LinearConstraintManager::SetObjectiveCoefficient(IntegerVariable var,
     var = NegationOf(var);
     coeff = -coeff;
   }
-  if (var.value() >= dense_objective_coeffs_.size()) {
-    dense_objective_coeffs_.resize(var.value() + 1, 0.0);
-  }
-  dense_objective_coeffs_[var] = ToDouble(coeff);
+  const double coeff_as_double = ToDouble(coeff);
+  const auto insert = objective_map_.insert({var, coeff_as_double});
+  CHECK(insert.second)
+      << "SetObjectiveCoefficient() called twice with same variable";
+  sum_of_squared_objective_coeffs_ += coeff_as_double * coeff_as_double;
 }
 
 bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
