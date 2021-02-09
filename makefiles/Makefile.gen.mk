@@ -1613,13 +1613,10 @@ objs/sat/cp_model_loader.$O: ortools/sat/cp_model_loader.cc \
  ortools/base/mathutil.h ortools/sat/linear_constraint.h \
  ortools/sat/precedences.h ortools/base/stl_util.h \
  ortools/sat/all_different.h ortools/sat/circuit.h \
- ortools/sat/cp_model_symmetries.h \
- ortools/algorithms/sparse_permutation.h ortools/sat/presolve_context.h \
- ortools/sat/presolve_util.h ortools/util/affine_relation.h \
- ortools/base/iterator_adaptors.h ortools/sat/cumulative.h \
- ortools/sat/diffn.h ortools/sat/disjunctive.h ortools/sat/theta_tree.h \
- ortools/sat/implied_bounds.h ortools/sat/symmetry.h ortools/sat/table.h \
- ortools/sat/timetable.h | $(OBJ_DIR)/sat
+ ortools/sat/cumulative.h ortools/sat/diffn.h ortools/sat/disjunctive.h \
+ ortools/sat/theta_tree.h ortools/sat/implied_bounds.h \
+ ortools/sat/symmetry.h ortools/algorithms/sparse_permutation.h \
+ ortools/sat/table.h ortools/sat/timetable.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_loader.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_loader.$O
 
 objs/sat/cp_model_objective.$O: ortools/sat/cp_model_objective.cc \
@@ -1742,8 +1739,9 @@ objs/sat/cp_model_solver.$O: ortools/sat/cp_model_solver.cc \
  ortools/sat/presolve_context.h ortools/sat/presolve_util.h \
  ortools/util/affine_relation.h ortools/base/iterator_adaptors.h \
  ortools/sat/cp_model_search.h ortools/sat/integer_search.h \
- ortools/sat/cuts.h ortools/sat/implied_bounds.h \
- ortools/sat/linear_constraint_manager.h \
+ ortools/sat/cp_model_symmetries.h \
+ ortools/algorithms/sparse_permutation.h ortools/sat/cuts.h \
+ ortools/sat/implied_bounds.h ortools/sat/linear_constraint_manager.h \
  ortools/sat/linear_programming_constraint.h ortools/sat/zero_half_cuts.h \
  ortools/sat/linear_relaxation.h ortools/sat/optimization.h \
  ortools/gen/ortools/sat/boolean_problem.pb.h ortools/sat/probing.h \
