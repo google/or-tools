@@ -2481,7 +2481,7 @@ class LnsSolver : public SubSolver {
             file::SetTextProto(name, neighborhood.cp_model, file::Defaults()));
       }
 
-      Model local_model;
+      Model local_model(solution_info);
       *(local_model.GetOrCreate<SatParameters>()) = local_params;
       TimeLimit* local_time_limit = local_model.GetOrCreate<TimeLimit>();
       local_time_limit->ResetLimitFromParameters(local_params);
@@ -2511,12 +2511,6 @@ class LnsSolver : public SubSolver {
       SolveLoadedCpModel(neighborhood.cp_model, &local_response_manager,
                          &local_model);
       CpSolverResponse local_response = local_response_manager.GetResponse();
-      if (local_response.solution_info().empty()) {
-        local_response.set_solution_info(solution_info);
-      } else {
-        local_response.set_solution_info(
-            absl::StrCat(solution_info, " ", local_response.solution_info()));
-      }
 
       // TODO(user): we actually do not need to postsolve if the solution is
       // not going to be used...
