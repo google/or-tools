@@ -234,7 +234,7 @@ class SharedResponseManager {
   void SetUpdatePrimalIntegralOnEachChange(bool set);
 
   // Updates the inner objective bounds.
-  void UpdateInnerObjectiveBounds(const std::string& worker_info,
+  void UpdateInnerObjectiveBounds(const std::string& update_info,
                                   IntegerValue lb, IntegerValue ub);
 
   // Reads the new solution from the response and update our state. For an
@@ -293,6 +293,9 @@ class SharedResponseManager {
     dump_prefix_ = dump_prefix;
   }
 
+  // Display improvement stats.
+  void DisplayImprovementStatistics();
+
  private:
   void TestGapLimitsIfNeeded() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void FillObjectiveValuesInBestResponse()
@@ -300,6 +303,11 @@ class SharedResponseManager {
   void SetStatsFromModelInternal(Model* model)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void UpdatePrimalIntegralInternal() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
+  void RegisterSolutionFound(const std::string& improvement_info)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  void RegisterObjectiveBoundImprovement(const std::string& improvement_info)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   const bool log_updates_;
   const bool enumerate_all_solutions_;
@@ -337,6 +345,10 @@ class SharedResponseManager {
 
   // Dump prefix.
   std::string dump_prefix_;
+
+  // Used for statistics of the improvements found by workers.
+  std::map<std::string, int> primal_improvements_count_ ABSL_GUARDED_BY(mutex_);
+  std::map<std::string, int> dual_improvements_count_ ABSL_GUARDED_BY(mutex_);
 };
 
 // This class manages a pool of lower and upper bounds on a set of variables in

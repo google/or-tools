@@ -1680,7 +1680,7 @@ void QuickSolveWithHint(const CpModelProto& model_proto,
   if (status == SatSolver::Status::FEASIBLE) {
     CpSolverResponse response;
     FillSolutionInResponse(model_proto, *model, &response);
-    response.set_solution_info(absl::StrCat(solution_info, " [hint]"));
+    response.set_solution_info(absl::StrCat(solution_info, "[hint]"));
     shared_response_manager->NewSolution(response, model);
 
     if (!model_proto.has_objective()) {
@@ -1699,7 +1699,7 @@ void QuickSolveWithHint(const CpModelProto& model_proto,
                   shared_response_manager->GetInnerObjectiveUpperBound()),
               {}, {})) {
         shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
-            absl::StrCat(solution_info, " [hint]"));
+            absl::StrCat(solution_info, "[hint]"));
         shared_response_manager->SetStatsFromModel(model);
         return;
       }
@@ -2515,7 +2515,7 @@ class LnsSolver : public SubSolver {
         local_response.set_solution_info(solution_info);
       } else {
         local_response.set_solution_info(
-            absl::StrCat(local_response.solution_info(), " ", solution_info));
+            absl::StrCat(solution_info, " ", local_response.solution_info()));
       }
 
       // TODO(user): we actually do not need to postsolve if the solution is
@@ -3247,6 +3247,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     // For now, just pass in all assumptions.
     *final_response.mutable_sufficient_assumptions_for_infeasibility() =
         model_proto.assumptions();
+  }
+  if (log_search && params.num_search_workers() > 1) {
+    shared_response_manager.DisplayImprovementStatistics();
   }
   return final_response;
 }

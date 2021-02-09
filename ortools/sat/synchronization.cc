@@ -113,9 +113,9 @@ SharedResponseManager::SharedResponseManager(bool log_updates,
 
 namespace {
 
-void LogNewSolution(const std::string& event_or_solution_count,
-                    double time_in_seconds, double obj_best, double obj_lb,
-                    double obj_ub, const std::string& solution_info) {
+void LogProgress(const std::string& event_or_solution_count,
+                 double time_in_seconds, double obj_best, double obj_lb,
+                 double obj_ub, const std::string& solution_info) {
   const std::string obj_next =
       absl::StrFormat("next:[%.9g,%.9g]", obj_lb, obj_ub);
   LOG(INFO) << absl::StrFormat("#%-5s %6.2fs best:%-5.9g %-15s %s",
@@ -123,9 +123,8 @@ void LogNewSolution(const std::string& event_or_solution_count,
                                obj_best, obj_next, solution_info);
 }
 
-void LogNewSatSolution(const std::string& event_or_solution_count,
-                       double time_in_seconds,
-                       const std::string& solution_info) {
+void LogSatProgress(const std::string& event_or_solution_count,
+                    double time_in_seconds, const std::string& solution_info) {
   LOG(INFO) << absl::StrFormat("#%-5s %6.2fs  %s", event_or_solution_count,
                                time_in_seconds, solution_info);
 }
@@ -211,7 +210,7 @@ void SharedResponseManager::TestGapLimitsIfNeeded() {
 }
 
 void SharedResponseManager::UpdateInnerObjectiveBounds(
-    const std::string& worker_info, IntegerValue lb, IntegerValue ub) {
+    const std::string& update_info, IntegerValue lb, IntegerValue ub) {
   absl::MutexLock mutex_lock(&mutex_);
   CHECK(model_proto_.has_objective());
 
@@ -246,7 +245,7 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
       best_response_.set_status(CpSolverStatus::INFEASIBLE);
     }
     if (update_integral_on_each_change_) UpdatePrimalIntegralInternal();
-    if (log_updates_) LogNewSatSolution("Done", wall_timer_.Get(), worker_info);
+    if (log_updates_) LogSatProgress("Done", wall_timer_.Get(), update_info);
     return;
   }
   if (log_updates_ && change) {
@@ -258,8 +257,8 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
     if (model_proto_.objective().scaling_factor() < 0) {
       std::swap(new_lb, new_ub);
     }
-    LogNewSolution("Bound", wall_timer_.Get(), best, new_lb, new_ub,
-                   worker_info);
+    RegisterObjectiveBoundImprovement(update_info);
+    LogProgress("Bound", wall_timer_.Get(), best, new_lb, new_ub, update_info);
   }
   if (change) TestGapLimitsIfNeeded();
 }
@@ -287,7 +286,7 @@ void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
     CHECK_EQ(num_solutions_, 0);
     best_response_.set_status(CpSolverStatus::INFEASIBLE);
   }
-  if (log_updates_) LogNewSatSolution("Done", wall_timer_.Get(), worker_info);
+  if (log_updates_) LogSatProgress("Done", wall_timer_.Get(), worker_info);
 }
 
 void SharedResponseManager::AddUnsatCore(const std::vector<int>& core) {
@@ -463,11 +462,12 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
       if (model_proto_.objective().scaling_factor() < 0) {
         std::swap(lb, ub);
       }
-      LogNewSolution(absl::StrCat(num_solutions_), wall_timer_.Get(), best, lb,
-                     ub, solution_info);
+      RegisterSolutionFound(solution_info);
+      LogProgress(absl::StrCat(num_solutions_), wall_timer_.Get(), best, lb, ub,
+                  solution_info);
     } else {
-      LogNewSatSolution(absl::StrCat(num_solutions_), wall_timer_.Get(),
-                        solution_info);
+      LogSatProgress(absl::StrCat(num_solutions_), wall_timer_.Get(),
+                     solution_info);
     }
   }
 
@@ -562,6 +562,60 @@ bool SharedResponseManager::ProblemIsSolved() const {
   absl::MutexLock mutex_lock(&mutex_);
   return best_response_.status() == CpSolverStatus::OPTIMAL ||
          best_response_.status() == CpSolverStatus::INFEASIBLE;
+}
+
+std::string ExtractWorkerName(const std::string& improvement_info) {
+  if (improvement_info.empty()) return "";
+
+  std::string worker_name = improvement_info;
+
+  // Remove ' [hint]' suffix.
+  const auto& hint_suffix = worker_name.find(" [");
+  if (hint_suffix != std::string::npos) {
+    worker_name.erase(hint_suffix);
+  }
+
+  // Remove lns info suffix.
+  const auto& lns_suffix = worker_name.find('(');
+  if (lns_suffix != std::string::npos) {
+    worker_name.erase(lns_suffix);
+  }
+
+  // Remove fixed_bools suffix.
+  const auto fixed_suffix = worker_name.find(" fixed_bools:");
+  if (fixed_suffix != std::string::npos) {
+    worker_name.erase(fixed_suffix);
+  }
+
+  return worker_name;
+}
+
+void SharedResponseManager::RegisterSolutionFound(
+    const std::string& improvement_info) {
+  if (improvement_info.empty()) return;
+  primal_improvements_count_[ExtractWorkerName(improvement_info)]++;
+}
+
+void SharedResponseManager::RegisterObjectiveBoundImprovement(
+    const std::string& improvement_info) {
+  if (improvement_info.empty() || improvement_info == "initial domain") return;
+  dual_improvements_count_[ExtractWorkerName(improvement_info)]++;
+}
+
+void SharedResponseManager::DisplayImprovementStatistics() {
+  absl::MutexLock mutex_lock(&mutex_);
+  if (!primal_improvements_count_.empty()) {
+    LOG(INFO) << "Solutions found per subsolver:";
+    for (const auto& entry : primal_improvements_count_) {
+      LOG(INFO) << "  '" << entry.first << "': " << entry.second;
+    }
+  }
+  if (!dual_improvements_count_.empty()) {
+    LOG(INFO) << "Objective bounds found per subsolver:";
+    for (const auto& entry : dual_improvements_count_) {
+      LOG(INFO) << "  '" << entry.first << "': " << entry.second;
+    }
+  }
 }
 
 SharedBoundsManager::SharedBoundsManager(const CpModelProto& model_proto)

@@ -60,10 +60,14 @@ LinearConstraintManager::~LinearConstraintManager() {
     LOG(INFO) << "Total cuts added: " << num_cuts_ << " (out of "
               << num_add_cut_calls_ << " calls) worker: '" << model_->Name()
               << "'";
-    LOG(INFO) << "Num simplifications: " << num_simplifications_;
+    LOG(INFO) << "  - num simplifications: " << num_simplifications_;
     for (const auto& entry : type_to_num_cuts_) {
-      LOG(INFO) << "Added " << entry.second << " cuts of type '" << entry.first
-                << "'.";
+      if (entry.second == 1) {
+        LOG(INFO) << "  - added 1 cut of type '" << entry.first << "'.";
+      } else {
+        LOG(INFO) << "  - added " << entry.second << " cuts of type '"
+                  << entry.first << "'.";
+      }
     }
   }
 }
