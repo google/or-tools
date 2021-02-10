@@ -74,11 +74,11 @@ class ChristofidesPathSolver {
 
  private:
   // Safe addition operator to avoid overflows when possible.
-  template <typename T>
-  T SafeAdd(T a, T b) {
-    return a + b;
-  }
-  template <>
+  //template <typename T>
+  //T SafeAdd(T a, T b) {
+  //  return a + b;
+  //}
+  //template <>
   int64 SafeAdd(int64 a, int64 b) {
     return CapAdd(a, b);
   }
