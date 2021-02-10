@@ -635,6 +635,8 @@ MPConstraint* MPSolver::LookupConstraintOrNull(
 
 MPSolverResponseStatus MPSolver::LoadModelFromProto(
     const MPModelProto& input_model, std::string* error_message) {
+  Clear();
+
   // The variable and constraint names are dropped, because we allow
   // duplicate names in the proto (they're not considered as 'ids'),
   // unlike the MPSolver C++ API which crashes if there are duplicate names.
@@ -646,6 +648,8 @@ MPSolverResponseStatus MPSolver::LoadModelFromProto(
 
 MPSolverResponseStatus MPSolver::LoadModelFromProtoWithUniqueNamesOrDie(
     const MPModelProto& input_model, std::string* error_message) {
+  Clear();
+
   // Force variable and constraint name indexing (which CHECKs name uniqueness).
   GenerateVariableNameIndex();
   GenerateConstraintNameIndex();

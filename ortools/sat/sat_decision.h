@@ -227,6 +227,9 @@ class SatDecisionPolicy {
 
   // Used in initial polarity computation.
   absl::StrongVector<BooleanVariable, double> weighted_sign_;
+
+  // Used in InitializeVariableOrdering().
+  std::vector<BooleanVariable> tmp_variables_;
 };
 
 }  // namespace sat

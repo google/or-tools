@@ -38,12 +38,11 @@ typedef unsigned short uint16;  // NOLINT
 typedef unsigned int uint32;
 typedef uint64_t uint64;
 
-// long long macros to be used because gcc and vc++ use different suffixes,
-// and different size specifiers in format strings
 static const uint8 kuint8max = UINT8_MAX;
 static const uint16 kuint16max = UINT16_MAX;
 static const uint32 kuint32max = UINT32_MAX;
 static const uint64 kuint64max = UINT64_MAX;
+
 static const int8 kint8min = INT8_MIN;
 static const int8 kint8max = INT8_MAX;
 static const int16 kint16min = INT16_MIN;

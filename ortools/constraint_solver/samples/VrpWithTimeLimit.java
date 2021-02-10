@@ -14,6 +14,8 @@
 // [START program]
 package com.google.ortools.constraintsolver.samples;
 // [START import]
+import static java.lang.Math.max;
+
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
@@ -27,8 +29,8 @@ import com.google.protobuf.Duration;
 import java.util.logging.Logger;
 // [END import]
 
-/** Minimal VRP.*/
-public class VrpWithTimeLimit {
+/** Minimal VRP. */
+public final class VrpWithTimeLimit {
   private static final Logger logger = Logger.getLogger(VrpWithTimeLimit.class.getName());
 
   // [START solution_printer]
@@ -50,13 +52,13 @@ public class VrpWithTimeLimit {
       }
       logger.info(route + manager.indexToNode(index));
       logger.info("Distance of the route: " + routeDistance + "m");
-      maxRouteDistance = Math.max(routeDistance, maxRouteDistance);
+      maxRouteDistance = max(routeDistance, maxRouteDistance);
     }
     logger.info("Maximum of the route distances: " + maxRouteDistance + "m");
   }
   // [END solution_printer]
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // Instantiate the data problem.
     // [START data]
@@ -78,12 +80,7 @@ public class VrpWithTimeLimit {
     // Create and register a transit callback.
     // [START transit_callback]
     final int transitCallbackIndex =
-        routing.registerTransitCallback((long fromIndex, long toIndex) -> {
-          // Convert from routing variable Index to user NodeIndex.
-          int fromNode = manager.indexToNode(fromIndex);
-          int toNode = manager.indexToNode(toIndex);
-          return 1;
-        });
+        routing.registerTransitCallback((long fromIndex, long toIndex) -> 1);
     // [END transit_callback]
 
     // Define cost of each arc.
@@ -94,9 +91,9 @@ public class VrpWithTimeLimit {
     // Add Distance constraint.
     // [START distance_constraint]
     routing.addDimension(transitCallbackIndex,
-        /*slack=*/0,
-        /*horizon=*/3000,
-        /*start_cumul_to_zero=*/true, "Distance");
+        /*slack_max=*/0,
+        /*capacity=*/3000,
+        /*fix_start_cumul_to_zero=*/true, "Distance");
     RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
     distanceDimension.setGlobalSpanCostCoefficient(100);
     // [END distance_constraint]
@@ -123,5 +120,7 @@ public class VrpWithTimeLimit {
     printSolution(manager, routing, solution);
     // [END print_solution]
   }
+
+  private VrpWithTimeLimit() {}
 }
 // [END program]

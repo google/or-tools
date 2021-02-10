@@ -695,7 +695,6 @@ import java.lang.Runnable;
 %typemap(javacode) Solver %{
   /**
    * This exceptions signal that a failure has been raised in the C++ world.
-   * @author lperron@google.com (Laurent Perron)
    */
   public static class FailException extends Exception {
     public FailException() {

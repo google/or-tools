@@ -385,7 +385,7 @@ message MPModelDeltaProto {
   // NOTE(user): We may also add more deltas, eg. objective offset.
 }
 
-// Next id: 10.
+// Next id: 11.
 message MPModelRequest {
   // The model to be optimized by the server.
   optional MPModelProto model = 1;

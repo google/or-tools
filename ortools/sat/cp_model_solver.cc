@@ -1680,7 +1680,7 @@ void QuickSolveWithHint(const CpModelProto& model_proto,
   if (status == SatSolver::Status::FEASIBLE) {
     CpSolverResponse response;
     FillSolutionInResponse(model_proto, *model, &response);
-    response.set_solution_info(absl::StrCat(solution_info, "[hint]"));
+    response.set_solution_info(absl::StrCat(solution_info, " [hint]"));
     shared_response_manager->NewSolution(response, model);
 
     if (!model_proto.has_objective()) {
@@ -1699,7 +1699,7 @@ void QuickSolveWithHint(const CpModelProto& model_proto,
                   shared_response_manager->GetInnerObjectiveUpperBound()),
               {}, {})) {
         shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
-            absl::StrCat(solution_info, "[hint]"));
+            absl::StrCat(solution_info, " [hint]"));
         shared_response_manager->SetStatsFromModel(model);
         return;
       }

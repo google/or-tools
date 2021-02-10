@@ -74,12 +74,7 @@ void VrpGlobalSpan() {
   // Create and register a transit callback.
   // [START transit_callback]
   const int transit_callback_index = routing.RegisterTransitCallback(
-      [&manager](int64 from_index, int64 to_index) -> int64 {
-        // Convert from routing variable Index to distance matrix NodeIndex.
-        auto from_node = manager.IndexToNode(from_index).value();
-        auto to_node = manager.IndexToNode(to_index).value();
-        return 1;
-      });
+      [](int64 from_index, int64 to_index) -> int64 { return 1; });
   // [END transit_callback]
 
   // Define cost of each arc.

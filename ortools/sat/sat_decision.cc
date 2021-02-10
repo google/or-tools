@@ -205,14 +205,14 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
   // First, extract the variables without activity, and add the other to the
   // priority queue.
   var_ordering_.Clear();
-  std::vector<BooleanVariable> variables;
+  tmp_variables_.clear();
   for (BooleanVariable var(0); var < num_variables; ++var) {
     if (!trail_.Assignment().VariableIsAssigned(var)) {
       if (activities_[var] > 0.0) {
         var_ordering_.Add(
             {var, static_cast<float>(tie_breakers_[var]), activities_[var]});
       } else {
-        variables.push_back(var);
+        tmp_variables_.push_back(var);
       }
     }
   }
@@ -227,15 +227,15 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
     case SatParameters::IN_ORDER:
       break;
     case SatParameters::IN_REVERSE_ORDER:
-      std::reverse(variables.begin(), variables.end());
+      std::reverse(tmp_variables_.begin(), tmp_variables_.end());
       break;
     case SatParameters::IN_RANDOM_ORDER:
-      std::shuffle(variables.begin(), variables.end(), *random_);
+      std::shuffle(tmp_variables_.begin(), tmp_variables_.end(), *random_);
       break;
   }
 
   // Add the variables without activity to the queue (in the default order)
-  for (const BooleanVariable var : variables) {
+  for (const BooleanVariable var : tmp_variables_) {
     var_ordering_.Add({var, static_cast<float>(tie_breakers_[var]), 0.0});
   }
 
