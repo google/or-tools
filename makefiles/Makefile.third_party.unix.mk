@@ -614,7 +614,7 @@ endif  # USE_COINOR
 ifeq ($(USE_SCIP),OFF)
 install_scip: $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
-$(GEN_DIR)/ortools/linear_solver/lpi_glop.cc:
+$(GEN_DIR)/ortools/linear_solver/lpi_glop.cc: | $(GEN_DIR)/ortools/linear_solver
 	touch $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 else
 install_scip: dependencies/install/lib/libscip.a $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc

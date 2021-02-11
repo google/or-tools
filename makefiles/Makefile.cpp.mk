@@ -169,10 +169,15 @@ $(GEN_DIR)/ortools/constraint_solver/routing_enums.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/routing_parameters.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/search_limit.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/search_stats.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h \
-$(GEN_DIR)/ortools/gscip/gscip.pb.h
+$(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h
 
 include $(OR_ROOT)makefiles/Makefile.gen.mk
+
+ifeq ($(USE_SCIP),ON)
+PROTO_DEPS += $(GEN_DIR)/ortools/gscip/gscip.pb.h
+else
+undefine GSCIP_LIB_OBJS
+endif
 
 all_protos: $(PROTO_DEPS)
 

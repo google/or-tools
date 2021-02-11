@@ -450,7 +450,7 @@ DEPENDENCIES_LNK += $(COIN_LNK)
 ifeq ($(USE_SCIP),OFF)
 build_scip: $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
-$(GEN_DIR)/ortools/linear_solver/lpi_glop.cc:
+$(GEN_DIR)/ortools/linear_solver/lpi_glop.cc: | $(GEN_DIR)/ortools/linear_solver
 	$(TOUCH) $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 else
 build_scip: dependencies/install/lib/libscip.lib $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
