@@ -489,7 +489,7 @@ namespace Google.OrTools.Sat
         
         public Constraint AddProdEquality(IntVar target, IEnumerable<IntVar> vars)
         {
-            return AddProdEquality(target, vars);
+            return AddMultiplicationEquality(target, vars);
         }
 
         // Scheduling support
