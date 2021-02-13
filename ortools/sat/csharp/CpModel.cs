@@ -474,7 +474,7 @@ namespace Google.OrTools.Sat
             return ct;
         }
 
-        public Constraint AddProdEquality(IntVar target, IEnumerable<IntVar> vars)
+        public Constraint AddMultiplicationEquality(IntVar target, IEnumerable<IntVar> vars)
         {
             Constraint ct = new Constraint(model_);
             IntegerArgumentProto args = new IntegerArgumentProto();
@@ -485,6 +485,11 @@ namespace Google.OrTools.Sat
             }
             ct.Proto.IntProd = args;
             return ct;
+        }
+        
+        public Constraint AddProdEquality(IntVar target, IEnumerable<IntVar> vars)
+        {
+            return AddProdEquality(target, vars);
         }
 
         // Scheduling support
