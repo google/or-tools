@@ -45,4 +45,9 @@ final class Difference implements LinearExpr {
       return -right.getCoefficient(index - left.numElements());
     }
   }
+
+  @Override
+  public long getOffset() { 
+    return left.getOffset() - right.getOffset();
+  }
 }

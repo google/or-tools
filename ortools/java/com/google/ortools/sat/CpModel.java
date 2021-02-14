@@ -136,6 +136,10 @@ public final class CpModel {
     for (int i = 0; i < expr.numElements(); ++i) {
       lin.addVars(expr.getVariable(i).getIndex()).addCoeffs(expr.getCoefficient(i));
     }
+    long offset = expr.getOffset();
+    if (offset != 0) {
+      lin.addVars(newConstant(1).getIndex()).addCoeffs(offset);
+    }
     for (long b : domain.flattenedIntervals()) {
       lin.addDomain(b);
     }
@@ -996,6 +1000,7 @@ public final class CpModel {
     for (int i = 0; i < expr.numElements(); ++i) {
       obj.addVars(expr.getVariable(i).getIndex()).addCoeffs(expr.getCoefficient(i));
     }
+    obj.setOffset(expr.getOffset());
   }
 
   /** Adds a maximization objective of a linear expression. */
@@ -1004,6 +1009,7 @@ public final class CpModel {
     for (int i = 0; i < expr.numElements(); ++i) {
       obj.addVars(expr.getVariable(i).getIndex()).addCoeffs(-expr.getCoefficient(i));
     }
+    obj.setOffset(-expr.getOffset());
     obj.setScalingFactor(-1.0);
   }
 

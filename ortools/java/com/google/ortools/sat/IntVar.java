@@ -69,6 +69,11 @@ public final class IntVar implements Literal, LinearExpr {
     return 1;
   }
 
+  @Override
+  public long getOffset() {
+    return 0;
+  }  
+
   /** Returns a short string describing the variable. */
   @Override
   public String getShortString() {

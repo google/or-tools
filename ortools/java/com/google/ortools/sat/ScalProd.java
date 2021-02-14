@@ -17,12 +17,55 @@ package com.google.ortools.sat;
 public final class ScalProd implements LinearExpr {
   private final IntVar[] variables;
   private final long[] coefficients;
+  private long offset;
 
   public ScalProd(IntVar[] variables, long[] coefficients) {
     assert (variables.length == coefficients.length);
     this.variables = variables;
     this.coefficients = coefficients;
+    this.offset = 0;
   }
+
+  public ScalProd(Literal[] literals, long[] coefficients) {
+    assert (literals.length == coefficients.length);
+    int size = literals.length;
+    this.variables = new IntVar[size];
+    this.coefficients = new long[size];
+    this.offset = 0;
+
+    for (int i = 0; i < size; ++i) {
+      Literal lit = variables[i];
+      long coeff = coefficients[i];
+      if (lit.getIndex() >= 0) {
+        this.variables[i] = (IntVar)lit;
+        this.coefficients[i] = coeff;
+      } else {
+        this.variables[i] = (IntVar)lit.not();
+        this.coefficients[i] = -coeff;
+        this.offset -= coeff;
+      }
+    }
+  }
+
+  public ScalProd(Literal[] literals) {
+    int size = literals.length;
+    this.variables = new IntVar[size];
+    this.coefficients = new long[size];
+    this.offset = 0;
+
+    for (int i = 0; i < size; ++i) {
+      Literal lit = variables[i];
+      long coeff = coefficients[i];
+      if (lit.getIndex() >= 0) {
+        this.variables[i] = (IntVar)lit;
+        this.coefficients[i] = 1;
+      } else {
+        this.variables[i] = (IntVar)lit.not();
+        this.coefficients[i] = -1;
+        this.offset -= 1;
+      }
+    }
+  }  
 
   @Override
   public int numElements() {
@@ -41,5 +84,9 @@ public final class ScalProd implements LinearExpr {
     assert (index >= 0);
     assert (index < coefficients.length);
     return coefficients[index];
+  }
+  @Override
+  public long getOffset() {
+    return offset;
   }
 }

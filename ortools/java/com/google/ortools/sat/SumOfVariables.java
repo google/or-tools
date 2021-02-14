@@ -37,4 +37,9 @@ public final class SumOfVariables implements LinearExpr {
   public long getCoefficient(int index) {
     return 1;
   }
+
+  @Override
+  public long getOffset() {
+    return 0;
+  }  
 }
