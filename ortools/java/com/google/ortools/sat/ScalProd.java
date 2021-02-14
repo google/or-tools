@@ -55,7 +55,6 @@ public final class ScalProd implements LinearExpr {
 
     for (int i = 0; i < size; ++i) {
       Literal lit = variables[i];
-      long coeff = coefficients[i];
       if (lit.getIndex() >= 0) {
         this.variables[i] = (IntVar)lit;
         this.coefficients[i] = 1;
