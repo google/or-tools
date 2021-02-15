@@ -1,7 +1,5 @@
 """Tests for ortools.sat.python.cp_model."""
 
-
-
 import unittest
 from ortools.sat import cp_model_pb2
 from ortools.sat.python import cp_model
@@ -635,4 +633,4 @@ class CpModelTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(verbosity=2)
