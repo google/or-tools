@@ -13,8 +13,6 @@
 
 package com.google.ortools.sat;
 
-import java.util.LinkedHashMap;
-
 import com.google.ortools.sat.AllDifferentConstraintProto;
 import com.google.ortools.sat.AutomatonConstraintProto;
 import com.google.ortools.sat.BoolArgumentProto;
@@ -32,6 +30,8 @@ import com.google.ortools.sat.NoOverlapConstraintProto;
 import com.google.ortools.sat.ReservoirConstraintProto;
 import com.google.ortools.sat.TableConstraintProto;
 import com.google.ortools.util.Domain;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Main modeling class.
@@ -42,7 +42,7 @@ public final class CpModel {
   static class CpModelException extends Exception {
     public CpModelException(String methodName, String msg) {
       // Call constructor of parent Exception
-      super("CpModel." + methodName + ": " + msg);
+      super(methodName + ": " + msg);
     }
   }
 
@@ -59,10 +59,9 @@ public final class CpModel {
       super(methodName, msg);
     }
   }
-
   public CpModel() {
     modelBuilder = CpModelProto.newBuilder();
-    constantMap = new LinkedHashMap<Long, IntVar>();
+    constantMap = new LinkedHashMap<>();
   }
 
   // Integer variables.
@@ -329,10 +328,10 @@ public final class CpModel {
   public Constraint addCircuit(int[] tails, int[] heads, Literal[] literals)
       throws MismatchedArrayLengths {
     if (tails.length != heads.length) {
-      throw new MismatchedArrayLengths("addCircuit", "tails", "heads");
+      throw new MismatchedArrayLengths("CpModel.addCircuit", "tails", "heads");
     }
     if (tails.length != literals.length) {
-      throw new MismatchedArrayLengths("addCircuit", "tails", "literals");
+      throw new MismatchedArrayLengths("CpModel.addCircuit", "tails", "literals");
     }
 
     Constraint ct = new Constraint(modelBuilder);
@@ -372,7 +371,7 @@ public final class CpModel {
     int numVars = variables.length;
     for (int t = 0; t < tuplesList.length; ++t) {
       if (tuplesList[t].length != numVars) {
-        throw new WrongLength("addAllowedAssignments",
+        throw new WrongLength("CpModel.addAllowedAssignments",
             "tuple " + t + " does not have the same length as the variables");
       }
       for (int i = 0; i < tuplesList[t].length; ++i) {
@@ -397,7 +396,7 @@ public final class CpModel {
     int numVars = variables.length;
     for (int t = 0; t < tuplesList.length; ++t) {
       if (tuplesList[t].length != numVars) {
-        throw new WrongLength("addAllowedAssignments",
+        throw new WrongLength("CpModel.addAllowedAssignments",
             "tuple " + t + " does not have the same length as the variables");
       }
       for (int i = 0; i < tuplesList[t].length; ++i) {
@@ -484,7 +483,7 @@ public final class CpModel {
     }
     for (long[] t : transitions) {
       if (t.length != 3) {
-        throw new WrongLength("addAutomaton", "transition does not have length 3");
+        throw new WrongLength("CpModel.addAutomaton", "transition does not have length 3");
       }
       automaton.addTransitionTail(t[0]).addTransitionLabel(t[1]).addTransitionHead(t[2]);
     }
@@ -505,7 +504,7 @@ public final class CpModel {
   public Constraint addInverse(IntVar[] variables, IntVar[] inverseVariables)
       throws MismatchedArrayLengths {
     if (variables.length != inverseVariables.length) {
-      throw new MismatchedArrayLengths("addInverse", "variables", "inverseVariables");
+      throw new MismatchedArrayLengths("CpModel.addInverse", "variables", "inverseVariables");
     }
     Constraint ct = new Constraint(modelBuilder);
     InverseConstraintProto.Builder inverse = ct.getBuilder().getInverseBuilder();
@@ -544,13 +543,13 @@ public final class CpModel {
   public Constraint addReservoirConstraint(
       IntVar[] times, long[] demands, long minLevel, long maxLevel) throws MismatchedArrayLengths {
     if (times.length != demands.length) {
-      throw new MismatchedArrayLengths("addReservoirConstraint", "times", "demands");
+      throw new MismatchedArrayLengths("CpModel.addReservoirConstraint", "times", "demands");
     }
     if (minLevel > 0) {
-      throw new IllegalArgumentException("addReservoirConstraint: minLevel must be <= 0");
+      throw new IllegalArgumentException("CpModel.addReservoirConstraint: minLevel must be <= 0");
     }
     if (maxLevel < 0) {
-      throw new IllegalArgumentException("addReservoirConstraint: maxLevel must be >= 0");
+      throw new IllegalArgumentException("CpModel.addReservoirConstraint: maxLevel must be >= 0");
     }
     Constraint ct = new Constraint(modelBuilder);
     ReservoirConstraintProto.Builder reservoir = ct.getBuilder().getReservoirBuilder();
@@ -600,16 +599,20 @@ public final class CpModel {
   public Constraint addReservoirConstraintWithActive(IntVar[] times, long[] demands,
       IntVar[] actives, long minLevel, long maxLevel) throws MismatchedArrayLengths {
     if (times.length != demands.length) {
-      throw new MismatchedArrayLengths("addReservoirConstraint", "times", "demands");
+      throw new MismatchedArrayLengths(
+          "CpModel.addReservoirConstraintWithActive", "times", "demands");
     }
     if (times.length != actives.length) {
-      throw new MismatchedArrayLengths("addReservoirConstraint", "times", "actives");
+      throw new MismatchedArrayLengths(
+          "CpModel.addReservoirConstraintWithActive", "times", "actives");
     }
     if (minLevel > 0) {
-      throw new IllegalArgumentException("addReservoirConstraint: minLevel must be <= 0");
+      throw new IllegalArgumentException(
+          "CpModel.addReservoirConstraintWithActive: minLevel must be <= 0");
     }
     if (maxLevel < 0) {
-      throw new IllegalArgumentException("addReservoirConstraint: maxLevel must be >= 0");
+      throw new IllegalArgumentException(
+          "CpModel.addReservoirConstraintWithActive: maxLevel must be >= 0");
     }
 
     Constraint ct = new Constraint(modelBuilder);
@@ -1091,5 +1094,5 @@ public final class CpModel {
   }
 
   private final CpModelProto.Builder modelBuilder;
-  private final LinkedHashMap<Long, IntVar> constantMap;
+  private final Map<Long, IntVar> constantMap;
 }

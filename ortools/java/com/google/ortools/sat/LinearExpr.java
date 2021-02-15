@@ -38,14 +38,21 @@ public interface LinearExpr {
     return new ScalProd(literals);
   }
 
-
   /** Creates a scalar product. */
-  static LinearExpr scalProd(IntVar[] variables, long[] coefficients) {
+  static LinearExpr scalProd(IntVar[] variables, long[] coefficients)
+      throws CpModel.MismatchedArrayLengths {
+    if (variables.length != coefficients.length) {
+      throw new CpModel.MismatchedArrayLengths("LinearExpr.scalProd", "variables", "coefficients");
+    }
     return new ScalProd(variables, coefficients);
   }
 
   /** Creates a scalar product. */
-  static LinearExpr scalProd(IntVar[] variables, int[] coefficients) {
+  static LinearExpr scalProd(IntVar[] variables, int[] coefficients)
+      throws CpModel.MismatchedArrayLengths {
+    if (variables.length != coefficients.length) {
+      throw new CpModel.MismatchedArrayLengths("LinearExpr.scalProd", "variables", "coefficients");
+    }
     long[] tmp = new long[coefficients.length];
     for (int i = 0; i < coefficients.length; ++i) {
       tmp[i] = coefficients[i];
@@ -54,12 +61,21 @@ public interface LinearExpr {
   }
 
   /** Creates a scalar product. */
-  static LinearExpr booleanScalProd(Literal[] literals, long[] coefficients) {
+  static LinearExpr booleanScalProd(Literal[] literals, long[] coefficients)
+      throws CpModel.MismatchedArrayLengths {
+    if (literals.length != coefficients.length) {
+      throw new CpModel.MismatchedArrayLengths("LinearExpr.scalProd", "literals", "coefficients");
+    }
     return new ScalProd(literals, coefficients);
   }
 
   /** Creates a scalar product. */
-  static LinearExpr booleanScalProd(Literal[] literals, int[] coefficients) {
+  static LinearExpr booleanScalProd(Literal[] literals, int[] coefficients)
+      throws CpModel.MismatchedArrayLengths {
+    if (literals.length != coefficients.length) {
+      throw new CpModel.MismatchedArrayLengths("LinearExpr.scalProd", "literals", "coefficients");
+    }
+
     long[] tmp = new long[coefficients.length];
     for (int i = 0; i < coefficients.length; ++i) {
       tmp[i] = coefficients[i];
