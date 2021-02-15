@@ -751,12 +751,60 @@ RoutingModel::~RoutingModel() {
   gtl::STLDeleteElements(&index_functions_delete);
 }
 
+namespace {
+int RegisterCallback(RoutingTransitCallback2 callback, bool is_positive,
+                     RoutingModel* model) {
+  if (is_positive) {
+    return model->RegisterPositiveTransitCallback(std::move(callback));
+  }
+  return model->RegisterTransitCallback(std::move(callback));
+}
+
+int RegisterUnaryCallback(RoutingTransitCallback1 callback, bool is_positive,
+                          RoutingModel* model) {
+  if (is_positive) {
+    return model->RegisterPositiveUnaryTransitCallback(std::move(callback));
+  }
+  return model->RegisterUnaryTransitCallback(std::move(callback));
+}
+}  // namespace
+
+int RoutingModel::RegisterUnaryTransitVector(std::vector<int64> values) {
+  return RegisterUnaryCallback(
+      [this, values](int64 i) {
+        return values[manager_.IndexToNode(i).value()];
+      },
+      /*is_positive=*/
+      std::all_of(std::cbegin(values), std::cend(values),
+                  [](int64 transit) { return transit >= 0; }),
+      this);
+}
+
 int RoutingModel::RegisterUnaryTransitCallback(TransitCallback1 callback) {
   const int index = unary_transit_evaluators_.size();
   unary_transit_evaluators_.push_back(std::move(callback));
   return RegisterTransitCallback([this, index](int i, int j) {
     return unary_transit_evaluators_[index](i);
   });
+}
+
+int RoutingModel::RegisterTransitMatrix(
+    std::vector<std::vector<int64> /*needed_for_swig*/> values) {
+  bool all_transits_positive = true;
+  for (const std::vector<int64>& transit_values : values) {
+    all_transits_positive =
+        std::all_of(std::cbegin(transit_values), std::cend(transit_values),
+                    [](int64 transit) { return transit >= 0; });
+    if (!all_transits_positive) {
+      break;
+    }
+  }
+  return RegisterCallback(
+      [this, values](int64 i, int64 j) {
+        return values[manager_.IndexToNode(i).value()]
+                     [manager_.IndexToNode(j).value()];
+      },
+      all_transits_positive, this);
 }
 
 int RoutingModel::RegisterPositiveUnaryTransitCallback(
@@ -901,68 +949,33 @@ bool RoutingModel::InitializeDimensionInternal(
   return false;
 }
 
-namespace {
-int RegisterCallback(RoutingTransitCallback2 callback, bool is_positive,
-                     RoutingModel* model) {
-  if (is_positive) {
-    return model->RegisterPositiveTransitCallback(std::move(callback));
-  }
-  return model->RegisterTransitCallback(std::move(callback));
-}
-
-int RegisterUnaryCallback(RoutingTransitCallback1 callback, bool is_positive,
-                          RoutingModel* model) {
-  if (is_positive) {
-    return model->RegisterPositiveUnaryTransitCallback(std::move(callback));
-  }
-  return model->RegisterUnaryTransitCallback(std::move(callback));
-}
-}  // namespace
-
-bool RoutingModel::AddConstantDimensionWithSlack(
+std::pair<int, bool> RoutingModel::AddConstantDimensionWithSlack(
     int64 value, int64 capacity, int64 slack_max, bool fix_start_cumul_to_zero,
     const std::string& dimension_name) {
-  return AddDimension(RegisterUnaryCallback([value](int64) { return value; },
-                                            /*is_positive=*/value >= 0, this),
-                      slack_max, capacity, fix_start_cumul_to_zero,
-                      dimension_name);
+  const int evaluator_index =
+      RegisterUnaryCallback([value](int64) { return value; },
+                            /*is_positive=*/value >= 0, this);
+  return std::make_pair(evaluator_index,
+                        AddDimension(evaluator_index, slack_max, capacity,
+                                     fix_start_cumul_to_zero, dimension_name));
 }
 
-bool RoutingModel::AddVectorDimension(std::vector<int64> values, int64 capacity,
-                                      bool fix_start_cumul_to_zero,
-                                      const std::string& dimension_name) {
-  return AddDimension(
-      RegisterUnaryCallback(
-          [this, values](int64 i) {
-            return values[manager_.IndexToNode(i).value()];
-          },
-          /*is_positive=*/
-          std::all_of(std::begin(values), std::end(values),
-                      [](int64 transit) { return transit >= 0; }),
-          this),
-      0, capacity, fix_start_cumul_to_zero, dimension_name);
+std::pair<int, bool> RoutingModel::AddVectorDimension(
+    std::vector<int64> values, int64 capacity, bool fix_start_cumul_to_zero,
+    const std::string& dimension_name) {
+  const int evaluator_index = RegisterUnaryTransitVector(std::move(values));
+  return std::make_pair(evaluator_index,
+                        AddDimension(evaluator_index, 0, capacity,
+                                     fix_start_cumul_to_zero, dimension_name));
 }
 
-bool RoutingModel::AddMatrixDimension(std::vector<std::vector<int64>> values,
-                                      int64 capacity,
-                                      bool fix_start_cumul_to_zero,
-                                      const std::string& dimension_name) {
-  bool all_transits_positive = true;
-  for (const std::vector<int64>& transit_values : values) {
-    all_transits_positive =
-        std::all_of(std::begin(transit_values), std::end(transit_values),
-                    [](int64 transit) { return transit >= 0; });
-    if (!all_transits_positive) {
-      break;
-    }
-  }
-  return AddDimension(RegisterCallback(
-                          [this, values](int64 i, int64 j) {
-                            return values[manager_.IndexToNode(i).value()]
-                                         [manager_.IndexToNode(j).value()];
-                          },
-                          all_transits_positive, this),
-                      0, capacity, fix_start_cumul_to_zero, dimension_name);
+std::pair<int, bool> RoutingModel::AddMatrixDimension(
+    std::vector<std::vector<int64>> values, int64 capacity,
+    bool fix_start_cumul_to_zero, const std::string& dimension_name) {
+  const int evaluator_index = RegisterTransitMatrix(std::move(values));
+  return std::make_pair(evaluator_index,
+                        AddDimension(evaluator_index, 0, capacity,
+                                     fix_start_cumul_to_zero, dimension_name));
 }
 
 namespace {

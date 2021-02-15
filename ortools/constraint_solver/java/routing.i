@@ -68,6 +68,26 @@ import java.util.function.LongUnaryOperator;
     int64 capacity,
     bool fix_start_cumul_to_zero,
     const std::string& name);
+%rename (addVectorDimension) RoutingModel::AddVectorDimension;
+
+%extend RoutingModel {
+  int AddVectorDimension(
+    const std::vector<int64>& values,
+    int64 capacity,
+    bool fix_start_cumul_to_zero,
+    const std::string& name) {
+    return $self->AddVectorDimension(values, capacity, fix_start_cumul_to_zero, name).first;
+  }
+
+  int AddMatrixDimension(
+    const std::vector<std::vector<int64> >& values,
+    int64 capacity,
+    bool fix_start_cumul_to_zero,
+    const std::string& name) {
+    return $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name).first;
+  }
+}
+
 %ignore RoutingModel::AddSameVehicleRequiredTypeAlternatives;
 %ignore RoutingModel::GetAllDimensionNames;
 %ignore RoutingModel::GetAutomaticFirstSolutionStrategy;
@@ -126,7 +146,6 @@ import java.util.function.LongUnaryOperator;
 %rename (addVariableMaximizedByFinalizer) RoutingModel::AddVariableMaximizedByFinalizer;
 %rename (addVariableMinimizedByFinalizer) RoutingModel::AddVariableMinimizedByFinalizer;
 %rename (addVariableTargetToFinalizer) RoutingModel::AddVariableTargetToFinalizer;
-%rename (addVectorDimension) RoutingModel::AddVectorDimension;
 %rename (applyLocks) RoutingModel::ApplyLocks;
 %rename (applyLocksToAllVehicles) RoutingModel::ApplyLocksToAllVehicles;
 %rename (arcIsMoreConstrainedThanArc) RoutingModel::ArcIsMoreConstrainedThanArc;
@@ -191,9 +210,15 @@ import java.util.function.LongUnaryOperator;
 %rename (preAssignment) RoutingModel::PreAssignment;
 %rename (readAssignment) RoutingModel::ReadAssignment;
 %rename (readAssignmentFromRoutes) RoutingModel::ReadAssignmentFromRoutes;
-%rename (registerPositiveTransitCallback) RoutingModel::RegisterPositiveTransitCallback;
+
+%rename (registerTransitMatrix) RoutingModel::RegisterTransitMatrix; // not tested
 %rename (registerTransitCallback) RoutingModel::RegisterTransitCallback;
+%rename (registerPositiveTransitCallback) RoutingModel::RegisterPositiveTransitCallback; // not tested
+
+%rename (registerUnaryTransitVector) RoutingModel::RegisterUnaryTransitVector; // not tested
 %rename (registerUnaryTransitCallback) RoutingModel::RegisterUnaryTransitCallback;
+%rename (registerPositiveUnaryTransitCallback) RoutingModel::RegisterPositiveUnaryTransitCallback; // not tested
+
 %rename (restoreAssignment) RoutingModel::RestoreAssignment;
 %rename (routesToAssignment) RoutingModel::RoutesToAssignment;
 %rename (setAllowedVehiclesForIndex) RoutingModel::SetAllowedVehiclesForIndex;

@@ -16,6 +16,9 @@
 
 %include "ortools/base/base.i"
 
+%include "std_pair.i"
+%template(PairIntBool) std::pair<int, bool>;
+
 %include "ortools/constraint_solver/python/constraint_solver.i"
 %include "ortools/constraint_solver/python/routing_types.i"
 %include "ortools/constraint_solver/python/routing_index_manager.i"
@@ -51,18 +54,51 @@ DEFINE_INDEX_TYPE_TYPEDEF(
     operations_research::RoutingModel::VehicleClassIndex);
 
 
+%ignore operations_research::RoutingModel::RegisterUnaryTransitVector(
+    std::vector<int64> values);
+
+%ignore operations_research::RoutingModel::AddVectorDimension(
+    std::vector<int64> values,
+    int64 capacity,
+    bool fix_start_cumul_to_zero,
+    const std::string& name);
+
+%ignore operations_research::RoutingModel::RegisterTransitMatrix(
+    std::vector<std::vector<int64> > values);
+
 %ignore operations_research::RoutingModel::AddMatrixDimension(
     std::vector<std::vector<int64> > values,
     int64 capacity,
+    bool fix_start_cumul_to_zero,
     const std::string& name);
 
 %extend operations_research::RoutingModel {
-  void AddMatrixDimension(
+  int RegisterUnaryTransitVector(
+    const std::vector<int64>& values) {
+    return $self->RegisterUnaryTransitVector(values);
+  }
+
+  std::pair<int, bool> AddVectorDimension(
+    const std::vector<int64>& values,
+    int64 capacity,
+    bool fix_start_cumul_to_zero,
+    const std::string& name) {
+    //return $self->AddVectorDimension(values, capacity, fix_start_cumul_to_zero, name).first;
+    return $self->AddVectorDimension(values, capacity, fix_start_cumul_to_zero, name);
+  }
+
+  int RegisterTransitMatrix(
+    const std::vector<std::vector<int64> >& values) {
+    return $self->RegisterTransitMatrix(values);
+  }
+
+  std::pair<int, bool> AddMatrixDimension(
     const std::vector<std::vector<int64> >& values,
     int64 capacity,
     bool fix_start_cumul_to_zero,
     const std::string& name) {
-    $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
+    //return $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name).first;
+    return $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
   }
 
 }

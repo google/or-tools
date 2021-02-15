@@ -99,6 +99,8 @@ def create_data_model():
     # [END demands_capacities]
     data['num_vehicles'] = 4
     data['depot'] = 0
+    assert(len(data['distance_matrix']) == len(data['demands']))
+    assert(data['num_vehicles'] == len(data['vehicle_capacities']))
     return data
     # [END data_model]
 
@@ -149,37 +151,21 @@ def main():
     # Create Routing Model.
     # [START routing_model]
     routing = pywrapcp.RoutingModel(manager)
-
     # [END routing_model]
 
     # Create and register a transit callback.
     # [START transit_callback]
-    def distance_callback(from_index, to_index):
-        """Returns the distance between the two nodes."""
-        # Convert from routing variable Index to distance matrix NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        to_node = manager.IndexToNode(to_index)
-        return data['distance_matrix'][from_node][to_node]
-
-    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+    transit_callback_index = routing.RegisterTransitMatrix(data['distance_matrix'])
     # [END transit_callback]
 
     # Define cost of each arc.
     # [START arc_cost]
     routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
-
     # [END arc_cost]
 
     # Add Capacity constraint.
     # [START capacity_constraint]
-    def demand_callback(from_index):
-        """Returns the demand of the node."""
-        # Convert from routing variable Index to demands NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        return data['demands'][from_node]
-
-    demand_callback_index = routing.RegisterUnaryTransitCallback(
-        demand_callback)
+    demand_callback_index = routing.RegisterUnaryTransitVector(data['demands'])
     routing.AddDimensionWithVehicleCapacity(
         demand_callback_index,
         0,  # null capacity slack
@@ -207,6 +193,8 @@ def main():
     # [START print_solution]
     if solution:
         print_solution(data, manager, routing, solution)
+    else:
+        print('no solution found.')
     # [END print_solution]
 
 

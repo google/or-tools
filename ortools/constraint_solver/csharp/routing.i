@@ -81,11 +81,35 @@ namespace operations_research {
 %}
 // Ignored:
 %ignore RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
+%ignore RoutingModel::AddVectorDimension(
+    std::vector<int64> values,
+    int64 capacity,
+    bool fix_start_cumul_to_zero,
+    const std::string& name);
 %ignore RoutingModel::AddMatrixDimension(
     std::vector<std::vector<int64> > values,
     int64 capacity,
     bool fix_start_cumul_to_zero,
     const std::string& name);
+
+%extend RoutingModel {
+  int AddVectorDimension(
+    const std::vector<int64>& values,
+    int64 capacity,
+    bool fix_start_cumul_to_zero,
+    const std::string& name) {
+    return $self->AddVectorDimension(values, capacity, fix_start_cumul_to_zero, name).first;
+  }
+
+  int AddMatrixDimension(
+    const std::vector<std::vector<int64> >& values,
+    int64 capacity,
+    bool fix_start_cumul_to_zero,
+    const std::string& name) {
+    return $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name).first;
+  }
+}
+
 %ignore RoutingModel::AddSameVehicleRequiredTypeAlternatives;
 %ignore RoutingModel::GetAllDimensionNames;
 %ignore RoutingModel::GetAutomaticFirstSolutionStrategy;
