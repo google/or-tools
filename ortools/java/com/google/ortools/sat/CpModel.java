@@ -13,6 +13,8 @@
 
 package com.google.ortools.sat;
 
+import java.util.LinkedHashMap;
+
 import com.google.ortools.sat.AllDifferentConstraintProto;
 import com.google.ortools.sat.AutomatonConstraintProto;
 import com.google.ortools.sat.BoolArgumentProto;
@@ -60,6 +62,7 @@ public final class CpModel {
 
   public CpModel() {
     modelBuilder = CpModelProto.newBuilder();
+    constantMap = new LinkedHashMap<Long, IntVar>();
   }
 
   // Integer variables.
@@ -87,7 +90,22 @@ public final class CpModel {
 
   /** Creates a constant variable. */
   public IntVar newConstant(long value) {
-    return new IntVar(modelBuilder, new Domain(value), ""); // bounds and name.
+    if (constantMap.containsKey(value)) {
+      return constantMap.get(value);
+    }
+    IntVar cste = new IntVar(modelBuilder, new Domain(value), ""); // bounds and name.
+    constantMap.put(value, cste);
+    return cste;
+  }
+
+  /** Returns the true literal. */
+  public Literal trueLiteral() {
+    return newConstant(1);
+  }
+
+  /** Returns the false literal. */
+  public Literal falseLiteral() {
+    return newConstant(0);
   }
 
   // Boolean Constraints.
@@ -1073,4 +1091,5 @@ public final class CpModel {
   }
 
   private final CpModelProto.Builder modelBuilder;
+  private final LinkedHashMap<Long, IntVar> constantMap;
 }
