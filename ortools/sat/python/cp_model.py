@@ -36,7 +36,7 @@ solver calls each time it finds a new solution.
 Additional methods for solving CP-SAT models:
 
 * [`Constraint`](#cp_model.Constraint): A few utility methods for modifying
-  contraints created by `CpModel`.
+  constraints created by `CpModel`.
 * [`LinearExpr`](#lineacp_model.LinearExpr): Methods for creating constraints
   and the objective from large arrays of coefficients.
 
@@ -1544,7 +1544,8 @@ class CpModel(object):
         self.__model.solution_hint.values.append(value)
 
     def ClearHints(self):
-        self.__model.ClearField("solution_hint")
+        """Remove any solution hint from the model."""
+        self.__model.ClearField('solution_hint')
 
     def AddAssumption(self, lit):
         """Add the literal 'lit' to the model as assumptions."""
@@ -1557,7 +1558,7 @@ class CpModel(object):
 
     def ClearAssumptions(self):
         """Remove all assumptions from the model."""
-        self.__model.ClearField("assumptions")
+        self.__model.ClearField('assumptions')
 
 
 def EvaluateLinearExpr(expression, solution):
