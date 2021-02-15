@@ -11,12 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code sample that solves a model and gets the infeasibility assumptions."""
-
 # [START program]
+# [START import]
 from ortools.sat.python import cp_model
+# [END import]
 
 
-def AssumptionsSampleSat():
+def main():
     """Showcases assumptions."""
     # Creates the model.
     # [START model]
@@ -49,9 +50,15 @@ def AssumptionsSampleSat():
     status = solver.Solve(model)
     # [END solve]
 
-    print('Status = %s' % solver.StatusName(status))
-    print('SufficientAssumptionsForInfeasibility = %s' % solver.SufficientAssumptionsForInfeasibility())
+    # Print solution.
+    # [START print_solution]
+    print(f'Status = {solver.StatusName(status)}')
+    if status == cp_model.INFEASIBLE:
+        print('SufficientAssumptionsForInfeasibility = '
+              f'{solver.SufficientAssumptionsForInfeasibility()}')
+    # [END print_solution]
 
 
-AssumptionsSampleSat()
+if __name__ == '__main__':
+    main()
 # [END program]

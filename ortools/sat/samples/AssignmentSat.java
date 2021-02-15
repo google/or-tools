@@ -41,75 +41,79 @@ public class AssignmentSat {
     // [END data_model]
 
     // Model
-    // [START model]
-    CpModel model = new CpModel();
-    // [END model]
+    try {
+      // [START model]
+      CpModel model = new CpModel();
+      // [END model]
 
-    // Variables
-    // [START variables]
-    IntVar[][] x = new IntVar[numWorkers][numTasks];
-    // Variables in a 1-dim array.
-    IntVar[] xFlat = new IntVar[numWorkers * numTasks];
-    int[] costsFlat = new int[numWorkers * numTasks];
-    for (int i = 0; i < numWorkers; ++i) {
-      for (int j = 0; j < numTasks; ++j) {
-        x[i][j] = model.newIntVar(0, 1, "");
-        int k = i * numTasks + j;
-        xFlat[k] = x[i][j];
-        costsFlat[k] = costs[i][j];
-      }
-    }
-    // [END variables]
-
-    // Constraints
-    // [START constraints]
-    // Each worker is assigned to at most one task.
-    for (int i = 0; i < numWorkers; ++i) {
-      IntVar[] vars = new IntVar[numTasks];
-      for (int j = 0; j < numTasks; ++j) {
-        vars[j] = x[i][j];
-      }
-      model.addLessOrEqual(LinearExpr.sum(vars), 1);
-    }
-    // Each task is assigned to exactly one worker.
-    for (int j = 0; j < numTasks; ++j) {
-      // LinearExpr taskSum;
-      IntVar[] vars = new IntVar[numWorkers];
-      for (int i = 0; i < numWorkers; ++i) {
-        vars[i] = x[i][j];
-      }
-      model.addEquality(LinearExpr.sum(vars), 1);
-    }
-    // [END constraints]
-
-    // Objective
-    // [START objective]
-    model.minimize(LinearExpr.scalProd(xFlat, costsFlat));
-    // [END objective]
-
-    // Solve
-    // [START solve]
-    CpSolver solver = new CpSolver();
-    CpSolverStatus status = solver.solve(model);
-    // [END solve]
-
-    // Print solution.
-    // [START print_solution]
-    // Check that the problem has a feasible solution.
-    if (status == CpSolverStatus.OPTIMAL || status == CpSolverStatus.FEASIBLE) {
-      System.out.println("Total cost: " + solver.objectiveValue() + "\n");
+      // Variables
+      // [START variables]
+      IntVar[][] x = new IntVar[numWorkers][numTasks];
+      // Variables in a 1-dim array.
+      IntVar[] xFlat = new IntVar[numWorkers * numTasks];
+      int[] costsFlat = new int[numWorkers * numTasks];
       for (int i = 0; i < numWorkers; ++i) {
         for (int j = 0; j < numTasks; ++j) {
-          if (solver.value(x[i][j]) == 1) {
-            System.out.println(
-                "Worker " + i + " assigned to task " + j + ".  Cost: " + costs[i][j]);
-          }
+          x[i][j] = model.newIntVar(0, 1, "");
+          int k = i * numTasks + j;
+          xFlat[k] = x[i][j];
+          costsFlat[k] = costs[i][j];
         }
       }
-    } else {
-      System.err.println("No solution found.");
+      // [END variables]
+
+      // Constraints
+      // [START constraints]
+      // Each worker is assigned to at most one task.
+      for (int i = 0; i < numWorkers; ++i) {
+        IntVar[] vars = new IntVar[numTasks];
+        for (int j = 0; j < numTasks; ++j) {
+          vars[j] = x[i][j];
+        }
+        model.addLessOrEqual(LinearExpr.sum(vars), 1);
+      }
+      // Each task is assigned to exactly one worker.
+      for (int j = 0; j < numTasks; ++j) {
+        // LinearExpr taskSum;
+        IntVar[] vars = new IntVar[numWorkers];
+        for (int i = 0; i < numWorkers; ++i) {
+          vars[i] = x[i][j];
+        }
+        model.addEquality(LinearExpr.sum(vars), 1);
+      }
+      // [END constraints]
+
+      // Objective
+      // [START objective]
+      model.minimize(LinearExpr.scalProd(xFlat, costsFlat));
+      // [END objective]
+
+      // Solve
+      // [START solve]
+      CpSolver solver = new CpSolver();
+      CpSolverStatus status = solver.solve(model);
+      // [END solve]
+
+      // Print solution.
+      // [START print_solution]
+      // Check that the problem has a feasible solution.
+      if (status == CpSolverStatus.OPTIMAL || status == CpSolverStatus.FEASIBLE) {
+        System.out.println("Total cost: " + solver.objectiveValue() + "\n");
+        for (int i = 0; i < numWorkers; ++i) {
+          for (int j = 0; j < numTasks; ++j) {
+            if (solver.value(x[i][j]) == 1) {
+              System.out.println(
+                  "Worker " + i + " assigned to task " + j + ".  Cost: " + costs[i][j]);
+            }
+          }
+        }
+      } else {
+        System.err.println("No solution found.");
+      }
+      // [END print_solution]
+    } catch (Exception e) {
+      System.err.println("Caught " + e + " while building the model");
     }
-    // [END print_solution]
   }
 
   private AssignmentSat() {}

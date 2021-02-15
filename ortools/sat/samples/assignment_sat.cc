@@ -108,3 +108,4 @@ int main(int argc, char** argv) {
   operations_research::sat::IntegerProgrammingExample();
   return EXIT_SUCCESS;
 }
+// [END program]

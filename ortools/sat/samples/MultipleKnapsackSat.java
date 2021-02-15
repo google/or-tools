@@ -69,68 +69,72 @@ public class MultipleKnapsackSat {
       totalValue = totalValue + data.values[i];
     }
 
-    // [START model]
-    CpModel model = new CpModel();
-    // [END model]
+    try {
+      // [START model]
+      CpModel model = new CpModel();
+      // [END model]
 
-    // [START variables]
-    IntVar[][] x = new IntVar[data.numItems][data.numBins];
-    for (int i = 0; i < data.numItems; ++i) {
-      for (int b = 0; b < data.numBins; ++b) {
-        x[i][b] = model.newIntVar(0, 1, "x_" + i + "_" + b);
-      }
-    }
-    // Main variables.
-    // Load and value variables.
-    IntVar[] load = new IntVar[data.numBins];
-    IntVar[] value = new IntVar[data.numBins];
-    for (int b = 0; b < data.numBins; ++b) {
-      load[b] = model.newIntVar(0, data.binCapacities[b], "load_" + b);
-      value[b] = model.newIntVar(0, totalValue, "value_" + b);
-    }
-
-    // Links load and value with x.
-    int[] sizes = new int[data.numItems];
-    for (int i = 0; i < data.numItems; ++i) {
-      sizes[i] = data.items[i];
-    }
-    for (int b = 0; b < data.numBins; ++b) {
-      IntVar[] vars = new IntVar[data.numItems];
+      // [START variables]
+      IntVar[][] x = new IntVar[data.numItems][data.numBins];
       for (int i = 0; i < data.numItems; ++i) {
-        vars[i] = x[i][b];
+        for (int b = 0; b < data.numBins; ++b) {
+          x[i][b] = model.newIntVar(0, 1, "x_" + i + "_" + b);
+        }
       }
-      model.addEquality(LinearExpr.scalProd(vars, data.items), load[b]);
-      model.addEquality(LinearExpr.scalProd(vars, data.values), value[b]);
-    }
-    // [END variables]
-
-    // [START constraints]
-    // Each item can be in at most one bin.
-    // Place all items.
-    for (int i = 0; i < data.numItems; ++i) {
-      IntVar[] vars = new IntVar[data.numBins];
+      // Main variables.
+      // Load and value variables.
+      IntVar[] load = new IntVar[data.numBins];
+      IntVar[] value = new IntVar[data.numBins];
       for (int b = 0; b < data.numBins; ++b) {
-        vars[b] = x[i][b];
+        load[b] = model.newIntVar(0, data.binCapacities[b], "load_" + b);
+        value[b] = model.newIntVar(0, totalValue, "value_" + b);
       }
-      model.addLessOrEqual(LinearExpr.sum(vars), 1);
-    }
-    // [END constraints]
-    // Maximize sum of load.
-    // [START objective]
-    model.maximize(LinearExpr.sum(value));
-    // [END objective]
 
-    // [START solve]
-    CpSolver solver = new CpSolver();
-    CpSolverStatus status = solver.solve(model);
-    // [END solve]
+      // Links load and value with x.
+      int[] sizes = new int[data.numItems];
+      for (int i = 0; i < data.numItems; ++i) {
+        sizes[i] = data.items[i];
+      }
+      for (int b = 0; b < data.numBins; ++b) {
+        IntVar[] vars = new IntVar[data.numItems];
+        for (int i = 0; i < data.numItems; ++i) {
+          vars[i] = x[i][b];
+        }
+        model.addEquality(LinearExpr.scalProd(vars, data.items), load[b]);
+        model.addEquality(LinearExpr.scalProd(vars, data.values), value[b]);
+      }
+      // [END variables]
 
-    // [START print_solution]
-    System.out.println("Solve status: " + status);
-    if (status == CpSolverStatus.OPTIMAL) {
-      printSolution(data, solver, x, load, value);
+      // [START constraints]
+      // Each item can be in at most one bin.
+      // Place all items.
+      for (int i = 0; i < data.numItems; ++i) {
+        IntVar[] vars = new IntVar[data.numBins];
+        for (int b = 0; b < data.numBins; ++b) {
+          vars[b] = x[i][b];
+        }
+        model.addLessOrEqual(LinearExpr.sum(vars), 1);
+      }
+      // [END constraints]
+      // Maximize sum of load.
+      // [START objective]
+      model.maximize(LinearExpr.sum(value));
+      // [END objective]
+
+      // [START solve]
+      CpSolver solver = new CpSolver();
+      CpSolverStatus status = solver.solve(model);
+      // [END solve]
+
+      // [START print_solution]
+      System.out.println("Solve status: " + status);
+      if (status == CpSolverStatus.OPTIMAL) {
+        printSolution(data, solver, x, load, value);
+      }
+      // [END print_solution]
+    } catch (Exception e) {
+      System.err.println("Caught " + e + " while building the model");
     }
-    // [END print_solution]
   }
 
   private MultipleKnapsackSat() {}

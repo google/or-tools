@@ -13,18 +13,18 @@
 
 // [START program]
 package com.google.ortools.sat.samples;
-
+// [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
-import com.google.ortools.sat.CpSolverSolutionCallback;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
-import com.google.ortools.sat.LinearExpr;
 import com.google.ortools.sat.Literal;
+// [END import]
 
 /** Minimal CP-SAT example to showcase assumptions. */
 public class AssumptionsSampleSat {
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // Create the model.
     // [START model]
@@ -54,10 +54,18 @@ public class AssumptionsSampleSat {
     // Create a solver and solve the model.
     // [START solve]
     CpSolver solver = new CpSolver();
-    solver.solve(model);
-    System.out.println(solver.sufficientAssumptionsForInfeasibility());
+    CpSolverStatus status = solver.solve(model);
     // [END solve]
+
+    // Print solution.
+    // [START print_solution]
+    // Check that the problem is infeasible.
+    if (status == CpSolverStatus.INFEASIBLE) {
+      System.out.println(solver.sufficientAssumptionsForInfeasibility());
+    }
+    // [END print_solution]
   }
 
+  private AssumptionsSampleSat() {}
 }
 // [END program]

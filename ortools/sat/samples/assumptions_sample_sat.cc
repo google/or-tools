@@ -12,9 +12,10 @@
 // limitations under the License.
 
 // [START program]
+// [START import]
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
-
+// [END import]
 namespace operations_research {
 namespace sat {
 
@@ -45,19 +46,24 @@ void AssumptionsSampleSat() {
   // Solving part.
   // [START solve]
   const CpSolverResponse response = Solve(cp_model.Build());
-  LOG(INFO) << CpSolverResponseStats(response);
-  for (const int index : response.sufficient_assumptions_for_infeasibility()) {
-    LOG(INFO) << index;
-  }
   // [END solve]
-}
 
+  // Print solution.
+  // [START print_solution]
+  LOG(INFO) << CpSolverResponseStats(response);
+  if (response.status() == CpSolverStatus::INFEASIBLE) {
+    for (const int index :
+         response.sufficient_assumptions_for_infeasibility()) {
+      LOG(INFO) << index;
+    }
+  }
+  // [END print_solution]
+}
 }  // namespace sat
 }  // namespace operations_research
 
-int main() {
+int main(int argc, char** argv) {
   operations_research::sat::AssumptionsSampleSat();
-
   return EXIT_SUCCESS;
 }
 // [END program]
