@@ -34,7 +34,7 @@ public final class ScalProd implements LinearExpr {
     this.offset = 0;
 
     for (int i = 0; i < size; ++i) {
-      Literal lit = variables[i];
+      Literal lit = literals[i];
       long coeff = coefficients[i];
       if (lit.getIndex() >= 0) {
         this.variables[i] = (IntVar)lit;
@@ -54,7 +54,7 @@ public final class ScalProd implements LinearExpr {
     this.offset = 0;
 
     for (int i = 0; i < size; ++i) {
-      Literal lit = variables[i];
+      Literal lit = literals[i];
       if (lit.getIndex() >= 0) {
         this.variables[i] = (IntVar)lit;
         this.coefficients[i] = 1;
