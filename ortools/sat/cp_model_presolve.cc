@@ -1237,7 +1237,9 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
   const int num_vars = ct->linear().vars().size();
   Domain rhs = ReadDomainFromProto(ct->linear());
 
-  // First pass. Process singleton column that are not in the objective.
+  // First pass. Process singleton column that are not in the objective. Note
+  // that for postsolve, it is important that we process them in the same order
+  // in which they will be removed.
   for (int i = 0; i < num_vars; ++i) {
     const int var = ct->linear().vars(i);
     const int64 coeff = ct->linear().coeffs(i);

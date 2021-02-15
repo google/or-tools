@@ -1202,7 +1202,8 @@ void LoadBaseModel(const CpModelProto& model_proto,
   // TODO(user): The core algo and symmetries seems to be problematic in some
   // cases. See for instance: neos-691058.mps.gz. This is probably because as
   // we modify the model, our symmetry might be wrong? investigate.
-  if (!parameters.optimize_with_core() && parameters.symmetry_level() > 1) {
+  if (!parameters.optimize_with_core() && parameters.symmetry_level() > 1 &&
+      !parameters.enumerate_all_solutions()) {
     mapping->LoadBooleanSymmetries(model_proto, model);
   }
 

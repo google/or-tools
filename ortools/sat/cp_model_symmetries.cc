@@ -490,6 +490,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   const int initial_ct_index = proto.constraints().size();
   for (int var = 0; var < num_vars; ++var) {
     if (context->IsFixed(var)) continue;
+    if (context->VariableWasRemoved(var)) continue;
     if (context->VariableIsNotUsedAnymore(var)) continue;
 
     const AffineRelation::Relation r = context->GetAffineRelation(var);
@@ -541,10 +542,12 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   {
     const std::vector<int> orbits = GetOrbits(num_vars, generators);
     std::vector<int> orbit_sizes;
+    int max_orbit_size = 0;
     for (const int rep : orbits) {
       if (rep == -1) continue;
       if (rep >= orbit_sizes.size()) orbit_sizes.resize(rep + 1, 0);
       orbit_sizes[rep]++;
+      max_orbit_size = std::max(max_orbit_size, orbit_sizes[rep]);
     }
 
     std::vector<int> tmp_to_clear;
@@ -592,7 +595,8 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
 
     if (log_info) {
       LOG(INFO) << "Num fixable by intersecting at_most_one with orbits: "
-                << can_be_fixed_to_false.size();
+                << can_be_fixed_to_false.size()
+                << " largest_orbit: " << max_orbit_size;
     }
   }
 
@@ -854,6 +858,24 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       std::swap(orbitope[i][best_col], orbitope[i].back());
       orbitope[i].pop_back();
     }
+  }
+
+  // If we are left with a set of variable than can all be permuted, lets
+  // break the symmetry by ordering them.
+  if (orbitope.size() == 1) {
+    const int num_cols = orbitope[0].size();
+    for (int i = 0; i + 1 < num_cols; ++i) {
+      // Add orbitope[0][i] >= orbitope[0][i+1].
+      ConstraintProto* ct = context->working_model->add_constraints();
+      ct->mutable_linear()->add_coeffs(1);
+      ct->mutable_linear()->add_vars(orbitope[0][i]);
+      ct->mutable_linear()->add_coeffs(-1);
+      ct->mutable_linear()->add_vars(orbitope[0][i + 1]);
+      ct->mutable_linear()->add_domain(0);
+      ct->mutable_linear()->add_domain(kint64max);
+      context->UpdateRuleStats("symmetry: added symmetry breaking inequality");
+    }
+    context->UpdateNewConstraintsVariableUsage();
   }
 
   return true;

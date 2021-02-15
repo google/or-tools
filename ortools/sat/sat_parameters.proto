@@ -969,7 +969,7 @@ message SatParameters {
   // exploit them. Currently, at level 1 we detect them in presolve and try
   // to fix Booleans. At level 2, we also do some form of dynamic symmetry
   // breaking during search.
-  optional int32 symmetry_level = 183 [default = 0];
+  optional int32 symmetry_level = 183 [default = 2];
 
   // ==========================================================================
   // MIP -> CP-SAT (i.e. IP with integer coeff) conversion parameters that are

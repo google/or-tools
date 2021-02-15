@@ -104,7 +104,7 @@ std::vector<std::vector<int>> BasicOrbitopeExtraction(
       // not appear at all.
       int num_matches_a = 0;
       int num_matches_b = 0;
-      int last_match_index;
+      int last_match_index = -1;
       for (int j = 0; j < orbitope[i].size(); ++j) {
         if (orbitope[i][j] == a) {
           ++num_matches_a;
@@ -114,6 +114,7 @@ std::vector<std::vector<int>> BasicOrbitopeExtraction(
           last_match_index = j;
         }
       }
+      if (last_match_index == -1) break;
       if (matching_column_index == -1) {
         matching_column_index = last_match_index;
       }

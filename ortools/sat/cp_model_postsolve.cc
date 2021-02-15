@@ -70,13 +70,12 @@ void PostsolveLinear(const ConstraintProto& ct,
   }
   if (free_vars.empty()) return;
 
-  Domain rhs =
-      ReadDomainFromProto(ct.linear()).AdditionWith(Domain(-fixed_activity));
-
   // Fast track for the most common case.
+  const Domain initial_rhs = ReadDomainFromProto(ct.linear());
   if (free_vars.size() == 1) {
     const int var = free_vars[0];
-    const Domain domain = rhs.InverseMultiplicationBy(free_coeffs[0])
+    const Domain domain = initial_rhs.AdditionWith(Domain(-fixed_activity))
+                              .InverseMultiplicationBy(free_coeffs[0])
                               .IntersectionWith((*domains)[var]);
     const int64 value = prefer_lower_value[var] ? domain.Min() : domain.Max();
     (*domains)[var] = Domain(value);
@@ -86,23 +85,29 @@ void PostsolveLinear(const ConstraintProto& ct,
   // The postsolve code is a bit involved if there is more than one free
   // variable, we have to postsolve them one by one.
   //
-  // Note that if there are some not free variable that are not assigned, the
-  // presolve should have made it sure that whatever the value of those
-  // variables the first variable can always be assigned to satisfy the
-  // constraint. In that case, the MultiplicationBy() below might be inexact,
-  // but that should be okay.
-  std::vector<Domain> to_add;
-  to_add.push_back(Domain(0));
+  // Here we recompute the same domains as during the presolve. Everything is
+  // like if we where substiting the variable one by one:
+  //    terms[i] + fixed_activity \in rhs_domains[i]
+  // In the reverse order.
+  std::vector<Domain> rhs_domains;
+  rhs_domains.push_back(initial_rhs);
   for (int i = 0; i + 1 < free_vars.size(); ++i) {
+    // Note that these should be exactly the same computation as the one done
+    // during presolve and should be exact. However, we have some tests that do
+    // not comply, so we don't check exactness here. Also, as long as we don't
+    // get empty domain below, and the complexity of the domain do not explode
+    // here, we should be fine.
     Domain term = (*domains)[free_vars[i]].MultiplicationBy(-free_coeffs[i]);
-    to_add.push_back(term.AdditionWith(to_add.back()));
+    rhs_domains.push_back(term.AdditionWith(rhs_domains.back()));
   }
   for (int i = free_vars.size() - 1; i >= 0; --i) {
-    // Choose a value for free_vars[i] that fall into rhs + to_add[i].
-    // This will crash if the intersection is empty, but it shouldn't be.
+    // Choose a value for free_vars[i] that fall into rhs_domains[i] -
+    // fixed_activity. This will crash if the intersection is empty, but it
+    // shouldn't be.
     const int var = free_vars[i];
     const int64 coeff = free_coeffs[i];
-    const Domain domain = rhs.AdditionWith(to_add[i])
+    const Domain domain = rhs_domains[i]
+                              .AdditionWith(Domain(-fixed_activity))
                               .InverseMultiplicationBy(coeff)
                               .IntersectionWith((*domains)[var]);
 
@@ -112,12 +117,10 @@ void PostsolveLinear(const ConstraintProto& ct,
     CHECK(!domain.IsEmpty()) << ct.ShortDebugString();
     const int64 value = prefer_lower_value[var] ? domain.Min() : domain.Max();
     (*domains)[var] = Domain(value);
-    rhs = rhs.AdditionWith(Domain(-coeff * value));
 
-    // Only needed in debug.
     fixed_activity += coeff * value;
   }
-  DCHECK(ReadDomainFromProto(ct.linear()).Contains(fixed_activity));
+  DCHECK(initial_rhs.Contains(fixed_activity));
 }
 
 // We assign any non fixed lhs variables to their minimum value. Then we assign
