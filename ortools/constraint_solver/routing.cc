@@ -2714,7 +2714,7 @@ class RouteConstructor {
       }
     }
     CHECK_GE(non_depot_node, 0);
-    const int64 depot_threashold =
+    const int64 depot_threshold =
         std::max(dimension.SlackVar(non_depot_node)->Max(),
                  dimension.CumulVar(non_depot_node)->Max());
 
@@ -2746,7 +2746,7 @@ class RouteConstructor {
 
     if (!feasible_route || (new_possible_cumul_tail2 +
                                 dimension.GetTransitValue(tail2, end_depot, 0) >
-                            depot_threashold)) {
+                            depot_threshold)) {
       return false;
     }
     return true;
