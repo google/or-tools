@@ -304,6 +304,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     new_params.set_linearization_level(1);
     strategies["default_lp"] = new_params;
     new_params.set_linearization_level(2);
+    new_params.set_add_lp_constraints_lazily(false);
     strategies["max_lp"] = new_params;
   }
 
