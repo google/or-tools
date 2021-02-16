@@ -357,9 +357,12 @@ message GlopParameters {
   // The solver will stop as soon as it has proven that the objective is smaller
   // than objective_lower_limit or greater than objective_upper_limit. Depending
   // on the simplex algorithm (primal or dual) and the optimization direction,
-  // note that only one bound will be used at the time. The parameter
-  // solution_objective_gap_tolerance is used as a relative tolerance to improve
-  // the 'proven' guarantee.
+  // note that only one bound will be used at the time.
+  //
+  // Important: The solver does not add any tolerances to these values, and as
+  // soon as the objective (as computed by the solver, so with some imprecision)
+  // crosses one of these bounds (strictly), the search will stop. It is up to
+  // the client to add any tolerance if needed.
   optional double objective_lower_limit = 40 [default = -inf];
   optional double objective_upper_limit = 41 [default = inf];
 

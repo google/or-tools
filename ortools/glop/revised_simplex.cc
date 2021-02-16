@@ -887,7 +887,6 @@ void RevisedSimplex::InitializeObjectiveLimit(const LinearProgram& lp) {
   DCHECK_NE(0.0, objective_scaling_factor_);
 
   // This sets dual_objective_limit_ and then primal_objective_limit_.
-  const Fractional tolerance = parameters_.solution_feasibility_tolerance();
   for (const bool set_dual : {true, false}) {
     // NOTE(user): If objective_scaling_factor_ is negative, the optimization
     // direction was reversed (during preprocessing or inside revised simplex),
@@ -905,17 +904,10 @@ void RevisedSimplex::InitializeObjectiveLimit(const LinearProgram& lp) {
                                  : parameters_.objective_upper_limit();
     const Fractional shifted_limit =
         limit / objective_scaling_factor_ - objective_offset_;
-
-    // The isfinite() test is there to avoid generating NaNs with clang in
-    // fast-math mode on iOS 9.3.i.
     if (set_dual) {
-      dual_objective_limit_ = std::isfinite(shifted_limit)
-                                  ? shifted_limit * (1.0 + tolerance)
-                                  : shifted_limit;
+      dual_objective_limit_ = shifted_limit;
     } else {
-      primal_objective_limit_ = std::isfinite(shifted_limit)
-                                    ? shifted_limit * (1.0 - tolerance)
-                                    : shifted_limit;
+      primal_objective_limit_ = shifted_limit;
     }
   }
 }
