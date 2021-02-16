@@ -666,9 +666,9 @@ class RoutingModel {
   /// operators, in the context of arc-based routing.
   void IgnoreDisjunctionsAlreadyForcedToZero();
 
-  /// Adds a soft contraint to force a set of variable indices to be on the same
-  /// vehicle. If all nodes are not on the same vehicle, each extra vehicle used
-  /// adds 'cost' to the cost function.
+  /// Adds a soft constraint to force a set of variable indices to be on the
+  /// same vehicle. If all nodes are not on the same vehicle, each extra vehicle
+  /// used adds 'cost' to the cost function.
   void AddSoftSameVehicleConstraint(const std::vector<int64>& indices,
                                     int64 cost);
 
