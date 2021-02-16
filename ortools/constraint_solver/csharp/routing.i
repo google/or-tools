@@ -12,6 +12,9 @@
 // limitations under the License.
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
+%include "std_pair.i"
+%template(IntBoolPair) std::pair<int, bool>;
+
 %include "ortools/constraint_solver/csharp/constraint_solver.i"
 %include "ortools/constraint_solver/csharp/routing_types.i"
 %include "ortools/constraint_solver/csharp/routing_index_manager.i"
@@ -81,6 +84,12 @@ namespace operations_research {
 %}
 // Ignored:
 %ignore RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
+
+%ignore RoutingModel::RegisterUnaryTransitVector(
+    std::vector<int64> values);
+%ignore RoutingModel::RegisterTransitMatrix(
+    std::vector<std::vector<int64> > values);
+
 %ignore RoutingModel::AddVectorDimension(
     std::vector<int64> values,
     int64 capacity,
@@ -93,20 +102,29 @@ namespace operations_research {
     const std::string& name);
 
 %extend RoutingModel {
-  int AddVectorDimension(
+  int RegisterUnaryTransitVector(
+    const std::vector<int64>& values) {
+    return $self->RegisterUnaryTransitVector(values);
+  }
+  int RegisterTransitMatrix(
+    const std::vector<std::vector<int64> >& values) {
+    return $self->RegisterTransitMatrix(values);
+  }
+
+  std::pair<int, bool> AddVectorDimension(
     const std::vector<int64>& values,
     int64 capacity,
     bool fix_start_cumul_to_zero,
     const std::string& name) {
-    return $self->AddVectorDimension(values, capacity, fix_start_cumul_to_zero, name).first;
+    return $self->AddVectorDimension(values, capacity, fix_start_cumul_to_zero, name);
   }
 
-  int AddMatrixDimension(
+  std::pair<int, bool> AddMatrixDimension(
     const std::vector<std::vector<int64> >& values,
     int64 capacity,
     bool fix_start_cumul_to_zero,
     const std::string& name) {
-    return $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name).first;
+    return $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
   }
 }
 
