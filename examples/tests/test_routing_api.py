@@ -91,9 +91,9 @@ class TestRoutingModel(unittest.TestCase):
         self.assertTrue(routing.Solve())
 
     def test_pair(self):
-        p = pywrapcp.PairIntBool(5, True)
+        p = pywrapcp.IntBoolPair(5, True)
         if __debug__:
-            print(f"class PairIntBool: {dir(p)}")
+            print(f"class IntBoolPair: {dir(p)}")
         self.assertEqual(5, p[0])
         self.assertEqual(True, p[1])
 
@@ -108,7 +108,7 @@ class TestRoutingModel(unittest.TestCase):
                 True, # fix_start_cumul_to_zero
                 "DimensionName")
         if __debug__:
-            print(f"class PairIntBool: {dir(res)}")
+            print(f"class IntBoolPair: {dir(res)}")
             print(f"result: {res}")
         self.assertEqual(res[0], 1)
         self.assertEqual(res[1], True)
@@ -127,7 +127,7 @@ class TestRoutingModel(unittest.TestCase):
                 True, # fix_start_cumul_to_zero
                 "DimensionName")
         if __debug__:
-            print(f"class PairIntBool: {dir(res)}")
+            print(f"class IntBoolPair: {dir(res)}")
             print(f"result: {res}")
         self.assertEqual(res[0], 1)
         self.assertEqual(res[1], True)
