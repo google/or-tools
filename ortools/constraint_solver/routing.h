@@ -400,10 +400,15 @@ class RoutingModel {
   ~RoutingModel();
 
   /// Registers 'callback' and returns its index.
+  int RegisterUnaryTransitVector(std::vector<int64> values);
   int RegisterUnaryTransitCallback(TransitCallback1 callback);
   int RegisterPositiveUnaryTransitCallback(TransitCallback1 callback);
+
+  int RegisterTransitMatrix(
+      std::vector<std::vector<int64> /*needed_for_swig*/> values);
   int RegisterTransitCallback(TransitCallback2 callback);
   int RegisterPositiveTransitCallback(TransitCallback2 callback);
+
   int RegisterStateDependentTransitCallback(VariableIndexEvaluator2 callback);
   const TransitCallback2& TransitCallback(int callback_index) const {
     CHECK_LT(callback_index, transit_evaluators_.size());
@@ -458,15 +463,16 @@ class RoutingModel {
   /// equal to 'value'; 'capacity' is the upper bound of the cumul variables.
   /// 'name' is the name used to reference the dimension; this name is used to
   /// get cumul and transit variables from the routing model.
-  /// Returns false if a dimension with the same name has already been created
-  /// (and doesn't create the new dimension).
-  bool AddConstantDimensionWithSlack(int64 value, int64 capacity,
-                                     int64 slack_max,
-                                     bool fix_start_cumul_to_zero,
-                                     const std::string& name);
-  bool AddConstantDimension(int64 value, int64 capacity,
-                            bool fix_start_cumul_to_zero,
-                            const std::string& name) {
+  /// Returns a pair consisting of an index to the registered unary transit
+  /// callback and a bool denoting whether the dimension has been created.
+  /// It is false if a dimension with the same name has already been created
+  /// (and doesn't create the new dimension but still register a new callback).
+  std::pair<int, bool> AddConstantDimensionWithSlack(
+      int64 value, int64 capacity, int64 slack_max,
+      bool fix_start_cumul_to_zero, const std::string& name);
+  std::pair<int, bool> AddConstantDimension(int64 value, int64 capacity,
+                                            bool fix_start_cumul_to_zero,
+                                            const std::string& name) {
     return AddConstantDimensionWithSlack(value, capacity, 0,
                                          fix_start_cumul_to_zero, name);
   }
@@ -475,19 +481,24 @@ class RoutingModel {
   /// the cumul variables. 'name' is the name used to reference the dimension;
   /// this name is used to get cumul and transit variables from the routing
   /// model.
-  /// Returns false if a dimension with the same name has already been created
-  /// (and doesn't create the new dimension).
-  bool AddVectorDimension(std::vector<int64> values, int64 capacity,
-                          bool fix_start_cumul_to_zero,
-                          const std::string& name);
+  /// Returns a pair consisting of an index to the registered unary transit
+  /// callback and a bool denoting whether the dimension has been created.
+  /// It is false if a dimension with the same name has already been created
+  /// (and doesn't create the new dimension but still register a new callback).
+  std::pair<int, bool> AddVectorDimension(std::vector<int64> values,
+                                          int64 capacity,
+                                          bool fix_start_cumul_to_zero,
+                                          const std::string& name);
   /// Creates a dimension where the transit variable is constrained to be
   /// equal to 'values[i][next(i)]' for node i; 'capacity' is the upper bound of
   /// the cumul variables. 'name' is the name used to reference the dimension;
   /// this name is used to get cumul and transit variables from the routing
   /// model.
-  /// Returns false if a dimension with the same name has already been created
-  /// (and doesn't create the new dimension).
-  bool AddMatrixDimension(
+  /// Returns a pair consisting of an index to the registered transit callback
+  /// and a bool denoting whether the dimension has been created.
+  /// It is false if a dimension with the same name has already been created
+  /// (and doesn't create the new dimension but still register a new callback).
+  std::pair<int, bool> AddMatrixDimension(
       std::vector<std::vector<int64> /*needed_for_swig*/> values,
       int64 capacity, bool fix_start_cumul_to_zero, const std::string& name);
   /// Creates a dimension with transits depending on the cumuls of another

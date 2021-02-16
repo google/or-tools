@@ -13,6 +13,9 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
+%include "std_pair.i"
+%template(IntBoolPair) std::pair<int, bool>;
+
 %include "ortools/constraint_solver/java/constraint_solver.i"
 %include "ortools/constraint_solver/java/routing_types.i"
 %include "ortools/constraint_solver/java/routing_index_manager.i"
@@ -62,12 +65,53 @@ import java.util.function.LongBinaryOperator;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongUnaryOperator.html
 import java.util.function.LongUnaryOperator;
 %}
+
 %ignore RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
+
+%ignore RoutingModel::RegisterUnaryTransitVector(
+    std::vector<int64> values);
+%ignore RoutingModel::RegisterTransitMatrix(
+    std::vector<std::vector<int64> > values);
+
+%ignore RoutingModel::AddVectorDimension(
+    std::vector<int64> values,
+    int64 capacity,
+    bool fix_start_cumul_to_zero,
+    const std::string& name);
 %ignore RoutingModel::AddMatrixDimension(
     std::vector<std::vector<int64> > values,
     int64 capacity,
     bool fix_start_cumul_to_zero,
     const std::string& name);
+
+// Extend:
+%extend RoutingModel {
+  int registerUnaryTransitVector(
+    const std::vector<int64>& values) {
+    return $self->RegisterUnaryTransitVector(values);
+  }
+  int registerTransitMatrix(
+    const std::vector<std::vector<int64> >& values) {
+    return $self->RegisterTransitMatrix(values);
+  }
+
+  std::pair<int, bool> addVectorDimension(
+    const std::vector<int64>& values,
+    int64 capacity,
+    bool fix_start_cumul_to_zero,
+    const std::string& name) {
+    return $self->AddVectorDimension(values, capacity, fix_start_cumul_to_zero, name);
+  }
+
+  std::pair<int, bool> addMatrixDimension(
+    const std::vector<std::vector<int64> >& values,
+    int64 capacity,
+    bool fix_start_cumul_to_zero,
+    const std::string& name) {
+    return $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
+  }
+}
+
 %ignore RoutingModel::AddSameVehicleRequiredTypeAlternatives;
 %ignore RoutingModel::GetAllDimensionNames;
 %ignore RoutingModel::GetAutomaticFirstSolutionStrategy;
@@ -126,7 +170,6 @@ import java.util.function.LongUnaryOperator;
 %rename (addVariableMaximizedByFinalizer) RoutingModel::AddVariableMaximizedByFinalizer;
 %rename (addVariableMinimizedByFinalizer) RoutingModel::AddVariableMinimizedByFinalizer;
 %rename (addVariableTargetToFinalizer) RoutingModel::AddVariableTargetToFinalizer;
-%rename (addVectorDimension) RoutingModel::AddVectorDimension;
 %rename (applyLocks) RoutingModel::ApplyLocks;
 %rename (applyLocksToAllVehicles) RoutingModel::ApplyLocksToAllVehicles;
 %rename (arcIsMoreConstrainedThanArc) RoutingModel::ArcIsMoreConstrainedThanArc;
@@ -191,9 +234,13 @@ import java.util.function.LongUnaryOperator;
 %rename (preAssignment) RoutingModel::PreAssignment;
 %rename (readAssignment) RoutingModel::ReadAssignment;
 %rename (readAssignmentFromRoutes) RoutingModel::ReadAssignmentFromRoutes;
-%rename (registerPositiveTransitCallback) RoutingModel::RegisterPositiveTransitCallback;
+
 %rename (registerTransitCallback) RoutingModel::RegisterTransitCallback;
+%rename (registerPositiveTransitCallback) RoutingModel::RegisterPositiveTransitCallback; // not tested
+
 %rename (registerUnaryTransitCallback) RoutingModel::RegisterUnaryTransitCallback;
+%rename (registerPositiveUnaryTransitCallback) RoutingModel::RegisterPositiveUnaryTransitCallback; // not tested
+
 %rename (restoreAssignment) RoutingModel::RestoreAssignment;
 %rename (routesToAssignment) RoutingModel::RoutesToAssignment;
 %rename (setAllowedVehiclesForIndex) RoutingModel::SetAllowedVehiclesForIndex;
@@ -219,14 +266,6 @@ import java.util.function.LongUnaryOperator;
 %rename (vehicleVar) RoutingModel::VehicleVar;
 %rename (vehicleVars) RoutingModel::VehicleVars;
 %rename (writeAssignment) RoutingModel::WriteAssignment;
-// Extend:
-%extend RoutingModel {
-  void addMatrixDimension(const std::vector<std::vector<int64> >& values,
-                          int64 capacity, bool fix_start_cumul_to_zero,
-                          const std::string& name) {
-    $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
-  }
-}
 
 // RoutingDimension
 %unignore RoutingDimension;

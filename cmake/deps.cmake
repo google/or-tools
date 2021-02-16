@@ -29,6 +29,7 @@ set(ABSL_DEPS
   absl::random_random
   absl::raw_hash_set
   absl::hash
+  absl::leak_check
   absl::memory
   absl::meta
   absl::stacktrace
