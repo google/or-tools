@@ -50,7 +50,7 @@ var classoperations__research_1_1_routing_dimension =
     [ "SetBreakDistanceDurationOfVehicle", "classoperations__research_1_1_routing_dimension.html#a68c42bd26c7f0a2f1a0247e51a45aab5", null ],
     [ "SetBreakIntervalsOfVehicle", "classoperations__research_1_1_routing_dimension.html#ae34995163df20f89961e907ac3b25532", null ],
     [ "SetBreakIntervalsOfVehicle", "classoperations__research_1_1_routing_dimension.html#ae0ff0210afb5c8d829a9d2158833c50f", null ],
-    [ "SetBreakIntervalsOfVehicle", "classoperations__research_1_1_routing_dimension.html#a9535f9b1e14dc539e25ef9dffacbd3d7", null ],
+    [ "SetBreakIntervalsOfVehicle", "classoperations__research_1_1_routing_dimension.html#aaeb9ca33221eed94b86c8270abb8bc53", null ],
     [ "SetCumulVarPiecewiseLinearCost", "classoperations__research_1_1_routing_dimension.html#a052c958dd77221524f13f06d87960e63", null ],
     [ "SetCumulVarSoftLowerBound", "classoperations__research_1_1_routing_dimension.html#adc8bb803b3a5f74bd5e1c04d0154b03c", null ],
     [ "SetCumulVarSoftUpperBound", "classoperations__research_1_1_routing_dimension.html#ab4ee0772eb17ffba5e3a2f6f38026546", null ],

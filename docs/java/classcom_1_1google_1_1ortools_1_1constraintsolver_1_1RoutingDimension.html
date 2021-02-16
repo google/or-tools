@@ -209,10 +209,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a995dd4b42f885532e8a2699a40b9fe1e"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a995dd4b42f885532e8a2699a40b9fe1e">HasBreakConstraints</a> ()</td></tr>
 <tr class="memdesc:a995dd4b42f885532e8a2699a40b9fe1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if any break interval or break distance was defined.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a995dd4b42f885532e8a2699a40b9fe1e">More...</a><br /></td></tr>
 <tr class="separator:a995dd4b42f885532e8a2699a40b9fe1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a5d9351f284c6ce4b064c582c323904"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a0a5d9351f284c6ce4b064c582c323904">setBreakIntervalsOfVehicle</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html">IntervalVar</a>[] breaks, int vehicle, long[] node_visit_transits, LongBinaryOperator group_delays)</td></tr>
-<tr class="memdesc:a0a5d9351f284c6ce4b064c582c323904"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deprecated, sets pre_travel(i, j) = node_visit_transit[i]<br  />
- and post_travel(i, j) = group_delays(i, j).  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a0a5d9351f284c6ce4b064c582c323904">More...</a><br /></td></tr>
-<tr class="separator:a0a5d9351f284c6ce4b064c582c323904"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a315abba7809b567ef0281f77b89c32"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a6a315abba7809b567ef0281f77b89c32">setBreakIntervalsOfVehicle</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html">IntervalVar</a>[] breaks, int vehicle, long[] node_visit_transits, LongBinaryOperator delays)</td></tr>
+<tr class="memdesc:a6a315abba7809b567ef0281f77b89c32"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deprecated, sets pre_travel(i, j) = node_visit_transit[i]<br  />
+ and post_travel(i, j) = delays(i, j).  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a6a315abba7809b567ef0281f77b89c32">More...</a><br /></td></tr>
+<tr class="separator:a6a315abba7809b567ef0281f77b89c32"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aae06e90a6c65de3acc680e15f0daf156"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html">IntervalVar</a>[]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#aae06e90a6c65de3acc680e15f0daf156">getBreakIntervalsOfVehicle</a> (int vehicle)</td></tr>
 <tr class="memdesc:aae06e90a6c65de3acc680e15f0daf156"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the break intervals set by SetBreakIntervalsOfVehicle().  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#aae06e90a6c65de3acc680e15f0daf156">More...</a><br /></td></tr>
 <tr class="separator:aae06e90a6c65de3acc680e15f0daf156"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1079,8 +1079,8 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a0a5d9351f284c6ce4b064c582c323904"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0a5d9351f284c6ce4b064c582c323904">&#9670;&nbsp;</a></span>setBreakIntervalsOfVehicle() <span class="overload">[3/3]</span></h2>
+<a id="a6a315abba7809b567ef0281f77b89c32"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a315abba7809b567ef0281f77b89c32">&#9670;&nbsp;</a></span>setBreakIntervalsOfVehicle() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1107,7 +1107,7 @@ Protected Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">LongBinaryOperator&#160;</td>
-          <td class="paramname"><em>group_delays</em>&#160;</td>
+          <td class="paramname"><em>delays</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1118,7 +1118,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Deprecated, sets pre_travel(i, j) = node_visit_transit[i]<br  />
- and post_travel(i, j) = group_delays(i, j). </p>
+ and post_travel(i, j) = delays(i, j). </p>
 
 <p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00308">308</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 

@@ -115,12 +115,12 @@ $(document).ready(function(){initNavTree('globals_func_a.html',''); initResizabl
 , <a class="el" href="presolve_8cc.html#a8ff65d0e60d689087429b371061ff069">presolve.cc</a>
 , <a class="el" href="lp__solver_8cc.html#a0e321160cc045077a64f7c399f587e89">lp_solver.cc</a>
 , <a class="el" href="routing__search_8cc.html#a60696653bee60d2186d1ea5850f64567">routing_search.cc</a>
-, <a class="el" href="scip__proto__solver_8cc.html#abd48e1f129a1b82575d25e61c1568b3d">scip_proto_solver.cc</a>
+, <a class="el" href="cp__model__solver_8cc.html#a1a876b63c00524a5578afbf691be5ad9">cp_model_solver.cc</a>
 , <a class="el" href="routing__flags_8cc.html#a5cfae8364f71b6be4b4a8d1df3941176">routing_flags.cc</a>
 , <a class="el" href="fz_8cc.html#a2e6f19a873c967cb1f135e943b9e1c3b">fz.cc</a>
 , <a class="el" href="routing__search_8cc.html#acc95d14bc59afe35d789e11bbacfab6f">routing_search.cc</a>
-, <a class="el" href="search_8cc.html#a81a9d3639953160f110d3e47c52a7169">search.cc</a>
 , <a class="el" href="routing__flags_8cc.html#adf4e98bb3aae883aee0a5a5f9e8107f9">routing_flags.cc</a>
+, <a class="el" href="search_8cc.html#a81a9d3639953160f110d3e47c52a7169">search.cc</a>
 , <a class="el" href="trace_8cc.html#af78fc552af0340868a2010c99824e44d">trace.cc</a>
 , <a class="el" href="jobshop__scheduling__parser_8cc.html#a02fb717402fc4a583911d5dcb63044d0">jobshop_scheduling_parser.cc</a>
 , <a class="el" href="cp__model__fz__solver_8cc.html#ab460ab792f7cf11e24191f801189ace5">cp_model_fz_solver.cc</a>
@@ -129,6 +129,7 @@ $(document).ready(function(){initNavTree('globals_func_a.html',''); initResizabl
 , <a class="el" href="model__exporter_8cc.html#a0198cf82f6ffb8734509542f49c8c587">model_exporter.cc</a>
 , <a class="el" href="model__validator_8cc.html#a3f15a1b3b1e093ebe2375816984f938a">model_validator.cc</a>
 , <a class="el" href="scip__interface_8cc.html#a0c995fe033eca0f3e3213f56e9f4d258">scip_interface.cc</a>
+, <a class="el" href="scip__proto__solver_8cc.html#abd48e1f129a1b82575d25e61c1568b3d">scip_proto_solver.cc</a>
 , <a class="el" href="boolean__problem_8cc.html#aa76db68d1f81b1cfd98995e3d0ac26f4">boolean_problem.cc</a>
 , <a class="el" href="cp__model__solver_8cc.html#aa6b6aa5316ec3a7e0c3ca010c084a747">cp_model_solver.cc</a>
 , <a class="el" href="linear__solver_8cc.html#a1744bd4628776ce533d29d6f9e7625e0">linear_solver.cc</a>
@@ -149,7 +150,7 @@ $(document).ready(function(){initNavTree('globals_func_a.html',''); initResizabl
 , <a class="el" href="constraint__solver_8cc.html#ae2bb43b7cc826bfc2b15fd12cfc942ca">constraint_solver.cc</a>
 , <a class="el" href="default__search_8cc.html#acd458c8d08db2d8b1bd2dce9a4307208">default_search.cc</a>
 , <a class="el" href="element_8cc.html#ac0db2d451cc038ba5425ebb07a91c6bf">element.cc</a>
-, <a class="el" href="base_2logging_8cc.html#a1bbf1e269a092c7c082b7b0e1d736dac">base/logging.cc</a>
+, <a class="el" href="base_2logging_8cc.html#ab6899e1368d8416fae8e78b0976cb6ce">base/logging.cc</a>
 , <a class="el" href="routing__flags_8cc.html#aa85e62a4f44d93971401eec95ad5a7b8">routing_flags.cc</a>
 , <a class="el" href="find__graph__symmetries_8cc.html#a319b3c460e91c76ad49c4589748e4f0c">find_graph_symmetries.cc</a>
 , <a class="el" href="base_2logging_8cc.html#a32e063544df3df8e161e59c355c5e419">base/logging.cc</a>
@@ -403,6 +404,9 @@ $(document).ready(function(){initNavTree('globals_func_a.html',''); initResizabl
 <li>Arena::CreateMaybeMessage&lt; ::operations_research::sat::DecisionStrategyProto_AffineTransformation &gt;()
 : <a class="el" href="cp__model_8pb_8cc.html#a0ce319e79a531e15d06f2e46c6839b3f">cp_model.pb.cc</a>
 </li>
+<li>Arena::CreateMaybeMessage&lt; ::operations_research::sat::DenseMatrixProto &gt;()
+: <a class="el" href="cp__model_8pb_8cc.html#add816a3c39ff89cd9a033ee1083e4b77">cp_model.pb.cc</a>
+</li>
 <li>Arena::CreateMaybeMessage&lt; ::operations_research::sat::ElementConstraintProto &gt;()
 : <a class="el" href="cp__model_8pb_8cc.html#ac5b2d3d57c4d928fb01df0d2756e6d46">cp_model.pb.cc</a>
 </li>
@@ -453,6 +457,12 @@ $(document).ready(function(){initNavTree('globals_func_a.html',''); initResizabl
 </li>
 <li>Arena::CreateMaybeMessage&lt; ::operations_research::sat::SatParameters &gt;()
 : <a class="el" href="sat__parameters_8pb_8cc.html#adb23a6497b1893a9af46c30183907c79">sat_parameters.pb.cc</a>
+</li>
+<li>Arena::CreateMaybeMessage&lt; ::operations_research::sat::SparsePermutationProto &gt;()
+: <a class="el" href="cp__model_8pb_8cc.html#aff035a4381583ecc9e730da65c1c927a">cp_model.pb.cc</a>
+</li>
+<li>Arena::CreateMaybeMessage&lt; ::operations_research::sat::SymmetryProto &gt;()
+: <a class="el" href="cp__model_8pb_8cc.html#a627817294b1ca699712f01eec700132e">cp_model.pb.cc</a>
 </li>
 <li>Arena::CreateMaybeMessage&lt; ::operations_research::sat::TableConstraintProto &gt;()
 : <a class="el" href="cp__model_8pb_8cc.html#ad306b7f37e6f58df6bfdebda9a338799">cp_model.pb.cc</a>
@@ -703,6 +713,9 @@ $(document).ready(function(){initNavTree('globals_func_a.html',''); initResizabl
 <li>Arena::CreateMaybeMessage&lt;::operations_research::sat::DecisionStrategyProto_AffineTransformation &gt;()
 : <a class="el" href="cp__model_8pb_8h.html#a76684065481e77a04d6a785b57a37ea0">cp_model.pb.h</a>
 </li>
+<li>Arena::CreateMaybeMessage&lt;::operations_research::sat::DenseMatrixProto &gt;()
+: <a class="el" href="cp__model_8pb_8h.html#a852decb66aaf3f37d9ec5f6d2dd1b747">cp_model.pb.h</a>
+</li>
 <li>Arena::CreateMaybeMessage&lt;::operations_research::sat::ElementConstraintProto &gt;()
 : <a class="el" href="cp__model_8pb_8h.html#aafaee55e2ef399a5e005a29ebdd5557f">cp_model.pb.h</a>
 </li>
@@ -753,6 +766,12 @@ $(document).ready(function(){initNavTree('globals_func_a.html',''); initResizabl
 </li>
 <li>Arena::CreateMaybeMessage&lt;::operations_research::sat::SatParameters &gt;()
 : <a class="el" href="sat__parameters_8pb_8h.html#ab55372e60a420147082bef8a70b2bb15">sat_parameters.pb.h</a>
+</li>
+<li>Arena::CreateMaybeMessage&lt;::operations_research::sat::SparsePermutationProto &gt;()
+: <a class="el" href="cp__model_8pb_8h.html#a0f4aa571b3bfd25adc4145a21cad78c3">cp_model.pb.h</a>
+</li>
+<li>Arena::CreateMaybeMessage&lt;::operations_research::sat::SymmetryProto &gt;()
+: <a class="el" href="cp__model_8pb_8h.html#a7f2803c32689a16fb06bd970a613c25e">cp_model.pb.h</a>
 </li>
 <li>Arena::CreateMaybeMessage&lt;::operations_research::sat::TableConstraintProto &gt;()
 : <a class="el" href="cp__model_8pb_8h.html#a32645384af0bf66e5cb51f2367bfee0a">cp_model.pb.h</a>

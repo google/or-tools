@@ -8,6 +8,7 @@ var classoperations__research_1_1sat_1_1_neighborhood_generator_helper =
     [ "FixGivenVariables", "classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a586408c556a6e1732ac80d8df9cdee5b", null ],
     [ "FullNeighborhood", "classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a15cb168917371b5fb2d17b00e640de63", null ],
     [ "GenerateTask", "classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a600568ec5f62e9175d11d08920d1bab1", null ],
+    [ "GetActiveIntervals", "classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a8b0ea5233e98dcd85233c074a034fd05", null ],
     [ "IsActive", "classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a3536511769245b28739a715de62b0193", null ],
     [ "ModelProto", "classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a9f348ae7c22fbaa73b72bc976455ab14", null ],
     [ "MutableMutex", "classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a49496d349c274724b25a6b077cc8fdb4", null ],

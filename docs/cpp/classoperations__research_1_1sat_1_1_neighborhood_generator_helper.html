@@ -127,6 +127,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a126969fed21452a041a7014fb86ff105"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6aef4ca16709a75231ee1691c306c641"><td class="memItemLeft" align="right" valign="top">const absl::Span&lt; const int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a6aef4ca16709a75231ee1691c306c641">TypeToConstraints</a> (ConstraintProto::ConstraintCase type) const</td></tr>
 <tr class="separator:a6aef4ca16709a75231ee1691c306c641"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b0ea5233e98dcd85233c074a034fd05"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a8b0ea5233e98dcd85233c074a034fd05">GetActiveIntervals</a> (const CpSolverResponse &amp;initial_solution) const</td></tr>
+<tr class="separator:a8b0ea5233e98dcd85233c074a034fd05"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f348ae7c22fbaa73b72bc976455ab14"><td class="memItemLeft" align="right" valign="top">const CpModelProto &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a9f348ae7c22fbaa73b72bc976455ab14">ModelProto</a> () const</td></tr>
 <tr class="separator:a9f348ae7c22fbaa73b72bc976455ab14"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af4a8d38991f3497e048a3b56b830087f"><td class="memItemLeft" align="right" valign="top">const SatParameters &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#af4a8d38991f3497e048a3b56b830087f">Parameters</a> () const</td></tr>
@@ -298,7 +300,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00245">245</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00292">292</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
@@ -328,7 +330,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00182">182</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00229">229</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
@@ -347,7 +349,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00172">172</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00188">188</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
@@ -381,6 +383,26 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a8b0ea5233e98dcd85233c074a034fd05"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8b0ea5233e98dcd85233c074a034fd05">&#9670;&nbsp;</a></span>GetActiveIntervals()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; int &gt; GetActiveIntervals </td>
+          <td>(</td>
+          <td class="paramtype">const CpSolverResponse &amp;&#160;</td>
+          <td class="paramname"><em>initial_solution</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00198">198</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+
+</div>
+</div>
 <a id="a3536511769245b28739a715de62b0193"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3536511769245b28739a715de62b0193">&#9670;&nbsp;</a></span>IsActive()</h2>
 
@@ -397,7 +419,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00162">162</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00178">178</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
@@ -424,7 +446,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00126">126</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00133">133</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
 
 </div>
 </div>
@@ -451,7 +473,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00135">135</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00142">142</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
 
 </div>
 </div>
@@ -505,7 +527,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00127">127</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00134">134</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
 
 </div>
 </div>
@@ -535,7 +557,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00231">231</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00278">278</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
@@ -555,7 +577,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00216">216</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00263">263</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
@@ -609,7 +631,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00137">137</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00144">144</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
 
 </div>
 </div>

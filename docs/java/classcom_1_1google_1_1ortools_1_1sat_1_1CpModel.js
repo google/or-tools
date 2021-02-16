@@ -7,6 +7,8 @@ var classcom_1_1google_1_1ortools_1_1sat_1_1CpModel =
     [ "addAllDifferent", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#aa244af8f621b649b116312870d8d070d", null ],
     [ "addAllowedAssignments", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a07c24a31bdfe0db93e53fbf38655f200", null ],
     [ "addAllowedAssignments", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a971f9bc9c7ae12bab67f4513a8f109d3", null ],
+    [ "addAssumption", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a6c947e26c649b032bc71b742a8591c78", null ],
+    [ "addAssumptions", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a575f2ec309ae45622e0d3601a83ccb91", null ],
     [ "addAutomaton", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a303881f104fd9020dbb86013536bfa37", null ],
     [ "addBoolAnd", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#aedb84df3a1abe770fd16136f0692de3e", null ],
     [ "addBoolOr", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ae55db7c57933adcbc4cfe7fccf8f2fb6", null ],
@@ -58,7 +60,10 @@ var classcom_1_1google_1_1ortools_1_1sat_1_1CpModel =
     [ "addReservoirConstraint", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a731e8bd6e9ce86bea263bcb22498571d", null ],
     [ "addReservoirConstraintWithActive", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a9a9e0fdb63a893daa454d53fb21a38c7", null ],
     [ "addReservoirConstraintWithActive", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a258c2320306720544f8a9caa2fc1b949", null ],
+    [ "clearAssumptions", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a2295a3e26efe868c58ef9cbf16714ddc", null ],
+    [ "clearHints", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#acfebe68026a8b01e9eba16f811d2fd8d", null ],
     [ "exportToFile", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a380637b707322864d915ee2c3dd4a900", null ],
+    [ "falseLiteral", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a5301d52f616d96319f708f4379d17cea", null ],
     [ "getBuilder", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#afc40b2018802b3b4978d91b64e84cad7", null ],
     [ "maximize", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#aa03f83497b1d96e83c6bcf48c385078c", null ],
     [ "minimize", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a5ebe6f90377f06adcb4a95eca060bcb6", null ],
@@ -79,5 +84,6 @@ var classcom_1_1google_1_1ortools_1_1sat_1_1CpModel =
     [ "newOptionalIntervalVar", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a24e1bd81b980c9fc6f79c46dae0008e5", null ],
     [ "newOptionalIntervalVar", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#af3b79c31eb97da5232415a213afa2f16", null ],
     [ "newOptionalIntervalVar", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a5b9aa1b17a579d7a2e3059479f6d1b0b", null ],
+    [ "trueLiteral", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ac9e2f74d525548916080a1465b77c2e6", null ],
     [ "validate", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ad3864adf749011c7abcd03127679af5d", null ]
 ];

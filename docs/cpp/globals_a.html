@@ -122,7 +122,7 @@ $(document).ready(function(){initNavTree('globals_a.html',''); initResizable(); 
 , <a class="el" href="presolve_8cc.html#a8ff65d0e60d689087429b371061ff069">presolve.cc</a>
 , <a class="el" href="lp__solver_8cc.html#a0e321160cc045077a64f7c399f587e89">lp_solver.cc</a>
 , <a class="el" href="routing__flags_8cc.html#ac4e4bf12d3bb1fb5a5fa197f3c9ca702">routing_flags.cc</a>
-, <a class="el" href="cp__model__solver_8cc.html#a335160e182a5699147bb9514356c7eb8">cp_model_solver.cc</a>
+, <a class="el" href="cp__model__solver_8cc.html#a9aab1846f5aa2cda3749adb20a0e7c7b">cp_model_solver.cc</a>
 , <a class="el" href="routing__flags_8cc.html#a5cfae8364f71b6be4b4a8d1df3941176">routing_flags.cc</a>
 , <a class="el" href="fz_8cc.html#a2e6f19a873c967cb1f135e943b9e1c3b">fz.cc</a>
 , <a class="el" href="routing__search_8cc.html#a60696653bee60d2186d1ea5850f64567">routing_search.cc</a>
@@ -139,7 +139,7 @@ $(document).ready(function(){initNavTree('globals_a.html',''); initResizable(); 
 , <a class="el" href="boolean__problem_8cc.html#aa76db68d1f81b1cfd98995e3d0ac26f4">boolean_problem.cc</a>
 , <a class="el" href="cp__model__solver_8cc.html#aa6b6aa5316ec3a7e0c3ca010c084a747">cp_model_solver.cc</a>
 , <a class="el" href="linear__solver_8cc.html#a1744bd4628776ce533d29d6f9e7625e0">linear_solver.cc</a>
-, <a class="el" href="cp__model__solver_8cc.html#a73c8968cf0877bf8947b93c2889c280a">cp_model_solver.cc</a>
+, <a class="el" href="cp__model__solver_8cc.html#a335160e182a5699147bb9514356c7eb8">cp_model_solver.cc</a>
 , <a class="el" href="synchronization_8cc.html#ac25c0e2d20a777a3b431680172312aa7">synchronization.cc</a>
 , <a class="el" href="bitset_8cc.html#a95564ffe5aa637e68370ebd4ede9e98b">bitset.cc</a>
 , <a class="el" href="time__limit_8cc.html#ad9d2d29e2ac7e6245aed7fcfe75c1631">time_limit.cc</a>
@@ -425,6 +425,9 @@ $(document).ready(function(){initNavTree('globals_a.html',''); initResizable(); 
 <li>Arena::CreateMaybeMessage&lt; ::operations_research::sat::DecisionStrategyProto_AffineTransformation &gt;()
 : <a class="el" href="cp__model_8pb_8cc.html#a0ce319e79a531e15d06f2e46c6839b3f">cp_model.pb.cc</a>
 </li>
+<li>Arena::CreateMaybeMessage&lt; ::operations_research::sat::DenseMatrixProto &gt;()
+: <a class="el" href="cp__model_8pb_8cc.html#add816a3c39ff89cd9a033ee1083e4b77">cp_model.pb.cc</a>
+</li>
 <li>Arena::CreateMaybeMessage&lt; ::operations_research::sat::ElementConstraintProto &gt;()
 : <a class="el" href="cp__model_8pb_8cc.html#ac5b2d3d57c4d928fb01df0d2756e6d46">cp_model.pb.cc</a>
 </li>
@@ -475,6 +478,12 @@ $(document).ready(function(){initNavTree('globals_a.html',''); initResizable(); 
 </li>
 <li>Arena::CreateMaybeMessage&lt; ::operations_research::sat::SatParameters &gt;()
 : <a class="el" href="sat__parameters_8pb_8cc.html#adb23a6497b1893a9af46c30183907c79">sat_parameters.pb.cc</a>
+</li>
+<li>Arena::CreateMaybeMessage&lt; ::operations_research::sat::SparsePermutationProto &gt;()
+: <a class="el" href="cp__model_8pb_8cc.html#aff035a4381583ecc9e730da65c1c927a">cp_model.pb.cc</a>
+</li>
+<li>Arena::CreateMaybeMessage&lt; ::operations_research::sat::SymmetryProto &gt;()
+: <a class="el" href="cp__model_8pb_8cc.html#a627817294b1ca699712f01eec700132e">cp_model.pb.cc</a>
 </li>
 <li>Arena::CreateMaybeMessage&lt; ::operations_research::sat::TableConstraintProto &gt;()
 : <a class="el" href="cp__model_8pb_8cc.html#ad306b7f37e6f58df6bfdebda9a338799">cp_model.pb.cc</a>
@@ -725,6 +734,9 @@ $(document).ready(function(){initNavTree('globals_a.html',''); initResizable(); 
 <li>Arena::CreateMaybeMessage&lt;::operations_research::sat::DecisionStrategyProto_AffineTransformation &gt;()
 : <a class="el" href="cp__model_8pb_8h.html#a76684065481e77a04d6a785b57a37ea0">cp_model.pb.h</a>
 </li>
+<li>Arena::CreateMaybeMessage&lt;::operations_research::sat::DenseMatrixProto &gt;()
+: <a class="el" href="cp__model_8pb_8h.html#a852decb66aaf3f37d9ec5f6d2dd1b747">cp_model.pb.h</a>
+</li>
 <li>Arena::CreateMaybeMessage&lt;::operations_research::sat::ElementConstraintProto &gt;()
 : <a class="el" href="cp__model_8pb_8h.html#aafaee55e2ef399a5e005a29ebdd5557f">cp_model.pb.h</a>
 </li>
@@ -775,6 +787,12 @@ $(document).ready(function(){initNavTree('globals_a.html',''); initResizable(); 
 </li>
 <li>Arena::CreateMaybeMessage&lt;::operations_research::sat::SatParameters &gt;()
 : <a class="el" href="sat__parameters_8pb_8h.html#ab55372e60a420147082bef8a70b2bb15">sat_parameters.pb.h</a>
+</li>
+<li>Arena::CreateMaybeMessage&lt;::operations_research::sat::SparsePermutationProto &gt;()
+: <a class="el" href="cp__model_8pb_8h.html#a0f4aa571b3bfd25adc4145a21cad78c3">cp_model.pb.h</a>
+</li>
+<li>Arena::CreateMaybeMessage&lt;::operations_research::sat::SymmetryProto &gt;()
+: <a class="el" href="cp__model_8pb_8h.html#a7f2803c32689a16fb06bd970a613c25e">cp_model.pb.h</a>
 </li>
 <li>Arena::CreateMaybeMessage&lt;::operations_research::sat::TableConstraintProto &gt;()
 : <a class="el" href="cp__model_8pb_8h.html#a32645384af0bf66e5cb51f2367bfee0a">cp_model.pb.h</a>

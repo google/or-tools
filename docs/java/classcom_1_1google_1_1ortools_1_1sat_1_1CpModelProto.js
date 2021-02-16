@@ -26,6 +26,8 @@ var classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto =
     [ "getSerializedSize", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a8342b02c43d81069adc3e820423d92ac", null ],
     [ "getSolutionHint", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a7d92f056d2f44ee2a4b1aeb7063e36ce", null ],
     [ "getSolutionHintOrBuilder", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a9fce9a96b47f8d135efd14b1e18b448d", null ],
+    [ "getSymmetry", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a35be012cf126c8fea1dbaa974a930239", null ],
+    [ "getSymmetryOrBuilder", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#aa7b41bf93a2031648deb4921a3d3a16a", null ],
     [ "getUnknownFields", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a9595e84f1a265789b99af6f10e024e33", null ],
     [ "getVariables", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#abda430c2e321758e3b387092ac023055", null ],
     [ "getVariablesCount", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a8b8ab2c28bcbc2b310c54dee8acf7ab4", null ],
@@ -35,6 +37,7 @@ var classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto =
     [ "hashCode", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#ab55eefa0b7ba9d1dec56bf8bb2b996b3", null ],
     [ "hasObjective", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#adb7213fb0f969793e4c440bd397ccedd", null ],
     [ "hasSolutionHint", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a65f40cabac3e43c6b10902ce4a301102", null ],
+    [ "hasSymmetry", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a5ea934b7881b35cc43db47897b8b9761", null ],
     [ "internalGetFieldAccessorTable", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a933d518fc16e760775083e723eb80b9a", null ],
     [ "isInitialized", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a968cb605190759c690e5a97cdc0bb4a1", null ],
     [ "newBuilder", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#aeff24d3f13ca1e88dc9427c640b64314", null ],
@@ -63,5 +66,6 @@ var classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto =
     [ "OBJECTIVE_FIELD_NUMBER", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a205df7de53bdd36fb63d9aaa0742052f", null ],
     [ "SEARCH_STRATEGY_FIELD_NUMBER", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#aadb1c7013fe47d8127137982d27e92a1", null ],
     [ "SOLUTION_HINT_FIELD_NUMBER", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a59ea6eb742cd33dda889dfec60dee469", null ],
+    [ "SYMMETRY_FIELD_NUMBER", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a030bd137d3c7aa1868603860b97bee7d", null ],
     [ "VARIABLES_FIELD_NUMBER", "classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a90cb7c551f56cb370ad8e1a990883f6a", null ]
 ];

@@ -7,6 +7,7 @@ var classGoogle_1_1OrTools_1_1Sat_1_1CpSolver =
     [ "SearchAllSolutions", "classGoogle_1_1OrTools_1_1Sat_1_1CpSolver.html#aa325005cb61ad7890dedd8843eb7b5dd", null ],
     [ "Solve", "classGoogle_1_1OrTools_1_1Sat_1_1CpSolver.html#abe80e94b5386fe6134ecf071aec60d2e", null ],
     [ "SolveWithSolutionCallback", "classGoogle_1_1OrTools_1_1Sat_1_1CpSolver.html#a271c85d731d4e684ef15bd7e94cefbe0", null ],
+    [ "SufficientAssumptionsForInfeasibility", "classGoogle_1_1OrTools_1_1Sat_1_1CpSolver.html#a090e2f15fb19c558f7c1820b4980a5fa", null ],
     [ "Value", "classGoogle_1_1OrTools_1_1Sat_1_1CpSolver.html#a58c7ab0674a3f3f5a2b357e0d1b01396", null ],
     [ "WallTime", "classGoogle_1_1OrTools_1_1Sat_1_1CpSolver.html#a054f9e55bbf4743a577284bc7caa1904", null ],
     [ "BestObjectiveBound", "classGoogle_1_1OrTools_1_1Sat_1_1CpSolver.html#a8f34ff079ecb479249803af3395f3d80", null ],

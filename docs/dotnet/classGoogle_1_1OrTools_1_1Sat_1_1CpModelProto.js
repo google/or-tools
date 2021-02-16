@@ -17,6 +17,7 @@ var classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto =
     [ "ObjectiveFieldNumber", "classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html#ac8c3674c210726c418ea3147bee6a859", null ],
     [ "SearchStrategyFieldNumber", "classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html#ae654c338cd096d02316da17102478fc2", null ],
     [ "SolutionHintFieldNumber", "classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html#ab189a904a65e70e41d9830dc8246e54b", null ],
+    [ "SymmetryFieldNumber", "classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html#a8cb794870655dafc0f11e37fbecf06e4", null ],
     [ "VariablesFieldNumber", "classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html#a86ecd6586e36e20b6bcc9bd63ec4b589", null ],
     [ "Assumptions", "classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html#a6ecc7775cb5fc1a33e93338ac8ebe534", null ],
     [ "Constraints", "classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html#a39723d2010ef2a6f6966173e1462fce6", null ],
@@ -27,5 +28,6 @@ var classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto =
     [ "Parser", "classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html#a2716f4e78c5ecb99d2a964cbde46948c", null ],
     [ "SearchStrategy", "classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html#a02c6f32e6a6aa1d96671ef541bb8ee7d", null ],
     [ "SolutionHint", "classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html#a0daf31060120ffd70d0b4aad585ff02e", null ],
+    [ "Symmetry", "classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html#afb2ab63ae5010d159e0dc533582a0a3c", null ],
     [ "Variables", "classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html#a2811532486e3bbc9fe731e5ea0253640", null ]
 ];
