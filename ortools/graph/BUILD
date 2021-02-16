@@ -8,6 +8,7 @@ cc_library(
     deps = [
         ":iterators",
         "//ortools/base",
+        "@com_google_absl//absl/debugging:leak_check",
     ],
 )
 

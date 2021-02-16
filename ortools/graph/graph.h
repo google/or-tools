@@ -162,6 +162,7 @@
 #include <new>
 #include <vector>
 
+#include "absl/debugging/leak_check.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
@@ -783,7 +784,7 @@ class SVector {
       // NOTE(user): Alternatively, our capacity could inherit from the other
       // vector's capacity, which can be (much) greater than its size.
       capacity_ = other.size_;
-      base_ = static_cast<T*>(malloc(2LL * capacity_ * sizeof(T)));
+      base_ = Allocate(capacity_);
       CHECK(base_ != nullptr);
       base_ += capacity_;
     } else {  // capacity_ >= other.size
@@ -852,7 +853,7 @@ class SVector {
     DCHECK_LE(n, max_size());
     if (n > capacity_) {
       const int new_capacity = std::min(n, max_size());
-      T* new_storage = static_cast<T*>(malloc(2LL * new_capacity * sizeof(T)));
+      T* new_storage = Allocate(new_capacity);
       CHECK(new_storage != nullptr);
       T* new_base = new_storage + new_capacity;
       // TODO(user): in C++17 we could use std::uninitialized_move instead
@@ -904,6 +905,11 @@ class SVector {
   }
 
  private:
+  T* Allocate(int capacity) const {
+    return absl::IgnoreLeak(
+        static_cast<T*>(malloc(2LL * capacity * sizeof(T))));
+  }
+
   int NewCapacity(int delta) {
     // TODO(user): check validity.
     double candidate = 1.3 * static_cast<double>(capacity_);
