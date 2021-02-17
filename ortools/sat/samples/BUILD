@@ -2,11 +2,15 @@ load(":code_samples.bzl", "code_sample_cc")
 
 code_sample_cc(name = "assignment_sat")
 
+code_sample_cc(name = "assumptions_sample_sat")
+
 code_sample_cc(name = "binpacking_problem_sat")
 
 code_sample_cc(name = "bool_or_sample_sat")
 
 code_sample_cc(name = "channeling_sample_sat")
+
+code_sample_cc(name = "copy_model_sample_sat")
 
 code_sample_cc(name = "cp_is_fun_sat")
 
