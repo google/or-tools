@@ -2,7 +2,6 @@ var classoperations__research_1_1sat_1_1_cp_model_mapping =
 [
     [ "ConstraintIsAlreadyLoaded", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#a66ee25333b0b64292cfa8731c4d4f5eb", null ],
     [ "CreateVariables", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#af7e0a5f102c8809cfc9c9e515c1d9118", null ],
-    [ "DetectAndLoadBooleanSymmetries", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#a83cee33f17bdb8facfea88928cc7c5f9", null ],
     [ "DetectOptionalVariables", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#aa3361a48335b9de95fcefa9dc5dc3e22", null ],
     [ "ExtractEncoding", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#ad78bf6fcea4b54f750e2457e47b4f46a", null ],
     [ "GetProtoVariableFromBooleanVariable", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#a870d11729c8b44299ad9e258b06fa768", null ],
@@ -18,6 +17,7 @@ var classoperations__research_1_1sat_1_1_cp_model_mapping =
     [ "Literal", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#a922026cbae3cd7aac276fcad53bd4278", null ],
     [ "Literals", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#a0f4307fe0ec0a2e2803a15a2f17aa394", null ],
     [ "LoadAffineView", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#a294162e1365ee4ad6cca5500ca019f42", null ],
+    [ "LoadBooleanSymmetries", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#a4af0100d434de55ff841156fdac6d180", null ],
     [ "NumBooleanVariables", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#a432f9671a5c6197d10b284ad2443322c", null ],
     [ "NumIntegerVariables", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#a6362803926342ed9d75c777f2d94c4d3", null ],
     [ "PotentialEncodedValues", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#ad67b08fb6b8be443da8c4427d3e83a77", null ],

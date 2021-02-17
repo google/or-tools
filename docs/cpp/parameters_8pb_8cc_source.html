@@ -625,11 +625,11 @@ $(document).ready(function(){initNavTree('parameters_8pb_8cc_source.html',''); i
 <div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160;  RegisterArenaDtor(arena);</div>
 <div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160;  <span class="comment">// @@protoc_insertion_point(arena_constructor:operations_research.glop.GlopParameters)</span></div>
 <div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160;}</div>
-<div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;GlopParameters::GlopParameters(<span class="keyword">const</span> GlopParameters&amp; from)</div>
+<div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;GlopParameters::GlopParameters(<span class="keyword">const</span> GlopParameters&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>)</div>
 <div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160;  : ::PROTOBUF_NAMESPACE_ID::Message(),</div>
-<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;      _has_bits_(from._has_bits_) {</div>
-<div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(from._internal_metadata_);</div>
-<div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;  ::memcpy(&amp;use_dual_simplex_, &amp;from.use_dual_simplex_,</div>
+<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;      _has_bits_(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._has_bits_) {</div>
+<div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_metadata_);</div>
+<div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;  ::memcpy(&amp;use_dual_simplex_, &amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.use_dual_simplex_,</div>
 <div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;    <span class="keyword">static_cast&lt;</span><span class="keywordtype">size_t</span><span class="keyword">&gt;</span>(<span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(&amp;initial_condition_number_threshold_) -</div>
 <div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;    <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(&amp;use_dual_simplex_)) + <span class="keyword">sizeof</span>(initial_condition_number_threshold_));</div>
 <div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;  <span class="comment">// @@protoc_insertion_point(copy_constructor:operations_research.glop.GlopParameters)</span></div>
@@ -1892,218 +1892,218 @@ $(document).ready(function(){initNavTree('parameters_8pb_8cc_source.html',''); i
 <div class="line"><a name="l01801"></a><span class="lineno"> 1801</span>&#160;  <span class="keywordflow">return</span> total_size;</div>
 <div class="line"><a name="l01802"></a><span class="lineno"> 1802</span>&#160;}</div>
 <div class="line"><a name="l01803"></a><span class="lineno"> 1803</span>&#160; </div>
-<div class="line"><a name="l01804"></a><span class="lineno"> 1804</span>&#160;<span class="keywordtype">void</span> GlopParameters::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; from) {</div>
+<div class="line"><a name="l01804"></a><span class="lineno"> 1804</span>&#160;<span class="keywordtype">void</span> GlopParameters::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
 <div class="line"><a name="l01805"></a><span class="lineno"> 1805</span>&#160;<span class="comment">// @@protoc_insertion_point(generalized_merge_from_start:operations_research.glop.GlopParameters)</span></div>
-<div class="line"><a name="l01806"></a><span class="lineno"> 1806</span>&#160;  GOOGLE_DCHECK_NE(&amp;from, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l01806"></a><span class="lineno"> 1806</span>&#160;  GOOGLE_DCHECK_NE(&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
 <div class="line"><a name="l01807"></a><span class="lineno"> 1807</span>&#160;  <span class="keyword">const</span> GlopParameters* source =</div>
 <div class="line"><a name="l01808"></a><span class="lineno"> 1808</span>&#160;      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated&lt;GlopParameters&gt;(</div>
-<div class="line"><a name="l01809"></a><span class="lineno"> 1809</span>&#160;          &amp;from);</div>
+<div class="line"><a name="l01809"></a><span class="lineno"> 1809</span>&#160;          &amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
 <div class="line"><a name="l01810"></a><span class="lineno"> 1810</span>&#160;  <span class="keywordflow">if</span> (source == <span class="keyword">nullptr</span>) {</div>
 <div class="line"><a name="l01811"></a><span class="lineno"> 1811</span>&#160;  <span class="comment">// @@protoc_insertion_point(generalized_merge_from_cast_fail:operations_research.glop.GlopParameters)</span></div>
-<div class="line"><a name="l01812"></a><span class="lineno"> 1812</span>&#160;    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l01812"></a><span class="lineno"> 1812</span>&#160;    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
 <div class="line"><a name="l01813"></a><span class="lineno"> 1813</span>&#160;  } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l01814"></a><span class="lineno"> 1814</span>&#160;  <span class="comment">// @@protoc_insertion_point(generalized_merge_from_cast_success:operations_research.glop.GlopParameters)</span></div>
 <div class="line"><a name="l01815"></a><span class="lineno"> 1815</span>&#160;    MergeFrom(*source);</div>
 <div class="line"><a name="l01816"></a><span class="lineno"> 1816</span>&#160;  }</div>
 <div class="line"><a name="l01817"></a><span class="lineno"> 1817</span>&#160;}</div>
 <div class="line"><a name="l01818"></a><span class="lineno"> 1818</span>&#160; </div>
-<div class="line"><a name="l01819"></a><span class="lineno"> 1819</span>&#160;<span class="keywordtype">void</span> GlopParameters::MergeFrom(<span class="keyword">const</span> GlopParameters&amp; from) {</div>
+<div class="line"><a name="l01819"></a><span class="lineno"> 1819</span>&#160;<span class="keywordtype">void</span> GlopParameters::MergeFrom(<span class="keyword">const</span> GlopParameters&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
 <div class="line"><a name="l01820"></a><span class="lineno"> 1820</span>&#160;<span class="comment">// @@protoc_insertion_point(class_specific_merge_from_start:operations_research.glop.GlopParameters)</span></div>
-<div class="line"><a name="l01821"></a><span class="lineno"> 1821</span>&#160;  GOOGLE_DCHECK_NE(&amp;from, <span class="keyword">this</span>);</div>
-<div class="line"><a name="l01822"></a><span class="lineno"> 1822</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(from._internal_metadata_);</div>
+<div class="line"><a name="l01821"></a><span class="lineno"> 1821</span>&#160;  GOOGLE_DCHECK_NE(&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l01822"></a><span class="lineno"> 1822</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_metadata_);</div>
 <div class="line"><a name="l01823"></a><span class="lineno"> 1823</span>&#160;  <a class="code" href="integral__types_8h.html#a1134b580f8da4de94ca6b1de4d37975e">::PROTOBUF_NAMESPACE_ID::uint32</a> cached_has_bits = 0;</div>
 <div class="line"><a name="l01824"></a><span class="lineno"> 1824</span>&#160;  (void) cached_has_bits;</div>
 <div class="line"><a name="l01825"></a><span class="lineno"> 1825</span>&#160; </div>
-<div class="line"><a name="l01826"></a><span class="lineno"> 1826</span>&#160;  cached_has_bits = from._has_bits_[0];</div>
+<div class="line"><a name="l01826"></a><span class="lineno"> 1826</span>&#160;  cached_has_bits = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._has_bits_[0];</div>
 <div class="line"><a name="l01827"></a><span class="lineno"> 1827</span>&#160;  <span class="keywordflow">if</span> (cached_has_bits &amp; 0x000000ffu) {</div>
 <div class="line"><a name="l01828"></a><span class="lineno"> 1828</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000001u) {</div>
-<div class="line"><a name="l01829"></a><span class="lineno"> 1829</span>&#160;      use_dual_simplex_ = from.use_dual_simplex_;</div>
+<div class="line"><a name="l01829"></a><span class="lineno"> 1829</span>&#160;      use_dual_simplex_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.use_dual_simplex_;</div>
 <div class="line"><a name="l01830"></a><span class="lineno"> 1830</span>&#160;    }</div>
 <div class="line"><a name="l01831"></a><span class="lineno"> 1831</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000002u) {</div>
-<div class="line"><a name="l01832"></a><span class="lineno"> 1832</span>&#160;      allow_simplex_algorithm_change_ = from.allow_simplex_algorithm_change_;</div>
+<div class="line"><a name="l01832"></a><span class="lineno"> 1832</span>&#160;      allow_simplex_algorithm_change_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.allow_simplex_algorithm_change_;</div>
 <div class="line"><a name="l01833"></a><span class="lineno"> 1833</span>&#160;    }</div>
 <div class="line"><a name="l01834"></a><span class="lineno"> 1834</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000004u) {</div>
-<div class="line"><a name="l01835"></a><span class="lineno"> 1835</span>&#160;      perturb_costs_in_dual_simplex_ = from.perturb_costs_in_dual_simplex_;</div>
+<div class="line"><a name="l01835"></a><span class="lineno"> 1835</span>&#160;      perturb_costs_in_dual_simplex_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.perturb_costs_in_dual_simplex_;</div>
 <div class="line"><a name="l01836"></a><span class="lineno"> 1836</span>&#160;    }</div>
 <div class="line"><a name="l01837"></a><span class="lineno"> 1837</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000008u) {</div>
-<div class="line"><a name="l01838"></a><span class="lineno"> 1838</span>&#160;      log_search_progress_ = from.log_search_progress_;</div>
+<div class="line"><a name="l01838"></a><span class="lineno"> 1838</span>&#160;      log_search_progress_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.log_search_progress_;</div>
 <div class="line"><a name="l01839"></a><span class="lineno"> 1839</span>&#160;    }</div>
 <div class="line"><a name="l01840"></a><span class="lineno"> 1840</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000010u) {</div>
-<div class="line"><a name="l01841"></a><span class="lineno"> 1841</span>&#160;      feasibility_rule_ = from.feasibility_rule_;</div>
+<div class="line"><a name="l01841"></a><span class="lineno"> 1841</span>&#160;      feasibility_rule_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.feasibility_rule_;</div>
 <div class="line"><a name="l01842"></a><span class="lineno"> 1842</span>&#160;    }</div>
 <div class="line"><a name="l01843"></a><span class="lineno"> 1843</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000020u) {</div>
-<div class="line"><a name="l01844"></a><span class="lineno"> 1844</span>&#160;      optimization_rule_ = from.optimization_rule_;</div>
+<div class="line"><a name="l01844"></a><span class="lineno"> 1844</span>&#160;      optimization_rule_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.optimization_rule_;</div>
 <div class="line"><a name="l01845"></a><span class="lineno"> 1845</span>&#160;    }</div>
 <div class="line"><a name="l01846"></a><span class="lineno"> 1846</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000040u) {</div>
-<div class="line"><a name="l01847"></a><span class="lineno"> 1847</span>&#160;      refactorization_threshold_ = from.refactorization_threshold_;</div>
+<div class="line"><a name="l01847"></a><span class="lineno"> 1847</span>&#160;      refactorization_threshold_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.refactorization_threshold_;</div>
 <div class="line"><a name="l01848"></a><span class="lineno"> 1848</span>&#160;    }</div>
 <div class="line"><a name="l01849"></a><span class="lineno"> 1849</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000080u) {</div>
-<div class="line"><a name="l01850"></a><span class="lineno"> 1850</span>&#160;      recompute_reduced_costs_threshold_ = from.recompute_reduced_costs_threshold_;</div>
+<div class="line"><a name="l01850"></a><span class="lineno"> 1850</span>&#160;      recompute_reduced_costs_threshold_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.recompute_reduced_costs_threshold_;</div>
 <div class="line"><a name="l01851"></a><span class="lineno"> 1851</span>&#160;    }</div>
 <div class="line"><a name="l01852"></a><span class="lineno"> 1852</span>&#160;    _has_bits_[0] |= cached_has_bits;</div>
 <div class="line"><a name="l01853"></a><span class="lineno"> 1853</span>&#160;  }</div>
 <div class="line"><a name="l01854"></a><span class="lineno"> 1854</span>&#160;  <span class="keywordflow">if</span> (cached_has_bits &amp; 0x0000ff00u) {</div>
 <div class="line"><a name="l01855"></a><span class="lineno"> 1855</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000100u) {</div>
-<div class="line"><a name="l01856"></a><span class="lineno"> 1856</span>&#160;      recompute_edges_norm_threshold_ = from.recompute_edges_norm_threshold_;</div>
+<div class="line"><a name="l01856"></a><span class="lineno"> 1856</span>&#160;      recompute_edges_norm_threshold_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.recompute_edges_norm_threshold_;</div>
 <div class="line"><a name="l01857"></a><span class="lineno"> 1857</span>&#160;    }</div>
 <div class="line"><a name="l01858"></a><span class="lineno"> 1858</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000200u) {</div>
-<div class="line"><a name="l01859"></a><span class="lineno"> 1859</span>&#160;      primal_feasibility_tolerance_ = from.primal_feasibility_tolerance_;</div>
+<div class="line"><a name="l01859"></a><span class="lineno"> 1859</span>&#160;      primal_feasibility_tolerance_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.primal_feasibility_tolerance_;</div>
 <div class="line"><a name="l01860"></a><span class="lineno"> 1860</span>&#160;    }</div>
 <div class="line"><a name="l01861"></a><span class="lineno"> 1861</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000400u) {</div>
-<div class="line"><a name="l01862"></a><span class="lineno"> 1862</span>&#160;      dual_feasibility_tolerance_ = from.dual_feasibility_tolerance_;</div>
+<div class="line"><a name="l01862"></a><span class="lineno"> 1862</span>&#160;      dual_feasibility_tolerance_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.dual_feasibility_tolerance_;</div>
 <div class="line"><a name="l01863"></a><span class="lineno"> 1863</span>&#160;    }</div>
 <div class="line"><a name="l01864"></a><span class="lineno"> 1864</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000800u) {</div>
-<div class="line"><a name="l01865"></a><span class="lineno"> 1865</span>&#160;      ratio_test_zero_threshold_ = from.ratio_test_zero_threshold_;</div>
+<div class="line"><a name="l01865"></a><span class="lineno"> 1865</span>&#160;      ratio_test_zero_threshold_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.ratio_test_zero_threshold_;</div>
 <div class="line"><a name="l01866"></a><span class="lineno"> 1866</span>&#160;    }</div>
 <div class="line"><a name="l01867"></a><span class="lineno"> 1867</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00001000u) {</div>
-<div class="line"><a name="l01868"></a><span class="lineno"> 1868</span>&#160;      normalize_using_column_norm_ = from.normalize_using_column_norm_;</div>
+<div class="line"><a name="l01868"></a><span class="lineno"> 1868</span>&#160;      normalize_using_column_norm_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.normalize_using_column_norm_;</div>
 <div class="line"><a name="l01869"></a><span class="lineno"> 1869</span>&#160;    }</div>
 <div class="line"><a name="l01870"></a><span class="lineno"> 1870</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00002000u) {</div>
-<div class="line"><a name="l01871"></a><span class="lineno"> 1871</span>&#160;      use_nested_pricing_ = from.use_nested_pricing_;</div>
+<div class="line"><a name="l01871"></a><span class="lineno"> 1871</span>&#160;      use_nested_pricing_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.use_nested_pricing_;</div>
 <div class="line"><a name="l01872"></a><span class="lineno"> 1872</span>&#160;    }</div>
 <div class="line"><a name="l01873"></a><span class="lineno"> 1873</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00004000u) {</div>
-<div class="line"><a name="l01874"></a><span class="lineno"> 1874</span>&#160;      use_scaling_ = from.use_scaling_;</div>
+<div class="line"><a name="l01874"></a><span class="lineno"> 1874</span>&#160;      use_scaling_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.use_scaling_;</div>
 <div class="line"><a name="l01875"></a><span class="lineno"> 1875</span>&#160;    }</div>
 <div class="line"><a name="l01876"></a><span class="lineno"> 1876</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00008000u) {</div>
-<div class="line"><a name="l01877"></a><span class="lineno"> 1877</span>&#160;      use_transposed_matrix_ = from.use_transposed_matrix_;</div>
+<div class="line"><a name="l01877"></a><span class="lineno"> 1877</span>&#160;      use_transposed_matrix_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.use_transposed_matrix_;</div>
 <div class="line"><a name="l01878"></a><span class="lineno"> 1878</span>&#160;    }</div>
 <div class="line"><a name="l01879"></a><span class="lineno"> 1879</span>&#160;    _has_bits_[0] |= cached_has_bits;</div>
 <div class="line"><a name="l01880"></a><span class="lineno"> 1880</span>&#160;  }</div>
 <div class="line"><a name="l01881"></a><span class="lineno"> 1881</span>&#160;  <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00ff0000u) {</div>
 <div class="line"><a name="l01882"></a><span class="lineno"> 1882</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00010000u) {</div>
-<div class="line"><a name="l01883"></a><span class="lineno"> 1883</span>&#160;      initial_basis_ = from.initial_basis_;</div>
+<div class="line"><a name="l01883"></a><span class="lineno"> 1883</span>&#160;      initial_basis_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.initial_basis_;</div>
 <div class="line"><a name="l01884"></a><span class="lineno"> 1884</span>&#160;    }</div>
 <div class="line"><a name="l01885"></a><span class="lineno"> 1885</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00020000u) {</div>
-<div class="line"><a name="l01886"></a><span class="lineno"> 1886</span>&#160;      harris_tolerance_ratio_ = from.harris_tolerance_ratio_;</div>
+<div class="line"><a name="l01886"></a><span class="lineno"> 1886</span>&#160;      harris_tolerance_ratio_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.harris_tolerance_ratio_;</div>
 <div class="line"><a name="l01887"></a><span class="lineno"> 1887</span>&#160;    }</div>
 <div class="line"><a name="l01888"></a><span class="lineno"> 1888</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00040000u) {</div>
-<div class="line"><a name="l01889"></a><span class="lineno"> 1889</span>&#160;      small_pivot_threshold_ = from.small_pivot_threshold_;</div>
+<div class="line"><a name="l01889"></a><span class="lineno"> 1889</span>&#160;      small_pivot_threshold_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.small_pivot_threshold_;</div>
 <div class="line"><a name="l01890"></a><span class="lineno"> 1890</span>&#160;    }</div>
 <div class="line"><a name="l01891"></a><span class="lineno"> 1891</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00080000u) {</div>
-<div class="line"><a name="l01892"></a><span class="lineno"> 1892</span>&#160;      minimum_acceptable_pivot_ = from.minimum_acceptable_pivot_;</div>
+<div class="line"><a name="l01892"></a><span class="lineno"> 1892</span>&#160;      minimum_acceptable_pivot_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.minimum_acceptable_pivot_;</div>
 <div class="line"><a name="l01893"></a><span class="lineno"> 1893</span>&#160;    }</div>
 <div class="line"><a name="l01894"></a><span class="lineno"> 1894</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00100000u) {</div>
-<div class="line"><a name="l01895"></a><span class="lineno"> 1895</span>&#160;      basis_refactorization_period_ = from.basis_refactorization_period_;</div>
+<div class="line"><a name="l01895"></a><span class="lineno"> 1895</span>&#160;      basis_refactorization_period_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.basis_refactorization_period_;</div>
 <div class="line"><a name="l01896"></a><span class="lineno"> 1896</span>&#160;    }</div>
 <div class="line"><a name="l01897"></a><span class="lineno"> 1897</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00200000u) {</div>
-<div class="line"><a name="l01898"></a><span class="lineno"> 1898</span>&#160;      solve_dual_problem_ = from.solve_dual_problem_;</div>
+<div class="line"><a name="l01898"></a><span class="lineno"> 1898</span>&#160;      solve_dual_problem_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.solve_dual_problem_;</div>
 <div class="line"><a name="l01899"></a><span class="lineno"> 1899</span>&#160;    }</div>
 <div class="line"><a name="l01900"></a><span class="lineno"> 1900</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00400000u) {</div>
-<div class="line"><a name="l01901"></a><span class="lineno"> 1901</span>&#160;      dualizer_threshold_ = from.dualizer_threshold_;</div>
+<div class="line"><a name="l01901"></a><span class="lineno"> 1901</span>&#160;      dualizer_threshold_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.dualizer_threshold_;</div>
 <div class="line"><a name="l01902"></a><span class="lineno"> 1902</span>&#160;    }</div>
 <div class="line"><a name="l01903"></a><span class="lineno"> 1903</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00800000u) {</div>
-<div class="line"><a name="l01904"></a><span class="lineno"> 1904</span>&#160;      solution_feasibility_tolerance_ = from.solution_feasibility_tolerance_;</div>
+<div class="line"><a name="l01904"></a><span class="lineno"> 1904</span>&#160;      solution_feasibility_tolerance_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.solution_feasibility_tolerance_;</div>
 <div class="line"><a name="l01905"></a><span class="lineno"> 1905</span>&#160;    }</div>
 <div class="line"><a name="l01906"></a><span class="lineno"> 1906</span>&#160;    _has_bits_[0] |= cached_has_bits;</div>
 <div class="line"><a name="l01907"></a><span class="lineno"> 1907</span>&#160;  }</div>
 <div class="line"><a name="l01908"></a><span class="lineno"> 1908</span>&#160;  <span class="keywordflow">if</span> (cached_has_bits &amp; 0xff000000u) {</div>
 <div class="line"><a name="l01909"></a><span class="lineno"> 1909</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x01000000u) {</div>
-<div class="line"><a name="l01910"></a><span class="lineno"> 1910</span>&#160;      lu_factorization_pivot_threshold_ = from.lu_factorization_pivot_threshold_;</div>
+<div class="line"><a name="l01910"></a><span class="lineno"> 1910</span>&#160;      lu_factorization_pivot_threshold_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.lu_factorization_pivot_threshold_;</div>
 <div class="line"><a name="l01911"></a><span class="lineno"> 1911</span>&#160;    }</div>
 <div class="line"><a name="l01912"></a><span class="lineno"> 1912</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x02000000u) {</div>
-<div class="line"><a name="l01913"></a><span class="lineno"> 1913</span>&#160;      max_time_in_seconds_ = from.max_time_in_seconds_;</div>
+<div class="line"><a name="l01913"></a><span class="lineno"> 1913</span>&#160;      max_time_in_seconds_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.max_time_in_seconds_;</div>
 <div class="line"><a name="l01914"></a><span class="lineno"> 1914</span>&#160;    }</div>
 <div class="line"><a name="l01915"></a><span class="lineno"> 1915</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x04000000u) {</div>
-<div class="line"><a name="l01916"></a><span class="lineno"> 1916</span>&#160;      max_number_of_iterations_ = from.max_number_of_iterations_;</div>
+<div class="line"><a name="l01916"></a><span class="lineno"> 1916</span>&#160;      max_number_of_iterations_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.max_number_of_iterations_;</div>
 <div class="line"><a name="l01917"></a><span class="lineno"> 1917</span>&#160;    }</div>
 <div class="line"><a name="l01918"></a><span class="lineno"> 1918</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x08000000u) {</div>
-<div class="line"><a name="l01919"></a><span class="lineno"> 1919</span>&#160;      markowitz_singularity_threshold_ = from.markowitz_singularity_threshold_;</div>
+<div class="line"><a name="l01919"></a><span class="lineno"> 1919</span>&#160;      markowitz_singularity_threshold_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.markowitz_singularity_threshold_;</div>
 <div class="line"><a name="l01920"></a><span class="lineno"> 1920</span>&#160;    }</div>
 <div class="line"><a name="l01921"></a><span class="lineno"> 1921</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x10000000u) {</div>
-<div class="line"><a name="l01922"></a><span class="lineno"> 1922</span>&#160;      markowitz_zlatev_parameter_ = from.markowitz_zlatev_parameter_;</div>
+<div class="line"><a name="l01922"></a><span class="lineno"> 1922</span>&#160;      markowitz_zlatev_parameter_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.markowitz_zlatev_parameter_;</div>
 <div class="line"><a name="l01923"></a><span class="lineno"> 1923</span>&#160;    }</div>
 <div class="line"><a name="l01924"></a><span class="lineno"> 1924</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x20000000u) {</div>
-<div class="line"><a name="l01925"></a><span class="lineno"> 1925</span>&#160;      devex_weights_reset_period_ = from.devex_weights_reset_period_;</div>
+<div class="line"><a name="l01925"></a><span class="lineno"> 1925</span>&#160;      devex_weights_reset_period_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.devex_weights_reset_period_;</div>
 <div class="line"><a name="l01926"></a><span class="lineno"> 1926</span>&#160;    }</div>
 <div class="line"><a name="l01927"></a><span class="lineno"> 1927</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x40000000u) {</div>
-<div class="line"><a name="l01928"></a><span class="lineno"> 1928</span>&#160;      initialize_devex_with_column_norms_ = from.initialize_devex_with_column_norms_;</div>
+<div class="line"><a name="l01928"></a><span class="lineno"> 1928</span>&#160;      initialize_devex_with_column_norms_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.initialize_devex_with_column_norms_;</div>
 <div class="line"><a name="l01929"></a><span class="lineno"> 1929</span>&#160;    }</div>
 <div class="line"><a name="l01930"></a><span class="lineno"> 1930</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x80000000u) {</div>
-<div class="line"><a name="l01931"></a><span class="lineno"> 1931</span>&#160;      exploit_singleton_column_in_initial_basis_ = from.exploit_singleton_column_in_initial_basis_;</div>
+<div class="line"><a name="l01931"></a><span class="lineno"> 1931</span>&#160;      exploit_singleton_column_in_initial_basis_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.exploit_singleton_column_in_initial_basis_;</div>
 <div class="line"><a name="l01932"></a><span class="lineno"> 1932</span>&#160;    }</div>
 <div class="line"><a name="l01933"></a><span class="lineno"> 1933</span>&#160;    _has_bits_[0] |= cached_has_bits;</div>
 <div class="line"><a name="l01934"></a><span class="lineno"> 1934</span>&#160;  }</div>
-<div class="line"><a name="l01935"></a><span class="lineno"> 1935</span>&#160;  cached_has_bits = from._has_bits_[1];</div>
+<div class="line"><a name="l01935"></a><span class="lineno"> 1935</span>&#160;  cached_has_bits = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._has_bits_[1];</div>
 <div class="line"><a name="l01936"></a><span class="lineno"> 1936</span>&#160;  <span class="keywordflow">if</span> (cached_has_bits &amp; 0x000000ffu) {</div>
 <div class="line"><a name="l01937"></a><span class="lineno"> 1937</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000001u) {</div>
-<div class="line"><a name="l01938"></a><span class="lineno"> 1938</span>&#160;      provide_strong_optimal_guarantee_ = from.provide_strong_optimal_guarantee_;</div>
+<div class="line"><a name="l01938"></a><span class="lineno"> 1938</span>&#160;      provide_strong_optimal_guarantee_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.provide_strong_optimal_guarantee_;</div>
 <div class="line"><a name="l01939"></a><span class="lineno"> 1939</span>&#160;    }</div>
 <div class="line"><a name="l01940"></a><span class="lineno"> 1940</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000002u) {</div>
-<div class="line"><a name="l01941"></a><span class="lineno"> 1941</span>&#160;      change_status_to_imprecise_ = from.change_status_to_imprecise_;</div>
+<div class="line"><a name="l01941"></a><span class="lineno"> 1941</span>&#160;      change_status_to_imprecise_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.change_status_to_imprecise_;</div>
 <div class="line"><a name="l01942"></a><span class="lineno"> 1942</span>&#160;    }</div>
 <div class="line"><a name="l01943"></a><span class="lineno"> 1943</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000004u) {</div>
-<div class="line"><a name="l01944"></a><span class="lineno"> 1944</span>&#160;      use_preprocessing_ = from.use_preprocessing_;</div>
+<div class="line"><a name="l01944"></a><span class="lineno"> 1944</span>&#160;      use_preprocessing_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.use_preprocessing_;</div>
 <div class="line"><a name="l01945"></a><span class="lineno"> 1945</span>&#160;    }</div>
 <div class="line"><a name="l01946"></a><span class="lineno"> 1946</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000008u) {</div>
-<div class="line"><a name="l01947"></a><span class="lineno"> 1947</span>&#160;      use_middle_product_form_update_ = from.use_middle_product_form_update_;</div>
+<div class="line"><a name="l01947"></a><span class="lineno"> 1947</span>&#160;      use_middle_product_form_update_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.use_middle_product_form_update_;</div>
 <div class="line"><a name="l01948"></a><span class="lineno"> 1948</span>&#160;    }</div>
 <div class="line"><a name="l01949"></a><span class="lineno"> 1949</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000010u) {</div>
-<div class="line"><a name="l01950"></a><span class="lineno"> 1950</span>&#160;      dual_small_pivot_threshold_ = from.dual_small_pivot_threshold_;</div>
+<div class="line"><a name="l01950"></a><span class="lineno"> 1950</span>&#160;      dual_small_pivot_threshold_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.dual_small_pivot_threshold_;</div>
 <div class="line"><a name="l01951"></a><span class="lineno"> 1951</span>&#160;    }</div>
 <div class="line"><a name="l01952"></a><span class="lineno"> 1952</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000020u) {</div>
-<div class="line"><a name="l01953"></a><span class="lineno"> 1953</span>&#160;      preprocessor_zero_tolerance_ = from.preprocessor_zero_tolerance_;</div>
+<div class="line"><a name="l01953"></a><span class="lineno"> 1953</span>&#160;      preprocessor_zero_tolerance_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.preprocessor_zero_tolerance_;</div>
 <div class="line"><a name="l01954"></a><span class="lineno"> 1954</span>&#160;    }</div>
 <div class="line"><a name="l01955"></a><span class="lineno"> 1955</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000040u) {</div>
-<div class="line"><a name="l01956"></a><span class="lineno"> 1956</span>&#160;      objective_lower_limit_ = from.objective_lower_limit_;</div>
+<div class="line"><a name="l01956"></a><span class="lineno"> 1956</span>&#160;      objective_lower_limit_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.objective_lower_limit_;</div>
 <div class="line"><a name="l01957"></a><span class="lineno"> 1957</span>&#160;    }</div>
 <div class="line"><a name="l01958"></a><span class="lineno"> 1958</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000080u) {</div>
-<div class="line"><a name="l01959"></a><span class="lineno"> 1959</span>&#160;      objective_upper_limit_ = from.objective_upper_limit_;</div>
+<div class="line"><a name="l01959"></a><span class="lineno"> 1959</span>&#160;      objective_upper_limit_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.objective_upper_limit_;</div>
 <div class="line"><a name="l01960"></a><span class="lineno"> 1960</span>&#160;    }</div>
 <div class="line"><a name="l01961"></a><span class="lineno"> 1961</span>&#160;    _has_bits_[1] |= cached_has_bits;</div>
 <div class="line"><a name="l01962"></a><span class="lineno"> 1962</span>&#160;  }</div>
 <div class="line"><a name="l01963"></a><span class="lineno"> 1963</span>&#160;  <span class="keywordflow">if</span> (cached_has_bits &amp; 0x0000ff00u) {</div>
 <div class="line"><a name="l01964"></a><span class="lineno"> 1964</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000100u) {</div>
-<div class="line"><a name="l01965"></a><span class="lineno"> 1965</span>&#160;      degenerate_ministep_factor_ = from.degenerate_ministep_factor_;</div>
+<div class="line"><a name="l01965"></a><span class="lineno"> 1965</span>&#160;      degenerate_ministep_factor_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.degenerate_ministep_factor_;</div>
 <div class="line"><a name="l01966"></a><span class="lineno"> 1966</span>&#160;    }</div>
 <div class="line"><a name="l01967"></a><span class="lineno"> 1967</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000200u) {</div>
-<div class="line"><a name="l01968"></a><span class="lineno"> 1968</span>&#160;      random_seed_ = from.random_seed_;</div>
+<div class="line"><a name="l01968"></a><span class="lineno"> 1968</span>&#160;      random_seed_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.random_seed_;</div>
 <div class="line"><a name="l01969"></a><span class="lineno"> 1969</span>&#160;    }</div>
 <div class="line"><a name="l01970"></a><span class="lineno"> 1970</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000400u) {</div>
-<div class="line"><a name="l01971"></a><span class="lineno"> 1971</span>&#160;      num_omp_threads_ = from.num_omp_threads_;</div>
+<div class="line"><a name="l01971"></a><span class="lineno"> 1971</span>&#160;      num_omp_threads_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.num_omp_threads_;</div>
 <div class="line"><a name="l01972"></a><span class="lineno"> 1972</span>&#160;    }</div>
 <div class="line"><a name="l01973"></a><span class="lineno"> 1973</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000800u) {</div>
-<div class="line"><a name="l01974"></a><span class="lineno"> 1974</span>&#160;      max_deterministic_time_ = from.max_deterministic_time_;</div>
+<div class="line"><a name="l01974"></a><span class="lineno"> 1974</span>&#160;      max_deterministic_time_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.max_deterministic_time_;</div>
 <div class="line"><a name="l01975"></a><span class="lineno"> 1975</span>&#160;    }</div>
 <div class="line"><a name="l01976"></a><span class="lineno"> 1976</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00001000u) {</div>
-<div class="line"><a name="l01977"></a><span class="lineno"> 1977</span>&#160;      drop_tolerance_ = from.drop_tolerance_;</div>
+<div class="line"><a name="l01977"></a><span class="lineno"> 1977</span>&#160;      drop_tolerance_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.drop_tolerance_;</div>
 <div class="line"><a name="l01978"></a><span class="lineno"> 1978</span>&#160;    }</div>
 <div class="line"><a name="l01979"></a><span class="lineno"> 1979</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00002000u) {</div>
-<div class="line"><a name="l01980"></a><span class="lineno"> 1980</span>&#160;      relative_cost_perturbation_ = from.relative_cost_perturbation_;</div>
+<div class="line"><a name="l01980"></a><span class="lineno"> 1980</span>&#160;      relative_cost_perturbation_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.relative_cost_perturbation_;</div>
 <div class="line"><a name="l01981"></a><span class="lineno"> 1981</span>&#160;    }</div>
 <div class="line"><a name="l01982"></a><span class="lineno"> 1982</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00004000u) {</div>
-<div class="line"><a name="l01983"></a><span class="lineno"> 1983</span>&#160;      relative_max_cost_perturbation_ = from.relative_max_cost_perturbation_;</div>
+<div class="line"><a name="l01983"></a><span class="lineno"> 1983</span>&#160;      relative_max_cost_perturbation_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.relative_max_cost_perturbation_;</div>
 <div class="line"><a name="l01984"></a><span class="lineno"> 1984</span>&#160;    }</div>
 <div class="line"><a name="l01985"></a><span class="lineno"> 1985</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00008000u) {</div>
-<div class="line"><a name="l01986"></a><span class="lineno"> 1986</span>&#160;      max_number_of_reoptimizations_ = from.max_number_of_reoptimizations_;</div>
+<div class="line"><a name="l01986"></a><span class="lineno"> 1986</span>&#160;      max_number_of_reoptimizations_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.max_number_of_reoptimizations_;</div>
 <div class="line"><a name="l01987"></a><span class="lineno"> 1987</span>&#160;    }</div>
 <div class="line"><a name="l01988"></a><span class="lineno"> 1988</span>&#160;    _has_bits_[1] |= cached_has_bits;</div>
 <div class="line"><a name="l01989"></a><span class="lineno"> 1989</span>&#160;  }</div>
 <div class="line"><a name="l01990"></a><span class="lineno"> 1990</span>&#160;  <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00070000u) {</div>
 <div class="line"><a name="l01991"></a><span class="lineno"> 1991</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00010000u) {</div>
-<div class="line"><a name="l01992"></a><span class="lineno"> 1992</span>&#160;      scaling_method_ = from.scaling_method_;</div>
+<div class="line"><a name="l01992"></a><span class="lineno"> 1992</span>&#160;      scaling_method_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.scaling_method_;</div>
 <div class="line"><a name="l01993"></a><span class="lineno"> 1993</span>&#160;    }</div>
 <div class="line"><a name="l01994"></a><span class="lineno"> 1994</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00020000u) {</div>
-<div class="line"><a name="l01995"></a><span class="lineno"> 1995</span>&#160;      cost_scaling_ = from.cost_scaling_;</div>
+<div class="line"><a name="l01995"></a><span class="lineno"> 1995</span>&#160;      cost_scaling_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.cost_scaling_;</div>
 <div class="line"><a name="l01996"></a><span class="lineno"> 1996</span>&#160;    }</div>
 <div class="line"><a name="l01997"></a><span class="lineno"> 1997</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00040000u) {</div>
-<div class="line"><a name="l01998"></a><span class="lineno"> 1998</span>&#160;      initial_condition_number_threshold_ = from.initial_condition_number_threshold_;</div>
+<div class="line"><a name="l01998"></a><span class="lineno"> 1998</span>&#160;      initial_condition_number_threshold_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.initial_condition_number_threshold_;</div>
 <div class="line"><a name="l01999"></a><span class="lineno"> 1999</span>&#160;    }</div>
 <div class="line"><a name="l02000"></a><span class="lineno"> 2000</span>&#160;    _has_bits_[1] |= cached_has_bits;</div>
 <div class="line"><a name="l02001"></a><span class="lineno"> 2001</span>&#160;  }</div>
 <div class="line"><a name="l02002"></a><span class="lineno"> 2002</span>&#160;}</div>
 <div class="line"><a name="l02003"></a><span class="lineno"> 2003</span>&#160; </div>
-<div class="line"><a name="l02004"></a><span class="lineno"> 2004</span>&#160;<span class="keywordtype">void</span> GlopParameters::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; from) {</div>
+<div class="line"><a name="l02004"></a><span class="lineno"> 2004</span>&#160;<span class="keywordtype">void</span> GlopParameters::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
 <div class="line"><a name="l02005"></a><span class="lineno"> 2005</span>&#160;<span class="comment">// @@protoc_insertion_point(generalized_copy_from_start:operations_research.glop.GlopParameters)</span></div>
-<div class="line"><a name="l02006"></a><span class="lineno"> 2006</span>&#160;  <span class="keywordflow">if</span> (&amp;from == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l02006"></a><span class="lineno"> 2006</span>&#160;  <span class="keywordflow">if</span> (&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a> == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l02007"></a><span class="lineno"> 2007</span>&#160;  Clear();</div>
-<div class="line"><a name="l02008"></a><span class="lineno"> 2008</span>&#160;  MergeFrom(from);</div>
+<div class="line"><a name="l02008"></a><span class="lineno"> 2008</span>&#160;  MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
 <div class="line"><a name="l02009"></a><span class="lineno"> 2009</span>&#160;}</div>
 <div class="line"><a name="l02010"></a><span class="lineno"> 2010</span>&#160; </div>
-<div class="line"><a name="l02011"></a><span class="lineno"> 2011</span>&#160;<span class="keywordtype">void</span> GlopParameters::CopyFrom(<span class="keyword">const</span> GlopParameters&amp; from) {</div>
+<div class="line"><a name="l02011"></a><span class="lineno"> 2011</span>&#160;<span class="keywordtype">void</span> GlopParameters::CopyFrom(<span class="keyword">const</span> GlopParameters&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
 <div class="line"><a name="l02012"></a><span class="lineno"> 2012</span>&#160;<span class="comment">// @@protoc_insertion_point(class_specific_copy_from_start:operations_research.glop.GlopParameters)</span></div>
-<div class="line"><a name="l02013"></a><span class="lineno"> 2013</span>&#160;  <span class="keywordflow">if</span> (&amp;from == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l02013"></a><span class="lineno"> 2013</span>&#160;  <span class="keywordflow">if</span> (&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a> == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l02014"></a><span class="lineno"> 2014</span>&#160;  Clear();</div>
-<div class="line"><a name="l02015"></a><span class="lineno"> 2015</span>&#160;  MergeFrom(from);</div>
+<div class="line"><a name="l02015"></a><span class="lineno"> 2015</span>&#160;  MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
 <div class="line"><a name="l02016"></a><span class="lineno"> 2016</span>&#160;}</div>
 <div class="line"><a name="l02017"></a><span class="lineno"> 2017</span>&#160; </div>
 <div class="line"><a name="l02018"></a><span class="lineno"> 2018</span>&#160;<span class="keywordtype">bool</span> GlopParameters::IsInitialized()<span class="keyword"> const </span>{</div>
@@ -2262,6 +2262,7 @@ $(document).ready(function(){initNavTree('parameters_8pb_8cc_source.html',''); i
 <div class="ttc" id="anamespaceoperations__research_1_1glop_html_ad00da1f90386e29065761ba337b5e8df"><div class="ttname"><a href="namespaceoperations__research_1_1glop.html#ad00da1f90386e29065761ba337b5e8df">operations_research::glop::GlopParameters_InitialBasisHeuristic_descriptor</a></div><div class="ttdeci">const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor * GlopParameters_InitialBasisHeuristic_descriptor()</div><div class="ttdef"><b>Definition:</b> <a href="parameters_8pb_8cc_source.html#l00320">parameters.pb.cc:320</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1glop_html_adbcd70aebdd6c407852dfb5c2d84914e"><div class="ttname"><a href="namespaceoperations__research_1_1glop.html#adbcd70aebdd6c407852dfb5c2d84914e">operations_research::glop::GlopParameters_CostScalingAlgorithm_descriptor</a></div><div class="ttdeci">const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor * GlopParameters_CostScalingAlgorithm_descriptor()</div><div class="ttdef"><b>Definition:</b> <a href="parameters_8pb_8cc_source.html#l00345">parameters.pb.cc:345</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdoc">The vehicle routing library lets one model and solve generic vehicle routing problems ranging from th...</div><div class="ttdef"><b>Definition:</b> <a href="dense__doubly__linked__list_8h_source.html#l00021">dense_doubly_linked_list.h:21</a></div></div>
+<div class="ttc" id="anamespaceswig_html_a62bf3d7d1ef1d4e3717f290cbe930bdb"><div class="ttname"><a href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">swig::from</a></div><div class="ttdeci">PyObject * from(const Type &amp;val)</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver__python__wrap_8cc_source.html#l03640">constraint_solver_python_wrap.cc:3640</a></div></div>
 <div class="ttc" id="aoptional__boolean_8pb_8cc_html_a45da01ad4acb3124fbe203f64edbd517"><div class="ttname"><a href="optional__boolean_8pb_8cc.html#a45da01ad4acb3124fbe203f64edbd517">schemas</a></div><div class="ttdeci">static constexpr ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema * schemas</div><div class="ttdef"><b>Definition:</b> <a href="optional__boolean_8pb_8cc_source.html#l00023">optional_boolean.pb.cc:23</a></div></div>
 <div class="ttc" id="aparameters_8pb_8cc_html_a1a656da48cf3d2824247c83ad8d92f10"><div class="ttname"><a href="parameters_8pb_8cc.html#a1a656da48cf3d2824247c83ad8d92f10">CHK_</a></div><div class="ttdeci">#define CHK_(x)</div></div>
 <div class="ttc" id="aparameters_8pb_8cc_html_a373507ae990823e4acc042b1b59555ec"><div class="ttname"><a href="parameters_8pb_8cc.html#a373507ae990823e4acc042b1b59555ec">descriptor_table_ortools_2fglop_2fparameters_2eproto_deps</a></div><div class="ttdeci">static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable *const descriptor_table_ortools_2fglop_2fparameters_2eproto_deps[1]</div><div class="ttdef"><b>Definition:</b> <a href="parameters_8pb_8cc_source.html#l00234">parameters.pb.cc:234</a></div></div>

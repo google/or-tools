@@ -102,8 +102,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:af7e0a5f102c8809cfc9c9e515c1d9118"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa3361a48335b9de95fcefa9dc5dc3e22"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_mapping.html#aa3361a48335b9de95fcefa9dc5dc3e22">DetectOptionalVariables</a> (const CpModelProto &amp;<a class="el" href="cp__model__solver_8cc.html#a6ac76d8a372013f67c4973012948ec84">model_proto</a>, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *m)</td></tr>
 <tr class="separator:aa3361a48335b9de95fcefa9dc5dc3e22"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a83cee33f17bdb8facfea88928cc7c5f9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_mapping.html#a83cee33f17bdb8facfea88928cc7c5f9">DetectAndLoadBooleanSymmetries</a> (const CpModelProto &amp;<a class="el" href="cp__model__solver_8cc.html#a6ac76d8a372013f67c4973012948ec84">model_proto</a>, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *m)</td></tr>
-<tr class="separator:a83cee33f17bdb8facfea88928cc7c5f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4af0100d434de55ff841156fdac6d180"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_mapping.html#a4af0100d434de55ff841156fdac6d180">LoadBooleanSymmetries</a> (const CpModelProto &amp;<a class="el" href="cp__model__solver_8cc.html#a6ac76d8a372013f67c4973012948ec84">model_proto</a>, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *m)</td></tr>
+<tr class="separator:a4af0100d434de55ff841156fdac6d180"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad78bf6fcea4b54f750e2457e47b4f46a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_mapping.html#ad78bf6fcea4b54f750e2457e47b4f46a">ExtractEncoding</a> (const CpModelProto &amp;<a class="el" href="cp__model__solver_8cc.html#a6ac76d8a372013f67c4973012948ec84">model_proto</a>, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *m)</td></tr>
 <tr class="separator:ad78bf6fcea4b54f750e2457e47b4f46a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adfbeb7391a9578a4cdba60c46b05e19e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_mapping.html#adfbeb7391a9578a4cdba60c46b05e19e">PropagateEncodingFromEquivalenceRelations</a> (const CpModelProto &amp;<a class="el" href="cp__model__solver_8cc.html#a6ac76d8a372013f67c4973012948ec84">model_proto</a>, <a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *m)</td></tr>
@@ -207,37 +207,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l00116">116</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
-
-</div>
-</div>
-<a id="a83cee33f17bdb8facfea88928cc7c5f9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a83cee33f17bdb8facfea88928cc7c5f9">&#9670;&nbsp;</a></span>DetectAndLoadBooleanSymmetries()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void DetectAndLoadBooleanSymmetries </td>
-          <td>(</td>
-          <td class="paramtype">const CpModelProto &amp;&#160;</td>
-          <td class="paramname"><em>model_proto</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *&#160;</td>
-          <td class="paramname"><em>m</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l00274">274</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l00115">115</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>
@@ -661,6 +631,36 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="cp__model__loader_8h_source.html#l00131">131</a> of file <a class="el" href="cp__model__loader_8h_source.html">cp_model_loader.h</a>.</p>
+
+</div>
+</div>
+<a id="a4af0100d434de55ff841156fdac6d180"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4af0100d434de55ff841156fdac6d180">&#9670;&nbsp;</a></span>LoadBooleanSymmetries()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void LoadBooleanSymmetries </td>
+          <td>(</td>
+          <td class="paramtype">const CpModelProto &amp;&#160;</td>
+          <td class="paramname"><em>model_proto</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *&#160;</td>
+          <td class="paramname"><em>m</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model__loader_8cc_source.html#l00273">273</a> of file <a class="el" href="cp__model__loader_8cc_source.html">cp_model_loader.cc</a>.</p>
 
 </div>
 </div>

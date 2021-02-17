@@ -32,7 +32,7 @@ var classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingDimension =
     [ "SetBreakDistanceDurationOfVehicle", "classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingDimension.html#ab69b65b34d44c5767096bbe6434907f4", null ],
     [ "SetBreakIntervalsOfVehicle", "classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingDimension.html#a273fc9971728bcb182670157cb115c7d", null ],
     [ "SetBreakIntervalsOfVehicle", "classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingDimension.html#a6404f58bb3e738cc356dee138177a580", null ],
-    [ "SetBreakIntervalsOfVehicle", "classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingDimension.html#a510d9d6df82af0a84192aced7ff38014", null ],
+    [ "SetBreakIntervalsOfVehicle", "classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingDimension.html#ad3e1fcd638efe5e91c59e166fdfb5446", null ],
     [ "SetCumulVarSoftLowerBound", "classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingDimension.html#a6410ff782c1f6556b9f41822112f1fbe", null ],
     [ "SetCumulVarSoftUpperBound", "classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingDimension.html#a36644121e2965f3a6bb59f33f7433a9c", null ],
     [ "SetGlobalSpanCostCoefficient", "classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingDimension.html#ab1ece350ce6e1abbe73d2318e51849ab", null ],

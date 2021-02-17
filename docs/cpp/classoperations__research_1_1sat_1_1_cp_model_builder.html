@@ -238,6 +238,18 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac1fcee16c92c43742bc7b0d3b78c7c28"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ac1fcee16c92c43742bc7b0d3b78c7c28">AddHint</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a>)</td></tr>
 <tr class="memdesc:ac1fcee16c92c43742bc7b0d3b78c7c28"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds hinting to a variable.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ac1fcee16c92c43742bc7b0d3b78c7c28">More...</a><br /></td></tr>
 <tr class="separator:ac1fcee16c92c43742bc7b0d3b78c7c28"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a485bca08c27e5705acb26db873aba498"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a485bca08c27e5705acb26db873aba498">ClearHints</a> ()</td></tr>
+<tr class="memdesc:a485bca08c27e5705acb26db873aba498"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove all hints.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a485bca08c27e5705acb26db873aba498">More...</a><br /></td></tr>
+<tr class="separator:a485bca08c27e5705acb26db873aba498"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a985bb035f4cbc4de36302c52e210bb73"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a985bb035f4cbc4de36302c52e210bb73">AddAssumption</a> (<a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> lit)</td></tr>
+<tr class="memdesc:a985bb035f4cbc4de36302c52e210bb73"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a literal to the model as assumptions.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a985bb035f4cbc4de36302c52e210bb73">More...</a><br /></td></tr>
+<tr class="separator:a985bb035f4cbc4de36302c52e210bb73"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a279be68ddf281b86e141f57fa46b8566"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a279be68ddf281b86e141f57fa46b8566">AddAssumptions</a> (absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> &gt; literals)</td></tr>
+<tr class="memdesc:a279be68ddf281b86e141f57fa46b8566"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds multiple literals to the model as assumptions.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a279be68ddf281b86e141f57fa46b8566">More...</a><br /></td></tr>
+<tr class="separator:a279be68ddf281b86e141f57fa46b8566"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19cdc5eb42348fd9ca0b6606479ed4b3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a19cdc5eb42348fd9ca0b6606479ed4b3">ClearAssumptions</a> ()</td></tr>
+<tr class="memdesc:a19cdc5eb42348fd9ca0b6606479ed4b3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove all assumptions from the model.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a19cdc5eb42348fd9ca0b6606479ed4b3">More...</a><br /></td></tr>
+<tr class="separator:a19cdc5eb42348fd9ca0b6606479ed4b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7ec28144e7a47f2e8067b895dba4971a"><td class="memItemLeft" align="right" valign="top">const CpModelProto &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a7ec28144e7a47f2e8067b895dba4971a">Build</a> () const</td></tr>
 <tr class="separator:a7ec28144e7a47f2e8067b895dba4971a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a76b3dff7b13e85766819c3413d237ad1"><td class="memItemLeft" align="right" valign="top">const CpModelProto &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a76b3dff7b13e85766819c3413d237ad1">Proto</a> () const</td></tr>
@@ -321,6 +333,50 @@ Public Member Functions</h2></td></tr>
 <p>It returns a table constraint that allows adding tuples incrementally after construction, </p>
 
 <p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00574">574</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+
+</div>
+</div>
+<a id="a985bb035f4cbc4de36302c52e210bb73"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a985bb035f4cbc4de36302c52e210bb73">&#9670;&nbsp;</a></span>AddAssumption()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void AddAssumption </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a>&#160;</td>
+          <td class="paramname"><em>lit</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds a literal to the model as assumptions. </p>
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00803">803</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+
+</div>
+</div>
+<a id="a279be68ddf281b86e141f57fa46b8566"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a279be68ddf281b86e141f57fa46b8566">&#9670;&nbsp;</a></span>AddAssumptions()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void AddAssumptions </td>
+          <td>(</td>
+          <td class="paramtype">absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> &gt;&#160;</td>
+          <td class="paramname"><em>literals</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds multiple literals to the model as assumptions. </p>
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00807">807</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -1350,7 +1406,49 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00864">864</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00876">876</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+
+</div>
+</div>
+<a id="a19cdc5eb42348fd9ca0b6606479ed4b3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19cdc5eb42348fd9ca0b6606479ed4b3">&#9670;&nbsp;</a></span>ClearAssumptions()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ClearAssumptions </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Remove all assumptions from the model. </p>
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00813">813</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+
+</div>
+</div>
+<a id="a485bca08c27e5705acb26db873aba498"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a485bca08c27e5705acb26db873aba498">&#9670;&nbsp;</a></span>ClearHints()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ClearHints </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Remove all hints. </p>
+
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00799">799</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -1442,7 +1540,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00867">867</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00879">879</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -1616,7 +1714,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00866">866</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00878">878</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>

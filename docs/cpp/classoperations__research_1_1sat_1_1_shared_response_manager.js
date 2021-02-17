@@ -4,6 +4,7 @@ var classoperations__research_1_1sat_1_1_shared_response_manager =
     [ "AddSolutionCallback", "classoperations__research_1_1sat_1_1_shared_response_manager.html#ac25b5700df43621c1132a8cffce727e5", null ],
     [ "AddUnsatCore", "classoperations__research_1_1sat_1_1_shared_response_manager.html#aa90c7f802ae2f01b3c6fad7d8ccdad30", null ],
     [ "BestSolutionInnerObjectiveValue", "classoperations__research_1_1sat_1_1_shared_response_manager.html#aa81c865475fd0607d70ae640f98eb955", null ],
+    [ "DisplayImprovementStatistics", "classoperations__research_1_1sat_1_1_shared_response_manager.html#a980263e6b86ef8180855eac0f703dc51", null ],
     [ "GetInnerObjectiveLowerBound", "classoperations__research_1_1sat_1_1_shared_response_manager.html#ae431b0e8c0f74f95c31ba38f3c534126", null ],
     [ "GetInnerObjectiveUpperBound", "classoperations__research_1_1sat_1_1_shared_response_manager.html#a695849b2629bf8fbb78196488b1c7a1e", null ],
     [ "GetResponse", "classoperations__research_1_1sat_1_1_shared_response_manager.html#a15cd9d22d53c6f6bf248240d2b794094", null ],
@@ -22,6 +23,6 @@ var classoperations__research_1_1sat_1_1_shared_response_manager =
     [ "SynchronizedInnerObjectiveLowerBound", "classoperations__research_1_1sat_1_1_shared_response_manager.html#a8beae17d2a8629258c83911cc1a1f9c1", null ],
     [ "SynchronizedInnerObjectiveUpperBound", "classoperations__research_1_1sat_1_1_shared_response_manager.html#a8b4c8e606fe8af8a8e7b2afe724ad48c", null ],
     [ "UnregisterCallback", "classoperations__research_1_1sat_1_1_shared_response_manager.html#ae602825eaafbd7898db32c977d47b1b5", null ],
-    [ "UpdateInnerObjectiveBounds", "classoperations__research_1_1sat_1_1_shared_response_manager.html#a953727a791120092f8f70c23c23beb84", null ],
+    [ "UpdateInnerObjectiveBounds", "classoperations__research_1_1sat_1_1_shared_response_manager.html#afcc9de6240a7eb2da97d08787d53df55", null ],
     [ "UpdatePrimalIntegral", "classoperations__research_1_1sat_1_1_shared_response_manager.html#a6089bc75390eaa54a3d1d593c1089a58", null ]
 ];

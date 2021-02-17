@@ -19,11 +19,14 @@ var interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder =
     [ "getSearchStrategyOrBuilderList", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a8d064ae1c05cda07a0f15f59ec3cb0bf", null ],
     [ "getSolutionHint", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a21e18efba8aa0dc03ae69fc34d35113b", null ],
     [ "getSolutionHintOrBuilder", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a75181b82b40a5669075665b37c37f2e0", null ],
+    [ "getSymmetry", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a34979a66d0fda4afc6f58acdb31506f6", null ],
+    [ "getSymmetryOrBuilder", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a39d81a7e80725f6bd037217ef5f339cb", null ],
     [ "getVariables", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a9ca5049d8cbcc25ceffee32012cf3048", null ],
     [ "getVariablesCount", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a011585ec9c8d9882de1b5278fe028ede", null ],
     [ "getVariablesList", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#ae65b18e09738eb5f6cce49d944732ff9", null ],
     [ "getVariablesOrBuilder", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a359f76d4b75e7395f7f2888ff695325b", null ],
     [ "getVariablesOrBuilderList", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a1e036bd5bc352d3a4b9940367efd3954", null ],
     [ "hasObjective", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a7d66cf109d9aa7288835c5f3097469c8", null ],
-    [ "hasSolutionHint", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a1e7abe2918ca2dc8b75680a85ba23ceb", null ]
+    [ "hasSolutionHint", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a1e7abe2918ca2dc8b75680a85ba23ceb", null ],
+    [ "hasSymmetry", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#ab5ee927bda7d8234143265b32c333b97", null ]
 ];

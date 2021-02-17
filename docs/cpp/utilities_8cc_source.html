@@ -240,7 +240,7 @@ $(document).ready(function(){initNavTree('utilities_8cc_source.html',''); initRe
 <div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> offset = 0; offset &lt; length_; ++offset) {</div>
 <div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    <span class="keywordflow">if</span> (bits_[offset]) {</div>
 <div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;      Save(solver, offset);</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;      bits_[offset] = <a class="code" href="integral__types_8h.html#a786084546298ed4128cd0742d10e280c">GG_ULONGLONG</a>(0);</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;      bits_[offset] = uint64_t{0};</div>
 <div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;    }</div>
 <div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;  }</div>
 <div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;}</div>
@@ -414,34 +414,34 @@ $(document).ready(function(){initNavTree('utilities_8cc_source.html',''); initRe
 <div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;    <a class="code" href="base_2logging_8h.html#a7c0ce053b28d53aa4eaf3eb7fb71663b">CHECK_EQ</a>(0, indent_);</div>
 <div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;  }</div>
 <div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160; </div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;  <span class="keywordtype">void</span> BeginVisitConstraint(<span class="keyword">const</span> std::string&amp; type_name,</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;  <span class="keywordtype">void</span> BeginVisitConstraint(<span class="keyword">const</span> std::string&amp; <a class="code" href="namespaceswig.html#ae90796b330cfb3adb7d76612cab3ede9">type_name</a>,</div>
 <div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;                            <span class="keyword">const</span> Constraint* <span class="keyword">const</span> constraint)<span class="keyword"> override </span>{</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a>) &lt;&lt; Spaces() &lt;&lt; type_name;</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a>) &lt;&lt; Spaces() &lt;&lt; <a class="code" href="namespaceswig.html#ae90796b330cfb3adb7d76612cab3ede9">type_name</a>;</div>
 <div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;    Increase();</div>
 <div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;  }</div>
 <div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160; </div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;  <span class="keywordtype">void</span> EndVisitConstraint(<span class="keyword">const</span> std::string&amp; type_name,</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;  <span class="keywordtype">void</span> EndVisitConstraint(<span class="keyword">const</span> std::string&amp; <a class="code" href="namespaceswig.html#ae90796b330cfb3adb7d76612cab3ede9">type_name</a>,</div>
 <div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                          <span class="keyword">const</span> Constraint* <span class="keyword">const</span> constraint)<span class="keyword"> override </span>{</div>
 <div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;    Decrease();</div>
 <div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;  }</div>
 <div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160; </div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;  <span class="keywordtype">void</span> BeginVisitIntegerExpression(<span class="keyword">const</span> std::string&amp; type_name,</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;  <span class="keywordtype">void</span> BeginVisitIntegerExpression(<span class="keyword">const</span> std::string&amp; <a class="code" href="namespaceswig.html#ae90796b330cfb3adb7d76612cab3ede9">type_name</a>,</div>
 <div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                                   <span class="keyword">const</span> IntExpr* <span class="keyword">const</span> expr)<span class="keyword"> override </span>{</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;    <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a>) &lt;&lt; Spaces() &lt;&lt; type_name;</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;    <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a>) &lt;&lt; Spaces() &lt;&lt; <a class="code" href="namespaceswig.html#ae90796b330cfb3adb7d76612cab3ede9">type_name</a>;</div>
 <div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;    Increase();</div>
 <div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;  }</div>
 <div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160; </div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;  <span class="keywordtype">void</span> EndVisitIntegerExpression(<span class="keyword">const</span> std::string&amp; type_name,</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;  <span class="keywordtype">void</span> EndVisitIntegerExpression(<span class="keyword">const</span> std::string&amp; <a class="code" href="namespaceswig.html#ae90796b330cfb3adb7d76612cab3ede9">type_name</a>,</div>
 <div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;                                 <span class="keyword">const</span> IntExpr* <span class="keyword">const</span> expr)<span class="keyword"> override </span>{</div>
 <div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;    Decrease();</div>
 <div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;  }</div>
 <div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160; </div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;  <span class="keywordtype">void</span> BeginVisitExtension(<span class="keyword">const</span> std::string&amp; type_name)<span class="keyword"> override </span>{</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;    <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a>) &lt;&lt; Spaces() &lt;&lt; type_name;</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;  <span class="keywordtype">void</span> BeginVisitExtension(<span class="keyword">const</span> std::string&amp; <a class="code" href="namespaceswig.html#ae90796b330cfb3adb7d76612cab3ede9">type_name</a>)<span class="keyword"> override </span>{</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;    <a class="code" href="base_2logging_8h.html#accad43a85d781d53381cd53a9894b6ae">LOG</a>(<a class="code" href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a>) &lt;&lt; Spaces() &lt;&lt; <a class="code" href="namespaceswig.html#ae90796b330cfb3adb7d76612cab3ede9">type_name</a>;</div>
 <div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;    Increase();</div>
 <div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;  }</div>
 <div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160; </div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;  <span class="keywordtype">void</span> EndVisitExtension(<span class="keyword">const</span> std::string&amp; type_name)<span class="keyword"> override </span>{ Decrease(); }</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;  <span class="keywordtype">void</span> EndVisitExtension(<span class="keyword">const</span> std::string&amp; <a class="code" href="namespaceswig.html#ae90796b330cfb3adb7d76612cab3ede9">type_name</a>)<span class="keyword"> override </span>{ Decrease(); }</div>
 <div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160; </div>
 <div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;  <span class="keywordtype">void</span> VisitIntegerVariable(<span class="keyword">const</span> IntVar* <span class="keyword">const</span> variable,</div>
 <div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;                            IntExpr* <span class="keyword">const</span> delegate)<span class="keyword"> override </span>{</div>
@@ -655,20 +655,20 @@ $(document).ready(function(){initNavTree('utilities_8cc_source.html',''); initRe
 <div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;    }</div>
 <div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160;  }</div>
 <div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160; </div>
-<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;  <span class="keywordtype">void</span> BeginVisitConstraint(<span class="keyword">const</span> std::string&amp; type_name,</div>
+<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;  <span class="keywordtype">void</span> BeginVisitConstraint(<span class="keyword">const</span> std::string&amp; <a class="code" href="namespaceswig.html#ae90796b330cfb3adb7d76612cab3ede9">type_name</a>,</div>
 <div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;                            <span class="keyword">const</span> Constraint* <span class="keyword">const</span> constraint)<span class="keyword"> override </span>{</div>
 <div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160;    num_constraints_++;</div>
-<div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;    AddConstraintType(type_name);</div>
+<div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;    AddConstraintType(<a class="code" href="namespaceswig.html#ae90796b330cfb3adb7d76612cab3ede9">type_name</a>);</div>
 <div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;  }</div>
 <div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160; </div>
-<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;  <span class="keywordtype">void</span> BeginVisitIntegerExpression(<span class="keyword">const</span> std::string&amp; type_name,</div>
+<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;  <span class="keywordtype">void</span> BeginVisitIntegerExpression(<span class="keyword">const</span> std::string&amp; <a class="code" href="namespaceswig.html#ae90796b330cfb3adb7d76612cab3ede9">type_name</a>,</div>
 <div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;                                   <span class="keyword">const</span> IntExpr* <span class="keyword">const</span> expr)<span class="keyword"> override </span>{</div>
-<div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160;    AddExpressionType(type_name);</div>
+<div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160;    AddExpressionType(<a class="code" href="namespaceswig.html#ae90796b330cfb3adb7d76612cab3ede9">type_name</a>);</div>
 <div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160;    num_expressions_++;</div>
 <div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160;  }</div>
 <div class="line"><a name="l00578"></a><span class="lineno">  578</span>&#160; </div>
-<div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160;  <span class="keywordtype">void</span> BeginVisitExtension(<span class="keyword">const</span> std::string&amp; type_name)<span class="keyword"> override </span>{</div>
-<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160;    AddExtensionType(type_name);</div>
+<div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160;  <span class="keywordtype">void</span> BeginVisitExtension(<span class="keyword">const</span> std::string&amp; <a class="code" href="namespaceswig.html#ae90796b330cfb3adb7d76612cab3ede9">type_name</a>)<span class="keyword"> override </span>{</div>
+<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160;    AddExtensionType(<a class="code" href="namespaceswig.html#ae90796b330cfb3adb7d76612cab3ede9">type_name</a>);</div>
 <div class="line"><a name="l00581"></a><span class="lineno">  581</span>&#160;    num_extensions_++;</div>
 <div class="line"><a name="l00582"></a><span class="lineno">  582</span>&#160;  }</div>
 <div class="line"><a name="l00583"></a><span class="lineno">  583</span>&#160; </div>
@@ -973,7 +973,6 @@ $(document).ready(function(){initNavTree('utilities_8cc_source.html',''); initRe
 <div class="ttc" id="aexpr__array_8cc_html_a472a99923cbe11ae7b5a5d157d9ad465"><div class="ttname"><a href="expr__array_8cc.html#a472a99923cbe11ae7b5a5d157d9ad465">var</a></div><div class="ttdeci">IntVar * var</div><div class="ttdef"><b>Definition:</b> <a href="expr__array_8cc_source.html#l01858">expr_array.cc:1858</a></div></div>
 <div class="ttc" id="ahash_8h_html"><div class="ttname"><a href="hash_8h.html">hash.h</a></div></div>
 <div class="ttc" id="aintegral__types_8h_html"><div class="ttname"><a href="integral__types_8h.html">integral_types.h</a></div></div>
-<div class="ttc" id="aintegral__types_8h_html_a786084546298ed4128cd0742d10e280c"><div class="ttname"><a href="integral__types_8h.html#a786084546298ed4128cd0742d10e280c">GG_ULONGLONG</a></div><div class="ttdeci">#define GG_ULONGLONG(x)</div><div class="ttdef"><b>Definition:</b> <a href="integral__types_8h_source.html#l00047">integral_types.h:47</a></div></div>
 <div class="ttc" id="aintegral__types_8h_html_a7cde0074dfd288f2d70c0e035dacb28a"><div class="ttname"><a href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a></div><div class="ttdeci">int64_t int64</div><div class="ttdef"><b>Definition:</b> <a href="integral__types_8h_source.html#l00034">integral_types.h:34</a></div></div>
 <div class="ttc" id="aintegral__types_8h_html_abc0f5bc07737e498f287334775dff2b6"><div class="ttname"><a href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a></div><div class="ttdeci">uint64_t uint64</div><div class="ttdef"><b>Definition:</b> <a href="integral__types_8h_source.html#l00039">integral_types.h:39</a></div></div>
 <div class="ttc" id="alog__severity_8h_html_ab4a2cbab234914b320b7fae11b6e8cb9"><div class="ttname"><a href="log__severity_8h.html#ab4a2cbab234914b320b7fae11b6e8cb9">INFO</a></div><div class="ttdeci">const int INFO</div><div class="ttdef"><b>Definition:</b> <a href="log__severity_8h_source.html#l00031">log_severity.h:31</a></div></div>
@@ -991,6 +990,7 @@ $(document).ready(function(){initNavTree('utilities_8cc_source.html',''); initRe
 <div class="ttc" id="anamespaceoperations__research_html_abf97a851d233a8ec9d94e1275fe7e34f"><div class="ttname"><a href="namespaceoperations__research.html#abf97a851d233a8ec9d94e1275fe7e34f">operations_research::ToInt64Vector</a></div><div class="ttdeci">std::vector&lt; int64 &gt; ToInt64Vector(const std::vector&lt; int &gt; &amp;input)</div><div class="ttdef"><b>Definition:</b> <a href="utilities_8cc_source.html#l00822">utilities.cc:822</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_aebb30ce0aaac158bab53d6d5a17e6ac2"><div class="ttname"><a href="namespaceoperations__research.html#aebb30ce0aaac158bab53d6d5a17e6ac2">operations_research::OneBit64</a></div><div class="ttdeci">uint64 OneBit64(int pos)</div><div class="ttdef"><b>Definition:</b> <a href="bitset_8h_source.html#l00038">bitset.h:38</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_af2d4f2de0654ff5a8bc06e9ff6f971cc"><div class="ttname"><a href="namespaceoperations__research.html#af2d4f2de0654ff5a8bc06e9ff6f971cc">operations_research::BitLength64</a></div><div class="ttdeci">uint64 BitLength64(uint64 size)</div><div class="ttdef"><b>Definition:</b> <a href="bitset_8h_source.html#l00338">bitset.h:338</a></div></div>
+<div class="ttc" id="anamespaceswig_html_ae90796b330cfb3adb7d76612cab3ede9"><div class="ttname"><a href="namespaceswig.html#ae90796b330cfb3adb7d76612cab3ede9">swig::type_name</a></div><div class="ttdeci">const char * type_name()</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver__python__wrap_8cc_source.html#l03551">constraint_solver_python_wrap.cc:3551</a></div></div>
 <div class="ttc" id="apack_8cc_html_a750b5d744c39a06bfb13e6eb010e35d0"><div class="ttname"><a href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a></div><div class="ttdeci">int index</div><div class="ttdef"><b>Definition:</b> <a href="pack_8cc_source.html#l00508">pack.cc:508</a></div></div>
 <div class="ttc" id="aparser_8yy_8cc_html_a5a634cf4429798b1c921a81de8250051"><div class="ttname"><a href="parser_8yy_8cc.html#a5a634cf4429798b1c921a81de8250051">input</a></div><div class="ttdeci">static int input(yyscan_t yyscanner)</div></div>
 </div><!-- fragment --></div><!-- contents -->

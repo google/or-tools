@@ -12,6 +12,7 @@ var classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver =
     [ "searchAllSolutions", "classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#a7ffc251fef14d87ad82ac59f98d96cf9", null ],
     [ "solve", "classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#a94cfac9362c485d50a8930688fe81a3e", null ],
     [ "solveWithSolutionCallback", "classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#a4b61919bdcff3d458bf6807086c48be6", null ],
+    [ "sufficientAssumptionsForInfeasibility", "classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#a7536be6e73c3980fe05e1166a455d1e8", null ],
     [ "userTime", "classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#a1cd8aaaecd8d26aeb54f5503a459b1d9", null ],
     [ "value", "classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#a61e7d175c0ca4cd5a12965af3fe358c4", null ],
     [ "wallTime", "classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#a2eb2b2447bd59c1f00a9495e63d6b7e3", null ]

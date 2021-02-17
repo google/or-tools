@@ -96,6 +96,33 @@ class _SwigNonDynamicMeta(type):
 
 import weakref
 
+class IntBoolPair(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
+    __repr__ = _swig_repr
+
+    def __init__(self, *args):
+        _pywrapcp.IntBoolPair_swiginit(self, _pywrapcp.new_IntBoolPair(*args))
+    first = property(_pywrapcp.IntBoolPair_first_get, _pywrapcp.IntBoolPair_first_set)
+    second = property(_pywrapcp.IntBoolPair_second_get, _pywrapcp.IntBoolPair_second_set)
+    def __len__(self):
+        return 2
+    def __repr__(self):
+        return str((self.first, self.second))
+    def __getitem__(self, index): 
+        if not (index % 2):
+            return self.first
+        else:
+            return self.second
+    def __setitem__(self, index, val):
+        if not (index % 2):
+            self.first = val
+        else:
+            self.second = val
+    __swig_destroy__ = _pywrapcp.delete_IntBoolPair
+
+# Register IntBoolPair in _pywrapcp:
+_pywrapcp.IntBoolPair_swigregister(IntBoolPair)
+
 class DefaultPhaseParameters(object):
     r&#34;&#34;&#34;
     This struct holds all parameters for the default search.
@@ -4726,7 +4753,6 @@ class RoutingModel(object):
     __swig_destroy__ = _pywrapcp.delete_RoutingModel
 
     def RegisterUnaryTransitCallback(self, callback: &#34;operations_research::RoutingModel::TransitCallback1&#34;) -&gt; &#34;int&#34;:
-        r&#34;&#34;&#34; Registers &#39;callback&#39; and returns its index.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_RegisterUnaryTransitCallback(self, callback)
 
     def RegisterPositiveUnaryTransitCallback(self, callback: &#34;operations_research::RoutingModel::TransitCallback1&#34;) -&gt; &#34;int&#34;:
@@ -4778,31 +4804,21 @@ class RoutingModel(object):
     def AddDimensionWithVehicleTransitAndCapacity(self, evaluator_indices: &#34;std::vector&lt; int &gt; const &amp;&#34;, slack_max: &#34;int64&#34;, vehicle_capacities: &#34;std::vector&lt; int64 &gt;&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
         return _pywrapcp.RoutingModel_AddDimensionWithVehicleTransitAndCapacity(self, evaluator_indices, slack_max, vehicle_capacities, fix_start_cumul_to_zero, name)
 
-    def AddConstantDimensionWithSlack(self, value: &#34;int64&#34;, capacity: &#34;int64&#34;, slack_max: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
+    def AddConstantDimensionWithSlack(self, value: &#34;int64&#34;, capacity: &#34;int64&#34;, slack_max: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;std::pair&lt; int,bool &gt;&#34;:
         r&#34;&#34;&#34;
         Creates a dimension where the transit variable is constrained to be
         equal to &#39;value&#39;; &#39;capacity&#39; is the upper bound of the cumul variables.
         &#39;name&#39; is the name used to reference the dimension; this name is used to
         get cumul and transit variables from the routing model.
-        Returns false if a dimension with the same name has already been created
-        (and doesn&#39;t create the new dimension).
+        Returns a pair consisting of an index to the registered unary transit
+        callback and a bool denoting whether the dimension has been created.
+        It is false if a dimension with the same name has already been created
+        (and doesn&#39;t create the new dimension but still register a new callback).
         &#34;&#34;&#34;
         return _pywrapcp.RoutingModel_AddConstantDimensionWithSlack(self, value, capacity, slack_max, fix_start_cumul_to_zero, name)
 
-    def AddConstantDimension(self, value: &#34;int64&#34;, capacity: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
+    def AddConstantDimension(self, value: &#34;int64&#34;, capacity: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;std::pair&lt; int,bool &gt;&#34;:
         return _pywrapcp.RoutingModel_AddConstantDimension(self, value, capacity, fix_start_cumul_to_zero, name)
-
-    def AddVectorDimension(self, values: &#34;std::vector&lt; int64 &gt;&#34;, capacity: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
-        r&#34;&#34;&#34;
-        Creates a dimension where the transit variable is constrained to be
-        equal to &#39;values[i]&#39; for node i; &#39;capacity&#39; is the upper bound of
-        the cumul variables. &#39;name&#39; is the name used to reference the dimension;
-        this name is used to get cumul and transit variables from the routing
-        model.
-        Returns false if a dimension with the same name has already been created
-        (and doesn&#39;t create the new dimension).
-        &#34;&#34;&#34;
-        return _pywrapcp.RoutingModel_AddVectorDimension(self, values, capacity, fix_start_cumul_to_zero, name)
 
     def MakePathSpansAndTotalSlacks(self, dimension: &#34;RoutingDimension&#34;, spans: &#34;std::vector&lt; operations_research::IntVar * &gt;&#34;, total_slacks: &#34;std::vector&lt; operations_research::IntVar * &gt;&#34;) -&gt; &#34;operations_research::Constraint *&#34;:
         r&#34;&#34;&#34;
@@ -4945,9 +4961,9 @@ class RoutingModel(object):
 
     def AddSoftSameVehicleConstraint(self, indices: &#34;std::vector&lt; int64 &gt; const &amp;&#34;, cost: &#34;int64&#34;) -&gt; &#34;void&#34;:
         r&#34;&#34;&#34;
-        Adds a soft contraint to force a set of variable indices to be on the same
-        vehicle. If all nodes are not on the same vehicle, each extra vehicle used
-        adds &#39;cost&#39; to the cost function.
+        Adds a soft constraint to force a set of variable indices to be on the
+        same vehicle. If all nodes are not on the same vehicle, each extra vehicle
+        used adds &#39;cost&#39; to the cost function.
         &#34;&#34;&#34;
         return _pywrapcp.RoutingModel_AddSoftSameVehicleConstraint(self, indices, cost)
 
@@ -5823,8 +5839,17 @@ class RoutingModel(object):
         &#34;&#34;&#34;
         return _pywrapcp.RoutingModel_MakeSelfDependentDimensionFinalizer(self, dimension)
 
-    def AddMatrixDimension(self, *args) -&gt; &#34;void&#34;:
-        return _pywrapcp.RoutingModel_AddMatrixDimension(self, *args)
+    def RegisterUnaryTransitVector(self, values: &#34;std::vector&lt; int64 &gt; const &amp;&#34;) -&gt; &#34;int&#34;:
+        return _pywrapcp.RoutingModel_RegisterUnaryTransitVector(self, values)
+
+    def AddVectorDimension(self, values: &#34;std::vector&lt; int64 &gt; const &amp;&#34;, capacity: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;std::pair&lt; int,bool &gt;&#34;:
+        return _pywrapcp.RoutingModel_AddVectorDimension(self, values, capacity, fix_start_cumul_to_zero, name)
+
+    def RegisterTransitMatrix(self, values: &#34;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#34;) -&gt; &#34;int&#34;:
+        return _pywrapcp.RoutingModel_RegisterTransitMatrix(self, values)
+
+    def AddMatrixDimension(self, values: &#34;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#34;, capacity: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;std::pair&lt; int,bool &gt;&#34;:
+        return _pywrapcp.RoutingModel_AddMatrixDimension(self, values, capacity, fix_start_cumul_to_zero, name)
 
 # Register RoutingModel in _pywrapcp:
 _pywrapcp.RoutingModel_swigregister(RoutingModel)
@@ -9450,6 +9475,62 @@ then SlackVar(nodeA) &gt;= sum_{breaks [tA, tB)} duration(break).</p></div>
 </ul>
 </li>
 </ul>
+</dd>
+<dt id="pywrapcp.IntBoolPair"><code class="flex name class">
+<span>class <span class="ident">IntBoolPair</span></span>
+<span>(</span><span>*args)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class IntBoolPair(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
+    __repr__ = _swig_repr
+
+    def __init__(self, *args):
+        _pywrapcp.IntBoolPair_swiginit(self, _pywrapcp.new_IntBoolPair(*args))
+    first = property(_pywrapcp.IntBoolPair_first_get, _pywrapcp.IntBoolPair_first_set)
+    second = property(_pywrapcp.IntBoolPair_second_get, _pywrapcp.IntBoolPair_second_set)
+    def __len__(self):
+        return 2
+    def __repr__(self):
+        return str((self.first, self.second))
+    def __getitem__(self, index): 
+        if not (index % 2):
+            return self.first
+        else:
+            return self.second
+    def __setitem__(self, index, val):
+        if not (index % 2):
+            self.first = val
+        else:
+            self.second = val
+    __swig_destroy__ = _pywrapcp.delete_IntBoolPair</code></pre>
+</details>
+<h3>Instance variables</h3>
+<dl>
+<dt id="pywrapcp.IntBoolPair.first"><code class="name">var <span class="ident">first</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="pywrapcp.IntBoolPair.second"><code class="name">var <span class="ident">second</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="pywrapcp.IntBoolPair.thisown"><code class="name">var <span class="ident">thisown</span></code></dt>
+<dd>
+<div class="desc"><p>The membership flag</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)</code></pre>
+</details>
+</dd>
+</dl>
 </dd>
 <dt id="pywrapcp.IntExpr"><code class="flex name class">
 <span>class <span class="ident">IntExpr</span></span>
@@ -15959,7 +16040,6 @@ and end nodes) + number of non-start or end nodes.</p></div>
     __swig_destroy__ = _pywrapcp.delete_RoutingModel
 
     def RegisterUnaryTransitCallback(self, callback: &#34;operations_research::RoutingModel::TransitCallback1&#34;) -&gt; &#34;int&#34;:
-        r&#34;&#34;&#34; Registers &#39;callback&#39; and returns its index.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_RegisterUnaryTransitCallback(self, callback)
 
     def RegisterPositiveUnaryTransitCallback(self, callback: &#34;operations_research::RoutingModel::TransitCallback1&#34;) -&gt; &#34;int&#34;:
@@ -16011,31 +16091,21 @@ and end nodes) + number of non-start or end nodes.</p></div>
     def AddDimensionWithVehicleTransitAndCapacity(self, evaluator_indices: &#34;std::vector&lt; int &gt; const &amp;&#34;, slack_max: &#34;int64&#34;, vehicle_capacities: &#34;std::vector&lt; int64 &gt;&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
         return _pywrapcp.RoutingModel_AddDimensionWithVehicleTransitAndCapacity(self, evaluator_indices, slack_max, vehicle_capacities, fix_start_cumul_to_zero, name)
 
-    def AddConstantDimensionWithSlack(self, value: &#34;int64&#34;, capacity: &#34;int64&#34;, slack_max: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
+    def AddConstantDimensionWithSlack(self, value: &#34;int64&#34;, capacity: &#34;int64&#34;, slack_max: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;std::pair&lt; int,bool &gt;&#34;:
         r&#34;&#34;&#34;
         Creates a dimension where the transit variable is constrained to be
         equal to &#39;value&#39;; &#39;capacity&#39; is the upper bound of the cumul variables.
         &#39;name&#39; is the name used to reference the dimension; this name is used to
         get cumul and transit variables from the routing model.
-        Returns false if a dimension with the same name has already been created
-        (and doesn&#39;t create the new dimension).
+        Returns a pair consisting of an index to the registered unary transit
+        callback and a bool denoting whether the dimension has been created.
+        It is false if a dimension with the same name has already been created
+        (and doesn&#39;t create the new dimension but still register a new callback).
         &#34;&#34;&#34;
         return _pywrapcp.RoutingModel_AddConstantDimensionWithSlack(self, value, capacity, slack_max, fix_start_cumul_to_zero, name)
 
-    def AddConstantDimension(self, value: &#34;int64&#34;, capacity: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
+    def AddConstantDimension(self, value: &#34;int64&#34;, capacity: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;std::pair&lt; int,bool &gt;&#34;:
         return _pywrapcp.RoutingModel_AddConstantDimension(self, value, capacity, fix_start_cumul_to_zero, name)
-
-    def AddVectorDimension(self, values: &#34;std::vector&lt; int64 &gt;&#34;, capacity: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
-        r&#34;&#34;&#34;
-        Creates a dimension where the transit variable is constrained to be
-        equal to &#39;values[i]&#39; for node i; &#39;capacity&#39; is the upper bound of
-        the cumul variables. &#39;name&#39; is the name used to reference the dimension;
-        this name is used to get cumul and transit variables from the routing
-        model.
-        Returns false if a dimension with the same name has already been created
-        (and doesn&#39;t create the new dimension).
-        &#34;&#34;&#34;
-        return _pywrapcp.RoutingModel_AddVectorDimension(self, values, capacity, fix_start_cumul_to_zero, name)
 
     def MakePathSpansAndTotalSlacks(self, dimension: &#34;RoutingDimension&#34;, spans: &#34;std::vector&lt; operations_research::IntVar * &gt;&#34;, total_slacks: &#34;std::vector&lt; operations_research::IntVar * &gt;&#34;) -&gt; &#34;operations_research::Constraint *&#34;:
         r&#34;&#34;&#34;
@@ -16178,9 +16248,9 @@ and end nodes) + number of non-start or end nodes.</p></div>
 
     def AddSoftSameVehicleConstraint(self, indices: &#34;std::vector&lt; int64 &gt; const &amp;&#34;, cost: &#34;int64&#34;) -&gt; &#34;void&#34;:
         r&#34;&#34;&#34;
-        Adds a soft contraint to force a set of variable indices to be on the same
-        vehicle. If all nodes are not on the same vehicle, each extra vehicle used
-        adds &#39;cost&#39; to the cost function.
+        Adds a soft constraint to force a set of variable indices to be on the
+        same vehicle. If all nodes are not on the same vehicle, each extra vehicle
+        used adds &#39;cost&#39; to the cost function.
         &#34;&#34;&#34;
         return _pywrapcp.RoutingModel_AddSoftSameVehicleConstraint(self, indices, cost)
 
@@ -17056,8 +17126,17 @@ and end nodes) + number of non-start or end nodes.</p></div>
         &#34;&#34;&#34;
         return _pywrapcp.RoutingModel_MakeSelfDependentDimensionFinalizer(self, dimension)
 
-    def AddMatrixDimension(self, *args) -&gt; &#34;void&#34;:
-        return _pywrapcp.RoutingModel_AddMatrixDimension(self, *args)</code></pre>
+    def RegisterUnaryTransitVector(self, values: &#34;std::vector&lt; int64 &gt; const &amp;&#34;) -&gt; &#34;int&#34;:
+        return _pywrapcp.RoutingModel_RegisterUnaryTransitVector(self, values)
+
+    def AddVectorDimension(self, values: &#34;std::vector&lt; int64 &gt; const &amp;&#34;, capacity: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;std::pair&lt; int,bool &gt;&#34;:
+        return _pywrapcp.RoutingModel_AddVectorDimension(self, values, capacity, fix_start_cumul_to_zero, name)
+
+    def RegisterTransitMatrix(self, values: &#34;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#34;) -&gt; &#34;int&#34;:
+        return _pywrapcp.RoutingModel_RegisterTransitMatrix(self, values)
+
+    def AddMatrixDimension(self, values: &#34;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#34;, capacity: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;std::pair&lt; int,bool &gt;&#34;:
+        return _pywrapcp.RoutingModel_AddMatrixDimension(self, values, capacity, fix_start_cumul_to_zero, name)</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
@@ -17197,7 +17276,7 @@ AtSolution() and adding it with AddSearchMonitor.</p></div>
 </details>
 </dd>
 <dt id="pywrapcp.RoutingModel.AddConstantDimension"><code class="name flex">
-<span>def <span class="ident">AddConstantDimension</span></span>(<span>self, value: int64, capacity: int64, fix_start_cumul_to_zero: bool, name: std::string const &) ‑> bool</span>
+<span>def <span class="ident">AddConstantDimension</span></span>(<span>self, value: int64, capacity: int64, fix_start_cumul_to_zero: bool, name: std::string const &) ‑> std::pair< int,bool ></span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -17205,32 +17284,36 @@ AtSolution() and adding it with AddSearchMonitor.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def AddConstantDimension(self, value: &#34;int64&#34;, capacity: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
+<pre><code class="python">def AddConstantDimension(self, value: &#34;int64&#34;, capacity: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;std::pair&lt; int,bool &gt;&#34;:
     return _pywrapcp.RoutingModel_AddConstantDimension(self, value, capacity, fix_start_cumul_to_zero, name)</code></pre>
 </details>
 </dd>
 <dt id="pywrapcp.RoutingModel.AddConstantDimensionWithSlack"><code class="name flex">
-<span>def <span class="ident">AddConstantDimensionWithSlack</span></span>(<span>self, value: int64, capacity: int64, slack_max: int64, fix_start_cumul_to_zero: bool, name: std::string const &) ‑> bool</span>
+<span>def <span class="ident">AddConstantDimensionWithSlack</span></span>(<span>self, value: int64, capacity: int64, slack_max: int64, fix_start_cumul_to_zero: bool, name: std::string const &) ‑> std::pair< int,bool ></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Creates a dimension where the transit variable is constrained to be
 equal to 'value'; 'capacity' is the upper bound of the cumul variables.
 'name' is the name used to reference the dimension; this name is used to
 get cumul and transit variables from the routing model.
-Returns false if a dimension with the same name has already been created
-(and doesn't create the new dimension).</p></div>
+Returns a pair consisting of an index to the registered unary transit
+callback and a bool denoting whether the dimension has been created.
+It is false if a dimension with the same name has already been created
+(and doesn't create the new dimension but still register a new callback).</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def AddConstantDimensionWithSlack(self, value: &#34;int64&#34;, capacity: &#34;int64&#34;, slack_max: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
+<pre><code class="python">def AddConstantDimensionWithSlack(self, value: &#34;int64&#34;, capacity: &#34;int64&#34;, slack_max: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;std::pair&lt; int,bool &gt;&#34;:
     r&#34;&#34;&#34;
     Creates a dimension where the transit variable is constrained to be
     equal to &#39;value&#39;; &#39;capacity&#39; is the upper bound of the cumul variables.
     &#39;name&#39; is the name used to reference the dimension; this name is used to
     get cumul and transit variables from the routing model.
-    Returns false if a dimension with the same name has already been created
-    (and doesn&#39;t create the new dimension).
+    Returns a pair consisting of an index to the registered unary transit
+    callback and a bool denoting whether the dimension has been created.
+    It is false if a dimension with the same name has already been created
+    (and doesn&#39;t create the new dimension but still register a new callback).
     &#34;&#34;&#34;
     return _pywrapcp.RoutingModel_AddConstantDimensionWithSlack(self, value, capacity, slack_max, fix_start_cumul_to_zero, name)</code></pre>
 </details>
@@ -17451,7 +17534,7 @@ vehicle routing problem.</p></div>
 </details>
 </dd>
 <dt id="pywrapcp.RoutingModel.AddMatrixDimension"><code class="name flex">
-<span>def <span class="ident">AddMatrixDimension</span></span>(<span>self, *args) ‑> void</span>
+<span>def <span class="ident">AddMatrixDimension</span></span>(<span>self, values: std::vector< std::vector< int64 > > const &, capacity: int64, fix_start_cumul_to_zero: bool, name: std::string const &) ‑> std::pair< int,bool ></span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -17459,8 +17542,8 @@ vehicle routing problem.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def AddMatrixDimension(self, *args) -&gt; &#34;void&#34;:
-    return _pywrapcp.RoutingModel_AddMatrixDimension(self, *args)</code></pre>
+<pre><code class="python">def AddMatrixDimension(self, values: &#34;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#34;, capacity: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;std::pair&lt; int,bool &gt;&#34;:
+    return _pywrapcp.RoutingModel_AddMatrixDimension(self, values, capacity, fix_start_cumul_to_zero, name)</code></pre>
 </details>
 </dd>
 <dt id="pywrapcp.RoutingModel.AddPickupAndDelivery"><code class="name flex">
@@ -17620,18 +17703,18 @@ route.</p></div>
 <span>def <span class="ident">AddSoftSameVehicleConstraint</span></span>(<span>self, indices: std::vector< int64 > const &, cost: int64) ‑> void</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Adds a soft contraint to force a set of variable indices to be on the same
-vehicle. If all nodes are not on the same vehicle, each extra vehicle used
-adds 'cost' to the cost function.</p></div>
+<div class="desc"><p>Adds a soft constraint to force a set of variable indices to be on the
+same vehicle. If all nodes are not on the same vehicle, each extra vehicle
+used adds 'cost' to the cost function.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def AddSoftSameVehicleConstraint(self, indices: &#34;std::vector&lt; int64 &gt; const &amp;&#34;, cost: &#34;int64&#34;) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34;
-    Adds a soft contraint to force a set of variable indices to be on the same
-    vehicle. If all nodes are not on the same vehicle, each extra vehicle used
-    adds &#39;cost&#39; to the cost function.
+    Adds a soft constraint to force a set of variable indices to be on the
+    same vehicle. If all nodes are not on the same vehicle, each extra vehicle
+    used adds &#39;cost&#39; to the cost function.
     &#34;&#34;&#34;
     return _pywrapcp.RoutingModel_AddSoftSameVehicleConstraint(self, indices, cost)</code></pre>
 </details>
@@ -17722,30 +17805,15 @@ solution finalizer.</p></div>
 </details>
 </dd>
 <dt id="pywrapcp.RoutingModel.AddVectorDimension"><code class="name flex">
-<span>def <span class="ident">AddVectorDimension</span></span>(<span>self, values: std::vector< int64 >, capacity: int64, fix_start_cumul_to_zero: bool, name: std::string const &) ‑> bool</span>
+<span>def <span class="ident">AddVectorDimension</span></span>(<span>self, values: std::vector< int64 > const &, capacity: int64, fix_start_cumul_to_zero: bool, name: std::string const &) ‑> std::pair< int,bool ></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Creates a dimension where the transit variable is constrained to be
-equal to 'values[i]' for node i; 'capacity' is the upper bound of
-the cumul variables. 'name' is the name used to reference the dimension;
-this name is used to get cumul and transit variables from the routing
-model.
-Returns false if a dimension with the same name has already been created
-(and doesn't create the new dimension).</p></div>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def AddVectorDimension(self, values: &#34;std::vector&lt; int64 &gt;&#34;, capacity: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
-    r&#34;&#34;&#34;
-    Creates a dimension where the transit variable is constrained to be
-    equal to &#39;values[i]&#39; for node i; &#39;capacity&#39; is the upper bound of
-    the cumul variables. &#39;name&#39; is the name used to reference the dimension;
-    this name is used to get cumul and transit variables from the routing
-    model.
-    Returns false if a dimension with the same name has already been created
-    (and doesn&#39;t create the new dimension).
-    &#34;&#34;&#34;
+<pre><code class="python">def AddVectorDimension(self, values: &#34;std::vector&lt; int64 &gt; const &amp;&#34;, capacity: &#34;int64&#34;, fix_start_cumul_to_zero: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;std::pair&lt; int,bool &gt;&#34;:
     return _pywrapcp.RoutingModel_AddVectorDimension(self, values, capacity, fix_start_cumul_to_zero, name)</code></pre>
 </details>
 </dd>
@@ -19437,18 +19505,43 @@ when using dimensions with slack.</p></div>
     return _pywrapcp.RoutingModel_RegisterTransitCallback(self, callback)</code></pre>
 </details>
 </dd>
+<dt id="pywrapcp.RoutingModel.RegisterTransitMatrix"><code class="name flex">
+<span>def <span class="ident">RegisterTransitMatrix</span></span>(<span>self, values: std::vector< std::vector< int64 > > const &) ‑> int</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def RegisterTransitMatrix(self, values: &#34;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#34;) -&gt; &#34;int&#34;:
+    return _pywrapcp.RoutingModel_RegisterTransitMatrix(self, values)</code></pre>
+</details>
+</dd>
 <dt id="pywrapcp.RoutingModel.RegisterUnaryTransitCallback"><code class="name flex">
 <span>def <span class="ident">RegisterUnaryTransitCallback</span></span>(<span>self, callback: operations_research::<a title="pywrapcp.RoutingModel" href="#pywrapcp.RoutingModel">RoutingModel</a>::TransitCallback1) ‑> int</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Registers 'callback' and returns its index.</p></div>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def RegisterUnaryTransitCallback(self, callback: &#34;operations_research::RoutingModel::TransitCallback1&#34;) -&gt; &#34;int&#34;:
-    r&#34;&#34;&#34; Registers &#39;callback&#39; and returns its index.&#34;&#34;&#34;
     return _pywrapcp.RoutingModel_RegisterUnaryTransitCallback(self, callback)</code></pre>
+</details>
+</dd>
+<dt id="pywrapcp.RoutingModel.RegisterUnaryTransitVector"><code class="name flex">
+<span>def <span class="ident">RegisterUnaryTransitVector</span></span>(<span>self, values: std::vector< int64 > const &) ‑> int</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def RegisterUnaryTransitVector(self, values: &#34;std::vector&lt; int64 &gt; const &amp;&#34;) -&gt; &#34;int&#34;:
+    return _pywrapcp.RoutingModel_RegisterUnaryTransitVector(self, values)</code></pre>
 </details>
 </dd>
 <dt id="pywrapcp.RoutingModel.RemainingTime"><code class="name flex">
@@ -28468,6 +28561,14 @@ OR
 </ul>
 </li>
 <li>
+<h4><code><a title="pywrapcp.IntBoolPair" href="#pywrapcp.IntBoolPair">IntBoolPair</a></code></h4>
+<ul class="">
+<li><code><a title="pywrapcp.IntBoolPair.first" href="#pywrapcp.IntBoolPair.first">first</a></code></li>
+<li><code><a title="pywrapcp.IntBoolPair.second" href="#pywrapcp.IntBoolPair.second">second</a></code></li>
+<li><code><a title="pywrapcp.IntBoolPair.thisown" href="#pywrapcp.IntBoolPair.thisown">thisown</a></code></li>
+</ul>
+</li>
+<li>
 <h4><code><a title="pywrapcp.IntExpr" href="#pywrapcp.IntExpr">IntExpr</a></code></h4>
 <ul class="two-column">
 <li><code><a title="pywrapcp.IntExpr.Bound" href="#pywrapcp.IntExpr.Bound">Bound</a></code></li>
@@ -28995,7 +29096,9 @@ OR
 <li><code><a title="pywrapcp.RoutingModel.RegisterPositiveTransitCallback" href="#pywrapcp.RoutingModel.RegisterPositiveTransitCallback">RegisterPositiveTransitCallback</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.RegisterPositiveUnaryTransitCallback" href="#pywrapcp.RoutingModel.RegisterPositiveUnaryTransitCallback">RegisterPositiveUnaryTransitCallback</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.RegisterTransitCallback" href="#pywrapcp.RoutingModel.RegisterTransitCallback">RegisterTransitCallback</a></code></li>
+<li><code><a title="pywrapcp.RoutingModel.RegisterTransitMatrix" href="#pywrapcp.RoutingModel.RegisterTransitMatrix">RegisterTransitMatrix</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.RegisterUnaryTransitCallback" href="#pywrapcp.RoutingModel.RegisterUnaryTransitCallback">RegisterUnaryTransitCallback</a></code></li>
+<li><code><a title="pywrapcp.RoutingModel.RegisterUnaryTransitVector" href="#pywrapcp.RoutingModel.RegisterUnaryTransitVector">RegisterUnaryTransitVector</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.RemainingTime" href="#pywrapcp.RoutingModel.RemainingTime">RemainingTime</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.RestoreAssignment" href="#pywrapcp.RoutingModel.RestoreAssignment">RestoreAssignment</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.RoutesToAssignment" href="#pywrapcp.RoutingModel.RoutesToAssignment">RoutesToAssignment</a></code></li>

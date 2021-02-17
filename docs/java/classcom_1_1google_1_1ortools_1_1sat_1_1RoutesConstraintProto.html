@@ -253,7 +253,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00467">467</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00482">482</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -277,7 +277,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1RoutesConstraintProtoOrBuilder.html#a356065b7ecf780b8801d4536a0653617">RoutesConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00342">342</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00357">357</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -304,7 +304,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l01254">1254</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l01304">1304</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -323,7 +323,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l01279">1279</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l01329">1329</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -346,6 +346,11 @@ Protected Member Functions</h2></td></tr>
 Experimental. The demands for each node, and the maximum capacity for each
 route. Note that this is currently only used for the LP relaxation and one
 need to add the corresponding constraint to enforce this outside of the LP.
+TODO(user): Ideally, we should be able to extract any dimension like these
+(i.e. capacity, route_length, etc..) automatically from the encoding. The
+classical way to encode that is to have "current_capacity" variables along
+the route and linear equations of the form:
+  arc_literal =&gt; (current_capacity_tail + demand &lt;= current_capacity_head)
 </pre><p><code>repeated int32 demands = 4;</code> </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">index</td><td>The index of the element to return. </td></tr>
@@ -356,7 +361,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1RoutesConstraintProtoOrBuilder.html#a3eb6b7eecb6f557d13d7c2d5e5bdbce8">RoutesConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00330">330</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00345">345</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -378,11 +383,16 @@ need to add the corresponding constraint to enforce this outside of the LP.
 Experimental. The demands for each node, and the maximum capacity for each
 route. Note that this is currently only used for the LP relaxation and one
 need to add the corresponding constraint to enforce this outside of the LP.
+TODO(user): Ideally, we should be able to extract any dimension like these
+(i.e. capacity, route_length, etc..) automatically from the encoding. The
+classical way to encode that is to have "current_capacity" variables along
+the route and linear equations of the form:
+  arc_literal =&gt; (current_capacity_tail + demand &lt;= current_capacity_head)
 </pre><p><code>repeated int32 demands = 4;</code> </p><dl class="section return"><dt>Returns</dt><dd>The count of demands. </dd></dl>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1RoutesConstraintProtoOrBuilder.html#a56151962c4fee5a1b099f9916d04fd93">RoutesConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00316">316</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00326">326</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -404,11 +414,16 @@ need to add the corresponding constraint to enforce this outside of the LP.
 Experimental. The demands for each node, and the maximum capacity for each
 route. Note that this is currently only used for the LP relaxation and one
 need to add the corresponding constraint to enforce this outside of the LP.
+TODO(user): Ideally, we should be able to extract any dimension like these
+(i.e. capacity, route_length, etc..) automatically from the encoding. The
+classical way to encode that is to have "current_capacity" variables along
+the route and linear equations of the form:
+  arc_literal =&gt; (current_capacity_tail + demand &lt;= current_capacity_head)
 </pre><p><code>repeated int32 demands = 4;</code> </p><dl class="section return"><dt>Returns</dt><dd>A list containing the demands. </dd></dl>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1RoutesConstraintProtoOrBuilder.html#adaa107dc64a1303bc610db18a155d247">RoutesConstraintProtoOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00303">303</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00308">308</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -612,7 +627,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l01274">1274</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l01324">1324</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -631,7 +646,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00396">396</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00411">411</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -748,7 +763,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00491">491</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00506">506</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -794,7 +809,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00348">348</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00363">363</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -821,7 +836,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00593">593</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00608">608</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -849,7 +864,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00596">596</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00611">611</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -868,7 +883,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00592">592</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00607">607</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -896,7 +911,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00606">606</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00621">621</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -952,7 +967,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00565">565</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00580">580</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -990,7 +1005,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00570">570</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00585">585</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1018,7 +1033,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00543">543</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00558">558</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1056,7 +1071,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00547">547</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00562">562</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1084,7 +1099,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00532">532</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00547">547</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1122,7 +1137,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00537">537</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00552">552</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1150,7 +1165,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00577">577</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00592">592</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1188,7 +1203,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00583">583</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00598">598</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1216,7 +1231,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00553">553</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00568">568</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1254,7 +1269,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00558">558</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00573">573</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1282,7 +1297,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00521">521</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00536">536</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1320,7 +1335,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00526">526</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00541">541</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1347,7 +1362,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l01269">1269</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l01319">1319</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1366,7 +1381,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00600">600</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00615">615</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1386,7 +1401,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00358">358</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00373">373</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>
@@ -1411,7 +1426,7 @@ need to add the corresponding constraint to enforce this outside of the LP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00335">335</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutesConstraintProto_8java_source.html#l00350">350</a> of file <a class="el" href="RoutesConstraintProto_8java_source.html">RoutesConstraintProto.java</a>.</p>
 
 </div>
 </div>

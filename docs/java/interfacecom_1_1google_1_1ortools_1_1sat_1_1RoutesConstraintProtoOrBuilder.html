@@ -172,6 +172,11 @@ Public Member Functions</h2></td></tr>
 Experimental. The demands for each node, and the maximum capacity for each
 route. Note that this is currently only used for the LP relaxation and one
 need to add the corresponding constraint to enforce this outside of the LP.
+TODO(user): Ideally, we should be able to extract any dimension like these
+(i.e. capacity, route_length, etc..) automatically from the encoding. The
+classical way to encode that is to have "current_capacity" variables along
+the route and linear equations of the form:
+  arc_literal =&gt; (current_capacity_tail + demand &lt;= current_capacity_head)
 </pre><p><code>repeated int32 demands = 4;</code> </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">index</td><td>The index of the element to return. </td></tr>
@@ -202,6 +207,11 @@ need to add the corresponding constraint to enforce this outside of the LP.
 Experimental. The demands for each node, and the maximum capacity for each
 route. Note that this is currently only used for the LP relaxation and one
 need to add the corresponding constraint to enforce this outside of the LP.
+TODO(user): Ideally, we should be able to extract any dimension like these
+(i.e. capacity, route_length, etc..) automatically from the encoding. The
+classical way to encode that is to have "current_capacity" variables along
+the route and linear equations of the form:
+  arc_literal =&gt; (current_capacity_tail + demand &lt;= current_capacity_head)
 </pre><p><code>repeated int32 demands = 4;</code> </p><dl class="section return"><dt>Returns</dt><dd>The count of demands. </dd></dl>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1RoutesConstraintProto_1_1Builder.html#a56151962c4fee5a1b099f9916d04fd93">RoutesConstraintProto.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1RoutesConstraintProto.html#a56151962c4fee5a1b099f9916d04fd93">RoutesConstraintProto</a>.</p>
@@ -226,6 +236,11 @@ need to add the corresponding constraint to enforce this outside of the LP.
 Experimental. The demands for each node, and the maximum capacity for each
 route. Note that this is currently only used for the LP relaxation and one
 need to add the corresponding constraint to enforce this outside of the LP.
+TODO(user): Ideally, we should be able to extract any dimension like these
+(i.e. capacity, route_length, etc..) automatically from the encoding. The
+classical way to encode that is to have "current_capacity" variables along
+the route and linear equations of the form:
+  arc_literal =&gt; (current_capacity_tail + demand &lt;= current_capacity_head)
 </pre><p><code>repeated int32 demands = 4;</code> </p><dl class="section return"><dt>Returns</dt><dd>A list containing the demands. </dd></dl>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1RoutesConstraintProto_1_1Builder.html#adaa107dc64a1303bc610db18a155d247">RoutesConstraintProto.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1RoutesConstraintProto.html#a537eae36a8a232ba2bf441cba57a18bc">RoutesConstraintProto</a>.</p>

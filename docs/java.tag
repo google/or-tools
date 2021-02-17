@@ -356,6 +356,21 @@
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
+    <name>DenseMatrixProto.java</name>
+    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>DenseMatrixProto_8java.html</filename>
+    <class kind="class">com::google::ortools::sat::DenseMatrixProto</class>
+    <class kind="class">com::google::ortools::sat::DenseMatrixProto::Builder</class>
+    <namespace>com::google::ortools::sat</namespace>
+  </compound>
+  <compound kind="file">
+    <name>DenseMatrixProtoOrBuilder.java</name>
+    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>DenseMatrixProtoOrBuilder_8java.html</filename>
+    <class kind="interface">com::google::ortools::sat::DenseMatrixProtoOrBuilder</class>
+    <namespace>com::google::ortools::sat</namespace>
+  </compound>
+  <compound kind="file">
     <name>Difference.java</name>
     <path>/home/mizux/work/master/ortools/java/com/google/ortools/sat/</path>
     <filename>Difference_8java.html</filename>
@@ -418,6 +433,13 @@
     <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>ImprovementSearchLimit_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::ImprovementSearchLimit</class>
+    <namespace>com::google::ortools::constraintsolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>IntBoolPair.java</name>
+    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>IntBoolPair_8java.html</filename>
+    <class kind="class">com::google::ortools::constraintsolver::IntBoolPair</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
@@ -1517,6 +1539,21 @@
     <namespace>com::google::ortools::util</namespace>
   </compound>
   <compound kind="file">
+    <name>SparsePermutationProto.java</name>
+    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>SparsePermutationProto_8java.html</filename>
+    <class kind="class">com::google::ortools::sat::SparsePermutationProto</class>
+    <class kind="class">com::google::ortools::sat::SparsePermutationProto::Builder</class>
+    <namespace>com::google::ortools::sat</namespace>
+  </compound>
+  <compound kind="file">
+    <name>SparsePermutationProtoOrBuilder.java</name>
+    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>SparsePermutationProtoOrBuilder_8java.html</filename>
+    <class kind="interface">com::google::ortools::sat::SparsePermutationProtoOrBuilder</class>
+    <namespace>com::google::ortools::sat</namespace>
+  </compound>
+  <compound kind="file">
     <name>SumOfVariables.java</name>
     <path>/home/mizux/work/master/ortools/java/com/google/ortools/sat/</path>
     <filename>SumOfVariables_8java.html</filename>
@@ -1529,6 +1566,21 @@
     <filename>SymmetryBreaker_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::SymmetryBreaker</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
+  </compound>
+  <compound kind="file">
+    <name>SymmetryProto.java</name>
+    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>SymmetryProto_8java.html</filename>
+    <class kind="class">com::google::ortools::sat::SymmetryProto</class>
+    <class kind="class">com::google::ortools::sat::SymmetryProto::Builder</class>
+    <namespace>com::google::ortools::sat</namespace>
+  </compound>
+  <compound kind="file">
+    <name>SymmetryProtoOrBuilder.java</name>
+    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>SymmetryProtoOrBuilder_8java.html</filename>
+    <class kind="interface">com::google::ortools::sat::SymmetryProtoOrBuilder</class>
+    <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>TableConstraintProto.java</name>
@@ -18761,6 +18813,62 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
+      <type>boolean</type>
+      <name>hasSymmetry</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html</anchorfile>
+      <anchor>ab5ee927bda7d8234143265b32c333b97</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.SymmetryProto</type>
+      <name>getSymmetry</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html</anchorfile>
+      <anchor>a34979a66d0fda4afc6f58acdb31506f6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setSymmetry</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html</anchorfile>
+      <anchor>a26ca5ceb510aec95cf9bf97296581178</anchor>
+      <arglist>(com.google.ortools.sat.SymmetryProto value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setSymmetry</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html</anchorfile>
+      <anchor>ac301d950a4e57dd5bf64299dd9b6581f</anchor>
+      <arglist>(com.google.ortools.sat.SymmetryProto.Builder builderForValue)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>mergeSymmetry</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html</anchorfile>
+      <anchor>aedd4952c7cdc1d6099a82ab9f229f413</anchor>
+      <arglist>(com.google.ortools.sat.SymmetryProto value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearSymmetry</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html</anchorfile>
+      <anchor>a0e5d3757fd2d86d8d70510efbacd7129</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.SymmetryProto.Builder</type>
+      <name>getSymmetryBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html</anchorfile>
+      <anchor>a2e043bc7e1e231ca2470e23e81a52878</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.SymmetryProtoOrBuilder</type>
+      <name>getSymmetryOrBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html</anchorfile>
+      <anchor>a39d81a7e80725f6bd037217ef5f339cb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>.lang.Override final Builder</type>
       <name>setUnknownFields</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html</anchorfile>
@@ -20777,6 +20885,235 @@
       <type>.lang.Override com.google.protobuf.GeneratedMessageV3.FieldAccessorTable</type>
       <name>internalGetFieldAccessorTable</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1Builder.html</anchorfile>
+      <anchor>a933d518fc16e760775083e723eb80b9a</anchor>
+      <arglist>()</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>com::google::ortools::sat::DenseMatrixProto::Builder</name>
+    <filename>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</filename>
+    <base>com::google::ortools::sat::DenseMatrixProtoOrBuilder</base>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clear</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a542b6d7ba65ac8ab25e1a42debda37ab</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.protobuf.Descriptors.Descriptor</type>
+      <name>getDescriptorForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a5df599d114f2e2c14f929edc26c3c89e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.DenseMatrixProto</type>
+      <name>getDefaultInstanceForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a6dd0dd195d3301c67567f373b79f38d6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.DenseMatrixProto</type>
+      <name>build</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>afc12ce09c68897c3bf298937a46de5cc</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.DenseMatrixProto</type>
+      <name>buildPartial</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a559165cca1a163b773530fc5a8b57a4d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clone</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>ad4c35acf2d13c654bdf4c231402d8e5b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>setField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a29cb2d6e078130bc33cbb0c4e4363843</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clearField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>af5d18ad987f46f34bc16e14dd69ad465</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clearOneof</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>afed76e2d97b5f1b69aa4c2e32de27a64</anchor>
+      <arglist>(com.google.protobuf.Descriptors.OneofDescriptor oneof)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>setRepeatedField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a32247777d57d4e965b2e70efe3218510</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, int index, java.lang.Object value)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>addRepeatedField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a4cccefa27c0c36e962ea460029b2e3d1</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>mergeFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a916dae08dfc215ec61d3721b0eed6631</anchor>
+      <arglist>(com.google.protobuf.Message other)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>mergeFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>af21c71689286cf3884d6009db1eface2</anchor>
+      <arglist>(com.google.ortools.sat.DenseMatrixProto other)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final boolean</type>
+      <name>isInitialized</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a968cb605190759c690e5a97cdc0bb4a1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>mergeFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a290ae22f465e8996adf8f356426908c7</anchor>
+      <arglist>(com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override int</type>
+      <name>getNumRows</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a7c200af1da201d4eee14f9604f487a32</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setNumRows</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a1a6bab1d8b39928f909c320ee15e59cf</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearNumRows</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a61b8f4b7a68d7f8a9eb39a067bf4af03</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override int</type>
+      <name>getNumCols</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a69fa590bb73ff6ec7628dc24a0041148</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setNumCols</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>afb109714b6c76811c216da78a370c7de</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearNumCols</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a4eec327575df251842e15105d1340cd5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt; java.lang.Integer &gt;</type>
+      <name>getEntriesList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a2cf3aa2ff93dabfac44f873b861c860f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getEntriesCount</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a5e874b851fdf4140ef9c84195250cdf1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getEntries</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a6c9c091969d1cf54f9edded8cb8f6b3d</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setEntries</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a5f25d2680008668d87930b12deab54c6</anchor>
+      <arglist>(int index, int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addEntries</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a53ef8d225601e6a9c1a73f6efd5f82c3</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addAllEntries</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a08d3c7db7caa92f00bdf340ffe46fbe2</anchor>
+      <arglist>(java.lang.Iterable&lt;? extends java.lang.Integer &gt; values)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearEntries</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a1f0955a6f21c8b62450dfe3e40902ee0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final Builder</type>
+      <name>setUnknownFields</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>ac316af0298e9645fc3e5159b0d4464e1</anchor>
+      <arglist>(final com.google.protobuf.UnknownFieldSet unknownFields)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final Builder</type>
+      <name>mergeUnknownFields</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>a3e05e91aa90c10970a9aafb7b561e218</anchor>
+      <arglist>(final com.google.protobuf.UnknownFieldSet unknownFields)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static final com.google.protobuf.Descriptors.Descriptor</type>
+      <name>getDescriptor</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
+      <anchor>ada120643f7710d9df7cad50d6ab2ac51</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>.lang.Override com.google.protobuf.GeneratedMessageV3.FieldAccessorTable</type>
+      <name>internalGetFieldAccessorTable</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto_1_1Builder.html</anchorfile>
       <anchor>a933d518fc16e760775083e723eb80b9a</anchor>
       <arglist>()</arglist>
     </member>
@@ -28293,6 +28630,34 @@
     </member>
     <member kind="function">
       <type>.lang.Override boolean</type>
+      <name>hasLnsExpandIntervalsInConstraintGraph</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>ae22768d4764a2e8f0566615fd5f43b42</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getLnsExpandIntervalsInConstraintGraph</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a42c1ebefe141d3b34a158075f0b8f021</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setLnsExpandIntervalsInConstraintGraph</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a2ce7b56b1b9c7ad84765d68c0160f922</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearLnsExpandIntervalsInConstraintGraph</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a72cdbc9f0467d5afd0a5c5ec39ad1a3b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
       <name>hasUseRinsLns</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>ac859df26c2a28a7024923252b2348dd0</anchor>
@@ -28713,30 +29078,30 @@
     </member>
     <member kind="function">
       <type>.lang.Override boolean</type>
-      <name>hasDetectSymmetries</name>
+      <name>hasSymmetryLevel</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
-      <anchor>afca00d28cb3869c55ca312e4fdd09efc</anchor>
+      <anchor>a36d13947e815db968bed7aa38c06ba43</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>.lang.Override boolean</type>
-      <name>getDetectSymmetries</name>
+      <type>.lang.Override int</type>
+      <name>getSymmetryLevel</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
-      <anchor>a3bd042392e44e478f73019535f9b0590</anchor>
+      <anchor>af31c84d98bbb96349310b8046737d96e</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>Builder</type>
-      <name>setDetectSymmetries</name>
+      <name>setSymmetryLevel</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
-      <anchor>a0dbcf9fd668739e782e873096431d5b3</anchor>
-      <arglist>(boolean value)</arglist>
+      <anchor>a8235bf27e23c4e010345c70bcb1c7ff7</anchor>
+      <arglist>(int value)</arglist>
     </member>
     <member kind="function">
       <type>Builder</type>
-      <name>clearDetectSymmetries</name>
+      <name>clearSymmetryLevel</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
-      <anchor>a0da713a002bf4feef4cdd43b96f0d1ee</anchor>
+      <anchor>a3637ee1b1c2ac352d4c1ca5a7a377e6f</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -28932,6 +29297,632 @@
       <type>.lang.Override com.google.protobuf.GeneratedMessageV3.FieldAccessorTable</type>
       <name>internalGetFieldAccessorTable</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a933d518fc16e760775083e723eb80b9a</anchor>
+      <arglist>()</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>com::google::ortools::sat::SparsePermutationProto::Builder</name>
+    <filename>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</filename>
+    <base>com::google::ortools::sat::SparsePermutationProtoOrBuilder</base>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clear</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a542b6d7ba65ac8ab25e1a42debda37ab</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.protobuf.Descriptors.Descriptor</type>
+      <name>getDescriptorForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a5df599d114f2e2c14f929edc26c3c89e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.SparsePermutationProto</type>
+      <name>getDefaultInstanceForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a05d1ce4ac977aa679adec30040f79b92</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.SparsePermutationProto</type>
+      <name>build</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a5914e145bf86a64f7c63c29fd2c5de53</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.SparsePermutationProto</type>
+      <name>buildPartial</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a9f763f10ff283ae6a6aab7659d8a96e9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clone</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>ad4c35acf2d13c654bdf4c231402d8e5b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>setField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a29cb2d6e078130bc33cbb0c4e4363843</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clearField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>af5d18ad987f46f34bc16e14dd69ad465</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clearOneof</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>afed76e2d97b5f1b69aa4c2e32de27a64</anchor>
+      <arglist>(com.google.protobuf.Descriptors.OneofDescriptor oneof)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>setRepeatedField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a32247777d57d4e965b2e70efe3218510</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, int index, java.lang.Object value)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>addRepeatedField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a4cccefa27c0c36e962ea460029b2e3d1</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>mergeFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a916dae08dfc215ec61d3721b0eed6631</anchor>
+      <arglist>(com.google.protobuf.Message other)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>mergeFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a4f2de2b200b9e2d32e8d531bb7e5af99</anchor>
+      <arglist>(com.google.ortools.sat.SparsePermutationProto other)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final boolean</type>
+      <name>isInitialized</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a968cb605190759c690e5a97cdc0bb4a1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>mergeFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a290ae22f465e8996adf8f356426908c7</anchor>
+      <arglist>(com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt; java.lang.Integer &gt;</type>
+      <name>getSupportList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>ace2de6d7c6d42b2db42d1e2ba6e753a1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getSupportCount</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a894c87d8863d6186c4e920696ea9fe3d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getSupport</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a18938c32a195acdd9167973a2a3738f9</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setSupport</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a9af5c5cded035a69c09f7370343ab79d</anchor>
+      <arglist>(int index, int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addSupport</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>af8b40d9ae21a926ce9e17891627df170</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addAllSupport</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a17bc4f2e99d2d712f2ad71ffe0683f2b</anchor>
+      <arglist>(java.lang.Iterable&lt;? extends java.lang.Integer &gt; values)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearSupport</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a8f5d9a5f4ee8bfdeebc62f2dbfd7309c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt; java.lang.Integer &gt;</type>
+      <name>getCycleSizesList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>aad3b67e507a0103ec18616dae2bff820</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getCycleSizesCount</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a7b19aca58e2b244cd17150583e2450df</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getCycleSizes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>ac2c13ac6eda9a6499c4020f1ec4e6a51</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setCycleSizes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>adbd696176b2c32cd982b41593f661cf4</anchor>
+      <arglist>(int index, int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addCycleSizes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a1dcf69f0ae8942aa914f092a92e9c644</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addAllCycleSizes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>ab8645ec6f87f57a0687c7394fc4724f5</anchor>
+      <arglist>(java.lang.Iterable&lt;? extends java.lang.Integer &gt; values)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearCycleSizes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>ad2627ebd7aed8b1330157a9407ab91c9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final Builder</type>
+      <name>setUnknownFields</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>ac316af0298e9645fc3e5159b0d4464e1</anchor>
+      <arglist>(final com.google.protobuf.UnknownFieldSet unknownFields)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final Builder</type>
+      <name>mergeUnknownFields</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a3e05e91aa90c10970a9aafb7b561e218</anchor>
+      <arglist>(final com.google.protobuf.UnknownFieldSet unknownFields)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static final com.google.protobuf.Descriptors.Descriptor</type>
+      <name>getDescriptor</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>ada120643f7710d9df7cad50d6ab2ac51</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>.lang.Override com.google.protobuf.GeneratedMessageV3.FieldAccessorTable</type>
+      <name>internalGetFieldAccessorTable</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html</anchorfile>
+      <anchor>a933d518fc16e760775083e723eb80b9a</anchor>
+      <arglist>()</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>com::google::ortools::sat::SymmetryProto::Builder</name>
+    <filename>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</filename>
+    <base>com::google::ortools::sat::SymmetryProtoOrBuilder</base>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clear</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a542b6d7ba65ac8ab25e1a42debda37ab</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.protobuf.Descriptors.Descriptor</type>
+      <name>getDescriptorForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a5df599d114f2e2c14f929edc26c3c89e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.SymmetryProto</type>
+      <name>getDefaultInstanceForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a09378122b09da69e5055bf10bbed86a6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.SymmetryProto</type>
+      <name>build</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a3122a453d2c1613a266321d59622f9e3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.SymmetryProto</type>
+      <name>buildPartial</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>aae754ade3ea5e2c8c1e966c4b8177964</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clone</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>ad4c35acf2d13c654bdf4c231402d8e5b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>setField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a29cb2d6e078130bc33cbb0c4e4363843</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clearField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>af5d18ad987f46f34bc16e14dd69ad465</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clearOneof</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>afed76e2d97b5f1b69aa4c2e32de27a64</anchor>
+      <arglist>(com.google.protobuf.Descriptors.OneofDescriptor oneof)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>setRepeatedField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a32247777d57d4e965b2e70efe3218510</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, int index, java.lang.Object value)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>addRepeatedField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a4cccefa27c0c36e962ea460029b2e3d1</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>mergeFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a916dae08dfc215ec61d3721b0eed6631</anchor>
+      <arglist>(com.google.protobuf.Message other)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>mergeFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a4a179a72af25791566e7001a00cb8e4e</anchor>
+      <arglist>(com.google.ortools.sat.SymmetryProto other)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final boolean</type>
+      <name>isInitialized</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a968cb605190759c690e5a97cdc0bb4a1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>mergeFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a290ae22f465e8996adf8f356426908c7</anchor>
+      <arglist>(com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt; com.google.ortools.sat.SparsePermutationProto &gt;</type>
+      <name>getPermutationsList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a221461d9f1d6237ef017f8fee91d0aee</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getPermutationsCount</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>aca5ad40a0e55a839ca7d2738a38a462d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.SparsePermutationProto</type>
+      <name>getPermutations</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>ae0401a9fc771e133e685105859d2dc4e</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setPermutations</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a028c4d6791b77c5c939900a51f074d74</anchor>
+      <arglist>(int index, com.google.ortools.sat.SparsePermutationProto value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setPermutations</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a60ddf2273c1ebdd96b63a0d9dd8598d4</anchor>
+      <arglist>(int index, com.google.ortools.sat.SparsePermutationProto.Builder builderForValue)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addPermutations</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a747ad0514c913d2603e1e0c0e523e98d</anchor>
+      <arglist>(com.google.ortools.sat.SparsePermutationProto value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addPermutations</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a2ec055f8206b9d758b033a008c9bd1ae</anchor>
+      <arglist>(int index, com.google.ortools.sat.SparsePermutationProto value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addPermutations</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>ab2e54ea00e55dd768a2751ad91e39915</anchor>
+      <arglist>(com.google.ortools.sat.SparsePermutationProto.Builder builderForValue)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addPermutations</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a0b50c781c7bef132b3ca2839ce76aaaf</anchor>
+      <arglist>(int index, com.google.ortools.sat.SparsePermutationProto.Builder builderForValue)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addAllPermutations</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>aa7aa2c88a3e04f084a83f49ecce5679b</anchor>
+      <arglist>(java.lang.Iterable&lt;? extends com.google.ortools.sat.SparsePermutationProto &gt; values)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearPermutations</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a5103585dac67bc7db062a63e084f4979</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>removePermutations</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a7108566ad915af485d371440fbdbd5f4</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.SparsePermutationProto.Builder</type>
+      <name>getPermutationsBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a066bd9a487417a4007ade0a0bd782299</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.SparsePermutationProtoOrBuilder</type>
+      <name>getPermutationsOrBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>aabed95f497281421e62ce0e724632ed2</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt;? extends com.google.ortools.sat.SparsePermutationProtoOrBuilder &gt;</type>
+      <name>getPermutationsOrBuilderList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a99abb0a616fca1cd03eed5bd71ed0bf7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.SparsePermutationProto.Builder</type>
+      <name>addPermutationsBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a40ab0bb9ac4ee1fda1383303d6844f38</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.SparsePermutationProto.Builder</type>
+      <name>addPermutationsBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a78f6e11295dbb5b6b1f81c4fad8ac47d</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt; com.google.ortools.sat.SparsePermutationProto.Builder &gt;</type>
+      <name>getPermutationsBuilderList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a228764a91779151d633ce72add8e6527</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt; com.google.ortools.sat.DenseMatrixProto &gt;</type>
+      <name>getOrbitopesList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a1e6c5fa6544e03f01ba0a27649634b4c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getOrbitopesCount</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a7143f3bb383ec91eb32b1626e59e8df3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.DenseMatrixProto</type>
+      <name>getOrbitopes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a2a849faf65a73e6c95486046e5bff4df</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setOrbitopes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>abc0b8f6c8f498d67a32b156c26281325</anchor>
+      <arglist>(int index, com.google.ortools.sat.DenseMatrixProto value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setOrbitopes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a7017ad56e3c18b3a5abf74101d01ddc7</anchor>
+      <arglist>(int index, com.google.ortools.sat.DenseMatrixProto.Builder builderForValue)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addOrbitopes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a16fd7344526b3a44fd28699753e23043</anchor>
+      <arglist>(com.google.ortools.sat.DenseMatrixProto value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addOrbitopes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>acfeecfe985a46c79f8d1c02fd8ff4b79</anchor>
+      <arglist>(int index, com.google.ortools.sat.DenseMatrixProto value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addOrbitopes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a768bd7058b570fd08a2d0370b9a2a528</anchor>
+      <arglist>(com.google.ortools.sat.DenseMatrixProto.Builder builderForValue)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addOrbitopes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a7bbd1d1ebfc3643bef16703922fef569</anchor>
+      <arglist>(int index, com.google.ortools.sat.DenseMatrixProto.Builder builderForValue)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addAllOrbitopes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a9059b8891b30f8bdde9d10f2cf250edf</anchor>
+      <arglist>(java.lang.Iterable&lt;? extends com.google.ortools.sat.DenseMatrixProto &gt; values)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearOrbitopes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a30fd14ee77c3407a9a6e306d41b4a4b1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>removeOrbitopes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>aefae2e63877e770981bc5f558110829c</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.DenseMatrixProto.Builder</type>
+      <name>getOrbitopesBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a5d1aa6a730d2c236864b9ea458ecbc58</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.DenseMatrixProtoOrBuilder</type>
+      <name>getOrbitopesOrBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a6081006cfa005f9ec52841e9fa435af0</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt;? extends com.google.ortools.sat.DenseMatrixProtoOrBuilder &gt;</type>
+      <name>getOrbitopesOrBuilderList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a53fc8e11b30e92fa95e3fbc107dde65b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.DenseMatrixProto.Builder</type>
+      <name>addOrbitopesBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a40a56e038d77c76249ce7fbea0e6d6cb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.DenseMatrixProto.Builder</type>
+      <name>addOrbitopesBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>ae6e3a9036062bee8f25e17f84225029b</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt; com.google.ortools.sat.DenseMatrixProto.Builder &gt;</type>
+      <name>getOrbitopesBuilderList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a1b1c6757343df2b05d58f09ea7ea4129</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final Builder</type>
+      <name>setUnknownFields</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>ac316af0298e9645fc3e5159b0d4464e1</anchor>
+      <arglist>(final com.google.protobuf.UnknownFieldSet unknownFields)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final Builder</type>
+      <name>mergeUnknownFields</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>a3e05e91aa90c10970a9aafb7b561e218</anchor>
+      <arglist>(final com.google.protobuf.UnknownFieldSet unknownFields)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static final com.google.protobuf.Descriptors.Descriptor</type>
+      <name>getDescriptor</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
+      <anchor>ada120643f7710d9df7cad50d6ab2ac51</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>.lang.Override com.google.protobuf.GeneratedMessageV3.FieldAccessorTable</type>
+      <name>internalGetFieldAccessorTable</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html</anchorfile>
       <anchor>a933d518fc16e760775083e723eb80b9a</anchor>
       <arglist>()</arglist>
     </member>
@@ -33160,6 +34151,20 @@
       <arglist>(long value)</arglist>
     </member>
     <member kind="function">
+      <type>Literal</type>
+      <name>trueLiteral</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html</anchorfile>
+      <anchor>ac9e2f74d525548916080a1465b77c2e6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Literal</type>
+      <name>falseLiteral</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html</anchorfile>
+      <anchor>a5301d52f616d96319f708f4379d17cea</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>Constraint</type>
       <name>addBoolOr</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html</anchorfile>
@@ -33609,6 +34614,34 @@
     </member>
     <member kind="function">
       <type>void</type>
+      <name>clearHints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html</anchorfile>
+      <anchor>acfebe68026a8b01e9eba16f811d2fd8d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>addAssumption</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html</anchorfile>
+      <anchor>a6c947e26c649b032bc71b742a8591c78</anchor>
+      <arglist>(Literal lit)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>addAssumptions</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html</anchorfile>
+      <anchor>a575f2ec309ae45622e0d3601a83ccb91</anchor>
+      <arglist>(Literal[] literals)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>clearAssumptions</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html</anchorfile>
+      <anchor>a2295a3e26efe868c58ef9cbf16714ddc</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
       <name>minimize</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html</anchorfile>
       <anchor>a5ebe6f90377f06adcb4a95eca060bcb6</anchor>
@@ -33866,6 +34899,27 @@
       <arglist>(int index)</arglist>
     </member>
     <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasSymmetry</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html</anchorfile>
+      <anchor>a5ea934b7881b35cc43db47897b8b9761</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.SymmetryProto</type>
+      <name>getSymmetry</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html</anchorfile>
+      <anchor>a35be012cf126c8fea1dbaa974a930239</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.SymmetryProtoOrBuilder</type>
+      <name>getSymmetryOrBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html</anchorfile>
+      <anchor>aa7b41bf93a2031648deb4921a3d3a16a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>.lang.Override final boolean</type>
       <name>isInitialized</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html</anchorfile>
@@ -34094,6 +35148,13 @@
       <name>ASSUMPTIONS_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html</anchorfile>
       <anchor>ae10e68b7ed7a38c51e48ad08b9fbf465</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>SYMMETRY_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html</anchorfile>
+      <anchor>a030bd137d3c7aa1868603860b97bee7d</anchor>
       <arglist></arglist>
     </member>
     <member kind="function" protection="protected">
@@ -34327,6 +35388,27 @@
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html</anchorfile>
       <anchor>a2de3b2818e74a82a51f187923e3564ef</anchor>
       <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasSymmetry</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html</anchorfile>
+      <anchor>ab5ee927bda7d8234143265b32c333b97</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.SymmetryProto</type>
+      <name>getSymmetry</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html</anchorfile>
+      <anchor>a34979a66d0fda4afc6f58acdb31506f6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.SymmetryProtoOrBuilder</type>
+      <name>getSymmetryOrBuilder</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html</anchorfile>
+      <anchor>a39d81a7e80725f6bd037217ef5f339cb</anchor>
+      <arglist>()</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -34830,6 +35912,13 @@
       <name>userTime</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html</anchorfile>
       <anchor>a1cd8aaaecd8d26aeb54f5503a459b1d9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>List&lt; Integer &gt;</type>
+      <name>sufficientAssumptionsForInfeasibility</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html</anchorfile>
+      <anchor>a7536be6e73c3980fe05e1166a455d1e8</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -37267,6 +38356,317 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>com::google::ortools::sat::DenseMatrixProto</name>
+    <filename>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</filename>
+    <base>com::google::ortools::sat::DenseMatrixProtoOrBuilder</base>
+    <class kind="class">com::google::ortools::sat::DenseMatrixProto::Builder</class>
+    <member kind="function">
+      <type>.lang.Override final com.google.protobuf.UnknownFieldSet</type>
+      <name>getUnknownFields</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a9595e84f1a265789b99af6f10e024e33</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override int</type>
+      <name>getNumRows</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a7c200af1da201d4eee14f9604f487a32</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override int</type>
+      <name>getNumCols</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a69fa590bb73ff6ec7628dc24a0041148</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override java.util.List&lt; java.lang.Integer &gt;</type>
+      <name>getEntriesList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a485e4c62232c39da4ca45c8a8e7480eb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getEntriesCount</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a5e874b851fdf4140ef9c84195250cdf1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getEntries</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a6c9c091969d1cf54f9edded8cb8f6b3d</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final boolean</type>
+      <name>isInitialized</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a968cb605190759c690e5a97cdc0bb4a1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override void</type>
+      <name>writeTo</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a813eab1fc00c769aad910c480868972b</anchor>
+      <arglist>(com.google.protobuf.CodedOutputStream output)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override int</type>
+      <name>getSerializedSize</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a8342b02c43d81069adc3e820423d92ac</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>equals</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>ad9c7bdd857ca6c970b0d1ba4dadb1f66</anchor>
+      <arglist>(final java.lang.Object obj)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override int</type>
+      <name>hashCode</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>ab55eefa0b7ba9d1dec56bf8bb2b996b3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>newBuilderForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a7a484474c36faf426657f0e94c090dbb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>toBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a77db07dbc1f747f14c5df841ccf5a14c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.protobuf.Parser&lt; DenseMatrixProto &gt;</type>
+      <name>getParserForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>aadb905078ded893ac39a86e99ea7a741</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.DenseMatrixProto</type>
+      <name>getDefaultInstanceForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a6dd0dd195d3301c67567f373b79f38d6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static final com.google.protobuf.Descriptors.Descriptor</type>
+      <name>getDescriptor</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>ada120643f7710d9df7cad50d6ab2ac51</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.DenseMatrixProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>abdabd6668dd2f331965f77a3e2f2a389</anchor>
+      <arglist>(java.nio.ByteBuffer data)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.DenseMatrixProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>af7dbde72bb8fedb59eed80c6d83c7831</anchor>
+      <arglist>(java.nio.ByteBuffer data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.DenseMatrixProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>aeb2784ff816a78843746cbe33e953491</anchor>
+      <arglist>(com.google.protobuf.ByteString data)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.DenseMatrixProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>aed28ee051fac10d5149195b2c0b7b1a5</anchor>
+      <arglist>(com.google.protobuf.ByteString data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.DenseMatrixProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>ac0dbbe104c54ae325bd711529512a10d</anchor>
+      <arglist>(byte[] data)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.DenseMatrixProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a949061ffbc831dcacb57fd20715af8d4</anchor>
+      <arglist>(byte[] data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.DenseMatrixProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>ae023cd52f9bfde49ebdda40baae464ed</anchor>
+      <arglist>(java.io.InputStream input)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.DenseMatrixProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a34775ba6df089d7e6f0cb9560d4edd35</anchor>
+      <arglist>(java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.DenseMatrixProto</type>
+      <name>parseDelimitedFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>ac45e426d86cbcb5dbe7f9816c7e57ce7</anchor>
+      <arglist>(java.io.InputStream input)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.DenseMatrixProto</type>
+      <name>parseDelimitedFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a3de667c1002715e5a04488b2fc128c0f</anchor>
+      <arglist>(java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.DenseMatrixProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>ab2ed70a4143e22f47137752a3d051a1d</anchor>
+      <arglist>(com.google.protobuf.CodedInputStream input)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.DenseMatrixProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a09c6c29b60ea62e98762b9f2153f5a76</anchor>
+      <arglist>(com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Builder</type>
+      <name>newBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>aeff24d3f13ca1e88dc9427c640b64314</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Builder</type>
+      <name>newBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a58e61dd361eeea83c690de1e579ef34d</anchor>
+      <arglist>(com.google.ortools.sat.DenseMatrixProto prototype)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.DenseMatrixProto</type>
+      <name>getDefaultInstance</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>ad1311196e8cbc85b0f280122669691b8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.protobuf.Parser&lt; DenseMatrixProto &gt;</type>
+      <name>parser</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>ac710d9d4d005cea8c289c6529456d890</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>NUM_ROWS_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>aed6e1efc6075cf8f999d0a5ec82c3a1b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>NUM_COLS_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>adf1dc8c65eb33518b76a21aed2b703f5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>ENTRIES_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a5c766e583576d5b2b85f256b392369cd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>.lang.Override java.lang.Object</type>
+      <name>newInstance</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>acab334d7dcecf2ae3efa8e973142c563</anchor>
+      <arglist>(UnusedPrivateParameter unused)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>.lang.Override com.google.protobuf.GeneratedMessageV3.FieldAccessorTable</type>
+      <name>internalGetFieldAccessorTable</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a933d518fc16e760775083e723eb80b9a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>.lang.Override Builder</type>
+      <name>newBuilderForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProto.html</anchorfile>
+      <anchor>a401adfed369d510f3437d16bccf924c3</anchor>
+      <arglist>(com.google.protobuf.GeneratedMessageV3.BuilderParent parent)</arglist>
+    </member>
+  </compound>
+  <compound kind="interface">
+    <name>com::google::ortools::sat::DenseMatrixProtoOrBuilder</name>
+    <filename>interfacecom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProtoOrBuilder.html</filename>
+    <member kind="function">
+      <type>int</type>
+      <name>getNumRows</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProtoOrBuilder.html</anchorfile>
+      <anchor>ad4bed2f85ad6ae5a211d4753f1d6b6a6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getNumCols</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProtoOrBuilder.html</anchorfile>
+      <anchor>aa900eb997a31ad177c9192ad084269b9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt; java.lang.Integer &gt;</type>
+      <name>getEntriesList</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProtoOrBuilder.html</anchorfile>
+      <anchor>a2cf3aa2ff93dabfac44f873b861c860f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getEntriesCount</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProtoOrBuilder.html</anchorfile>
+      <anchor>a5e874b851fdf4140ef9c84195250cdf1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getEntries</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1DenseMatrixProtoOrBuilder.html</anchorfile>
+      <anchor>a6c9c091969d1cf54f9edded8cb8f6b3d</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>com::google::ortools::constraintsolver::DisjunctiveConstraint</name>
     <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DisjunctiveConstraint.html</filename>
     <base>com::google::ortools::constraintsolver::Constraint</base>
@@ -39281,6 +40681,73 @@
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverParameters_1_1IncrementalityValues.html</anchorfile>
       <anchor>a4577d98ceb0cb0b1b4564454891d5ece</anchor>
       <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>com::google::ortools::constraintsolver::IntBoolPair</name>
+    <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntBoolPair.html</filename>
+    <member kind="function">
+      <type>synchronized void</type>
+      <name>delete</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntBoolPair.html</anchorfile>
+      <anchor>a155da317e33b817886120f10038c12cf</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntBoolPair</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntBoolPair.html</anchorfile>
+      <anchor>aad94dbcee3e34fc91e4502dbb9b35a73</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntBoolPair</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntBoolPair.html</anchorfile>
+      <anchor>ab6126b2b2a7dd4b6d69d13a237b964ca</anchor>
+      <arglist>(int first, boolean second)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntBoolPair</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntBoolPair.html</anchorfile>
+      <anchor>adf94054722545c4b674078f24278e226</anchor>
+      <arglist>(IntBoolPair other)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>setFirst</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntBoolPair.html</anchorfile>
+      <anchor>adddd1ff233edc7f6be87e473aa68c294</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getFirst</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntBoolPair.html</anchorfile>
+      <anchor>a832ae7da94e1ffaf185faa63bcbefa7c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>setSecond</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntBoolPair.html</anchorfile>
+      <anchor>a74754c39a7e5fc03ad04b14cb23f1e8b</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getSecond</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntBoolPair.html</anchorfile>
+      <anchor>a0ba39eea0a3d487e71655ed853ec99c2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type></type>
+      <name>IntBoolPair</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntBoolPair.html</anchorfile>
+      <anchor>ab79035755676a7c9f427c5845cf98848</anchor>
+      <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -41998,6 +43465,13 @@
       <arglist>(int index)</arglist>
     </member>
     <member kind="function">
+      <type>long</type>
+      <name>getOffset</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
+      <anchor>aa7d6a5c7e69f4efdc6a44b85bbe22f1a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>String</type>
       <name>getShortString</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
@@ -42034,6 +43508,13 @@
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
+      <name>booleanSum</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a2327601f78813fe230278d1ee19b141a</anchor>
+      <arglist>(Literal[] literals)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
       <name>scalProd</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
       <anchor>add2c1c4ca7d2bd87e429a5044df28417</anchor>
@@ -42045,6 +43526,20 @@
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
       <anchor>adc5cb20cefb7b9bfa251adc4a57eb2bb</anchor>
       <arglist>(IntVar[] variables, int[] coefficients)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>booleanScalProd</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
+      <anchor>abc9b462da2d05c47e2707ee570bcbaf5</anchor>
+      <arglist>(Literal[] literals, long[] coefficients)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>booleanScalProd</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
+      <anchor>aaad53f35ba454aa700076b79c1c7c72f</anchor>
+      <arglist>(Literal[] literals, int[] coefficients)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
@@ -44037,12 +45532,26 @@
       <anchor>a2c77626134edecc47b69efe661ea1904</anchor>
       <arglist>(int index)</arglist>
     </member>
+    <member kind="function">
+      <type>long</type>
+      <name>getOffset</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
+      <anchor>aa7d6a5c7e69f4efdc6a44b85bbe22f1a</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
       <name>sum</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
       <anchor>aafaf7ba9f072b09e687ed03fb4d98b4a</anchor>
       <arglist>(IntVar[] variables)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>booleanSum</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a2327601f78813fe230278d1ee19b141a</anchor>
+      <arglist>(Literal[] literals)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
@@ -44057,6 +45566,20 @@
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
       <anchor>adc5cb20cefb7b9bfa251adc4a57eb2bb</anchor>
       <arglist>(IntVar[] variables, int[] coefficients)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>booleanScalProd</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
+      <anchor>abc9b462da2d05c47e2707ee570bcbaf5</anchor>
+      <arglist>(Literal[] literals, long[] coefficients)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>booleanScalProd</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
+      <anchor>aaad53f35ba454aa700076b79c1c7c72f</anchor>
+      <arglist>(Literal[] literals, int[] coefficients)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
@@ -62927,8 +64450,8 @@
       <type>void</type>
       <name>setBreakIntervalsOfVehicle</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html</anchorfile>
-      <anchor>a0a5d9351f284c6ce4b064c582c323904</anchor>
-      <arglist>(IntervalVar[] breaks, int vehicle, long[] node_visit_transits, LongBinaryOperator group_delays)</arglist>
+      <anchor>a6a315abba7809b567ef0281f77b89c32</anchor>
+      <arglist>(IntervalVar[] breaks, int vehicle, long[] node_visit_transits, LongBinaryOperator delays)</arglist>
     </member>
     <member kind="function">
       <type>IntervalVar[]</type>
@@ -63183,9 +64706,9 @@
     </member>
     <member kind="function">
       <type>int</type>
-      <name>RegisterPositiveUnaryTransitCallback</name>
+      <name>registerPositiveUnaryTransitCallback</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
-      <anchor>a24e12cade013d8c86670181493d7dbc1</anchor>
+      <anchor>ab85aa5d8d6971b67704958b85691aad5</anchor>
       <arglist>(LongUnaryOperator callback)</arglist>
     </member>
     <member kind="function">
@@ -63231,25 +64754,18 @@
       <arglist>(int[] evaluator_indices, long slack_max, long[] vehicle_capacities, boolean fix_start_cumul_to_zero, String name)</arglist>
     </member>
     <member kind="function">
-      <type>boolean</type>
+      <type>IntBoolPair</type>
       <name>addConstantDimensionWithSlack</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
-      <anchor>acf1d8da5fb9f06bdbdbdec0d0df39ea6</anchor>
+      <anchor>af111edb9d78528940eb6ce4d9b8fffa3</anchor>
       <arglist>(long value, long capacity, long slack_max, boolean fix_start_cumul_to_zero, String name)</arglist>
     </member>
     <member kind="function">
-      <type>boolean</type>
+      <type>IntBoolPair</type>
       <name>addConstantDimension</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
-      <anchor>a3666f7a1a1b2441e49d4ce3a9b5f402b</anchor>
+      <anchor>a476c0847fe80efe1e3a5fbc5dba9a10b</anchor>
       <arglist>(long value, long capacity, boolean fix_start_cumul_to_zero, String name)</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>addVectorDimension</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
-      <anchor>ae416d6ab8bec12e51d77ec1dd0e39216</anchor>
-      <arglist>(long[] values, long capacity, boolean fix_start_cumul_to_zero, String name)</arglist>
     </member>
     <member kind="function">
       <type>Constraint</type>
@@ -64162,10 +65678,31 @@
       <arglist>(RoutingDimension dimension)</arglist>
     </member>
     <member kind="function">
-      <type>void</type>
+      <type>int</type>
+      <name>registerUnaryTransitVector</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a5d5b216a42d1e2a27fbc004fe6f684d2</anchor>
+      <arglist>(long[] values)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>registerTransitMatrix</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
+      <anchor>aeb3a3d6f530eecc238943c636009b880</anchor>
+      <arglist>(long[][] values)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntBoolPair</type>
+      <name>addVectorDimension</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
+      <anchor>acfafeea42089265c9bad18a59584b1b4</anchor>
+      <arglist>(long[] values, long capacity, boolean fix_start_cumul_to_zero, String name)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntBoolPair</type>
       <name>addMatrixDimension</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
-      <anchor>acc95d7545609ac22ed71d6a50d8d0af3</anchor>
+      <anchor>aaac374b49e54bf37ea3b2b1087977489</anchor>
       <arglist>(long[][] values, long capacity, boolean fix_start_cumul_to_zero, String name)</arglist>
     </member>
     <member kind="function" static="yes">
@@ -67984,6 +69521,20 @@
     </member>
     <member kind="function">
       <type>.lang.Override boolean</type>
+      <name>hasLnsExpandIntervalsInConstraintGraph</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ae22768d4764a2e8f0566615fd5f43b42</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getLnsExpandIntervalsInConstraintGraph</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a42c1ebefe141d3b34a158075f0b8f021</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
       <name>hasUseRinsLns</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>ac859df26c2a28a7024923252b2348dd0</anchor>
@@ -68194,16 +69745,16 @@
     </member>
     <member kind="function">
       <type>.lang.Override boolean</type>
-      <name>hasDetectSymmetries</name>
+      <name>hasSymmetryLevel</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>afca00d28cb3869c55ca312e4fdd09efc</anchor>
+      <anchor>a36d13947e815db968bed7aa38c06ba43</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>.lang.Override boolean</type>
-      <name>getDetectSymmetries</name>
+      <type>.lang.Override int</type>
+      <name>getSymmetryLevel</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a3bd042392e44e478f73019535f9b0590</anchor>
+      <anchor>af31c84d98bbb96349310b8046737d96e</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -69440,6 +70991,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
+      <name>LNS_EXPAND_INTERVALS_IN_CONSTRAINT_GRAPH_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a081a043412502b65084ae4cb073bdc6d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
       <name>USE_RINS_LNS_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a3bf182e59262b81746b7d1ca36f592f2</anchor>
@@ -69545,9 +71103,9 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
-      <name>DETECT_SYMMETRIES_FIELD_NUMBER</name>
+      <name>SYMMETRY_LEVEL_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a92379154e0a6a81052b5e74f64103dfb</anchor>
+      <anchor>aa3a4d5c9681171af486714f84bf7dc29</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -71579,6 +73137,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasLnsExpandIntervalsInConstraintGraph</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a9d4d80552054663b792d7b156430e3e0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getLnsExpandIntervalsInConstraintGraph</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a6653a2d6573353d2f355bd8223e11013</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasUseRinsLns</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>a88dacd6435fc71c48efa44b858f9f59a</anchor>
@@ -71789,16 +73361,16 @@
     </member>
     <member kind="function">
       <type>boolean</type>
-      <name>hasDetectSymmetries</name>
+      <name>hasSymmetryLevel</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
-      <anchor>ad4400c024e423539ef1aa9bdb71ebc62</anchor>
+      <anchor>a0fa4a35e5a5218cf793e4bf2c724b01d</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>boolean</type>
-      <name>getDetectSymmetries</name>
+      <type>int</type>
+      <name>getSymmetryLevel</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
-      <anchor>a9ff0ef98b422b14e607fe18396c9fa31</anchor>
+      <anchor>a154df3b42f8806b51a878342adc18841</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -71955,6 +73527,20 @@
       <arglist>(IntVar[] variables, long[] coefficients)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>ScalProd</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1ScalProd.html</anchorfile>
+      <anchor>a44d2a6541bd74945219f137627bb4be9</anchor>
+      <arglist>(Literal[] literals, long[] coefficients)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>ScalProd</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1ScalProd.html</anchorfile>
+      <anchor>a2ff48665bf063083523bb71540efa6e2</anchor>
+      <arglist>(Literal[] literals)</arglist>
+    </member>
+    <member kind="function">
       <type>int</type>
       <name>numElements</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1ScalProd.html</anchorfile>
@@ -71975,12 +73561,26 @@
       <anchor>a2c77626134edecc47b69efe661ea1904</anchor>
       <arglist>(int index)</arglist>
     </member>
+    <member kind="function">
+      <type>long</type>
+      <name>getOffset</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1ScalProd.html</anchorfile>
+      <anchor>aa7d6a5c7e69f4efdc6a44b85bbe22f1a</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
       <name>sum</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
       <anchor>aafaf7ba9f072b09e687ed03fb4d98b4a</anchor>
       <arglist>(IntVar[] variables)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>booleanSum</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a2327601f78813fe230278d1ee19b141a</anchor>
+      <arglist>(Literal[] literals)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
@@ -71995,6 +73595,20 @@
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
       <anchor>adc5cb20cefb7b9bfa251adc4a57eb2bb</anchor>
       <arglist>(IntVar[] variables, int[] coefficients)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>booleanScalProd</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
+      <anchor>abc9b462da2d05c47e2707ee570bcbaf5</anchor>
+      <arglist>(Literal[] literals, long[] coefficients)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>booleanScalProd</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
+      <anchor>aaad53f35ba454aa700076b79c1c7c72f</anchor>
+      <arglist>(Literal[] literals, int[] coefficients)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
@@ -78531,6 +80145,324 @@
       <arglist>()</arglist>
     </member>
   </compound>
+  <compound kind="class">
+    <name>com::google::ortools::sat::SparsePermutationProto</name>
+    <filename>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</filename>
+    <base>com::google::ortools::sat::SparsePermutationProtoOrBuilder</base>
+    <class kind="class">com::google::ortools::sat::SparsePermutationProto::Builder</class>
+    <member kind="function">
+      <type>.lang.Override final com.google.protobuf.UnknownFieldSet</type>
+      <name>getUnknownFields</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a9595e84f1a265789b99af6f10e024e33</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override java.util.List&lt; java.lang.Integer &gt;</type>
+      <name>getSupportList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a5eeda28703dba2721656ea0d5c18c2e8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getSupportCount</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a894c87d8863d6186c4e920696ea9fe3d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getSupport</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a18938c32a195acdd9167973a2a3738f9</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override java.util.List&lt; java.lang.Integer &gt;</type>
+      <name>getCycleSizesList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a50d42845edfe5d34d8af50be80656163</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getCycleSizesCount</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a7b19aca58e2b244cd17150583e2450df</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getCycleSizes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>ac2c13ac6eda9a6499c4020f1ec4e6a51</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final boolean</type>
+      <name>isInitialized</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a968cb605190759c690e5a97cdc0bb4a1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override void</type>
+      <name>writeTo</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a813eab1fc00c769aad910c480868972b</anchor>
+      <arglist>(com.google.protobuf.CodedOutputStream output)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override int</type>
+      <name>getSerializedSize</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a8342b02c43d81069adc3e820423d92ac</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>equals</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>ad9c7bdd857ca6c970b0d1ba4dadb1f66</anchor>
+      <arglist>(final java.lang.Object obj)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override int</type>
+      <name>hashCode</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>ab55eefa0b7ba9d1dec56bf8bb2b996b3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>newBuilderForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a7a484474c36faf426657f0e94c090dbb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>toBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a77db07dbc1f747f14c5df841ccf5a14c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.protobuf.Parser&lt; SparsePermutationProto &gt;</type>
+      <name>getParserForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a0eb0c9c9aa1db6e717e2382ef41faeb8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.SparsePermutationProto</type>
+      <name>getDefaultInstanceForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a05d1ce4ac977aa679adec30040f79b92</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static final com.google.protobuf.Descriptors.Descriptor</type>
+      <name>getDescriptor</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>ada120643f7710d9df7cad50d6ab2ac51</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SparsePermutationProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a414118005b12e0099a90be77510408b9</anchor>
+      <arglist>(java.nio.ByteBuffer data)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SparsePermutationProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a6d2e243711889b63a10852fda040d973</anchor>
+      <arglist>(java.nio.ByteBuffer data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SparsePermutationProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a54e82e80f964c95aef9033dcb9b7b0bb</anchor>
+      <arglist>(com.google.protobuf.ByteString data)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SparsePermutationProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a8cb316db142ef58290a06d303b8873f7</anchor>
+      <arglist>(com.google.protobuf.ByteString data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SparsePermutationProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a23fe5f8a472ba5422f8c91527b1fe563</anchor>
+      <arglist>(byte[] data)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SparsePermutationProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>aa2524887696ed13252a1efa455bd9c83</anchor>
+      <arglist>(byte[] data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SparsePermutationProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a0b8113f45a9264052bbb1b2f1c88012a</anchor>
+      <arglist>(java.io.InputStream input)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SparsePermutationProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a627e1b2b40d40d7297e78a5f7bcf58e2</anchor>
+      <arglist>(java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SparsePermutationProto</type>
+      <name>parseDelimitedFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a4c939c663657583cecd2cc8644670a9f</anchor>
+      <arglist>(java.io.InputStream input)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SparsePermutationProto</type>
+      <name>parseDelimitedFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>ab8795698a99df6cdf4c0499e68e9a512</anchor>
+      <arglist>(java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SparsePermutationProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>aa9295983b221b4fcdb2b18f12a07dc4a</anchor>
+      <arglist>(com.google.protobuf.CodedInputStream input)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SparsePermutationProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a034c06becd1c06f34b15b02e2addbdd0</anchor>
+      <arglist>(com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Builder</type>
+      <name>newBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>aeff24d3f13ca1e88dc9427c640b64314</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Builder</type>
+      <name>newBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>ad3223798a795b7ed7ba1ba6258887841</anchor>
+      <arglist>(com.google.ortools.sat.SparsePermutationProto prototype)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SparsePermutationProto</type>
+      <name>getDefaultInstance</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a738fac192c5d29a1be56ff3c4467ef52</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.protobuf.Parser&lt; SparsePermutationProto &gt;</type>
+      <name>parser</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>aef630978c7a17c55db79cf50b76fd444</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>SUPPORT_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>ace7d5f0efcebe1d3c3a223ae8b605464</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>CYCLE_SIZES_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a877d4883d22041ba1cb526c9cf49ea7b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>.lang.Override java.lang.Object</type>
+      <name>newInstance</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>acab334d7dcecf2ae3efa8e973142c563</anchor>
+      <arglist>(UnusedPrivateParameter unused)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>.lang.Override com.google.protobuf.GeneratedMessageV3.FieldAccessorTable</type>
+      <name>internalGetFieldAccessorTable</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a933d518fc16e760775083e723eb80b9a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>.lang.Override Builder</type>
+      <name>newBuilderForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto.html</anchorfile>
+      <anchor>a401adfed369d510f3437d16bccf924c3</anchor>
+      <arglist>(com.google.protobuf.GeneratedMessageV3.BuilderParent parent)</arglist>
+    </member>
+  </compound>
+  <compound kind="interface">
+    <name>com::google::ortools::sat::SparsePermutationProtoOrBuilder</name>
+    <filename>interfacecom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProtoOrBuilder.html</filename>
+    <member kind="function">
+      <type>java.util.List&lt; java.lang.Integer &gt;</type>
+      <name>getSupportList</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProtoOrBuilder.html</anchorfile>
+      <anchor>ace2de6d7c6d42b2db42d1e2ba6e753a1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getSupportCount</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProtoOrBuilder.html</anchorfile>
+      <anchor>a894c87d8863d6186c4e920696ea9fe3d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getSupport</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProtoOrBuilder.html</anchorfile>
+      <anchor>a18938c32a195acdd9167973a2a3738f9</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt; java.lang.Integer &gt;</type>
+      <name>getCycleSizesList</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProtoOrBuilder.html</anchorfile>
+      <anchor>aad3b67e507a0103ec18616dae2bff820</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getCycleSizesCount</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProtoOrBuilder.html</anchorfile>
+      <anchor>a7b19aca58e2b244cd17150583e2450df</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getCycleSizes</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProtoOrBuilder.html</anchorfile>
+      <anchor>ac2c13ac6eda9a6499c4020f1ec4e6a51</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+  </compound>
   <compound kind="enum">
     <name>com::google::ortools::graph::LinearSumAssignment::Status</name>
     <filename>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</filename>
@@ -78715,12 +80647,26 @@
       <anchor>a2c77626134edecc47b69efe661ea1904</anchor>
       <arglist>(int index)</arglist>
     </member>
+    <member kind="function">
+      <type>long</type>
+      <name>getOffset</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SumOfVariables.html</anchorfile>
+      <anchor>aa7d6a5c7e69f4efdc6a44b85bbe22f1a</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
       <name>sum</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
       <anchor>aafaf7ba9f072b09e687ed03fb4d98b4a</anchor>
       <arglist>(IntVar[] variables)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>booleanSum</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
+      <anchor>a2327601f78813fe230278d1ee19b141a</anchor>
+      <arglist>(Literal[] literals)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
@@ -78735,6 +80681,20 @@
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
       <anchor>adc5cb20cefb7b9bfa251adc4a57eb2bb</anchor>
       <arglist>(IntVar[] variables, int[] coefficients)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>booleanScalProd</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
+      <anchor>abc9b462da2d05c47e2707ee570bcbaf5</anchor>
+      <arglist>(Literal[] literals, long[] coefficients)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>booleanScalProd</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
+      <anchor>aaad53f35ba454aa700076b79c1c7c72f</anchor>
+      <arglist>(Literal[] literals, int[] coefficients)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static LinearExpr</type>
@@ -78866,6 +80826,380 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SymmetryBreaker.html</anchorfile>
       <anchor>aeb590aba470ae6ec1e69cdad7bb5961c</anchor>
       <arglist>()</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>com::google::ortools::sat::SymmetryProto</name>
+    <filename>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</filename>
+    <base>com::google::ortools::sat::SymmetryProtoOrBuilder</base>
+    <class kind="class">com::google::ortools::sat::SymmetryProto::Builder</class>
+    <member kind="function">
+      <type>.lang.Override final com.google.protobuf.UnknownFieldSet</type>
+      <name>getUnknownFields</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a9595e84f1a265789b99af6f10e024e33</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override java.util.List&lt; com.google.ortools.sat.SparsePermutationProto &gt;</type>
+      <name>getPermutationsList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a3bebb48338d5d5b4888ee8001194a226</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override java.util.List&lt;? extends com.google.ortools.sat.SparsePermutationProtoOrBuilder &gt;</type>
+      <name>getPermutationsOrBuilderList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a5878f747d8eca3b30d9ee8fdd8d92efb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override int</type>
+      <name>getPermutationsCount</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a9834f96e9772f5a12da647c4c9f50d74</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.SparsePermutationProto</type>
+      <name>getPermutations</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>aa08ea419590aa55974a4dafaae6dd145</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.SparsePermutationProtoOrBuilder</type>
+      <name>getPermutationsOrBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>afc7c1f847f21a97b7f0acffb00e2da73</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override java.util.List&lt; com.google.ortools.sat.DenseMatrixProto &gt;</type>
+      <name>getOrbitopesList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a75e287d49b2c0ced0bedc42f73c7b431</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override java.util.List&lt;? extends com.google.ortools.sat.DenseMatrixProtoOrBuilder &gt;</type>
+      <name>getOrbitopesOrBuilderList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>adf9b92933a9d11a10c14372bf1c0dff6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override int</type>
+      <name>getOrbitopesCount</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>af3524b556bba129a0c0f92cc918fa3a2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.DenseMatrixProto</type>
+      <name>getOrbitopes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a2be312c421d176f832f71b9b5f5aed1d</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.DenseMatrixProtoOrBuilder</type>
+      <name>getOrbitopesOrBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>ae99735102e0313844e454c9fcb74fbf5</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final boolean</type>
+      <name>isInitialized</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a968cb605190759c690e5a97cdc0bb4a1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override void</type>
+      <name>writeTo</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a813eab1fc00c769aad910c480868972b</anchor>
+      <arglist>(com.google.protobuf.CodedOutputStream output)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override int</type>
+      <name>getSerializedSize</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a8342b02c43d81069adc3e820423d92ac</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>equals</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>ad9c7bdd857ca6c970b0d1ba4dadb1f66</anchor>
+      <arglist>(final java.lang.Object obj)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override int</type>
+      <name>hashCode</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>ab55eefa0b7ba9d1dec56bf8bb2b996b3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>newBuilderForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a7a484474c36faf426657f0e94c090dbb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>toBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a77db07dbc1f747f14c5df841ccf5a14c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.protobuf.Parser&lt; SymmetryProto &gt;</type>
+      <name>getParserForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a3f20ddd884d57ddc23eb71b90c8f2069</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.SymmetryProto</type>
+      <name>getDefaultInstanceForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a09378122b09da69e5055bf10bbed86a6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static final com.google.protobuf.Descriptors.Descriptor</type>
+      <name>getDescriptor</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>ada120643f7710d9df7cad50d6ab2ac51</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SymmetryProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a01bb84e8b8d0f33fc967d3335c4ee809</anchor>
+      <arglist>(java.nio.ByteBuffer data)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SymmetryProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a9202cd9f3fb614a9ec567174a2adb543</anchor>
+      <arglist>(java.nio.ByteBuffer data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SymmetryProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>af75dc6b48f3e228a4b3424094aa620f9</anchor>
+      <arglist>(com.google.protobuf.ByteString data)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SymmetryProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>aef60a10f67d7a9c305cd5c422aca192d</anchor>
+      <arglist>(com.google.protobuf.ByteString data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SymmetryProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a62b2363c7f7374680f26336d008b026e</anchor>
+      <arglist>(byte[] data)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SymmetryProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a67be9b2a1144414039e45424ea2941e3</anchor>
+      <arglist>(byte[] data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SymmetryProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a4719bcfb1bef1fe4d6190fcac361c7fa</anchor>
+      <arglist>(java.io.InputStream input)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SymmetryProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a0a56bccfdac0756353633322e307c9f6</anchor>
+      <arglist>(java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SymmetryProto</type>
+      <name>parseDelimitedFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a8e6224cd76a25cb3ef6d9c346b9eaead</anchor>
+      <arglist>(java.io.InputStream input)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SymmetryProto</type>
+      <name>parseDelimitedFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>ab166cdb62fc2215fc8849f6f0c1b1340</anchor>
+      <arglist>(java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SymmetryProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a5d92450e9f63efbab66b02d545436f15</anchor>
+      <arglist>(com.google.protobuf.CodedInputStream input)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SymmetryProto</type>
+      <name>parseFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>aea536c81ed0085af516db12de21e816e</anchor>
+      <arglist>(com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Builder</type>
+      <name>newBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>aeff24d3f13ca1e88dc9427c640b64314</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Builder</type>
+      <name>newBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a4abbc00855488e10bc5f56e7abb76dd9</anchor>
+      <arglist>(com.google.ortools.sat.SymmetryProto prototype)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.ortools.sat.SymmetryProto</type>
+      <name>getDefaultInstance</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a7c18da3a664abb30bd854b5a3b4b60f0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.protobuf.Parser&lt; SymmetryProto &gt;</type>
+      <name>parser</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a7b819cba75458db5d9e97163d013b00f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>PERMUTATIONS_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>aef6a35950628ac133a955ba072984ed8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>ORBITOPES_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>ab94c4e0622c2e711d2e393a1944659f0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>.lang.Override java.lang.Object</type>
+      <name>newInstance</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>acab334d7dcecf2ae3efa8e973142c563</anchor>
+      <arglist>(UnusedPrivateParameter unused)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>.lang.Override com.google.protobuf.GeneratedMessageV3.FieldAccessorTable</type>
+      <name>internalGetFieldAccessorTable</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a933d518fc16e760775083e723eb80b9a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>.lang.Override Builder</type>
+      <name>newBuilderForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html</anchorfile>
+      <anchor>a401adfed369d510f3437d16bccf924c3</anchor>
+      <arglist>(com.google.protobuf.GeneratedMessageV3.BuilderParent parent)</arglist>
+    </member>
+  </compound>
+  <compound kind="interface">
+    <name>com::google::ortools::sat::SymmetryProtoOrBuilder</name>
+    <filename>interfacecom_1_1google_1_1ortools_1_1sat_1_1SymmetryProtoOrBuilder.html</filename>
+    <member kind="function">
+      <type>java.util.List&lt; com.google.ortools.sat.SparsePermutationProto &gt;</type>
+      <name>getPermutationsList</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SymmetryProtoOrBuilder.html</anchorfile>
+      <anchor>a221461d9f1d6237ef017f8fee91d0aee</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.SparsePermutationProto</type>
+      <name>getPermutations</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SymmetryProtoOrBuilder.html</anchorfile>
+      <anchor>ae0401a9fc771e133e685105859d2dc4e</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getPermutationsCount</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SymmetryProtoOrBuilder.html</anchorfile>
+      <anchor>aca5ad40a0e55a839ca7d2738a38a462d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt;? extends com.google.ortools.sat.SparsePermutationProtoOrBuilder &gt;</type>
+      <name>getPermutationsOrBuilderList</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SymmetryProtoOrBuilder.html</anchorfile>
+      <anchor>a99abb0a616fca1cd03eed5bd71ed0bf7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.SparsePermutationProtoOrBuilder</type>
+      <name>getPermutationsOrBuilder</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SymmetryProtoOrBuilder.html</anchorfile>
+      <anchor>aabed95f497281421e62ce0e724632ed2</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt; com.google.ortools.sat.DenseMatrixProto &gt;</type>
+      <name>getOrbitopesList</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SymmetryProtoOrBuilder.html</anchorfile>
+      <anchor>a1e6c5fa6544e03f01ba0a27649634b4c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.DenseMatrixProto</type>
+      <name>getOrbitopes</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SymmetryProtoOrBuilder.html</anchorfile>
+      <anchor>a2a849faf65a73e6c95486046e5bff4df</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getOrbitopesCount</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SymmetryProtoOrBuilder.html</anchorfile>
+      <anchor>a7143f3bb383ec91eb32b1626e59e8df3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt;? extends com.google.ortools.sat.DenseMatrixProtoOrBuilder &gt;</type>
+      <name>getOrbitopesOrBuilderList</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SymmetryProtoOrBuilder.html</anchorfile>
+      <anchor>a53fc8e11b30e92fa95e3fbc107dde65b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.DenseMatrixProtoOrBuilder</type>
+      <name>getOrbitopesOrBuilder</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SymmetryProtoOrBuilder.html</anchorfile>
+      <anchor>a6081006cfa005f9ec52841e9fa435af0</anchor>
+      <arglist>(int index)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -80487,6 +82821,7 @@
     <class kind="interface">com::google::ortools::constraintsolver::FirstSolutionStrategyOrBuilder</class>
     <class kind="class">com::google::ortools::constraintsolver::GlobalVehicleBreaksConstraint</class>
     <class kind="class">com::google::ortools::constraintsolver::ImprovementSearchLimit</class>
+    <class kind="class">com::google::ortools::constraintsolver::IntBoolPair</class>
     <class kind="class">com::google::ortools::constraintsolver::IntervalVar</class>
     <class kind="class">com::google::ortools::constraintsolver::IntervalVarElement</class>
     <class kind="class">com::google::ortools::constraintsolver::IntExpr</class>
@@ -80632,6 +82967,8 @@
     <class kind="interface">com::google::ortools::sat::CumulativeConstraintProtoOrBuilder</class>
     <class kind="class">com::google::ortools::sat::DecisionStrategyProto</class>
     <class kind="interface">com::google::ortools::sat::DecisionStrategyProtoOrBuilder</class>
+    <class kind="class">com::google::ortools::sat::DenseMatrixProto</class>
+    <class kind="interface">com::google::ortools::sat::DenseMatrixProtoOrBuilder</class>
     <class kind="class">com::google::ortools::sat::ElementConstraintProto</class>
     <class kind="interface">com::google::ortools::sat::ElementConstraintProtoOrBuilder</class>
     <class kind="class">com::google::ortools::sat::IntegerArgumentProto</class>
@@ -80663,6 +83000,10 @@
     <class kind="interface">com::google::ortools::sat::SatParametersOrBuilder</class>
     <class kind="class">com::google::ortools::sat::SatParametersOuterClass</class>
     <class kind="class">com::google::ortools::sat::SolutionCallback</class>
+    <class kind="class">com::google::ortools::sat::SparsePermutationProto</class>
+    <class kind="interface">com::google::ortools::sat::SparsePermutationProtoOrBuilder</class>
+    <class kind="class">com::google::ortools::sat::SymmetryProto</class>
+    <class kind="interface">com::google::ortools::sat::SymmetryProtoOrBuilder</class>
     <class kind="class">com::google::ortools::sat::TableConstraintProto</class>
     <class kind="interface">com::google::ortools::sat::TableConstraintProtoOrBuilder</class>
     <class kind="class">com::google::ortools::sat::Constraint</class>

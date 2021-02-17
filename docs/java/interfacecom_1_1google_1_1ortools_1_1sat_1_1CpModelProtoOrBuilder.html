@@ -150,6 +150,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a8b1753ec9db75b7568d15e0a1b02db4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2de3b2818e74a82a51f187923e3564ef"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a2de3b2818e74a82a51f187923e3564ef">getAssumptions</a> (int index)</td></tr>
 <tr class="separator:a2de3b2818e74a82a51f187923e3564ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab5ee927bda7d8234143265b32c333b97"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#ab5ee927bda7d8234143265b32c333b97">hasSymmetry</a> ()</td></tr>
+<tr class="separator:ab5ee927bda7d8234143265b32c333b97"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a34979a66d0fda4afc6f58acdb31506f6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html">com.google.ortools.sat.SymmetryProto</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a34979a66d0fda4afc6f58acdb31506f6">getSymmetry</a> ()</td></tr>
+<tr class="separator:a34979a66d0fda4afc6f58acdb31506f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39d81a7e80725f6bd037217ef5f339cb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SymmetryProtoOrBuilder.html">com.google.ortools.sat.SymmetryProtoOrBuilder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html#a39d81a7e80725f6bd037217ef5f339cb">getSymmetryOrBuilder</a> ()</td></tr>
+<tr class="separator:a39d81a7e80725f6bd037217ef5f339cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a2de3b2818e74a82a51f187923e3564ef"></a>
@@ -662,6 +668,56 @@ optimal solutions.
 
 </div>
 </div>
+<a id="a34979a66d0fda4afc6f58acdb31506f6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a34979a66d0fda4afc6f58acdb31506f6">&#9670;&nbsp;</a></span>getSymmetry()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto.html">com.google.ortools.sat.SymmetryProto</a> getSymmetry </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+For now, this is not meant to be filled by a client writing a model, but
+by our preprocessing step.
+Information about the symmetries of the feasible solution space.
+These usually leaves the objective invariant.
+</pre><p><code>.operations_research.sat.SymmetryProto symmetry = 8;</code> </p><dl class="section return"><dt>Returns</dt><dd>The symmetry. </dd></dl>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#a34979a66d0fda4afc6f58acdb31506f6">CpModelProto.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a35be012cf126c8fea1dbaa974a930239">CpModelProto</a>.</p>
+
+</div>
+</div>
+<a id="a39d81a7e80725f6bd037217ef5f339cb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a39d81a7e80725f6bd037217ef5f339cb">&#9670;&nbsp;</a></span>getSymmetryOrBuilder()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SymmetryProtoOrBuilder.html">com.google.ortools.sat.SymmetryProtoOrBuilder</a> getSymmetryOrBuilder </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+For now, this is not meant to be filled by a client writing a model, but
+by our preprocessing step.
+Information about the symmetries of the feasible solution space.
+These usually leaves the objective invariant.
+</pre><p><code>.operations_research.sat.SymmetryProto symmetry = 8;</code> </p>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#a39d81a7e80725f6bd037217ef5f339cb">CpModelProto.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#aa7b41bf93a2031648deb4921a3d3a16a">CpModelProto</a>.</p>
+
+</div>
+</div>
 <a id="a9ca5049d8cbcc25ceffee32012cf3048"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9ca5049d8cbcc25ceffee32012cf3048">&#9670;&nbsp;</a></span>getVariables()</h2>
 
@@ -823,6 +879,31 @@ optimal solutions.
 </pre><p><code>.operations_research.sat.PartialVariableAssignment solution_hint = 6;</code> </p><dl class="section return"><dt>Returns</dt><dd>Whether the solutionHint field is set. </dd></dl>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#a1e7abe2918ca2dc8b75680a85ba23ceb">CpModelProto.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a65f40cabac3e43c6b10902ce4a301102">CpModelProto</a>.</p>
+
+</div>
+</div>
+<a id="ab5ee927bda7d8234143265b32c333b97"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab5ee927bda7d8234143265b32c333b97">&#9670;&nbsp;</a></span>hasSymmetry()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean hasSymmetry </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+For now, this is not meant to be filled by a client writing a model, but
+by our preprocessing step.
+Information about the symmetries of the feasible solution space.
+These usually leaves the objective invariant.
+</pre><p><code>.operations_research.sat.SymmetryProto symmetry = 8;</code> </p><dl class="section return"><dt>Returns</dt><dd>Whether the symmetry field is set. </dd></dl>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#ab5ee927bda7d8234143265b32c333b97">CpModelProto.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#a5ea934b7881b35cc43db47897b8b9761">CpModelProto</a>.</p>
 
 </div>
 </div>
