@@ -57,7 +57,7 @@ def CopyModelSat():
     copy_x = copy.GetIntVarFromProtoIndex(x.Index())
     copy_y = copy.GetIntVarFromProtoIndex(y.Index())
 
-    model.Add(copy_x + copy_y <= 1)
+    copy.Add(copy_x + copy_y <= 1)
     status = solver.Solve(copy)
 
     if status == cp_model.OPTIMAL:

@@ -1419,7 +1419,7 @@ class CpModel(object):
     # Support for deep copy.
     def CopyFrom(self, other_model):
         """Reset the model, and creates a new one from a CpModelProto instance."""
-        self.__model = other_model.Proto()
+        self.__model.CopyFrom(other_model.Proto())
 
         # Rebuild constant map.
         self.__constant_map.clear()
