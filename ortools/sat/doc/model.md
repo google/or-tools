@@ -16,7 +16,7 @@
          * [Python code](#python-code-1)
          * [C   code](#c-code-2)
 
-<!-- Added by: lperron, at: Wed Feb 17 18:22:38 CET 2021 -->
+<!-- Added by: lperron, at: Wed Feb 17 18:36:47 CET 2021 -->
 
 <!--te-->
 
@@ -350,7 +350,7 @@ def CopyModelSat():
   copy_x = copy.GetIntVarFromProtoIndex(x.Index())
   copy_y = copy.GetIntVarFromProtoIndex(y.Index())
 
-  model.Add(copy_x + copy_y <= 1)
+  copy.Add(copy_x + copy_y <= 1)
   status = solver.Solve(copy)
 
   if status == cp_model.OPTIMAL:
