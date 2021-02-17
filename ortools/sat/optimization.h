@@ -35,7 +35,10 @@ namespace sat {
 // removed.
 //
 // Note that this function doest NOT preserve the order of Literal in the core.
-void MinimizeCoreWithPropagation(SatSolver* solver, std::vector<Literal>* core);
+//
+// TODO(user): Avoid spending too much time trying to minimize a core.
+void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
+                                 std::vector<Literal>* core);
 
 // Because the Solve*() functions below are also used in scripts that requires a
 // special output format, we use this to tell them whether or not to use the

@@ -315,10 +315,31 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   graph->Build();
   DCHECK_EQ(graph->num_nodes(), initial_equivalence_classes->size());
 
+  // TODO(user): The symmetry code does not officially support multi-arcs. And
+  // we shouldn't have any as long as there is no duplicates variable in our
+  // constraints (but of course, we can't always guarantee that). That said,
+  // because the symmetry code really only look at the degree, it works as long
+  // as the maximum degree is bounded by num_nodes.
+  const int num_nodes = graph->num_nodes();
+  std::vector<int> in_degree(num_nodes, 0);
+  std::vector<int> out_degree(num_nodes, 0);
+  for (int i = 0; i < num_nodes; ++i) {
+    out_degree[i] = graph->OutDegree(i);
+    for (const int head : (*graph)[i]) {
+      in_degree[head]++;
+    }
+  }
+  for (int i = 0; i < num_nodes; ++i) {
+    if (in_degree[i] >= num_nodes || out_degree[i] >= num_nodes) {
+      LOG(ERROR) << "Too many multi-arcs";
+      return nullptr;
+    }
+  }
+
   // Because this code is running during presolve, a lot a variable might have
   // no edges. We do not want to detect symmetries between these.
   //
-  // Note that this code forces us to "densify" the ids aftewards because the
+  // Note that this code forces us to "densify" the ids afterwards because the
   // symmetry detection code relies on that.
   //
   // TODO(user): It will probably be more efficient to not even create these

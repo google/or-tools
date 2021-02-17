@@ -454,11 +454,22 @@ class IntVar(LinearExpr):
     def __init__(self, model, domain, name):
         """See CpModel.NewIntVar below."""
         self.__model = model
-        self.__index = len(model.variables)
-        self.__var = model.variables.add()
-        self.__var.domain.extend(domain.FlattenedIntervals())
-        self.__var.name = name
         self.__negation = None
+        # Python do not support multiple __init__ methods.
+        # This method is only called from the CpModel class.
+        # We hack the parameter to support the two cases:
+        # case 1:
+        #     model is a CpModelProto, domain is a Domain, and name is a string.
+        # case 2:
+        #     model is a CpModelProto, domain is an index (int), and name is None.
+        if isinstance(domain, numbers.Integral) and name is None:
+            self.__index = domain
+            self.__var = model.variables[domain]
+        else:
+            self.__index = len(model.variables)
+            self.__var = model.variables.add()
+            self.__var.domain.extend(domain.FlattenedIntervals())
+            self.__var.name = name
 
     def Index(self):
         """Returns the index of the variable in the model."""
@@ -638,15 +649,28 @@ class IntervalVar(object):
     def __init__(self, model, start_index, size_index, end_index,
                  is_present_index, name):
         self.__model = model
-        self.__index = len(model.constraints)
-        self.__ct = self.__model.constraints.add()
-        self.__ct.interval.start = start_index
-        self.__ct.interval.size = size_index
-        self.__ct.interval.end = end_index
-        if is_present_index is not None:
-            self.__ct.enforcement_literal.append(is_present_index)
-        if name:
-            self.__ct.name = name
+        # As with the IntVar::__init__ method, we hack the __init__ method to
+        # support two use cases:
+        #   case 1: called when creating a new interval variable.
+        #      {start|size|end}_index are indices of integer variables
+        #      is_present_index is either None or the index of a Boolean literal.
+        #      name is a string
+        #   case 2: called when querying an existing interval variable.
+        #      start_index is an int, all parameters after are None.
+        if (size_index is None and end_index is None and
+                is_present_index is None and name is None):
+            self.__index = start_index
+            self.__ct = model.constraints[start_index]
+        else:
+            self.__index = len(model.constraints)
+            self.__ct = self.__model.constraints.add()
+            self.__ct.interval.start = start_index
+            self.__ct.interval.size = size_index
+            self.__ct.interval.end = end_index
+            if is_present_index is not None:
+                self.__ct.enforcement_literal.append(is_present_index)
+            if name:
+                self.__ct.name = name
 
     def Index(self):
         """Returns the index of the interval constraint in the model."""
@@ -689,7 +713,6 @@ class CpModel(object):
     def __init__(self):
         self.__model = cp_model_pb2.CpModelProto()
         self.__constant_map = {}
-        self.__optional_constant_map = {}
 
     # Integer variable.
 
@@ -733,7 +756,8 @@ class CpModel(object):
 
     def NewConstant(self, value):
         """Declares a constant integer."""
-        return IntVar(self.__model, Domain(value, value), '')
+        return IntVar(self.__model, self.GetOrMakeIndexFromConstant(value),
+                      None)
 
     # Linear constraints.
 
@@ -1391,6 +1415,50 @@ class CpModel(object):
             [self.GetOrMakeIndex(x) for x in demands])
         model_ct.cumulative.capacity = self.GetOrMakeIndex(capacity)
         return ct
+
+    # Support for deep copy.
+    def CopyFrom(self, other_model):
+        """Reset the model, and creates a new one from a CpModelProto instance."""
+        self.__model = other_model.Proto()
+
+        # Rebuild constant map.
+        self.__constant_map.clear()
+        for i, var in enumerate(self.__model.variables):
+            if len(var.domain) == 2 and var.domain[0] == var.domain[1]:
+                self.__constant_map[var.domain[0]] = i
+
+    def GetBoolVarFromProtoIndex(self, index):
+        """Returns an already created Boolean variable from its index."""
+        if index < 0 or index >= len(self.__model.variables):
+            raise ValueError(
+                f'GetBoolVarFromProtoIndex: out of bound index {index}')
+        var = self.__model.variables[index]
+        if len(var.domain) != 2 or var.domain[0] < 0 or var.domain[1] > 1:
+            raise ValueError(
+                f'GetBoolVarFromProtoIndex: index {index} does not reference' +
+                ' a Boolean variable')
+
+        return IntVar(self.__model, index, None)
+
+    def GetIntVarFromProtoIndex(self, index):
+        """Returns an already created integer variable from its index."""
+        if index < 0 or index >= len(self.__model.variables):
+            raise ValueError(
+                f'GetIntVarFromProtoIndex: out of bound index {index}')
+        return IntVar(self.__model, index, None)
+
+    def GetIntervalVarFromProtoIndex(self, index):
+        """Returns an already created interval variable from its index."""
+        if index < 0 or index >= len(self.__model.constraints):
+            raise ValueError(
+                f'GetIntervalVarFromProtoIndex: out of bound index {index}')
+        ct = self.__model.constraints[index]
+        if not ct.HasField('interval'):
+            raise ValueError(
+                f'GetIntervalVarFromProtoIndex: index {index} does not reference an'
+                + ' interval variable')
+
+        return IntervalVar(self.__model, index, None, None, None, None)
 
     # Helpers.
 

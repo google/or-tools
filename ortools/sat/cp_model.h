@@ -878,6 +878,18 @@ class CpModelBuilder {
   const CpModelProto& Proto() const { return cp_model_; }
   CpModelProto* MutableProto() { return &cp_model_; }
 
+  /// Replace the current model with the one from the given proto.
+  void CopyFrom(const CpModelProto& model_proto);
+
+  /// Returns the Boolean variable from its index in the proto.
+  BoolVar GetBoolVarFromProtoIndex(int index);
+
+  /// Returns the integer variable from its index in the proto.
+  IntVar GetIntVarFromProtoIndex(int index);
+
+  /// Returns the interval variable from its index in the proto.
+  IntervalVar GetIntervalVarFromProtoIndex(int index);
+
  private:
   friend class CumulativeConstraint;
   friend class ReservoirConstraint;

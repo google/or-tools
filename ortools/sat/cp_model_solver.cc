@@ -1600,9 +1600,10 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
           solution_info);
 
       // Extract a good subset of assumptions and add it to the response.
+      auto* time_limit = model->GetOrCreate<TimeLimit>();
       auto* sat_solver = model->GetOrCreate<SatSolver>();
       std::vector<Literal> core = sat_solver->GetLastIncompatibleDecisions();
-      MinimizeCoreWithPropagation(sat_solver, &core);
+      MinimizeCoreWithPropagation(time_limit, sat_solver, &core);
       std::vector<int> core_in_proto_format;
       for (const Literal l : core) {
         core_in_proto_format.push_back(

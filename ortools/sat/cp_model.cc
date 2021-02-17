@@ -348,8 +348,8 @@ int CpModelBuilder::GetOrCreateIntegerIndex(int index) {
     return index;
   }
   if (!gtl::ContainsKey(bool_to_integer_index_map_, index)) {
-    const int ref = PositiveRef(index);
-    const IntegerVariableProto& old_var = cp_model_.variables(ref);
+    const int var = PositiveRef(index);
+    const IntegerVariableProto& old_var = cp_model_.variables(var);
     const int new_index = cp_model_.variables_size();
     IntegerVariableProto* const new_var = cp_model_.add_variables();
     new_var->add_domain(0);
@@ -812,6 +812,52 @@ void CpModelBuilder::AddAssumptions(absl::Span<const BoolVar> literals) {
 
 void CpModelBuilder::ClearAssumptions() {
   cp_model_.mutable_assumptions()->Clear();
+}
+
+void CpModelBuilder::CopyFrom(const CpModelProto& model_proto) {
+  cp_model_ = model_proto;
+  // Rebuild constant to index map.
+  constant_to_index_map_.clear();
+  for (int i = 0; i < cp_model_.variables_size(); ++i) {
+    const IntegerVariableProto& var = cp_model_.variables(i);
+    if (var.domain_size() == 2 && var.domain(0) == var.domain(1)) {
+      constant_to_index_map_[var.domain(0)] = i;
+    }
+  }
+  // This one would be more complicated to rebuild. Let's just clear it.
+  bool_to_integer_index_map_.clear();
+}
+
+BoolVar CpModelBuilder::GetBoolVarFromProtoIndex(int index) {
+  CHECK_GE(index, 0);
+  CHECK_LT(index, cp_model_.variables_size());
+  const IntegerVariableProto& proto = cp_model_.variables(index);
+  CHECK_EQ(2, proto.domain_size())
+      << "CpModelBuilder::GetBoolVarFromProtoIndex: The domain of the variable "
+         "is not Boolean";
+  CHECK_GE(0, proto.domain(0))
+      << "CpModelBuilder::GetBoolVarFromProtoIndex: The domain of the variable "
+         "is not Boolean";
+  CHECK_LE(1, proto.domain(1))
+      << "CpModelBuilder::GetBoolVarFromProtoIndex: The domain of the variable "
+         "is not Boolean";
+  return BoolVar(index, &cp_model_);
+}
+
+IntVar CpModelBuilder::GetIntVarFromProtoIndex(int index) {
+  CHECK_GE(index, 0);
+  CHECK_LT(index, cp_model_.variables_size());
+  return IntVar(index, &cp_model_);
+}
+
+IntervalVar CpModelBuilder::GetIntervalVarFromProtoIndex(int index) {
+  CHECK_GE(index, 0);
+  CHECK_LT(index, cp_model_.constraints_size());
+  const ConstraintProto& ct = cp_model_.constraints(index);
+  CHECK_EQ(ct.constraint_case(), ConstraintProto::kInterval)
+      << "CpModelBuilder::GetIntervalVarFromProtoIndex: the referenced "
+         "object is not an interval variable";
+  return IntervalVar(index, &cp_model_);
 }
 
 int64 SolutionIntegerValue(const CpSolverResponse& r, const LinearExpr& expr) {

@@ -215,7 +215,7 @@ class FuMalikSymmetryBreaker {
 
 }  // namespace
 
-void MinimizeCoreWithPropagation(SatSolver* solver,
+void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
                                  std::vector<Literal>* core) {
   if (solver->IsModelUnsat()) return;
   std::set<LiteralIndex> moved_last;
@@ -223,7 +223,7 @@ void MinimizeCoreWithPropagation(SatSolver* solver,
 
   solver->Backtrack(0);
   solver->SetAssumptionLevel(0);
-  while (true) {
+  while (!limit->LimitReached()) {
     // We want each literal in candidate to appear last once in our propagation
     // order. We want to do that while maximizing the reutilization of the
     // current assignment prefix, that is minimizing the number of
@@ -232,7 +232,7 @@ void MinimizeCoreWithPropagation(SatSolver* solver,
         moved_last, solver->CurrentDecisionLevel(), &candidate);
     if (target_level == -1) break;
     solver->Backtrack(target_level);
-    while (!solver->IsModelUnsat() &&
+    while (!solver->IsModelUnsat() && !limit->LimitReached() &&
            solver->CurrentDecisionLevel() < candidate.size()) {
       const Literal decision = candidate[solver->CurrentDecisionLevel()];
       if (solver->Assignment().LiteralIsTrue(decision)) {
@@ -1220,7 +1220,7 @@ SatSolver::Status FindCores(std::vector<Literal> assumptions,
     if (result != SatSolver::ASSUMPTIONS_UNSAT) return result;
     std::vector<Literal> core = sat_solver->GetLastIncompatibleDecisions();
     if (sat_solver->parameters().minimize_core()) {
-      MinimizeCoreWithPropagation(sat_solver, &core);
+      MinimizeCoreWithPropagation(limit, sat_solver, &core);
     }
     CHECK(!core.empty());
     cores->push_back(core);
@@ -1282,7 +1282,7 @@ SatSolver::Status FindMultipleCoresForMaxHs(
     if (result != SatSolver::ASSUMPTIONS_UNSAT) return result;
     std::vector<Literal> core = sat_solver->GetLastIncompatibleDecisions();
     if (sat_solver->parameters().minimize_core()) {
-      MinimizeCoreWithPropagation(sat_solver, &core);
+      MinimizeCoreWithPropagation(limit, sat_solver, &core);
     }
     CHECK(!core.empty());
     cores->push_back(core);
