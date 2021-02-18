@@ -16,6 +16,9 @@ class TestRoutingIndexManager(unittest.TestCase):
         self.assertEqual(42, manager.GetNumberOfNodes())
         self.assertEqual(3, manager.GetNumberOfVehicles())
         self.assertEqual(42+3*2-1, manager.GetNumberOfIndices())
+        for i in range(manager.GetNumberOfVehicles()):
+            self.assertEqual(7, manager.IndexToNode(manager.GetStartIndex(i)))
+            self.assertEqual(7, manager.IndexToNode(manager.GetEndIndex(i)))
 
     def test_ctor_multi_same(self):
         manager = pywrapcp.RoutingIndexManager(42, 3, [0,0,0], [0,0,0])
@@ -23,6 +26,9 @@ class TestRoutingIndexManager(unittest.TestCase):
         self.assertEqual(42, manager.GetNumberOfNodes())
         self.assertEqual(3, manager.GetNumberOfVehicles())
         self.assertEqual(42+3*2-1, manager.GetNumberOfIndices())
+        for i in range(manager.GetNumberOfVehicles()):
+            self.assertEqual(0, manager.IndexToNode(manager.GetStartIndex(i)))
+            self.assertEqual(0, manager.IndexToNode(manager.GetEndIndex(i)))
 
     def test_ctor_multi_all_diff(self):
         manager = pywrapcp.RoutingIndexManager(42, 3, [1,2,3], [4,5,6])
@@ -30,6 +36,9 @@ class TestRoutingIndexManager(unittest.TestCase):
         self.assertEqual(42, manager.GetNumberOfNodes())
         self.assertEqual(3, manager.GetNumberOfVehicles())
         self.assertEqual(42, manager.GetNumberOfIndices())
+        for i in range(manager.GetNumberOfVehicles()):
+            self.assertEqual(i+1, manager.IndexToNode(manager.GetStartIndex(i)))
+            self.assertEqual(i+4, manager.IndexToNode(manager.GetEndIndex(i)))
 
 
 class TestRoutingModel(unittest.TestCase):
@@ -47,7 +56,11 @@ class TestRoutingModel(unittest.TestCase):
         self.assertIsNotNone(manager)
         routing = pywrapcp.RoutingModel(manager)
         self.assertIsNotNone(routing)
-        self.assertTrue(routing.Solve())
+        self.assertEqual(routing.ROUTING_NOT_SOLVED, routing.status())
+        assignment = routing.Solve()
+        self.assertEqual(routing.ROUTING_SUCCESS, routing.status())
+        self.assertIsNotNone(assignment)
+        self.assertEqual(0, assignment.ObjectiveValue())
 
     def test_unary_transit_vector(self):
         manager = pywrapcp.RoutingIndexManager(5, 2, 0)
@@ -57,7 +70,11 @@ class TestRoutingModel(unittest.TestCase):
         transit_id = routing.RegisterUnaryTransitVector([i+1 for i in range(5)])
         self.assertEqual(1, transit_id)
         routing.SetArcCostEvaluatorOfAllVehicles(transit_id)
-        self.assertTrue(routing.Solve())
+        self.assertEqual(routing.ROUTING_NOT_SOLVED, routing.status())
+        assignment = routing.Solve()
+        self.assertEqual(routing.ROUTING_SUCCESS, routing.status())
+        self.assertIsNotNone(assignment)
+        self.assertEqual(15, assignment.ObjectiveValue())
 
     def test_unary_transit_callback(self):
         manager = pywrapcp.RoutingIndexManager(5, 2, 0)
@@ -67,7 +84,11 @@ class TestRoutingModel(unittest.TestCase):
         transit_id = routing.RegisterUnaryTransitCallback(lambda from_index: 1)
         self.assertEqual(1, transit_id)
         routing.SetArcCostEvaluatorOfAllVehicles(transit_id)
-        self.assertTrue(routing.Solve())
+        self.assertEqual(routing.ROUTING_NOT_SOLVED, routing.status())
+        assignment = routing.Solve()
+        self.assertEqual(routing.ROUTING_SUCCESS, routing.status())
+        self.assertIsNotNone(assignment)
+        self.assertEqual(5, assignment.ObjectiveValue())
 
     def test_transit_matrix(self):
         manager = pywrapcp.RoutingIndexManager(5, 2, 0)
@@ -78,7 +99,11 @@ class TestRoutingModel(unittest.TestCase):
         transit_id = routing.RegisterTransitMatrix(matrix)
         self.assertEqual(1, transit_id)
         routing.SetArcCostEvaluatorOfAllVehicles(transit_id)
-        self.assertTrue(routing.Solve())
+        self.assertEqual(routing.ROUTING_NOT_SOLVED, routing.status())
+        assignment = routing.Solve()
+        self.assertEqual(routing.ROUTING_SUCCESS, routing.status())
+        self.assertIsNotNone(assignment)
+        self.assertEqual(15, assignment.ObjectiveValue())
 
     def test_transit_callback(self):
         manager = pywrapcp.RoutingIndexManager(5, 2, 0)
@@ -88,32 +113,30 @@ class TestRoutingModel(unittest.TestCase):
         transit_id = routing.RegisterTransitCallback(lambda from_index, to_indx: 1)
         self.assertEqual(1, transit_id)
         routing.SetArcCostEvaluatorOfAllVehicles(transit_id)
-        self.assertTrue(routing.Solve())
-
-    def test_pair(self):
-        p = pywrapcp.IntBoolPair(5, True)
-        if __debug__:
-            print(f"class IntBoolPair: {dir(p)}")
-        self.assertEqual(5, p[0])
-        self.assertEqual(True, p[1])
+        self.assertEqual(routing.ROUTING_NOT_SOLVED, routing.status())
+        assignment = routing.Solve()
+        self.assertEqual(routing.ROUTING_SUCCESS, routing.status())
+        self.assertIsNotNone(assignment)
+        self.assertEqual(5, assignment.ObjectiveValue())
 
     def test_vector_dimension(self):
         manager = pywrapcp.RoutingIndexManager(5, 2, 0)
         self.assertIsNotNone(manager)
         routing = pywrapcp.RoutingModel(manager)
         self.assertIsNotNone(routing)
-        res = routing.AddVectorDimension(
+        transit_id, success = routing.AddVectorDimension(
                 [i+1 for i in range(5)],
                 10, # capacity
                 True, # fix_start_cumul_to_zero
                 "DimensionName")
-        if __debug__:
-            print(f"class IntBoolPair: {dir(res)}")
-            print(f"result: {res}")
-        self.assertEqual(res[0], 1)
-        self.assertEqual(res[1], True)
-        routing.SetArcCostEvaluatorOfAllVehicles(res[0])
-        self.assertTrue(routing.Solve())
+        self.assertTrue(success)
+        self.assertEqual(transit_id, 1)
+        routing.SetArcCostEvaluatorOfAllVehicles(transit_id)
+        self.assertEqual(routing.ROUTING_NOT_SOLVED, routing.status())
+        assignment = routing.Solve()
+        self.assertEqual(routing.ROUTING_SUCCESS, routing.status())
+        self.assertIsNotNone(assignment)
+        self.assertEqual(16, assignment.ObjectiveValue())
 
     def test_matrix_dimension(self):
         manager = pywrapcp.RoutingIndexManager(5, 2, 0)
@@ -121,18 +144,19 @@ class TestRoutingModel(unittest.TestCase):
         routing = pywrapcp.RoutingModel(manager)
         self.assertIsNotNone(routing)
         matrix = [[i+1 for i in range(5)] for j in range(5)]
-        res = routing.AddMatrixDimension(
+        transit_id, success = routing.AddMatrixDimension(
                 matrix,
                 10, # capacity
                 True, # fix_start_cumul_to_zero
                 "DimensionName")
-        if __debug__:
-            print(f"class IntBoolPair: {dir(res)}")
-            print(f"result: {res}")
-        self.assertEqual(res[0], 1)
-        self.assertEqual(res[1], True)
-        routing.SetArcCostEvaluatorOfAllVehicles(res[0])
-        self.assertTrue(routing.Solve())
+        self.assertTrue(success)
+        self.assertEqual(transit_id, 1)
+        routing.SetArcCostEvaluatorOfAllVehicles(transit_id)
+        self.assertEqual(routing.ROUTING_NOT_SOLVED, routing.status())
+        assignment = routing.Solve()
+        self.assertEqual(routing.ROUTING_SUCCESS, routing.status())
+        self.assertIsNotNone(assignment)
+        self.assertEqual(16, assignment.ObjectiveValue())
 
     def test_matrix_dimension_2(self):
         manager = pywrapcp.RoutingIndexManager(5, 2, 0)
@@ -140,15 +164,21 @@ class TestRoutingModel(unittest.TestCase):
         routing = pywrapcp.RoutingModel(manager)
         self.assertIsNotNone(routing)
         matrix = [[i+1 for i in range(5)] for j in range(5)]
-        routing.AddMatrixDimension(
+        transit_id, success = routing.AddMatrixDimension(
                 matrix,
                 10, # capacity
                 True, # fix_start_cumul_to_zero
                 "DimensionName")
-        transit_id = routing.RegisterTransitMatrix(matrix)
-        self.assertEqual(2, transit_id)
-        routing.SetArcCostEvaluatorOfAllVehicles(transit_id)
-        self.assertTrue(routing.Solve())
+        self.assertTrue(success)
+        self.assertEqual(transit_id, 1)
+        transit2_id = routing.RegisterTransitMatrix(matrix)
+        self.assertEqual(transit2_id, 2)
+        routing.SetArcCostEvaluatorOfAllVehicles(transit2_id)
+        self.assertEqual(routing.ROUTING_NOT_SOLVED, routing.status())
+        assignment = routing.Solve()
+        self.assertEqual(routing.ROUTING_SUCCESS, routing.status())
+        self.assertIsNotNone(assignment)
+        self.assertEqual(16, assignment.ObjectiveValue())
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
