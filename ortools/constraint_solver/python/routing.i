@@ -83,7 +83,6 @@ DEFINE_INDEX_TYPE_TYPEDEF(
     int64 capacity,
     bool fix_start_cumul_to_zero,
     const std::string& name) {
-    //return $self->AddVectorDimension(values, capacity, fix_start_cumul_to_zero, name).first;
     return $self->AddVectorDimension(values, capacity, fix_start_cumul_to_zero, name);
   }
 
@@ -97,7 +96,6 @@ DEFINE_INDEX_TYPE_TYPEDEF(
     int64 capacity,
     bool fix_start_cumul_to_zero,
     const std::string& name) {
-    //return $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name).first;
     return $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
   }
 
