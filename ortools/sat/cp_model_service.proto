@@ -24,7 +24,7 @@ option java_multiple_files = true;
 
 // Experimental rpc code.
 
-message SolveRequest {
+message CpSatSolveRequest {
   CpModelProto model = 1;
   int32 num_search_workers = 2;
   google.protobuf.Duration time_limit = 3;
@@ -32,17 +32,14 @@ message SolveRequest {
   bool log_search_progress = 5;
 }
 
-message SolveAnswer {
+message CpSatSolveResponse {
   CpSolverResponse response = 1;
   string search_log = 2;
 }
 
 // This service enables sending a CpModelProto to a server and getting back
 // the optimal solution or all intermediate solutions of the problem.
-service CpSatRemoveSolve {
+service CpSatSolver {
   // Single solve, sends a model, expects the optimal solution.
-  rpc Solve(SolveRequest) returns (SolveAnswer) {}
-  // Streaming solve, sends a model, expects all intermediate solutions as well
-  // as the final one.
-  rpc StreamingSolve(SolveRequest) returns (stream SolveAnswer) {}
+  rpc Solve(CpSatSolveRequest) returns (CpSatSolveResponse) {}
 }
