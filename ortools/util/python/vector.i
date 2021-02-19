@@ -92,6 +92,38 @@ PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
 // TODO(user): see if we can also get rid of this and utilize already
 // existing code.
 %define PY_LIST_LIST_INPUT_TYPEMAP(type, checker)
+%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<std::vector<type> >&,
+                                   std::vector<std::vector<type> > {
+  if (!PyList_Check($input)) {
+    $1 = 0;
+  } else {
+    const int size = PyList_Size($input);
+    bool failed = false;
+    for (size_t i = 0; i < size; ++i) {
+      PyObject* const tuple = PyList_GetItem($input, i);
+      if (!PyTuple_Check(tuple) && !PyList_Check(tuple)) {
+        $1 = 0;
+        break;
+      } else {
+        const bool is_tuple = PyTuple_Check(tuple);
+        const int arity = is_tuple ? PyTuple_Size(tuple) : PyList_Size(tuple);
+        for (size_t j = 0; j < arity; ++j) {
+          PyObject* const entry =
+              is_tuple ? PyTuple_GetItem(tuple, j) : PyList_GetItem(tuple, j);
+          if (!checker(entry)) {
+            failed = true;
+            break;
+          }
+        }
+      }
+      if (failed) {
+        break;
+      }
+    }
+    $1 = failed ? 0 : 1;
+  }
+}
+
 %typemap(in) const std::vector<std::vector<type> >&
     (std::vector<std::vector<type> > temp) {
   if (!PyList_Check($input)) {
@@ -124,34 +156,33 @@ PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
   $1 = &temp;
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<std::vector<type> >& {
+%typemap(in) std::vector<std::vector<type> > {
   if (!PyList_Check($input)) {
-    $1 = 0;
-  } else {
-    const int size = PyList_Size($input);
-    bool failed = false;
-    for (size_t i = 0; i < size; ++i) {
-      PyObject* const tuple = PyList_GetItem($input, i);
+    PyErr_SetString(PyExc_TypeError, "Expecting a list of tuples");
+    SWIG_fail;
+  }
+  int len = PyList_Size($input);
+  int arity = -1;
+  if (len > 0) {
+    $1.resize(len);
+    for (size_t i = 0; i < len; ++i) {
+      PyObject *tuple = PyList_GetItem($input, i);
       if (!PyTuple_Check(tuple) && !PyList_Check(tuple)) {
-        $1 = 0;
-        break;
-      } else {
-        const bool is_tuple = PyTuple_Check(tuple);
-        const int arity = is_tuple ? PyTuple_Size(tuple) : PyList_Size(tuple);
-        for (size_t j = 0; j < arity; ++j) {
-          PyObject* const entry =
-              is_tuple ? PyTuple_GetItem(tuple, j) : PyList_GetItem(tuple, j);
-          if (!checker(entry)) {
-            failed = true;
-            break;
-          }
+        PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
+        SWIG_fail;
+      }
+      bool is_tuple = PyTuple_Check(tuple);
+      int arity = is_tuple ? PyTuple_Size(tuple) : PyList_Size(tuple);
+      $1[i].resize(arity);
+      for (size_t j = 0; j < arity; ++j) {
+        bool success = PyObjAs<type>(is_tuple ?
+                                     PyTuple_GetItem(tuple, j) :
+                                     PyList_GetItem(tuple, j), &$1[i][j]);
+        if (!success) {
+          SWIG_fail;
         }
       }
-      if (failed) {
-        break;
-      }
     }
-    $1 = failed ? 0 : 1;
   }
 }
 
