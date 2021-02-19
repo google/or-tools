@@ -771,7 +771,7 @@ int RegisterUnaryCallback(RoutingTransitCallback1 callback, bool is_positive,
 
 int RoutingModel::RegisterUnaryTransitVector(std::vector<int64> values) {
   return RegisterUnaryCallback(
-      [this, values](int64 i) {
+      [this, values = std::move(values)](int64 i) {
         return values[manager_.IndexToNode(i).value()];
       },
       /*is_positive=*/
@@ -800,7 +800,7 @@ int RoutingModel::RegisterTransitMatrix(
     }
   }
   return RegisterCallback(
-      [this, values](int64 i, int64 j) {
+      [this, values = std::move(values)](int64 i, int64 j) {
         return values[manager_.IndexToNode(i).value()]
                      [manager_.IndexToNode(j).value()];
       },
