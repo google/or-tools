@@ -6837,7 +6837,7 @@ void RoutingDimension::SetBreakIntervalsOfVehicle(
     std::vector<int64> node_visit_transits) {
   if (breaks.empty()) return;
   const int visit_evaluator = model()->RegisterTransitCallback(
-      [node_visit_transits](int64 from, int64 to) {
+      [node_visit_transits = std::move(node_visit_transits)](int64 from, int64 to) {
         return node_visit_transits[from];
       });
   SetBreakIntervalsOfVehicle(std::move(breaks), vehicle, visit_evaluator, -1);
