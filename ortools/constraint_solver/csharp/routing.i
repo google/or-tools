@@ -85,48 +85,11 @@ namespace operations_research {
 // Ignored:
 %ignore RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
 
-%ignore RoutingModel::RegisterUnaryTransitVector(
-    std::vector<int64> values);
-%ignore RoutingModel::RegisterTransitMatrix(
-    std::vector<std::vector<int64> > values);
+%unignore RoutingModel::RegisterUnaryTransitVector;
+%unignore RoutingModel::RegisterTransitMatrix;
 
-%ignore RoutingModel::AddVectorDimension(
-    std::vector<int64> values,
-    int64 capacity,
-    bool fix_start_cumul_to_zero,
-    const std::string& name);
-%ignore RoutingModel::AddMatrixDimension(
-    std::vector<std::vector<int64> > values,
-    int64 capacity,
-    bool fix_start_cumul_to_zero,
-    const std::string& name);
-
-%extend RoutingModel {
-  int RegisterUnaryTransitVector(
-    const std::vector<int64>& values) {
-    return $self->RegisterUnaryTransitVector(values);
-  }
-  int RegisterTransitMatrix(
-    const std::vector<std::vector<int64> >& values) {
-    return $self->RegisterTransitMatrix(values);
-  }
-
-  std::pair<int, bool> AddVectorDimension(
-    const std::vector<int64>& values,
-    int64 capacity,
-    bool fix_start_cumul_to_zero,
-    const std::string& name) {
-    return $self->AddVectorDimension(values, capacity, fix_start_cumul_to_zero, name);
-  }
-
-  std::pair<int, bool> AddMatrixDimension(
-    const std::vector<std::vector<int64> >& values,
-    int64 capacity,
-    bool fix_start_cumul_to_zero,
-    const std::string& name) {
-    return $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
-  }
-}
+%unignore RoutingModel::AddVectorDimension;
+%unignore RoutingModel::AddMatrixDimension;
 
 %ignore RoutingModel::AddSameVehicleRequiredTypeAlternatives;
 %ignore RoutingModel::GetAllDimensionNames;
