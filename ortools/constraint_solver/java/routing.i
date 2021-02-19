@@ -67,51 +67,6 @@ import java.util.function.LongUnaryOperator;
 %}
 
 %ignore RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
-
-%ignore RoutingModel::RegisterUnaryTransitVector(
-    std::vector<int64> values);
-%ignore RoutingModel::RegisterTransitMatrix(
-    std::vector<std::vector<int64> > values);
-
-%ignore RoutingModel::AddVectorDimension(
-    std::vector<int64> values,
-    int64 capacity,
-    bool fix_start_cumul_to_zero,
-    const std::string& name);
-%ignore RoutingModel::AddMatrixDimension(
-    std::vector<std::vector<int64> > values,
-    int64 capacity,
-    bool fix_start_cumul_to_zero,
-    const std::string& name);
-
-// Extend:
-%extend RoutingModel {
-  int registerUnaryTransitVector(
-    const std::vector<int64>& values) {
-    return $self->RegisterUnaryTransitVector(values);
-  }
-  int registerTransitMatrix(
-    const std::vector<std::vector<int64> >& values) {
-    return $self->RegisterTransitMatrix(values);
-  }
-
-  std::pair<int, bool> addVectorDimension(
-    const std::vector<int64>& values,
-    int64 capacity,
-    bool fix_start_cumul_to_zero,
-    const std::string& name) {
-    return $self->AddVectorDimension(values, capacity, fix_start_cumul_to_zero, name);
-  }
-
-  std::pair<int, bool> addMatrixDimension(
-    const std::vector<std::vector<int64> >& values,
-    int64 capacity,
-    bool fix_start_cumul_to_zero,
-    const std::string& name) {
-    return $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
-  }
-}
-
 %ignore RoutingModel::AddSameVehicleRequiredTypeAlternatives;
 %ignore RoutingModel::GetAllDimensionNames;
 %ignore RoutingModel::GetAutomaticFirstSolutionStrategy;
@@ -148,12 +103,16 @@ import java.util.function.LongUnaryOperator;
 %rename (activeVehicleVar) RoutingModel::ActiveVehicleVar;
 %rename (addAllActive) RoutingModel::AddAllActive;
 %rename (addAtSolutionCallback) RoutingModel::AddAtSolutionCallback;
+
 %rename (addConstantDimension) RoutingModel::AddConstantDimension;
 %rename (addConstantDimensionWithSlack) RoutingModel::AddConstantDimensionWithSlack;
+%rename (addVectorDimension) RoutingModel::AddVectorDimension;
+%rename (addMatrixDimension) RoutingModel::AddMatrixDimension;
 %rename (addDimension) RoutingModel::AddDimension;
 %rename (addDimensionWithVehicleCapacity) RoutingModel::AddDimensionWithVehicleCapacity;
 %rename (addDimensionWithVehicleTransitAndCapacity) RoutingModel::AddDimensionWithVehicleTransitAndCapacity;
 %rename (addDimensionWithVehicleTransits) RoutingModel::AddDimensionWithVehicleTransits;
+
 %rename (addDisjunction) RoutingModel::AddDisjunction;
 %rename (addHardTypeIncompatibility) RoutingModel::AddHardTypeIncompatibility;
 %rename (addIntervalToAssignment) RoutingModel::AddIntervalToAssignment;
@@ -235,11 +194,13 @@ import java.util.function.LongUnaryOperator;
 %rename (readAssignment) RoutingModel::ReadAssignment;
 %rename (readAssignmentFromRoutes) RoutingModel::ReadAssignmentFromRoutes;
 
-%rename (registerTransitCallback) RoutingModel::RegisterTransitCallback;
-%rename (registerPositiveTransitCallback) RoutingModel::RegisterPositiveTransitCallback; // not tested
-
+%rename (registerUnaryTransitVector) RoutingModel::RegisterUnaryTransitVector;
 %rename (registerUnaryTransitCallback) RoutingModel::RegisterUnaryTransitCallback;
 %rename (registerPositiveUnaryTransitCallback) RoutingModel::RegisterPositiveUnaryTransitCallback; // not tested
+
+%rename (registerTransitMatrix) RoutingModel::RegisterTransitMatrix;
+%rename (registerTransitCallback) RoutingModel::RegisterTransitCallback;
+%rename (registerPositiveTransitCallback) RoutingModel::RegisterPositiveTransitCallback; // not tested
 
 %rename (restoreAssignment) RoutingModel::RestoreAssignment;
 %rename (routesToAssignment) RoutingModel::RoutesToAssignment;
