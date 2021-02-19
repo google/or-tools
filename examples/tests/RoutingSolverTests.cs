@@ -1,3 +1,16 @@
+// Copyright 2010-2018 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 using System;
 using Xunit;
 using Google.OrTools.ConstraintSolver;
@@ -24,7 +37,8 @@ namespace Google.OrTools.Tests
             });
             // Define cost of each arc.
             routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
-            if (callGC) {
+            if (callGC)
+            {
                 GC.Collect();
             }
             // Setting first solution heuristic.
@@ -127,7 +141,7 @@ namespace Google.OrTools.Tests
             // Create Routing Model.
             RoutingModel routing = new RoutingModel(manager);
             // Create a distance callback.
-            long[] vector = {1, 1, 1, 1, 1};
+            long[] vector = { 1, 1, 1, 1, 1 };
             int transitCallbackIndex = routing.RegisterUnaryTransitVector(vector);
             // Define cost of each arc.
             routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
@@ -152,7 +166,7 @@ namespace Google.OrTools.Tests
                 (long fromIndex) => {
                 // Convert from routing variable Index to distance matrix NodeIndex.
                 var fromNode = manager.IndexToNode(fromIndex);
-                return fromNode+1;
+                return fromNode + 1;
             });
             // Define cost of each arc.
             routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
