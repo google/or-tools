@@ -57,10 +57,7 @@ class ModelRandomGenerator : public absl::BitGenRef {
   // log.
   //
   // TODO(user): I didn't find a cleaner way to log this.
-  void LogSalt() const {
-    // absl::BitGen(
-    //     absl::MakeTaggedSeedSeq("UNUSED", absl::LogInfoStreamer().stream()));
-  }
+  void LogSalt() const {}
 
  private:
   random_engine_t deterministic_random_;

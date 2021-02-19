@@ -14,7 +14,6 @@
          * [Java code samples](#java-code-samples)
          * [C# code samples](#c-code-samples-1)
 
-<!-- Added by: lperron, at: Fri Dec 18 09:46:38 CET 2020 -->
 
 <!--te-->
 

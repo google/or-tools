@@ -85,7 +85,7 @@ void Append(
 // between each other.
 template <typename Graph>
 std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
-    const CpModelProto& problem,
+    bool log_info, const CpModelProto& problem,
     std::vector<int>* initial_equivalence_classes) {
   CHECK(initial_equivalence_classes != nullptr);
 
@@ -275,9 +275,11 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         // The other cases should be presolved before this is called.
         // TODO(user): not 100% true, this happen on rmatr200-p5, Fix.
         if (constraint.enforcement_literal_size() != 1) {
-          VLOG(1) << "BoolAnd with multiple enforcement literal are not "
-                     "supported in symmetry code:"
-                  << constraint.ShortDebugString();
+          if (log_info) {
+            LOG(INFO) << "BoolAnd with multiple enforcement literal are not "
+                         "supported in symmetry code:"
+                      << constraint.ShortDebugString();
+          }
           return nullptr;
         }
 
@@ -295,8 +297,10 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         // TODO(user): support other types of constraints. Or at least, we
         // could associate to them an unique node so that their variables can
         // appear in no symmetry.
-        LOG(ERROR) << "Unsupported constraint type "
-                   << ConstraintCaseName(constraint.constraint_case());
+        if (log_info) {
+          LOG(INFO) << "Unsupported constraint type "
+                    << ConstraintCaseName(constraint.constraint_case());
+        }
         return nullptr;
       }
     }
@@ -331,7 +335,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   }
   for (int i = 0; i < num_nodes; ++i) {
     if (in_degree[i] >= num_nodes || out_degree[i] >= num_nodes) {
-      LOG(ERROR) << "Too many multi-arcs";
+      if (log_info) LOG(INFO) << "Too many multi-arcs in symmetry code.";
       return nullptr;
     }
   }
@@ -377,8 +381,8 @@ void FindCpModelSymmetries(
   typedef GraphSymmetryFinder::Graph Graph;
 
   std::vector<int> equivalence_classes;
-  std::unique_ptr<Graph> graph(
-      GenerateGraphForSymmetryDetection<Graph>(problem, &equivalence_classes));
+  std::unique_ptr<Graph> graph(GenerateGraphForSymmetryDetection<Graph>(
+      log_info, problem, &equivalence_classes));
   if (graph == nullptr) return;
 
   if (log_info) {

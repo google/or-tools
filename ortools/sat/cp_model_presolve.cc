@@ -343,8 +343,7 @@ bool CpModelPresolver::PresolveBoolAnd(ConstraintProto* ct) {
 }
 
 bool CpModelPresolver::PresolveAtMostOrExactlyOne(ConstraintProto* ct) {
-  const bool is_at_most_one =
-      ct->constraint_case() == ConstraintProto::kAtMostOne;
+  bool is_at_most_one = ct->constraint_case() == ConstraintProto::kAtMostOne;
   const std::string name = is_at_most_one ? "at_most_one: " : "exactly_one: ";
   auto* literals = is_at_most_one
                        ? ct->mutable_at_most_one()->mutable_literals()
@@ -388,6 +387,7 @@ bool CpModelPresolver::PresolveAtMostOrExactlyOne(ConstraintProto* ct) {
 
   // Remove fixed variables.
   bool changed = false;
+  bool transform_to_at_most_one = false;
   context_->tmp_literals.clear();
   for (const int literal : *literals) {
     if (context_->LiteralIsTrue(literal)) {
@@ -405,16 +405,45 @@ bool CpModelPresolver::PresolveAtMostOrExactlyOne(ConstraintProto* ct) {
       continue;
     }
 
-    // TODO(user): Most situation are already dealt with by the dual presolve
-    // code in var_domination.cc, so maybe we don't need it here.
-    if (context_->VariableIsUniqueAndRemovable(literal) ||
+    // A singleton variable in an at most one can just be set to zero.
+    //
+    // In an exactly one, it can be left to the postsolve to decide, and the
+    // rest of the constraint can be transformed to an at most one.
+    bool is_removable = context_->VariableIsUniqueAndRemovable(literal);
+    if (is_at_most_one && !is_removable &&
         context_->VariableWithCostIsUniqueAndRemovable(literal)) {
-      context_->UpdateRuleStats("TODO [exactly/at_most]_one: singleton");
+      const auto it = context_->ObjectiveMap().find(PositiveRef(literal));
+      CHECK(it != context_->ObjectiveMap().end());
+      const int64 coeff = it->second;
+
+      // Fixing it to zero need to go in the correct direction.
+      is_removable = (coeff > 0) == RefIsPositive(literal);
+    }
+
+    if (is_removable) {
+      if (is_at_most_one) {
+        context_->UpdateRuleStats("at_most_one: singleton");
+        if (!context_->SetLiteralToFalse(literal)) return false;
+        changed = true;
+        continue;
+      } else {
+        changed = true;
+        is_at_most_one = true;
+        transform_to_at_most_one = true;
+        *(context_->mapping_model->add_constraints()) = *ct;
+        context_->UpdateRuleStats("exactly_one: singleton");
+        continue;
+      }
     }
 
     context_->tmp_literals.push_back(literal);
   }
 
+  if (transform_to_at_most_one) {
+    CHECK(changed);
+    ct->Clear();
+    literals = ct->mutable_at_most_one()->mutable_literals();
+  }
   if (changed) {
     literals->Clear();
     for (const int lit : context_->tmp_literals) {

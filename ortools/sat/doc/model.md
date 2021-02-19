@@ -16,7 +16,6 @@
          * [Python code](#python-code-1)
          * [C   code](#c-code-2)
 
-<!-- Added by: lperron, at: Wed Feb 17 18:36:47 CET 2021 -->
 
 <!--te-->
 

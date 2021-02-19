@@ -29,14 +29,12 @@ public class RankingSampleSat {
   /**
    * This code takes a list of interval variables in a noOverlap constraint, and a parallel list of
    * integer variables and enforces the following constraint
-   *
    * <ul>
-   *   <li>rank[i] == -1 iff interval[i] is not active.
-   *   <li>rank[i] == number of active intervals that precede interval[i].
+   * <li>rank[i] == -1 iff interval[i] is not active.
+   * <li>rank[i] == number of active intervals that precede interval[i].
    * </ul>
    */
-  static void rankTasks(CpModel model, IntVar[] starts, Literal[] presences, IntVar[] ranks)
-      throws Exception {
+  static void rankTasks(CpModel model, IntVar[] starts, Literal[] presences, IntVar[] ranks) {
     int numTasks = starts.length;
 
     // Creates precedence variables between pairs of intervals.
@@ -97,91 +95,85 @@ public class RankingSampleSat {
 
   public static void main(String[] args) throws Exception {
     Loader.loadNativeLibraries();
-    try {
-      CpModel model = new CpModel();
-      int horizon = 100;
-      int numTasks = 4;
+    CpModel model = new CpModel();
+    int horizon = 100;
+    int numTasks = 4;
 
-      IntVar[] starts = new IntVar[numTasks];
-      IntVar[] ends = new IntVar[numTasks];
-      IntervalVar[] intervals = new IntervalVar[numTasks];
-      Literal[] presences = new Literal[numTasks];
-      IntVar[] ranks = new IntVar[numTasks];
+    IntVar[] starts = new IntVar[numTasks];
+    IntVar[] ends = new IntVar[numTasks];
+    IntervalVar[] intervals = new IntervalVar[numTasks];
+    Literal[] presences = new Literal[numTasks];
+    IntVar[] ranks = new IntVar[numTasks];
 
-      IntVar trueVar = model.newConstant(1);
+    IntVar trueVar = model.newConstant(1);
 
-      // Creates intervals, half of them are optional.
-      for (int t = 0; t < numTasks; ++t) {
-        starts[t] = model.newIntVar(0, horizon, "start_" + t);
-        int duration = t + 1;
-        ends[t] = model.newIntVar(0, horizon, "end_" + t);
-        if (t < numTasks / 2) {
-          intervals[t] = model.newIntervalVar(starts[t], duration, ends[t], "interval_" + t);
-          presences[t] = trueVar;
-        } else {
-          presences[t] = model.newBoolVar("presence_" + t);
-          intervals[t] = model.newOptionalIntervalVar(
-              starts[t], duration, ends[t], presences[t], "o_interval_" + t);
-        }
-
-        // The rank will be -1 iff the task is not performed.
-        ranks[t] = model.newIntVar(-1, numTasks - 1, "rank_" + t);
-      }
-
-      // Adds NoOverlap constraint.
-      model.addNoOverlap(intervals);
-
-      // Adds ranking constraint.
-      rankTasks(model, starts, presences, ranks);
-
-      // Adds a constraint on ranks (ranks[0] < ranks[1]).
-      model.addLessOrEqualWithOffset(ranks[0], ranks[1], 1);
-
-      // Creates makespan variable.
-      IntVar makespan = model.newIntVar(0, horizon, "makespan");
-      for (int t = 0; t < numTasks; ++t) {
-        model.addLessOrEqual(ends[t], makespan).onlyEnforceIf(presences[t]);
-      }
-      // The objective function is a mix of a fixed gain per task performed, and a fixed cost for
-      // each
-      // additional day of activity.
-      // The solver will balance both cost and gain and minimize makespan * per-day-penalty - number
-      // of tasks performed * per-task-gain.
-      //
-      // On this problem, as the fixed cost is less that the duration of the last interval, the
-      // solver
-      // will not perform the last interval.
-      IntVar[] objectiveVars = new IntVar[numTasks + 1];
-      int[] objectiveCoefs = new int[numTasks + 1];
-      for (int t = 0; t < numTasks; ++t) {
-        objectiveVars[t] = (IntVar) presences[t];
-        objectiveCoefs[t] = -7;
-      }
-      objectiveVars[numTasks] = makespan;
-      objectiveCoefs[numTasks] = 2;
-      model.minimize(LinearExpr.scalProd(objectiveVars, objectiveCoefs));
-
-      // Creates a solver and solves the model.
-      CpSolver solver = new CpSolver();
-      CpSolverStatus status = solver.solve(model);
-
-      if (status == CpSolverStatus.OPTIMAL) {
-        System.out.println("Optimal cost: " + solver.objectiveValue());
-        System.out.println("Makespan: " + solver.value(makespan));
-        for (int t = 0; t < numTasks; ++t) {
-          if (solver.booleanValue(presences[t])) {
-            System.out.printf("Task %d starts at %d with rank %d%n", t, solver.value(starts[t]),
-                solver.value(ranks[t]));
-          } else {
-            System.out.printf(
-                "Task %d in not performed and ranked at %d%n", t, solver.value(ranks[t]));
-          }
-        }
+    // Creates intervals, half of them are optional.
+    for (int t = 0; t < numTasks; ++t) {
+      starts[t] = model.newIntVar(0, horizon, "start_" + t);
+      int duration = t + 1;
+      ends[t] = model.newIntVar(0, horizon, "end_" + t);
+      if (t < numTasks / 2) {
+        intervals[t] = model.newIntervalVar(starts[t], duration, ends[t], "interval_" + t);
+        presences[t] = trueVar;
       } else {
-        System.out.println("Solver exited with nonoptimal status: " + status);
+        presences[t] = model.newBoolVar("presence_" + t);
+        intervals[t] = model.newOptionalIntervalVar(
+            starts[t], duration, ends[t], presences[t], "o_interval_" + t);
       }
-    } catch (Exception e) {
-      System.err.println("Caught " + e + " while building the model");
+
+      // The rank will be -1 iff the task is not performed.
+      ranks[t] = model.newIntVar(-1, numTasks - 1, "rank_" + t);
+    }
+
+    // Adds NoOverlap constraint.
+    model.addNoOverlap(intervals);
+
+    // Adds ranking constraint.
+    rankTasks(model, starts, presences, ranks);
+
+    // Adds a constraint on ranks (ranks[0] < ranks[1]).
+    model.addLessOrEqualWithOffset(ranks[0], ranks[1], 1);
+
+    // Creates makespan variable.
+    IntVar makespan = model.newIntVar(0, horizon, "makespan");
+    for (int t = 0; t < numTasks; ++t) {
+      model.addLessOrEqual(ends[t], makespan).onlyEnforceIf(presences[t]);
+    }
+    // The objective function is a mix of a fixed gain per task performed, and a fixed cost for each
+    // additional day of activity.
+    // The solver will balance both cost and gain and minimize makespan * per-day-penalty - number
+    // of tasks performed * per-task-gain.
+    //
+    // On this problem, as the fixed cost is less that the duration of the last interval, the solver
+    // will not perform the last interval.
+    IntVar[] objectiveVars = new IntVar[numTasks + 1];
+    int[] objectiveCoefs = new int[numTasks + 1];
+    for (int t = 0; t < numTasks; ++t) {
+      objectiveVars[t] = (IntVar) presences[t];
+      objectiveCoefs[t] = -7;
+    }
+    objectiveVars[numTasks] = makespan;
+    objectiveCoefs[numTasks] = 2;
+    model.minimize(LinearExpr.scalProd(objectiveVars, objectiveCoefs));
+
+    // Creates a solver and solves the model.
+    CpSolver solver = new CpSolver();
+    CpSolverStatus status = solver.solve(model);
+
+    if (status == CpSolverStatus.OPTIMAL) {
+      System.out.println("Optimal cost: " + solver.objectiveValue());
+      System.out.println("Makespan: " + solver.value(makespan));
+      for (int t = 0; t < numTasks; ++t) {
+        if (solver.booleanValue(presences[t])) {
+          System.out.printf("Task %d starts at %d with rank %d%n", t, solver.value(starts[t]),
+              solver.value(ranks[t]));
+        } else {
+          System.out.printf(
+              "Task %d in not performed and ranked at %d%n", t, solver.value(ranks[t]));
+        }
+      }
+    } else {
+      System.out.println("Solver exited with nonoptimal status: " + status);
     }
   }
 }

@@ -47,6 +47,35 @@ void PostsolveClause(const ConstraintProto& ct, std::vector<Domain>* domains) {
   (*domains)[PositiveRef(first_ref)] = Domain(RefIsPositive(first_ref) ? 1 : 0);
 }
 
+void PostsolveExactlyOne(const ConstraintProto& ct,
+                         std::vector<Domain>* domains) {
+  bool satisfied = false;
+  std::vector<int> free_variables;
+  for (const int ref : ct.exactly_one().literals()) {
+    const int var = PositiveRef(ref);
+    if ((*domains)[var].IsFixed()) {
+      if ((*domains)[var].FixedValue() == (RefIsPositive(ref) ? 1 : 0)) {
+        CHECK(!satisfied) << "Two variables at one in exactly one.";
+        satisfied = true;
+      }
+    } else {
+      free_variables.push_back(ref);
+    }
+  }
+  if (!satisfied) {
+    // Fix one at true.
+    CHECK(!free_variables.empty()) << "All zero in exactly one";
+    const int ref = free_variables.back();
+    (*domains)[PositiveRef(ref)] = Domain(RefIsPositive(ref) ? 1 : 0);
+    free_variables.pop_back();
+  }
+
+  // Fix any free variable left at false.
+  for (const int ref : free_variables) {
+    (*domains)[PositiveRef(ref)] = Domain(RefIsPositive(ref) ? 0 : 1);
+  }
+}
+
 // Here we simply assign all non-fixed variable to a feasible value. Which
 // should always exists by construction.
 void PostsolveLinear(const ConstraintProto& ct,
@@ -284,6 +313,9 @@ void PostsolveResponse(const int64 num_variables_in_original_model,
     switch (ct.constraint_case()) {
       case ConstraintProto::kBoolOr:
         PostsolveClause(ct, &domains);
+        break;
+      case ConstraintProto::kExactlyOne:
+        PostsolveExactlyOne(ct, &domains);
         break;
       case ConstraintProto::kLinear:
         PostsolveLinear(ct, prefer_lower_value, &domains);

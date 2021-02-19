@@ -27,7 +27,6 @@
          * [Java code](#java-code-2)
          * [C# code](#c-code-5)
 
-<!-- Added by: lperron, at: Fri Dec 18 09:46:43 CET 2020 -->
 
 <!--te-->
 

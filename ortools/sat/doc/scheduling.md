@@ -36,7 +36,6 @@
       * [Convex hull of a set of intervals](#convex-hull-of-a-set-of-intervals)
       * [Reservoir constraint](#reservoir-constraint)
 
-<!-- Added by: lperron, at: Fri Dec 18 09:46:42 CET 2020 -->
 
 <!--te-->
 
