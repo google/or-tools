@@ -48,13 +48,16 @@
     $1 = i == size;
   }
 }
-%typemap(in) std::vector<type> {
-  if (!vector_input_helper($input, &$1, PyObjAs<type>)) {
+
+%typemap(in) std::vector<type> (std::vector<type> temp) {
+  if (!vector_input_helper($input, &temp, PyObjAs<type>)) {
     if (!PyErr_Occurred())
       SWIG_Error(SWIG_TypeError, "sequence(type) expected");
     return NULL;
   }
+  $1 = temp;
 }
+
 %typemap(in) const std::vector<type>& (std::vector<type> temp),
              const std::vector<type>* (std::vector<type> temp) {
   if (!vector_input_helper($input, &temp, PyObjAs<type>)) {
@@ -80,12 +83,36 @@
 %typemap(out) std::vector<type>*, const std::vector<type>& {
   $result = vector_output_helper($1, &py_converter);
 }
-
 %enddef  // PY_LIST_OUTPUT_TYPEMAP
 
 PY_LIST_OUTPUT_TYPEMAP(int, PyInt_Check, PyInt_FromLong);
 PY_LIST_OUTPUT_TYPEMAP(int64, SwigPyIntOrLong_Check, PyLong_FromLongLong);
 PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
+
+// Optimization
+%typemap(in) std::vector<int> {
+if (!vector_input_helper($input, &$1, PyObjAs<int>)) {
+    if (!PyErr_Occurred())
+     SWIG_Error(SWIG_TypeError, "sequence(int) expected");
+     return NULL;
+  }
+}
+
+%typemap(in) std::vector<int64> {
+if (!vector_input_helper($input, &$1, PyObjAs<int64>)) {
+    if (!PyErr_Occurred())
+     SWIG_Error(SWIG_TypeError, "sequence(int64) expected");
+     return NULL;
+  }
+}
+
+%typemap(in) std::vector<double> {
+if (!vector_input_helper($input, &$1, PyObjAs<double>)) {
+    if (!PyErr_Occurred())
+     SWIG_Error(SWIG_TypeError, "sequence(double) expected");
+     return NULL;
+  }
+}
 
 // Add conversion list(tuple(int)) -> std::vector<std::vector>.
 // TODO(user): see if we can also get rid of this and utilize already
@@ -184,7 +211,6 @@ PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
     }
   }
 }
-
 %enddef  // PY_LIST_LIST_INPUT_TYPEMAP
 
 PY_LIST_LIST_INPUT_TYPEMAP(int, PyInt_Check);
