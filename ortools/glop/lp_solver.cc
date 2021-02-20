@@ -160,6 +160,7 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
   // Note that we only activate the floating-point exceptions after we are sure
   // that the program is valid. This way, if we have input NaNs, we will not
   // crash.
+#ifndef __EMSCRIPTEN__  
   ScopedFloatingPointEnv scoped_fenv;
   if (absl::GetFlag(FLAGS_lp_solver_enable_fp_exceptions)) {
 #ifdef _MSC_VER
@@ -168,6 +169,7 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
     scoped_fenv.EnableExceptions(FE_DIVBYZERO | FE_INVALID);
 #endif
   }
+#endif
 
   // Make an internal copy of the problem for the preprocessing.
   VLOG(1) << "Initial problem: " << lp.GetDimensionString();

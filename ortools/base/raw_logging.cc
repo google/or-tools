@@ -25,13 +25,17 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/logging_utilities.h"
 
-#if !defined(_MSC_VER)
+#if !defined(_MSC_VER) && !defined(__EMSCRIPTEN__)
 #include <sys/syscall.h>  // for syscall()
 #define safe_write(fd, s, len) syscall(SYS_write, fd, s, len)
 #else
+#if !defined(__EMSCRIPTEN__)
 #include <io.h>  // _write()
 // Not so safe, but what can you do?
 #define safe_write(fd, s, len) _write(fd, s, len)
+#else
+#define safe_write(fd, s, len) write(fd, s, len)
+#endif
 #endif
 
 #if defined(_MSC_VER) && !defined(__MINGW32__)
