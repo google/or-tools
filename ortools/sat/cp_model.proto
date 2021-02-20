@@ -748,6 +748,7 @@ message CpSolverResponse {
   // Additional information about how the solution was found.
   string solution_info = 20;
 
-  // Optional logs of the solver.
+  // Optional logs of the solver. They will be filled only if the parameter
+  // 'fill_logs_in_response' is set.
   string logs = 26;
 }
