@@ -96,12 +96,18 @@ function clean_build() {
 }
 
 function expand_wasm_config() {
-  declare -r EMSDK_VERSION=2.0.14
-  declare -r EMSDK_URL=https://github.com/emscripten-core/emsdk/archive/${EMSDK_VERSION}.tar.gz 
-  declare -r EMSDK_RELATIVE_DIR="emsdk-${EMSDK_VERSION}"
-  declare -r EMSDK="${ARCHIVE_DIR}/${EMSDK_RELATIVE_DIR}"
+  local -r EMSDK_VERSION=2.0.14
+  local -r EMSDK_URL=https://github.com/emscripten-core/emsdk/archive/${EMSDK_VERSION}.tar.gz 
+  local -r EMSDK_RELATIVE_DIR="emsdk-${EMSDK_VERSION}"
+  local -r EMSDK="${ARCHIVE_DIR}/${EMSDK_RELATIVE_DIR}"
   if [ ! -d "${EMSDK}" ]; then
-    install_emscripten
+    echo "Fetching emscripten"
+    unpack "${EMSDK_URL}" "${EMSDK_RELATIVE_DIR}"
+    echo "Installing Emscripten ..."
+    ${EMSDK}/emsdk install ${EMSDK_VERSION}
+
+    echo "Activating Emscripten ..."
+    ${EMSDK}/emsdk activate ${EMSDK_VERSION}
   fi
 
   declare -r TOOLCHAIN_FILE=${EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
