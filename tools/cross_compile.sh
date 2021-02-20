@@ -95,6 +95,19 @@ function clean_build() {
   mkdir -p "${BUILD_DIR}"
 }
 
+function expand_wasm_config() {
+  declare -r EMSDK_VERSION=2.0.14
+  declare -r EMSDK_URL=https://github.com/emscripten-core/emsdk/archive/${EMSDK_VERSION}.tar.gz 
+  declare -r EMSDK_RELATIVE_DIR="emsdk-${EMSDK_VERSION}"
+  declare -r EMSDK="${ARCHIVE_DIR}/${EMSDK_RELATIVE_DIR}"
+  if [ ! -d "${EMSDK}" ]; then
+    install_emscripten
+  fi
+
+  declare -r TOOLCHAIN_FILE=${EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
+  CMAKE_ADDITIONAL_ARGS+=( -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN_FILE}" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF)
+}
+
 function expand_linaro_config() {
   #ref: https://releases.linaro.org/components/toolchain/binaries/
   local -r LINARO_VERSION=7.5-2019.12
@@ -322,6 +335,9 @@ function main() {
     mips64el)
       expand_codescape_config
       declare -r QEMU_ARCH=mips64el ;;
+    wasm32)
+      expand_wasm_config
+      declare -r QEMU_ARCH=DISABLED ;;
     *)
       >&2 echo "Unknown TARGET '${TARGET}'..."
       exit 1 ;;
