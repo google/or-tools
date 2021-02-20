@@ -270,7 +270,7 @@ DESCRIPTION
 
 \tYou MUST define the following variables before running this script:
 \t* PROJECT: glop or-tools
-\t* TARGET: x86_64 aarch64-linux-gnu aarch64_be-linux-gnu mips64 mips64el
+\t* TARGET: x86_64 aarch64-linux-gnu aarch64_be-linux-gnu mips64 mips64el wasm32
 
 OPTIONS
 \t-h --help: show this help text

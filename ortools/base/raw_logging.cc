@@ -29,12 +29,12 @@
 #include <sys/syscall.h>  // for syscall()
 #define safe_write(fd, s, len) syscall(SYS_write, fd, s, len)
 #else
-#if !defined(__EMSCRIPTEN__)
+#if defined(__EMSCRIPTEN__)
+#define safe_write(fd, s, len) write(fd, s, len)
+#else
 #include <io.h>  // _write()
 // Not so safe, but what can you do?
 #define safe_write(fd, s, len) _write(fd, s, len)
-#else
-#define safe_write(fd, s, len) write(fd, s, len)
 #endif
 #endif
 
