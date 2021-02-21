@@ -304,6 +304,15 @@ run: build
 	$(BIN_DIR)$S$(SOURCE_NAME)$E $(ARGS)
 endif # ifeq ($(SOURCE_SUFFIX),.cc)
 
+# Special error message for the common case of using ".cpp" instead of ".cc"
+ifeq ($(SOURCE_SUFFIX),.cpp)
+.PHONY: build
+build:
+	@echo Error: SOURCE has a .cpp extension, for C++ please use .cc
+.PHONY: run
+run: build
+endif # ifeq ($(SOURCE_SUFFIX),.cpp)
+
 endif # ifndef CXX_BIN
 
 $(OBJ_DIR):
