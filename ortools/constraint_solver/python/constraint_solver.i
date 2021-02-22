@@ -41,7 +41,6 @@
 
 // std::function utilities.
 %include "ortools/util/python/functions.i"
-
 %include "ortools/util/python/vector.i"
 
 // We *do* need to use SWIGTYPE_... type names directly, because the

@@ -16,8 +16,7 @@
 
 %include "ortools/base/base.i"
 
-%include "std_pair.i"
-%template(IntBoolPair) std::pair<int, bool>;
+%include "ortools/util/python/pair.i"
 
 %include "ortools/constraint_solver/python/constraint_solver.i"
 %include "ortools/constraint_solver/python/routing_types.i"
@@ -52,6 +51,7 @@ DEFINE_INDEX_TYPE_TYPEDEF(
 DEFINE_INDEX_TYPE_TYPEDEF(
     operations_research::RoutingVehicleClassIndex,
     operations_research::RoutingModel::VehicleClassIndex);
+
 
 %ignore operations_research::RoutingModel::RegisterStateDependentTransitCallback;
 %ignore operations_research::RoutingModel::StateDependentTransitCallback;

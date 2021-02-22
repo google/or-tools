@@ -48,16 +48,6 @@
     $1 = i == size;
   }
 }
-
-%typemap(in) std::vector<type> (std::vector<type> temp) {
-  if (!vector_input_helper($input, &temp, PyObjAs<type>)) {
-    if (!PyErr_Occurred())
-      SWIG_Error(SWIG_TypeError, "sequence(type) expected");
-    return NULL;
-  }
-  $1 = temp;
-}
-
 %typemap(in) const std::vector<type>& (std::vector<type> temp),
              const std::vector<type>* (std::vector<type> temp) {
   if (!vector_input_helper($input, &temp, PyObjAs<type>)) {
@@ -85,34 +75,35 @@
 }
 %enddef  // PY_LIST_OUTPUT_TYPEMAP
 
+%define PY_LIST_INPUT_VALUE_TYPEMAP(type)
+%typemap(in) std::vector<type> (std::vector<type> temp) {
+  if (!vector_input_helper($input, &temp, PyObjAs<type>)) {
+    if (!PyErr_Occurred())
+      SWIG_Error(SWIG_TypeError, "sequence(type) expected");
+    return NULL;
+  }
+  $1 = temp;
+}
+%enddef  // PY_LIST_INPUT_VALUE_TYPEMAP
+
+%define PY_LIST_INPUT_VALUE_PRIMITIVE_TYPEMAP(type)
+%typemap(in) std::vector<type> {
+  if (!vector_input_helper($input, &$1, PyObjAs<type>)) {
+    if (!PyErr_Occurred())
+      SWIG_Error(SWIG_TypeError, "sequence(type) expected");
+    return NULL;
+  }
+}
+%enddef  // PY_LIST_INPUT_VALUE_PRIMITIVE_TYPEMAP
+
 PY_LIST_OUTPUT_TYPEMAP(int, PyInt_Check, PyInt_FromLong);
+PY_LIST_INPUT_VALUE_PRIMITIVE_TYPEMAP(int);
+
 PY_LIST_OUTPUT_TYPEMAP(int64, SwigPyIntOrLong_Check, PyLong_FromLongLong);
+PY_LIST_INPUT_VALUE_PRIMITIVE_TYPEMAP(int64);
+
 PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
-
-// Optimization
-%typemap(in) std::vector<int> {
-if (!vector_input_helper($input, &$1, PyObjAs<int>)) {
-    if (!PyErr_Occurred())
-     SWIG_Error(SWIG_TypeError, "sequence(int) expected");
-     return NULL;
-  }
-}
-
-%typemap(in) std::vector<int64> {
-if (!vector_input_helper($input, &$1, PyObjAs<int64>)) {
-    if (!PyErr_Occurred())
-     SWIG_Error(SWIG_TypeError, "sequence(int64) expected");
-     return NULL;
-  }
-}
-
-%typemap(in) std::vector<double> {
-if (!vector_input_helper($input, &$1, PyObjAs<double>)) {
-    if (!PyErr_Occurred())
-     SWIG_Error(SWIG_TypeError, "sequence(double) expected");
-     return NULL;
-  }
-}
+PY_LIST_INPUT_VALUE_PRIMITIVE_TYPEMAP(double);
 
 // Add conversion list(tuple(int)) -> std::vector<std::vector>.
 // TODO(user): see if we can also get rid of this and utilize already
@@ -211,6 +202,7 @@ if (!vector_input_helper($input, &$1, PyObjAs<double>)) {
     }
   }
 }
+
 %enddef  // PY_LIST_LIST_INPUT_TYPEMAP
 
 PY_LIST_LIST_INPUT_TYPEMAP(int, PyInt_Check);
@@ -262,4 +254,5 @@ bool CanConvertTo ## Class(PyObject *py_obj) {
 }
 PY_LIST_OUTPUT_TYPEMAP(operations_research::Class*, CanConvertTo ## Class,
                        FromObject ## Class);
+PY_LIST_INPUT_VALUE_TYPEMAP(operations_research::Class*);
 %enddef

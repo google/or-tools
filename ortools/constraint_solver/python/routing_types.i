@@ -53,6 +53,7 @@ bool PyObjAs(PyObject *py, IndexT* i) {
 }
 %}
 PY_LIST_OUTPUT_TYPEMAP(IndexT, PyInt_Check, PyInt_FromIndexT<IndexT>);
+PY_LIST_INPUT_VALUE_PRIMITIVE_TYPEMAP(IndexT);
 PY_LIST_LIST_INPUT_TYPEMAP(IndexT, PyInt_Check);
 
 %enddef  // DEFINE_INDEX_TYPE
