@@ -284,7 +284,14 @@ test_cc: detect_cc
 ##################
 ##  C++ SOURCE  ##
 ##################
-ifeq ($(SOURCE_SUFFIX),.cc) # Those rules will be used if SOURCE contain a .cc file
+IS_CPP =
+ifeq ($(SOURCE_SUFFIX),.cc)
+    IS_CPP = true
+endif
+ifeq ($(SOURCE_SUFFIX),.cpp)
+    IS_CPP = true
+endif
+ifdef IS_CPP # Those rules will be used if SOURCE contain a .cc or .cpp file
 $(OBJ_DIR)/$(SOURCE_NAME).$O: $(SOURCE) | $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) \
  -c $(SOURCE_PATH) \
@@ -302,8 +309,7 @@ build: $(BIN_DIR)/$(SOURCE_NAME)$E
 .PHONY: run # Run a C++ program.
 run: build
 	$(BIN_DIR)$S$(SOURCE_NAME)$E $(ARGS)
-endif # ifeq ($(SOURCE_SUFFIX),.cc)
-
+endif # ifeq IS_CPP
 endif # ifndef CXX_BIN
 
 $(OBJ_DIR):
