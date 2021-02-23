@@ -31,9 +31,9 @@
 // use a generic, templated type checker.
 // Get const std::vector<std::string>& "in" typemap.
 
-%define PY_LIST_OUTPUT_TYPEMAP(type, checker, py_converter)
-%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<type>&,
-                                   std::vector<type>,
+%define PY_LIST_INPUT_OUTPUT_TYPEMAP(type, checker, py_converter)
+%typecheck(SWIG_TYPECHECK_POINTER) std::vector<type>,
+                                   const std::vector<type>&,
                                    const std::vector<type>* {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     $1 = 0;
@@ -47,6 +47,14 @@
     }
     $1 = i == size;
   }
+}
+%typemap(in) std::vector<type> (std::vector<type> temp) {
+  if (!vector_input_helper($input, &temp, PyObjAs<type>)) {
+    if (!PyErr_Occurred())
+      SWIG_Error(SWIG_TypeError, "sequence(type) expected");
+    return NULL;
+  }
+$1.swap(temp);
 }
 %typemap(in) const std::vector<type>& (std::vector<type> temp),
              const std::vector<type>* (std::vector<type> temp) {
@@ -75,35 +83,9 @@
 }
 %enddef  // PY_LIST_OUTPUT_TYPEMAP
 
-%define PY_LIST_INPUT_VALUE_TYPEMAP(type)
-%typemap(in) std::vector<type> (std::vector<type> temp) {
-  if (!vector_input_helper($input, &temp, PyObjAs<type>)) {
-    if (!PyErr_Occurred())
-      SWIG_Error(SWIG_TypeError, "sequence(type) expected");
-    return NULL;
-  }
-  $1 = temp;
-}
-%enddef  // PY_LIST_INPUT_VALUE_TYPEMAP
-
-%define PY_LIST_INPUT_VALUE_PRIMITIVE_TYPEMAP(type)
-%typemap(in) std::vector<type> {
-  if (!vector_input_helper($input, &$1, PyObjAs<type>)) {
-    if (!PyErr_Occurred())
-      SWIG_Error(SWIG_TypeError, "sequence(type) expected");
-    return NULL;
-  }
-}
-%enddef  // PY_LIST_INPUT_VALUE_PRIMITIVE_TYPEMAP
-
-PY_LIST_OUTPUT_TYPEMAP(int, PyInt_Check, PyInt_FromLong);
-PY_LIST_INPUT_VALUE_PRIMITIVE_TYPEMAP(int);
-
-PY_LIST_OUTPUT_TYPEMAP(int64, SwigPyIntOrLong_Check, PyLong_FromLongLong);
-PY_LIST_INPUT_VALUE_PRIMITIVE_TYPEMAP(int64);
-
-PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
-PY_LIST_INPUT_VALUE_PRIMITIVE_TYPEMAP(double);
+PY_LIST_INPUT_OUTPUT_TYPEMAP(int, PyInt_Check, PyInt_FromLong);
+PY_LIST_INPUT_OUTPUT_TYPEMAP(int64, SwigPyIntOrLong_Check, PyLong_FromLongLong);
+PY_LIST_INPUT_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
 
 // Add conversion list(tuple(int)) -> std::vector<std::vector>.
 // TODO(user): see if we can also get rid of this and utilize already
@@ -161,9 +143,9 @@ PY_LIST_INPUT_VALUE_PRIMITIVE_TYPEMAP(double);
       int arity = is_tuple ? PyTuple_Size(tuple) : PyList_Size(tuple);
       temp[i].resize(arity);
       for (size_t j = 0; j < arity; ++j) {
-        bool success = PyObjAs<type>(is_tuple ?
-                                     PyTuple_GetItem(tuple, j) :
-                                     PyList_GetItem(tuple, j), &temp[i][j]);
+        bool success = PyObjAs<type>(
+            is_tuple ? PyTuple_GetItem(tuple, j) : PyList_GetItem(tuple, j),
+            &temp[i][j]);
         if (!success) {
           SWIG_fail;
         }
@@ -173,7 +155,8 @@ PY_LIST_INPUT_VALUE_PRIMITIVE_TYPEMAP(double);
   $1 = &temp;
 }
 
-%typemap(in) std::vector<std::vector<type> > {
+%typemap(in) std::vector<std::vector<type> >
+    (std::vector<std::vector<type> > temp) {
   if (!PyList_Check($input)) {
     PyErr_SetString(PyExc_TypeError, "Expecting a list of tuples");
     SWIG_fail;
@@ -181,7 +164,7 @@ PY_LIST_INPUT_VALUE_PRIMITIVE_TYPEMAP(double);
   int len = PyList_Size($input);
   int arity = -1;
   if (len > 0) {
-    $1.resize(len);
+    temp.resize(len);
     for (size_t i = 0; i < len; ++i) {
       PyObject *tuple = PyList_GetItem($input, i);
       if (!PyTuple_Check(tuple) && !PyList_Check(tuple)) {
@@ -190,19 +173,19 @@ PY_LIST_INPUT_VALUE_PRIMITIVE_TYPEMAP(double);
       }
       bool is_tuple = PyTuple_Check(tuple);
       int arity = is_tuple ? PyTuple_Size(tuple) : PyList_Size(tuple);
-      $1[i].resize(arity);
+      temp[i].resize(arity);
       for (size_t j = 0; j < arity; ++j) {
-        bool success = PyObjAs<type>(is_tuple ?
-                                     PyTuple_GetItem(tuple, j) :
-                                     PyList_GetItem(tuple, j), &$1[i][j]);
+        bool success = PyObjAs<type>(
+            is_tuple ? PyTuple_GetItem(tuple, j) : PyList_GetItem(tuple, j),
+            &temp[i][j]);
         if (!success) {
           SWIG_fail;
         }
       }
     }
   }
+$1.swap(temp);
 }
-
 %enddef  // PY_LIST_LIST_INPUT_TYPEMAP
 
 PY_LIST_LIST_INPUT_TYPEMAP(int, PyInt_Check);
@@ -252,7 +235,7 @@ bool CanConvertTo ## Class(PyObject *py_obj) {
   $1 = CanConvertTo ## Class($input);
   if ($1 == 0) PyErr_Clear();
 }
-PY_LIST_OUTPUT_TYPEMAP(operations_research::Class*, CanConvertTo ## Class,
-                       FromObject ## Class);
-PY_LIST_INPUT_VALUE_TYPEMAP(operations_research::Class*);
+PY_LIST_INPUT_OUTPUT_TYPEMAP(operations_research::Class*,
+                             CanConvertTo ## Class,
+                             FromObject ## Class);
 %enddef
