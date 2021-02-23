@@ -39,8 +39,7 @@ public interface LinearExpr {
   }
 
   /** Creates a scalar product. */
-  static LinearExpr scalProd(IntVar[] variables, long[] coefficients)
-      throws CpModel.MismatchedArrayLengths {
+  static LinearExpr scalProd(IntVar[] variables, long[] coefficients) {
     if (variables.length != coefficients.length) {
       throw new CpModel.MismatchedArrayLengths("LinearExpr.scalProd", "variables", "coefficients");
     }
@@ -48,8 +47,7 @@ public interface LinearExpr {
   }
 
   /** Creates a scalar product. */
-  static LinearExpr scalProd(IntVar[] variables, int[] coefficients)
-      throws CpModel.MismatchedArrayLengths {
+  static LinearExpr scalProd(IntVar[] variables, int[] coefficients) {
     if (variables.length != coefficients.length) {
       throw new CpModel.MismatchedArrayLengths("LinearExpr.scalProd", "variables", "coefficients");
     }
@@ -61,8 +59,7 @@ public interface LinearExpr {
   }
 
   /** Creates a scalar product. */
-  static LinearExpr booleanScalProd(Literal[] literals, long[] coefficients)
-      throws CpModel.MismatchedArrayLengths {
+  static LinearExpr booleanScalProd(Literal[] literals, long[] coefficients) {
     if (literals.length != coefficients.length) {
       throw new CpModel.MismatchedArrayLengths("LinearExpr.scalProd", "literals", "coefficients");
     }
@@ -70,8 +67,7 @@ public interface LinearExpr {
   }
 
   /** Creates a scalar product. */
-  static LinearExpr booleanScalProd(Literal[] literals, int[] coefficients)
-      throws CpModel.MismatchedArrayLengths {
+  static LinearExpr booleanScalProd(Literal[] literals, int[] coefficients) {
     if (literals.length != coefficients.length) {
       throw new CpModel.MismatchedArrayLengths("LinearExpr.scalProd", "literals", "coefficients");
     }

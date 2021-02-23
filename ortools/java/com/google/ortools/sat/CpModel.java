@@ -39,7 +39,7 @@ import java.util.Map;
  * <p>Proposes a factory to create all modeling objects understood by the SAT solver.
  */
 public final class CpModel {
-  static class CpModelException extends Exception {
+  static class CpModelException extends RuntimeException {
     public CpModelException(String methodName, String msg) {
       // Call constructor of parent Exception
       super(methodName + ": " + msg);
@@ -325,8 +325,7 @@ public final class CpModel {
    * @return an instance of the Constraint class
    * @throws MismatchedArrayLengths if the arrays have different sizes
    */
-  public Constraint addCircuit(int[] tails, int[] heads, Literal[] literals)
-      throws MismatchedArrayLengths {
+  public Constraint addCircuit(int[] tails, int[] heads, Literal[] literals) {
     if (tails.length != heads.length) {
       throw new MismatchedArrayLengths("CpModel.addCircuit", "tails", "heads");
     }
@@ -361,8 +360,7 @@ public final class CpModel {
    * @return an instance of the Constraint class
    * @throws WrongLength if one tuple does not have the same length as the variables
    */
-  public Constraint addAllowedAssignments(IntVar[] variables, long[][] tuplesList)
-      throws WrongLength {
+  public Constraint addAllowedAssignments(IntVar[] variables, long[][] tuplesList) {
     Constraint ct = new Constraint(modelBuilder);
     TableConstraintProto.Builder table = ct.getBuilder().getTableBuilder();
     for (IntVar var : variables) {
@@ -386,8 +384,7 @@ public final class CpModel {
    *
    * @see #addAllowedAssignments(IntVar[], long[][]) addAllowedAssignments
    */
-  public Constraint addAllowedAssignments(IntVar[] variables, int[][] tuplesList)
-      throws WrongLength {
+  public Constraint addAllowedAssignments(IntVar[] variables, int[][] tuplesList) {
     Constraint ct = new Constraint(modelBuilder);
     TableConstraintProto.Builder table = ct.getBuilder().getTableBuilder();
     for (IntVar var : variables) {
@@ -418,8 +415,7 @@ public final class CpModel {
    * @return an instance of the Constraint class
    * @throws WrongLength if one tuple does not have the same length as the variables
    */
-  public Constraint addForbiddenAssignments(IntVar[] variables, long[][] tuplesList)
-      throws WrongLength {
+  public Constraint addForbiddenAssignments(IntVar[] variables, long[][] tuplesList) {
     Constraint ct = addAllowedAssignments(variables, tuplesList);
     // Reverse the flag.
     ct.getBuilder().getTableBuilder().setNegated(true);
@@ -431,8 +427,7 @@ public final class CpModel {
    *
    * @see #addForbiddenAssignments(IntVar[], long[][]) addForbiddenAssignments
    */
-  public Constraint addForbiddenAssignments(IntVar[] variables, int[][] tuplesList)
-      throws WrongLength {
+  public Constraint addForbiddenAssignments(IntVar[] variables, int[][] tuplesList) {
     Constraint ct = addAllowedAssignments(variables, tuplesList);
     // Reverse the flag.
     ct.getBuilder().getTableBuilder().setNegated(true);
@@ -470,8 +465,8 @@ public final class CpModel {
    * @return an instance of the Constraint class
    * @throws WrongLength if one transition does not have a length of 3
    */
-  public Constraint addAutomaton(IntVar[] transitionVariables, long startingState,
-      long[] finalStates, long[][] transitions) throws WrongLength {
+  public Constraint addAutomaton(
+      IntVar[] transitionVariables, long startingState, long[] finalStates, long[][] transitions) {
     Constraint ct = new Constraint(modelBuilder);
     AutomatonConstraintProto.Builder automaton = ct.getBuilder().getAutomatonBuilder();
     for (IntVar var : transitionVariables) {
@@ -501,8 +496,7 @@ public final class CpModel {
    * @return an instance of the Constraint class
    * @throws MismatchedArrayLengths if variables and inverseVariables have different length
    */
-  public Constraint addInverse(IntVar[] variables, IntVar[] inverseVariables)
-      throws MismatchedArrayLengths {
+  public Constraint addInverse(IntVar[] variables, IntVar[] inverseVariables) {
     if (variables.length != inverseVariables.length) {
       throw new MismatchedArrayLengths("CpModel.addInverse", "variables", "inverseVariables");
     }
@@ -541,7 +535,7 @@ public final class CpModel {
    * @throws IllegalArgumentException if maxLevel < 0
    */
   public Constraint addReservoirConstraint(
-      IntVar[] times, long[] demands, long minLevel, long maxLevel) throws MismatchedArrayLengths {
+      IntVar[] times, long[] demands, long minLevel, long maxLevel) {
     if (times.length != demands.length) {
       throw new MismatchedArrayLengths("CpModel.addReservoirConstraint", "times", "demands");
     }
@@ -569,7 +563,7 @@ public final class CpModel {
    * @see #addReservoirConstraint(IntVar[], long[], long, long) Reservoir
    */
   public Constraint addReservoirConstraint(
-      IntVar[] times, int[] demands, long minLevel, long maxLevel) throws MismatchedArrayLengths {
+      IntVar[] times, int[] demands, long minLevel, long maxLevel) {
     return addReservoirConstraint(times, toLongArray(demands), minLevel, maxLevel);
   }
 
@@ -596,8 +590,8 @@ public final class CpModel {
    * @throws IllegalArgumentException if minLevel > 0
    * @throws IllegalArgumentException if maxLevel < 0
    */
-  public Constraint addReservoirConstraintWithActive(IntVar[] times, long[] demands,
-      IntVar[] actives, long minLevel, long maxLevel) throws MismatchedArrayLengths {
+  public Constraint addReservoirConstraintWithActive(
+      IntVar[] times, long[] demands, IntVar[] actives, long minLevel, long maxLevel) {
     if (times.length != demands.length) {
       throw new MismatchedArrayLengths(
           "CpModel.addReservoirConstraintWithActive", "times", "demands");
@@ -635,8 +629,8 @@ public final class CpModel {
    *
    * @see #addReservoirConstraintWithActive(IntVar[], long[], IntVar[], long, long) Reservoir
    */
-  public Constraint addReservoirConstraintWithActive(IntVar[] times, int[] demands,
-      IntVar[] actives, long minLevel, long maxLevel) throws MismatchedArrayLengths {
+  public Constraint addReservoirConstraintWithActive(
+      IntVar[] times, int[] demands, IntVar[] actives, long minLevel, long maxLevel) {
     return addReservoirConstraintWithActive(
         times, toLongArray(demands), actives, minLevel, maxLevel);
   }
