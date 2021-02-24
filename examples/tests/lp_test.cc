@@ -132,7 +132,7 @@ void RunBooleanProgrammingExample(
 void MutableObjectiveCrash() {
   LOG(INFO) << "MutableObjectiveCrash";
   // Create the linear solver with the GLOP backend.
-  MPSolver* solver = MPSolver::CreateSolver("GLOP");
+  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("GLOP"));
 
   // Create the variables x and y.
   MPVariable* const x = solver->MakeNumVar(0.0, 1, "x");
