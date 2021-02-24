@@ -21,7 +21,7 @@ namespace operations_research {
 void SimpleMipProgram() {
   // [START solver]
   // Create the mip solver with the SCIP backend.
-  MPSolver* solver = MPSolver::CreateSolver("SCIP");
+  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("SCIP"));
   // [END solver]
 
   // [START variables]
