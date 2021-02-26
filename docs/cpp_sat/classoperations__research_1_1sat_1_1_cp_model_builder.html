@@ -250,6 +250,18 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a76b3dff7b13e85766819c3413d237ad1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae8e77c3b7a6be3b4e47395bfd38d1810"><td class="memItemLeft" align="right" valign="top">CpModelProto *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ae8e77c3b7a6be3b4e47395bfd38d1810">MutableProto</a> ()</td></tr>
 <tr class="separator:ae8e77c3b7a6be3b4e47395bfd38d1810"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a848bf666470d64c65de60c29b3c852f1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a848bf666470d64c65de60c29b3c852f1">CopyFrom</a> (const CpModelProto &amp;model_proto)</td></tr>
+<tr class="memdesc:a848bf666470d64c65de60c29b3c852f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Replace the current model with the one from the given proto.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a848bf666470d64c65de60c29b3c852f1">More...</a><br /></td></tr>
+<tr class="separator:a848bf666470d64c65de60c29b3c852f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1791e483516ceaac7c275500d6ac622"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ae1791e483516ceaac7c275500d6ac622">GetBoolVarFromProtoIndex</a> (int index)</td></tr>
+<tr class="memdesc:ae1791e483516ceaac7c275500d6ac622"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the Boolean variable from its index in the proto.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#ae1791e483516ceaac7c275500d6ac622">More...</a><br /></td></tr>
+<tr class="separator:ae1791e483516ceaac7c275500d6ac622"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abbb17eb0f6b7c2104e681dbf8b1de525"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#abbb17eb0f6b7c2104e681dbf8b1de525">GetIntVarFromProtoIndex</a> (int index)</td></tr>
+<tr class="memdesc:abbb17eb0f6b7c2104e681dbf8b1de525"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the integer variable from its index in the proto.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#abbb17eb0f6b7c2104e681dbf8b1de525">More...</a><br /></td></tr>
+<tr class="separator:abbb17eb0f6b7c2104e681dbf8b1de525"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9ff0b1b7e617ce43edcd01029eeb80af"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html">IntervalVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a9ff0b1b7e617ce43edcd01029eeb80af">GetIntervalVarFromProtoIndex</a> (int index)</td></tr>
+<tr class="memdesc:a9ff0b1b7e617ce43edcd01029eeb80af"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the interval variable from its index in the proto.  <a href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a9ff0b1b7e617ce43edcd01029eeb80af">More...</a><br /></td></tr>
+<tr class="separator:a9ff0b1b7e617ce43edcd01029eeb80af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a2642f1728e719f00cf36e348124155e0"></a>
@@ -1370,6 +1382,26 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a848bf666470d64c65de60c29b3c852f1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a848bf666470d64c65de60c29b3c852f1">&#9670;&nbsp;</a></span>CopyFrom()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void CopyFrom </td>
+          <td>(</td>
+          <td class="paramtype">const CpModelProto &amp;&#160;</td>
+          <td class="paramname"><em>model_proto</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Replace the current model with the one from the given proto. </p>
+
+</div>
+</div>
 <a id="a9c481bea08e8109289cdd3ee8d4a24d8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9c481bea08e8109289cdd3ee8d4a24d8">&#9670;&nbsp;</a></span>FalseVar()</h2>
 
@@ -1386,6 +1418,66 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Creates an always false Boolean variable. </p>
+
+</div>
+</div>
+<a id="ae1791e483516ceaac7c275500d6ac622"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae1791e483516ceaac7c275500d6ac622">&#9670;&nbsp;</a></span>GetBoolVarFromProtoIndex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> GetBoolVarFromProtoIndex </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns the Boolean variable from its index in the proto. </p>
+
+</div>
+</div>
+<a id="a9ff0b1b7e617ce43edcd01029eeb80af"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ff0b1b7e617ce43edcd01029eeb80af">&#9670;&nbsp;</a></span>GetIntervalVarFromProtoIndex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_interval_var.html">IntervalVar</a> GetIntervalVarFromProtoIndex </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns the interval variable from its index in the proto. </p>
+
+</div>
+</div>
+<a id="abbb17eb0f6b7c2104e681dbf8b1de525"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abbb17eb0f6b7c2104e681dbf8b1de525">&#9670;&nbsp;</a></span>GetIntVarFromProtoIndex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> GetIntVarFromProtoIndex </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns the integer variable from its index in the proto. </p>
 
 </div>
 </div>

@@ -221,17 +221,17 @@ $(document).ready(function(){initNavTree('demon__profiler_8pb_8cc_source.html','
 <div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;  RegisterArenaDtor(arena);</div>
 <div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;  <span class="comment">// @@protoc_insertion_point(arena_constructor:operations_research.DemonRuns)</span></div>
 <div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;}</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;DemonRuns::DemonRuns(<span class="keyword">const</span> DemonRuns&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>)</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;DemonRuns::DemonRuns(<span class="keyword">const</span> DemonRuns&amp; from)</div>
 <div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;  : ::PROTOBUF_NAMESPACE_ID::Message(),</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;      start_time_(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.start_time_),</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;      end_time_(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.end_time_) {</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_metadata_);</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;      start_time_(from.start_time_),</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;      end_time_(from.end_time_) {</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(from._internal_metadata_);</div>
 <div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;  demon_id_.UnsafeSetDefault(&amp;::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;  <span class="keywordflow">if</span> (!<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_demon_id().empty()) {</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    demon_id_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_demon_id(), </div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;  <span class="keywordflow">if</span> (!from._internal_demon_id().empty()) {</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    demon_id_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_demon_id(), </div>
 <div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;      GetArena());</div>
 <div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;  }</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;  failures_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.failures_;</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;  failures_ = from.failures_;</div>
 <div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;  <span class="comment">// @@protoc_insertion_point(copy_constructor:operations_research.DemonRuns)</span></div>
 <div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;}</div>
 <div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160; </div>
@@ -454,50 +454,50 @@ $(document).ready(function(){initNavTree('demon__profiler_8pb_8cc_source.html','
 <div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;  <span class="keywordflow">return</span> total_size;</div>
 <div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;}</div>
 <div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160; </div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;<span class="keywordtype">void</span> DemonRuns::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;<span class="keywordtype">void</span> DemonRuns::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; from) {</div>
 <div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;<span class="comment">// @@protoc_insertion_point(generalized_merge_from_start:operations_research.DemonRuns)</span></div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;  GOOGLE_DCHECK_NE(&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;  GOOGLE_DCHECK_NE(&amp;from, <span class="keyword">this</span>);</div>
 <div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;  <span class="keyword">const</span> DemonRuns* source =</div>
 <div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated&lt;DemonRuns&gt;(</div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;          &amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;          &amp;from);</div>
 <div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;  <span class="keywordflow">if</span> (source == <span class="keyword">nullptr</span>) {</div>
 <div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;  <span class="comment">// @@protoc_insertion_point(generalized_merge_from_cast_fail:operations_research.DemonRuns)</span></div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, <span class="keyword">this</span>);</div>
 <div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;  } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;  <span class="comment">// @@protoc_insertion_point(generalized_merge_from_cast_success:operations_research.DemonRuns)</span></div>
 <div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;    MergeFrom(*source);</div>
 <div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;  }</div>
 <div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;}</div>
 <div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160; </div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;<span class="keywordtype">void</span> DemonRuns::MergeFrom(<span class="keyword">const</span> DemonRuns&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;<span class="keywordtype">void</span> DemonRuns::MergeFrom(<span class="keyword">const</span> DemonRuns&amp; from) {</div>
 <div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;<span class="comment">// @@protoc_insertion_point(class_specific_merge_from_start:operations_research.DemonRuns)</span></div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;  GOOGLE_DCHECK_NE(&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_metadata_);</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;  GOOGLE_DCHECK_NE(&amp;from, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(from._internal_metadata_);</div>
 <div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;  <a class="code" href="integral__types_8h.html#a1134b580f8da4de94ca6b1de4d37975e">::PROTOBUF_NAMESPACE_ID::uint32</a> cached_has_bits = 0;</div>
 <div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;  (void) cached_has_bits;</div>
 <div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160; </div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;  start_time_.MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.start_time_);</div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;  end_time_.MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.end_time_);</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.demon_id().size() &gt; 0) {</div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;    _internal_set_demon_id(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_demon_id());</div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;  start_time_.MergeFrom(from.start_time_);</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;  end_time_.MergeFrom(from.end_time_);</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;  <span class="keywordflow">if</span> (from.demon_id().size() &gt; 0) {</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;    _internal_set_demon_id(from._internal_demon_id());</div>
 <div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;  }</div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.failures() != 0) {</div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;    _internal_set_failures(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_failures());</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;  <span class="keywordflow">if</span> (from.failures() != 0) {</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;    _internal_set_failures(from._internal_failures());</div>
 <div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;  }</div>
 <div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;}</div>
 <div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160; </div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;<span class="keywordtype">void</span> DemonRuns::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;<span class="keywordtype">void</span> DemonRuns::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; from) {</div>
 <div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;<span class="comment">// @@protoc_insertion_point(generalized_copy_from_start:operations_research.DemonRuns)</span></div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;  <span class="keywordflow">if</span> (&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a> == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;  <span class="keywordflow">if</span> (&amp;from == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;  Clear();</div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;  MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;  MergeFrom(from);</div>
 <div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;}</div>
 <div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160; </div>
-<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;<span class="keywordtype">void</span> DemonRuns::CopyFrom(<span class="keyword">const</span> DemonRuns&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;<span class="keywordtype">void</span> DemonRuns::CopyFrom(<span class="keyword">const</span> DemonRuns&amp; from) {</div>
 <div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;<span class="comment">// @@protoc_insertion_point(class_specific_copy_from_start:operations_research.DemonRuns)</span></div>
-<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;  <span class="keywordflow">if</span> (&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a> == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;  <span class="keywordflow">if</span> (&amp;from == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;  Clear();</div>
-<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;  MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;  MergeFrom(from);</div>
 <div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;}</div>
 <div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160; </div>
 <div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;<span class="keywordtype">bool</span> DemonRuns::IsInitialized()<span class="keyword"> const </span>{</div>
@@ -533,18 +533,18 @@ $(document).ready(function(){initNavTree('demon__profiler_8pb_8cc_source.html','
 <div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;  RegisterArenaDtor(arena);</div>
 <div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;  <span class="comment">// @@protoc_insertion_point(arena_constructor:operations_research.ConstraintRuns)</span></div>
 <div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;}</div>
-<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;ConstraintRuns::ConstraintRuns(<span class="keyword">const</span> ConstraintRuns&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>)</div>
+<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;ConstraintRuns::ConstraintRuns(<span class="keyword">const</span> ConstraintRuns&amp; from)</div>
 <div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;  : ::PROTOBUF_NAMESPACE_ID::Message(),</div>
-<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;      initial_propagation_start_time_(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.initial_propagation_start_time_),</div>
-<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;      initial_propagation_end_time_(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.initial_propagation_end_time_),</div>
-<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;      demons_(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.demons_) {</div>
-<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_metadata_);</div>
+<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;      initial_propagation_start_time_(from.initial_propagation_start_time_),</div>
+<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;      initial_propagation_end_time_(from.initial_propagation_end_time_),</div>
+<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;      demons_(from.demons_) {</div>
+<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(from._internal_metadata_);</div>
 <div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;  constraint_id_.UnsafeSetDefault(&amp;::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());</div>
-<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;  <span class="keywordflow">if</span> (!<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_constraint_id().empty()) {</div>
-<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;    constraint_id_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_constraint_id(), </div>
+<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;  <span class="keywordflow">if</span> (!from._internal_constraint_id().empty()) {</div>
+<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;    constraint_id_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_constraint_id(), </div>
 <div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;      GetArena());</div>
 <div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;  }</div>
-<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;  failures_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.failures_;</div>
+<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;  failures_ = from.failures_;</div>
 <div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;  <span class="comment">// @@protoc_insertion_point(copy_constructor:operations_research.ConstraintRuns)</span></div>
 <div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;}</div>
 <div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160; </div>
@@ -795,51 +795,51 @@ $(document).ready(function(){initNavTree('demon__profiler_8pb_8cc_source.html','
 <div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;  <span class="keywordflow">return</span> total_size;</div>
 <div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160;}</div>
 <div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160; </div>
-<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;<span class="keywordtype">void</span> ConstraintRuns::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;<span class="keywordtype">void</span> ConstraintRuns::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; from) {</div>
 <div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;<span class="comment">// @@protoc_insertion_point(generalized_merge_from_start:operations_research.ConstraintRuns)</span></div>
-<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;  GOOGLE_DCHECK_NE(&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;  GOOGLE_DCHECK_NE(&amp;from, <span class="keyword">this</span>);</div>
 <div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;  <span class="keyword">const</span> ConstraintRuns* source =</div>
 <div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated&lt;ConstraintRuns&gt;(</div>
-<div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;          &amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
+<div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;          &amp;from);</div>
 <div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;  <span class="keywordflow">if</span> (source == <span class="keyword">nullptr</span>) {</div>
 <div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;  <span class="comment">// @@protoc_insertion_point(generalized_merge_from_cast_fail:operations_research.ConstraintRuns)</span></div>
-<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, <span class="keyword">this</span>);</div>
 <div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;  } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;  <span class="comment">// @@protoc_insertion_point(generalized_merge_from_cast_success:operations_research.ConstraintRuns)</span></div>
 <div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160;    MergeFrom(*source);</div>
 <div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;  }</div>
 <div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;}</div>
 <div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160; </div>
-<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;<span class="keywordtype">void</span> ConstraintRuns::MergeFrom(<span class="keyword">const</span> ConstraintRuns&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;<span class="keywordtype">void</span> ConstraintRuns::MergeFrom(<span class="keyword">const</span> ConstraintRuns&amp; from) {</div>
 <div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;<span class="comment">// @@protoc_insertion_point(class_specific_merge_from_start:operations_research.ConstraintRuns)</span></div>
-<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;  GOOGLE_DCHECK_NE(&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
-<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_metadata_);</div>
+<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;  GOOGLE_DCHECK_NE(&amp;from, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(from._internal_metadata_);</div>
 <div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;  <a class="code" href="integral__types_8h.html#a1134b580f8da4de94ca6b1de4d37975e">::PROTOBUF_NAMESPACE_ID::uint32</a> cached_has_bits = 0;</div>
 <div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;  (void) cached_has_bits;</div>
 <div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160; </div>
-<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;  initial_propagation_start_time_.MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.initial_propagation_start_time_);</div>
-<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;  initial_propagation_end_time_.MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.initial_propagation_end_time_);</div>
-<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;  demons_.MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.demons_);</div>
-<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.constraint_id().size() &gt; 0) {</div>
-<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;    _internal_set_constraint_id(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_constraint_id());</div>
+<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;  initial_propagation_start_time_.MergeFrom(from.initial_propagation_start_time_);</div>
+<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;  initial_propagation_end_time_.MergeFrom(from.initial_propagation_end_time_);</div>
+<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;  demons_.MergeFrom(from.demons_);</div>
+<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;  <span class="keywordflow">if</span> (from.constraint_id().size() &gt; 0) {</div>
+<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;    _internal_set_constraint_id(from._internal_constraint_id());</div>
 <div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;  }</div>
-<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.failures() != 0) {</div>
-<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;    _internal_set_failures(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_failures());</div>
+<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;  <span class="keywordflow">if</span> (from.failures() != 0) {</div>
+<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;    _internal_set_failures(from._internal_failures());</div>
 <div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;  }</div>
 <div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;}</div>
 <div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160; </div>
-<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;<span class="keywordtype">void</span> ConstraintRuns::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;<span class="keywordtype">void</span> ConstraintRuns::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; from) {</div>
 <div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160;<span class="comment">// @@protoc_insertion_point(generalized_copy_from_start:operations_research.ConstraintRuns)</span></div>
-<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;  <span class="keywordflow">if</span> (&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a> == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;  <span class="keywordflow">if</span> (&amp;from == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;  Clear();</div>
-<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;  MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
+<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;  MergeFrom(from);</div>
 <div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160;}</div>
 <div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160; </div>
-<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;<span class="keywordtype">void</span> ConstraintRuns::CopyFrom(<span class="keyword">const</span> ConstraintRuns&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;<span class="keywordtype">void</span> ConstraintRuns::CopyFrom(<span class="keyword">const</span> ConstraintRuns&amp; from) {</div>
 <div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;<span class="comment">// @@protoc_insertion_point(class_specific_copy_from_start:operations_research.ConstraintRuns)</span></div>
-<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;  <span class="keywordflow">if</span> (&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a> == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;  <span class="keywordflow">if</span> (&amp;from == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;  Clear();</div>
-<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;  MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
+<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;  MergeFrom(from);</div>
 <div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;}</div>
 <div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160; </div>
 <div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;<span class="keywordtype">bool</span> ConstraintRuns::IsInitialized()<span class="keyword"> const </span>{</div>
@@ -904,7 +904,6 @@ $(document).ready(function(){initNavTree('demon__profiler_8pb_8cc_source.html','
 <div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdoc">The vehicle routing library lets one model and solve generic vehicle routing problems ranging from th...</div><div class="ttdef"><b>Definition:</b> <a href="dense__doubly__linked__list_8h_source.html#l00021">dense_doubly_linked_list.h:21</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a4b2928e7c087b629b9741ba749aa9b04"><div class="ttname"><a href="namespaceoperations__research.html#a4b2928e7c087b629b9741ba749aa9b04">operations_research::_DemonRuns_default_instance_</a></div><div class="ttdeci">class operations_research::DemonRunsDefaultTypeInternal _DemonRuns_default_instance_</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8pb_8h_source.html#l00062">demon_profiler.pb.h:61</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_aa9ae85dc85fabfea38f3d5bda107bd4c"><div class="ttname"><a href="namespaceoperations__research.html#aa9ae85dc85fabfea38f3d5bda107bd4c">operations_research::_ConstraintRuns_default_instance_</a></div><div class="ttdeci">class operations_research::ConstraintRunsDefaultTypeInternal _ConstraintRuns_default_instance_</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8pb_8h_source.html#l00059">demon_profiler.pb.h:58</a></div></div>
-<div class="ttc" id="anamespaceswig_html_a62bf3d7d1ef1d4e3717f290cbe930bdb"><div class="ttname"><a href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">swig::from</a></div><div class="ttdeci">PyObject * from(const Type &amp;val)</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver__python__wrap_8cc_source.html#l03640">constraint_solver_python_wrap.cc:3640</a></div></div>
 <div class="ttc" id="aoptional__boolean_8pb_8cc_html_a45da01ad4acb3124fbe203f64edbd517"><div class="ttname"><a href="optional__boolean_8pb_8cc.html#a45da01ad4acb3124fbe203f64edbd517">schemas</a></div><div class="ttdeci">static constexpr ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema * schemas</div><div class="ttdef"><b>Definition:</b> <a href="optional__boolean_8pb_8cc_source.html#l00023">optional_boolean.pb.cc:23</a></div></div>
 <div class="ttc" id="astruct_table_struct__ortools__2fconstraint__5fsolver__2fdemon__5fprofiler__2eproto_html_a345548bf52cc46cc10c6830c03d541ff"><div class="ttname"><a href="struct_table_struct__ortools__2fconstraint__5fsolver__2fdemon__5fprofiler__2eproto.html#a345548bf52cc46cc10c6830c03d541ff">TableStruct_ortools_2fconstraint_5fsolver_2fdemon_5fprofiler_2eproto::offsets</a></div><div class="ttdeci">static const ::PROTOBUF_NAMESPACE_ID::uint32 offsets[]</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8pb_8h_source.html#l00053">demon_profiler.pb.h:53</a></div></div>
 </div><!-- fragment --></div><!-- contents -->

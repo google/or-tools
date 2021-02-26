@@ -251,15 +251,15 @@ $(document).ready(function(){initNavTree('solver__parameters_8pb_8cc_source.html
 <div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;  RegisterArenaDtor(arena);</div>
 <div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;  <span class="comment">// @@protoc_insertion_point(arena_constructor:operations_research.ConstraintSolverParameters)</span></div>
 <div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;}</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;ConstraintSolverParameters::ConstraintSolverParameters(<span class="keyword">const</span> ConstraintSolverParameters&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>)</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;ConstraintSolverParameters::ConstraintSolverParameters(<span class="keyword">const</span> ConstraintSolverParameters&amp; from)</div>
 <div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;  : ::PROTOBUF_NAMESPACE_ID::Message() {</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_metadata_);</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(from._internal_metadata_);</div>
 <div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;  profile_file_.UnsafeSetDefault(&amp;::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;  <span class="keywordflow">if</span> (!<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_profile_file().empty()) {</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;    profile_file_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_profile_file(), </div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;  <span class="keywordflow">if</span> (!from._internal_profile_file().empty()) {</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;    profile_file_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_profile_file(), </div>
 <div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;      GetArena());</div>
 <div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;  }</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;  ::memcpy(&amp;compress_trail_, &amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.compress_trail_,</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;  ::memcpy(&amp;compress_trail_, &amp;from.compress_trail_,</div>
 <div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    <span class="keyword">static_cast&lt;</span><span class="keywordtype">size_t</span><span class="keyword">&gt;</span>(<span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(&amp;skip_locally_optimal_paths_) -</div>
 <div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;    <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(&amp;compress_trail_)) + <span class="keyword">sizeof</span>(skip_locally_optimal_paths_));</div>
 <div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;  <span class="comment">// @@protoc_insertion_point(copy_constructor:operations_research.ConstraintSolverParameters)</span></div>
@@ -878,123 +878,123 @@ $(document).ready(function(){initNavTree('solver__parameters_8pb_8cc_source.html
 <div class="line"><a name="l00787"></a><span class="lineno">  787</span>&#160;  <span class="keywordflow">return</span> total_size;</div>
 <div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160;}</div>
 <div class="line"><a name="l00789"></a><span class="lineno">  789</span>&#160; </div>
-<div class="line"><a name="l00790"></a><span class="lineno">  790</span>&#160;<span class="keywordtype">void</span> ConstraintSolverParameters::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00790"></a><span class="lineno">  790</span>&#160;<span class="keywordtype">void</span> ConstraintSolverParameters::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; from) {</div>
 <div class="line"><a name="l00791"></a><span class="lineno">  791</span>&#160;<span class="comment">// @@protoc_insertion_point(generalized_merge_from_start:operations_research.ConstraintSolverParameters)</span></div>
-<div class="line"><a name="l00792"></a><span class="lineno">  792</span>&#160;  GOOGLE_DCHECK_NE(&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00792"></a><span class="lineno">  792</span>&#160;  GOOGLE_DCHECK_NE(&amp;from, <span class="keyword">this</span>);</div>
 <div class="line"><a name="l00793"></a><span class="lineno">  793</span>&#160;  <span class="keyword">const</span> ConstraintSolverParameters* source =</div>
 <div class="line"><a name="l00794"></a><span class="lineno">  794</span>&#160;      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated&lt;ConstraintSolverParameters&gt;(</div>
-<div class="line"><a name="l00795"></a><span class="lineno">  795</span>&#160;          &amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
+<div class="line"><a name="l00795"></a><span class="lineno">  795</span>&#160;          &amp;from);</div>
 <div class="line"><a name="l00796"></a><span class="lineno">  796</span>&#160;  <span class="keywordflow">if</span> (source == <span class="keyword">nullptr</span>) {</div>
 <div class="line"><a name="l00797"></a><span class="lineno">  797</span>&#160;  <span class="comment">// @@protoc_insertion_point(generalized_merge_from_cast_fail:operations_research.ConstraintSolverParameters)</span></div>
-<div class="line"><a name="l00798"></a><span class="lineno">  798</span>&#160;    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00798"></a><span class="lineno">  798</span>&#160;    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, <span class="keyword">this</span>);</div>
 <div class="line"><a name="l00799"></a><span class="lineno">  799</span>&#160;  } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l00800"></a><span class="lineno">  800</span>&#160;  <span class="comment">// @@protoc_insertion_point(generalized_merge_from_cast_success:operations_research.ConstraintSolverParameters)</span></div>
 <div class="line"><a name="l00801"></a><span class="lineno">  801</span>&#160;    MergeFrom(*source);</div>
 <div class="line"><a name="l00802"></a><span class="lineno">  802</span>&#160;  }</div>
 <div class="line"><a name="l00803"></a><span class="lineno">  803</span>&#160;}</div>
 <div class="line"><a name="l00804"></a><span class="lineno">  804</span>&#160; </div>
-<div class="line"><a name="l00805"></a><span class="lineno">  805</span>&#160;<span class="keywordtype">void</span> ConstraintSolverParameters::MergeFrom(<span class="keyword">const</span> ConstraintSolverParameters&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00805"></a><span class="lineno">  805</span>&#160;<span class="keywordtype">void</span> ConstraintSolverParameters::MergeFrom(<span class="keyword">const</span> ConstraintSolverParameters&amp; from) {</div>
 <div class="line"><a name="l00806"></a><span class="lineno">  806</span>&#160;<span class="comment">// @@protoc_insertion_point(class_specific_merge_from_start:operations_research.ConstraintSolverParameters)</span></div>
-<div class="line"><a name="l00807"></a><span class="lineno">  807</span>&#160;  GOOGLE_DCHECK_NE(&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
-<div class="line"><a name="l00808"></a><span class="lineno">  808</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_metadata_);</div>
+<div class="line"><a name="l00807"></a><span class="lineno">  807</span>&#160;  GOOGLE_DCHECK_NE(&amp;from, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00808"></a><span class="lineno">  808</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(from._internal_metadata_);</div>
 <div class="line"><a name="l00809"></a><span class="lineno">  809</span>&#160;  <a class="code" href="integral__types_8h.html#a1134b580f8da4de94ca6b1de4d37975e">::PROTOBUF_NAMESPACE_ID::uint32</a> cached_has_bits = 0;</div>
 <div class="line"><a name="l00810"></a><span class="lineno">  810</span>&#160;  (void) cached_has_bits;</div>
 <div class="line"><a name="l00811"></a><span class="lineno">  811</span>&#160; </div>
-<div class="line"><a name="l00812"></a><span class="lineno">  812</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.profile_file().size() &gt; 0) {</div>
-<div class="line"><a name="l00813"></a><span class="lineno">  813</span>&#160;    _internal_set_profile_file(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_profile_file());</div>
+<div class="line"><a name="l00812"></a><span class="lineno">  812</span>&#160;  <span class="keywordflow">if</span> (from.profile_file().size() &gt; 0) {</div>
+<div class="line"><a name="l00813"></a><span class="lineno">  813</span>&#160;    _internal_set_profile_file(from._internal_profile_file());</div>
 <div class="line"><a name="l00814"></a><span class="lineno">  814</span>&#160;  }</div>
-<div class="line"><a name="l00815"></a><span class="lineno">  815</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.compress_trail() != 0) {</div>
-<div class="line"><a name="l00816"></a><span class="lineno">  816</span>&#160;    _internal_set_compress_trail(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_compress_trail());</div>
+<div class="line"><a name="l00815"></a><span class="lineno">  815</span>&#160;  <span class="keywordflow">if</span> (from.compress_trail() != 0) {</div>
+<div class="line"><a name="l00816"></a><span class="lineno">  816</span>&#160;    _internal_set_compress_trail(from._internal_compress_trail());</div>
 <div class="line"><a name="l00817"></a><span class="lineno">  817</span>&#160;  }</div>
-<div class="line"><a name="l00818"></a><span class="lineno">  818</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.trail_block_size() != 0) {</div>
-<div class="line"><a name="l00819"></a><span class="lineno">  819</span>&#160;    _internal_set_trail_block_size(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_trail_block_size());</div>
+<div class="line"><a name="l00818"></a><span class="lineno">  818</span>&#160;  <span class="keywordflow">if</span> (from.trail_block_size() != 0) {</div>
+<div class="line"><a name="l00819"></a><span class="lineno">  819</span>&#160;    _internal_set_trail_block_size(from._internal_trail_block_size());</div>
 <div class="line"><a name="l00820"></a><span class="lineno">  820</span>&#160;  }</div>
-<div class="line"><a name="l00821"></a><span class="lineno">  821</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.array_split_size() != 0) {</div>
-<div class="line"><a name="l00822"></a><span class="lineno">  822</span>&#160;    _internal_set_array_split_size(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_array_split_size());</div>
+<div class="line"><a name="l00821"></a><span class="lineno">  821</span>&#160;  <span class="keywordflow">if</span> (from.array_split_size() != 0) {</div>
+<div class="line"><a name="l00822"></a><span class="lineno">  822</span>&#160;    _internal_set_array_split_size(from._internal_array_split_size());</div>
 <div class="line"><a name="l00823"></a><span class="lineno">  823</span>&#160;  }</div>
-<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.store_names() != 0) {</div>
-<div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;    _internal_set_store_names(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_store_names());</div>
+<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;  <span class="keywordflow">if</span> (from.store_names() != 0) {</div>
+<div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;    _internal_set_store_names(from._internal_store_names());</div>
 <div class="line"><a name="l00826"></a><span class="lineno">  826</span>&#160;  }</div>
-<div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.name_cast_variables() != 0) {</div>
-<div class="line"><a name="l00828"></a><span class="lineno">  828</span>&#160;    _internal_set_name_cast_variables(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_name_cast_variables());</div>
+<div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160;  <span class="keywordflow">if</span> (from.name_cast_variables() != 0) {</div>
+<div class="line"><a name="l00828"></a><span class="lineno">  828</span>&#160;    _internal_set_name_cast_variables(from._internal_name_cast_variables());</div>
 <div class="line"><a name="l00829"></a><span class="lineno">  829</span>&#160;  }</div>
-<div class="line"><a name="l00830"></a><span class="lineno">  830</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.name_all_variables() != 0) {</div>
-<div class="line"><a name="l00831"></a><span class="lineno">  831</span>&#160;    _internal_set_name_all_variables(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_name_all_variables());</div>
+<div class="line"><a name="l00830"></a><span class="lineno">  830</span>&#160;  <span class="keywordflow">if</span> (from.name_all_variables() != 0) {</div>
+<div class="line"><a name="l00831"></a><span class="lineno">  831</span>&#160;    _internal_set_name_all_variables(from._internal_name_all_variables());</div>
 <div class="line"><a name="l00832"></a><span class="lineno">  832</span>&#160;  }</div>
-<div class="line"><a name="l00833"></a><span class="lineno">  833</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.profile_propagation() != 0) {</div>
-<div class="line"><a name="l00834"></a><span class="lineno">  834</span>&#160;    _internal_set_profile_propagation(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_profile_propagation());</div>
+<div class="line"><a name="l00833"></a><span class="lineno">  833</span>&#160;  <span class="keywordflow">if</span> (from.profile_propagation() != 0) {</div>
+<div class="line"><a name="l00834"></a><span class="lineno">  834</span>&#160;    _internal_set_profile_propagation(from._internal_profile_propagation());</div>
 <div class="line"><a name="l00835"></a><span class="lineno">  835</span>&#160;  }</div>
-<div class="line"><a name="l00836"></a><span class="lineno">  836</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.print_model() != 0) {</div>
-<div class="line"><a name="l00837"></a><span class="lineno">  837</span>&#160;    _internal_set_print_model(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_print_model());</div>
+<div class="line"><a name="l00836"></a><span class="lineno">  836</span>&#160;  <span class="keywordflow">if</span> (from.print_model() != 0) {</div>
+<div class="line"><a name="l00837"></a><span class="lineno">  837</span>&#160;    _internal_set_print_model(from._internal_print_model());</div>
 <div class="line"><a name="l00838"></a><span class="lineno">  838</span>&#160;  }</div>
-<div class="line"><a name="l00839"></a><span class="lineno">  839</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.print_model_stats() != 0) {</div>
-<div class="line"><a name="l00840"></a><span class="lineno">  840</span>&#160;    _internal_set_print_model_stats(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_print_model_stats());</div>
+<div class="line"><a name="l00839"></a><span class="lineno">  839</span>&#160;  <span class="keywordflow">if</span> (from.print_model_stats() != 0) {</div>
+<div class="line"><a name="l00840"></a><span class="lineno">  840</span>&#160;    _internal_set_print_model_stats(from._internal_print_model_stats());</div>
 <div class="line"><a name="l00841"></a><span class="lineno">  841</span>&#160;  }</div>
-<div class="line"><a name="l00842"></a><span class="lineno">  842</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.print_added_constraints() != 0) {</div>
-<div class="line"><a name="l00843"></a><span class="lineno">  843</span>&#160;    _internal_set_print_added_constraints(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_print_added_constraints());</div>
+<div class="line"><a name="l00842"></a><span class="lineno">  842</span>&#160;  <span class="keywordflow">if</span> (from.print_added_constraints() != 0) {</div>
+<div class="line"><a name="l00843"></a><span class="lineno">  843</span>&#160;    _internal_set_print_added_constraints(from._internal_print_added_constraints());</div>
 <div class="line"><a name="l00844"></a><span class="lineno">  844</span>&#160;  }</div>
-<div class="line"><a name="l00845"></a><span class="lineno">  845</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.disable_solve() != 0) {</div>
-<div class="line"><a name="l00846"></a><span class="lineno">  846</span>&#160;    _internal_set_disable_solve(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_disable_solve());</div>
+<div class="line"><a name="l00845"></a><span class="lineno">  845</span>&#160;  <span class="keywordflow">if</span> (from.disable_solve() != 0) {</div>
+<div class="line"><a name="l00846"></a><span class="lineno">  846</span>&#160;    _internal_set_disable_solve(from._internal_disable_solve());</div>
 <div class="line"><a name="l00847"></a><span class="lineno">  847</span>&#160;  }</div>
-<div class="line"><a name="l00848"></a><span class="lineno">  848</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.profile_local_search() != 0) {</div>
-<div class="line"><a name="l00849"></a><span class="lineno">  849</span>&#160;    _internal_set_profile_local_search(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_profile_local_search());</div>
+<div class="line"><a name="l00848"></a><span class="lineno">  848</span>&#160;  <span class="keywordflow">if</span> (from.profile_local_search() != 0) {</div>
+<div class="line"><a name="l00849"></a><span class="lineno">  849</span>&#160;    _internal_set_profile_local_search(from._internal_profile_local_search());</div>
 <div class="line"><a name="l00850"></a><span class="lineno">  850</span>&#160;  }</div>
-<div class="line"><a name="l00851"></a><span class="lineno">  851</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.print_local_search_profile() != 0) {</div>
-<div class="line"><a name="l00852"></a><span class="lineno">  852</span>&#160;    _internal_set_print_local_search_profile(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_print_local_search_profile());</div>
+<div class="line"><a name="l00851"></a><span class="lineno">  851</span>&#160;  <span class="keywordflow">if</span> (from.print_local_search_profile() != 0) {</div>
+<div class="line"><a name="l00852"></a><span class="lineno">  852</span>&#160;    _internal_set_print_local_search_profile(from._internal_print_local_search_profile());</div>
 <div class="line"><a name="l00853"></a><span class="lineno">  853</span>&#160;  }</div>
-<div class="line"><a name="l00854"></a><span class="lineno">  854</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.trace_propagation() != 0) {</div>
-<div class="line"><a name="l00855"></a><span class="lineno">  855</span>&#160;    _internal_set_trace_propagation(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_trace_propagation());</div>
+<div class="line"><a name="l00854"></a><span class="lineno">  854</span>&#160;  <span class="keywordflow">if</span> (from.trace_propagation() != 0) {</div>
+<div class="line"><a name="l00855"></a><span class="lineno">  855</span>&#160;    _internal_set_trace_propagation(from._internal_trace_propagation());</div>
 <div class="line"><a name="l00856"></a><span class="lineno">  856</span>&#160;  }</div>
-<div class="line"><a name="l00857"></a><span class="lineno">  857</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.trace_search() != 0) {</div>
-<div class="line"><a name="l00858"></a><span class="lineno">  858</span>&#160;    _internal_set_trace_search(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_trace_search());</div>
+<div class="line"><a name="l00857"></a><span class="lineno">  857</span>&#160;  <span class="keywordflow">if</span> (from.trace_search() != 0) {</div>
+<div class="line"><a name="l00858"></a><span class="lineno">  858</span>&#160;    _internal_set_trace_search(from._internal_trace_search());</div>
 <div class="line"><a name="l00859"></a><span class="lineno">  859</span>&#160;  }</div>
-<div class="line"><a name="l00860"></a><span class="lineno">  860</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.check_solution_period() != 0) {</div>
-<div class="line"><a name="l00861"></a><span class="lineno">  861</span>&#160;    _internal_set_check_solution_period(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_check_solution_period());</div>
+<div class="line"><a name="l00860"></a><span class="lineno">  860</span>&#160;  <span class="keywordflow">if</span> (from.check_solution_period() != 0) {</div>
+<div class="line"><a name="l00861"></a><span class="lineno">  861</span>&#160;    _internal_set_check_solution_period(from._internal_check_solution_period());</div>
 <div class="line"><a name="l00862"></a><span class="lineno">  862</span>&#160;  }</div>
-<div class="line"><a name="l00863"></a><span class="lineno">  863</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.use_small_table() != 0) {</div>
-<div class="line"><a name="l00864"></a><span class="lineno">  864</span>&#160;    _internal_set_use_small_table(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_use_small_table());</div>
+<div class="line"><a name="l00863"></a><span class="lineno">  863</span>&#160;  <span class="keywordflow">if</span> (from.use_small_table() != 0) {</div>
+<div class="line"><a name="l00864"></a><span class="lineno">  864</span>&#160;    _internal_set_use_small_table(from._internal_use_small_table());</div>
 <div class="line"><a name="l00865"></a><span class="lineno">  865</span>&#160;  }</div>
-<div class="line"><a name="l00866"></a><span class="lineno">  866</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.use_cumulative_edge_finder() != 0) {</div>
-<div class="line"><a name="l00867"></a><span class="lineno">  867</span>&#160;    _internal_set_use_cumulative_edge_finder(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_use_cumulative_edge_finder());</div>
+<div class="line"><a name="l00866"></a><span class="lineno">  866</span>&#160;  <span class="keywordflow">if</span> (from.use_cumulative_edge_finder() != 0) {</div>
+<div class="line"><a name="l00867"></a><span class="lineno">  867</span>&#160;    _internal_set_use_cumulative_edge_finder(from._internal_use_cumulative_edge_finder());</div>
 <div class="line"><a name="l00868"></a><span class="lineno">  868</span>&#160;  }</div>
-<div class="line"><a name="l00869"></a><span class="lineno">  869</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.use_cumulative_time_table() != 0) {</div>
-<div class="line"><a name="l00870"></a><span class="lineno">  870</span>&#160;    _internal_set_use_cumulative_time_table(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_use_cumulative_time_table());</div>
+<div class="line"><a name="l00869"></a><span class="lineno">  869</span>&#160;  <span class="keywordflow">if</span> (from.use_cumulative_time_table() != 0) {</div>
+<div class="line"><a name="l00870"></a><span class="lineno">  870</span>&#160;    _internal_set_use_cumulative_time_table(from._internal_use_cumulative_time_table());</div>
 <div class="line"><a name="l00871"></a><span class="lineno">  871</span>&#160;  }</div>
-<div class="line"><a name="l00872"></a><span class="lineno">  872</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.use_cumulative_time_table_sync() != 0) {</div>
-<div class="line"><a name="l00873"></a><span class="lineno">  873</span>&#160;    _internal_set_use_cumulative_time_table_sync(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_use_cumulative_time_table_sync());</div>
+<div class="line"><a name="l00872"></a><span class="lineno">  872</span>&#160;  <span class="keywordflow">if</span> (from.use_cumulative_time_table_sync() != 0) {</div>
+<div class="line"><a name="l00873"></a><span class="lineno">  873</span>&#160;    _internal_set_use_cumulative_time_table_sync(from._internal_use_cumulative_time_table_sync());</div>
 <div class="line"><a name="l00874"></a><span class="lineno">  874</span>&#160;  }</div>
-<div class="line"><a name="l00875"></a><span class="lineno">  875</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.max_edge_finder_size() != 0) {</div>
-<div class="line"><a name="l00876"></a><span class="lineno">  876</span>&#160;    _internal_set_max_edge_finder_size(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_max_edge_finder_size());</div>
+<div class="line"><a name="l00875"></a><span class="lineno">  875</span>&#160;  <span class="keywordflow">if</span> (from.max_edge_finder_size() != 0) {</div>
+<div class="line"><a name="l00876"></a><span class="lineno">  876</span>&#160;    _internal_set_max_edge_finder_size(from._internal_max_edge_finder_size());</div>
 <div class="line"><a name="l00877"></a><span class="lineno">  877</span>&#160;  }</div>
-<div class="line"><a name="l00878"></a><span class="lineno">  878</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.use_sequence_high_demand_tasks() != 0) {</div>
-<div class="line"><a name="l00879"></a><span class="lineno">  879</span>&#160;    _internal_set_use_sequence_high_demand_tasks(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_use_sequence_high_demand_tasks());</div>
+<div class="line"><a name="l00878"></a><span class="lineno">  878</span>&#160;  <span class="keywordflow">if</span> (from.use_sequence_high_demand_tasks() != 0) {</div>
+<div class="line"><a name="l00879"></a><span class="lineno">  879</span>&#160;    _internal_set_use_sequence_high_demand_tasks(from._internal_use_sequence_high_demand_tasks());</div>
 <div class="line"><a name="l00880"></a><span class="lineno">  880</span>&#160;  }</div>
-<div class="line"><a name="l00881"></a><span class="lineno">  881</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.use_all_possible_disjunctions() != 0) {</div>
-<div class="line"><a name="l00882"></a><span class="lineno">  882</span>&#160;    _internal_set_use_all_possible_disjunctions(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_use_all_possible_disjunctions());</div>
+<div class="line"><a name="l00881"></a><span class="lineno">  881</span>&#160;  <span class="keywordflow">if</span> (from.use_all_possible_disjunctions() != 0) {</div>
+<div class="line"><a name="l00882"></a><span class="lineno">  882</span>&#160;    _internal_set_use_all_possible_disjunctions(from._internal_use_all_possible_disjunctions());</div>
 <div class="line"><a name="l00883"></a><span class="lineno">  883</span>&#160;  }</div>
-<div class="line"><a name="l00884"></a><span class="lineno">  884</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.diffn_use_cumulative() != 0) {</div>
-<div class="line"><a name="l00885"></a><span class="lineno">  885</span>&#160;    _internal_set_diffn_use_cumulative(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_diffn_use_cumulative());</div>
+<div class="line"><a name="l00884"></a><span class="lineno">  884</span>&#160;  <span class="keywordflow">if</span> (from.diffn_use_cumulative() != 0) {</div>
+<div class="line"><a name="l00885"></a><span class="lineno">  885</span>&#160;    _internal_set_diffn_use_cumulative(from._internal_diffn_use_cumulative());</div>
 <div class="line"><a name="l00886"></a><span class="lineno">  886</span>&#160;  }</div>
-<div class="line"><a name="l00887"></a><span class="lineno">  887</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.use_element_rmq() != 0) {</div>
-<div class="line"><a name="l00888"></a><span class="lineno">  888</span>&#160;    _internal_set_use_element_rmq(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_use_element_rmq());</div>
+<div class="line"><a name="l00887"></a><span class="lineno">  887</span>&#160;  <span class="keywordflow">if</span> (from.use_element_rmq() != 0) {</div>
+<div class="line"><a name="l00888"></a><span class="lineno">  888</span>&#160;    _internal_set_use_element_rmq(from._internal_use_element_rmq());</div>
 <div class="line"><a name="l00889"></a><span class="lineno">  889</span>&#160;  }</div>
-<div class="line"><a name="l00890"></a><span class="lineno">  890</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.skip_locally_optimal_paths() != 0) {</div>
-<div class="line"><a name="l00891"></a><span class="lineno">  891</span>&#160;    _internal_set_skip_locally_optimal_paths(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_skip_locally_optimal_paths());</div>
+<div class="line"><a name="l00890"></a><span class="lineno">  890</span>&#160;  <span class="keywordflow">if</span> (from.skip_locally_optimal_paths() != 0) {</div>
+<div class="line"><a name="l00891"></a><span class="lineno">  891</span>&#160;    _internal_set_skip_locally_optimal_paths(from._internal_skip_locally_optimal_paths());</div>
 <div class="line"><a name="l00892"></a><span class="lineno">  892</span>&#160;  }</div>
 <div class="line"><a name="l00893"></a><span class="lineno">  893</span>&#160;}</div>
 <div class="line"><a name="l00894"></a><span class="lineno">  894</span>&#160; </div>
-<div class="line"><a name="l00895"></a><span class="lineno">  895</span>&#160;<span class="keywordtype">void</span> ConstraintSolverParameters::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00895"></a><span class="lineno">  895</span>&#160;<span class="keywordtype">void</span> ConstraintSolverParameters::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; from) {</div>
 <div class="line"><a name="l00896"></a><span class="lineno">  896</span>&#160;<span class="comment">// @@protoc_insertion_point(generalized_copy_from_start:operations_research.ConstraintSolverParameters)</span></div>
-<div class="line"><a name="l00897"></a><span class="lineno">  897</span>&#160;  <span class="keywordflow">if</span> (&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a> == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00897"></a><span class="lineno">  897</span>&#160;  <span class="keywordflow">if</span> (&amp;from == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00898"></a><span class="lineno">  898</span>&#160;  Clear();</div>
-<div class="line"><a name="l00899"></a><span class="lineno">  899</span>&#160;  MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
+<div class="line"><a name="l00899"></a><span class="lineno">  899</span>&#160;  MergeFrom(from);</div>
 <div class="line"><a name="l00900"></a><span class="lineno">  900</span>&#160;}</div>
 <div class="line"><a name="l00901"></a><span class="lineno">  901</span>&#160; </div>
-<div class="line"><a name="l00902"></a><span class="lineno">  902</span>&#160;<span class="keywordtype">void</span> ConstraintSolverParameters::CopyFrom(<span class="keyword">const</span> ConstraintSolverParameters&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00902"></a><span class="lineno">  902</span>&#160;<span class="keywordtype">void</span> ConstraintSolverParameters::CopyFrom(<span class="keyword">const</span> ConstraintSolverParameters&amp; from) {</div>
 <div class="line"><a name="l00903"></a><span class="lineno">  903</span>&#160;<span class="comment">// @@protoc_insertion_point(class_specific_copy_from_start:operations_research.ConstraintSolverParameters)</span></div>
-<div class="line"><a name="l00904"></a><span class="lineno">  904</span>&#160;  <span class="keywordflow">if</span> (&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a> == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00904"></a><span class="lineno">  904</span>&#160;  <span class="keywordflow">if</span> (&amp;from == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00905"></a><span class="lineno">  905</span>&#160;  Clear();</div>
-<div class="line"><a name="l00906"></a><span class="lineno">  906</span>&#160;  MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
+<div class="line"><a name="l00906"></a><span class="lineno">  906</span>&#160;  MergeFrom(from);</div>
 <div class="line"><a name="l00907"></a><span class="lineno">  907</span>&#160;}</div>
 <div class="line"><a name="l00908"></a><span class="lineno">  908</span>&#160; </div>
 <div class="line"><a name="l00909"></a><span class="lineno">  909</span>&#160;<span class="keywordtype">bool</span> ConstraintSolverParameters::IsInitialized()<span class="keyword"> const </span>{</div>
@@ -1040,7 +1040,6 @@ $(document).ready(function(){initNavTree('solver__parameters_8pb_8cc_source.html
 <div class="ttc" id="anamespaceoperations__research_html_a2438be8da35d20dce98cb1b6cc79447f"><div class="ttname"><a href="namespaceoperations__research.html#a2438be8da35d20dce98cb1b6cc79447f">operations_research::ConstraintSolverParameters_TrailCompression_IsValid</a></div><div class="ttdeci">bool ConstraintSolverParameters_TrailCompression_IsValid(int value)</div><div class="ttdef"><b>Definition:</b> <a href="solver__parameters_8pb_8cc_source.html#l00133">solver_parameters.pb.cc:133</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_a621f5b43f3ef7e16d622802a27ca2daa"><div class="ttname"><a href="namespaceoperations__research.html#a621f5b43f3ef7e16d622802a27ca2daa">operations_research::ConstraintSolverParameters_TrailCompression_descriptor</a></div><div class="ttdeci">const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor * ConstraintSolverParameters_TrailCompression_descriptor()</div><div class="ttdef"><b>Definition:</b> <a href="solver__parameters_8pb_8cc_source.html#l00129">solver_parameters.pb.cc:129</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_ac5e380bc50cb14374c22d16ed40a8422"><div class="ttname"><a href="namespaceoperations__research.html#ac5e380bc50cb14374c22d16ed40a8422">operations_research::ConstraintSolverParameters_TrailCompression</a></div><div class="ttdeci">ConstraintSolverParameters_TrailCompression</div><div class="ttdef"><b>Definition:</b> <a href="solver__parameters_8pb_8h_source.html#l00067">solver_parameters.pb.h:67</a></div></div>
-<div class="ttc" id="anamespaceswig_html_a62bf3d7d1ef1d4e3717f290cbe930bdb"><div class="ttname"><a href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">swig::from</a></div><div class="ttdeci">PyObject * from(const Type &amp;val)</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver__python__wrap_8cc_source.html#l03640">constraint_solver_python_wrap.cc:3640</a></div></div>
 <div class="ttc" id="aoptional__boolean_8pb_8cc_html_a45da01ad4acb3124fbe203f64edbd517"><div class="ttname"><a href="optional__boolean_8pb_8cc.html#a45da01ad4acb3124fbe203f64edbd517">schemas</a></div><div class="ttdeci">static constexpr ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema * schemas</div><div class="ttdef"><b>Definition:</b> <a href="optional__boolean_8pb_8cc_source.html#l00023">optional_boolean.pb.cc:23</a></div></div>
 <div class="ttc" id="asolver__parameters_8pb_8cc_html_a0efe13d16d0ea2ee243fb8f3a1a1e489"><div class="ttname"><a href="solver__parameters_8pb_8cc.html#a0efe13d16d0ea2ee243fb8f3a1a1e489">descriptor_table_ortools_2fconstraint_5fsolver_2fsolver_5fparameters_2eproto_deps</a></div><div class="ttdeci">static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable *const descriptor_table_ortools_2fconstraint_5fsolver_2fsolver_5fparameters_2eproto_deps[1]</div><div class="ttdef"><b>Definition:</b> <a href="solver__parameters_8pb_8cc_source.html#l00113">solver_parameters.pb.cc:113</a></div></div>
 <div class="ttc" id="asolver__parameters_8pb_8cc_html_a1a656da48cf3d2824247c83ad8d92f10"><div class="ttname"><a href="solver__parameters_8pb_8cc.html#a1a656da48cf3d2824247c83ad8d92f10">CHK_</a></div><div class="ttdeci">#define CHK_(x)</div></div>

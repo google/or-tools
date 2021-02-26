@@ -293,11 +293,11 @@ $(document).ready(function(){initNavTree('flow__problem_8pb_8cc_source.html','')
 <div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;  RegisterArenaDtor(arena);</div>
 <div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;  <span class="comment">// @@protoc_insertion_point(arena_constructor:operations_research.Arc)</span></div>
 <div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;}</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;<a class="code" href="namespaceoperations__research.html#a6894cc7d30a41a5e750f40a7f4751c01">Arc::Arc</a>(<span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#a6894cc7d30a41a5e750f40a7f4751c01">Arc</a>&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>)</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;<a class="code" href="namespaceoperations__research.html#a6894cc7d30a41a5e750f40a7f4751c01">Arc::Arc</a>(<span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#a6894cc7d30a41a5e750f40a7f4751c01">Arc</a>&amp; from)</div>
 <div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;  : ::PROTOBUF_NAMESPACE_ID::Message(),</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;      _has_bits_(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._has_bits_) {</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_metadata_);</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;  ::memcpy(&amp;tail_node_id_, &amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.tail_node_id_,</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;      _has_bits_(from._has_bits_) {</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(from._internal_metadata_);</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;  ::memcpy(&amp;tail_node_id_, &amp;from.tail_node_id_,</div>
 <div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    <span class="keyword">static_cast&lt;</span><span class="keywordtype">size_t</span><span class="keyword">&gt;</span>(<span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(&amp;capacity_) -</div>
 <div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;    <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(&amp;tail_node_id_)) + <span class="keyword">sizeof</span>(capacity_));</div>
 <div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;  <span class="comment">// @@protoc_insertion_point(copy_constructor:operations_research.Arc)</span></div>
@@ -503,58 +503,58 @@ $(document).ready(function(){initNavTree('flow__problem_8pb_8cc_source.html','')
 <div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;  <span class="keywordflow">return</span> total_size;</div>
 <div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;}</div>
 <div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160; </div>
-<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;<span class="keywordtype">void</span> Arc::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;<span class="keywordtype">void</span> Arc::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; from) {</div>
 <div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;<span class="comment">// @@protoc_insertion_point(generalized_merge_from_start:operations_research.Arc)</span></div>
-<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;  GOOGLE_DCHECK_NE(&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;  GOOGLE_DCHECK_NE(&amp;from, <span class="keyword">this</span>);</div>
 <div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;  <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#a6894cc7d30a41a5e750f40a7f4751c01">Arc</a>* source =</div>
 <div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated&lt;Arc&gt;(</div>
-<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;          &amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
+<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;          &amp;from);</div>
 <div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;  <span class="keywordflow">if</span> (source == <span class="keyword">nullptr</span>) {</div>
 <div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;  <span class="comment">// @@protoc_insertion_point(generalized_merge_from_cast_fail:operations_research.Arc)</span></div>
-<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, <span class="keyword">this</span>);</div>
 <div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;  } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;  <span class="comment">// @@protoc_insertion_point(generalized_merge_from_cast_success:operations_research.Arc)</span></div>
 <div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;    MergeFrom(*source);</div>
 <div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;  }</div>
 <div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;}</div>
 <div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160; </div>
-<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;<span class="keywordtype">void</span> Arc::MergeFrom(<span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#a6894cc7d30a41a5e750f40a7f4751c01">Arc</a>&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;<span class="keywordtype">void</span> Arc::MergeFrom(<span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#a6894cc7d30a41a5e750f40a7f4751c01">Arc</a>&amp; from) {</div>
 <div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;<span class="comment">// @@protoc_insertion_point(class_specific_merge_from_start:operations_research.Arc)</span></div>
-<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;  GOOGLE_DCHECK_NE(&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
-<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_metadata_);</div>
+<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;  GOOGLE_DCHECK_NE(&amp;from, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(from._internal_metadata_);</div>
 <div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;  <a class="code" href="integral__types_8h.html#a1134b580f8da4de94ca6b1de4d37975e">::PROTOBUF_NAMESPACE_ID::uint32</a> cached_has_bits = 0;</div>
 <div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;  (void) cached_has_bits;</div>
 <div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160; </div>
-<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;  cached_has_bits = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._has_bits_[0];</div>
+<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;  cached_has_bits = from._has_bits_[0];</div>
 <div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;  <span class="keywordflow">if</span> (cached_has_bits &amp; 0x0000000fu) {</div>
 <div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000001u) {</div>
-<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;      tail_node_id_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.tail_node_id_;</div>
+<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;      tail_node_id_ = from.tail_node_id_;</div>
 <div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;    }</div>
 <div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000002u) {</div>
-<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;      head_node_id_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.head_node_id_;</div>
+<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;      head_node_id_ = from.head_node_id_;</div>
 <div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;    }</div>
 <div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000004u) {</div>
-<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;      unit_cost_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.unit_cost_;</div>
+<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;      unit_cost_ = from.unit_cost_;</div>
 <div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;    }</div>
 <div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000008u) {</div>
-<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;      capacity_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.capacity_;</div>
+<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;      capacity_ = from.capacity_;</div>
 <div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;    }</div>
 <div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;    _has_bits_[0] |= cached_has_bits;</div>
 <div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;  }</div>
 <div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;}</div>
 <div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160; </div>
-<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;<span class="keywordtype">void</span> Arc::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;<span class="keywordtype">void</span> Arc::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; from) {</div>
 <div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;<span class="comment">// @@protoc_insertion_point(generalized_copy_from_start:operations_research.Arc)</span></div>
-<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;  <span class="keywordflow">if</span> (&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a> == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;  <span class="keywordflow">if</span> (&amp;from == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;  Clear();</div>
-<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;  MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
+<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;  MergeFrom(from);</div>
 <div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;}</div>
 <div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160; </div>
-<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;<span class="keywordtype">void</span> Arc::CopyFrom(<span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#a6894cc7d30a41a5e750f40a7f4751c01">Arc</a>&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;<span class="keywordtype">void</span> Arc::CopyFrom(<span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#a6894cc7d30a41a5e750f40a7f4751c01">Arc</a>&amp; from) {</div>
 <div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;<span class="comment">// @@protoc_insertion_point(class_specific_copy_from_start:operations_research.Arc)</span></div>
-<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;  <span class="keywordflow">if</span> (&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a> == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;  <span class="keywordflow">if</span> (&amp;from == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;  Clear();</div>
-<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;  MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
+<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;  MergeFrom(from);</div>
 <div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160;}</div>
 <div class="line"><a name="l00468"></a><span class="lineno">  468</span>&#160; </div>
 <div class="line"><a name="l00469"></a><span class="lineno">  469</span>&#160;<span class="keywordtype">bool</span> Arc::IsInitialized()<span class="keyword"> const </span>{</div>
@@ -598,11 +598,11 @@ $(document).ready(function(){initNavTree('flow__problem_8pb_8cc_source.html','')
 <div class="line"><a name="l00507"></a><span class="lineno">  507</span>&#160;  RegisterArenaDtor(arena);</div>
 <div class="line"><a name="l00508"></a><span class="lineno">  508</span>&#160;  <span class="comment">// @@protoc_insertion_point(arena_constructor:operations_research.Node)</span></div>
 <div class="line"><a name="l00509"></a><span class="lineno">  509</span>&#160;}</div>
-<div class="line"><a name="l00510"></a><span class="lineno">  510</span>&#160;Node::Node(<span class="keyword">const</span> Node&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>)</div>
+<div class="line"><a name="l00510"></a><span class="lineno">  510</span>&#160;Node::Node(<span class="keyword">const</span> Node&amp; from)</div>
 <div class="line"><a name="l00511"></a><span class="lineno">  511</span>&#160;  : ::PROTOBUF_NAMESPACE_ID::Message(),</div>
-<div class="line"><a name="l00512"></a><span class="lineno">  512</span>&#160;      _has_bits_(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._has_bits_) {</div>
-<div class="line"><a name="l00513"></a><span class="lineno">  513</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_metadata_);</div>
-<div class="line"><a name="l00514"></a><span class="lineno">  514</span>&#160;  ::memcpy(&amp;id_, &amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.id_,</div>
+<div class="line"><a name="l00512"></a><span class="lineno">  512</span>&#160;      _has_bits_(from._has_bits_) {</div>
+<div class="line"><a name="l00513"></a><span class="lineno">  513</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(from._internal_metadata_);</div>
+<div class="line"><a name="l00514"></a><span class="lineno">  514</span>&#160;  ::memcpy(&amp;id_, &amp;from.id_,</div>
 <div class="line"><a name="l00515"></a><span class="lineno">  515</span>&#160;    <span class="keyword">static_cast&lt;</span><span class="keywordtype">size_t</span><span class="keyword">&gt;</span>(<span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(&amp;supply_) -</div>
 <div class="line"><a name="l00516"></a><span class="lineno">  516</span>&#160;    <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(&amp;id_)) + <span class="keyword">sizeof</span>(supply_));</div>
 <div class="line"><a name="l00517"></a><span class="lineno">  517</span>&#160;  <span class="comment">// @@protoc_insertion_point(copy_constructor:operations_research.Node)</span></div>
@@ -764,52 +764,52 @@ $(document).ready(function(){initNavTree('flow__problem_8pb_8cc_source.html','')
 <div class="line"><a name="l00673"></a><span class="lineno">  673</span>&#160;  <span class="keywordflow">return</span> total_size;</div>
 <div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;}</div>
 <div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160; </div>
-<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160;<span class="keywordtype">void</span> Node::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160;<span class="keywordtype">void</span> Node::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; from) {</div>
 <div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;<span class="comment">// @@protoc_insertion_point(generalized_merge_from_start:operations_research.Node)</span></div>
-<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;  GOOGLE_DCHECK_NE(&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;  GOOGLE_DCHECK_NE(&amp;from, <span class="keyword">this</span>);</div>
 <div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;  <span class="keyword">const</span> Node* source =</div>
 <div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated&lt;Node&gt;(</div>
-<div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;          &amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
+<div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;          &amp;from);</div>
 <div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;  <span class="keywordflow">if</span> (source == <span class="keyword">nullptr</span>) {</div>
 <div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;  <span class="comment">// @@protoc_insertion_point(generalized_merge_from_cast_fail:operations_research.Node)</span></div>
-<div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160;    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160;    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, <span class="keyword">this</span>);</div>
 <div class="line"><a name="l00685"></a><span class="lineno">  685</span>&#160;  } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l00686"></a><span class="lineno">  686</span>&#160;  <span class="comment">// @@protoc_insertion_point(generalized_merge_from_cast_success:operations_research.Node)</span></div>
 <div class="line"><a name="l00687"></a><span class="lineno">  687</span>&#160;    MergeFrom(*source);</div>
 <div class="line"><a name="l00688"></a><span class="lineno">  688</span>&#160;  }</div>
 <div class="line"><a name="l00689"></a><span class="lineno">  689</span>&#160;}</div>
 <div class="line"><a name="l00690"></a><span class="lineno">  690</span>&#160; </div>
-<div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160;<span class="keywordtype">void</span> Node::MergeFrom(<span class="keyword">const</span> Node&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160;<span class="keywordtype">void</span> Node::MergeFrom(<span class="keyword">const</span> Node&amp; from) {</div>
 <div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160;<span class="comment">// @@protoc_insertion_point(class_specific_merge_from_start:operations_research.Node)</span></div>
-<div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160;  GOOGLE_DCHECK_NE(&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
-<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_metadata_);</div>
+<div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160;  GOOGLE_DCHECK_NE(&amp;from, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(from._internal_metadata_);</div>
 <div class="line"><a name="l00695"></a><span class="lineno">  695</span>&#160;  <a class="code" href="integral__types_8h.html#a1134b580f8da4de94ca6b1de4d37975e">::PROTOBUF_NAMESPACE_ID::uint32</a> cached_has_bits = 0;</div>
 <div class="line"><a name="l00696"></a><span class="lineno">  696</span>&#160;  (void) cached_has_bits;</div>
 <div class="line"><a name="l00697"></a><span class="lineno">  697</span>&#160; </div>
-<div class="line"><a name="l00698"></a><span class="lineno">  698</span>&#160;  cached_has_bits = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._has_bits_[0];</div>
+<div class="line"><a name="l00698"></a><span class="lineno">  698</span>&#160;  cached_has_bits = from._has_bits_[0];</div>
 <div class="line"><a name="l00699"></a><span class="lineno">  699</span>&#160;  <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000003u) {</div>
 <div class="line"><a name="l00700"></a><span class="lineno">  700</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000001u) {</div>
-<div class="line"><a name="l00701"></a><span class="lineno">  701</span>&#160;      id_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.id_;</div>
+<div class="line"><a name="l00701"></a><span class="lineno">  701</span>&#160;      id_ = from.id_;</div>
 <div class="line"><a name="l00702"></a><span class="lineno">  702</span>&#160;    }</div>
 <div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160;    <span class="keywordflow">if</span> (cached_has_bits &amp; 0x00000002u) {</div>
-<div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;      supply_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.supply_;</div>
+<div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;      supply_ = from.supply_;</div>
 <div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160;    }</div>
 <div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;    _has_bits_[0] |= cached_has_bits;</div>
 <div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;  }</div>
 <div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;}</div>
 <div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160; </div>
-<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;<span class="keywordtype">void</span> Node::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;<span class="keywordtype">void</span> Node::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; from) {</div>
 <div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;<span class="comment">// @@protoc_insertion_point(generalized_copy_from_start:operations_research.Node)</span></div>
-<div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;  <span class="keywordflow">if</span> (&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a> == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;  <span class="keywordflow">if</span> (&amp;from == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;  Clear();</div>
-<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;  MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
+<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;  MergeFrom(from);</div>
 <div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;}</div>
 <div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160; </div>
-<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;<span class="keywordtype">void</span> Node::CopyFrom(<span class="keyword">const</span> Node&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;<span class="keywordtype">void</span> Node::CopyFrom(<span class="keyword">const</span> Node&amp; from) {</div>
 <div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160;<span class="comment">// @@protoc_insertion_point(class_specific_copy_from_start:operations_research.Node)</span></div>
-<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;  <span class="keywordflow">if</span> (&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a> == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;  <span class="keywordflow">if</span> (&amp;from == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;  Clear();</div>
-<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160;  MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
+<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160;  MergeFrom(from);</div>
 <div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;}</div>
 <div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160; </div>
 <div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;<span class="keywordtype">bool</span> Node::IsInitialized()<span class="keyword"> const </span>{</div>
@@ -851,13 +851,13 @@ $(document).ready(function(){initNavTree('flow__problem_8pb_8cc_source.html','')
 <div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;  RegisterArenaDtor(arena);</div>
 <div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;  <span class="comment">// @@protoc_insertion_point(arena_constructor:operations_research.FlowModel)</span></div>
 <div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;}</div>
-<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;FlowModel::FlowModel(<span class="keyword">const</span> FlowModel&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>)</div>
+<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;FlowModel::FlowModel(<span class="keyword">const</span> FlowModel&amp; from)</div>
 <div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;  : ::PROTOBUF_NAMESPACE_ID::Message(),</div>
-<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;      _has_bits_(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._has_bits_),</div>
-<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;      node_(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.node_),</div>
-<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;      arc_(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.arc_) {</div>
-<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_metadata_);</div>
-<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;  problem_type_ = <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.problem_type_;</div>
+<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;      _has_bits_(from._has_bits_),</div>
+<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;      node_(from.node_),</div>
+<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;      arc_(from.arc_) {</div>
+<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(from._internal_metadata_);</div>
+<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;  problem_type_ = from.problem_type_;</div>
 <div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160;  <span class="comment">// @@protoc_insertion_point(copy_constructor:operations_research.FlowModel)</span></div>
 <div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;}</div>
 <div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160; </div>
@@ -1047,47 +1047,47 @@ $(document).ready(function(){initNavTree('flow__problem_8pb_8cc_source.html','')
 <div class="line"><a name="l00956"></a><span class="lineno">  956</span>&#160;  <span class="keywordflow">return</span> total_size;</div>
 <div class="line"><a name="l00957"></a><span class="lineno">  957</span>&#160;}</div>
 <div class="line"><a name="l00958"></a><span class="lineno">  958</span>&#160; </div>
-<div class="line"><a name="l00959"></a><span class="lineno">  959</span>&#160;<span class="keywordtype">void</span> FlowModel::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00959"></a><span class="lineno">  959</span>&#160;<span class="keywordtype">void</span> FlowModel::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; from) {</div>
 <div class="line"><a name="l00960"></a><span class="lineno">  960</span>&#160;<span class="comment">// @@protoc_insertion_point(generalized_merge_from_start:operations_research.FlowModel)</span></div>
-<div class="line"><a name="l00961"></a><span class="lineno">  961</span>&#160;  GOOGLE_DCHECK_NE(&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00961"></a><span class="lineno">  961</span>&#160;  GOOGLE_DCHECK_NE(&amp;from, <span class="keyword">this</span>);</div>
 <div class="line"><a name="l00962"></a><span class="lineno">  962</span>&#160;  <span class="keyword">const</span> FlowModel* source =</div>
 <div class="line"><a name="l00963"></a><span class="lineno">  963</span>&#160;      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated&lt;FlowModel&gt;(</div>
-<div class="line"><a name="l00964"></a><span class="lineno">  964</span>&#160;          &amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
+<div class="line"><a name="l00964"></a><span class="lineno">  964</span>&#160;          &amp;from);</div>
 <div class="line"><a name="l00965"></a><span class="lineno">  965</span>&#160;  <span class="keywordflow">if</span> (source == <span class="keyword">nullptr</span>) {</div>
 <div class="line"><a name="l00966"></a><span class="lineno">  966</span>&#160;  <span class="comment">// @@protoc_insertion_point(generalized_merge_from_cast_fail:operations_research.FlowModel)</span></div>
-<div class="line"><a name="l00967"></a><span class="lineno">  967</span>&#160;    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00967"></a><span class="lineno">  967</span>&#160;    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, <span class="keyword">this</span>);</div>
 <div class="line"><a name="l00968"></a><span class="lineno">  968</span>&#160;  } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l00969"></a><span class="lineno">  969</span>&#160;  <span class="comment">// @@protoc_insertion_point(generalized_merge_from_cast_success:operations_research.FlowModel)</span></div>
 <div class="line"><a name="l00970"></a><span class="lineno">  970</span>&#160;    MergeFrom(*source);</div>
 <div class="line"><a name="l00971"></a><span class="lineno">  971</span>&#160;  }</div>
 <div class="line"><a name="l00972"></a><span class="lineno">  972</span>&#160;}</div>
 <div class="line"><a name="l00973"></a><span class="lineno">  973</span>&#160; </div>
-<div class="line"><a name="l00974"></a><span class="lineno">  974</span>&#160;<span class="keywordtype">void</span> FlowModel::MergeFrom(<span class="keyword">const</span> FlowModel&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00974"></a><span class="lineno">  974</span>&#160;<span class="keywordtype">void</span> FlowModel::MergeFrom(<span class="keyword">const</span> FlowModel&amp; from) {</div>
 <div class="line"><a name="l00975"></a><span class="lineno">  975</span>&#160;<span class="comment">// @@protoc_insertion_point(class_specific_merge_from_start:operations_research.FlowModel)</span></div>
-<div class="line"><a name="l00976"></a><span class="lineno">  976</span>&#160;  GOOGLE_DCHECK_NE(&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>, <span class="keyword">this</span>);</div>
-<div class="line"><a name="l00977"></a><span class="lineno">  977</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_metadata_);</div>
+<div class="line"><a name="l00976"></a><span class="lineno">  976</span>&#160;  GOOGLE_DCHECK_NE(&amp;from, <span class="keyword">this</span>);</div>
+<div class="line"><a name="l00977"></a><span class="lineno">  977</span>&#160;  _internal_metadata_.MergeFrom&lt;::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&gt;(from._internal_metadata_);</div>
 <div class="line"><a name="l00978"></a><span class="lineno">  978</span>&#160;  <a class="code" href="integral__types_8h.html#a1134b580f8da4de94ca6b1de4d37975e">::PROTOBUF_NAMESPACE_ID::uint32</a> cached_has_bits = 0;</div>
 <div class="line"><a name="l00979"></a><span class="lineno">  979</span>&#160;  (void) cached_has_bits;</div>
 <div class="line"><a name="l00980"></a><span class="lineno">  980</span>&#160; </div>
-<div class="line"><a name="l00981"></a><span class="lineno">  981</span>&#160;  node_.MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.node_);</div>
-<div class="line"><a name="l00982"></a><span class="lineno">  982</span>&#160;  arc_.MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>.arc_);</div>
-<div class="line"><a name="l00983"></a><span class="lineno">  983</span>&#160;  <span class="keywordflow">if</span> (<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_has_problem_type()) {</div>
-<div class="line"><a name="l00984"></a><span class="lineno">  984</span>&#160;    _internal_set_problem_type(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>._internal_problem_type());</div>
+<div class="line"><a name="l00981"></a><span class="lineno">  981</span>&#160;  node_.MergeFrom(from.node_);</div>
+<div class="line"><a name="l00982"></a><span class="lineno">  982</span>&#160;  arc_.MergeFrom(from.arc_);</div>
+<div class="line"><a name="l00983"></a><span class="lineno">  983</span>&#160;  <span class="keywordflow">if</span> (from._internal_has_problem_type()) {</div>
+<div class="line"><a name="l00984"></a><span class="lineno">  984</span>&#160;    _internal_set_problem_type(from._internal_problem_type());</div>
 <div class="line"><a name="l00985"></a><span class="lineno">  985</span>&#160;  }</div>
 <div class="line"><a name="l00986"></a><span class="lineno">  986</span>&#160;}</div>
 <div class="line"><a name="l00987"></a><span class="lineno">  987</span>&#160; </div>
-<div class="line"><a name="l00988"></a><span class="lineno">  988</span>&#160;<span class="keywordtype">void</span> FlowModel::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00988"></a><span class="lineno">  988</span>&#160;<span class="keywordtype">void</span> FlowModel::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message&amp; from) {</div>
 <div class="line"><a name="l00989"></a><span class="lineno">  989</span>&#160;<span class="comment">// @@protoc_insertion_point(generalized_copy_from_start:operations_research.FlowModel)</span></div>
-<div class="line"><a name="l00990"></a><span class="lineno">  990</span>&#160;  <span class="keywordflow">if</span> (&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a> == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00990"></a><span class="lineno">  990</span>&#160;  <span class="keywordflow">if</span> (&amp;from == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00991"></a><span class="lineno">  991</span>&#160;  Clear();</div>
-<div class="line"><a name="l00992"></a><span class="lineno">  992</span>&#160;  MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
+<div class="line"><a name="l00992"></a><span class="lineno">  992</span>&#160;  MergeFrom(from);</div>
 <div class="line"><a name="l00993"></a><span class="lineno">  993</span>&#160;}</div>
 <div class="line"><a name="l00994"></a><span class="lineno">  994</span>&#160; </div>
-<div class="line"><a name="l00995"></a><span class="lineno">  995</span>&#160;<span class="keywordtype">void</span> FlowModel::CopyFrom(<span class="keyword">const</span> FlowModel&amp; <a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>) {</div>
+<div class="line"><a name="l00995"></a><span class="lineno">  995</span>&#160;<span class="keywordtype">void</span> FlowModel::CopyFrom(<span class="keyword">const</span> FlowModel&amp; from) {</div>
 <div class="line"><a name="l00996"></a><span class="lineno">  996</span>&#160;<span class="comment">// @@protoc_insertion_point(class_specific_copy_from_start:operations_research.FlowModel)</span></div>
-<div class="line"><a name="l00997"></a><span class="lineno">  997</span>&#160;  <span class="keywordflow">if</span> (&amp;<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a> == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00997"></a><span class="lineno">  997</span>&#160;  <span class="keywordflow">if</span> (&amp;from == <span class="keyword">this</span>) <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00998"></a><span class="lineno">  998</span>&#160;  Clear();</div>
-<div class="line"><a name="l00999"></a><span class="lineno">  999</span>&#160;  MergeFrom(<a class="code" href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">from</a>);</div>
+<div class="line"><a name="l00999"></a><span class="lineno">  999</span>&#160;  MergeFrom(from);</div>
 <div class="line"><a name="l01000"></a><span class="lineno"> 1000</span>&#160;}</div>
 <div class="line"><a name="l01001"></a><span class="lineno"> 1001</span>&#160; </div>
 <div class="line"><a name="l01002"></a><span class="lineno"> 1002</span>&#160;<span class="keywordtype">bool</span> FlowModel::IsInitialized()<span class="keyword"> const </span>{</div>
@@ -1175,7 +1175,6 @@ $(document).ready(function(){initNavTree('flow__problem_8pb_8cc_source.html','')
 <div class="ttc" id="anamespaceoperations__research_html_a6896684caf664bddb9ef9166d70a0064"><div class="ttname"><a href="namespaceoperations__research.html#a6896684caf664bddb9ef9166d70a0064">operations_research::FlowModel_ProblemType_IsValid</a></div><div class="ttdeci">bool FlowModel_ProblemType_IsValid(int value)</div><div class="ttdef"><b>Definition:</b> <a href="flow__problem_8pb_8cc_source.html#l00160">flow_problem.pb.cc:160</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_aa22235731898cbd9e50abc8dfb2fc5b8"><div class="ttname"><a href="namespaceoperations__research.html#aa22235731898cbd9e50abc8dfb2fc5b8">operations_research::_Arc_default_instance_</a></div><div class="ttdeci">class operations_research::ArcDefaultTypeInternal _Arc_default_instance_</div><div class="ttdef"><b>Definition:</b> <a href="flow__problem_8pb_8h_source.html#l00060">flow_problem.pb.h:59</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html_aeda16188ba0f2eaa4bc58ae293f7be59"><div class="ttname"><a href="namespaceoperations__research.html#aeda16188ba0f2eaa4bc58ae293f7be59">operations_research::FlowModel_ProblemType_descriptor</a></div><div class="ttdeci">const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor * FlowModel_ProblemType_descriptor()</div><div class="ttdef"><b>Definition:</b> <a href="flow__problem_8pb_8cc_source.html#l00156">flow_problem.pb.cc:156</a></div></div>
-<div class="ttc" id="anamespaceswig_html_a62bf3d7d1ef1d4e3717f290cbe930bdb"><div class="ttname"><a href="namespaceswig.html#a62bf3d7d1ef1d4e3717f290cbe930bdb">swig::from</a></div><div class="ttdeci">PyObject * from(const Type &amp;val)</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver__python__wrap_8cc_source.html#l03640">constraint_solver_python_wrap.cc:3640</a></div></div>
 <div class="ttc" id="aoptional__boolean_8pb_8cc_html_a45da01ad4acb3124fbe203f64edbd517"><div class="ttname"><a href="optional__boolean_8pb_8cc.html#a45da01ad4acb3124fbe203f64edbd517">schemas</a></div><div class="ttdeci">static constexpr ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema * schemas</div><div class="ttdef"><b>Definition:</b> <a href="optional__boolean_8pb_8cc_source.html#l00023">optional_boolean.pb.cc:23</a></div></div>
 <div class="ttc" id="astruct_table_struct__ortools__2fgraph__2fflow__5fproblem__2eproto_html_a345548bf52cc46cc10c6830c03d541ff"><div class="ttname"><a href="struct_table_struct__ortools__2fgraph__2fflow__5fproblem__2eproto.html#a345548bf52cc46cc10c6830c03d541ff">TableStruct_ortools_2fgraph_2fflow_5fproblem_2eproto::offsets</a></div><div class="ttdeci">static const ::PROTOBUF_NAMESPACE_ID::uint32 offsets[]</div><div class="ttdef"><b>Definition:</b> <a href="flow__problem_8pb_8h_source.html#l00054">flow_problem.pb.h:54</a></div></div>
 </div><!-- fragment --></div><!-- contents -->

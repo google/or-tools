@@ -48,6 +48,7 @@ var classoperations__research_1_1sat_1_1_sat_parameters_1_1___internal =
     [ "set_has_exploit_integer_lp_solution", "classoperations__research_1_1sat_1_1_sat_parameters_1_1___internal.html#ae8c56d3190bc0a19215584fe20893c6f", null ],
     [ "set_has_exploit_objective", "classoperations__research_1_1sat_1_1_sat_parameters_1_1___internal.html#a08ce44e10b29846b96ab6f6b6f55ca4f", null ],
     [ "set_has_exploit_relaxation_solution", "classoperations__research_1_1sat_1_1_sat_parameters_1_1___internal.html#a1b002bca145367a2f03a22f713fee266", null ],
+    [ "set_has_fill_logs_in_response", "classoperations__research_1_1sat_1_1_sat_parameters_1_1___internal.html#a0f3cfafdc185a238c917a560bd46ba71", null ],
     [ "set_has_fill_tightened_domains_in_response", "classoperations__research_1_1sat_1_1_sat_parameters_1_1___internal.html#a8813de69fa1a41c3cf81e15200c578b3", null ],
     [ "set_has_find_multiple_cores", "classoperations__research_1_1sat_1_1_sat_parameters_1_1___internal.html#af688ff3222869d6c7793f4faff53db42", null ],
     [ "set_has_fp_rounding", "classoperations__research_1_1sat_1_1_sat_parameters_1_1___internal.html#adefca5f1a42a9a5a88d948980c7a743c", null ],

@@ -395,187 +395,188 @@ $(document).ready(function(){initNavTree('cp__model__search_8cc_source.html','')
 <div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;    new_params.set_linearization_level(1);</div>
 <div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    strategies[<span class="stringliteral">&quot;default_lp&quot;</span>] = new_params;</div>
 <div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    new_params.set_linearization_level(2);</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    strategies[<span class="stringliteral">&quot;max_lp&quot;</span>] = new_params;</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;  }</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160; </div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;  <span class="comment">// Core. Note that we disable the lp here because it is faster on the minizinc</span></div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;  <span class="comment">// benchmark.</span></div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;  <span class="comment">//</span></div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;  <span class="comment">// TODO(user): Do more experiments, the LP with core could be useful, but we</span></div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;  <span class="comment">// probably need to incorporate the newly created integer variables from the</span></div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;  <span class="comment">// core algorithm into the LP.</span></div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;  {</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;    SatParameters new_params = base_params;</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;    new_params.set_optimize_with_core(<span class="keyword">true</span>);</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;    new_params.set_linearization_level(0);</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;    strategies[<span class="stringliteral">&quot;core&quot;</span>] = new_params;</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;  }</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160; </div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;  <span class="comment">// It can be interesting to try core and lp.</span></div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;  {</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;    SatParameters new_params = base_params;</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    new_params.set_optimize_with_core(<span class="keyword">true</span>);</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;    new_params.set_linearization_level(1);</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;    strategies[<span class="stringliteral">&quot;core_default_lp&quot;</span>] = new_params;</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;  }</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160; </div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;  {</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;    SatParameters new_params = base_params;</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;    new_params.set_optimize_with_core(<span class="keyword">true</span>);</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;    new_params.set_linearization_level(2);</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;    strategies[<span class="stringliteral">&quot;core_max_lp&quot;</span>] = new_params;</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;  }</div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160; </div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;  {</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;    SatParameters new_params = base_params;</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;    new_params.set_use_probing_search(<span class="keyword">true</span>);</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;    strategies[<span class="stringliteral">&quot;probing&quot;</span>] = new_params;</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;  }</div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160; </div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;  <span class="comment">// Search variation.</span></div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;  {</div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;    SatParameters new_params = base_params;</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;    strategies[<span class="stringliteral">&quot;auto&quot;</span>] = new_params;</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160; </div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;    new_params.set_search_branching(SatParameters::FIXED_SEARCH);</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;    strategies[<span class="stringliteral">&quot;fixed&quot;</span>] = new_params;</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160; </div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;    new_params.set_search_branching(</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;        SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;    strategies[<span class="stringliteral">&quot;quick_restart&quot;</span>] = new_params;</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160; </div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;    new_params.set_search_branching(</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;        SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;    new_params.set_linearization_level(0);</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    strategies[<span class="stringliteral">&quot;quick_restart_no_lp&quot;</span>] = new_params;</div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160; </div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;    <span class="comment">// We force the max lp here too.</span></div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;    new_params.set_linearization_level(2);</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;    new_params.set_search_branching(SatParameters::LP_SEARCH);</div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;    strategies[<span class="stringliteral">&quot;reduced_costs&quot;</span>] = new_params;</div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160; </div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;    <span class="comment">// For this one, we force other param too.</span></div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;    new_params.set_linearization_level(2);</div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;    new_params.set_search_branching(SatParameters::PSEUDO_COST_SEARCH);</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;    new_params.set_exploit_best_solution(<span class="keyword">true</span>);</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;    strategies[<span class="stringliteral">&quot;pseudo_costs&quot;</span>] = new_params;</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;  }</div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160; </div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;  <span class="comment">// Less encoding.</span></div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;  {</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;    SatParameters new_params = base_params;</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;    new_params.set_boolean_encoding_level(0);</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;    strategies[<span class="stringliteral">&quot;less_encoding&quot;</span>] = new_params;</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;  }</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160; </div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;  <span class="comment">// Our current set of strategies</span></div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;  <span class="comment">//</span></div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;  <span class="comment">// TODO(user, fdid): Avoid launching two strategies if they are the same,</span></div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;  <span class="comment">// like if there is no lp, or everything is already linearized at level 1.</span></div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;  std::vector&lt;std::string&gt; names;</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;  <span class="keywordflow">if</span> (base_params.reduce_memory_usage_in_interleave_mode() &amp;&amp;</div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;      base_params.interleave_search()) {</div>
-<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;    <span class="comment">// Low memory mode for interleaved search in single thread.</span></div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;    <span class="keywordflow">if</span> (cp_model.has_objective()) {</div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;      names.push_back(<span class="stringliteral">&quot;default_lp&quot;</span>);</div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;      names.push_back(!cp_model.search_strategy().empty() ? <span class="stringliteral">&quot;fixed&quot;</span></div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;                                                          : <span class="stringliteral">&quot;pseudo_costs&quot;</span>);</div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;      names.push_back(cp_model.objective().vars_size() &gt; 1 ? <span class="stringliteral">&quot;core&quot;</span> : <span class="stringliteral">&quot;no_lp&quot;</span>);</div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;      names.push_back(<span class="stringliteral">&quot;max_lp&quot;</span>);</div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;      names.push_back(<span class="stringliteral">&quot;default_lp&quot;</span>);</div>
-<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;      names.push_back(cp_model.search_strategy_size() &gt; 0 ? <span class="stringliteral">&quot;fixed&quot;</span> : <span class="stringliteral">&quot;no_lp&quot;</span>);</div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;      names.push_back(<span class="stringliteral">&quot;less_encoding&quot;</span>);</div>
-<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;      names.push_back(<span class="stringliteral">&quot;max_lp&quot;</span>);</div>
-<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;      names.push_back(<span class="stringliteral">&quot;quick_restart&quot;</span>);</div>
-<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;    }</div>
-<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;  } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (cp_model.has_objective()) {</div>
-<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;    names.push_back(<span class="stringliteral">&quot;default_lp&quot;</span>);</div>
-<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;    names.push_back(!cp_model.search_strategy().empty() ? <span class="stringliteral">&quot;fixed&quot;</span></div>
-<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;                                                        : <span class="stringliteral">&quot;reduced_costs&quot;</span>);</div>
-<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;    names.push_back(<span class="stringliteral">&quot;pseudo_costs&quot;</span>);</div>
-<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;    names.push_back(<span class="stringliteral">&quot;no_lp&quot;</span>);</div>
-<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;    names.push_back(<span class="stringliteral">&quot;max_lp&quot;</span>);</div>
-<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;    <span class="keywordflow">if</span> (cp_model.objective().vars_size() &gt; 1) names.push_back(<span class="stringliteral">&quot;core&quot;</span>);</div>
-<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;    <span class="comment">// TODO(user): Experiment with core and LP.</span></div>
-<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160; </div>
-<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;    <span class="comment">// Only add this strategy if we have enough worker left for LNS.</span></div>
-<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;    <span class="keywordflow">if</span> (num_workers &gt; 8 || base_params.interleave_search()) {</div>
-<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;      names.push_back(<span class="stringliteral">&quot;quick_restart&quot;</span>);</div>
-<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;    }</div>
-<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;    <span class="keywordflow">if</span> (num_workers &gt; 10) {</div>
-<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;      names.push_back(<span class="stringliteral">&quot;quick_restart_no_lp&quot;</span>);</div>
-<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;    }</div>
-<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;  } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;    names.push_back(<span class="stringliteral">&quot;default_lp&quot;</span>);</div>
-<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;    <span class="keywordflow">if</span> (cp_model.search_strategy_size() &gt; 0) names.push_back(<span class="stringliteral">&quot;fixed&quot;</span>);</div>
-<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;    names.push_back(<span class="stringliteral">&quot;less_encoding&quot;</span>);</div>
-<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;    names.push_back(<span class="stringliteral">&quot;no_lp&quot;</span>);</div>
-<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;    names.push_back(<span class="stringliteral">&quot;max_lp&quot;</span>);</div>
-<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;    names.push_back(<span class="stringliteral">&quot;quick_restart&quot;</span>);</div>
-<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;    <span class="keywordflow">if</span> (num_workers &gt; 10) {</div>
-<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;      names.push_back(<span class="stringliteral">&quot;quick_restart_no_lp&quot;</span>);</div>
-<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;    }</div>
-<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;  }</div>
-<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;  <span class="keywordflow">if</span> (num_workers &gt; 12) {</div>
-<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;    names.push_back(<span class="stringliteral">&quot;probing&quot;</span>);</div>
-<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;  }</div>
-<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160; </div>
-<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;  <span class="comment">// Creates the diverse set of parameters with names and seed. We remove the</span></div>
-<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;  <span class="comment">// last ones if needed below.</span></div>
-<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;  std::vector&lt;SatParameters&gt; result;</div>
-<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;  <span class="keywordflow">for</span> (<span class="keyword">const</span> std::string&amp; <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a> : names) {</div>
-<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;    SatParameters new_params = strategies.at(<a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>);</div>
-<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;    new_params.set_name(<a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>);</div>
-<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;    new_params.set_random_seed(result.size() + 1);</div>
-<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;    result.push_back(new_params);</div>
-<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;  }</div>
-<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160; </div>
-<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;  <span class="comment">// If there is no objective, we complete with randomized fixed search.</span></div>
-<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;  <span class="comment">// If there is an objective, the extra workers will use LNS.</span></div>
-<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;  <span class="keywordflow">if</span> (!cp_model.has_objective()) {</div>
-<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;    <span class="keywordtype">int</span> target = num_workers;</div>
-<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160; </div>
-<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;    <span class="comment">// If strategies that do not require a full worker are present, leave one</span></div>
-<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;    <span class="comment">// worker for them.</span></div>
-<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;    <span class="keywordflow">if</span> (!base_params.interleave_search() &amp;&amp;</div>
-<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;        (base_params.use_rins_lns() || base_params.use_relaxation_lns() ||</div>
-<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;         base_params.use_feasibility_pump())) {</div>
-<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;      target = <a class="code" href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">std::max</a>(1, num_workers - 1);</div>
-<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;    }</div>
-<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160; </div>
-<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;    <span class="keywordtype">int</span> <a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a> = 1;</div>
-<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;    <span class="keywordflow">while</span> (result.size() &lt; target) {</div>
-<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;      <span class="comment">// TODO(user): This doesn&#39;t make sense if there is no fixed search.</span></div>
-<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;      SatParameters new_params = base_params;</div>
-<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;      new_params.set_search_branching(SatParameters::FIXED_SEARCH);</div>
-<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;      new_params.set_randomize_search(<span class="keyword">true</span>);</div>
-<div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160;      new_params.set_search_randomization_tolerance(<a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>);</div>
-<div class="line"><a name="l00468"></a><span class="lineno">  468</span>&#160;      new_params.set_random_seed(result.size() + 1);</div>
-<div class="line"><a name="l00469"></a><span class="lineno">  469</span>&#160;      new_params.set_name(absl::StrCat(<span class="stringliteral">&quot;random_&quot;</span>, <a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>));</div>
-<div class="line"><a name="l00470"></a><span class="lineno">  470</span>&#160;      result.push_back(new_params);</div>
-<div class="line"><a name="l00471"></a><span class="lineno">  471</span>&#160;      ++<a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>;</div>
-<div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;    }</div>
-<div class="line"><a name="l00473"></a><span class="lineno">  473</span>&#160;  }</div>
-<div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160; </div>
-<div class="line"><a name="l00475"></a><span class="lineno">  475</span>&#160;  <span class="comment">// If we are not in interleave search, we cannot run more strategies than</span></div>
-<div class="line"><a name="l00476"></a><span class="lineno">  476</span>&#160;  <span class="comment">// the number of worker.</span></div>
-<div class="line"><a name="l00477"></a><span class="lineno">  477</span>&#160;  <span class="comment">//</span></div>
-<div class="line"><a name="l00478"></a><span class="lineno">  478</span>&#160;  <span class="comment">// TODO(user): consider using LNS if we use a small number of workers.</span></div>
-<div class="line"><a name="l00479"></a><span class="lineno">  479</span>&#160;  <span class="keywordflow">if</span> (!base_params.interleave_search() &amp;&amp; result.size() &gt; num_workers) {</div>
-<div class="line"><a name="l00480"></a><span class="lineno">  480</span>&#160;    result.resize(num_workers);</div>
-<div class="line"><a name="l00481"></a><span class="lineno">  481</span>&#160;  }</div>
-<div class="line"><a name="l00482"></a><span class="lineno">  482</span>&#160; </div>
-<div class="line"><a name="l00483"></a><span class="lineno">  483</span>&#160;  <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00484"></a><span class="lineno">  484</span>&#160;}</div>
-<div class="line"><a name="l00485"></a><span class="lineno">  485</span>&#160; </div>
-<div class="line"><a name="l00486"></a><span class="lineno">  486</span>&#160;}  <span class="comment">// namespace sat</span></div>
-<div class="line"><a name="l00487"></a><span class="lineno">  487</span>&#160;}  <span class="comment">// namespace operations_research</span></div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    new_params.set_add_lp_constraints_lazily(<span class="keyword">false</span>);</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;    strategies[<span class="stringliteral">&quot;max_lp&quot;</span>] = new_params;</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;  }</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160; </div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;  <span class="comment">// Core. Note that we disable the lp here because it is faster on the minizinc</span></div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;  <span class="comment">// benchmark.</span></div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;  <span class="comment">//</span></div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;  <span class="comment">// TODO(user): Do more experiments, the LP with core could be useful, but we</span></div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;  <span class="comment">// probably need to incorporate the newly created integer variables from the</span></div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;  <span class="comment">// core algorithm into the LP.</span></div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;  {</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;    SatParameters new_params = base_params;</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;    new_params.set_optimize_with_core(<span class="keyword">true</span>);</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;    new_params.set_linearization_level(0);</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;    strategies[<span class="stringliteral">&quot;core&quot;</span>] = new_params;</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;  }</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160; </div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;  <span class="comment">// It can be interesting to try core and lp.</span></div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;  {</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;    SatParameters new_params = base_params;</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;    new_params.set_optimize_with_core(<span class="keyword">true</span>);</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;    new_params.set_linearization_level(1);</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;    strategies[<span class="stringliteral">&quot;core_default_lp&quot;</span>] = new_params;</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;  }</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160; </div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;  {</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;    SatParameters new_params = base_params;</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;    new_params.set_optimize_with_core(<span class="keyword">true</span>);</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;    new_params.set_linearization_level(2);</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;    strategies[<span class="stringliteral">&quot;core_max_lp&quot;</span>] = new_params;</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;  }</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160; </div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;  {</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;    SatParameters new_params = base_params;</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;    new_params.set_use_probing_search(<span class="keyword">true</span>);</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;    strategies[<span class="stringliteral">&quot;probing&quot;</span>] = new_params;</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;  }</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160; </div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;  <span class="comment">// Search variation.</span></div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;  {</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;    SatParameters new_params = base_params;</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;    strategies[<span class="stringliteral">&quot;auto&quot;</span>] = new_params;</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160; </div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;    new_params.set_search_branching(SatParameters::FIXED_SEARCH);</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;    strategies[<span class="stringliteral">&quot;fixed&quot;</span>] = new_params;</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160; </div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;    new_params.set_search_branching(</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;        SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;    strategies[<span class="stringliteral">&quot;quick_restart&quot;</span>] = new_params;</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160; </div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;    new_params.set_search_branching(</div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;        SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    new_params.set_linearization_level(0);</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;    strategies[<span class="stringliteral">&quot;quick_restart_no_lp&quot;</span>] = new_params;</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160; </div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;    <span class="comment">// We force the max lp here too.</span></div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;    new_params.set_linearization_level(2);</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;    new_params.set_search_branching(SatParameters::LP_SEARCH);</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;    strategies[<span class="stringliteral">&quot;reduced_costs&quot;</span>] = new_params;</div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160; </div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;    <span class="comment">// For this one, we force other param too.</span></div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;    new_params.set_linearization_level(2);</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;    new_params.set_search_branching(SatParameters::PSEUDO_COST_SEARCH);</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;    new_params.set_exploit_best_solution(<span class="keyword">true</span>);</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;    strategies[<span class="stringliteral">&quot;pseudo_costs&quot;</span>] = new_params;</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;  }</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160; </div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;  <span class="comment">// Less encoding.</span></div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;  {</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;    SatParameters new_params = base_params;</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;    new_params.set_boolean_encoding_level(0);</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;    strategies[<span class="stringliteral">&quot;less_encoding&quot;</span>] = new_params;</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;  }</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160; </div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;  <span class="comment">// Our current set of strategies</span></div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;  <span class="comment">//</span></div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;  <span class="comment">// TODO(user, fdid): Avoid launching two strategies if they are the same,</span></div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;  <span class="comment">// like if there is no lp, or everything is already linearized at level 1.</span></div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;  std::vector&lt;std::string&gt; names;</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;  <span class="keywordflow">if</span> (base_params.reduce_memory_usage_in_interleave_mode() &amp;&amp;</div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;      base_params.interleave_search()) {</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;    <span class="comment">// Low memory mode for interleaved search in single thread.</span></div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;    <span class="keywordflow">if</span> (cp_model.has_objective()) {</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;      names.push_back(<span class="stringliteral">&quot;default_lp&quot;</span>);</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;      names.push_back(!cp_model.search_strategy().empty() ? <span class="stringliteral">&quot;fixed&quot;</span></div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;                                                          : <span class="stringliteral">&quot;pseudo_costs&quot;</span>);</div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;      names.push_back(cp_model.objective().vars_size() &gt; 1 ? <span class="stringliteral">&quot;core&quot;</span> : <span class="stringliteral">&quot;no_lp&quot;</span>);</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;      names.push_back(<span class="stringliteral">&quot;max_lp&quot;</span>);</div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;      names.push_back(<span class="stringliteral">&quot;default_lp&quot;</span>);</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;      names.push_back(cp_model.search_strategy_size() &gt; 0 ? <span class="stringliteral">&quot;fixed&quot;</span> : <span class="stringliteral">&quot;no_lp&quot;</span>);</div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;      names.push_back(<span class="stringliteral">&quot;less_encoding&quot;</span>);</div>
+<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;      names.push_back(<span class="stringliteral">&quot;max_lp&quot;</span>);</div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;      names.push_back(<span class="stringliteral">&quot;quick_restart&quot;</span>);</div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;    }</div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;  } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (cp_model.has_objective()) {</div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;    names.push_back(<span class="stringliteral">&quot;default_lp&quot;</span>);</div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;    names.push_back(!cp_model.search_strategy().empty() ? <span class="stringliteral">&quot;fixed&quot;</span></div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;                                                        : <span class="stringliteral">&quot;reduced_costs&quot;</span>);</div>
+<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;    names.push_back(<span class="stringliteral">&quot;pseudo_costs&quot;</span>);</div>
+<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;    names.push_back(<span class="stringliteral">&quot;no_lp&quot;</span>);</div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;    names.push_back(<span class="stringliteral">&quot;max_lp&quot;</span>);</div>
+<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;    <span class="keywordflow">if</span> (cp_model.objective().vars_size() &gt; 1) names.push_back(<span class="stringliteral">&quot;core&quot;</span>);</div>
+<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;    <span class="comment">// TODO(user): Experiment with core and LP.</span></div>
+<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160; </div>
+<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;    <span class="comment">// Only add this strategy if we have enough worker left for LNS.</span></div>
+<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;    <span class="keywordflow">if</span> (num_workers &gt; 8 || base_params.interleave_search()) {</div>
+<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;      names.push_back(<span class="stringliteral">&quot;quick_restart&quot;</span>);</div>
+<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;    }</div>
+<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;    <span class="keywordflow">if</span> (num_workers &gt; 10) {</div>
+<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;      names.push_back(<span class="stringliteral">&quot;quick_restart_no_lp&quot;</span>);</div>
+<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;    }</div>
+<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;  } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;    names.push_back(<span class="stringliteral">&quot;default_lp&quot;</span>);</div>
+<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;    <span class="keywordflow">if</span> (cp_model.search_strategy_size() &gt; 0) names.push_back(<span class="stringliteral">&quot;fixed&quot;</span>);</div>
+<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;    names.push_back(<span class="stringliteral">&quot;less_encoding&quot;</span>);</div>
+<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;    names.push_back(<span class="stringliteral">&quot;no_lp&quot;</span>);</div>
+<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;    names.push_back(<span class="stringliteral">&quot;max_lp&quot;</span>);</div>
+<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;    names.push_back(<span class="stringliteral">&quot;quick_restart&quot;</span>);</div>
+<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;    <span class="keywordflow">if</span> (num_workers &gt; 10) {</div>
+<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;      names.push_back(<span class="stringliteral">&quot;quick_restart_no_lp&quot;</span>);</div>
+<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;    }</div>
+<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;  }</div>
+<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;  <span class="keywordflow">if</span> (num_workers &gt; 12) {</div>
+<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;    names.push_back(<span class="stringliteral">&quot;probing&quot;</span>);</div>
+<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;  }</div>
+<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160; </div>
+<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;  <span class="comment">// Creates the diverse set of parameters with names and seed. We remove the</span></div>
+<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;  <span class="comment">// last ones if needed below.</span></div>
+<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;  std::vector&lt;SatParameters&gt; result;</div>
+<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;  <span class="keywordflow">for</span> (<span class="keyword">const</span> std::string&amp; <a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a> : names) {</div>
+<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;    SatParameters new_params = strategies.at(<a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>);</div>
+<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;    new_params.set_name(<a class="code" href="default__search_8cc.html#ac673bc430bdc3fdaa09f7becf98ef267">name</a>);</div>
+<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;    new_params.set_random_seed(result.size() + 1);</div>
+<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;    result.push_back(new_params);</div>
+<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;  }</div>
+<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160; </div>
+<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;  <span class="comment">// If there is no objective, we complete with randomized fixed search.</span></div>
+<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;  <span class="comment">// If there is an objective, the extra workers will use LNS.</span></div>
+<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;  <span class="keywordflow">if</span> (!cp_model.has_objective()) {</div>
+<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;    <span class="keywordtype">int</span> target = num_workers;</div>
+<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160; </div>
+<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;    <span class="comment">// If strategies that do not require a full worker are present, leave one</span></div>
+<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;    <span class="comment">// worker for them.</span></div>
+<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;    <span class="keywordflow">if</span> (!base_params.interleave_search() &amp;&amp;</div>
+<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;        (base_params.use_rins_lns() || base_params.use_relaxation_lns() ||</div>
+<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;         base_params.use_feasibility_pump())) {</div>
+<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;      target = <a class="code" href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">std::max</a>(1, num_workers - 1);</div>
+<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;    }</div>
+<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160; </div>
+<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;    <span class="keywordtype">int</span> <a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a> = 1;</div>
+<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;    <span class="keywordflow">while</span> (result.size() &lt; target) {</div>
+<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;      <span class="comment">// TODO(user): This doesn&#39;t make sense if there is no fixed search.</span></div>
+<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;      SatParameters new_params = base_params;</div>
+<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;      new_params.set_search_branching(SatParameters::FIXED_SEARCH);</div>
+<div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160;      new_params.set_randomize_search(<span class="keyword">true</span>);</div>
+<div class="line"><a name="l00468"></a><span class="lineno">  468</span>&#160;      new_params.set_search_randomization_tolerance(<a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>);</div>
+<div class="line"><a name="l00469"></a><span class="lineno">  469</span>&#160;      new_params.set_random_seed(result.size() + 1);</div>
+<div class="line"><a name="l00470"></a><span class="lineno">  470</span>&#160;      new_params.set_name(absl::StrCat(<span class="stringliteral">&quot;random_&quot;</span>, <a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>));</div>
+<div class="line"><a name="l00471"></a><span class="lineno">  471</span>&#160;      result.push_back(new_params);</div>
+<div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;      ++<a class="code" href="pack_8cc.html#a750b5d744c39a06bfb13e6eb010e35d0">index</a>;</div>
+<div class="line"><a name="l00473"></a><span class="lineno">  473</span>&#160;    }</div>
+<div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160;  }</div>
+<div class="line"><a name="l00475"></a><span class="lineno">  475</span>&#160; </div>
+<div class="line"><a name="l00476"></a><span class="lineno">  476</span>&#160;  <span class="comment">// If we are not in interleave search, we cannot run more strategies than</span></div>
+<div class="line"><a name="l00477"></a><span class="lineno">  477</span>&#160;  <span class="comment">// the number of worker.</span></div>
+<div class="line"><a name="l00478"></a><span class="lineno">  478</span>&#160;  <span class="comment">//</span></div>
+<div class="line"><a name="l00479"></a><span class="lineno">  479</span>&#160;  <span class="comment">// TODO(user): consider using LNS if we use a small number of workers.</span></div>
+<div class="line"><a name="l00480"></a><span class="lineno">  480</span>&#160;  <span class="keywordflow">if</span> (!base_params.interleave_search() &amp;&amp; result.size() &gt; num_workers) {</div>
+<div class="line"><a name="l00481"></a><span class="lineno">  481</span>&#160;    result.resize(num_workers);</div>
+<div class="line"><a name="l00482"></a><span class="lineno">  482</span>&#160;  }</div>
+<div class="line"><a name="l00483"></a><span class="lineno">  483</span>&#160; </div>
+<div class="line"><a name="l00484"></a><span class="lineno">  484</span>&#160;  <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00485"></a><span class="lineno">  485</span>&#160;}</div>
+<div class="line"><a name="l00486"></a><span class="lineno">  486</span>&#160; </div>
+<div class="line"><a name="l00487"></a><span class="lineno">  487</span>&#160;}  <span class="comment">// namespace sat</span></div>
+<div class="line"><a name="l00488"></a><span class="lineno">  488</span>&#160;}  <span class="comment">// namespace operations_research</span></div>
 <div class="ttc" id="aalldiff__cst_8cc_html_a9d0c202d5fdd62f4fa2c613339ff168a"><div class="ttname"><a href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">max</a></div><div class="ttdeci">int64 max</div><div class="ttdef"><b>Definition:</b> <a href="alldiff__cst_8cc_source.html#l00139">alldiff_cst.cc:139</a></div></div>
 <div class="ttc" id="abase_2logging_8h_html_a3e1cfef60e774a81f30eaddf26a3a274"><div class="ttname"><a href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a></div><div class="ttdeci">#define CHECK(condition)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00495">base/logging.h:495</a></div></div>
 <div class="ttc" id="abase_2logging_8h_html_ab4f56aa24c4c9cddc47a6abd2d747f9a"><div class="ttname"><a href="base_2logging_8h.html#ab4f56aa24c4c9cddc47a6abd2d747f9a">DCHECK_GT</a></div><div class="ttdeci">#define DCHECK_GT(val1, val2)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00890">base/logging.h:890</a></div></div>
