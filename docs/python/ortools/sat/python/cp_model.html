@@ -518,11 +518,22 @@ class IntVar(LinearExpr):
     def __init__(self, model, domain, name):
         &#34;&#34;&#34;See CpModel.NewIntVar below.&#34;&#34;&#34;
         self.__model = model
-        self.__index = len(model.variables)
-        self.__var = model.variables.add()
-        self.__var.domain.extend(domain.FlattenedIntervals())
-        self.__var.name = name
         self.__negation = None
+        # Python do not support multiple __init__ methods.
+        # This method is only called from the CpModel class.
+        # We hack the parameter to support the two cases:
+        # case 1:
+        #     model is a CpModelProto, domain is a Domain, and name is a string.
+        # case 2:
+        #     model is a CpModelProto, domain is an index (int), and name is None.
+        if isinstance(domain, numbers.Integral) and name is None:
+            self.__index = domain
+            self.__var = model.variables[domain]
+        else:
+            self.__index = len(model.variables)
+            self.__var = model.variables.add()
+            self.__var.domain.extend(domain.FlattenedIntervals())
+            self.__var.name = name
 
     def Index(self):
         &#34;&#34;&#34;Returns the index of the variable in the model.&#34;&#34;&#34;
@@ -702,15 +713,28 @@ class IntervalVar(object):
     def __init__(self, model, start_index, size_index, end_index,
                  is_present_index, name):
         self.__model = model
-        self.__index = len(model.constraints)
-        self.__ct = self.__model.constraints.add()
-        self.__ct.interval.start = start_index
-        self.__ct.interval.size = size_index
-        self.__ct.interval.end = end_index
-        if is_present_index is not None:
-            self.__ct.enforcement_literal.append(is_present_index)
-        if name:
-            self.__ct.name = name
+        # As with the IntVar::__init__ method, we hack the __init__ method to
+        # support two use cases:
+        #   case 1: called when creating a new interval variable.
+        #      {start|size|end}_index are indices of integer variables
+        #      is_present_index is either None or the index of a Boolean literal.
+        #      name is a string
+        #   case 2: called when querying an existing interval variable.
+        #      start_index is an int, all parameters after are None.
+        if (size_index is None and end_index is None and
+                is_present_index is None and name is None):
+            self.__index = start_index
+            self.__ct = model.constraints[start_index]
+        else:
+            self.__index = len(model.constraints)
+            self.__ct = self.__model.constraints.add()
+            self.__ct.interval.start = start_index
+            self.__ct.interval.size = size_index
+            self.__ct.interval.end = end_index
+            if is_present_index is not None:
+                self.__ct.enforcement_literal.append(is_present_index)
+            if name:
+                self.__ct.name = name
 
     def Index(self):
         &#34;&#34;&#34;Returns the index of the interval constraint in the model.&#34;&#34;&#34;
@@ -753,7 +777,6 @@ class CpModel(object):
     def __init__(self):
         self.__model = cp_model_pb2.CpModelProto()
         self.__constant_map = {}
-        self.__optional_constant_map = {}
 
     # Integer variable.
 
@@ -797,7 +820,8 @@ class CpModel(object):
 
     def NewConstant(self, value):
         &#34;&#34;&#34;Declares a constant integer.&#34;&#34;&#34;
-        return IntVar(self.__model, Domain(value, value), &#39;&#39;)
+        return IntVar(self.__model, self.GetOrMakeIndexFromConstant(value),
+                      None)
 
     # Linear constraints.
 
@@ -1455,6 +1479,50 @@ class CpModel(object):
             [self.GetOrMakeIndex(x) for x in demands])
         model_ct.cumulative.capacity = self.GetOrMakeIndex(capacity)
         return ct
+
+    # Support for deep copy.
+    def CopyFrom(self, other_model):
+        &#34;&#34;&#34;Reset the model, and creates a new one from a CpModelProto instance.&#34;&#34;&#34;
+        self.__model.CopyFrom(other_model.Proto())
+
+        # Rebuild constant map.
+        self.__constant_map.clear()
+        for i, var in enumerate(self.__model.variables):
+            if len(var.domain) == 2 and var.domain[0] == var.domain[1]:
+                self.__constant_map[var.domain[0]] = i
+
+    def GetBoolVarFromProtoIndex(self, index):
+        &#34;&#34;&#34;Returns an already created Boolean variable from its index.&#34;&#34;&#34;
+        if index &lt; 0 or index &gt;= len(self.__model.variables):
+            raise ValueError(
+                f&#39;GetBoolVarFromProtoIndex: out of bound index {index}&#39;)
+        var = self.__model.variables[index]
+        if len(var.domain) != 2 or var.domain[0] &lt; 0 or var.domain[1] &gt; 1:
+            raise ValueError(
+                f&#39;GetBoolVarFromProtoIndex: index {index} does not reference&#39; +
+                &#39; a Boolean variable&#39;)
+
+        return IntVar(self.__model, index, None)
+
+    def GetIntVarFromProtoIndex(self, index):
+        &#34;&#34;&#34;Returns an already created integer variable from its index.&#34;&#34;&#34;
+        if index &lt; 0 or index &gt;= len(self.__model.variables):
+            raise ValueError(
+                f&#39;GetIntVarFromProtoIndex: out of bound index {index}&#39;)
+        return IntVar(self.__model, index, None)
+
+    def GetIntervalVarFromProtoIndex(self, index):
+        &#34;&#34;&#34;Returns an already created interval variable from its index.&#34;&#34;&#34;
+        if index &lt; 0 or index &gt;= len(self.__model.constraints):
+            raise ValueError(
+                f&#39;GetIntervalVarFromProtoIndex: out of bound index {index}&#39;)
+        ct = self.__model.constraints[index]
+        if not ct.HasField(&#39;interval&#39;):
+            raise ValueError(
+                f&#39;GetIntervalVarFromProtoIndex: index {index} does not reference an&#39;
+                + &#39; interval variable&#39;)
+
+        return IntervalVar(self.__model, index, None, None, None, None)
 
     # Helpers.
 
@@ -2240,7 +2308,6 @@ Returns:
     def __init__(self):
         self.__model = cp_model_pb2.CpModelProto()
         self.__constant_map = {}
-        self.__optional_constant_map = {}
 
     # Integer variable.
 
@@ -2284,7 +2351,8 @@ Returns:
 
     def NewConstant(self, value):
         &#34;&#34;&#34;Declares a constant integer.&#34;&#34;&#34;
-        return IntVar(self.__model, Domain(value, value), &#39;&#39;)
+        return IntVar(self.__model, self.GetOrMakeIndexFromConstant(value),
+                      None)
 
     # Linear constraints.
 
@@ -2942,6 +3010,50 @@ Returns:
             [self.GetOrMakeIndex(x) for x in demands])
         model_ct.cumulative.capacity = self.GetOrMakeIndex(capacity)
         return ct
+
+    # Support for deep copy.
+    def CopyFrom(self, other_model):
+        &#34;&#34;&#34;Reset the model, and creates a new one from a CpModelProto instance.&#34;&#34;&#34;
+        self.__model.CopyFrom(other_model.Proto())
+
+        # Rebuild constant map.
+        self.__constant_map.clear()
+        for i, var in enumerate(self.__model.variables):
+            if len(var.domain) == 2 and var.domain[0] == var.domain[1]:
+                self.__constant_map[var.domain[0]] = i
+
+    def GetBoolVarFromProtoIndex(self, index):
+        &#34;&#34;&#34;Returns an already created Boolean variable from its index.&#34;&#34;&#34;
+        if index &lt; 0 or index &gt;= len(self.__model.variables):
+            raise ValueError(
+                f&#39;GetBoolVarFromProtoIndex: out of bound index {index}&#39;)
+        var = self.__model.variables[index]
+        if len(var.domain) != 2 or var.domain[0] &lt; 0 or var.domain[1] &gt; 1:
+            raise ValueError(
+                f&#39;GetBoolVarFromProtoIndex: index {index} does not reference&#39; +
+                &#39; a Boolean variable&#39;)
+
+        return IntVar(self.__model, index, None)
+
+    def GetIntVarFromProtoIndex(self, index):
+        &#34;&#34;&#34;Returns an already created integer variable from its index.&#34;&#34;&#34;
+        if index &lt; 0 or index &gt;= len(self.__model.variables):
+            raise ValueError(
+                f&#39;GetIntVarFromProtoIndex: out of bound index {index}&#39;)
+        return IntVar(self.__model, index, None)
+
+    def GetIntervalVarFromProtoIndex(self, index):
+        &#34;&#34;&#34;Returns an already created interval variable from its index.&#34;&#34;&#34;
+        if index &lt; 0 or index &gt;= len(self.__model.constraints):
+            raise ValueError(
+                f&#39;GetIntervalVarFromProtoIndex: out of bound index {index}&#39;)
+        ct = self.__model.constraints[index]
+        if not ct.HasField(&#39;interval&#39;):
+            raise ValueError(
+                f&#39;GetIntervalVarFromProtoIndex: index {index} does not reference an&#39;
+                + &#39; interval variable&#39;)
+
+        return IntervalVar(self.__model, index, None, None, None, None)
 
     # Helpers.
 
@@ -4358,6 +4470,26 @@ Raises:
     self.__model.ClearField(&#39;solution_hint&#39;)</code></pre>
 </details>
 </dd>
+<dt id="cp_model.CpModel.CopyFrom"><code class="name flex">
+<span>def <span class="ident">CopyFrom</span></span>(<span>self, other_model)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reset the model, and creates a new one from a CpModelProto instance.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def CopyFrom(self, other_model):
+    &#34;&#34;&#34;Reset the model, and creates a new one from a CpModelProto instance.&#34;&#34;&#34;
+    self.__model.CopyFrom(other_model.Proto())
+
+    # Rebuild constant map.
+    self.__constant_map.clear()
+    for i, var in enumerate(self.__model.variables):
+        if len(var.domain) == 2 and var.domain[0] == var.domain[1]:
+            self.__constant_map[var.domain[0]] = i</code></pre>
+</details>
+</dd>
 <dt id="cp_model.CpModel.ExportToFile"><code class="name flex">
 <span>def <span class="ident">ExportToFile</span></span>(<span>self, file)</span>
 </code></dt>
@@ -4370,6 +4502,46 @@ Raises:
 <pre><code class="python">def ExportToFile(self, file):
     &#34;&#34;&#34;Write the model as a ascii protocol buffer to &#39;file&#39;.&#34;&#34;&#34;
     return pywrapsat.SatHelper.WriteModelToFile(self.__model, file)</code></pre>
+</details>
+</dd>
+<dt id="cp_model.CpModel.GetBoolVarFromProtoIndex"><code class="name flex">
+<span>def <span class="ident">GetBoolVarFromProtoIndex</span></span>(<span>self, index)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns an already created Boolean variable from its index.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def GetBoolVarFromProtoIndex(self, index):
+    &#34;&#34;&#34;Returns an already created Boolean variable from its index.&#34;&#34;&#34;
+    if index &lt; 0 or index &gt;= len(self.__model.variables):
+        raise ValueError(
+            f&#39;GetBoolVarFromProtoIndex: out of bound index {index}&#39;)
+    var = self.__model.variables[index]
+    if len(var.domain) != 2 or var.domain[0] &lt; 0 or var.domain[1] &gt; 1:
+        raise ValueError(
+            f&#39;GetBoolVarFromProtoIndex: index {index} does not reference&#39; +
+            &#39; a Boolean variable&#39;)
+
+    return IntVar(self.__model, index, None)</code></pre>
+</details>
+</dd>
+<dt id="cp_model.CpModel.GetIntVarFromProtoIndex"><code class="name flex">
+<span>def <span class="ident">GetIntVarFromProtoIndex</span></span>(<span>self, index)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns an already created integer variable from its index.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def GetIntVarFromProtoIndex(self, index):
+    &#34;&#34;&#34;Returns an already created integer variable from its index.&#34;&#34;&#34;
+    if index &lt; 0 or index &gt;= len(self.__model.variables):
+        raise ValueError(
+            f&#39;GetIntVarFromProtoIndex: out of bound index {index}&#39;)
+    return IntVar(self.__model, index, None)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpModel.GetIntervalIndex"><code class="name flex">
@@ -4385,6 +4557,29 @@ Raises:
     if not isinstance(arg, IntervalVar):
         raise TypeError(&#39;NotSupported: model.GetIntervalIndex(%s)&#39; % arg)
     return arg.Index()</code></pre>
+</details>
+</dd>
+<dt id="cp_model.CpModel.GetIntervalVarFromProtoIndex"><code class="name flex">
+<span>def <span class="ident">GetIntervalVarFromProtoIndex</span></span>(<span>self, index)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns an already created interval variable from its index.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def GetIntervalVarFromProtoIndex(self, index):
+    &#34;&#34;&#34;Returns an already created interval variable from its index.&#34;&#34;&#34;
+    if index &lt; 0 or index &gt;= len(self.__model.constraints):
+        raise ValueError(
+            f&#39;GetIntervalVarFromProtoIndex: out of bound index {index}&#39;)
+    ct = self.__model.constraints[index]
+    if not ct.HasField(&#39;interval&#39;):
+        raise ValueError(
+            f&#39;GetIntervalVarFromProtoIndex: index {index} does not reference an&#39;
+            + &#39; interval variable&#39;)
+
+    return IntervalVar(self.__model, index, None, None, None, None)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpModel.GetOrMakeBooleanIndex"><code class="name flex">
@@ -4548,7 +4743,8 @@ Raises:
 </summary>
 <pre><code class="python">def NewConstant(self, value):
     &#34;&#34;&#34;Declares a constant integer.&#34;&#34;&#34;
-    return IntVar(self.__model, Domain(value, value), &#39;&#39;)</code></pre>
+    return IntVar(self.__model, self.GetOrMakeIndexFromConstant(value),
+                  None)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpModel.NewIntVar"><code class="name flex">
@@ -5511,11 +5707,22 @@ model is feasible, or optimal if you provided an objective function.</p>
     def __init__(self, model, domain, name):
         &#34;&#34;&#34;See CpModel.NewIntVar below.&#34;&#34;&#34;
         self.__model = model
-        self.__index = len(model.variables)
-        self.__var = model.variables.add()
-        self.__var.domain.extend(domain.FlattenedIntervals())
-        self.__var.name = name
         self.__negation = None
+        # Python do not support multiple __init__ methods.
+        # This method is only called from the CpModel class.
+        # We hack the parameter to support the two cases:
+        # case 1:
+        #     model is a CpModelProto, domain is a Domain, and name is a string.
+        # case 2:
+        #     model is a CpModelProto, domain is an index (int), and name is None.
+        if isinstance(domain, numbers.Integral) and name is None:
+            self.__index = domain
+            self.__var = model.variables[domain]
+        else:
+            self.__index = len(model.variables)
+            self.__var = model.variables.add()
+            self.__var.domain.extend(domain.FlattenedIntervals())
+            self.__var.name = name
 
     def Index(self):
         &#34;&#34;&#34;Returns the index of the variable in the model.&#34;&#34;&#34;
@@ -5689,15 +5896,28 @@ intervals into the schedule.</p></div>
     def __init__(self, model, start_index, size_index, end_index,
                  is_present_index, name):
         self.__model = model
-        self.__index = len(model.constraints)
-        self.__ct = self.__model.constraints.add()
-        self.__ct.interval.start = start_index
-        self.__ct.interval.size = size_index
-        self.__ct.interval.end = end_index
-        if is_present_index is not None:
-            self.__ct.enforcement_literal.append(is_present_index)
-        if name:
-            self.__ct.name = name
+        # As with the IntVar::__init__ method, we hack the __init__ method to
+        # support two use cases:
+        #   case 1: called when creating a new interval variable.
+        #      {start|size|end}_index are indices of integer variables
+        #      is_present_index is either None or the index of a Boolean literal.
+        #      name is a string
+        #   case 2: called when querying an existing interval variable.
+        #      start_index is an int, all parameters after are None.
+        if (size_index is None and end_index is None and
+                is_present_index is None and name is None):
+            self.__index = start_index
+            self.__ct = model.constraints[start_index]
+        else:
+            self.__index = len(model.constraints)
+            self.__ct = self.__model.constraints.add()
+            self.__ct.interval.start = start_index
+            self.__ct.interval.size = size_index
+            self.__ct.interval.end = end_index
+            if is_present_index is not None:
+                self.__ct.enforcement_literal.append(is_present_index)
+            if name:
+                self.__ct.name = name
 
     def Index(self):
         &#34;&#34;&#34;Returns the index of the interval constraint in the model.&#34;&#34;&#34;
@@ -6399,8 +6619,12 @@ def Term(cls, expression, coefficient):
 <li><code><a title="cp_model.CpModel.AssertIsBooleanVariable" href="#cp_model.CpModel.AssertIsBooleanVariable">AssertIsBooleanVariable</a></code></li>
 <li><code><a title="cp_model.CpModel.ClearAssumptions" href="#cp_model.CpModel.ClearAssumptions">ClearAssumptions</a></code></li>
 <li><code><a title="cp_model.CpModel.ClearHints" href="#cp_model.CpModel.ClearHints">ClearHints</a></code></li>
+<li><code><a title="cp_model.CpModel.CopyFrom" href="#cp_model.CpModel.CopyFrom">CopyFrom</a></code></li>
 <li><code><a title="cp_model.CpModel.ExportToFile" href="#cp_model.CpModel.ExportToFile">ExportToFile</a></code></li>
+<li><code><a title="cp_model.CpModel.GetBoolVarFromProtoIndex" href="#cp_model.CpModel.GetBoolVarFromProtoIndex">GetBoolVarFromProtoIndex</a></code></li>
+<li><code><a title="cp_model.CpModel.GetIntVarFromProtoIndex" href="#cp_model.CpModel.GetIntVarFromProtoIndex">GetIntVarFromProtoIndex</a></code></li>
 <li><code><a title="cp_model.CpModel.GetIntervalIndex" href="#cp_model.CpModel.GetIntervalIndex">GetIntervalIndex</a></code></li>
+<li><code><a title="cp_model.CpModel.GetIntervalVarFromProtoIndex" href="#cp_model.CpModel.GetIntervalVarFromProtoIndex">GetIntervalVarFromProtoIndex</a></code></li>
 <li><code><a title="cp_model.CpModel.GetOrMakeBooleanIndex" href="#cp_model.CpModel.GetOrMakeBooleanIndex">GetOrMakeBooleanIndex</a></code></li>
 <li><code><a title="cp_model.CpModel.GetOrMakeIndex" href="#cp_model.CpModel.GetOrMakeIndex">GetOrMakeIndex</a></code></li>
 <li><code><a title="cp_model.CpModel.GetOrMakeIndexFromConstant" href="#cp_model.CpModel.GetOrMakeIndexFromConstant">GetOrMakeIndexFromConstant</a></code></li>
