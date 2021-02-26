@@ -9881,6 +9881,13 @@
       <anchor>aebb6a9095483a3d450a5050e9ad2d334</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>const int</type>
+      <name>LogsFieldNumber</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
+      <anchor>a021b18b030539f60366e61419e95ebcd</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="property" static="yes">
       <type>static pb::MessageParser&lt; CpSolverResponse &gt;</type>
       <name>Parser</name>
@@ -10040,6 +10047,13 @@
       <name>SolutionInfo</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>aac598b5b76738002261dd0f5411f7e9c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>string</type>
+      <name>Logs</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html</anchorfile>
+      <anchor>a682695b5c1b41fd9e7c82ddce06007f0</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -47076,6 +47090,20 @@
     </member>
     <member kind="function">
       <type>static long</type>
+      <name>RoutingIndexManager_GetStartIndex</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>ac7d458f06e21626a758e8e9083dbc821</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static long</type>
+      <name>RoutingIndexManager_GetEndIndex</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>ac6f99f85479c02fafc2c314735330437</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static long</type>
       <name>RoutingIndexManager_NodeToIndex</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
       <anchor>a654a22ab284ffea39d8af727fa68ae6c</anchor>
@@ -47328,6 +47356,13 @@
     </member>
     <member kind="function">
       <type>static int</type>
+      <name>RoutingModel_RegisterUnaryTransitVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a14bcb5f359819e86e220a3d6eb896a1e</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int length2, long[] jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static int</type>
       <name>RoutingModel_RegisterUnaryTransitCallback</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
       <anchor>a040cb4a5405c57f0a591e5a760f71913</anchor>
@@ -47339,6 +47374,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
       <anchor>ae9ecabbac8d38c30fe51c3521eae6643</anchor>
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, LongToLong jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static int</type>
+      <name>RoutingModel_RegisterTransitMatrix</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a2868fa8952be090682952349e1afa84d</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int len2_1, int[] len2_2, long[] jarg2)</arglist>
     </member>
     <member kind="function">
       <type>static int</type>
@@ -47395,6 +47437,20 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
       <anchor>a734958b1af94d48195abf2b85eaf8d2c</anchor>
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, long jarg2, long jarg3, bool jarg4, string jarg5)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>RoutingModel_AddVectorDimension</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a531cd1bd0ada638bbac84d06be20ecec</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int length2, long[] jarg2, long jarg3, bool jarg4, string jarg5)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>RoutingModel_AddMatrixDimension</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
+      <anchor>a1864ff96520f629b5584d43f9140acd8</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int len2_1, int[] len2_2, long[] jarg2, long jarg3, bool jarg4, string jarg5)</arglist>
     </member>
     <member kind="function">
       <type>static global::System.IntPtr</type>
@@ -48340,34 +48396,6 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
       <anchor>aed390b637621750da161edc609fd53ea</anchor>
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2)</arglist>
-    </member>
-    <member kind="function">
-      <type>static int</type>
-      <name>RoutingModel_RegisterUnaryTransitVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
-      <anchor>a14bcb5f359819e86e220a3d6eb896a1e</anchor>
-      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int length2, long[] jarg2)</arglist>
-    </member>
-    <member kind="function">
-      <type>static int</type>
-      <name>RoutingModel_RegisterTransitMatrix</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
-      <anchor>a2868fa8952be090682952349e1afa84d</anchor>
-      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int len2_1, int[] len2_2, long[] jarg2)</arglist>
-    </member>
-    <member kind="function">
-      <type>static global::System.IntPtr</type>
-      <name>RoutingModel_AddVectorDimension</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
-      <anchor>a531cd1bd0ada638bbac84d06be20ecec</anchor>
-      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int length2, long[] jarg2, long jarg3, bool jarg4, string jarg5)</arglist>
-    </member>
-    <member kind="function">
-      <type>static global::System.IntPtr</type>
-      <name>RoutingModel_AddMatrixDimension</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html</anchorfile>
-      <anchor>a1864ff96520f629b5584d43f9140acd8</anchor>
-      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int len2_1, int[] len2_2, long[] jarg2, long jarg3, bool jarg4, string jarg5)</arglist>
     </member>
     <member kind="function">
       <type>static string</type>
@@ -57472,6 +57500,20 @@
     </member>
     <member kind="function">
       <type>long</type>
+      <name>GetStartIndex</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>aa4ee569bcff466f8dd297ff97ee26815</anchor>
+      <arglist>(int vehicle)</arglist>
+    </member>
+    <member kind="function">
+      <type>long</type>
+      <name>GetEndIndex</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>a50faf9b05ab39a469783cbc39908a090</anchor>
+      <arglist>(int vehicle)</arglist>
+    </member>
+    <member kind="function">
+      <type>long</type>
       <name>NodeToIndex</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingIndexManager.html</anchorfile>
       <anchor>a9bb043ec346721b53eb6be74b1c5f793</anchor>
@@ -57533,6 +57575,13 @@
     </member>
     <member kind="function">
       <type>int</type>
+      <name>RegisterUnaryTransitVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a9712d267d0f07fe44c32785c3882c4cd</anchor>
+      <arglist>(long[] values)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
       <name>RegisterUnaryTransitCallback</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
       <anchor>a53abeba3ba50b555e65a16f0f871c17d</anchor>
@@ -57544,6 +57593,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
       <anchor>aa929f71688fceabafdbb63be2a377547</anchor>
       <arglist>(LongToLong callback)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>RegisterTransitMatrix</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a037b863a2c2bb4789d3bf0245c601e69</anchor>
+      <arglist>(long[][] values)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -57600,6 +57656,20 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
       <anchor>aa61b76af1033268ee09809a17e3ec9a1</anchor>
       <arglist>(long value, long capacity, bool fix_start_cumul_to_zero, string name)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntBoolPair</type>
+      <name>AddVectorDimension</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a68d5bafaa6fe53c346b0f93fd22d9945</anchor>
+      <arglist>(long[] values, long capacity, bool fix_start_cumul_to_zero, string name)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntBoolPair</type>
+      <name>AddMatrixDimension</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>abc2a989d4d4718b535856c64914bb3e3</anchor>
+      <arglist>(long[][] values, long capacity, bool fix_start_cumul_to_zero, string name)</arglist>
     </member>
     <member kind="function">
       <type>Constraint</type>
@@ -58517,34 +58587,6 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
       <anchor>a9c23ebeec4259161ccdb8a3a1b5c1244</anchor>
       <arglist>(RoutingDimension dimension)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>RegisterUnaryTransitVector</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
-      <anchor>a9712d267d0f07fe44c32785c3882c4cd</anchor>
-      <arglist>(long[] values)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>RegisterTransitMatrix</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
-      <anchor>a037b863a2c2bb4789d3bf0245c601e69</anchor>
-      <arglist>(long[][] values)</arglist>
-    </member>
-    <member kind="function">
-      <type>IntBoolPair</type>
-      <name>AddVectorDimension</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
-      <anchor>a68d5bafaa6fe53c346b0f93fd22d9945</anchor>
-      <arglist>(long[] values, long capacity, bool fix_start_cumul_to_zero, string name)</arglist>
-    </member>
-    <member kind="function">
-      <type>IntBoolPair</type>
-      <name>AddMatrixDimension</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
-      <anchor>abc2a989d4d4718b535856c64914bb3e3</anchor>
-      <arglist>(long[][] values, long capacity, bool fix_start_cumul_to_zero, string name)</arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static readonly int</type>
