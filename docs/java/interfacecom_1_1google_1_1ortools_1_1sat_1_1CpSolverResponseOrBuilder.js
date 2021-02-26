@@ -3,6 +3,8 @@ var interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder =
     [ "getAllSolutionsWereFound", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a3529f2aeb759b0e4d4c49437ebd2ccde", null ],
     [ "getBestObjectiveBound", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a8acd7d1e0e85ee50dd3362794d5ec2bb", null ],
     [ "getDeterministicTime", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a8558f1993d307f57f7d3e5dab0a49039", null ],
+    [ "getLogs", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a7233b24210e7437d50299205c1288e0c", null ],
+    [ "getLogsBytes", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a9f12014e3291be9e650042ec8b09ce3e", null ],
     [ "getNumBinaryPropagations", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a50b2ff93a6dbf8c385ce4c425209ffd8", null ],
     [ "getNumBooleans", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#aef7ad55668a2e13916dbc2239c5dc746", null ],
     [ "getNumBranches", "interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a52da60281a2afd6beaf4640d98dd3255", null ],

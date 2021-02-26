@@ -20020,6 +20020,41 @@
       <arglist>(com.google.protobuf.ByteString value)</arglist>
     </member>
     <member kind="function">
+      <type>java.lang.String</type>
+      <name>getLogs</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html</anchorfile>
+      <anchor>a7233b24210e7437d50299205c1288e0c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.protobuf.ByteString</type>
+      <name>getLogsBytes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html</anchorfile>
+      <anchor>a9f12014e3291be9e650042ec8b09ce3e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setLogs</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html</anchorfile>
+      <anchor>a26849dbe1fada37d6435028635134507</anchor>
+      <arglist>(java.lang.String value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearLogs</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html</anchorfile>
+      <anchor>aeb9051c20471a7410562db62c74b3214</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setLogsBytes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html</anchorfile>
+      <anchor>add775220cddc4765ee2a5a786c0d9b3d</anchor>
+      <arglist>(com.google.protobuf.ByteString value)</arglist>
+    </member>
+    <member kind="function">
       <type>.lang.Override final Builder</type>
       <name>setUnknownFields</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html</anchorfile>
@@ -26218,6 +26253,34 @@
       <name>clearLogSearchProgress</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>a13fe0d2417ca00b24b356ed9f4fd7c33</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasFillLogsInResponse</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a685113b26081f589c652613a1d30a4a2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getFillLogsInResponse</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>ad2758c0969a11b2be038130ae995c99e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setFillLogsInResponse</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a93a57627137fe34673aaad1d7d11b6b5</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearFillLogsInResponse</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a34e04de8d1f5a75f2db507d0edaca5cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -36194,6 +36257,20 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
+      <type>.lang.Override java.lang.String</type>
+      <name>getLogs</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse.html</anchorfile>
+      <anchor>a31bb7be53993ecf275604997d289a6c2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.protobuf.ByteString</type>
+      <name>getLogsBytes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse.html</anchorfile>
+      <anchor>ae2798ae9d2166ca1f6b5e2578f841934</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>.lang.Override final boolean</type>
       <name>isInitialized</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse.html</anchorfile>
@@ -36522,6 +36599,13 @@
       <anchor>a79891c106d58d0abc0619fe77038e9d4</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>LOGS_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse.html</anchorfile>
+      <anchor>a07957170fb1c9c4f9bc1a434dd478772</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function" protection="protected">
       <type>.lang.Override java.lang.Object</type>
       <name>newInstance</name>
@@ -36790,6 +36874,20 @@
       <name>getSolutionInfoBytes</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html</anchorfile>
       <anchor>a796560eb19ff9e624b4804c9c07fa8f0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>java.lang.String</type>
+      <name>getLogs</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html</anchorfile>
+      <anchor>a7233b24210e7437d50299205c1288e0c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.protobuf.ByteString</type>
+      <name>getLogsBytes</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html</anchorfile>
+      <anchor>a9f12014e3291be9e650042ec8b09ce3e</anchor>
       <arglist>()</arglist>
     </member>
   </compound>
@@ -64699,6 +64797,13 @@
     </member>
     <member kind="function">
       <type>int</type>
+      <name>registerUnaryTransitVector</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a5d5b216a42d1e2a27fbc004fe6f684d2</anchor>
+      <arglist>(long[] values)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
       <name>registerUnaryTransitCallback</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>ad974aa3fe6db0db4546066ffb6fa0fa1</anchor>
@@ -64710,6 +64815,13 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>ab85aa5d8d6971b67704958b85691aad5</anchor>
       <arglist>(LongUnaryOperator callback)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>registerTransitMatrix</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
+      <anchor>aeb3a3d6f530eecc238943c636009b880</anchor>
+      <arglist>(long[][] values)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -64766,6 +64878,20 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>a476c0847fe80efe1e3a5fbc5dba9a10b</anchor>
       <arglist>(long value, long capacity, boolean fix_start_cumul_to_zero, String name)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntBoolPair</type>
+      <name>addVectorDimension</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
+      <anchor>acfafeea42089265c9bad18a59584b1b4</anchor>
+      <arglist>(long[] values, long capacity, boolean fix_start_cumul_to_zero, String name)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntBoolPair</type>
+      <name>addMatrixDimension</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
+      <anchor>aaac374b49e54bf37ea3b2b1087977489</anchor>
+      <arglist>(long[][] values, long capacity, boolean fix_start_cumul_to_zero, String name)</arglist>
     </member>
     <member kind="function">
       <type>Constraint</type>
@@ -65676,34 +65802,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>af7ee2a6b2d0c0dc0273c6122d4943ebc</anchor>
       <arglist>(RoutingDimension dimension)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>registerUnaryTransitVector</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
-      <anchor>a5d5b216a42d1e2a27fbc004fe6f684d2</anchor>
-      <arglist>(long[] values)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>registerTransitMatrix</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
-      <anchor>aeb3a3d6f530eecc238943c636009b880</anchor>
-      <arglist>(long[][] values)</arglist>
-    </member>
-    <member kind="function">
-      <type>IntBoolPair</type>
-      <name>addVectorDimension</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
-      <anchor>acfafeea42089265c9bad18a59584b1b4</anchor>
-      <arglist>(long[] values, long capacity, boolean fix_start_cumul_to_zero, String name)</arglist>
-    </member>
-    <member kind="function">
-      <type>IntBoolPair</type>
-      <name>addMatrixDimension</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
-      <anchor>aaac374b49e54bf37ea3b2b1087977489</anchor>
-      <arglist>(long[][] values, long capacity, boolean fix_start_cumul_to_zero, String name)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static long</type>
@@ -68317,6 +68415,20 @@
     </member>
     <member kind="function">
       <type>.lang.Override boolean</type>
+      <name>hasFillLogsInResponse</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a685113b26081f589c652613a1d30a4a2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getFillLogsInResponse</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ad2758c0969a11b2be038130ae995c99e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
       <name>hasUsePbResolution</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a5a99121a7383eb56decfa8cf768eeda8</anchor>
@@ -70389,6 +70501,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
+      <name>FILL_LOGS_IN_RESPONSE_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ab3dbfb252b30f9dc7b9e9335feb903c1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
       <name>USE_PB_RESOLUTION_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a69fcaa4093c9205b45d8ef6f665284f5</anchor>
@@ -71929,6 +72048,20 @@
       <name>getLogSearchProgress</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>a6d17ef88ec89b774e776c6ff7f9dbfe4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasFillLogsInResponse</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a0e46c5a6d064452e268bf63eef9723c6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getFillLogsInResponse</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a65c12e6154b04b2ef0c677d0770017fd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
