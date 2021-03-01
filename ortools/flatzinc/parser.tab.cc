@@ -11,11 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/* A Bison parser, made by GNU Bison 3.7.4.  */
+/* A Bison parser, made by GNU Bison 3.7.5.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2020 Free Software Foundation,
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2021 Free Software Foundation,
    Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -59,10 +59,10 @@
    USER NAME SPACE" below.  */
 
 /* Identify Bison output, and Bison version.  */
-#define YYBISON 30704
+#define YYBISON 30705
 
 /* Bison version string.  */
-#define YYBISON_VERSION "3.7.4"
+#define YYBISON_VERSION "3.7.5"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -238,6 +238,18 @@ typedef int_least16_t yytype_int16;
 typedef short yytype_int16;
 #endif
 
+/* Work around bug in HP-UX 11.23, which defines these macros
+   incorrectly for preprocessor constants.  This workaround can likely
+   be removed in 2023, as HPE has promised support for HP-UX 11.23
+   (aka HP-UX 11i v2) only through the end of 2022; see Table 2 of
+   <https://h20195.www2.hpe.com/V2/getpdf.aspx/4AA4-7673ENW.pdf>.  */
+#ifdef __hpux
+#undef UINT_LEAST8_MAX
+#undef UINT_LEAST16_MAX
+#define UINT_LEAST8_MAX 255
+#define UINT_LEAST16_MAX 65535
+#endif
+
 #if defined __UINT_LEAST8_MAX__ && __UINT_LEAST8_MAX__ <= __INT_MAX__
 typedef __UINT_LEAST8_TYPE__ yytype_uint8;
 #elif (!defined __UINT_LEAST8_MAX__ && defined YY_STDINT_H && \
@@ -332,9 +344,9 @@ typedef int yy_state_fast_t;
 
 /* Suppress unused-variable warnings by "using" E.  */
 #if !defined lint || defined __GNUC__
-#define YYUSE(E) ((void)(E))
+#define YY_USE(E) ((void)(E))
 #else
-#define YYUSE(E) /* empty */
+#define YY_USE(E) /* empty */
 #endif
 
 #if defined __GNUC__ && !defined __ICC && 407 <= __GNUC__ * 100 + __GNUC_MINOR__
@@ -690,8 +702,8 @@ static const yytype_int16 yypgoto[] = {
     -181, -182, -182, -182, -182, -72,  -56,  100, -76,  -182};
 
 /* YYDEFGOTO[NTERM-NUM].  */
-static const yytype_int16 yydefgoto[] = {
-    -1, 1,  2,  6,  44,  45,  82,  83,  7,  20, 114, 196, 125, 126, 21,  22,
+static const yytype_uint8 yydefgoto[] = {
+    0,  1,  2,  6,  44,  45,  82,  83,  7,  20, 114, 196, 125, 126, 21,  22,
     23, 46, 34, 35, 208, 209, 119, 204, 25, 40, 99,  100, 60,  133, 134, 41};
 
 /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -836,17 +848,17 @@ static void yy_symbol_value_print(
     operations_research::fz::ParserContext* context,
     operations_research::fz::Model* model, bool* ok, void* scanner) {
   FILE* yyoutput = yyo;
-  YYUSE(yyoutput);
-  YYUSE(context);
-  YYUSE(model);
-  YYUSE(ok);
-  YYUSE(scanner);
+  YY_USE(yyoutput);
+  YY_USE(context);
+  YY_USE(model);
+  YY_USE(ok);
+  YY_USE(scanner);
   if (!yyvaluep) return;
 #ifdef YYPRINT
   if (yykind < YYNTOKENS) YYPRINT(yyo, yytoknum[yykind], *yyvaluep);
 #endif
   YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
-  YYUSE(yykind);
+  YY_USE(yykind);
   YY_IGNORE_MAYBE_UNINITIALIZED_END
 }
 
@@ -1182,16 +1194,16 @@ static void yydestruct(const char* yymsg, yysymbol_kind_t yykind,
                        operations_research::fz::ParserContext* context,
                        operations_research::fz::Model* model, bool* ok,
                        void* scanner) {
-  YYUSE(yyvaluep);
-  YYUSE(context);
-  YYUSE(model);
-  YYUSE(ok);
-  YYUSE(scanner);
+  YY_USE(yyvaluep);
+  YY_USE(context);
+  YY_USE(model);
+  YY_USE(ok);
+  YY_USE(scanner);
   if (!yymsg) yymsg = "Deleting";
   YY_SYMBOL_PRINT(yymsg, yykind, yyvaluep, yylocationp);
 
   YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
-  YYUSE(yykind);
+  YY_USE(yykind);
   YY_IGNORE_MAYBE_UNINITIALIZED_END
 }
 
@@ -1431,7 +1443,7 @@ yyreduce:
     {
       yyerrok;
     }
-#line 1581 "./ortools/flatzinc/parser.tab.cc"
+#line 1593 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 19: /* variable_or_constant_declaration: domain ':' IDENTIFIER
@@ -1455,7 +1467,7 @@ yyreduce:
       }
       delete annotations;
     }
-#line 1605 "./ortools/flatzinc/parser.tab.cc"
+#line 1617 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 20: /* variable_or_constant_declaration: ARRAY '[' IVALUE DOTDOT IVALUE
@@ -1477,7 +1489,7 @@ yyreduce:
       delete assignments;
       delete annotations;
     }
-#line 1624 "./ortools/flatzinc/parser.tab.cc"
+#line 1636 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 21: /* variable_or_constant_declaration: ARRAY '[' IVALUE DOTDOT IVALUE
@@ -1494,7 +1506,7 @@ yyreduce:
       context->integer_array_map[identifier] = std::vector<int64>();
       delete annotations;
     }
-#line 1639 "./ortools/flatzinc/parser.tab.cc"
+#line 1651 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 22: /* variable_or_constant_declaration: ARRAY '[' IVALUE DOTDOT IVALUE
@@ -1516,7 +1528,7 @@ yyreduce:
       delete assignments;
       delete annotations;
     }
-#line 1658 "./ortools/flatzinc/parser.tab.cc"
+#line 1670 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 23: /* variable_or_constant_declaration: ARRAY '[' IVALUE DOTDOT IVALUE
@@ -1533,7 +1545,7 @@ yyreduce:
       context->float_array_map[identifier] = std::vector<double>();
       delete annotations;
     }
-#line 1673 "./ortools/flatzinc/parser.tab.cc"
+#line 1685 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 24: /* variable_or_constant_declaration: ARRAY '[' IVALUE DOTDOT IVALUE
@@ -1567,7 +1579,7 @@ yyreduce:
       delete assignments;
       delete annotations;
     }
-#line 1703 "./ortools/flatzinc/parser.tab.cc"
+#line 1715 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 25: /* variable_or_constant_declaration: VAR domain ':' IDENTIFIER
@@ -1605,7 +1617,7 @@ yyreduce:
       }
       delete annotations;
     }
-#line 1741 "./ortools/flatzinc/parser.tab.cc"
+#line 1753 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 26: /* variable_or_constant_declaration: ARRAY '[' IVALUE DOTDOT IVALUE
@@ -1681,7 +1693,7 @@ yyreduce:
         delete annotations;
       }
     }
-#line 1813 "./ortools/flatzinc/parser.tab.cc"
+#line 1825 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 27: /* optional_var_or_value: '=' var_or_value  */
@@ -1689,7 +1701,7 @@ yyreduce:
     {
       (yyval.var_or_value) = (yyvsp[0].var_or_value);
     }
-#line 1819 "./ortools/flatzinc/parser.tab.cc"
+#line 1831 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 28: /* optional_var_or_value: %empty  */
@@ -1697,7 +1709,7 @@ yyreduce:
     {
       (yyval.var_or_value) = VariableRefOrValue::Undefined();
     }
-#line 1825 "./ortools/flatzinc/parser.tab.cc"
+#line 1837 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 29: /* optional_var_or_value_array: '=' '[' var_or_value_array ']'  */
@@ -1705,7 +1717,7 @@ yyreduce:
     {
       (yyval.var_or_value_array) = (yyvsp[-1].var_or_value_array);
     }
-#line 1831 "./ortools/flatzinc/parser.tab.cc"
+#line 1843 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 30: /* optional_var_or_value_array: '=' '[' ']'  */
@@ -1713,7 +1725,7 @@ yyreduce:
     {
       (yyval.var_or_value_array) = nullptr;
     }
-#line 1837 "./ortools/flatzinc/parser.tab.cc"
+#line 1849 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 31: /* optional_var_or_value_array: %empty  */
@@ -1721,7 +1733,7 @@ yyreduce:
     {
       (yyval.var_or_value_array) = nullptr;
     }
-#line 1843 "./ortools/flatzinc/parser.tab.cc"
+#line 1855 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 32: /* var_or_value_array: var_or_value_array ',' var_or_value  */
@@ -1730,7 +1742,7 @@ yyreduce:
       (yyval.var_or_value_array) = (yyvsp[-2].var_or_value_array);
       (yyval.var_or_value_array)->PushBack((yyvsp[0].var_or_value));
     }
-#line 1852 "./ortools/flatzinc/parser.tab.cc"
+#line 1864 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 33: /* var_or_value_array: var_or_value  */
@@ -1739,7 +1751,7 @@ yyreduce:
       (yyval.var_or_value_array) = new VariableRefOrValueArray();
       (yyval.var_or_value_array)->PushBack((yyvsp[0].var_or_value));
     }
-#line 1861 "./ortools/flatzinc/parser.tab.cc"
+#line 1873 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 34: /* var_or_value: IVALUE  */
@@ -1748,7 +1760,7 @@ yyreduce:
       (yyval.var_or_value) =
           VariableRefOrValue::Value((yyvsp[0].integer_value));
     }
-#line 1867 "./ortools/flatzinc/parser.tab.cc"
+#line 1879 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 35: /* var_or_value: IDENTIFIER  */
@@ -1768,7 +1780,7 @@ yyreduce:
         *ok = false;
       }
     }
-#line 1885 "./ortools/flatzinc/parser.tab.cc"
+#line 1897 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 36: /* var_or_value: IDENTIFIER '[' IVALUE ']'  */
@@ -1789,7 +1801,7 @@ yyreduce:
         *ok = false;
       }
     }
-#line 1906 "./ortools/flatzinc/parser.tab.cc"
+#line 1918 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 37: /* int_domain: TOKEN_BOOL  */
@@ -1797,7 +1809,7 @@ yyreduce:
     {
       (yyval.domain) = Domain::Boolean();
     }
-#line 1912 "./ortools/flatzinc/parser.tab.cc"
+#line 1924 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 38: /* int_domain: TOKEN_INT  */
@@ -1805,7 +1817,7 @@ yyreduce:
     {
       (yyval.domain) = Domain::AllInt64();
     }
-#line 1918 "./ortools/flatzinc/parser.tab.cc"
+#line 1930 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 39: /* int_domain: IVALUE DOTDOT IVALUE  */
@@ -1814,7 +1826,7 @@ yyreduce:
       (yyval.domain) =
           Domain::Interval((yyvsp[-2].integer_value), (yyvsp[0].integer_value));
     }
-#line 1924 "./ortools/flatzinc/parser.tab.cc"
+#line 1936 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 40: /* int_domain: '{' integers '}'  */
@@ -1824,7 +1836,7 @@ yyreduce:
       (yyval.domain) = Domain::IntegerList(std::move(*(yyvsp[-1].integers)));
       delete (yyvsp[-1].integers);
     }
-#line 1934 "./ortools/flatzinc/parser.tab.cc"
+#line 1946 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 41: /* set_domain: SET OF TOKEN_BOOL  */
@@ -1832,7 +1844,7 @@ yyreduce:
     {
       (yyval.domain) = Domain::SetOfBoolean();
     }
-#line 1940 "./ortools/flatzinc/parser.tab.cc"
+#line 1952 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 42: /* set_domain: SET OF TOKEN_INT  */
@@ -1840,7 +1852,7 @@ yyreduce:
     {
       (yyval.domain) = Domain::SetOfAllInt64();
     }
-#line 1946 "./ortools/flatzinc/parser.tab.cc"
+#line 1958 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 43: /* set_domain: SET OF IVALUE DOTDOT IVALUE  */
@@ -1849,7 +1861,7 @@ yyreduce:
       (yyval.domain) = Domain::SetOfInterval((yyvsp[-2].integer_value),
                                              (yyvsp[0].integer_value));
     }
-#line 1952 "./ortools/flatzinc/parser.tab.cc"
+#line 1964 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 44: /* set_domain: SET OF '{' integers '}'  */
@@ -1860,7 +1872,7 @@ yyreduce:
           Domain::SetOfIntegerList(std::move(*(yyvsp[-1].integers)));
       delete (yyvsp[-1].integers);
     }
-#line 1962 "./ortools/flatzinc/parser.tab.cc"
+#line 1974 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 45: /* float_domain: TOKEN_FLOAT  */
@@ -1868,7 +1880,7 @@ yyreduce:
     {
       (yyval.domain) = Domain::AllInt64();
     }
-#line 1968 "./ortools/flatzinc/parser.tab.cc"
+#line 1980 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 46: /* float_domain: DVALUE DOTDOT DVALUE  */
@@ -1878,7 +1890,7 @@ yyreduce:
       const int64 ub = ConvertAsIntegerOrDie((yyvsp[0].double_value));
       (yyval.domain) = Domain::Interval(lb, ub);
     }
-#line 1978 "./ortools/flatzinc/parser.tab.cc"
+#line 1990 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 47: /* domain: int_domain  */
@@ -1886,7 +1898,7 @@ yyreduce:
     {
       (yyval.domain) = (yyvsp[0].domain);
     }
-#line 1984 "./ortools/flatzinc/parser.tab.cc"
+#line 1996 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 48: /* domain: set_domain  */
@@ -1894,7 +1906,7 @@ yyreduce:
     {
       (yyval.domain) = (yyvsp[0].domain);
     }
-#line 1990 "./ortools/flatzinc/parser.tab.cc"
+#line 2002 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 49: /* domain: float_domain  */
@@ -1902,7 +1914,7 @@ yyreduce:
     {
       (yyval.domain) = (yyvsp[0].domain);
     }
-#line 1996 "./ortools/flatzinc/parser.tab.cc"
+#line 2008 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 50: /* integers: integers ',' integer  */
@@ -1911,7 +1923,7 @@ yyreduce:
       (yyval.integers) = (yyvsp[-2].integers);
       (yyval.integers)->emplace_back((yyvsp[0].integer_value));
     }
-#line 2002 "./ortools/flatzinc/parser.tab.cc"
+#line 2014 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 51: /* integers: integer  */
@@ -1920,7 +1932,7 @@ yyreduce:
       (yyval.integers) = new std::vector<int64>();
       (yyval.integers)->emplace_back((yyvsp[0].integer_value));
     }
-#line 2008 "./ortools/flatzinc/parser.tab.cc"
+#line 2020 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 52: /* integer: IVALUE  */
@@ -1928,7 +1940,7 @@ yyreduce:
     {
       (yyval.integer_value) = (yyvsp[0].integer_value);
     }
-#line 2014 "./ortools/flatzinc/parser.tab.cc"
+#line 2026 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 53: /* integer: IDENTIFIER  */
@@ -1937,7 +1949,7 @@ yyreduce:
       (yyval.integer_value) =
           gtl::FindOrDie(context->integer_map, (yyvsp[0].string_value));
     }
-#line 2020 "./ortools/flatzinc/parser.tab.cc"
+#line 2032 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 54: /* integer: IDENTIFIER '[' IVALUE ']'  */
@@ -1947,7 +1959,7 @@ yyreduce:
           gtl::FindOrDie(context->integer_array_map, (yyvsp[-3].string_value)),
           (yyvsp[-1].integer_value));
     }
-#line 2028 "./ortools/flatzinc/parser.tab.cc"
+#line 2040 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 55: /* floats: floats ',' float  */
@@ -1956,7 +1968,7 @@ yyreduce:
       (yyval.doubles) = (yyvsp[-2].doubles);
       (yyval.doubles)->emplace_back((yyvsp[0].double_value));
     }
-#line 2034 "./ortools/flatzinc/parser.tab.cc"
+#line 2046 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 56: /* floats: float  */
@@ -1965,7 +1977,7 @@ yyreduce:
       (yyval.doubles) = new std::vector<double>();
       (yyval.doubles)->emplace_back((yyvsp[0].double_value));
     }
-#line 2040 "./ortools/flatzinc/parser.tab.cc"
+#line 2052 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 57: /* float: DVALUE  */
@@ -1973,7 +1985,7 @@ yyreduce:
     {
       (yyval.double_value) = (yyvsp[0].double_value);
     }
-#line 2046 "./ortools/flatzinc/parser.tab.cc"
+#line 2058 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 58: /* float: IDENTIFIER  */
@@ -1982,7 +1994,7 @@ yyreduce:
       (yyval.double_value) =
           gtl::FindOrDie(context->float_map, (yyvsp[0].string_value));
     }
-#line 2052 "./ortools/flatzinc/parser.tab.cc"
+#line 2064 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 59: /* float: IDENTIFIER '[' IVALUE ']'  */
@@ -1992,7 +2004,7 @@ yyreduce:
           gtl::FindOrDie(context->float_array_map, (yyvsp[-3].string_value)),
           (yyvsp[-1].integer_value));
     }
-#line 2060 "./ortools/flatzinc/parser.tab.cc"
+#line 2072 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 60: /* const_literal: IVALUE  */
@@ -2000,7 +2012,7 @@ yyreduce:
     {
       (yyval.domain) = Domain::IntegerValue((yyvsp[0].integer_value));
     }
-#line 2066 "./ortools/flatzinc/parser.tab.cc"
+#line 2078 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 61: /* const_literal: IVALUE DOTDOT IVALUE  */
@@ -2009,7 +2021,7 @@ yyreduce:
       (yyval.domain) =
           Domain::Interval((yyvsp[-2].integer_value), (yyvsp[0].integer_value));
     }
-#line 2072 "./ortools/flatzinc/parser.tab.cc"
+#line 2084 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 62: /* const_literal: '{' integers '}'  */
@@ -2019,7 +2031,7 @@ yyreduce:
       (yyval.domain) = Domain::IntegerList(std::move(*(yyvsp[-1].integers)));
       delete (yyvsp[-1].integers);
     }
-#line 2082 "./ortools/flatzinc/parser.tab.cc"
+#line 2094 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 63: /* const_literal: '{' '}'  */
@@ -2027,7 +2039,7 @@ yyreduce:
     {
       (yyval.domain) = Domain::EmptyDomain();
     }
-#line 2088 "./ortools/flatzinc/parser.tab.cc"
+#line 2100 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 64: /* const_literal: DVALUE  */
@@ -2037,7 +2049,7 @@ yyreduce:
       (yyval.domain) =
           Domain::IntegerValue(static_cast<int64>((yyvsp[0].double_value)));
     }
-#line 2097 "./ortools/flatzinc/parser.tab.cc"
+#line 2109 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 65: /* const_literal: IDENTIFIER  */
@@ -2046,7 +2058,7 @@ yyreduce:
       (yyval.domain) = Domain::IntegerValue(
           gtl::FindOrDie(context->integer_map, (yyvsp[0].string_value)));
     }
-#line 2103 "./ortools/flatzinc/parser.tab.cc"
+#line 2115 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 66: /* const_literal: IDENTIFIER '[' IVALUE ']'  */
@@ -2056,7 +2068,7 @@ yyreduce:
           gtl::FindOrDie(context->integer_array_map, (yyvsp[-3].string_value)),
           (yyvsp[-1].integer_value)));
     }
-#line 2112 "./ortools/flatzinc/parser.tab.cc"
+#line 2124 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 67: /* const_literals: const_literals ',' const_literal  */
@@ -2065,7 +2077,7 @@ yyreduce:
       (yyval.domains) = (yyvsp[-2].domains);
       (yyval.domains)->emplace_back((yyvsp[0].domain));
     }
-#line 2121 "./ortools/flatzinc/parser.tab.cc"
+#line 2133 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 68: /* const_literals: const_literal  */
@@ -2074,7 +2086,7 @@ yyreduce:
       (yyval.domains) = new std::vector<Domain>();
       (yyval.domains)->emplace_back((yyvsp[0].domain));
     }
-#line 2127 "./ortools/flatzinc/parser.tab.cc"
+#line 2139 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 71: /* constraint: CONSTRAINT IDENTIFIER '(' arguments ')' annotations
@@ -2091,7 +2103,7 @@ yyreduce:
       delete annotations;
       delete (yyvsp[-2].args);
     }
-#line 2142 "./ortools/flatzinc/parser.tab.cc"
+#line 2154 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 72: /* arguments: arguments ',' argument  */
@@ -2100,7 +2112,7 @@ yyreduce:
       (yyval.args) = (yyvsp[-2].args);
       (yyval.args)->emplace_back((yyvsp[0].arg));
     }
-#line 2148 "./ortools/flatzinc/parser.tab.cc"
+#line 2160 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 73: /* arguments: argument  */
@@ -2109,7 +2121,7 @@ yyreduce:
       (yyval.args) = new std::vector<Argument>();
       (yyval.args)->emplace_back((yyvsp[0].arg));
     }
-#line 2154 "./ortools/flatzinc/parser.tab.cc"
+#line 2166 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 74: /* argument: IVALUE  */
@@ -2117,7 +2129,7 @@ yyreduce:
     {
       (yyval.arg) = Argument::IntegerValue((yyvsp[0].integer_value));
     }
-#line 2160 "./ortools/flatzinc/parser.tab.cc"
+#line 2172 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 75: /* argument: DVALUE  */
@@ -2126,7 +2138,7 @@ yyreduce:
       (yyval.arg) = Argument::IntegerValue(
           ConvertAsIntegerOrDie((yyvsp[0].double_value)));
     }
-#line 2166 "./ortools/flatzinc/parser.tab.cc"
+#line 2178 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 76: /* argument: SVALUE  */
@@ -2134,7 +2146,7 @@ yyreduce:
     {
       (yyval.arg) = Argument::VoidArgument();
     }
-#line 2172 "./ortools/flatzinc/parser.tab.cc"
+#line 2184 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 77: /* argument: IVALUE DOTDOT IVALUE  */
@@ -2143,7 +2155,7 @@ yyreduce:
       (yyval.arg) = Argument::Interval((yyvsp[-2].integer_value),
                                        (yyvsp[0].integer_value));
     }
-#line 2178 "./ortools/flatzinc/parser.tab.cc"
+#line 2190 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 78: /* argument: '{' integers '}'  */
@@ -2153,7 +2165,7 @@ yyreduce:
       (yyval.arg) = Argument::IntegerList(std::move(*(yyvsp[-1].integers)));
       delete (yyvsp[-1].integers);
     }
-#line 2188 "./ortools/flatzinc/parser.tab.cc"
+#line 2200 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 79: /* argument: IDENTIFIER  */
@@ -2195,7 +2207,7 @@ yyreduce:
         (yyval.arg) = Argument::DomainList(d);
       }
     }
-#line 2224 "./ortools/flatzinc/parser.tab.cc"
+#line 2236 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 80: /* argument: IDENTIFIER '[' IVALUE ']'  */
@@ -2217,7 +2229,7 @@ yyreduce:
         (yyval.arg) = Argument::FromDomain(d);
       }
     }
-#line 2246 "./ortools/flatzinc/parser.tab.cc"
+#line 2258 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 81: /* argument: '[' var_or_value_array ']'  */
@@ -2248,7 +2260,7 @@ yyreduce:
       }
       delete arguments;
     }
-#line 2276 "./ortools/flatzinc/parser.tab.cc"
+#line 2288 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 82: /* argument: '[' ']'  */
@@ -2256,7 +2268,7 @@ yyreduce:
     {
       (yyval.arg) = Argument::VoidArgument();
     }
-#line 2284 "./ortools/flatzinc/parser.tab.cc"
+#line 2296 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 83: /* annotations: annotations COLONCOLON annotation  */
@@ -2267,7 +2279,7 @@ yyreduce:
                                 : new std::vector<Annotation>();
       (yyval.annotations)->emplace_back((yyvsp[0].annotation));
     }
-#line 2293 "./ortools/flatzinc/parser.tab.cc"
+#line 2305 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 84: /* annotations: %empty  */
@@ -2275,7 +2287,7 @@ yyreduce:
     {
       (yyval.annotations) = nullptr;
     }
-#line 2299 "./ortools/flatzinc/parser.tab.cc"
+#line 2311 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 85: /* annotation_arguments: annotation_arguments ',' annotation  */
@@ -2284,7 +2296,7 @@ yyreduce:
       (yyval.annotations) = (yyvsp[-2].annotations);
       (yyval.annotations)->emplace_back((yyvsp[0].annotation));
     }
-#line 2305 "./ortools/flatzinc/parser.tab.cc"
+#line 2317 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 86: /* annotation_arguments: annotation  */
@@ -2293,7 +2305,7 @@ yyreduce:
       (yyval.annotations) = new std::vector<Annotation>();
       (yyval.annotations)->emplace_back((yyvsp[0].annotation));
     }
-#line 2311 "./ortools/flatzinc/parser.tab.cc"
+#line 2323 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 87: /* annotation: IVALUE DOTDOT IVALUE  */
@@ -2302,7 +2314,7 @@ yyreduce:
       (yyval.annotation) = Annotation::Interval((yyvsp[-2].integer_value),
                                                 (yyvsp[0].integer_value));
     }
-#line 2317 "./ortools/flatzinc/parser.tab.cc"
+#line 2329 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 88: /* annotation: IVALUE  */
@@ -2310,7 +2322,7 @@ yyreduce:
     {
       (yyval.annotation) = Annotation::IntegerValue((yyvsp[0].integer_value));
     }
-#line 2323 "./ortools/flatzinc/parser.tab.cc"
+#line 2335 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 89: /* annotation: SVALUE  */
@@ -2318,7 +2330,7 @@ yyreduce:
     {
       (yyval.annotation) = Annotation::String((yyvsp[0].string_value));
     }
-#line 2329 "./ortools/flatzinc/parser.tab.cc"
+#line 2341 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 90: /* annotation: IDENTIFIER  */
@@ -2335,7 +2347,7 @@ yyreduce:
         (yyval.annotation) = Annotation::Identifier(id);
       }
     }
-#line 2344 "./ortools/flatzinc/parser.tab.cc"
+#line 2356 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 91: /* annotation: IDENTIFIER '(' annotation_arguments ')'  */
@@ -2350,7 +2362,7 @@ yyreduce:
         (yyval.annotation) = Annotation::FunctionCall((yyvsp[-3].string_value));
       }
     }
-#line 2358 "./ortools/flatzinc/parser.tab.cc"
+#line 2370 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 92: /* annotation: IDENTIFIER '[' IVALUE ']'  */
@@ -2363,7 +2375,7 @@ yyreduce:
           gtl::FindOrDie(context->variable_array_map, (yyvsp[-3].string_value)),
           (yyvsp[-1].integer_value)));
     }
-#line 2369 "./ortools/flatzinc/parser.tab.cc"
+#line 2381 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 93: /* annotation: '[' annotation_arguments ']'  */
@@ -2378,7 +2390,7 @@ yyreduce:
         (yyval.annotation) = Annotation::Empty();
       }
     }
-#line 2383 "./ortools/flatzinc/parser.tab.cc"
+#line 2395 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 94: /* solve: SOLVE annotations SATISFY  */
@@ -2391,7 +2403,7 @@ yyreduce:
         model->Satisfy(std::vector<Annotation>());
       }
     }
-#line 2396 "./ortools/flatzinc/parser.tab.cc"
+#line 2408 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 95: /* solve: SOLVE annotations MINIMIZE argument  */
@@ -2408,7 +2420,7 @@ yyreduce:
         model->Minimize(obj_var, std::vector<Annotation>());
       }
     }
-#line 2412 "./ortools/flatzinc/parser.tab.cc"
+#line 2424 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 96: /* solve: SOLVE annotations MAXIMIZE argument  */
@@ -2425,10 +2437,10 @@ yyreduce:
         model->Maximize(obj_var, std::vector<Annotation>());
       }
     }
-#line 2428 "./ortools/flatzinc/parser.tab.cc"
+#line 2440 "./ortools/flatzinc/parser.tab.cc"
     break;
 
-#line 2432 "./ortools/flatzinc/parser.tab.cc"
+#line 2444 "./ortools/flatzinc/parser.tab.cc"
 
     default:
       break;
