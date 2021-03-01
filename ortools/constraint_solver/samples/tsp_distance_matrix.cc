@@ -13,6 +13,7 @@
 
 // [START program]
 // [START import]
+#include <cstdint>
 #include <vector>
 
 #include "ortools/constraint_solver/routing.h"
@@ -74,15 +75,15 @@ void PrintSolution(const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
   LOG(INFO) << "Objective: " << solution.ObjectiveValue();
   // Inspect solution.
-  int64 index = routing.Start(0);
+  int64_t index = routing.Start(0);
   LOG(INFO) << "Route for Vehicle 0:";
-  int64 distance{0};
+  int64_t distance{0};
   std::stringstream route;
   while (routing.IsEnd(index) == false) {
     route << manager.IndexToNode(index).value() << " -> ";
-    int64 previous_index = index;
+    int64_t previous_index = index;
     index = solution.Value(routing.NextVar(index));
-    distance += routing.GetArcCostForVehicle(previous_index, index, int64{0});
+    distance += routing.GetArcCostForVehicle(previous_index, index, int64_t{0});
   }
   LOG(INFO) << route.str() << manager.IndexToNode(index).value();
   LOG(INFO) << "Distance of the route: " << distance << "m";

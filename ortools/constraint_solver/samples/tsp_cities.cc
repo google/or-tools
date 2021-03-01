@@ -14,6 +14,7 @@
 // [START program]
 // [START import]
 #include <cmath>
+#include <cstdint>
 #include <vector>
 
 #include "ortools/constraint_solver/routing.h"
@@ -25,7 +26,7 @@
 namespace operations_research {
 // [START data_model]
 struct DataModel {
-  const std::vector<std::vector<int64>> distance_matrix{
+  const std::vector<std::vector<int64_t>> distance_matrix{
       {0, 2451, 713, 1018, 1631, 1374, 2408, 213, 2571, 875, 1420, 2145, 1972},
       {2451, 0, 1745, 1524, 831, 1240, 959, 2596, 403, 1589, 1374, 357, 579},
       {713, 1745, 0, 355, 920, 803, 1737, 851, 1858, 262, 940, 1453, 1260},
@@ -54,15 +55,15 @@ void PrintSolution(const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
   // Inspect solution.
   LOG(INFO) << "Objective: " << solution.ObjectiveValue() << " miles";
-  int64 index = routing.Start(0);
+  int64_t index = routing.Start(0);
   LOG(INFO) << "Route:";
-  int64 distance{0};
+  int64_t distance{0};
   std::stringstream route;
   while (routing.IsEnd(index) == false) {
     route << manager.IndexToNode(index).value() << " -> ";
-    int64 previous_index = index;
+    int64_t previous_index = index;
     index = solution.Value(routing.NextVar(index));
-    distance += routing.GetArcCostForVehicle(previous_index, index, int64{0});
+    distance += routing.GetArcCostForVehicle(previous_index, index, int64_t{0});
   }
   LOG(INFO) << route.str() << manager.IndexToNode(index).value();
   LOG(INFO) << "Route distance: " << distance << "miles";

@@ -13,6 +13,7 @@
 
 // [START program]
 // [START import]
+#include <cstdint>
 #include <vector>
 
 #include "ortools/constraint_solver/routing.h"
@@ -23,7 +24,7 @@
 namespace operations_research {
 // [START data_model]
 struct DataModel {
-  const std::vector<std::vector<int64>> distance_matrix{
+  const std::vector<std::vector<int64_t>> distance_matrix{
       {0, 548, 776, 696, 582, 274, 502, 194, 308, 194, 536, 502, 388, 354, 468,
        776, 662},
       {548, 0, 684, 308, 194, 502, 730, 354, 696, 742, 1084, 594, 480, 674,
@@ -60,7 +61,7 @@ struct DataModel {
        194, 798, 0},
   };
   // [START initial_routes]
-  const std::vector<std::vector<int64>> initial_routes{
+  const std::vector<std::vector<int64_t>> initial_routes{
       {8, 16, 14, 13, 12, 11},
       {3, 4, 9, 10},
       {15, 1},
@@ -80,18 +81,18 @@ struct DataModel {
 // [START solution_printer]
 void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
-  int64 max_route_distance{0};
+  int64_t max_route_distance{0};
   for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
-    int64 index = routing.Start(vehicle_id);
+    int64_t index = routing.Start(vehicle_id);
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
-    int64 route_distance{0};
+    int64_t route_distance{0};
     std::stringstream route;
     while (routing.IsEnd(index) == false) {
       route << manager.IndexToNode(index).value() << " -> ";
-      int64 previous_index = index;
+      int64_t previous_index = index;
       index = solution.Value(routing.NextVar(index));
       route_distance += routing.GetArcCostForVehicle(previous_index, index,
-                                                     int64{vehicle_id});
+                                                     int64_t{vehicle_id});
     }
     LOG(INFO) << route.str() << manager.IndexToNode(index).value();
     LOG(INFO) << "Distance of the route: " << route_distance << "m";

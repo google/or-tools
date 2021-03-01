@@ -13,6 +13,7 @@
 
 // [START program]
 // [START import]
+#include <cstdint>
 #include <vector>
 
 #include "google/protobuf/duration.pb.h"
@@ -30,18 +31,18 @@ namespace operations_research {
 // [START solution_printer]
 void PrintSolution(const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
-  int64 max_route_distance{0};
+  int64_t max_route_distance{0};
   for (int vehicle_id = 0; vehicle_id < manager.num_vehicles(); ++vehicle_id) {
-    int64 index = routing.Start(vehicle_id);
+    int64_t index = routing.Start(vehicle_id);
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
-    int64 route_distance{0};
+    int64_t route_distance{0};
     std::stringstream route;
     while (routing.IsEnd(index) == false) {
       route << manager.IndexToNode(index).value() << " -> ";
-      int64 previous_index = index;
+      int64_t previous_index = index;
       index = solution.Value(routing.NextVar(index));
       route_distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(
-          previous_index, index, int64{vehicle_id});
+          previous_index, index, int64_t{vehicle_id});
     }
     LOG(INFO) << route.str() << manager.IndexToNode(index).value();
     LOG(INFO) << "Distance of the route: " << route_distance << "m";

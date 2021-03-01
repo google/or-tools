@@ -14,6 +14,7 @@
 // [START program]
 // [START import]
 #include <cmath>
+#include <cstdint>
 #include <vector>
 
 #include "ortools/constraint_solver/routing.h"
@@ -81,14 +82,15 @@ struct DataModel {
 
 // [START distance_matrix]
 // @brief Generate distance matrix.
-std::vector<std::vector<int64>> ComputeEuclideanDistanceMatrix(
+std::vector<std::vector<int64_t>> ComputeEuclideanDistanceMatrix(
     const std::vector<std::vector<int>>& locations) {
-  std::vector<std::vector<int64>> distances = std::vector<std::vector<int64>>(
-      locations.size(), std::vector<int64>(locations.size(), int64{0}));
+  std::vector<std::vector<int64_t>> distances =
+      std::vector<std::vector<int64_t>>(
+          locations.size(), std::vector<int64_t>(locations.size(), int64_t{0}));
   for (int fromNode = 0; fromNode < locations.size(); fromNode++) {
     for (int toNode = 0; toNode < locations.size(); toNode++) {
       if (fromNode != toNode)
-        distances[fromNode][toNode] = static_cast<int64>(
+        distances[fromNode][toNode] = static_cast<int64_t>(
             std::hypot((locations[toNode][0] - locations[fromNode][0]),
                        (locations[toNode][1] - locations[fromNode][1])));
     }
@@ -106,15 +108,15 @@ void PrintSolution(const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
   LOG(INFO) << "Objective: " << solution.ObjectiveValue();
   // Inspect solution.
-  int64 index = routing.Start(0);
+  int64_t index = routing.Start(0);
   LOG(INFO) << "Route:";
-  int64 distance{0};
+  int64_t distance{0};
   std::stringstream route;
   while (routing.IsEnd(index) == false) {
     route << manager.IndexToNode(index).value() << " -> ";
-    int64 previous_index = index;
+    int64_t previous_index = index;
     index = solution.Value(routing.NextVar(index));
-    distance += routing.GetArcCostForVehicle(previous_index, index, int64{0});
+    distance += routing.GetArcCostForVehicle(previous_index, index, int64_t{0});
   }
   LOG(INFO) << route.str() << manager.IndexToNode(index).value();
   LOG(INFO) << "Route distance: " << distance << "miles";

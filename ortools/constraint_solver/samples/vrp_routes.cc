@@ -13,6 +13,7 @@
 
 // [START program]
 // [START import]
+#include <cstdint>
 #include <vector>
 
 #include "ortools/constraint_solver/routing.h"
@@ -24,7 +25,7 @@
 namespace operations_research {
 // [START data_model]
 struct DataModel {
-  const std::vector<std::vector<int64>> distance_matrix{
+  const std::vector<std::vector<int64_t>> distance_matrix{
       {0, 548, 776, 696, 582, 274, 502, 194, 308, 194, 536, 502, 388, 354, 468,
        776, 662},
       {548, 0, 684, 308, 194, 502, 730, 354, 696, 742, 1084, 594, 480, 674,
@@ -70,10 +71,10 @@ void PrintSolution(
     const std::vector<std::vector<RoutingIndexManager::NodeIndex>>& routes) {
   // Print routes.
   DataModel data;
-  int64 total_distance = 0;
+  int64_t total_distance = 0;
   for (int i = 0; i < routes.size(); ++i) {
     std::vector<RoutingIndexManager::NodeIndex> route = routes[i];
-    int64 route_distance{0};
+    int64_t route_distance{0};
     std::stringstream route_text;
     LOG(INFO) << "Route for Vehicle " << i << ":";
     route_text << route[0];
@@ -138,7 +139,7 @@ void Vrp() {
   // [START get_routes]
   // Get the routes and convert indices to nodes.
   std::vector<std::vector<RoutingIndexManager::NodeIndex>> routes;
-  for (const std::vector<int64>& route_indices :
+  for (const std::vector<int64_t>& route_indices :
        routing.GetRoutesFromAssignment(*solution)) {
     routes.push_back(manager.IndicesToNodes(route_indices));
   }

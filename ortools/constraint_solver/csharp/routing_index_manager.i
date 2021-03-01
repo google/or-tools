@@ -30,18 +30,13 @@ DEFINE_INDEX_TYPE_TYPEDEF(operations_research::RoutingNodeIndex,
 namespace operations_research {
 
 %unignore RoutingIndexManager;
-%unignore RoutingIndexManager::GetStartIndex;
-%unignore RoutingIndexManager::GetEndIndex;
+%unignore RoutingIndexManager::GetStartIndex(int);
+%unignore RoutingIndexManager::GetEndIndex(int);
 %unignore RoutingIndexManager::IndexToNode;
 %unignore RoutingIndexManager::NodeToIndex;
 %unignore RoutingIndexManager::NodesToIndices;
-%unignore RoutingIndexManager::RoutingIndexManager(
-    int, int,
-    NodeIndex);
-%unignore RoutingIndexManager::RoutingIndexManager(
-    int, int,
-    const std::vector<NodeIndex>&,
-    const std::vector<NodeIndex>&);
+%unignore RoutingIndexManager::RoutingIndexManager(int, int, NodeIndex);
+%unignore RoutingIndexManager::RoutingIndexManager(int, int, const std::vector<NodeIndex>&, const std::vector<NodeIndex>&);
 %rename (GetNumberOfNodes) RoutingIndexManager::num_nodes;
 %rename (GetNumberOfVehicles) RoutingIndexManager::num_vehicles;
 %rename (GetNumberOfIndices) RoutingIndexManager::num_indices;
