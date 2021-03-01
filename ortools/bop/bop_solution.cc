@@ -13,6 +13,8 @@
 
 #include "ortools/bop/bop_solution.h"
 
+#include <cstdint>
+
 namespace operations_research {
 namespace bop {
 
@@ -40,9 +42,9 @@ BopSolution::BopSolution(const LinearBooleanProblem& problem,
   }
 }
 
-int64 BopSolution::ComputeCost() const {
+int64_t BopSolution::ComputeCost() const {
   recompute_cost_ = false;
-  int64 sum = 0;
+  int64_t sum = 0;
   const LinearObjective& objective = problem_->objective();
   const size_t num_sparse_vars = objective.literals_size();
   CHECK_EQ(num_sparse_vars, objective.coefficients_size());
@@ -59,7 +61,7 @@ int64 BopSolution::ComputeCost() const {
 bool BopSolution::ComputeIsFeasible() const {
   recompute_is_feasible_ = false;
   for (const LinearBooleanConstraint& constraint : problem_->constraints()) {
-    int64 sum = 0;
+    int64_t sum = 0;
     const size_t num_sparse_vars = constraint.literals_size();
     CHECK_EQ(num_sparse_vars, constraint.coefficients_size());
 

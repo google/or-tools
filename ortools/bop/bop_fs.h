@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BOP_BOP_FS_H_
 #define OR_TOOLS_BOP_BOP_FS_H_
 
+#include <cstdint>
 #include <string>
 
 #include "ortools/base/basictypes.h"
@@ -65,7 +66,7 @@ class GuidedSatFirstSolutionGenerator : public BopOptimizerBase {
 
   const Policy policy_;
   bool abort_;
-  int64 state_update_stamp_;
+  int64_t state_update_stamp_;
   std::unique_ptr<sat::SatSolver> sat_solver_;
 };
 
@@ -138,7 +139,7 @@ class LinearRelaxation : public BopOptimizerBase {
   bool CostIsWorseThanSolution(double scaled_cost, double tolerance) const;
 
   const BopParameters parameters_;
-  int64 state_update_stamp_;
+  int64_t state_update_stamp_;
   bool lp_model_loaded_;
   int num_full_solves_;
   glop::LinearProgram lp_model_;
