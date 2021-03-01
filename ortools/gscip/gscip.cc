@@ -164,20 +164,29 @@ const GScipConstraintOptions& DefaultGScipConstraintOptions() {
 
 absl::Status GScip::SetParams(const GScipParameters& params,
                               const std::string& legacy_params) {
-  SCIPsetMessagehdlrQuiet(scip_, params.silence_output());
+  if (params.has_silence_output()) {
+    SCIPsetMessagehdlrQuiet(scip_, params.silence_output());
+  }
   if (!params.search_logs_filename().empty()) {
     SCIPsetMessagehdlrLogfile(scip_, params.search_logs_filename().c_str());
   }
   const SCIP_Bool set_param_quiet =
       static_cast<SCIP_Bool>(!params.silence_output());
+
   RETURN_IF_SCIP_ERROR(SCIPsetEmphasis(
       scip_, ConvertEmphasis(params.emphasis()), set_param_quiet));
-  RETURN_IF_SCIP_ERROR(SCIPsetHeuristics(
-      scip_, ConvertMetaParamValue(params.heuristics()), set_param_quiet));
-  RETURN_IF_SCIP_ERROR(SCIPsetPresolving(
-      scip_, ConvertMetaParamValue(params.presolve()), set_param_quiet));
-  RETURN_IF_SCIP_ERROR(SCIPsetSeparating(
-      scip_, ConvertMetaParamValue(params.separating()), set_param_quiet));
+  if (params.has_heuristics()) {
+    RETURN_IF_SCIP_ERROR(SCIPsetHeuristics(
+        scip_, ConvertMetaParamValue(params.heuristics()), set_param_quiet));
+  }
+  if (params.has_presolve()) {
+    RETURN_IF_SCIP_ERROR(SCIPsetPresolving(
+        scip_, ConvertMetaParamValue(params.presolve()), set_param_quiet));
+  }
+  if (params.has_separating()) {
+    RETURN_IF_SCIP_ERROR(SCIPsetSeparating(
+        scip_, ConvertMetaParamValue(params.separating()), set_param_quiet));
+  }
   for (const auto& bool_param : params.bool_params()) {
     RETURN_IF_SCIP_ERROR(
         (SCIPsetBoolParam(scip_, bool_param.first.c_str(), bool_param.second)));
