@@ -3112,6 +3112,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   int new_size = 0;
   bool changed = false;
   int num_zero_demand_removed = 0;
+  int64 sum_of_max_demands = 0;
   for (int i = 0; i < proto.intervals_size(); ++i) {
     if (context_->working_model->constraints(proto.intervals(i))
             .constraint_case() ==
@@ -3125,11 +3126,21 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       num_zero_demand_removed++;
       continue;
     }
+    sum_of_max_demands += demand_max;
 
     ct->mutable_cumulative()->set_intervals(new_size, proto.intervals(i));
     ct->mutable_cumulative()->set_demands(new_size, proto.demands(i));
     new_size++;
   }
+
+  const int64 capacity_min = context_->MinOf(proto.capacity());
+  const int64 capacity_max = context_->MaxOf(proto.capacity());
+
+  if (sum_of_max_demands <= capacity_min) {
+    context_->UpdateRuleStats("cumulative: capacity exceeds sum of demands");
+    return RemoveConstraint(ct);
+  }
+
   if (new_size < proto.intervals_size()) {
     changed = true;
     ct->mutable_cumulative()->mutable_intervals()->Truncate(new_size);
@@ -3146,8 +3157,6 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   }
 
   if (HasEnforcementLiteral(*ct)) return changed;
-  if (!context_->IsFixed(proto.capacity())) return changed;
-  const int64 capacity = context_->MinOf(proto.capacity());
 
   const int num_intervals = proto.intervals_size();
   bool with_start_view = false;
@@ -3174,13 +3183,14 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       // the no-overlap and the cumulative constraint.
       return changed;
     }
+
     const int64 demand_min = context_->MinOf(demand_ref);
     const int64 demand_max = context_->MaxOf(demand_ref);
-    if (demand_min > capacity / 2) {
+    if (demand_min > capacity_max / 2) {
       num_greater_half_capacity++;
     }
-    if (demand_min > capacity) {
-      context_->UpdateRuleStats("cumulative: demand_min exceeds capacity");
+    if (demand_min > capacity_max) {
+      context_->UpdateRuleStats("cumulative: demand_min exceeds capacity max");
       if (ct.enforcement_literal().empty()) {
         return context_->NotifyThatModelIsUnsat();
       } else {
@@ -3190,11 +3200,12 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
         }
       }
       return changed;
-    } else if (demand_max > capacity) {
+    } else if (demand_max > capacity_max) {
       if (ct.enforcement_literal().empty()) {
-        context_->UpdateRuleStats("cumulative: demand_max exceeds capacity.");
+        context_->UpdateRuleStats(
+            "cumulative: demand_max exceeds capacity max.");
         if (!context_->IntersectDomainWith(demand_ref,
-                                           Domain(kint64min, capacity))) {
+                                           Domain(kint64min, capacity_max))) {
           return true;
         }
       } else {
@@ -4961,7 +4972,7 @@ void CpModelPresolver::PresolveToFixPoint() {
       }
 
       // TODO(user): Is seems safer to simply remove the changed Boolean.
-      // We loose a bit of preformance, but the code is simpler.
+      // We loose a bit of performance, but the code is simpler.
       if (changed) {
         context_->UpdateConstraintVariableUsage(c);
       }
