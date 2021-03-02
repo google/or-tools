@@ -423,9 +423,11 @@ inline std::string RemoveOperationsResearchAndGlop(
   operations_research::ScopedInstructionCounter scoped_instruction_count( \
       RemoveOperationsResearchAndGlop(__PRETTY_FUNCTION__), time_limit)
 
+#else  // !HAS_PERF_SUBSYSTEM
+#define SCOPED_INSTRUCTION_COUNT(time_limit)
 #endif  // HAS_PERF_SUBSYSTEM
 
-#else  // OR_STATS
+#else  // !OR_STATS
 // If OR_STATS is not defined, we remove some instructions that may be time
 // consuming.
 
