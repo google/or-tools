@@ -42,15 +42,15 @@ void LuFactorization::Clear() {
 }
 
 Status LuFactorization::ComputeFactorization(
-    const CompactSparseMatrixView& compact_matrix) {
+    const CompactSparseMatrixView& matrix) {
   SCOPED_TIME_STAT(&stats_);
   Clear();
-  if (compact_matrix.num_rows().value() != compact_matrix.num_cols().value()) {
+  if (matrix.num_rows().value() != matrix.num_cols().value()) {
     GLOP_RETURN_AND_LOG_ERROR(Status::ERROR_LU, "Not a square matrix!!");
   }
 
-  GLOP_RETURN_IF_ERROR(markowitz_.ComputeLU(compact_matrix, &row_perm_,
-                                            &col_perm_, &lower_, &upper_));
+  GLOP_RETURN_IF_ERROR(
+      markowitz_.ComputeLU(matrix, &row_perm_, &col_perm_, &lower_, &upper_));
   inverse_col_perm_.PopulateFromInverse(col_perm_);
   inverse_row_perm_.PopulateFromInverse(row_perm_);
   ComputeTransposeUpper();
@@ -58,10 +58,10 @@ Status LuFactorization::ComputeFactorization(
 
   is_identity_factorization_ = false;
   IF_STATS_ENABLED({
-    stats_.lu_fill_in.Add(GetFillInPercentage(compact_matrix));
+    stats_.lu_fill_in.Add(GetFillInPercentage(matrix));
     stats_.basis_num_entries.Add(matrix.num_entries().value());
   });
-  DCHECK(CheckFactorization(compact_matrix, Fractional(1e-6)));
+  DCHECK(CheckFactorization(matrix, Fractional(1e-6)));
   return Status::OK();
 }
 

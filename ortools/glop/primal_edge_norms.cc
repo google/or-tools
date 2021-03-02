@@ -167,8 +167,8 @@ void PrimalEdgeNorms::ComputeDirectionLeftInverse(
 
   // TODO(user): Refactorize if estimated accuracy above a threshold.
   IF_STATS_ENABLED(stats_.direction_left_inverse_accuracy.Add(
-      ScalarProduct(direction_left_inverse_.values,
-                    matrix_.column(entering_col)) -
+      compact_matrix_.ColumnScalarProduct(entering_col,
+                                          direction_left_inverse_.values) -
       SquaredNorm(direction.values)));
   IF_STATS_ENABLED(stats_.direction_left_inverse_density.Add(
       Density(direction_left_inverse_.values)));

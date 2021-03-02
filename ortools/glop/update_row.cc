@@ -72,7 +72,7 @@ void UpdateRow::ComputeUnitRowLeftInverse(RowIndex leaving_row) {
                                   unit_row_left_inverse_.values) -
       1.0));
   IF_STATS_ENABLED(stats_.unit_row_left_inverse_density.Add(
-      Density(unit_row_left_inverse_.values())));
+      Density(unit_row_left_inverse_.values)));
 }
 
 void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {

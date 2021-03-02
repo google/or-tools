@@ -627,11 +627,6 @@ class RevisedSimplex {
   DenseRow lower_bound_;
   DenseRow upper_bound_;
 
-  // The bound perturbation to be used for basic variable that are slightly
-  // outside their bounds. This contains small values that are non-zero only if
-  // the primal simplex ran into many degenerate iterations.
-  DenseRow bound_perturbation_;
-
   // Used in dual phase I to keep track of the non-basic dual infeasible
   // columns and their sign of infeasibility (+1 or -1).
   DenseRow dual_infeasibility_improvement_direction_;

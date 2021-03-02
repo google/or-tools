@@ -827,7 +827,6 @@ bool RevisedSimplex::InitializeBoundsAndTestIfUnchanged(
   SCOPED_TIME_STAT(&function_stats_);
   lower_bound_.resize(num_cols_, 0.0);
   upper_bound_.resize(num_cols_, 0.0);
-  bound_perturbation_.AssignToZero(num_cols_);
 
   // Variable bounds, for both non-slack and slack variables.
   bool bounds_are_unchanged = true;
@@ -1436,25 +1435,6 @@ void RevisedSimplex::CorrectErrorsOnVariableValues() {
             << ", Primal residual |A.x - b| = "
             << variable_values_.ComputeMaximumPrimalResidual();
   }
-
-  // If we are doing too many degenerate iterations, we try to perturb the
-  // problem by extending each basic variable bound with a random value. See how
-  // bound_perturbation_ is used in ComputeHarrisRatioAndLeavingCandidates().
-  //
-  // Note that the perturbation is currently only reset to zero at the end of
-  // the algorithm.
-  //
-  // TODO(user): This is currently disabled because the improvement is unclear.
-  if (/* DISABLES CODE */ false &&
-      (!feasibility_phase_ && num_consecutive_degenerate_iterations_ >= 100)) {
-    VLOG(1) << "Perturbing the problem.";
-    const Fractional tolerance = parameters_.harris_tolerance_ratio() *
-                                 parameters_.primal_feasibility_tolerance();
-    std::uniform_real_distribution<double> dist(0, tolerance);
-    for (ColIndex col(0); col < num_cols_; ++col) {
-      bound_perturbation_[col] += dist(random_);
-    }
-  }
 }
 
 void RevisedSimplex::ComputeVariableValuesError() {
@@ -1553,14 +1533,8 @@ Fractional RevisedSimplex::ComputeHarrisRatioAndLeavingCandidates(
   for (const auto e : direction_) {
     const Fractional magnitude = std::abs(e.coefficient());
     if (magnitude <= threshold) continue;
-    Fractional ratio = GetRatio<is_entering_reduced_cost_positive>(e.row());
-    // TODO(user): The perturbation is currently disabled, so no need to test
-    // anything here.
-    if (false && ratio < 0.0) {
-      // If the variable is already pass its bound, we use the perturbed version
-      // of the bound (if bound_perturbation_[basis_[row]] is not zero).
-      ratio += std::abs(bound_perturbation_[basis_[e.row()]] / e.coefficient());
-    }
+    const Fractional ratio =
+        GetRatio<is_entering_reduced_cost_positive>(e.row());
     if (ratio <= harris_ratio) {
       leaving_candidates->SetCoefficient(e.row(), ratio);
 
