@@ -1972,6 +1972,9 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
           for (const int ref : ct.bool_or().literals()) {
             temp.push_back(get_literal(ref));
           }
+          for (const int ref : ct.enforcement_literal()) {
+            temp.push_back(get_literal(ref).Negated());
+          }
           drat_proof_handler->AddProblemClause(temp);
           break;
         default:
@@ -2003,6 +2006,9 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
         temp.clear();
         for (const int ref : ct.bool_or().literals()) {
           temp.push_back(get_literal(ref));
+        }
+        for (const int ref : ct.enforcement_literal()) {
+          temp.push_back(get_literal(ref).Negated());
         }
         solver->AddProblemClause(temp);
         break;
