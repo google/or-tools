@@ -373,24 +373,11 @@ namespace operations_research {
 		}
 		else if (lb > (-SRS_infinite) && ub < SRS_infinite) {
 			// Both bounds are finite -> this is a ranged constraint
-			// The value of a ranged constraint is allowed to be in
-			//   [ rhs[i], rhs[i]+rngval[i] ]
-			// see also the reference documentation for SRSnewrows()
+			LOG(DFATAL) << "Sirius does not handle ranged constraint."
 			if (ub < lb) {
-				// The bounds for the constraint are contradictory. SIRIUS models
-				// a range constraint l <= ax <= u as
-				//    ax = l + v
-				// where v is an auxiliary variable the range of which is controlled
-				// by l and u: if l < u then v in [0, u-l]
-				//             else          v in [u-l, 0]
-				// (the range is specified as the rngval[] argument to SRSnewrows).
-				// Thus SIRIUS cannot represent range constraints with contradictory
-				// bounds and we must error out here.
 				CHECK_STATUS(-1);
 			}
-			rhs = ub;
-			range = ub - lb;
-			sense = 'N';
+			CHECK_STATUS(-1);
 		}
 		else if (ub < SRS_infinite ||
 			(std::abs(ub) == SRS_infinite && std::abs(lb) > SRS_infinite)) {
