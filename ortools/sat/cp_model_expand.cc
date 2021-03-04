@@ -13,6 +13,8 @@
 
 #include "ortools/sat/cp_model_expand.h"
 
+#include <cstdint>
+#include <limits>
 #include <map>
 
 #include "absl/container/flat_hash_map.h"
@@ -49,7 +51,7 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
 
   int num_positives = 0;
   int num_negatives = 0;
-  for (const int64 demand : reservoir.demands()) {
+  for (const int64_t demand : reservoir.demands()) {
     if (demand > 0) {
       num_positives++;
     } else if (demand < 0) {
@@ -107,7 +109,7 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
       }
 
       // Accounts for own demand in the domain of the sum.
-      const int64 demand_i = reservoir.demands(i);
+      const int64_t demand_i = reservoir.demands(i);
       level->mutable_linear()->add_domain(
           CapSub(reservoir.min_level(), demand_i));
       level->mutable_linear()->add_domain(
@@ -145,14 +147,15 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
   const int mod_var = int_mod.vars(1);
   const int target_var = int_mod.target();
 
-  const int64 mod_lb = context->MinOf(mod_var);
+  const int64_t mod_lb = context->MinOf(mod_var);
   CHECK_GE(mod_lb, 1);
-  const int64 mod_ub = context->MaxOf(mod_var);
+  const int64_t mod_ub = context->MaxOf(mod_var);
 
-  const int64 var_lb = context->MinOf(var);
-  const int64 var_ub = context->MaxOf(var);
+  const int64_t var_lb = context->MinOf(var);
+  const int64_t var_ub = context->MaxOf(var);
 
   // Compute domains of var / mod_var.
+  // TODO(user): implement Domain.ContinuousDivisionBy(domain).
   const int div_var =
       context->NewIntVar(Domain(var_lb / mod_ub, var_ub / mod_lb));
 
@@ -189,7 +192,8 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
   } else {
     // Create prod_var = div_var * mod.
     const int prod_var = context->NewIntVar(
-        Domain(var_lb * mod_lb / mod_ub, var_ub * mod_ub / mod_lb));
+        context->DomainOf(div_var).ContinuousMultiplicationBy(
+            context->DomainOf(mod_var)));
     IntegerArgumentProto* const int_prod =
         context->working_model->add_constraints()->mutable_int_prod();
     int_prod->set_target(prod_var);
@@ -256,8 +260,10 @@ void ExpandIntProdWithOneAcrossZero(int a_ref, int b_ref, int product_ref,
 
   // Split the domain of a in two, controlled by a new literal.
   const int a_is_positive = context->NewBoolVar();
-  context->AddImplyInDomain(a_is_positive, a_ref, {0, kint64max});
-  context->AddImplyInDomain(NegatedRef(a_is_positive), a_ref, {kint64min, -1});
+  context->AddImplyInDomain(a_is_positive, a_ref,
+                            {0, std::numeric_limits<int64_t>::max()});
+  context->AddImplyInDomain(NegatedRef(a_is_positive), a_ref,
+                            {std::numeric_limits<int64_t>::min(), -1});
   const int pos_a_ref = context->NewIntVar({0, context->MaxOf(a_ref)});
   AddXEqualYOrXEqualZero(a_is_positive, pos_a_ref, a_ref, context);
 
@@ -304,10 +310,12 @@ void ExpandIntProdWithTwoAcrossZero(int a_ref, int b_ref, int product_ref,
                                     PresolveContext* context) {
   // Split a_ref domain in two, controlled by a new literal.
   const int a_is_positive = context->NewBoolVar();
-  context->AddImplyInDomain(a_is_positive, a_ref, {0, kint64max});
-  context->AddImplyInDomain(NegatedRef(a_is_positive), a_ref, {kint64min, -1});
-  const int64 min_of_a = context->MinOf(a_ref);
-  const int64 max_of_a = context->MaxOf(a_ref);
+  context->AddImplyInDomain(a_is_positive, a_ref,
+                            {0, std::numeric_limits<int64_t>::max()});
+  context->AddImplyInDomain(NegatedRef(a_is_positive), a_ref,
+                            {std::numeric_limits<int64_t>::min(), -1});
+  const int64_t min_of_a = context->MinOf(a_ref);
+  const int64_t max_of_a = context->MaxOf(a_ref);
 
   const int pos_a_ref = context->NewIntVar({0, max_of_a});
   AddXEqualYOrXEqualZero(a_is_positive, pos_a_ref, a_ref, context);
@@ -412,7 +420,7 @@ void ExpandInverse(ConstraintProto* ct, PresolveContext* context) {
 
   // Reduce the domains of each variable by checking that the inverse value
   // exists.
-  std::vector<int64> possible_values;
+  std::vector<int64_t> possible_values;
   // Propagate from one vector to its counterpart.
   // Note this reaches the fixpoint as there is a one to one mapping between
   // (variable-value) pairs in each vector.
@@ -460,7 +468,7 @@ void ExpandInverse(ConstraintProto* ct, PresolveContext* context) {
     const int f_i = ct->inverse().f_direct(i);
     const Domain domain = context->DomainOf(f_i);
     for (const ClosedInterval& interval : domain) {
-      for (int64 j = interval.start; j <= interval.end; ++j) {
+      for (int64_t j = interval.start; j <= interval.end; ++j) {
         // We have f[i] == j <=> r[j] == i;
         const int r_j = ct->inverse().f_inverse(j);
         int r_j_i;
@@ -490,13 +498,13 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
   }
 
   bool all_constants = true;
-  absl::flat_hash_map<int64, int> constant_var_values_usage;
-  std::vector<int64> constant_var_values;
-  std::vector<int64> invalid_indices;
+  absl::flat_hash_map<int64_t, int> constant_var_values_usage;
+  std::vector<int64_t> constant_var_values;
+  std::vector<int64_t> invalid_indices;
   Domain index_domain = context->DomainOf(index_ref);
   Domain target_domain = context->DomainOf(target_ref);
   for (const ClosedInterval& interval : index_domain) {
-    for (int64 v = interval.start; v <= interval.end; ++v) {
+    for (int64_t v = interval.start; v <= interval.end; ++v) {
       const int var = element.vars(v);
       const Domain var_domain = context->DomainOf(var);
       if (var_domain.IntersectionWith(target_domain).IsEmpty()) {
@@ -508,7 +516,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
         break;
       }
 
-      const int64 value = var_domain.Min();
+      const int64_t value = var_domain.Min();
       if (constant_var_values_usage[value]++ == 0) {
         constant_var_values.push_back(value);
       }
@@ -531,7 +539,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
   // no longer valid for the target variable. They are created only for values
   // that have multiples literals supporting them.
   // Order is not important.
-  absl::flat_hash_map<int64, BoolArgumentProto*> supports;
+  absl::flat_hash_map<int64_t, BoolArgumentProto*> supports;
   if (all_constants && target_ref != index_ref) {
     if (!context->IntersectDomainWith(
             target_ref, Domain::FromValues(constant_var_values))) {
@@ -547,7 +555,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
     }
 
     for (const ClosedInterval& interval : target_domain) {
-      for (int64 v = interval.start; v <= interval.end; ++v) {
+      for (int64_t v = interval.start; v <= interval.end; ++v) {
         const int usage = gtl::FindOrDie(constant_var_values_usage, v);
         if (usage > 1) {
           const int lit = context->GetOrCreateVarValueEncoding(target_ref, v);
@@ -565,7 +573,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
   auto* bool_or = context->working_model->add_constraints()->mutable_bool_or();
 
   for (const ClosedInterval& interval : index_domain) {
-    for (int64 v = interval.start; v <= interval.end; ++v) {
+    for (int64_t v = interval.start; v <= interval.end; ++v) {
       const int var = element.vars(v);
       const int index_lit = context->GetOrCreateVarValueEncoding(index_ref, v);
       const Domain var_domain = context->DomainOf(var);
@@ -582,7 +590,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
         context->AddImplyInDomain(index_lit, var, target_domain);
       } else if (var_domain.Size() == 1) {
         if (all_constants) {
-          const int64 value = var_domain.Min();
+          const int64_t value = var_domain.Min();
           if (constant_var_values_usage[value] > 1) {
             // The encoding literal for 'value' of the target_ref has been
             // created before.
@@ -611,10 +619,10 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
   }
 
   if (all_constants) {
-    const int64 var_min = target_domain.Min();
+    const int64_t var_min = target_domain.Min();
 
     // Scan all values to find the one with the most literals attached.
-    int64 most_frequent_value = kint64max;
+    int64_t most_frequent_value = std::numeric_limits<int64_t>::max();
     int usage = -1;
     for (const auto it : constant_var_values_usage) {
       if (it.second > usage ||
@@ -631,7 +639,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
     // coefficients are positive).
     // TODO(user): Benchmark if using base is always beneficial.
     // TODO(user): Try not to create this if max_usage == 1.
-    const int64 base =
+    const int64_t base =
         usage > 2 && usage > size / 10 ? most_frequent_value : var_min;
     if (base != var_min) {
       VLOG(3) << "expand element: choose " << base << " with usage " << usage
@@ -640,15 +648,15 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
 
     LinearConstraintProto* const linear =
         context->working_model->add_constraints()->mutable_linear();
-    int64 rhs = -base;
+    int64_t rhs = -base;
     linear->add_vars(target_ref);
     linear->add_coeffs(-1);
     for (const ClosedInterval& interval : index_domain) {
-      for (int64 v = interval.start; v <= interval.end; ++v) {
+      for (int64_t v = interval.start; v <= interval.end; ++v) {
         const int ref = element.vars(v);
         const int index_lit =
             context->GetOrCreateVarValueEncoding(index_ref, v);
-        const int64 delta = context->DomainOf(ref).Min() - base;
+        const int64_t delta = context->DomainOf(ref).Min() - base;
         if (RefIsPositive(index_lit)) {
           linear->add_vars(index_lit);
           linear->add_coeffs(delta);
@@ -672,8 +680,8 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
 // Adds clauses so that literals[i] true <=> encoding[value[i]] true.
 // This also implicitly use the fact that exactly one alternative is true.
 void LinkLiteralsAndValues(
-    const std::vector<int>& value_literals, const std::vector<int64>& values,
-    const absl::flat_hash_map<int64, int>& target_encoding,
+    const std::vector<int>& value_literals, const std::vector<int64_t>& values,
+    const absl::flat_hash_map<int64_t, int>& target_encoding,
     PresolveContext* context) {
   CHECK_EQ(value_literals.size(), values.size());
 
@@ -685,7 +693,7 @@ void LinkLiteralsAndValues(
   // value is false too (i.e not possible). Conversely, if the tuple is
   // selected, the value must be selected.
   for (int i = 0; i < values.size(); ++i) {
-    const int64 v = values[i];
+    const int64_t v = values[i];
     CHECK(target_encoding.contains(v));
     const int lit = gtl::FindOrDie(target_encoding, v);
     value_literals_per_target_literal[lit].push_back(value_literals[i]);
@@ -724,8 +732,8 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   AutomatonConstraintProto& proto = *ct->mutable_automaton();
 
   if (proto.vars_size() == 0) {
-    const int64 initial_state = proto.starting_state();
-    for (const int64 final_state : proto.final_states()) {
+    const int64_t initial_state = proto.starting_state();
+    for (const int64_t final_state : proto.final_states()) {
       if (initial_state == final_state) {
         context->UpdateRuleStats("automaton: empty constraint");
         ct->Clear();
@@ -743,17 +751,17 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   const std::vector<int> vars = {proto.vars().begin(), proto.vars().end()};
 
   // Compute the set of reachable state at each time point.
-  const absl::flat_hash_set<int64> final_states(
+  const absl::flat_hash_set<int64_t> final_states(
       {proto.final_states().begin(), proto.final_states().end()});
-  std::vector<absl::flat_hash_set<int64>> reachable_states(n + 1);
+  std::vector<absl::flat_hash_set<int64_t>> reachable_states(n + 1);
   reachable_states[0].insert(proto.starting_state());
 
   // Forward pass.
   for (int time = 0; time < n; ++time) {
     for (int t = 0; t < proto.transition_tail_size(); ++t) {
-      const int64 tail = proto.transition_tail(t);
-      const int64 label = proto.transition_label(t);
-      const int64 head = proto.transition_head(t);
+      const int64_t tail = proto.transition_tail(t);
+      const int64_t label = proto.transition_label(t);
+      const int64_t head = proto.transition_head(t);
       if (!reachable_states[time].contains(tail)) continue;
       if (!context->DomainContains(vars[time], label)) continue;
       if (time == n - 1 && !final_states.contains(head)) continue;
@@ -763,11 +771,11 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
 
   // Backward pass.
   for (int time = n - 1; time >= 0; --time) {
-    absl::flat_hash_set<int64> new_set;
+    absl::flat_hash_set<int64_t> new_set;
     for (int t = 0; t < proto.transition_tail_size(); ++t) {
-      const int64 tail = proto.transition_tail(t);
-      const int64 label = proto.transition_label(t);
-      const int64 head = proto.transition_head(t);
+      const int64_t tail = proto.transition_tail(t);
+      const int64_t label = proto.transition_label(t);
+      const int64_t head = proto.transition_head(t);
 
       if (!reachable_states[time].contains(tail)) continue;
       if (!context->DomainContains(vars[time], label)) continue;
@@ -782,22 +790,22 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   // initial state, and at time n we should be in one of the final states. We
   // don't need to create Booleans at at time when there is just one possible
   // state (like at time zero).
-  absl::flat_hash_map<int64, int> encoding;
-  absl::flat_hash_map<int64, int> in_encoding;
-  absl::flat_hash_map<int64, int> out_encoding;
+  absl::flat_hash_map<int64_t, int> encoding;
+  absl::flat_hash_map<int64_t, int> in_encoding;
+  absl::flat_hash_map<int64_t, int> out_encoding;
   bool removed_values = false;
 
   for (int time = 0; time < n; ++time) {
     // All these vector have the same size. We will use them to enforce a
     // local table constraint representing one step of the automaton at the
     // given time.
-    std::vector<int64> in_states;
-    std::vector<int64> transition_values;
-    std::vector<int64> out_states;
+    std::vector<int64_t> in_states;
+    std::vector<int64_t> transition_values;
+    std::vector<int64_t> out_states;
     for (int i = 0; i < proto.transition_label_size(); ++i) {
-      const int64 tail = proto.transition_tail(i);
-      const int64 label = proto.transition_label(i);
-      const int64 head = proto.transition_head(i);
+      const int64_t tail = proto.transition_tail(i);
+      const int64_t label = proto.transition_label(i);
+      const int64_t head = proto.transition_head(i);
 
       if (!reachable_states[time].contains(tail)) continue;
       if (!reachable_states[time + 1].contains(head)) continue;
@@ -848,7 +856,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
 
     // Fully encode vars[time].
     {
-      std::vector<int64> s = transition_values;
+      std::vector<int64_t> s = transition_values;
       gtl::STLSortAndRemoveDuplicates(&s);
 
       encoding.clear();
@@ -859,7 +867,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
 
       // Fully encode the variable.
       for (const ClosedInterval& interval : context->DomainOf(vars[time])) {
-        for (int64 v = interval.start; v <= interval.end; ++v) {
+        for (int64_t v = interval.start; v <= interval.end; ++v) {
           encoding[v] = context->GetOrCreateVarValueEncoding(vars[time], v);
         }
       }
@@ -867,7 +875,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
 
     // For each possible out states, create one Boolean variable.
     {
-      std::vector<int64> s = out_states;
+      std::vector<int64_t> s = out_states;
       gtl::STLSortAndRemoveDuplicates(&s);
 
       out_encoding.clear();
@@ -876,7 +884,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
         out_encoding[s.front()] = var;
         out_encoding[s.back()] = NegatedRef(var);
       } else if (s.size() > 2) {
-        for (const int64 state : s) {
+        for (const int64_t state : s) {
           out_encoding[state] = context->NewBoolVar();
         }
       }
@@ -907,7 +915,7 @@ void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
   TableConstraintProto& table = *ct->mutable_table();
   const int num_vars = table.vars_size();
   const int num_original_tuples = table.values_size() / num_vars;
-  std::vector<std::vector<int64>> tuples(num_original_tuples);
+  std::vector<std::vector<int64_t>> tuples(num_original_tuples);
   int count = 0;
   for (int i = 0; i < num_original_tuples; ++i) {
     for (int j = 0; j < num_vars; ++j) {
@@ -922,8 +930,8 @@ void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
   }
 
   // Compress tuples.
-  const int64 any_value = kint64min;
-  std::vector<int64> domain_sizes;
+  const int64_t any_value = std::numeric_limits<int64_t>::min();
+  std::vector<int64_t> domain_sizes;
   for (int i = 0; i < num_vars; ++i) {
     domain_sizes.push_back(context->DomainOf(table.vars(i)).Size());
   }
@@ -931,10 +939,10 @@ void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
 
   // For each tuple, forbid the variables values to be this tuple.
   std::vector<int> clause;
-  for (const std::vector<int64>& tuple : tuples) {
+  for (const std::vector<int64_t>& tuple : tuples) {
     clause.clear();
     for (int i = 0; i < num_vars; ++i) {
-      const int64 value = tuple[i];
+      const int64_t value = tuple[i];
       if (value == any_value) continue;
 
       const int literal =
@@ -976,18 +984,18 @@ void ExpandLinMin(ConstraintProto* ct, PresolveContext* context) {
 // tuples_with_any vector provides a list of tuple_literals that will support
 // any value.
 void ProcessOneVariable(const std::vector<int>& tuple_literals,
-                        const std::vector<int64>& values, int variable,
+                        const std::vector<int64_t>& values, int variable,
                         const std::vector<int>& tuples_with_any,
                         PresolveContext* context) {
   VLOG(2) << "Process var(" << variable << ") with domain "
           << context->DomainOf(variable) << " and " << values.size()
           << " active tuples, and " << tuples_with_any.size() << " any tuples";
   CHECK_EQ(tuple_literals.size(), values.size());
-  std::vector<std::pair<int64, int>> pairs;
+  std::vector<std::pair<int64_t, int>> pairs;
 
   // Collect pairs of value-literal.
   for (int i = 0; i < values.size(); ++i) {
-    const int64 value = values[i];
+    const int64_t value = values[i];
     CHECK(context->DomainContains(variable, value));
     pairs.emplace_back(value, tuple_literals[i]);
   }
@@ -998,7 +1006,7 @@ void ProcessOneVariable(const std::vector<int>& tuple_literals,
   std::sort(pairs.begin(), pairs.end());
   for (int i = 0; i < pairs.size();) {
     selected.clear();
-    const int64 value = pairs[i].first;
+    const int64_t value = pairs[i].first;
     for (; i < pairs.size() && pairs[i].first == value; ++i) {
       selected.push_back(pairs[i].second);
     }
@@ -1027,8 +1035,9 @@ void ProcessOneVariable(const std::vector<int>& tuple_literals,
 
 // Simpler encoding for table constraints with 2 variables.
 void AddSizeTwoTable(
-    const std::vector<int>& vars, const std::vector<std::vector<int64>>& tuples,
-    const std::vector<absl::flat_hash_set<int64>>& values_per_var,
+    const std::vector<int>& vars,
+    const std::vector<std::vector<int64_t>>& tuples,
+    const std::vector<absl::flat_hash_set<int64_t>>& values_per_var,
     PresolveContext* context) {
   CHECK_EQ(vars.size(), 2);
   const int left_var = vars[0];
@@ -1044,8 +1053,8 @@ void AddSizeTwoTable(
   std::map<int, std::vector<int>> right_to_left;
 
   for (const auto& tuple : tuples) {
-    const int64 left_value(tuple[0]);
-    const int64 right_value(tuple[1]);
+    const int64_t left_value(tuple[0]);
+    const int64_t right_value(tuple[1]);
     CHECK(context->DomainContains(left_var, left_value));
     CHECK(context->DomainContains(right_var, right_value));
 
@@ -1101,7 +1110,7 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   const int num_original_tuples = table.values_size() / num_vars;
 
   // Read tuples flat array and recreate the vector of tuples.
-  std::vector<std::vector<int64>> tuples(num_original_tuples);
+  std::vector<std::vector<int64_t>> tuples(num_original_tuples);
   int count = 0;
   for (int tuple_index = 0; tuple_index < num_original_tuples; ++tuple_index) {
     for (int var_index = 0; var_index < num_vars; ++var_index) {
@@ -1111,12 +1120,12 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
 
   // Compute the set of possible values for each variable (from the table).
   // Remove invalid tuples along the way.
-  std::vector<absl::flat_hash_set<int64>> values_per_var(num_vars);
+  std::vector<absl::flat_hash_set<int64_t>> values_per_var(num_vars);
   int new_size = 0;
   for (int tuple_index = 0; tuple_index < num_original_tuples; ++tuple_index) {
     bool keep = true;
     for (int var_index = 0; var_index < num_vars; ++var_index) {
-      const int64 value = tuples[tuple_index][var_index];
+      const int64_t value = tuples[tuple_index][var_index];
       if (!context->DomainContains(vars[var_index], value)) {
         keep = false;
         break;
@@ -1175,8 +1184,8 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   // tuples.
   int num_prefix_tuples = 0;
   {
-    absl::flat_hash_set<absl::Span<const int64>> prefixes;
-    for (const std::vector<int64>& tuple : tuples) {
+    absl::flat_hash_set<absl::Span<const int64_t>> prefixes;
+    for (const std::vector<int64_t>& tuple : tuples) {
       prefixes.insert(absl::MakeSpan(tuple.data(), num_vars - 1));
     }
     num_prefix_tuples = prefixes.size();
@@ -1185,8 +1194,8 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   // TODO(user): reinvestigate ExploreSubsetOfVariablesAndAddNegatedTables.
 
   // Compress tuples.
-  const int64 any_value = kint64min;
-  std::vector<int64> domain_sizes;
+  const int64_t any_value = std::numeric_limits<int64_t>::min();
+  std::vector<int64_t> domain_sizes;
   for (int i = 0; i < num_vars; ++i) {
     domain_sizes.push_back(values_per_var[i].size());
   }
@@ -1214,7 +1223,7 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   // Debug message to log the status of the expansion.
   if (VLOG_IS_ON(2)) {
     // Compute the maximum number of prefix tuples.
-    int64 max_num_prefix_tuples = 1;
+    int64_t max_num_prefix_tuples = 1;
     for (int var_index = 0; var_index + 1 < num_vars; ++var_index) {
       max_num_prefix_tuples =
           CapProd(max_num_prefix_tuples, values_per_var[var_index].size());
@@ -1287,7 +1296,7 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   }
 
   std::vector<int> active_tuple_literals;
-  std::vector<int64> active_values;
+  std::vector<int64_t> active_values;
   std::vector<int> any_tuple_literals;
   for (int var_index = 0; var_index < num_vars; ++var_index) {
     if (values_per_var[var_index].size() == 1) continue;
@@ -1297,7 +1306,7 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
     any_tuple_literals.clear();
     for (int tuple_index = 0; tuple_index < tuple_literals.size();
          ++tuple_index) {
-      const int64 value = tuples[tuple_index][var_index];
+      const int64_t value = tuples[tuple_index][var_index];
       const int tuple_literal = tuple_literals[tuple_index];
 
       if (value == any_value) {
@@ -1339,7 +1348,7 @@ void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
   // equation per value stating that this value can be assigned at most once, or
   // exactly once in case of permutation.
   for (const ClosedInterval& interval : union_of_domains) {
-    for (int64 v = interval.start; v <= interval.end; ++v) {
+    for (int64_t v = interval.start; v <= interval.end; ++v) {
       // Collect references which domain contains v.
       std::vector<int> possible_refs;
       int fixed_variable_count = 0;
@@ -1460,7 +1469,7 @@ void ExpandCpModel(PresolveContext* context) {
     }
     if (skip) continue;  // Nothing was done for this constraint.
 
-    // Update variable-contraint graph.
+    // Update variable-constraint graph.
     context->UpdateNewConstraintsVariableUsage();
     if (ct->constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
       context->UpdateConstraintVariableUsage(i);
