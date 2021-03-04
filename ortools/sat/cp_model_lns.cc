@@ -13,6 +13,7 @@
 
 #include "ortools/sat/cp_model_lns.h"
 
+#include <cstdint>
 #include <limits>
 #include <numeric>
 #include <vector>
@@ -53,20 +54,20 @@ void NeighborhoodGeneratorHelper::Synchronize() {
   absl::MutexLock mutex_lock(&mutex_);
   if (shared_bounds_ != nullptr) {
     std::vector<int> model_variables;
-    std::vector<int64> new_lower_bounds;
-    std::vector<int64> new_upper_bounds;
+    std::vector<int64_t> new_lower_bounds;
+    std::vector<int64_t> new_upper_bounds;
     shared_bounds_->GetChangedBounds(shared_bounds_id_, &model_variables,
                                      &new_lower_bounds, &new_upper_bounds);
 
     for (int i = 0; i < model_variables.size(); ++i) {
       const int var = model_variables[i];
-      const int64 new_lb = new_lower_bounds[i];
-      const int64 new_ub = new_upper_bounds[i];
+      const int64_t new_lb = new_lower_bounds[i];
+      const int64_t new_ub = new_upper_bounds[i];
       if (VLOG_IS_ON(3)) {
         const auto& domain =
             model_proto_with_only_variables_.variables(var).domain();
-        const int64 old_lb = domain.Get(0);
-        const int64 old_ub = domain.Get(domain.size() - 1);
+        const int64_t old_lb = domain.Get(0);
+        const int64_t old_ub = domain.Get(domain.size() - 1);
         VLOG(3) << "Variable: " << var << " old domain: [" << old_lb << ", "
                 << old_ub << "] new domain: [" << new_lb << ", " << new_ub
                 << "]";
@@ -302,7 +303,7 @@ bool NeighborhoodGenerator::ReadyToGenerate() const {
   return (helper_.shared_response().SolutionsRepository().NumSolutions() > 0);
 }
 
-double NeighborhoodGenerator::GetUCBScore(int64 total_num_calls) const {
+double NeighborhoodGenerator::GetUCBScore(int64_t total_num_calls) const {
   absl::MutexLock mutex_lock(&mutex_);
   DCHECK_GE(total_num_calls, num_calls_);
   if (num_calls_ <= 10) return std::numeric_limits<double>::infinity();
@@ -601,7 +602,7 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
   for (const int c : helper.TypeToConstraints(ConstraintProto::kNoOverlap)) {
     // Sort all non-relaxed intervals of this constraint by current start
     // time.
-    std::vector<std::pair<int64, int>> start_interval_pairs;
+    std::vector<std::pair<int64_t, int>> start_interval_pairs;
     for (const int i :
          neighborhood.cp_model.constraints(c).no_overlap().intervals()) {
       if (ignored_intervals.count(i)) continue;
@@ -612,7 +613,7 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
       if (initial_solution.solution(size_var) == 0) continue;
 
       const int start_var = interval_ct.interval().start();
-      const int64 start_value = initial_solution.solution(start_var);
+      const int64_t start_value = initial_solution.solution(start_var);
       start_interval_pairs.push_back({start_value, i});
     }
     std::sort(start_interval_pairs.begin(), start_interval_pairs.end());
@@ -632,7 +633,7 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
 
       LinearConstraintProto* linear =
           neighborhood.cp_model.add_constraints()->mutable_linear();
-      linear->add_domain(kint64min);
+      linear->add_domain(std::numeric_limits<int64_t>::min());
       linear->add_domain(0);
       linear->add_vars(before_var);
       linear->add_coeffs(1);
@@ -669,11 +670,11 @@ Neighborhood SchedulingNeighborhoodGenerator::Generate(
 Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
-  std::vector<std::pair<int64, int>> start_interval_pairs;
+  std::vector<std::pair<int64_t, int>> start_interval_pairs;
   for (const int i : helper_.GetActiveIntervals(initial_solution)) {
     const ConstraintProto& interval_ct = helper_.ModelProto().constraints(i);
     const int start_var = interval_ct.interval().start();
-    const int64 start_value = initial_solution.solution(start_var);
+    const int64_t start_value = initial_solution.solution(start_var);
     start_interval_pairs.push_back({start_value, i});
   }
   std::sort(start_interval_pairs.begin(), start_interval_pairs.end());
@@ -769,10 +770,10 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
   }
 
   // Fix the variables in the local model.
-  for (const std::pair</*model_var*/ int, /*value*/ int64> fixed_var :
+  for (const std::pair</*model_var*/ int, /*value*/ int64_t> fixed_var :
        rins_neighborhood.fixed_vars) {
     const int var = fixed_var.first;
-    const int64 value = fixed_var.second;
+    const int64_t value = fixed_var.second;
     if (var >= neighborhood.cp_model.variables_size()) continue;
     if (!helper_.IsActive(var)) continue;
 
@@ -789,11 +790,12 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
     neighborhood.is_reduced = true;
   }
 
-  for (const std::pair</*model_var*/ int, /*domain*/ std::pair<int64, int64>>
+  for (const std::pair</*model_var*/ int,
+                       /*domain*/ std::pair<int64_t, int64_t>>
            reduced_var : rins_neighborhood.reduced_domain_vars) {
     const int var = reduced_var.first;
-    const int64 lb = reduced_var.second.first;
-    const int64 ub = reduced_var.second.second;
+    const int64_t lb = reduced_var.second.first;
+    const int64_t ub = reduced_var.second.second;
     if (var >= neighborhood.cp_model.variables_size()) continue;
     if (!helper_.IsActive(var)) continue;
     Domain domain = ReadDomainFromProto(neighborhood.cp_model.variables(var));

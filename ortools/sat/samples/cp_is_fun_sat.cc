@@ -19,6 +19,7 @@
 //
 // This problem has 72 different solutions in base 10.
 
+#include <cstdint>
 #include <vector>
 
 #include "ortools/sat/cp_model.h"
@@ -33,7 +34,7 @@ void CPIsFunSat() {
   CpModelBuilder cp_model;
 
   // [START variables]
-  const int64 kBase = 10;
+  const int64_t kBase = 10;
 
   // Define decision variables.
   Domain digit(0, kBase - 1);

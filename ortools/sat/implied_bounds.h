@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_IMPLIED_BOUNDS_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -157,8 +158,8 @@ class ImpliedBounds {
   SparseBitset<IntegerVariable> new_level_zero_bounds_;
 
   // Stats.
-  int64 num_deductions_ = 0;
-  int64 num_enqueued_in_var_to_bounds_ = 0;
+  int64_t num_deductions_ = 0;
+  int64_t num_enqueued_in_var_to_bounds_ = 0;
 };
 
 }  // namespace sat

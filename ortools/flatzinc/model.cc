@@ -13,6 +13,8 @@
 
 #include "ortools/flatzinc/model.h"
 
+#include <cstdint>
+#include <limits>
 #include <set>
 #include <vector>
 
@@ -28,7 +30,7 @@ namespace operations_research {
 namespace fz {
 // ----- Domain -----
 
-Domain Domain::IntegerList(std::vector<int64> values) {
+Domain Domain::IntegerList(std::vector<int64_t> values) {
   Domain result;
   result.is_interval = false;
   result.values = std::move(values);
@@ -46,7 +48,7 @@ Domain Domain::AllInt64() {
   return result;
 }
 
-Domain Domain::IntegerValue(int64 value) {
+Domain Domain::IntegerValue(int64_t value) {
   Domain result;
   result.is_interval = false;
   result.values.push_back(value);
@@ -55,7 +57,7 @@ Domain Domain::IntegerValue(int64 value) {
   return result;
 }
 
-Domain Domain::Interval(int64 included_min, int64 included_max) {
+Domain Domain::Interval(int64_t included_min, int64_t included_max) {
   Domain result;
   result.is_interval = true;
   result.display_as_boolean = false;
@@ -75,7 +77,7 @@ Domain Domain::Boolean() {
   return result;
 }
 
-Domain Domain::SetOfIntegerList(std::vector<int64> values) {
+Domain Domain::SetOfIntegerList(std::vector<int64_t> values) {
   Domain result = IntegerList(std::move(values));
   result.is_a_set = true;
   return result;
@@ -87,13 +89,13 @@ Domain Domain::SetOfAllInt64() {
   return result;
 }
 
-Domain Domain::SetOfIntegerValue(int64 value) {
+Domain Domain::SetOfIntegerValue(int64_t value) {
   Domain result = IntegerValue(value);
   result.is_a_set = true;
   return result;
 }
 
-Domain Domain::SetOfInterval(int64 included_min, int64 included_max) {
+Domain Domain::SetOfInterval(int64_t included_min, int64_t included_max) {
   Domain result = Interval(included_min, included_max);
   result.is_a_set = true;
   return result;
@@ -125,8 +127,8 @@ bool Domain::IntersectWithDomain(const Domain& domain) {
     if (values.empty()) {
       values = domain.values;
     } else {
-      const int64 imin = values[0];
-      const int64 imax = values[1];
+      const int64_t imin = values[0];
+      const int64_t imax = values[1];
       values = domain.values;
       IntersectWithInterval(imin, imax);
     }
@@ -136,11 +138,11 @@ bool Domain::IntersectWithDomain(const Domain& domain) {
   return IntersectWithListOfIntegers(domain.values);
 }
 
-bool Domain::IntersectWithSingleton(int64 value) {
+bool Domain::IntersectWithSingleton(int64_t value) {
   return IntersectWithInterval(value, value);
 }
 
-bool Domain::IntersectWithInterval(int64 interval_min, int64 interval_max) {
+bool Domain::IntersectWithInterval(int64_t interval_min, int64_t interval_max) {
   if (interval_min > interval_max) {  // Empty interval -> empty domain.
     is_interval = false;
     values.clear();
@@ -166,10 +168,10 @@ bool Domain::IntersectWithInterval(int64 interval_min, int64 interval_max) {
   } else {
     if (!values.empty()) {
       std::sort(values.begin(), values.end());
-      std::vector<int64> new_values;
+      std::vector<int64_t> new_values;
       new_values.reserve(values.size());
       bool changed = false;
-      for (const int64 val : values) {
+      for (const int64_t val : values) {
         if (val > interval_max) {
           changed = true;
           break;
@@ -188,12 +190,14 @@ bool Domain::IntersectWithInterval(int64 interval_min, int64 interval_max) {
   return false;
 }
 
-bool Domain::IntersectWithListOfIntegers(const std::vector<int64>& integers) {
+bool Domain::IntersectWithListOfIntegers(const std::vector<int64_t>& integers) {
   if (is_interval) {
-    const int64 dmin = values.empty() ? kint64min : values[0];
-    const int64 dmax = values.empty() ? kint64max : values[1];
+    const int64_t dmin =
+        values.empty() ? std::numeric_limits<int64_t>::min() : values[0];
+    const int64_t dmax =
+        values.empty() ? std::numeric_limits<int64_t>::max() : values[1];
     values.clear();
-    for (const int64 v : integers) {
+    for (const int64_t v : integers) {
       if (v >= dmin && v <= dmax) values.push_back(v);
     }
     gtl::STLSortAndRemoveDuplicates(&values);
@@ -202,7 +206,7 @@ bool Domain::IntersectWithListOfIntegers(const std::vector<int64>& integers) {
         values.size() >= 2) {
       if (values.size() > 2) {
         // Contiguous case.
-        const int64 last = values.back();
+        const int64_t last = values.back();
         values.resize(2);
         values[1] = last;
       }
@@ -215,11 +219,11 @@ bool Domain::IntersectWithListOfIntegers(const std::vector<int64>& integers) {
   } else {
     // TODO(user): Investigate faster code for small arrays.
     std::sort(values.begin(), values.end());
-    absl::flat_hash_set<int64> other_values(integers.begin(), integers.end());
-    std::vector<int64> new_values;
+    absl::flat_hash_set<int64_t> other_values(integers.begin(), integers.end());
+    std::vector<int64_t> new_values;
     new_values.reserve(std::min(values.size(), integers.size()));
     bool changed = false;
-    for (const int64 val : values) {
+    for (const int64_t val : values) {
       if (gtl::ContainsKey(other_values, val)) {
         if (new_values.empty() || val != new_values.back()) {
           new_values.push_back(val);
@@ -242,27 +246,30 @@ bool Domain::empty() const {
                      : values.empty();
 }
 
-int64 Domain::Min() const {
+int64_t Domain::Min() const {
   CHECK(!empty());
-  return is_interval && values.empty() ? kint64min : values.front();
+  return is_interval && values.empty() ? std::numeric_limits<int64_t>::min()
+                                       : values.front();
 }
 
-int64 Domain::Max() const {
+int64_t Domain::Max() const {
   CHECK(!empty());
-  return is_interval && values.empty() ? kint64max : values.back();
+  return is_interval && values.empty() ? std::numeric_limits<int64_t>::max()
+                                       : values.back();
 }
 
-int64 Domain::Value() const {
+int64_t Domain::Value() const {
   CHECK(HasOneValue());
   return values.front();
 }
 
 bool Domain::IsAllInt64() const {
   return is_interval &&
-         (values.empty() || (values[0] == kint64min && values[1] == kint64max));
+         (values.empty() || (values[0] == std::numeric_limits<int64_t>::min() &&
+                             values[1] == std::numeric_limits<int64_t>::max()));
 }
 
-bool Domain::Contains(int64 value) const {
+bool Domain::Contains(int64_t value) const {
   if (is_interval) {
     if (values.empty()) {
       return true;
@@ -275,9 +282,9 @@ bool Domain::Contains(int64 value) const {
 }
 
 namespace {
-bool IntervalOverlapValues(int64 lb, int64 ub,
-                           const std::vector<int64>& values) {
-  for (int64 value : values) {
+bool IntervalOverlapValues(int64_t lb, int64_t ub,
+                           const std::vector<int64_t>& values) {
+  for (int64_t value : values) {
     if (lb <= value && value <= ub) {
       return true;
     }
@@ -286,7 +293,7 @@ bool IntervalOverlapValues(int64 lb, int64 ub,
 }
 }  // namespace
 
-bool Domain::OverlapsIntList(const std::vector<int64>& vec) const {
+bool Domain::OverlapsIntList(const std::vector<int64_t>& vec) const {
   if (IsAllInt64()) {
     return true;
   }
@@ -295,13 +302,13 @@ bool Domain::OverlapsIntList(const std::vector<int64>& vec) const {
     return IntervalOverlapValues(values[0], values[1], vec);
   } else {
     // TODO(user): Better algorithm, sort and compare increasingly.
-    const std::vector<int64>& to_scan =
+    const std::vector<int64_t>& to_scan =
         values.size() <= vec.size() ? values : vec;
-    const absl::flat_hash_set<int64> container =
+    const absl::flat_hash_set<int64_t> container =
         values.size() <= vec.size()
-            ? absl::flat_hash_set<int64>(vec.begin(), vec.end())
-            : absl::flat_hash_set<int64>(values.begin(), values.end());
-    for (int64 value : to_scan) {
+            ? absl::flat_hash_set<int64_t>(vec.begin(), vec.end())
+            : absl::flat_hash_set<int64_t>(values.begin(), values.end());
+    for (int64_t value : to_scan) {
       if (gtl::ContainsKey(container, value)) {
         return true;
       }
@@ -310,14 +317,14 @@ bool Domain::OverlapsIntList(const std::vector<int64>& vec) const {
   }
 }
 
-bool Domain::OverlapsIntInterval(int64 lb, int64 ub) const {
+bool Domain::OverlapsIntInterval(int64_t lb, int64_t ub) const {
   if (IsAllInt64()) {
     return true;
   }
   if (is_interval) {
     CHECK(!values.empty());
-    const int64 dlb = values[0];
-    const int64 dub = values[1];
+    const int64_t dlb = values[0];
+    const int64_t dub = values[1];
     return !(dub < lb || dlb > ub);
   } else {
     return IntervalOverlapValues(lb, ub, values);
@@ -336,7 +343,7 @@ bool Domain::OverlapsDomain(const Domain& other) const {
   }
 }
 
-bool Domain::RemoveValue(int64 value) {
+bool Domain::RemoveValue(int64_t value) {
   if (is_interval) {
     if (values.empty()) {
       return false;
@@ -348,10 +355,10 @@ bool Domain::RemoveValue(int64 value) {
       return true;
     } else if (values[1] - values[0] < 1024 && value > values[0] &&
                value < values[1]) {  // small
-      const int64 vmax = values[1];
+      const int64_t vmax = values[1];
       values.pop_back();
       values.reserve(vmax - values[0]);
-      for (int64 v = values[0] + 1; v <= vmax; ++v) {
+      for (int64_t v = values[0] + 1; v <= vmax; ++v) {
         if (v != value) {
           values.push_back(v);
         }
@@ -383,14 +390,14 @@ std::string Domain::DebugString() const {
 
 // ----- Argument -----
 
-Argument Argument::IntegerValue(int64 value) {
+Argument Argument::IntegerValue(int64_t value) {
   Argument result;
   result.type = INT_VALUE;
   result.values.push_back(value);
   return result;
 }
 
-Argument Argument::Interval(int64 imin, int64 imax) {
+Argument Argument::Interval(int64_t imin, int64_t imax) {
   Argument result;
   result.type = INT_INTERVAL;
   result.values.push_back(imin);
@@ -398,7 +405,7 @@ Argument Argument::Interval(int64 imin, int64 imax) {
   return result;
 }
 
-Argument Argument::IntegerList(std::vector<int64> values) {
+Argument Argument::IntegerList(std::vector<int64_t> values) {
   Argument result;
   result.type = INT_LIST;
   result.values = std::move(values);
@@ -435,7 +442,8 @@ Argument Argument::VoidArgument() {
 Argument Argument::FromDomain(const Domain& domain) {
   if (domain.is_interval) {
     if (domain.values.empty()) {
-      return Argument::Interval(kint64min, kint64max);
+      return Argument::Interval(std::numeric_limits<int64_t>::min(),
+                                std::numeric_limits<int64_t>::max());
     } else {
       return Argument::Interval(domain.values[0], domain.values[1]);
     }
@@ -479,7 +487,7 @@ bool Argument::HasOneValue() const {
           (type == INT_VAR_REF && variables[0]->domain.HasOneValue()));
 }
 
-int64 Argument::Value() const {
+int64_t Argument::Value() const {
   DCHECK(HasOneValue()) << "Value() called on unbound Argument: "
                         << DebugString();
   switch (type) {
@@ -528,7 +536,7 @@ bool Argument::IsArrayOfValues() const {
   }
 }
 
-bool Argument::Contains(int64 value) const {
+bool Argument::Contains(int64_t value) const {
   switch (type) {
     case Argument::INT_LIST: {
       return std::find(values.begin(), values.end(), value) != values.end();
@@ -546,7 +554,7 @@ bool Argument::Contains(int64 value) const {
   }
 }
 
-int64 Argument::ValueAt(int pos) const {
+int64_t Argument::ValueAt(int pos) const {
   switch (type) {
     case INT_LIST:
       CHECK_GE(pos, 0);
@@ -683,7 +691,7 @@ Annotation Annotation::FunctionCall(const std::string& id) {
   return result;
 }
 
-Annotation Annotation::Interval(int64 interval_min, int64 interval_max) {
+Annotation Annotation::Interval(int64_t interval_min, int64_t interval_max) {
   Annotation result;
   result.type = INTERVAL;
   result.interval_min = interval_min;
@@ -691,7 +699,7 @@ Annotation Annotation::Interval(int64 interval_min, int64 interval_max) {
   return result;
 }
 
-Annotation Annotation::IntegerValue(int64 value) {
+Annotation Annotation::IntegerValue(int64_t value) {
   Annotation result;
   result.type = INT_VALUE;
   result.interval_min = value;
@@ -831,7 +839,7 @@ IntegerVariable* Model::AddVariable(const std::string& name,
 }
 
 // TODO(user): Create only once constant per value.
-IntegerVariable* Model::AddConstant(int64 value) {
+IntegerVariable* Model::AddConstant(int64_t value) {
   IntegerVariable* const var = new IntegerVariable(
       absl::StrCat(value), Domain::IntegerValue(value), true);
   variables_.push_back(var);

@@ -14,6 +14,7 @@
 #include "ortools/sat/timetable_edgefinding.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <vector>
@@ -55,7 +56,7 @@ void TimeTableEdgeFinding::RegisterWith(GenericLiteralWatcher* watcher) {
 
 bool TimeTableEdgeFinding::Propagate() {
   while (true) {
-    const int64 old_timestamp = integer_trail_->num_enqueues();
+    const int64_t old_timestamp = integer_trail_->num_enqueues();
 
     helper_->SynchronizeAndSetTimeDirection(true);
     if (!TimeTableEdgeFindingPass()) return false;

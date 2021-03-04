@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_LINEAR_PROGRAMMING_CONSTRAINT_H_
 #define OR_TOOLS_SAT_LINEAR_PROGRAMMING_CONSTRAINT_H_
 
+#include <cstdint>
 #include <limits>
 #include <utility>
 #include <vector>
@@ -215,7 +216,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
     return average_degeneracy_.CurrentAverage();
   }
 
-  int64 total_num_simplex_iterations() const {
+  int64_t total_num_simplex_iterations() const {
     return total_num_simplex_iterations_;
   }
 
@@ -279,7 +280,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   bool FillExactDualRayReason();
 
   // Returns number of non basic variables with zero reduced costs.
-  int64 CalculateDegeneracy();
+  int64_t CalculateDegeneracy();
 
   // From a set of row multipliers (at LP scale), scale them back to the CP
   // world and then make them integer (eventually multiplying them by a new
@@ -367,7 +368,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // DUAL_FEASIBLE status as a signal to correct the prediction. The next limit
   // is capped by 'min_iter' and 'max_iter'. Note that this is enabled only for
   // linearization level 2 and above.
-  void UpdateSimplexIterationLimit(const int64 min_iter, const int64 max_iter);
+  void UpdateSimplexIterationLimit(const int64_t min_iter,
+                                   const int64_t max_iter);
 
   // This epsilon is related to the precision of the value/reduced_cost returned
   // by the LP once they have been scaled back into the CP domain. So for large
@@ -401,7 +403,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Underlying LP solver API.
   glop::LinearProgram lp_data_;
   glop::RevisedSimplex simplex_;
-  int64 next_simplex_iter_ = 500;
+  int64_t next_simplex_iter_ = 500;
 
   // For the scaling.
   glop::LpScalingHelper scaler_;
@@ -514,14 +516,14 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Used by the strong branching heuristic.
   int branching_frequency_ = 1;
-  int64 count_since_last_branching_ = 0;
+  int64_t count_since_last_branching_ = 0;
 
   // Sum of all simplex iterations performed by this class. This is useful to
   // test the incrementality and compare to other solvers.
-  int64 total_num_simplex_iterations_ = 0;
+  int64_t total_num_simplex_iterations_ = 0;
 
   // Some stats on the LP statuses encountered.
-  std::vector<int64> num_solves_by_status_;
+  std::vector<int64_t> num_solves_by_status_;
 };
 
 // A class that stores which LP propagator is associated to each variable.
@@ -562,8 +564,8 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
                                     const std::vector<int>& tails,
                                     const std::vector<int>& heads,
                                     const std::vector<Literal>& literals,
-                                    const std::vector<int64>& demands,
-                                    int64 capacity, Model* model);
+                                    const std::vector<int64_t>& demands,
+                                    int64_t capacity, Model* model);
 }  // namespace sat
 }  // namespace operations_research
 

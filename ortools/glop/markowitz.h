@@ -73,6 +73,7 @@
 #ifndef OR_TOOLS_GLOP_MARKOWITZ_H_
 #define OR_TOOLS_GLOP_MARKOWITZ_H_
 
+#include <cstdint>
 #include <queue>
 
 #include "absl/container/inlined_vector.h"
@@ -125,8 +126,8 @@ class MatrixNonZeroPattern {
   // Decreases the degree of a row/column. This is the basic operation used to
   // keep the correct degree after a call to DeleteRowAndColumn(). This is
   // because row_non_zero_[row] is only lazily cleaned.
-  int32 DecreaseRowDegree(RowIndex row);
-  int32 DecreaseColDegree(ColIndex col);
+  int32_t DecreaseRowDegree(RowIndex row);
+  int32_t DecreaseColDegree(ColIndex col);
 
   // Returns true if the column has been deleted by DeleteRowAndColumn().
   bool IsColumnDeleted(ColIndex col) const;
@@ -152,14 +153,14 @@ class MatrixNonZeroPattern {
 
   // Returns the degree (i.e. the number of non-zeros) of the given column.
   // This is only valid for the column indices still in the residual matrix.
-  int32 ColDegree(ColIndex col) const {
+  int32_t ColDegree(ColIndex col) const {
     DCHECK(!deleted_columns_[col]);
     return col_degree_[col];
   }
 
   // Returns the degree (i.e. the number of non-zeros) of the given row.
   // This is only valid for the row indices still in the residual matrix.
-  int32 RowDegree(RowIndex row) const { return row_degree_[row]; }
+  int32_t RowDegree(RowIndex row) const { return row_degree_[row]; }
 
   // Returns the set of non-zeros of the given row (unsorted).
   // Call RemoveDeletedColumnsFromRow(row) to clean the row first.
@@ -188,8 +189,8 @@ class MatrixNonZeroPattern {
   // TODO(user): We could be even more efficient since a size of int32 is enough
   // for us and we could store in common the inlined/not-inlined size.
   absl::StrongVector<RowIndex, absl::InlinedVector<ColIndex, 6>> row_non_zero_;
-  StrictITIVector<RowIndex, int32> row_degree_;
-  StrictITIVector<ColIndex, int32> col_degree_;
+  StrictITIVector<RowIndex, int32_t> row_degree_;
+  StrictITIVector<ColIndex, int32_t> col_degree_;
   DenseBooleanRow deleted_columns_;
   DenseBooleanRow bool_scratchpad_;
   std::vector<ColIndex> col_scratchpad_;
@@ -210,22 +211,22 @@ class ColumnPriorityQueue {
 
   // Clears the queue and prepares it to store up to num_cols column indices
   // with a degree from 1 to max_degree included.
-  void Reset(int32 max_degree, ColIndex num_cols);
+  void Reset(int32_t max_degree, ColIndex num_cols);
 
   // Changes the degree of a column and make sure it is in the queue. The degree
   // must be non-negative (>= 0) and at most equal to the value of num_cols used
   // in Reset(). A degree of zero will remove the column from the queue.
-  void PushOrAdjust(ColIndex col, int32 degree);
+  void PushOrAdjust(ColIndex col, int32_t degree);
 
   // Removes the column index with higher priority from the queue and returns
   // it. Returns kInvalidCol if the queue is empty.
   ColIndex Pop();
 
  private:
-  StrictITIVector<ColIndex, int32> col_index_;
-  StrictITIVector<ColIndex, int32> col_degree_;
+  StrictITIVector<ColIndex, int32_t> col_index_;
+  StrictITIVector<ColIndex, int32_t> col_degree_;
   std::vector<std::vector<ColIndex>> col_by_degree_;
-  int32 min_degree_;
+  int32_t min_degree_;
   DISALLOW_COPY_AND_ASSIGN(ColumnPriorityQueue);
 };
 
@@ -373,9 +374,9 @@ class Markowitz {
   // Amongst the pivots with a minimum Markowitz number, we choose the one
   // with highest magnitude. This doesn't apply to pivots with a 0 Markowitz
   // number because all such pivots will have to be taken at some point anyway.
-  int64 FindPivot(const RowPermutation& row_perm,
-                  const ColumnPermutation& col_perm, RowIndex* pivot_row,
-                  ColIndex* pivot_col, Fractional* pivot_coefficient);
+  int64_t FindPivot(const RowPermutation& row_perm,
+                    const ColumnPermutation& col_perm, RowIndex* pivot_row,
+                    ColIndex* pivot_col, Fractional* pivot_coefficient);
 
   // Updates the degree of a given column in the internal structure of the
   // class.

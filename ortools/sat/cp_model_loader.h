@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_LOADER_H_
 #define OR_TOOLS_SAT_CP_MODEL_LOADER_H_
 
+#include <cstdint>
 #include <functional>
 #include <vector>
 
@@ -216,7 +217,7 @@ class CpModelMapping {
   // variable when the constraints will be loaded.
   // Note that the pointer is not stable across calls.
   // It returns nullptr if the set is empty.
-  const absl::flat_hash_set<int64>& PotentialEncodedValues(int var) {
+  const absl::flat_hash_set<int64_t>& PotentialEncodedValues(int var) {
     const auto& it = variables_to_encoded_values_.find(var);
     if (it != variables_to_encoded_values_.end()) {
       return it->second;
@@ -242,9 +243,9 @@ class CpModelMapping {
   absl::flat_hash_set<const ConstraintProto*> already_loaded_ct_;
   absl::flat_hash_set<const ConstraintProto*> is_half_encoding_ct_;
 
-  absl::flat_hash_map<int, absl::flat_hash_set<int64>>
+  absl::flat_hash_map<int, absl::flat_hash_set<int64_t>>
       variables_to_encoded_values_;
-  const absl::flat_hash_set<int64> empty_set_;
+  const absl::flat_hash_set<int64_t> empty_set_;
 };
 
 // Inspects the model and use some heuristic to decide which variable, if any,

@@ -14,6 +14,7 @@
 #include "ortools/sat/clause.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
@@ -1018,10 +1019,10 @@ class SccGraph {
   using Implication =
       absl::StrongVector<LiteralIndex, absl::InlinedVector<Literal, 6>>;
   using AtMostOne =
-      absl::StrongVector<LiteralIndex, absl::InlinedVector<int32, 6>>;
+      absl::StrongVector<LiteralIndex, absl::InlinedVector<int32_t, 6>>;
   using SccFinder =
-      StronglyConnectedComponentsFinder<int32, SccGraph,
-                                        std::vector<std::vector<int32>>>;
+      StronglyConnectedComponentsFinder<int32_t, SccGraph,
+                                        std::vector<std::vector<int32_t>>>;
 
   explicit SccGraph(SccFinder* finder, Implication* graph,
                     AtMostOne* at_most_ones,
@@ -1031,7 +1032,7 @@ class SccGraph {
         at_most_ones_(*at_most_ones),
         at_most_one_buffer_(*at_most_one_buffer) {}
 
-  const std::vector<int32>& operator[](int32 node) const {
+  const std::vector<int32_t>& operator[](int32_t node) const {
     tmp_.clear();
     for (const Literal l : implications_[LiteralIndex(node)]) {
       tmp_.push_back(l.Index().value());
@@ -1106,7 +1107,7 @@ class SccGraph {
   mutable std::vector<Literal> to_fix_;
 
   // For the deterministic time.
-  mutable int64 work_done_ = 0;
+  mutable int64_t work_done_ = 0;
 
  private:
   const SccFinder& finder_;
@@ -1114,7 +1115,7 @@ class SccGraph {
   const AtMostOne& at_most_ones_;
   const std::vector<Literal>& at_most_one_buffer_;
 
-  mutable std::vector<int32> tmp_;
+  mutable std::vector<int32_t> tmp_;
 
   // Used to get a non-quadratic complexity in the presence of at most ones.
   mutable std::vector<bool> at_most_one_already_explored_;
@@ -1136,8 +1137,8 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
 
   // TODO(user): We could just do it directly though.
   int num_fixed_during_scc = 0;
-  const int32 size(implications_.size());
-  std::vector<std::vector<int32>> scc;
+  const int32_t size(implications_.size());
+  std::vector<std::vector<int32_t>> scc;
   double dtime = 0.0;
   {
     SccGraph::SccFinder finder;
@@ -1160,7 +1161,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
 
   int num_equivalences = 0;
   reverse_topological_order_.clear();
-  for (std::vector<int32>& component : scc) {
+  for (std::vector<int32_t>& component : scc) {
     // If one is fixed then all must be fixed. Note that the reason why the
     // propagation didn't already do that and we don't always get fixed
     // component of size 1 is because of the potential newly fixed literals
@@ -1170,7 +1171,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
     {
       bool all_fixed = false;
       bool all_true = false;
-      for (const int32 i : component) {
+      for (const int32_t i : component) {
         const Literal l = Literal(LiteralIndex(i));
         if (trail_->Assignment().LiteralIsAssigned(l)) {
           all_fixed = true;
@@ -1179,7 +1180,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
         }
       }
       if (all_fixed) {
-        for (const int32 i : component) {
+        for (const int32_t i : component) {
           const Literal l = Literal(LiteralIndex(i));
           if (!is_redundant_[l.Index()]) {
             ++num_redundant_literals_;
@@ -1322,8 +1323,8 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
   WallTimer wall_timer;
   wall_timer.Start();
 
-  int64 num_fixed = 0;
-  int64 num_new_redundant_implications = 0;
+  int64_t num_fixed = 0;
+  int64_t num_new_redundant_implications = 0;
   bool aborted = false;
   work_done_in_mark_descendants_ = 0;
   int marked_index = 0;
@@ -1499,7 +1500,7 @@ struct VectorHash {
 
 bool BinaryImplicationGraph::TransformIntoMaxCliques(
     std::vector<std::vector<Literal>>* at_most_ones,
-    int64 max_num_explored_nodes) {
+    int64_t max_num_explored_nodes) {
   // The code below assumes a DAG.
   if (!DetectEquivalences()) return false;
   work_done_in_mark_descendants_ = 0;
@@ -1582,7 +1583,7 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
   std::vector<Literal> clique(at_most_one.begin(), at_most_one.end());
   std::vector<LiteralIndex> intersection;
   double clique_weight = 0.0;
-  const int64 old_work = work_done_in_mark_descendants_;
+  const int64_t old_work = work_done_in_mark_descendants_;
   for (const Literal l : clique) clique_weight += expanded_lp_values[l.Index()];
   for (int i = 0; i < clique.size(); ++i) {
     // Do not spend too much time here.
@@ -1864,13 +1865,13 @@ bool BinaryImplicationGraph::FindFailedLiteralAroundVar(BooleanVariable var,
   return propagation_trail_index_ > saved_index;
 }
 
-int64 BinaryImplicationGraph::NumImplicationOnVariableRemoval(
+int64_t BinaryImplicationGraph::NumImplicationOnVariableRemoval(
     BooleanVariable var) {
   const Literal literal(var, true);
-  int64 result = 0;
+  int64_t result = 0;
   direct_implications_of_negated_literal_ =
       DirectImplications(literal.Negated());
-  const int64 s1 = DirectImplications(literal).size();
+  const int64_t s1 = DirectImplications(literal).size();
   for (const Literal l : direct_implications_of_negated_literal_) {
     result += s1;
 

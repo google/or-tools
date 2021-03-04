@@ -13,6 +13,7 @@
 
 #include "ortools/glop/preprocessor.h"
 
+#include <cstdint>
 #include <limits>
 
 #include "absl/strings/str_format.h"
@@ -158,9 +159,9 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
           lp->num_variables().value(),
           (lp->num_variables() - initial_num_cols_).value(),
           // static_cast<int64> is needed because the Android port uses int32.
-          static_cast<int64>(new_num_entries.value()),
-          static_cast<int64>(new_num_entries.value() -
-                             initial_num_entries_.value()));
+          static_cast<int64_t>(new_num_entries.value()),
+          static_cast<int64_t>(new_num_entries.value() -
+                               initial_num_entries_.value()));
     }
     status_ = preprocessor->status();
     preprocessors_.push_back(std::move(preprocessor));

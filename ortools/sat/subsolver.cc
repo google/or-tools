@@ -13,6 +13,8 @@
 
 #include "ortools/sat/subsolver.h"
 
+#include <cstdint>
+
 #include "ortools/base/logging.h"
 
 #if !defined(__PORTABLE_PLATFORM__)
@@ -32,7 +34,7 @@ namespace {
 // For now we use a really basic logic: call the least frequently called.
 int NextSubsolverToSchedule(
     const std::vector<std::unique_ptr<SubSolver>>& subsolvers,
-    const std::vector<int64>& num_generated_tasks) {
+    const std::vector<int64_t>& num_generated_tasks) {
   int best = -1;
   for (int i = 0; i < subsolvers.size(); ++i) {
     if (subsolvers[i]->TaskIsAvailable()) {
@@ -52,8 +54,8 @@ void SynchronizeAll(const std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
 }  // namespace
 
 void SequentialLoop(const std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
-  int64 task_id = 0;
-  std::vector<int64> num_generated_tasks(subsolvers.size(), 0);
+  int64_t task_id = 0;
+  std::vector<int64_t> num_generated_tasks(subsolvers.size(), 0);
   while (true) {
     SynchronizeAll(subsolvers);
     const int best = NextSubsolverToSchedule(subsolvers, num_generated_tasks);
@@ -90,8 +92,8 @@ void DeterministicLoop(
     return SequentialLoop(subsolvers);
   }
 
-  int64 task_id = 0;
-  std::vector<int64> num_generated_tasks(subsolvers.size(), 0);
+  int64_t task_id = 0;
+  std::vector<int64_t> num_generated_tasks(subsolvers.size(), 0);
   while (true) {
     SynchronizeAll(subsolvers);
 
@@ -133,8 +135,8 @@ void NonDeterministicLoop(
   // The lambda below are using little space, but there is no reason
   // to create millions of them, so we use the blocking nature of
   // pool.Schedule() when the queue capacity is set.
-  int64 task_id = 0;
-  std::vector<int64> num_generated_tasks(subsolvers.size(), 0);
+  int64_t task_id = 0;
+  std::vector<int64_t> num_generated_tasks(subsolvers.size(), 0);
   while (true) {
     bool all_done = false;
     {

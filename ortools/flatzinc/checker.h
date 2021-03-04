@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_FLATZINC_CHECKER_H_
 #define OR_TOOLS_FLATZINC_CHECKER_H_
 
+#include <cstdint>
 #include <functional>
 
 #include "ortools/flatzinc/model.h"
@@ -25,7 +26,7 @@ namespace fz {
 // feasible solution of the given model. Returns true iff this is the
 // case.
 bool CheckSolution(const Model& model,
-                   const std::function<int64(IntegerVariable*)>& evaluator);
+                   const std::function<int64_t(IntegerVariable*)>& evaluator);
 
 }  // namespace fz
 }  // namespace operations_research

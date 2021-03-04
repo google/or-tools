@@ -408,6 +408,8 @@ void ReducedCosts::ComputeReducedCosts() {
 #endif  // OMP
   }
 
+  deterministic_time_ +=
+      DeterministicTimeForFpOperations(matrix_.num_entries().value());
   recompute_reduced_costs_ = false;
   are_reduced_costs_recomputed_ = true;
   are_reduced_costs_precise_ = basis_factorization_.IsRefactorized();

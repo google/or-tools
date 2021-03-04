@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_RINS_H_
 #define OR_TOOLS_SAT_RINS_H_
 
+#include <cstdint>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -55,8 +56,9 @@ struct LPVariables {
 // relaxation ignore those.
 struct RINSNeighborhood {
   // A variable will appear only once and not in both vectors.
-  std::vector<std::pair</*model_var*/ int, /*value*/ int64>> fixed_vars;
-  std::vector<std::pair</*model_var*/ int, /*domain*/ std::pair<int64, int64>>>
+  std::vector<std::pair</*model_var*/ int, /*value*/ int64_t>> fixed_vars;
+  std::vector<
+      std::pair</*model_var*/ int, /*domain*/ std::pair<int64_t, int64_t>>>
       reduced_domain_vars;
 };
 

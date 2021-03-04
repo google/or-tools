@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_TIMETABLE_H_
 #define OR_TOOLS_SAT_TIMETABLE_H_
 
+#include <cstdint>
 #include <vector>
 
 #include "ortools/base/macros.h"
@@ -32,8 +33,8 @@ namespace sat {
 // propagation.
 void AddReservoirConstraint(std::vector<AffineExpression> times,
                             std::vector<IntegerValue> deltas,
-                            std::vector<Literal> presences, int64 min_level,
-                            int64 max_level, Model* model);
+                            std::vector<Literal> presences, int64_t min_level,
+                            int64_t max_level, Model* model);
 
 // The piecewise constant function must be below the given capacity. The initial
 // function value is zero. Note that a negative capacity will thus be trivially

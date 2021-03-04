@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cmath>
+#include <cstdint>
 #include <functional>
 #include <limits>
 #include <map>
@@ -192,7 +193,7 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   }
 
   int num_constants = 0;
-  std::set<int64> constant_values;
+  std::set<int64_t> constant_values;
   std::map<Domain, int> num_vars_per_domains;
   for (const IntegerVariableProto& var : model_proto.variables()) {
     if (var.domain_size() == 2 && var.domain(0) == var.domain(1)) {
@@ -238,14 +239,14 @@ std::string CpModelStats(const CpModelProto& model_proto) {
       absl::StrAppend(&result, Summarize(temp));
     }
   } else {
-    int64 max_complexity = 0;
-    int64 min = kint64max;
-    int64 max = kint64min;
+    int64_t max_complexity = 0;
+    int64_t min = std::numeric_limits<int64_t>::max();
+    int64_t max = std::numeric_limits<int64_t>::min();
     for (const auto& entry : num_vars_per_domains) {
       min = std::min(min, entry.first.Min());
       max = std::max(max, entry.first.Max());
-      max_complexity = std::max(max_complexity,
-                                static_cast<int64>(entry.first.NumIntervals()));
+      max_complexity = std::max(
+          max_complexity, static_cast<int64_t>(entry.first.NumIntervals()));
     }
     absl::StrAppend(&result, " - ", num_vars_per_domains.size(),
                     " different domains in [", min, ",", max,
@@ -334,7 +335,7 @@ void FillSolutionInResponse(const CpModelProto& model_proto, const Model& model,
   auto* trail = model.Get<Trail>();
   auto* integer_trail = model.Get<IntegerTrail>();
 
-  std::vector<int64> solution;
+  std::vector<int64_t> solution;
   for (int i = 0; i < model_proto.variables_size(); ++i) {
     if (mapping->IsInteger(i)) {
       const IntegerVariable var = mapping->Integer(i);
@@ -368,7 +369,7 @@ void FillSolutionInResponse(const CpModelProto& model_proto, const Model& model,
       // TODO(user): Checks against initial model.
       CHECK(SolutionIsFeasible(model_proto, solution));
     }
-    for (const int64 value : solution) response->add_solution(value);
+    for (const int64_t value : solution) response->add_solution(value);
   } else {
     // Not all variables are fixed.
     // We fill instead the lb/ub of each variables.
@@ -396,7 +397,8 @@ void FillSolutionInResponse(const CpModelProto& model_proto, const Model& model,
 namespace {
 
 IntegerVariable GetOrCreateVariableWithTightBound(
-    const std::vector<std::pair<IntegerVariable, int64>>& terms, Model* model) {
+    const std::vector<std::pair<IntegerVariable, int64_t>>& terms,
+    Model* model) {
   if (terms.empty()) return model->Add(ConstantIntegerVariable(0));
   if (terms.size() == 1 && terms.front().second == 1) {
     return terms.front().first;
@@ -405,14 +407,14 @@ IntegerVariable GetOrCreateVariableWithTightBound(
     return NegationOf(terms.front().first);
   }
 
-  int64 sum_min = 0;
-  int64 sum_max = 0;
-  for (const std::pair<IntegerVariable, int64> var_coeff : terms) {
-    const int64 min_domain = model->Get(LowerBound(var_coeff.first));
-    const int64 max_domain = model->Get(UpperBound(var_coeff.first));
-    const int64 coeff = var_coeff.second;
-    const int64 prod1 = min_domain * coeff;
-    const int64 prod2 = max_domain * coeff;
+  int64_t sum_min = 0;
+  int64_t sum_max = 0;
+  for (const std::pair<IntegerVariable, int64_t> var_coeff : terms) {
+    const int64_t min_domain = model->Get(LowerBound(var_coeff.first));
+    const int64_t max_domain = model->Get(UpperBound(var_coeff.first));
+    const int64_t coeff = var_coeff.second;
+    const int64_t prod1 = min_domain * coeff;
+    const int64_t prod2 = max_domain * coeff;
     sum_min += std::min(prod1, prod2);
     sum_max += std::max(prod1, prod2);
   }
@@ -420,7 +422,8 @@ IntegerVariable GetOrCreateVariableWithTightBound(
 }
 
 IntegerVariable GetOrCreateVariableGreaterOrEqualToSumOf(
-    const std::vector<std::pair<IntegerVariable, int64>>& terms, Model* model) {
+    const std::vector<std::pair<IntegerVariable, int64_t>>& terms,
+    Model* model) {
   if (terms.empty()) return model->Add(ConstantIntegerVariable(0));
   if (terms.size() == 1 && terms.front().second == 1) {
     return terms.front().first;
@@ -433,7 +436,7 @@ IntegerVariable GetOrCreateVariableGreaterOrEqualToSumOf(
   const IntegerVariable new_var =
       GetOrCreateVariableWithTightBound(terms, model);
   std::vector<IntegerVariable> vars;
-  std::vector<int64> coeffs;
+  std::vector<int64_t> coeffs;
   for (const auto& term : terms) {
     vars.push_back(term.first);
     coeffs.push_back(term.second);
@@ -481,8 +484,8 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
           CreateStronglyConnectedGraphCutGenerator(num_nodes, tails, heads,
                                                    literals, m));
     } else {
-      const std::vector<int64> demands(ct.routes().demands().begin(),
-                                       ct.routes().demands().end());
+      const std::vector<int64_t> demands(ct.routes().demands().begin(),
+                                         ct.routes().demands().end());
       relaxation->cut_generators.push_back(
           CreateCVRPCutGenerator(num_nodes, tails, heads, literals, demands,
                                  ct.routes().capacity(), m));
@@ -852,9 +855,9 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   }
 
   // Add the objective.
-  std::vector<std::vector<std::pair<IntegerVariable, int64>>>
+  std::vector<std::vector<std::pair<IntegerVariable, int64_t>>>
       component_to_cp_terms(num_components);
-  std::vector<std::pair<IntegerVariable, int64>> top_level_cp_terms;
+  std::vector<std::pair<IntegerVariable, int64_t>> top_level_cp_terms;
   int num_components_containing_objective = 0;
   if (model_proto.has_objective()) {
     // First pass: set objective coefficients on the lp constraints, and store
@@ -862,7 +865,7 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
       const IntegerVariable var =
           mapping->Integer(model_proto.objective().vars(i));
-      const int64 coeff = model_proto.objective().coeffs(i);
+      const int64_t coeff = model_proto.objective().coeffs(i);
       const int c = index_to_component[get_var_index(var)];
       if (lp_constraints[c] != nullptr) {
         lp_constraints[c]->SetObjectiveCoefficient(var, IntegerValue(coeff));
@@ -1293,7 +1296,7 @@ void LoadFeasibilityPump(const CpModelProto& model_proto,
     for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
       const IntegerVariable var =
           mapping->Integer(model_proto.objective().vars(i));
-      const int64 coeff = model_proto.objective().coeffs(i);
+      const int64_t coeff = model_proto.objective().coeffs(i);
       feasibility_pump->SetObjectiveCoefficient(var, IntegerValue(coeff));
     }
   }
@@ -1355,7 +1358,7 @@ void LoadCpModel(const CpModelProto& model_proto,
         AddLPConstraints(model_proto, parameters.linearization_level(), model);
   } else if (model_proto.has_objective()) {
     const CpObjectiveProto& obj = model_proto.objective();
-    std::vector<std::pair<IntegerVariable, int64>> terms;
+    std::vector<std::pair<IntegerVariable, int64_t>> terms;
     terms.reserve(obj.vars_size());
     for (int i = 0; i < obj.vars_size(); ++i) {
       terms.push_back(
@@ -1432,7 +1435,7 @@ void LoadCpModel(const CpModelProto& model_proto,
     // user specified upper bound.
     if (!automatic_domain.IsIncludedIn(user_domain)) {
       std::vector<IntegerVariable> vars;
-      std::vector<int64> coeffs;
+      std::vector<int64_t> coeffs;
       const CpObjectiveProto& obj = model_proto.objective();
       for (int i = 0; i < obj.vars_size(); ++i) {
         vars.push_back(mapping->Integer(obj.vars(i)));
@@ -1740,15 +1743,16 @@ void MinimizeL1DistanceWithHint(const CpModelProto& model_proto,
   // TODO(user): For boolean variables we can avoid creating new variables.
   for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
     const int var = model_proto.solution_hint().vars(i);
-    const int64 value = model_proto.solution_hint().values(i);
+    const int64_t value = model_proto.solution_hint().values(i);
 
     // Add a new var to represent the difference between var and value.
     const int new_var_index = updated_model_proto.variables_size();
     IntegerVariableProto* var_proto = updated_model_proto.add_variables();
-    const int64 min_domain = model_proto.variables(var).domain(0) - value;
-    const int64 max_domain = model_proto.variables(var).domain(
-                                 model_proto.variables(var).domain_size() - 1) -
-                             value;
+    const int64_t min_domain = model_proto.variables(var).domain(0) - value;
+    const int64_t max_domain =
+        model_proto.variables(var).domain(
+            model_proto.variables(var).domain_size() - 1) -
+        value;
     var_proto->add_domain(min_domain);
     var_proto->add_domain(max_domain);
 
@@ -1766,8 +1770,8 @@ void MinimizeL1DistanceWithHint(const CpModelProto& model_proto,
     // abs_var = abs(new_var).
     const int abs_var_index = updated_model_proto.variables_size();
     IntegerVariableProto* abs_var_proto = updated_model_proto.add_variables();
-    const int64 abs_min_domain = 0;
-    const int64 abs_max_domain =
+    const int64_t abs_min_domain = 0;
+    const int64_t abs_max_domain =
         std::max(std::abs(min_domain), std::abs(max_domain));
     abs_var_proto->add_domain(abs_min_domain);
     abs_var_proto->add_domain(abs_max_domain);
@@ -1818,7 +1822,7 @@ void MinimizeL1DistanceWithHint(const CpModelProto& model_proto,
 // before postsolving it. Note that 'num_variables_in_original_model' refers to
 // the model before presolve.
 void PostsolveResponseWithFullSolver(
-    const int64 num_variables_in_original_model, CpModelProto mapping_proto,
+    const int64_t num_variables_in_original_model, CpModelProto mapping_proto,
     const std::vector<int>& postsolve_mapping, WallTimer* wall_timer,
     CpSolverResponse* response) {
   if (response->status() != CpSolverStatus::FEASIBLE &&
@@ -1888,7 +1892,7 @@ void PostsolveResponseWithFullSolver(
 }
 
 void PostsolveResponseWrapper(const SatParameters& params,
-                              const int64 num_variables_in_original_model,
+                              const int64_t num_variables_in_original_model,
                               const CpModelProto& mapping_proto,
                               const std::vector<int>& postsolve_mapping,
                               WallTimer* wall_timer,
@@ -2061,9 +2065,9 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
       break;
     }
     case SatSolver::FEASIBLE: {
-      CHECK(SolutionIsFeasible(model_proto,
-                               std::vector<int64>(response.solution().begin(),
-                                                  response.solution().end())));
+      CHECK(SolutionIsFeasible(
+          model_proto, std::vector<int64_t>(response.solution().begin(),
+                                            response.solution().end())));
       response.set_status(CpSolverStatus::OPTIMAL);
       break;
     }
@@ -2182,7 +2186,7 @@ class FullProblemSolver : public SubSolver {
     return previous_task_is_completed_;
   }
 
-  std::function<void()> GenerateTask(int64 task_id) override {
+  std::function<void()> GenerateTask(int64_t task_id) override {
     {
       absl::MutexLock mutex_lock(&mutex_);
       previous_task_is_completed_ = false;
@@ -2320,7 +2324,7 @@ class FeasibilityPumpSolver : public SubSolver {
     return previous_task_is_completed_;
   }
 
-  std::function<void()> GenerateTask(int64 task_id) override {
+  std::function<void()> GenerateTask(int64_t task_id) override {
     return [this]() {
       {
         absl::MutexLock mutex_lock(&mutex_);
@@ -2406,7 +2410,7 @@ class LnsSolver : public SubSolver {
     return generator_->ReadyToGenerate();
   }
 
-  std::function<void()> GenerateTask(int64 task_id) override {
+  std::function<void()> GenerateTask(int64_t task_id) override {
     return [task_id, this]() {
       if (shared_->SearchIsDone()) return;
 
@@ -3179,7 +3183,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 #endif  // __PORTABLE_PLATFORM__
 
   if (params.stop_after_presolve() || shared_time_limit.LimitReached()) {
-    int64 num_terms = 0;
+    int64_t num_terms = 0;
     for (const ConstraintProto& ct : new_cp_model_proto.constraints()) {
       num_terms += UsedVariables(ct).size();
     }
@@ -3241,8 +3245,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   postprocess_solution(&final_response);
   if (!final_response.solution().empty()) {
     CHECK(SolutionIsFeasible(
-        model_proto, std::vector<int64>(final_response.solution().begin(),
-                                        final_response.solution().end())));
+        model_proto, std::vector<int64_t>(final_response.solution().begin(),
+                                          final_response.solution().end())));
   }
   if (degraded_assumptions_support &&
       final_response.status() == CpSolverStatus::INFEASIBLE) {

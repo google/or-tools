@@ -14,6 +14,7 @@
 #include "ortools/sat/integer_search.h"
 
 #include <cmath>
+#include <cstdint>
 #include <functional>
 #include <vector>
 
@@ -117,7 +118,7 @@ IntegerLiteral SplitAroundLpValue(IntegerVariable var, Model* model) {
   //
   // TODO(user): Why is the reduced cost doing things differently?
   const IntegerValue value = IntegerValue(
-      static_cast<int64>(std::round(lp->GetSolutionValue(positive_var))));
+      static_cast<int64_t>(std::round(lp->GetSolutionValue(positive_var))));
 
   // Because our lp solution might be from higher up in the tree, it
   // is possible that value is now outside the domain of positive_var.
@@ -126,7 +127,7 @@ IntegerLiteral SplitAroundLpValue(IntegerVariable var, Model* model) {
 }
 
 IntegerLiteral SplitUsingBestSolutionValueInRepository(
-    IntegerVariable var, const SharedSolutionRepository<int64>& solution_repo,
+    IntegerVariable var, const SharedSolutionRepository<int64_t>& solution_repo,
     Model* model) {
   if (solution_repo.NumSolutions() == 0) {
     return IntegerLiteral();
@@ -691,10 +692,10 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
   const SatParameters& sat_parameters = *(model->GetOrCreate<SatParameters>());
 
   // Main search loop.
-  const int64 old_num_conflicts = sat_solver->num_failures();
-  const int64 conflict_limit = sat_parameters.max_number_of_conflicts();
-  int64 num_decisions_since_last_lp_record_ = 0;
-  int64 num_decisions_without_probing = 0;
+  const int64_t old_num_conflicts = sat_solver->num_failures();
+  const int64_t conflict_limit = sat_parameters.max_number_of_conflicts();
+  int64_t num_decisions_since_last_lp_record_ = 0;
+  int64_t num_decisions_without_probing = 0;
   while (!time_limit->LimitReached() &&
          (sat_solver->num_failures() - old_num_conflicts < conflict_limit)) {
     // If needed, restart and switch decision_policy.

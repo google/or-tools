@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_GLOP_UPDATE_ROW_H_
 #define OR_TOOLS_GLOP_UPDATE_ROW_H_
 
+#include <cstdint>
+
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/variables_info.h"
@@ -147,7 +149,7 @@ class UpdateRow {
 
   // Track the number of basic floating point multiplication.
   // Used by DeterministicTime().
-  int64 num_operations_;
+  int64_t num_operations_;
 
   // Glop standard classes.
   GlopParameters parameters_;

@@ -13,6 +13,7 @@
 
 #include "ortools/glop/markowitz.h"
 
+#include <cstdint>
 #include <limits>
 
 #include "absl/strings/str_format.h"
@@ -72,8 +73,8 @@ Status Markowitz::ComputeRowAndColumnPermutation(
     // matrix becomes dense (i.e. when its density factor is above a certain
     // threshold). The residual size is 'end_index - index' and the
     // density can either be computed exactly or estimated from min_markowitz.
-    const int64 min_markowitz = FindPivot(*row_perm, *col_perm, &pivot_row,
-                                          &pivot_col, &pivot_coefficient);
+    const int64_t min_markowitz = FindPivot(*row_perm, *col_perm, &pivot_row,
+                                            &pivot_col, &pivot_coefficient);
 
     // Singular matrix? No pivot will be selected if a column has no entries. If
     // a column has some entries, then we are sure that a pivot will be selected
@@ -295,10 +296,10 @@ const SparseColumn& Markowitz::ComputeColumn(const RowPermutation& row_perm,
   return *lower_column;
 }
 
-int64 Markowitz::FindPivot(const RowPermutation& row_perm,
-                           const ColumnPermutation& col_perm,
-                           RowIndex* pivot_row, ColIndex* pivot_col,
-                           Fractional* pivot_coefficient) {
+int64_t Markowitz::FindPivot(const RowPermutation& row_perm,
+                             const ColumnPermutation& col_perm,
+                             RowIndex* pivot_row, ColIndex* pivot_col,
+                             Fractional* pivot_coefficient) {
   SCOPED_TIME_STAT(&stats_);
 
   // Fast track for singleton columns.
@@ -380,7 +381,7 @@ int64 Markowitz::FindPivot(const RowPermutation& row_perm,
 
   // Note(user): we use int64 since this is a product of two ints, moreover
   // the ints should be relatively small, so that should be fine for a while.
-  int64 min_markowitz_number = std::numeric_limits<int64>::max();
+  int64_t min_markowitz_number = std::numeric_limits<int64_t>::max();
   examined_col_.clear();
   const int num_columns_to_examine = parameters_.markowitz_zlatev_parameter();
   const Fractional threshold = parameters_.lu_factorization_pivot_threshold();
@@ -400,7 +401,7 @@ int64 Markowitz::FindPivot(const RowPermutation& row_perm,
     // to eventually have a better pivot.
     //
     // Todo(user): keep the minimum row degree to have a better bound?
-    const int64 markowitz_lower_bound = col_degree - 1;
+    const int64_t markowitz_lower_bound = col_degree - 1;
     if (min_markowitz_number < markowitz_lower_bound) break;
 
     // TODO(user): col_degree (which is the same as column.num_entries()) is
@@ -427,7 +428,7 @@ int64 Markowitz::FindPivot(const RowPermutation& row_perm,
       if (magnitude < skip_threshold) continue;
 
       const int row_degree = residual_matrix_non_zero_.RowDegree(e.row());
-      const int64 markowitz_number = (col_degree - 1) * (row_degree - 1);
+      const int64_t markowitz_number = (col_degree - 1) * (row_degree - 1);
       DCHECK_NE(markowitz_number, 0);
       if (markowitz_number < min_markowitz_number ||
           ((markowitz_number == min_markowitz_number) &&
@@ -596,7 +597,7 @@ void MatrixNonZeroPattern::InitializeFromMatrixSubset(
   // Initialize row_non_zero_.
   for (ColIndex col(0); col < num_cols; ++col) {
     if (col_perm[col] != kInvalidCol) continue;
-    int32 col_degree = 0;
+    int32_t col_degree = 0;
     for (const SparseColumn::Entry e : basis_matrix.column(col)) {
       const RowIndex row = e.row();
       if (row_perm[row] == kInvalidRow) {
@@ -615,11 +616,11 @@ void MatrixNonZeroPattern::AddEntry(RowIndex row, ColIndex col) {
   row_non_zero_[row].push_back(col);
 }
 
-int32 MatrixNonZeroPattern::DecreaseColDegree(ColIndex col) {
+int32_t MatrixNonZeroPattern::DecreaseColDegree(ColIndex col) {
   return --col_degree_[col];
 }
 
-int32 MatrixNonZeroPattern::DecreaseRowDegree(RowIndex row) {
+int32_t MatrixNonZeroPattern::DecreaseRowDegree(RowIndex row) {
   return --row_degree_[row];
 }
 
@@ -804,12 +805,12 @@ void ColumnPriorityQueue::Reset(int max_degree, ColIndex num_cols) {
   min_degree_ = num_cols.value();
 }
 
-void ColumnPriorityQueue::PushOrAdjust(ColIndex col, int32 degree) {
+void ColumnPriorityQueue::PushOrAdjust(ColIndex col, int32_t degree) {
   DCHECK_GE(degree, 0);
   DCHECK_LT(degree, col_by_degree_.size());
-  const int32 old_degree = col_degree_[col];
+  const int32_t old_degree = col_degree_[col];
   if (degree != old_degree) {
-    const int32 old_index = col_index_[col];
+    const int32_t old_index = col_index_[col];
     if (old_index != -1) {
       col_by_degree_[old_degree][old_index] = col_by_degree_[old_degree].back();
       col_index_[col_by_degree_[old_degree].back()] = old_index;

@@ -15,7 +15,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -99,7 +101,7 @@ bool SmallRangeAndAllCoefficientsMagnitudeAreTheSame(
     const LinearConstraint& constraint, IntegerTrail* integer_trail) {
   if (constraint.vars.empty()) return true;
 
-  const int64 magnitude = std::abs(constraint.coeffs[0].value());
+  const int64_t magnitude = std::abs(constraint.coeffs[0].value());
   for (int i = 1; i < constraint.coeffs.size(); ++i) {
     const IntegerVariable var = constraint.vars[i];
     if (integer_trail->LevelZeroUpperBound(var) -
@@ -633,7 +635,8 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
   // Make sure we don't have an integer overflow below. Note that we assume that
   // divisor and the maximum coeff magnitude are not too different (maybe a
   // factor 1000 at most) so that the final result will never overflow.
-  max_scaling = std::min(max_scaling, kint64max / divisor);
+  max_scaling =
+      std::min(max_scaling, std::numeric_limits<int64_t>::max() / divisor);
 
   const IntegerValue size = divisor - rhs_remainder;
   if (max_scaling == 1 || size == 1) {
@@ -1102,7 +1105,8 @@ void IntegerRoundingCutHelper::ComputeCut(
 
       // Avoid overflow.
       if (CapProd(CapProd(std::abs(coeff.value()), factor_t.value()),
-                  info.bound_diff.value()) == kint64max) {
+                  info.bound_diff.value()) ==
+          std::numeric_limits<int64_t>::max()) {
         continue;
       }
 
@@ -1590,7 +1594,7 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraintWithSlackCreation(
   bool changed = false;
 
   // TODO(user): we could relax a bit this test.
-  int64 overflow_detection = 0;
+  int64_t overflow_detection = 0;
 
   const int size = cut->vars.size();
   for (int i = 0; i < size; ++i) {
@@ -1623,7 +1627,7 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraintWithSlackCreation(
     bool keep_term = false;
     if (info.bool_var == kNoIntegerVariable) keep_term = true;
     if (CapProd(std::abs(coeff.value()), info.bound_diff.value()) ==
-        kint64max) {
+        std::numeric_limits<int64_t>::max()) {
       keep_term = true;
     }
 
@@ -1792,9 +1796,9 @@ void TryToGenerateAllDiffCut(
     current_union =
         current_union.UnionWith(integer_trail.InitialVariableDomain(var));
     current_set_vars.push_back(var);
-    const int64 required_min_sum =
+    const int64_t required_min_sum =
         SumOfKMinValueInDomain(current_union, current_set_vars.size());
-    const int64 required_max_sum =
+    const int64_t required_max_sum =
         SumOfKMaxValueInDomain(current_union, current_set_vars.size());
     if (sum < required_min_sum || sum > required_max_sum) {
       LinearConstraint cut;
@@ -2449,8 +2453,9 @@ CutGenerator CreateCliqueCutGenerator(
           // We need to express such "at most one" in term of the initial
           // variables, so we do not use the
           // LinearConstraintBuilder::AddLiteralTerm() here.
-          LinearConstraintBuilder builder(model, IntegerValue(kint64min),
-                                          IntegerValue(1));
+          LinearConstraintBuilder builder(
+              model, IntegerValue(std::numeric_limits<int64_t>::min()),
+              IntegerValue(1));
           for (const Literal l : at_most_one) {
             if (ContainsKey(positive_map, l.Index())) {
               builder.AddTerm(positive_map.at(l.Index()), IntegerValue(1));

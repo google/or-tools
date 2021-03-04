@@ -38,6 +38,8 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_H_
 #define OR_TOOLS_SAT_CP_MODEL_H_
 
+#include <cstdint>
+#include <limits>
 #include <string>
 
 #include "absl/container/flat_hash_map.h"
@@ -122,7 +124,7 @@ class BoolVar {
   BoolVar(int index, CpModelProto* cp_model);
 
   CpModelProto* cp_model_ = nullptr;
-  int index_ = kint32min;
+  int index_ = std::numeric_limits<int32_t>::min();
 };
 
 std::ostream& operator<<(std::ostream& os, const BoolVar& var);
@@ -162,7 +164,7 @@ class IntVar {
 
   /// Adds a constant value to an integer variable and returns a linear
   /// expression.
-  LinearExpr AddConstant(int64 value) const;
+  LinearExpr AddConstant(int64_t value) const;
 
   /// Equality test with another IntVar.
   bool operator==(const IntVar& other) const {
@@ -197,15 +199,15 @@ class IntVar {
   friend class LinearExpr;
   friend class IntervalVar;
   friend class ReservoirConstraint;
-  friend int64 SolutionIntegerValue(const CpSolverResponse& r,
-                                    const LinearExpr& expr);
-  friend int64 SolutionIntegerMin(const CpSolverResponse& r, IntVar x);
-  friend int64 SolutionIntegerMax(const CpSolverResponse& r, IntVar x);
+  friend int64_t SolutionIntegerValue(const CpSolverResponse& r,
+                                      const LinearExpr& expr);
+  friend int64_t SolutionIntegerMin(const CpSolverResponse& r, IntVar x);
+  friend int64_t SolutionIntegerMax(const CpSolverResponse& r, IntVar x);
 
   IntVar(int index, CpModelProto* cp_model);
 
   CpModelProto* cp_model_ = nullptr;
-  int index_ = kint32min;
+  int index_ = std::numeric_limits<int32_t>::min();
 };
 
 std::ostream& operator<<(std::ostream& os, const IntVar& var);
@@ -260,48 +262,48 @@ class LinearExpr {
   LinearExpr(IntVar var);  // NOLINT(runtime/explicit)
 
   /// Constructs a constant linear expression.
-  LinearExpr(int64 constant);  // NOLINT(runtime/explicit)
+  LinearExpr(int64_t constant);  // NOLINT(runtime/explicit)
 
   /// Adds a constant value to the linear expression.
-  LinearExpr& AddConstant(int64 value);
+  LinearExpr& AddConstant(int64_t value);
 
   /// Adds a single integer variable to the linear expression.
   void AddVar(IntVar var);
 
   /// Adds a term (var * coeff) to the linear expression.
-  void AddTerm(IntVar var, int64 coeff);
+  void AddTerm(IntVar var, int64_t coeff);
 
   /// Constructs the sum of a list of variables.
   static LinearExpr Sum(absl::Span<const IntVar> vars);
 
   /// Constructs the scalar product of variables and coefficients.
   static LinearExpr ScalProd(absl::Span<const IntVar> vars,
-                             absl::Span<const int64> coeffs);
+                             absl::Span<const int64_t> coeffs);
 
   /// Constructs the sum of a list of Booleans.
   static LinearExpr BooleanSum(absl::Span<const BoolVar> vars);
 
   /// Constructs the scalar product of Booleans and coefficients.
   static LinearExpr BooleanScalProd(absl::Span<const BoolVar> vars,
-                                    absl::Span<const int64> coeffs);
+                                    absl::Span<const int64_t> coeffs);
   /// Construncts var * coefficient.
-  static LinearExpr Term(IntVar var, int64 coefficient);
+  static LinearExpr Term(IntVar var, int64_t coefficient);
 
   /// Returns the vector of variables.
   const std::vector<IntVar>& variables() const { return variables_; }
 
   /// Returns the vector of coefficients.
-  const std::vector<int64>& coefficients() const { return coefficients_; }
+  const std::vector<int64_t>& coefficients() const { return coefficients_; }
 
   /// Returns the constant term.
-  int64 constant() const { return constant_; }
+  int64_t constant() const { return constant_; }
 
   // TODO(user): LinearExpr.DebugString() and operator<<.
 
  private:
   std::vector<IntVar> variables_;
-  std::vector<int64> coefficients_;
-  int64 constant_ = 0;
+  std::vector<int64_t> coefficients_;
+  int64_t constant_ = 0;
 };
 
 /**
@@ -385,7 +387,7 @@ class IntervalVar {
   IntervalVar(int index, CpModelProto* cp_model);
 
   CpModelProto* cp_model_ = nullptr;
-  int index_ = kint32min;
+  int index_ = std::numeric_limits<int32_t>::min();
 };
 
 std::ostream& operator<<(std::ostream& os, const IntervalVar& var);
@@ -497,7 +499,7 @@ class MultipleCircuitConstraint : public Constraint {
 class TableConstraint : public Constraint {
  public:
   /// Adds a tuple of possible values to the constraint.
-  void AddTuple(absl::Span<const int64> tuple);
+  void AddTuple(absl::Span<const int64_t> tuple);
 
  private:
   friend class CpModelBuilder;
@@ -518,7 +520,7 @@ class ReservoirConstraint : public Constraint {
    *
    * It will increase the used capacity by `c demand at time `c time.
    */
-  void AddEvent(IntVar time, int64 demand);
+  void AddEvent(IntVar time, int64_t demand);
 
   /**
    * Adds a optional event
@@ -526,7 +528,7 @@ class ReservoirConstraint : public Constraint {
    * If `c is_active is true, It will increase the used capacity by `c demand at
    * time `c time.
    */
-  void AddOptionalEvent(IntVar time, int64 demand, BoolVar is_active);
+  void AddOptionalEvent(IntVar time, int64_t demand, BoolVar is_active);
 
  private:
   friend class CpModelBuilder;
@@ -545,7 +547,7 @@ class ReservoirConstraint : public Constraint {
 class AutomatonConstraint : public Constraint {
  public:
   /// Adds a transitions to the automaton.
-  void AddTransition(int tail, int head, int64 transition_label);
+  void AddTransition(int tail, int head, int64_t transition_label);
 
  private:
   friend class CpModelBuilder;
@@ -605,7 +607,7 @@ class CpModelBuilder {
   BoolVar NewBoolVar();
 
   /// Creates a constant variable.
-  IntVar NewConstant(int64 value);
+  IntVar NewConstant(int64_t value);
 
   /// Creates an always true Boolean variable.
   BoolVar TrueVar();
@@ -664,7 +666,7 @@ class CpModelBuilder {
                                 IntVar target);
 
   /// Adds the element constraint: values[index] == target
-  Constraint AddElement(IntVar index, absl::Span<const int64> values,
+  Constraint AddElement(IntVar index, absl::Span<const int64_t> values,
                         IntVar target);
 
   /**
@@ -751,7 +753,8 @@ class CpModelBuilder {
    * It returns a ReservoirConstraint that allows adding optional and non
    * optional events incrementally after construction.
    */
-  ReservoirConstraint AddReservoirConstraint(int64 min_level, int64 max_level);
+  ReservoirConstraint AddReservoirConstraint(int64_t min_level,
+                                             int64_t max_level);
 
   /**
    *
@@ -857,7 +860,7 @@ class CpModelBuilder {
       DecisionStrategyProto::DomainReductionStrategy domain_strategy);
 
   /// Adds hinting to a variable.
-  void AddHint(IntVar var, int64 value);
+  void AddHint(IntVar var, int64_t value);
 
   /// Remove all hints.
   void ClearHints();
@@ -899,7 +902,7 @@ class CpModelBuilder {
                          LinearExpressionProto* expr_proto);
 
   // Returns a (cached) integer variable index with a constant value.
-  int IndexFromConstant(int64 value);
+  int IndexFromConstant(int64_t value);
 
   // Returns a valid integer index from a BoolVar index.
   // If the input index is a positive, it returns this index.
@@ -912,18 +915,18 @@ class CpModelBuilder {
                        LinearConstraintProto* proto);
 
   CpModelProto cp_model_;
-  absl::flat_hash_map<int64, int> constant_to_index_map_;
+  absl::flat_hash_map<int64_t, int> constant_to_index_map_;
   absl::flat_hash_map<int, int> bool_to_integer_index_map_;
 };
 
 /// Evaluates the value of an linear expression in a solver response.
-int64 SolutionIntegerValue(const CpSolverResponse& r, const LinearExpr& expr);
+int64_t SolutionIntegerValue(const CpSolverResponse& r, const LinearExpr& expr);
 
 /// Returns the min of an integer variable in a solution.
-int64 SolutionIntegerMin(const CpSolverResponse& r, IntVar x);
+int64_t SolutionIntegerMin(const CpSolverResponse& r, IntVar x);
 
 /// Returns the max of an integer variable in a solution.
-int64 SolutionIntegerMax(const CpSolverResponse& r, IntVar x);
+int64_t SolutionIntegerMax(const CpSolverResponse& r, IntVar x);
 
 /// Evaluates the value of a Boolean literal in a solver response.
 bool SolutionBooleanValue(const CpSolverResponse& r, BoolVar x);

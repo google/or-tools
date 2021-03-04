@@ -13,6 +13,7 @@
 
 #include "ortools/sat/rins.h"
 
+#include <cstdint>
 #include <limits>
 
 #include "ortools/sat/cp_model_loader.h"
@@ -73,7 +74,7 @@ std::vector<double> GetGeneralRelaxationValues(
       relaxation_solutions->NumSolutions() == 0) {
     return relaxation_values;
   }
-  const SharedSolutionRepository<int64>::Solution relaxation_solution =
+  const SharedSolutionRepository<int64_t>::Solution relaxation_solution =
       relaxation_solutions->GetRandomBiasedSolution(random);
 
   for (int model_var = 0;
@@ -130,9 +131,9 @@ RINSNeighborhood GetRINSNeighborhood(
   if (relaxation_values.empty()) return rins_neighborhood;
 
   const double tolerance = 1e-6;
-  const SharedSolutionRepository<int64>::Solution solution =
+  const SharedSolutionRepository<int64_t>::Solution solution =
       use_only_relaxation_values
-          ? SharedSolutionRepository<int64>::Solution()
+          ? SharedSolutionRepository<int64_t>::Solution()
           : response_manager->SolutionsRepository().GetRandomBiasedSolution(
                 random);
   for (int model_var = 0; model_var < relaxation_values.size(); ++model_var) {
@@ -149,10 +150,10 @@ RINSNeighborhood GetRINSNeighborhood(
       // Important: the LP relaxation doesn't know about holes in the variable
       // domains, so the intersection of [domain_lb, domain_ub] with the
       // initial variable domain might be empty.
-      const int64 domain_lb =
-          static_cast<int64>(std::floor(relaxation_value + tolerance));
-      const int64 domain_ub =
-          static_cast<int64>(std::ceil(relaxation_value - tolerance));
+      const int64_t domain_lb =
+          static_cast<int64_t>(std::floor(relaxation_value + tolerance));
+      const int64_t domain_ub =
+          static_cast<int64_t>(std::ceil(relaxation_value - tolerance));
       if (domain_lb == domain_ub) {
         rins_neighborhood.fixed_vars.push_back({model_var, domain_lb});
       } else {

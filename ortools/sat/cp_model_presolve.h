@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_PRESOLVE_H_
 #define OR_TOOLS_SAT_CP_MODEL_PRESOLVE_H_
 
+#include <cstdint>
 #include <vector>
 
 #include "ortools/sat/cp_model.pb.h"
@@ -126,7 +127,7 @@ class CpModelPresolver {
   template <typename ProtoWithVarsAndCoeffs>
   bool CanonicalizeLinearExpressionInternal(const ConstraintProto& ct,
                                             ProtoWithVarsAndCoeffs* proto,
-                                            int64* offset);
+                                            int64_t* offset);
   bool CanonicalizeLinearExpression(const ConstraintProto& ct,
                                     LinearExpressionProto* exp);
 
@@ -139,10 +140,10 @@ class CpModelPresolver {
   void PresolveLinearEqualityModuloTwo(ConstraintProto* ct);
 
   // To simplify dealing with the two kind of intervals.
-  int64 StartMin(const IntervalConstraintProto& interval) const;
-  int64 EndMax(const IntervalConstraintProto& interval) const;
-  int64 SizeMin(const IntervalConstraintProto& interval) const;
-  int64 SizeMax(const IntervalConstraintProto& interval) const;
+  int64_t StartMin(const IntervalConstraintProto& interval) const;
+  int64_t EndMax(const IntervalConstraintProto& interval) const;
+  int64_t SizeMin(const IntervalConstraintProto& interval) const;
+  int64_t SizeMax(const IntervalConstraintProto& interval) const;
 
   // SetPPC is short for set packing, partitioning and covering constraints.
   // These are sum of booleans <=, = and >= 1 respectively.
@@ -192,7 +193,7 @@ class CpModelPresolver {
   PresolveContext* context_;
 
   // Used by CanonicalizeLinearExpressionInternal().
-  std::vector<std::pair<int, int64>> tmp_terms_;
+  std::vector<std::pair<int, int64_t>> tmp_terms_;
 };
 
 // Convenient wrapper to call the full presolve.

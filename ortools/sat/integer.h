@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_INTEGER_H_
 #define OR_TOOLS_SAT_INTEGER_H_
 
+#include <cstdint>
 #include <deque>
 #include <functional>
 #include <limits>
@@ -53,7 +54,7 @@ namespace sat {
 // Note that both bounds are inclusive, which allows to write many propagation
 // algorithms for just one of the bound and apply it to the negated variables to
 // get the symmetric algorithm for the other bound.
-DEFINE_INT_TYPE(IntegerValue, int64);
+DEFINE_INT_TYPE(IntegerValue, int64_t);
 
 // The max range of an integer variable is [kMinIntegerValue, kMaxIntegerValue].
 //
@@ -108,10 +109,14 @@ inline IntegerValue PositiveRemainder(IntegerValue dividend,
 
 // Computes result += a * b, and return false iff there is an overflow.
 inline bool AddProductTo(IntegerValue a, IntegerValue b, IntegerValue* result) {
-  const int64 prod = CapProd(a.value(), b.value());
-  if (prod == kint64min || prod == kint64max) return false;
-  const int64 add = CapAdd(prod, result->value());
-  if (add == kint64min || add == kint64max) return false;
+  const int64_t prod = CapProd(a.value(), b.value());
+  if (prod == std::numeric_limits<int64_t>::min() ||
+      prod == std::numeric_limits<int64_t>::max())
+    return false;
+  const int64_t add = CapAdd(prod, result->value());
+  if (add == std::numeric_limits<int64_t>::min() ||
+      add == std::numeric_limits<int64_t>::max())
+    return false;
   *result = IntegerValue(add);
   return true;
 }
@@ -121,7 +126,7 @@ inline bool AddProductTo(IntegerValue a, IntegerValue b, IntegerValue* result) {
 // Each time we create an IntegerVariable we also create its negation. This is
 // done like that so internally we only stores and deal with lower bound. The
 // upper bound beeing the lower bound of the negated variable.
-DEFINE_INT_TYPE(IntegerVariable, int32);
+DEFINE_INT_TYPE(IntegerVariable, int32_t);
 const IntegerVariable kNoIntegerVariable(-1);
 inline IntegerVariable NegationOf(IntegerVariable i) {
   return IntegerVariable(i.value() ^ 1);
@@ -136,7 +141,7 @@ inline IntegerVariable PositiveVariable(IntegerVariable i) {
 }
 
 // Special type for storing only one thing for var and NegationOf(var).
-DEFINE_INT_TYPE(PositiveOnlyIndex, int32);
+DEFINE_INT_TYPE(PositiveOnlyIndex, int32_t);
 inline PositiveOnlyIndex GetPositiveOnlyIndex(IntegerVariable var) {
   return PositiveOnlyIndex(var.value() / 2);
 }
@@ -485,7 +490,7 @@ class IntegerEncoder {
   IntegerDomains* domains_;
 
   bool add_implications_ = true;
-  int64 num_created_variables_ = 0;
+  int64_t num_created_variables_ = 0;
 
   // We keep all the literals associated to an Integer variable in a map ordered
   // by bound (so we can properly add implications between the literals
@@ -791,11 +796,11 @@ class IntegerTrail : public SatPropagator {
   // Note(user): this can be used to see if any of the bounds changed. Just
   // looking at the integer trail index is not enough because at level zero it
   // doesn't change since we directly update the "fixed" bounds.
-  int64 num_enqueues() const { return num_enqueues_; }
-  int64 timestamp() const { return num_enqueues_ + num_untrails_; }
+  int64_t num_enqueues() const { return num_enqueues_; }
+  int64_t timestamp() const { return num_enqueues_ + num_untrails_; }
 
   // Same as num_enqueues but only count the level zero changes.
-  int64 num_level_zero_enqueues() const { return num_level_zero_enqueues_; }
+  int64_t num_level_zero_enqueues() const { return num_level_zero_enqueues_; }
 
   // All the registered bitsets will be set to one each time a LbVar is
   // modified. It is up to the client to clear it if it wants to be notified
@@ -955,12 +960,12 @@ class IntegerTrail : public SatPropagator {
   struct TrailEntry {
     IntegerValue bound;
     IntegerVariable var;
-    int32 prev_trail_index;
+    int32_t prev_trail_index;
 
     // Index in literals_reason_start_/bounds_reason_starts_ If this is -1, then
     // this was a propagation with a lazy reason, and the reason can be
     // re-created by calling the function lazy_reasons_[trail_index].
-    int32 reason_index;
+    int32_t reason_index;
   };
   std::vector<TrailEntry> integer_trail_;
   std::vector<LazyReasonFunction> lazy_reasons_;
@@ -1021,7 +1026,7 @@ class IntegerTrail : public SatPropagator {
   struct RelaxHeapEntry {
     int index;
     IntegerValue coeff;
-    int64 diff;
+    int64_t diff;
     bool operator<(const RelaxHeapEntry& o) const { return index < o.index; }
   };
   mutable std::vector<RelaxHeapEntry> relax_heap_;
@@ -1040,10 +1045,10 @@ class IntegerTrail : public SatPropagator {
   // This is reverted as we backtrack over it.
   int first_level_without_full_propagation_ = -1;
 
-  int64 num_enqueues_ = 0;
-  int64 num_untrails_ = 0;
-  int64 num_level_zero_enqueues_ = 0;
-  mutable int64 num_decisions_to_break_loop_ = 0;
+  int64_t num_enqueues_ = 0;
+  int64_t num_untrails_ = 0;
+  int64_t num_level_zero_enqueues_ = 0;
+  mutable int64_t num_decisions_to_break_loop_ = 0;
 
   std::vector<SparseBitset<IntegerVariable>*> watchers_;
   std::vector<ReversibleInterface*> reversible_classes_;
@@ -1236,7 +1241,7 @@ class GenericLiteralWatcher : public SatPropagator {
   std::vector<bool> in_queue_;
 
   // Data for each propagator.
-  DEFINE_INT_TYPE(IdType, int32);
+  DEFINE_INT_TYPE(IdType, int32_t);
   std::vector<int> id_to_level_at_last_call_;
   RevVector<IdType, int> id_to_greatest_common_level_since_last_call_;
   std::vector<std::vector<ReversibleInterface*>> id_to_reversible_classes_;
@@ -1416,15 +1421,15 @@ inline std::function<BooleanVariable(Model*)> NewBooleanVariable() {
 }
 
 inline std::function<IntegerVariable(Model*)> ConstantIntegerVariable(
-    int64 value) {
+    int64_t value) {
   return [=](Model* model) {
     return model->GetOrCreate<IntegerTrail>()
         ->GetOrCreateConstantIntegerVariable(IntegerValue(value));
   };
 }
 
-inline std::function<IntegerVariable(Model*)> NewIntegerVariable(int64 lb,
-                                                                 int64 ub) {
+inline std::function<IntegerVariable(Model*)> NewIntegerVariable(int64_t lb,
+                                                                 int64_t ub) {
   return [=](Model* model) {
     CHECK_LE(lb, ub);
     return model->GetOrCreate<IntegerTrail>()->AddIntegerVariable(
@@ -1464,13 +1469,13 @@ inline std::function<IntegerVariable(Model*)> NewIntegerVariableFromLiteral(
   };
 }
 
-inline std::function<int64(const Model&)> LowerBound(IntegerVariable v) {
+inline std::function<int64_t(const Model&)> LowerBound(IntegerVariable v) {
   return [=](const Model& model) {
     return model.Get<IntegerTrail>()->LowerBound(v).value();
   };
 }
 
-inline std::function<int64(const Model&)> UpperBound(IntegerVariable v) {
+inline std::function<int64_t(const Model&)> UpperBound(IntegerVariable v) {
   return [=](const Model& model) {
     return model.Get<IntegerTrail>()->UpperBound(v).value();
   };
@@ -1484,7 +1489,7 @@ inline std::function<bool(const Model&)> IsFixed(IntegerVariable v) {
 }
 
 // This checks that the variable is fixed.
-inline std::function<int64(const Model&)> Value(IntegerVariable v) {
+inline std::function<int64_t(const Model&)> Value(IntegerVariable v) {
   return [=](const Model& model) {
     const IntegerTrail* trail = model.Get<IntegerTrail>();
     CHECK_EQ(trail->LowerBound(v), trail->UpperBound(v)) << v;
@@ -1492,7 +1497,8 @@ inline std::function<int64(const Model&)> Value(IntegerVariable v) {
   };
 }
 
-inline std::function<void(Model*)> GreaterOrEqual(IntegerVariable v, int64 lb) {
+inline std::function<void(Model*)> GreaterOrEqual(IntegerVariable v,
+                                                  int64_t lb) {
   return [=](Model* model) {
     if (!model->GetOrCreate<IntegerTrail>()->Enqueue(
             IntegerLiteral::GreaterOrEqual(v, IntegerValue(lb)),
@@ -1506,7 +1512,7 @@ inline std::function<void(Model*)> GreaterOrEqual(IntegerVariable v, int64 lb) {
   };
 }
 
-inline std::function<void(Model*)> LowerOrEqual(IntegerVariable v, int64 ub) {
+inline std::function<void(Model*)> LowerOrEqual(IntegerVariable v, int64_t ub) {
   return [=](Model* model) {
     if (!model->GetOrCreate<IntegerTrail>()->Enqueue(
             IntegerLiteral::LowerOrEqual(v, IntegerValue(ub)),
@@ -1521,7 +1527,7 @@ inline std::function<void(Model*)> LowerOrEqual(IntegerVariable v, int64 ub) {
 }
 
 // Fix v to a given value.
-inline std::function<void(Model*)> Equality(IntegerVariable v, int64 value) {
+inline std::function<void(Model*)> Equality(IntegerVariable v, int64_t value) {
   return [=](Model* model) {
     model->Add(LowerOrEqual(v, value));
     model->Add(GreaterOrEqual(v, value));
@@ -1563,7 +1569,7 @@ inline std::function<void(Model*)> Implication(
 // in_interval => v in [lb, ub].
 inline std::function<void(Model*)> ImpliesInInterval(Literal in_interval,
                                                      IntegerVariable v,
-                                                     int64 lb, int64 ub) {
+                                                     int64_t lb, int64_t ub) {
   return [=](Model* model) {
     if (lb == ub) {
       IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();

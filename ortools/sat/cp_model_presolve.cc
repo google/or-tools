@@ -16,8 +16,10 @@
 #include <sys/stat.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <deque>
+#include <limits>
 #include <map>
 #include <memory>
 #include <numeric>
@@ -119,7 +121,7 @@ bool CpModelPresolver::PresolveEnforcementLiteral(ConstraintProto* ct) {
     // to false. TODO(user): generalize if the literal always appear with the
     // same polarity.
     if (context_->VariableWithCostIsUniqueAndRemovable(literal)) {
-      const int64 obj_coeff =
+      const int64_t obj_coeff =
           gtl::FindOrDie(context_->ObjectiveMap(), PositiveRef(literal));
       if (RefIsPositive(literal) == (obj_coeff > 0)) {
         // It is just more advantageous to set it to false!
@@ -142,7 +144,7 @@ bool CpModelPresolver::PresolveBoolXor(ConstraintProto* ct) {
   int new_size = 0;
   bool changed = false;
   int num_true_literals = 0;
-  int true_literal = kint32min;
+  int true_literal = std::numeric_limits<int32_t>::min();
   for (const int literal : ct->bool_xor().literals()) {
     // TODO(user): More generally, if a variable appear in only bool xor
     // constraints, we can simply eliminate it using linear algebra on Z/2Z.
@@ -172,7 +174,7 @@ bool CpModelPresolver::PresolveBoolXor(ConstraintProto* ct) {
     context_->UpdateRuleStats("TODO bool_xor: two active literals");
   }
   if (num_true_literals % 2 == 1) {
-    CHECK_NE(true_literal, kint32min);
+    CHECK_NE(true_literal, std::numeric_limits<int32_t>::min());
     ct->mutable_bool_xor()->set_literals(new_size++, true_literal);
   }
   if (num_true_literals > 1) {
@@ -327,7 +329,7 @@ bool CpModelPresolver::PresolveBoolAnd(ConstraintProto* ct) {
     const int enforcement = ct->enforcement_literal(0);
     if (context_->VariableWithCostIsUniqueAndRemovable(enforcement)) {
       int var = PositiveRef(enforcement);
-      int64 obj_coeff = gtl::FindOrDie(context_->ObjectiveMap(), var);
+      int64_t obj_coeff = gtl::FindOrDie(context_->ObjectiveMap(), var);
       if (!RefIsPositive(enforcement)) obj_coeff = -obj_coeff;
 
       // The other case where the constraint is redundant is treated elsewhere.
@@ -414,7 +416,7 @@ bool CpModelPresolver::PresolveAtMostOrExactlyOne(ConstraintProto* ct) {
         context_->VariableWithCostIsUniqueAndRemovable(literal)) {
       const auto it = context_->ObjectiveMap().find(PositiveRef(literal));
       CHECK(it != context_->ObjectiveMap().end());
-      const int64 coeff = it->second;
+      const int64_t coeff = it->second;
 
       // Fixing it to zero need to go in the correct direction.
       is_removable = (coeff > 0) == RefIsPositive(literal);
@@ -515,8 +517,8 @@ bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
   const int target_ref = ct->int_max().target();
 
   // Pass 1, compute the infered min of the target, and remove duplicates.
-  int64 infered_min = kint64min;
-  int64 infered_max = kint64min;
+  int64_t infered_min = std::numeric_limits<int64_t>::min();
+  int64_t infered_max = std::numeric_limits<int64_t>::min();
   bool contains_target_ref = false;
   std::set<int> used_ref;
   int new_size = 0;
@@ -525,7 +527,7 @@ bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
     if (gtl::ContainsKey(used_ref, ref)) continue;
     if (gtl::ContainsKey(used_ref, NegatedRef(ref)) ||
         ref == NegatedRef(target_ref)) {
-      infered_min = std::max(infered_min, int64{0});
+      infered_min = std::max(infered_min, int64_t{0});
     }
     used_ref.insert(ref);
     ct->mutable_int_max()->set_vars(new_size++, ref);
@@ -548,7 +550,7 @@ bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
       arg->add_vars(ref);
       arg->add_coeffs(-1);
       arg->add_domain(0);
-      arg->add_domain(kint64max);
+      arg->add_domain(std::numeric_limits<int64_t>::max());
     }
     return RemoveConstraint(ct);
   }
@@ -574,7 +576,9 @@ bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
   // then the constraint is really max(...) <= target_ub and we can simplify it.
   if (context_->VariableIsUniqueAndRemovable(target_ref)) {
     const Domain& target_domain = context_->DomainOf(target_ref);
-    if (infered_domain.IntersectionWith(Domain(kint64min, target_domain.Max()))
+    if (infered_domain
+            .IntersectionWith(Domain(std::numeric_limits<int64_t>::min(),
+                                     target_domain.Max()))
             .IsIncludedIn(target_domain)) {
       if (infered_domain.Max() <= target_domain.Max()) {
         // The constraint is always satisfiable.
@@ -584,7 +588,8 @@ bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
         for (const int ref : ct->int_max().vars()) {
           context_->UpdateRuleStats("int_max: lower than constant");
           if (!context_->IntersectDomainWith(
-                  ref, Domain(kint64min, target_domain.Max()))) {
+                  ref, Domain(std::numeric_limits<int64_t>::min(),
+                              target_domain.Max()))) {
             return false;
           }
         }
@@ -597,7 +602,7 @@ bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
           *(new_ct->mutable_enforcement_literal()) = ct->enforcement_literal();
           ct->mutable_linear()->add_vars(ref);
           ct->mutable_linear()->add_coeffs(1);
-          ct->mutable_linear()->add_domain(kint64min);
+          ct->mutable_linear()->add_domain(std::numeric_limits<int64_t>::min());
           ct->mutable_linear()->add_domain(target_domain.Max());
         }
       }
@@ -612,11 +617,12 @@ bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
   // Pass 2, update the argument domains. Filter them eventually.
   new_size = 0;
   const int size = ct->int_max().vars_size();
-  const int64 target_max = context_->MaxOf(target_ref);
+  const int64_t target_max = context_->MaxOf(target_ref);
   for (const int ref : ct->int_max().vars()) {
     if (!HasEnforcementLiteral(*ct)) {
-      if (!context_->IntersectDomainWith(ref, Domain(kint64min, target_max),
-                                         &domain_reduced)) {
+      if (!context_->IntersectDomainWith(
+              ref, Domain(std::numeric_limits<int64_t>::min(), target_max),
+              &domain_reduced)) {
         return true;
       }
     }
@@ -691,7 +697,7 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
   // TODO(user): Remove duplicate expressions. This might be expensive.
 
   // Pass 1, Compute the infered min of the target.
-  int64 infered_min = context_->MinOf(ct->lin_max().target());
+  int64_t infered_min = context_->MinOf(ct->lin_max().target());
   for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
     // TODO(user): Check if the expressions contain target.
 
@@ -729,8 +735,9 @@ bool CpModelPresolver::PresolveIntAbs(ConstraintProto* ct) {
 
   // Propagate from the variable domain to the target variable.
   const Domain var_domain = context_->DomainOf(var);
-  const Domain new_target_domain = var_domain.UnionWith(var_domain.Negation())
-                                       .IntersectionWith({0, kint64max});
+  const Domain new_target_domain =
+      var_domain.UnionWith(var_domain.Negation())
+          .IntersectionWith({0, std::numeric_limits<int64_t>::max()});
   if (!context_->DomainOf(target_ref).IsIncludedIn(new_target_domain)) {
     if (!context_->IntersectDomainWith(target_ref, new_target_domain)) {
       return true;
@@ -824,7 +831,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
 
   // Replace any affine relation without offset.
   // TODO(user): Also remove constant rhs variables.
-  int64 constant = 1;
+  int64_t constant = 1;
   for (int i = 0; i < ct->int_prod().vars().size(); ++i) {
     const int ref = ct->int_prod().vars(i);
     const AffineRelation::Relation& r = context_->GetAffineRelation(ref);
@@ -902,7 +909,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
 
     if (context_->IsFixed(b)) std::swap(a, b);
     if (context_->IsFixed(a)) {
-      const int64 value_a = context_->MinOf(a);
+      const int64_t value_a = context_->MinOf(a);
       if (value_a == 0) {  // Fix target to 0.
         if (!context_->IntersectDomainWith(product, Domain(0, 0))) {
           return false;
@@ -986,7 +993,7 @@ bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
     return false;
   }
 
-  const int64 divisor = context_->MinOf(ref_div);
+  const int64_t divisor = context_->MinOf(ref_div);
   if (divisor == 1) {
     LinearConstraintProto* const lin =
         context_->working_model->add_constraints()->mutable_linear();
@@ -1095,10 +1102,10 @@ void CpModelPresolver::DivideLinearByGcd(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return;
 
   // Compute the GCD of all coefficients.
-  int64 gcd = 0;
+  int64_t gcd = 0;
   const int num_vars = ct->linear().vars().size();
   for (int i = 0; i < num_vars; ++i) {
-    const int64 magnitude = std::abs(ct->linear().coeffs(i));
+    const int64_t magnitude = std::abs(ct->linear().coeffs(i));
     gcd = MathUtil::GCD64(gcd, magnitude);
     if (gcd == 1) break;
   }
@@ -1125,7 +1132,7 @@ void CpModelPresolver::PresolveLinearEqualityModuloTwo(ConstraintProto* ct) {
   // The case modulo 2 is interesting if the non-zero terms are Booleans.
   std::vector<int> literals;
   for (int i = 0; i < ct->linear().vars().size(); ++i) {
-    const int64 coeff = ct->linear().coeffs(i);
+    const int64_t coeff = ct->linear().coeffs(i);
     const int ref = ct->linear().vars(i);
     if (coeff % 2 == 0) continue;
     if (!context_->CanBeUsedAsLiteral(ref)) return;
@@ -1133,11 +1140,11 @@ void CpModelPresolver::PresolveLinearEqualityModuloTwo(ConstraintProto* ct) {
     if (literals.size() > 2) return;
   }
   if (literals.size() == 1) {
-    const int64 rhs = std::abs(ct->linear().domain(0));
+    const int64_t rhs = std::abs(ct->linear().domain(0));
     context_->UpdateRuleStats("linear: only one odd Boolean in equality");
     if (!context_->IntersectDomainWith(literals[0], Domain(rhs % 2))) return;
   } else if (literals.size() == 2) {
-    const int64 rhs = std::abs(ct->linear().domain(0));
+    const int64_t rhs = std::abs(ct->linear().domain(0));
     context_->UpdateRuleStats("linear: only two odd Booleans in equality");
     if (rhs % 2) {
       context_->StoreBooleanEqualityRelation(literals[0],
@@ -1150,20 +1157,20 @@ void CpModelPresolver::PresolveLinearEqualityModuloTwo(ConstraintProto* ct) {
 
 template <typename ProtoWithVarsAndCoeffs>
 bool CpModelPresolver::CanonicalizeLinearExpressionInternal(
-    const ConstraintProto& ct, ProtoWithVarsAndCoeffs* proto, int64* offset) {
+    const ConstraintProto& ct, ProtoWithVarsAndCoeffs* proto, int64_t* offset) {
   // First regroup the terms on the same variables and sum the fixed ones.
   //
   // TODO(user): Add a quick pass to skip most of the work below if the
   // constraint is already in canonical form?
   tmp_terms_.clear();
-  int64 sum_of_fixed_terms = 0;
+  int64_t sum_of_fixed_terms = 0;
   bool remapped = false;
   const int old_size = proto->vars().size();
   DCHECK_EQ(old_size, proto->coeffs().size());
   for (int i = 0; i < old_size; ++i) {
     const int ref = proto->vars(i);
     const int var = PositiveRef(ref);
-    const int64 coeff =
+    const int64_t coeff =
         RefIsPositive(ref) ? proto->coeffs(i) : -proto->coeffs(i);
     if (coeff == 0) continue;
 
@@ -1203,7 +1210,7 @@ bool CpModelPresolver::CanonicalizeLinearExpressionInternal(
   proto->clear_coeffs();
   std::sort(tmp_terms_.begin(), tmp_terms_.end());
   int current_var = 0;
-  int64 current_coeff = 0;
+  int64_t current_coeff = 0;
   for (const auto entry : tmp_terms_) {
     CHECK(RefIsPositive(entry.first));
     if (entry.first == current_var) {
@@ -1233,7 +1240,7 @@ bool CpModelPresolver::CanonicalizeLinearExpressionInternal(
 
 bool CpModelPresolver::CanonicalizeLinearExpression(
     const ConstraintProto& ct, LinearExpressionProto* exp) {
-  int64 offset = 0;
+  int64_t offset = 0;
   const bool result = CanonicalizeLinearExpressionInternal(ct, exp, &offset);
   exp->set_offset(exp->offset() + offset);
   return result;
@@ -1244,7 +1251,7 @@ bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct) {
       context_->ModelIsUnsat()) {
     return false;
   }
-  int64 offset = 0;
+  int64_t offset = 0;
   const bool result =
       CanonicalizeLinearExpressionInternal(*ct, ct->mutable_linear(), &offset);
   if (offset != 0) {
@@ -1271,7 +1278,7 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
   // in which they will be removed.
   for (int i = 0; i < num_vars; ++i) {
     const int var = ct->linear().vars(i);
-    const int64 coeff = ct->linear().coeffs(i);
+    const int64_t coeff = ct->linear().coeffs(i);
     CHECK(RefIsPositive(var));
     if (context_->VariableIsUniqueAndRemovable(var)) {
       bool exact;
@@ -1306,7 +1313,7 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
 
     for (int i = 0; i < num_vars; ++i) {
       const int var = ct->linear().vars(i);
-      const int64 coeff = ct->linear().coeffs(i);
+      const int64_t coeff = ct->linear().coeffs(i);
       CHECK(RefIsPositive(var));
 
       // If the variable appear only in the objective and we have an equality,
@@ -1324,7 +1331,7 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
       //
       // TODO(user): If the objective is a single variable, we can actually
       // "absorb" any factor into the objective scaling.
-      const int64 objective_coeff =
+      const int64_t objective_coeff =
           gtl::FindOrDie(context_->ObjectiveMap(), var);
       CHECK_NE(coeff, 0);
       if (objective_coeff % coeff != 0) continue;
@@ -1435,7 +1442,7 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
     context_->UpdateRuleStats("linear: remove abs from abs(x) in domain");
     const Domain implied_abs_target_domain =
         ReadDomainFromProto(ct->linear())
-            .IntersectionWith({0, kint64max})
+            .IntersectionWith({0, std::numeric_limits<int64_t>::max()})
             .IntersectionWith(context_->DomainOf(ct->linear().vars(0)));
 
     if (implied_abs_target_domain.IsEmpty()) {
@@ -1474,12 +1481,12 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
     const LinearConstraintProto& linear = ct->linear();
     const int ref = linear.vars(0);
     const int var = PositiveRef(ref);
-    const int64 coeff =
+    const int64_t coeff =
         RefIsPositive(ref) ? ct->linear().coeffs(0) : -ct->linear().coeffs(0);
 
     if (linear.domain_size() == 2 && linear.domain(0) == linear.domain(1)) {
-      const int64 value = RefIsPositive(ref) ? linear.domain(0) * coeff
-                                             : -linear.domain(0) * coeff;
+      const int64_t value = RefIsPositive(ref) ? linear.domain(0) * coeff
+                                               : -linear.domain(0) * coeff;
       if (context_->StoreLiteralImpliesVarEqValue(literal, var, value)) {
         // The domain is not actually modified, but we want to rescan the
         // constraints linked to this variable. See TODO below.
@@ -1489,8 +1496,8 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
       const Domain complement = context_->DomainOf(ref).IntersectionWith(
           ReadDomainFromProto(linear).Complement());
       if (complement.Size() != 1) return false;
-      const int64 value = RefIsPositive(ref) ? complement.Min() * coeff
-                                             : -complement.Min() * coeff;
+      const int64_t value = RefIsPositive(ref) ? complement.Min() * coeff
+                                               : -complement.Min() * coeff;
       if (context_->StoreLiteralImpliesVarNEqValue(literal, var, value)) {
         // The domain is not actually modified, but we want to rescan the
         // constraints linked to this variable. See TODO below.
@@ -1506,9 +1513,9 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
 
   // Size one constraint?
   if (ct->linear().vars().size() == 1) {
-    const int64 coeff = RefIsPositive(ct->linear().vars(0))
-                            ? ct->linear().coeffs(0)
-                            : -ct->linear().coeffs(0);
+    const int64_t coeff = RefIsPositive(ct->linear().vars(0))
+                              ? ct->linear().coeffs(0)
+                              : -ct->linear().coeffs(0);
     context_->UpdateRuleStats("linear: size one");
     const int var = PositiveRef(ct->linear().vars(0));
     const Domain rhs = ReadDomainFromProto(ct->linear());
@@ -1526,13 +1533,13 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
   const LinearConstraintProto& arg = ct->linear();
   if (arg.vars_size() == 2) {
     const Domain rhs = ReadDomainFromProto(ct->linear());
-    const int64 rhs_min = rhs.Min();
-    const int64 rhs_max = rhs.Max();
+    const int64_t rhs_min = rhs.Min();
+    const int64_t rhs_max = rhs.Max();
     if (rhs_min == rhs_max) {
       const int v1 = arg.vars(0);
       const int v2 = arg.vars(1);
-      const int64 coeff1 = arg.coeffs(0);
-      const int64 coeff2 = arg.coeffs(1);
+      const int64_t coeff1 = arg.coeffs(0);
+      const int64_t coeff2 = arg.coeffs(1);
       bool added = false;
       if (coeff1 == 1) {
         added = context_->StoreAffineRelation(v1, v2, -coeff2, rhs_max);
@@ -1554,20 +1561,24 @@ namespace {
 
 // Return true if the given domain only restrict the values with an upper bound.
 bool IsLeConstraint(const Domain& domain, const Domain& all_values) {
-  return all_values.IntersectionWith(Domain(kint64min, domain.Max()))
+  return all_values
+      .IntersectionWith(
+          Domain(std::numeric_limits<int64_t>::min(), domain.Max()))
       .IsIncludedIn(domain);
 }
 
 // Same as IsLeConstraint() but in the other direction.
 bool IsGeConstraint(const Domain& domain, const Domain& all_values) {
-  return all_values.IntersectionWith(Domain(domain.Min(), kint64max))
+  return all_values
+      .IntersectionWith(
+          Domain(domain.Min(), std::numeric_limits<int64_t>::max()))
       .IsIncludedIn(domain);
 }
 
 // In the equation terms + coeff * var_domain \included rhs, returns true if can
 // we always fix rhs to its min value for any value in terms. It is okay to
 // not be as generic as possible here.
-bool RhsCanBeFixedToMin(int64 coeff, const Domain& var_domain,
+bool RhsCanBeFixedToMin(int64_t coeff, const Domain& var_domain,
                         const Domain& terms, const Domain& rhs) {
   if (var_domain.NumIntervals() != 1) return false;
   if (std::abs(coeff) != 1) return false;
@@ -1587,7 +1598,7 @@ bool RhsCanBeFixedToMin(int64 coeff, const Domain& var_domain,
   return false;
 }
 
-bool RhsCanBeFixedToMax(int64 coeff, const Domain& var_domain,
+bool RhsCanBeFixedToMax(int64_t coeff, const Domain& var_domain,
                         const Domain& terms, const Domain& rhs) {
   if (var_domain.NumIntervals() != 1) return false;
   if (std::abs(coeff) != 1) return false;
@@ -1629,7 +1640,7 @@ bool CpModelPresolver::PropagateDomainsInLinear(int c, ConstraintProto* ct) {
   left_domains[0] = Domain(0);
   for (int i = 0; i < num_vars; ++i) {
     const int var = ct->linear().vars(i);
-    const int64 coeff = ct->linear().coeffs(i);
+    const int64_t coeff = ct->linear().coeffs(i);
     CHECK(RefIsPositive(var));
     term_domains[i] = context_->DomainOf(var).MultiplicationBy(coeff);
     left_domains[i + 1] =
@@ -1673,7 +1684,7 @@ bool CpModelPresolver::PropagateDomainsInLinear(int c, ConstraintProto* ct) {
   term_domains[num_vars] = Domain(0);
   for (int i = num_vars - 1; i >= 0; --i) {
     const int var = ct->linear().vars(i);
-    const int64 var_coeff = ct->linear().coeffs(i);
+    const int64_t var_coeff = ct->linear().coeffs(i);
     right_domain =
         right_domain.AdditionWith(term_domains[i + 1]).RelaxIfTooComplex();
     implied_term_domain = left_domains[i].AdditionWith(right_domain);
@@ -1721,7 +1732,7 @@ bool CpModelPresolver::PropagateDomainsInLinear(int c, ConstraintProto* ct) {
             context_->VarToConstraints(var).contains(-1);
         const int size =
             context_->VarToConstraints(var).size() - (is_in_objective ? 1 : 0);
-        const int64 obj_coeff =
+        const int64_t obj_coeff =
             is_in_objective ? gtl::FindOrDie(context_->ObjectiveMap(), var) : 0;
 
         // We cannot fix anything if the domain of the objective is excluding
@@ -1776,7 +1787,7 @@ bool CpModelPresolver::PropagateDomainsInLinear(int c, ConstraintProto* ct) {
     // variable altogether.
     if (rhs.Min() != rhs.Max() &&
         context_->VariableWithCostIsUniqueAndRemovable(var)) {
-      const int64 obj_coeff = gtl::FindOrDie(context_->ObjectiveMap(), var);
+      const int64_t obj_coeff = gtl::FindOrDie(context_->ObjectiveMap(), var);
       const bool same_sign = (var_coeff > 0) == (obj_coeff > 0);
       bool fixed = false;
       if (same_sign && RhsCanBeFixedToMin(var_coeff, context_->DomainOf(var),
@@ -1954,14 +1965,14 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   // We also do not want to split them in two.
   if (num_vars <= 1) return;
 
-  int64 min_sum = 0;
-  int64 max_sum = 0;
-  int64 max_coeff_magnitude = 0;
+  int64_t min_sum = 0;
+  int64_t max_sum = 0;
+  int64_t max_coeff_magnitude = 0;
   for (int i = 0; i < num_vars; ++i) {
     const int ref = arg.vars(i);
-    const int64 coeff = arg.coeffs(i);
-    const int64 term_a = coeff * context_->MinOf(ref);
-    const int64 term_b = coeff * context_->MaxOf(ref);
+    const int64_t coeff = arg.coeffs(i);
+    const int64_t term_a = coeff * context_->MinOf(ref);
+    const int64_t term_b = coeff * context_->MaxOf(ref);
     max_coeff_magnitude = std::max(max_coeff_magnitude, std::abs(coeff));
     min_sum += std::min(term_a, term_b);
     max_sum += std::max(term_a, term_b);
@@ -1974,8 +1985,8 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   // same. This is maybe not too important, we just don't split as often as we
   // could, but it is still unclear if splitting is good.
   const auto& domain = ct->linear().domain();
-  const int64 ub_threshold = domain[domain.size() - 2] - min_sum;
-  const int64 lb_threshold = max_sum - domain[1];
+  const int64_t ub_threshold = domain[domain.size() - 2] - min_sum;
+  const int64_t lb_threshold = max_sum - domain[1];
   const Domain rhs_domain = ReadDomainFromProto(ct->linear());
   if (max_coeff_magnitude < std::max(ub_threshold, lb_threshold)) return;
 
@@ -2024,7 +2035,7 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   // Any coefficient greater than this will cause the constraint to be trivially
   // satisfied when the variable move away from its bound. Note that as we
   // remove coefficient, the threshold do not change!
-  const int64 threshold = lower_bounded ? ub_threshold : lb_threshold;
+  const int64_t threshold = lower_bounded ? ub_threshold : lb_threshold;
 
   // Do we only extract Booleans?
   const bool only_booleans =
@@ -2033,12 +2044,12 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   // To avoid a quadratic loop, we will rewrite the linear expression at the
   // same time as we extract enforcement literals.
   int new_size = 0;
-  int64 rhs_offset = 0;
+  int64_t rhs_offset = 0;
   bool some_integer_encoding_were_extracted = false;
   LinearConstraintProto* mutable_arg = ct->mutable_linear();
   for (int i = 0; i < arg.vars_size(); ++i) {
     int ref = arg.vars(i);
-    int64 coeff = arg.coeffs(i);
+    int64_t coeff = arg.coeffs(i);
     if (coeff < 0) {
       ref = NegatedRef(ref);
       coeff = -coeff;
@@ -2091,13 +2102,13 @@ void CpModelPresolver::ExtractAtMostOneFromLinear(ConstraintProto* ct) {
 
   const LinearConstraintProto& arg = ct->linear();
   const int num_vars = arg.vars_size();
-  int64 min_sum = 0;
-  int64 max_sum = 0;
+  int64_t min_sum = 0;
+  int64_t max_sum = 0;
   for (int i = 0; i < num_vars; ++i) {
     const int ref = arg.vars(i);
-    const int64 coeff = arg.coeffs(i);
-    const int64 term_a = coeff * context_->MinOf(ref);
-    const int64 term_b = coeff * context_->MaxOf(ref);
+    const int64_t coeff = arg.coeffs(i);
+    const int64_t term_a = coeff * context_->MinOf(ref);
+    const int64_t term_b = coeff * context_->MaxOf(ref);
     min_sum += std::min(term_a, term_b);
     max_sum += std::max(term_a, term_b);
   }
@@ -2105,7 +2116,7 @@ void CpModelPresolver::ExtractAtMostOneFromLinear(ConstraintProto* ct) {
     std::vector<int> at_most_one;
     for (int i = 0; i < num_vars; ++i) {
       const int ref = arg.vars(i);
-      const int64 coeff = arg.coeffs(i);
+      const int64_t coeff = arg.coeffs(i);
       if (context_->MinOf(ref) != 0) continue;
       if (context_->MaxOf(ref) != 1) continue;
 
@@ -2147,14 +2158,14 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
 
   const LinearConstraintProto& arg = ct->linear();
   const int num_vars = arg.vars_size();
-  int64 min_coeff = kint64max;
-  int64 max_coeff = 0;
-  int64 min_sum = 0;
-  int64 max_sum = 0;
+  int64_t min_coeff = std::numeric_limits<int64_t>::max();
+  int64_t max_coeff = 0;
+  int64_t min_sum = 0;
+  int64_t max_sum = 0;
   for (int i = 0; i < num_vars; ++i) {
     // We assume we already ran PresolveLinear().
     const int var = arg.vars(i);
-    const int64 coeff = arg.coeffs(i);
+    const int64_t coeff = arg.coeffs(i);
     CHECK(RefIsPositive(var));
     CHECK_NE(coeff, 0);
     if (context_->MinOf(var) != 0) return false;
@@ -2306,7 +2317,7 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
   // is false. TODO(user): the encoding could be made better in some cases.
   const int max_mask = (1 << arg.vars_size());
   for (int mask = 0; mask < max_mask; ++mask) {
-    int64 value = 0;
+    int64_t value = 0;
     for (int i = 0; i < num_vars; ++i) {
       if ((mask >> i) & 1) value += arg.coeffs(i);
     }
@@ -2330,7 +2341,7 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
 
 namespace {
 
-void AddLinearExpression(int64 coeff, const LinearExpressionProto& exp,
+void AddLinearExpression(int64_t coeff, const LinearExpressionProto& exp,
                          LinearConstraintProto* linear_ct) {
   const int size = exp.vars().size();
   for (int i = 0; i < size; ++i) {
@@ -2475,7 +2486,7 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
   if (HasEnforcementLiteral(*ct)) return false;
 
   bool all_constants = true;
-  absl::flat_hash_set<int64> constant_set;
+  absl::flat_hash_set<int64_t> constant_set;
   bool all_included_in_target_domain = true;
 
   {
@@ -2490,13 +2501,13 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
     //
     // Note that this must be done before the unique_index/target rule.
     if (PositiveRef(target_ref) == PositiveRef(index_ref)) {
-      std::vector<int64> possible_indices;
+      std::vector<int64_t> possible_indices;
       const Domain& index_domain = context_->DomainOf(index_ref);
       for (const ClosedInterval& interval : index_domain) {
-        for (int64 index_value = interval.start; index_value <= interval.end;
+        for (int64_t index_value = interval.start; index_value <= interval.end;
              ++index_value) {
           const int ref = ct->element().vars(index_value);
-          const int64 target_value =
+          const int64_t target_value =
               target_ref == index_ref ? index_value : -index_value;
           if (context_->DomainContains(ref, target_value)) {
             possible_indices.push_back(target_value);
@@ -2518,7 +2529,7 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
     Domain infered_domain;
     const Domain& initial_index_domain = context_->DomainOf(index_ref);
     const Domain& target_domain = context_->DomainOf(target_ref);
-    std::vector<int64> possible_indices;
+    std::vector<int64_t> possible_indices;
     for (const ClosedInterval interval : initial_index_domain) {
       for (int value = interval.start; value <= interval.end; ++value) {
         CHECK_GE(value, 0);
@@ -2586,8 +2597,8 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
   // variables.
   if (context_->MinOf(index_ref) == 0 && context_->MaxOf(index_ref) == 1 &&
       all_constants) {
-    const int64 v0 = context_->MinOf(ct->element().vars(0));
-    const int64 v1 = context_->MinOf(ct->element().vars(1));
+    const int64_t v0 = context_->MinOf(ct->element().vars(0));
+    const int64_t v1 = context_->MinOf(ct->element().vars(1));
 
     LinearConstraintProto* const lin =
         context_->working_model->add_constraints()->mutable_linear();
@@ -2613,8 +2624,8 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
       return true;
     }
     const int r_ref = r_index.representative;
-    const int64 r_min = context_->MinOf(r_ref);
-    const int64 r_max = context_->MaxOf(r_ref);
+    const int64_t r_min = context_->MinOf(r_ref);
+    const int64_t r_max = context_->MaxOf(r_ref);
     const int array_size = ct->element().vars_size();
     if (r_min != 0) {
       context_->UpdateRuleStats("TODO element: representative has bad domain");
@@ -2624,8 +2635,8 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
       // This will happen eventually when domains are synchronized.
       ElementConstraintProto* const element =
           context_->working_model->add_constraints()->mutable_element();
-      for (int64 v = 0; v <= r_max; ++v) {
-        const int64 scaled_index = v * r_index.coeff + r_index.offset;
+      for (int64_t v = 0; v <= r_max; ++v) {
+        const int64_t scaled_index = v * r_index.coeff + r_index.offset;
         CHECK_GE(scaled_index, 0);
         CHECK_LT(scaled_index, array_size);
         element->add_vars(ct->element().vars(scaled_index));
@@ -2688,10 +2699,10 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
   // TODO(user): this is not supper efficient. Optimize if needed.
   const int num_vars = ct->table().vars_size();
   const int num_tuples = ct->table().values_size() / num_vars;
-  std::vector<int64> tuple(num_vars);
-  std::vector<std::vector<int64>> new_tuples;
+  std::vector<int64_t> tuple(num_vars);
+  std::vector<std::vector<int64_t>> new_tuples;
   new_tuples.reserve(num_tuples);
-  std::vector<absl::flat_hash_set<int64>> new_domains(num_vars);
+  std::vector<absl::flat_hash_set<int64_t>> new_domains(num_vars);
   std::vector<AffineRelation::Relation> affine_relations;
 
   absl::flat_hash_set<int> visited;
@@ -2718,10 +2729,10 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
     std::string tmp;
     for (int j = 0; j < num_vars; ++j) {
       const int ref = ct->table().vars(j);
-      int64 v = ct->table().values(i * num_vars + j);
+      int64_t v = ct->table().values(i * num_vars + j);
       const AffineRelation::Relation& r = affine_relations[j];
       if (r.representative != ref) {
-        const int64 inverse_value = (v - r.offset) / r.coeff;
+        const int64_t inverse_value = (v - r.offset) / r.coeff;
         if (inverse_value * r.coeff + r.offset != v) {
           // Bad rounding.
           delete_row = true;
@@ -2738,7 +2749,7 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
     if (delete_row) continue;
     new_tuples.push_back(tuple);
     for (int j = 0; j < num_vars; ++j) {
-      const int64 v = tuple[j];
+      const int64_t v = tuple[j];
       new_domains[j].insert(v);
     }
   }
@@ -2747,8 +2758,8 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
   // Update the list of tuples if needed.
   if (new_tuples.size() < num_tuples || modified_variables) {
     ct->mutable_table()->clear_values();
-    for (const std::vector<int64>& t : new_tuples) {
-      for (const int64 v : t) {
+    for (const std::vector<int64_t>& t : new_tuples) {
+      for (const int64_t v : t) {
         ct->mutable_table()->add_values(v);
       }
     }
@@ -2777,8 +2788,8 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
     const int ref = ct->table().vars(j);
     if (!context_->IntersectDomainWith(
             PositiveRef(ref),
-            Domain::FromValues(std::vector<int64>(new_domains[j].begin(),
-                                                  new_domains[j].end())),
+            Domain::FromValues(std::vector<int64_t>(new_domains[j].begin(),
+                                                    new_domains[j].end())),
             &changed)) {
       return true;
     }
@@ -2805,11 +2816,11 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
   // it could.
   if (new_tuples.size() > 0.7 * prod) {
     // Enumerate all tuples.
-    std::vector<std::vector<int64>> var_to_values(num_vars);
+    std::vector<std::vector<int64_t>> var_to_values(num_vars);
     for (int j = 0; j < num_vars; ++j) {
       var_to_values[j].assign(new_domains[j].begin(), new_domains[j].end());
     }
-    std::vector<std::vector<int64>> all_tuples(prod);
+    std::vector<std::vector<int64_t>> all_tuples(prod);
     for (int i = 0; i < prod; ++i) {
       all_tuples[i].resize(num_vars);
       int index = i;
@@ -2821,15 +2832,15 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
     gtl::STLSortAndRemoveDuplicates(&all_tuples);
 
     // Compute the complement of new_tuples.
-    std::vector<std::vector<int64>> diff(prod - new_tuples.size());
+    std::vector<std::vector<int64_t>> diff(prod - new_tuples.size());
     std::set_difference(all_tuples.begin(), all_tuples.end(),
                         new_tuples.begin(), new_tuples.end(), diff.begin());
 
     // Negate the constraint.
     ct->mutable_table()->set_negated(!ct->table().negated());
     ct->mutable_table()->clear_values();
-    for (const std::vector<int64>& t : diff) {
-      for (const int64 v : t) ct->mutable_table()->add_values(v);
+    for (const std::vector<int64_t>& t : diff) {
+      for (const int64_t v : t) ct->mutable_table()->add_values(v);
     }
     context_->UpdateRuleStats("table: negated");
   }
@@ -2862,7 +2873,7 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
         continue;
       }
 
-      const int64 value = context_->MinOf(all_diff.vars(i));
+      const int64_t value = context_->MinOf(all_diff.vars(i));
       bool propagated = false;
       for (int j = 0; j < size; ++j) {
         if (i == j) continue;
@@ -2906,10 +2917,10 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
       domain = domain.UnionWith(context_->DomainOf(all_diff.vars(i)));
     }
     if (all_diff.vars_size() == domain.Size()) {
-      absl::flat_hash_map<int64, std::vector<int>> value_to_refs;
+      absl::flat_hash_map<int64_t, std::vector<int>> value_to_refs;
       for (const int ref : all_diff.vars()) {
         for (const ClosedInterval& interval : context_->DomainOf(ref)) {
-          for (int64 v = interval.start; v <= interval.end; ++v) {
+          for (int64_t v = interval.start; v <= interval.end; ++v) {
             value_to_refs[v].push_back(ref);
           }
         }
@@ -3019,23 +3030,26 @@ void ExtractClauses(bool use_bool_and, const ClauseContainer& container,
 
 }  // namespace
 
-int64 CpModelPresolver::StartMin(
+int64_t CpModelPresolver::StartMin(
     const IntervalConstraintProto& interval) const {
   if (interval.has_start_view()) return context_->MinOf(interval.start_view());
   return context_->MinOf(interval.start());
 }
 
-int64 CpModelPresolver::EndMax(const IntervalConstraintProto& interval) const {
+int64_t CpModelPresolver::EndMax(
+    const IntervalConstraintProto& interval) const {
   if (interval.has_end_view()) return context_->MaxOf(interval.end_view());
   return context_->MaxOf(interval.end());
 }
 
-int64 CpModelPresolver::SizeMin(const IntervalConstraintProto& interval) const {
+int64_t CpModelPresolver::SizeMin(
+    const IntervalConstraintProto& interval) const {
   if (interval.has_size_view()) return context_->MinOf(interval.size_view());
   return context_->MinOf(interval.size());
 }
 
-int64 CpModelPresolver::SizeMax(const IntervalConstraintProto& interval) const {
+int64_t CpModelPresolver::SizeMax(
+    const IntervalConstraintProto& interval) const {
   if (interval.has_size_view()) return context_->MaxOf(interval.size_view());
   return context_->MaxOf(interval.size());
 }
@@ -3071,13 +3085,13 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
   //
   // TODO(user): We might also want to split this constraints into many
   // independent no overlap constraints.
-  int64 end_max_so_far = kint64min;
+  int64_t end_max_so_far = std::numeric_limits<int64_t>::min();
   new_size = 0;
   for (int i = 0; i < proto.intervals_size(); ++i) {
     const int interval_index = proto.intervals(i);
     const IntervalConstraintProto& interval =
         context_->working_model->constraints(interval_index).interval();
-    const int64 end_max_of_previous_intervals = end_max_so_far;
+    const int64_t end_max_of_previous_intervals = end_max_so_far;
     end_max_so_far = std::max(end_max_so_far, EndMax(interval));
     if (StartMin(interval) >= end_max_of_previous_intervals &&
         (i + 1 == proto.intervals_size() ||
@@ -3121,7 +3135,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     }
 
     const int demand_ref = proto.demands(i);
-    const int64 demand_max = context_->MaxOf(demand_ref);
+    const int64_t demand_max = context_->MaxOf(demand_ref);
     if (demand_max == 0) {
       num_zero_demand_removed++;
       continue;
@@ -3157,6 +3171,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   }
 
   if (HasEnforcementLiteral(*ct)) return changed;
+  const int64_t capacity = context_->MinOf(proto.capacity());
 
   const int num_intervals = proto.intervals_size();
   bool with_start_view = false;
@@ -3183,9 +3198,8 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       // the no-overlap and the cumulative constraint.
       return changed;
     }
-
-    const int64 demand_min = context_->MinOf(demand_ref);
-    const int64 demand_max = context_->MaxOf(demand_ref);
+    const int64_t demand_min = context_->MinOf(demand_ref);
+    const int64_t demand_max = context_->MaxOf(demand_ref);
     if (demand_min > capacity_max / 2) {
       num_greater_half_capacity++;
     }
@@ -3204,8 +3218,9 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       if (ct.enforcement_literal().empty()) {
         context_->UpdateRuleStats(
             "cumulative: demand_max exceeds capacity max.");
-        if (!context_->IntersectDomainWith(demand_ref,
-                                           Domain(kint64min, capacity_max))) {
+        if (!context_->IntersectDomainWith(
+                demand_ref,
+                Domain(std::numeric_limits<int64_t>::min(), capacity_max))) {
           return true;
         }
       } else {
@@ -3217,7 +3232,6 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       }
     }
   }
-
   if (num_greater_half_capacity == num_intervals) {
     if (num_duration_one == num_intervals && !has_optional_interval &&
         !with_start_view) {
@@ -3487,8 +3501,8 @@ bool CpModelPresolver::PresolveAutomaton(ConstraintProto* ct) {
     const AffineRelation::Relation rep = affine_relations.front();
     int new_size = 0;
     for (int t = 0; t < proto.transition_tail_size(); ++t) {
-      const int64 label = proto.transition_label(t);
-      int64 inverse_label = (label - rep.offset) / rep.coeff;
+      const int64_t label = proto.transition_label(t);
+      int64_t inverse_label = (label - rep.offset) / rep.coeff;
       if (inverse_label * rep.coeff + rep.offset == label) {
         if (new_size != t) {
           proto.set_transition_tail(new_size, proto.transition_tail(t));
@@ -3515,7 +3529,7 @@ bool CpModelPresolver::PresolveAutomaton(ConstraintProto* ct) {
 
   int new_size = 0;
   for (int t = 0; t < proto.transition_tail_size(); ++t) {
-    const int64 label = proto.transition_label(t);
+    const int64_t label = proto.transition_label(t);
     if (hull.Contains(label)) {
       if (new_size != t) {
         proto.set_transition_tail(new_size, proto.transition_tail(t));
@@ -3537,7 +3551,7 @@ bool CpModelPresolver::PresolveAutomaton(ConstraintProto* ct) {
   const std::vector<int> vars = {proto.vars().begin(), proto.vars().end()};
 
   // Compute the set of reachable state at each time point.
-  std::vector<std::set<int64>> reachable_states(n + 1);
+  std::vector<std::set<int64_t>> reachable_states(n + 1);
   reachable_states[0].insert(proto.starting_state());
   reachable_states[n] = {proto.final_states().begin(),
                          proto.final_states().end()};
@@ -3548,24 +3562,24 @@ bool CpModelPresolver::PresolveAutomaton(ConstraintProto* ct) {
   // all the possible transitions.
   for (int time = 0; time + 1 < n; ++time) {
     for (int t = 0; t < proto.transition_tail_size(); ++t) {
-      const int64 tail = proto.transition_tail(t);
-      const int64 label = proto.transition_label(t);
-      const int64 head = proto.transition_head(t);
+      const int64_t tail = proto.transition_tail(t);
+      const int64_t label = proto.transition_label(t);
+      const int64_t head = proto.transition_head(t);
       if (!gtl::ContainsKey(reachable_states[time], tail)) continue;
       if (!context_->DomainContains(vars[time], label)) continue;
       reachable_states[time + 1].insert(head);
     }
   }
 
-  std::vector<std::set<int64>> reached_values(n);
+  std::vector<std::set<int64_t>> reached_values(n);
 
   // Backward.
   for (int time = n - 1; time >= 0; --time) {
-    std::set<int64> new_set;
+    std::set<int64_t> new_set;
     for (int t = 0; t < proto.transition_tail_size(); ++t) {
-      const int64 tail = proto.transition_tail(t);
-      const int64 label = proto.transition_label(t);
-      const int64 head = proto.transition_head(t);
+      const int64_t tail = proto.transition_tail(t);
+      const int64_t label = proto.transition_label(t);
+      const int64_t head = proto.transition_head(t);
 
       if (!gtl::ContainsKey(reachable_states[time], tail)) continue;
       if (!context_->DomainContains(vars[time], label)) continue;
@@ -3638,16 +3652,16 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
   }
 
   const int num_events = mutable_reservoir.demands_size();
-  int64 gcd = mutable_reservoir.demands().empty()
-                  ? 0
-                  : std::abs(mutable_reservoir.demands(0));
+  int64_t gcd = mutable_reservoir.demands().empty()
+                    ? 0
+                    : std::abs(mutable_reservoir.demands(0));
   int num_positives = 0;
   int num_negatives = 0;
-  int64 sum_of_demands = 0;
-  int64 max_sum_of_positive_demands = 0;
-  int64 min_sum_of_negative_demands = 0;
+  int64_t sum_of_demands = 0;
+  int64_t max_sum_of_positive_demands = 0;
+  int64_t min_sum_of_negative_demands = 0;
   for (int i = 0; i < num_events; ++i) {
-    const int64 demand = mutable_reservoir.demands(i);
+    const int64_t demand = mutable_reservoir.demands(i);
     sum_of_demands += demand;
     gcd = MathUtil::GCD64(gcd, std::abs(demand));
     if (demand > 0) {
@@ -3690,9 +3704,9 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
     // always feasible, we do not care about the order, just the sum.
     auto* const sum =
         context_->working_model->add_constraints()->mutable_linear();
-    int64 fixed_contrib = 0;
+    int64_t fixed_contrib = 0;
     for (int i = 0; i < mutable_reservoir.demands_size(); ++i) {
-      const int64 demand = mutable_reservoir.demands(i);
+      const int64_t demand = mutable_reservoir.demands(i);
       DCHECK_NE(demand, 0);
 
       const int active = mutable_reservoir.actives(i);
@@ -4148,8 +4162,8 @@ void CpModelPresolver::ExpandObjective() {
     var_to_process.erase(objective_var);
 
     int expanded_linear_index = -1;
-    int64 objective_coeff_in_expanded_constraint;
-    int64 size_of_expanded_constraint = 0;
+    int64_t objective_coeff_in_expanded_constraint;
+    int64_t size_of_expanded_constraint = 0;
     const auto& non_deterministic_list =
         context_->VarToConstraints(objective_var);
     std::vector<int> constraints_with_objective(non_deterministic_list.begin(),
@@ -4179,10 +4193,10 @@ void CpModelPresolver::ExpandObjective() {
       // beginning of the function when this is the case we should be safe.
       // However, it might be more robust to just handle this case properly.
       bool is_present = false;
-      int64 objective_coeff;
+      int64_t objective_coeff;
       for (int i = 0; i < num_terms; ++i) {
         const int ref = ct.linear().vars(i);
-        const int64 coeff = ct.linear().coeffs(i);
+        const int64_t coeff = ct.linear().coeffs(i);
         if (PositiveRef(ref) == objective_var) {
           CHECK(!is_present) << "Duplicate variables not supported.";
           is_present = true;
@@ -4642,7 +4656,7 @@ bool CpModelPresolver::ProcessSetPPC() {
 
   // Signatures of all the constraints. In the signature the bit i is 1 if it
   // contains a literal l such that l%64 = i.
-  std::vector<uint64> signatures;
+  std::vector<uint64_t> signatures;
 
   // Graph of constraints to literals. constraint_literals[c] contains all the
   // literals in constraint indexed by 'c' in sorted order.
@@ -4680,10 +4694,10 @@ bool CpModelPresolver::ProcessSetPPC() {
         ct->constraint_case() == ConstraintProto::ConstraintCase::kExactlyOne) {
       constraint_literals.push_back(GetLiteralsFromSetPPCConstraint(*ct));
 
-      uint64 signature = 0;
+      uint64_t signature = 0;
       for (const int literal : constraint_literals.back()) {
         const int positive_literal = PositiveRef(literal);
-        signature |= (int64{1} << (positive_literal % 64));
+        signature |= (int64_t{1} << (positive_literal % 64));
         DCHECK_GE(positive_literal, 0);
         if (positive_literal >= literals_to_constraints.size()) {
           literals_to_constraints.resize(positive_literal + 1);
@@ -4792,12 +4806,12 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
 
   if (domain.NumIntervals() != domain.Size()) return;
 
-  const int64 var_min = domain.Min();
-  int64 gcd = domain[1].start - var_min;
+  const int64_t var_min = domain.Min();
+  int64_t gcd = domain[1].start - var_min;
   for (int index = 2; index < domain.NumIntervals(); ++index) {
     const ClosedInterval& i = domain[index];
     CHECK_EQ(i.start, i.end);
-    const int64 shifted_value = i.start - var_min;
+    const int64_t shifted_value = i.start - var_min;
     CHECK_GE(shifted_value, 0);
 
     gcd = MathUtil::GCD64(gcd, shifted_value);
@@ -4807,11 +4821,11 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
 
   int new_var_index;
   {
-    std::vector<int64> scaled_values;
+    std::vector<int64_t> scaled_values;
     for (int index = 0; index < domain.NumIntervals(); ++index) {
       const ClosedInterval& i = domain[index];
       CHECK_EQ(i.start, i.end);
-      const int64 shifted_value = i.start - var_min;
+      const int64_t shifted_value = i.start - var_min;
       scaled_values.push_back(shifted_value / gcd);
     }
     new_var_index = context_->NewIntVar(Domain::FromValues(scaled_values));
@@ -4825,7 +4839,7 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
 
 // Adds all affine relations to our model for the variables that are still used.
 void CpModelPresolver::EncodeAllAffineRelations() {
-  int64 num_added = 0;
+  int64_t num_added = 0;
   for (int var = 0; var < context_->working_model->variables_size(); ++var) {
     if (context_->IsFixed(var)) continue;
 
@@ -4903,10 +4917,10 @@ void CpModelPresolver::PresolveToFixPoint() {
   if (context_->ModelIsUnsat()) return;
 
   // Limit on number of operations.
-  const int64 max_num_operations =
+  const int64_t max_num_operations =
       context_->params().cp_model_max_num_presolve_operations() > 0
           ? context_->params().cp_model_max_num_presolve_operations()
-          : kint64max;
+          : std::numeric_limits<int64_t>::max();
 
   // This is used for constraint having unique variables in them (i.e. not
   // appearing anywhere else) to not call the presolve more than once for this
@@ -5237,7 +5251,7 @@ bool CpModelPresolver::Presolve() {
        ++iter) {
     context_->UpdateRuleStats("presolve: iteration");
     // Save some quantities to decide if we abort early the iteration loop.
-    const int64 old_num_presolve_op = context_->num_presolve_operations;
+    const int64_t old_num_presolve_op = context_->num_presolve_operations;
     int old_num_non_empty_constraints = 0;
     for (int c = 0; c < context_->working_model->constraints_size(); ++c) {
       const auto type =
@@ -5545,13 +5559,13 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
     int new_size = 0;
     for (int i = 0; i < mutable_hint->vars_size(); ++i) {
       const int old_ref = mutable_hint->vars(i);
-      const int64 old_value = mutable_hint->values(i);
+      const int64_t old_value = mutable_hint->values(i);
 
       // Note that if (old_value - r.offset) is not divisible by r.coeff, then
       // the hint is clearly infeasible, but we still set it to a "close" value.
       const AffineRelation::Relation r = context.GetAffineRelation(old_ref);
       const int var = r.representative;
-      const int64 value = (old_value - r.offset) / r.coeff;
+      const int64_t value = (old_value - r.offset) / r.coeff;
 
       const int image = mapping[var];
       if (image >= 0) {
@@ -5594,7 +5608,7 @@ std::vector<int> FindDuplicateConstraints(const CpModelProto& model_proto) {
 
   // We use a map hash: serialized_constraint_proto hash -> constraint index.
   ConstraintProto copy;
-  absl::flat_hash_map<int64, int> equiv_constraints;
+  absl::flat_hash_map<int64_t, int> equiv_constraints;
 
   std::string s;
   const int num_constraints = model_proto.constraints().size();

@@ -13,6 +13,8 @@
 
 #include "ortools/sat/linear_relaxation.h"
 
+#include <cstdint>
+#include <limits>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
@@ -825,13 +827,15 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& constraint_proto,
   const IntegerValue rhs_domain_max =
       IntegerValue(constraint_proto.linear().domain(
           constraint_proto.linear().domain_size() - 1));
-  if (rhs_domain_min == kint64min && rhs_domain_max == kint64max) return;
+  if (rhs_domain_min == std::numeric_limits<int64_t>::min() &&
+      rhs_domain_max == std::numeric_limits<int64_t>::max())
+    return;
 
   if (!HasEnforcementLiteral(constraint_proto)) {
     LinearConstraintBuilder lc(&model, rhs_domain_min, rhs_domain_max);
     for (int i = 0; i < constraint_proto.linear().vars_size(); i++) {
       const int ref = constraint_proto.linear().vars(i);
-      const int64 coeff = constraint_proto.linear().coeffs(i);
+      const int64_t coeff = constraint_proto.linear().coeffs(i);
       lc.AddTerm(mapping->Integer(ref), IntegerValue(coeff));
     }
     relaxation->linear_constraints.push_back(lc.Build());

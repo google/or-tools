@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <random>
 #include <string>
@@ -79,15 +80,15 @@ void SatSolver::SetNumVariables(int num_variables) {
   decisions_.resize(num_variables + 1);
 }
 
-int64 SatSolver::num_branches() const { return counters_.num_branches; }
+int64_t SatSolver::num_branches() const { return counters_.num_branches; }
 
-int64 SatSolver::num_failures() const { return counters_.num_failures; }
+int64_t SatSolver::num_failures() const { return counters_.num_failures; }
 
-int64 SatSolver::num_propagations() const {
+int64_t SatSolver::num_propagations() const {
   return trail_->NumberOfEnqueues() - counters_.num_branches;
 }
 
-int64 SatSolver::num_restarts() const { return counters_.num_restarts; }
+int64_t SatSolver::num_restarts() const { return counters_.num_restarts; }
 
 double SatSolver::deterministic_time() const {
   // Each of these counters mesure really basic operations. The weight are just
@@ -120,9 +121,9 @@ void SatSolver::SetParameters(const SatParameters& parameters) {
 }
 
 bool SatSolver::IsMemoryLimitReached() const {
-  const int64 memory_usage =
+  const int64_t memory_usage =
       ::operations_research::sysinfo::MemoryUsageProcess();
-  const int64 kMegaByte = 1024 * 1024;
+  const int64_t kMegaByte = 1024 * 1024;
   return memory_usage > kMegaByte * parameters_->max_memory_in_mb();
 }
 
@@ -556,7 +557,7 @@ bool SatSolver::ReapplyAssumptionsIfNeeded() {
   if (CurrentDecisionLevel() >= assumption_level_) return true;
 
   int unused = 0;
-  const int64 old_num_branches = counters_.num_branches;
+  const int64_t old_num_branches = counters_.num_branches;
   const SatSolver::Status status =
       ReapplyDecisionsUpTo(assumption_level_ - 1, &unused);
   counters_.num_branches = old_num_branches;
@@ -939,7 +940,7 @@ void SatSolver::ClearNewlyAddedBinaryClauses() {
 
 namespace {
 // Return the next value that is a multiple of interval.
-int64 NextMultipleOf(int64 value, int64 interval) {
+int64_t NextMultipleOf(int64_t value, int64_t interval) {
   return interval * (1 + value / interval);
 }
 }  // namespace
@@ -1141,27 +1142,27 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
   }
 
   // Used to trigger clause minimization via propagation.
-  int64 next_minimization_num_restart =
+  int64_t next_minimization_num_restart =
       restart_->NumRestarts() +
       parameters_->minimize_with_propagation_restart_period();
 
   // Variables used to show the search progress.
-  const int64 kDisplayFrequency = 10000;
-  int64 next_display = parameters_->log_search_progress()
-                           ? NextMultipleOf(num_failures(), kDisplayFrequency)
-                           : std::numeric_limits<int64>::max();
+  const int64_t kDisplayFrequency = 10000;
+  int64_t next_display = parameters_->log_search_progress()
+                             ? NextMultipleOf(num_failures(), kDisplayFrequency)
+                             : std::numeric_limits<int64_t>::max();
 
   // Variables used to check the memory limit every kMemoryCheckFrequency.
-  const int64 kMemoryCheckFrequency = 10000;
-  int64 next_memory_check =
+  const int64_t kMemoryCheckFrequency = 10000;
+  int64_t next_memory_check =
       NextMultipleOf(num_failures(), kMemoryCheckFrequency);
 
   // The max_number_of_conflicts is per solve but the counter is for the whole
   // solver.
-  const int64 kFailureLimit =
+  const int64_t kFailureLimit =
       parameters_->max_number_of_conflicts() ==
-              std::numeric_limits<int64>::max()
-          ? std::numeric_limits<int64>::max()
+              std::numeric_limits<int64_t>::max()
+          ? std::numeric_limits<int64_t>::max()
           : counters_.num_failures + parameters_->max_number_of_conflicts();
 
   // Starts search.
@@ -1249,7 +1250,7 @@ void SatSolver::MinimizeSomeClauses(int decisions_budget) {
   // while we are processing it.
   block_clause_deletion_ = true;
 
-  const int64 target_num_branches = counters_.num_branches + decisions_budget;
+  const int64_t target_num_branches = counters_.num_branches + decisions_budget;
   while (counters_.num_branches < target_num_branches &&
          (time_limit_ == nullptr || !time_limit_->LimitReached())) {
     SatClause* to_minimize = clauses_propagator_->NextClauseToMinimize();

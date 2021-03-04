@@ -91,6 +91,7 @@
 #ifndef OR_TOOLS_GLOP_REVISED_SIMPLEX_H_
 #define OR_TOOLS_GLOP_REVISED_SIMPLEX_H_
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -116,32 +117,6 @@
 
 namespace operations_research {
 namespace glop {
-
-// Holds the statuses of all the variables, including slack variables. There
-// is no point storing constraint statuses since internally all constraints are
-// always fixed to zero.
-//
-// Note that this is the minimal amount of information needed to perform a "warm
-// start". Using this information and the original linear program, the basis can
-// be refactorized and all the needed quantities derived.
-//
-// TODO(user): Introduce another state class to store a complete state of the
-// solver. Using this state and the original linear program, the solver can be
-// restarted with as little time overhead as possible. This is especially useful
-// for strong branching in a MIP context.
-struct BasisState {
-  // TODO(user): A MIP solver will potentially store a lot of BasicStates so
-  // memory usage is important. It is possible to use only 2 bits for one
-  // VariableStatus enum. To achieve this, the FIXED_VALUE status can be
-  // converted to either AT_LOWER_BOUND or AT_UPPER_BOUND and decoded properly
-  // later since this will be used with a given linear program. This way we can
-  // even encode more information by using the reduced cost sign to choose to
-  // which bound the fixed status correspond.
-  VariableStatusRow statuses;
-
-  // Returns true if this state is empty.
-  bool IsEmpty() const { return statuses.empty(); }
-};
 
 // Entry point of the revised simplex algorithm implementation.
 class RevisedSimplex {
@@ -187,7 +162,7 @@ class RevisedSimplex {
   ColIndex GetProblemNumCols() const;
   ProblemStatus GetProblemStatus() const;
   Fractional GetObjectiveValue() const;
-  int64 GetNumberOfIterations() const;
+  int64_t GetNumberOfIterations() const;
   Fractional GetVariableValue(ColIndex col) const;
   Fractional GetReducedCost(ColIndex col) const;
   const DenseRow& GetReducedCosts() const;
@@ -320,10 +295,6 @@ class RevisedSimplex {
   // x1..., slack variables will be s1... .
   void SetVariableNames();
 
-  // Computes the initial variable status from its type. A constrained variable
-  // is set to the lowest of its 2 bounds in absolute value.
-  VariableStatus ComputeDefaultVariableStatus(ColIndex col) const;
-
   // Sets the variable status and derives the variable value according to the
   // exact status definition. This can only be called for non-basic variables
   // because the value of a basic variable is computed from the values of the
@@ -354,9 +325,6 @@ class RevisedSimplex {
                                           bool* only_change_is_new_cols,
                                           ColIndex* num_new_cols);
 
-  // Initializes bound-related internal data. Returns true if unchanged.
-  bool InitializeBoundsAndTestIfUnchanged(const LinearProgram& lp);
-
   // Checks if the only change to the bounds is the addition of new columns,
   // and that the new columns have at least one bound equal to zero.
   bool OldBoundsAreUnchangedAndNewVariablesHaveOneBoundAtZero(
@@ -367,10 +335,6 @@ class RevisedSimplex {
 
   // Computes the stopping criterion on the problem objective value.
   void InitializeObjectiveLimit(const LinearProgram& lp);
-
-  // Initializes the variable statuses using a warm-start basis.
-  void InitializeVariableStatusesForWarmStart(const BasisState& state,
-                                              ColIndex num_new_cols);
 
   // Initializes the starting basis. In most cases it starts by the all slack
   // basis and tries to apply some heuristics to replace fixed variables.
@@ -432,7 +396,8 @@ class RevisedSimplex {
   // that adding 'ratio * d_[row]' to the variable value changes it to its
   // target bound.
   template <bool is_entering_reduced_cost_positive>
-  Fractional GetRatio(RowIndex row) const;
+  Fractional GetRatio(const DenseRow& lower_bounds,
+                      const DenseRow& upper_bounds, RowIndex row) const;
 
   // First pass of the Harris ratio test. Returns the harris ratio value which
   // is an upper bound on the ratio value that the leaving variable can take.
@@ -623,10 +588,6 @@ class RevisedSimplex {
   Fractional objective_offset_;
   Fractional objective_scaling_factor_;
 
-  // Array of values representing variable bounds. Indexed by column number.
-  DenseRow lower_bound_;
-  DenseRow upper_bound_;
-
   // Used in dual phase I to keep track of the non-basic dual infeasible
   // columns and their sign of infeasibility (+1 or -1).
   DenseRow dual_infeasibility_improvement_direction_;
@@ -692,13 +653,16 @@ class RevisedSimplex {
   std::vector<std::pair<RowIndex, ColIndex>> pair_to_ignore_;
 
   // Total number of iterations performed.
-  uint64 num_iterations_;
+  uint64_t num_iterations_;
 
   // Number of iterations performed during the first (feasibility) phase.
-  uint64 num_feasibility_iterations_;
+  uint64_t num_feasibility_iterations_;
 
   // Number of iterations performed during the second (optimization) phase.
-  uint64 num_optimization_iterations_;
+  uint64_t num_optimization_iterations_;
+
+  // Deterministic time for DualPhaseIUpdatePriceOnReducedCostChange().
+  int64 num_update_price_operations_ = 0;
 
   // Total time spent in Solve().
   double total_time_;

@@ -16,31 +16,138 @@
 namespace operations_research {
 namespace glop {
 
-VariablesInfo::VariablesInfo(const CompactSparseMatrix& matrix,
-                             const DenseRow& lower_bound,
-                             const DenseRow& upper_bound)
-    : matrix_(matrix),
-      lower_bound_(lower_bound),
-      upper_bound_(upper_bound),
-      boxed_variables_are_relevant_(true) {}
+VariablesInfo::VariablesInfo(const CompactSparseMatrix& matrix)
+    : matrix_(matrix) {}
 
-void VariablesInfo::InitializeAndComputeType() {
+bool VariablesInfo::LoadBoundsAndReturnTrueIfUnchanged(
+    const DenseRow& new_lower_bounds, const DenseRow& new_upper_bounds) {
   const ColIndex num_cols = matrix_.num_cols();
+  DCHECK_EQ(num_cols, new_lower_bounds.size());
+  DCHECK_EQ(num_cols, new_upper_bounds.size());
+
+  // Optim if nothing changed.
+  if (lower_bounds_ == new_lower_bounds && upper_bounds_ == new_upper_bounds) {
+    return true;
+  }
+
+  lower_bounds_ = new_lower_bounds;
+  upper_bounds_ = new_upper_bounds;
+  variable_type_.resize(num_cols, VariableType::UNCONSTRAINED);
+  for (ColIndex col(0); col < num_cols; ++col) {
+    variable_type_[col] = ComputeVariableType(col);
+  }
+  return false;
+}
+
+void VariablesInfo::ResetStatusInfo() {
+  const ColIndex num_cols = matrix_.num_cols();
+  DCHECK_EQ(num_cols, lower_bounds_.size());
+  DCHECK_EQ(num_cols, upper_bounds_.size());
+
+  // TODO(user): These could just be Resized() but there is a bug with the
+  // iteration and resize it seems. Investigate. I suspect the last bucket
+  // is not cleared so you can still iterate on the ones there even if it all
+  // positions before num_cols are set to zero.
+  variable_status_.resize(num_cols, VariableStatus::FREE);
   can_increase_.ClearAndResize(num_cols);
   can_decrease_.ClearAndResize(num_cols);
   is_basic_.ClearAndResize(num_cols);
   not_basic_.ClearAndResize(num_cols);
   non_basic_boxed_variables_.ClearAndResize(num_cols);
 
-  num_entries_in_relevant_columns_ = 0;
+  // This one cannot just be resized.
   boxed_variables_are_relevant_ = true;
+  num_entries_in_relevant_columns_ = 0;
   relevance_.ClearAndResize(num_cols);
+}
 
-  variable_status_.resize(num_cols, VariableStatus::FREE);
-  variable_type_.resize(num_cols, VariableType::UNCONSTRAINED);
+void VariablesInfo::InitializeFromBasisState(ColIndex first_slack_col,
+                                             ColIndex num_new_cols,
+                                             const BasisState& state) {
+  ResetStatusInfo();
+
+  RowIndex num_basic_variables(0);
+  const ColIndex num_cols = lower_bounds_.size();
+  const RowIndex num_rows = ColToRowIndex(num_cols - first_slack_col);
+  DCHECK_LE(num_new_cols, first_slack_col);
+  const ColIndex first_new_col(first_slack_col - num_new_cols);
+
+  // Compute the status for all the columns (note that the slack variables are
+  // already added at the end of the matrix at this stage).
   for (ColIndex col(0); col < num_cols; ++col) {
-    variable_type_[col] = ComputeVariableType(col);
+    // Start with the given "warm" status from the BasisState if it exists.
+    VariableStatus status;
+    if (col < first_new_col && col < state.statuses.size()) {
+      status = state.statuses[col];
+    } else if (col >= first_slack_col &&
+               col - num_new_cols < state.statuses.size()) {
+      status = state.statuses[col - num_new_cols];
+    } else {
+      UpdateToNonBasicStatus(col, DefaultVariableStatus(col));
+      continue;
+    }
+
+    // Remove incompatibilities between the warm status and the current state.
+    switch (status) {
+      case VariableStatus::BASIC:
+        // Do not allow more than num_rows VariableStatus::BASIC variables.
+        if (num_basic_variables == num_rows) {
+          VLOG(1) << "Too many basic variables in the warm-start basis."
+                  << "Only keeping the first ones as VariableStatus::BASIC.";
+          UpdateToNonBasicStatus(col, DefaultVariableStatus(col));
+        } else {
+          ++num_basic_variables;
+          UpdateToBasicStatus(col);
+        }
+        break;
+      case VariableStatus::AT_LOWER_BOUND:
+        if (lower_bounds_[col] == upper_bounds_[col]) {
+          UpdateToNonBasicStatus(col, VariableStatus::FIXED_VALUE);
+        } else {
+          UpdateToNonBasicStatus(col, lower_bounds_[col] == -kInfinity
+                                          ? DefaultVariableStatus(col)
+                                          : status);
+        }
+        break;
+      case VariableStatus::AT_UPPER_BOUND:
+        if (lower_bounds_[col] == upper_bounds_[col]) {
+          UpdateToNonBasicStatus(col, VariableStatus::FIXED_VALUE);
+        } else {
+          UpdateToNonBasicStatus(col, upper_bounds_[col] == kInfinity
+                                          ? DefaultVariableStatus(col)
+                                          : status);
+        }
+        break;
+      default:
+        UpdateToNonBasicStatus(col, DefaultVariableStatus(col));
+    }
   }
+}
+
+void VariablesInfo::InitializeToDefaultStatus() {
+  ResetStatusInfo();
+  const ColIndex num_cols = lower_bounds_.size();
+  for (ColIndex col(0); col < num_cols; ++col) {
+    UpdateToNonBasicStatus(col, DefaultVariableStatus(col));
+  }
+}
+
+VariableStatus VariablesInfo::DefaultVariableStatus(ColIndex col) const {
+  DCHECK_GE(col, 0);
+  DCHECK_LT(col, lower_bounds_.size());
+  if (lower_bounds_[col] == upper_bounds_[col]) {
+    return VariableStatus::FIXED_VALUE;
+  }
+  if (lower_bounds_[col] == -kInfinity && upper_bounds_[col] == kInfinity) {
+    return VariableStatus::FREE;
+  }
+
+  // Returns the bound with the lowest magnitude. Note that it must be finite
+  // because the VariableStatus::FREE case was tested earlier.
+  DCHECK(IsFinite(lower_bounds_[col]) || IsFinite(upper_bounds_[col]));
+  return std::abs(lower_bounds_[col]) <= std::abs(upper_bounds_[col])
+             ? VariableStatus::AT_LOWER_BOUND
+             : VariableStatus::AT_UPPER_BOUND;
 }
 
 void VariablesInfo::MakeBoxedVariableRelevant(bool value) {
@@ -54,14 +161,6 @@ void VariablesInfo::MakeBoxedVariableRelevant(bool value) {
     for (const ColIndex col : non_basic_boxed_variables_) {
       SetRelevance(col, false);
     }
-  }
-}
-
-void VariablesInfo::Update(ColIndex col, VariableStatus status) {
-  if (status == VariableStatus::BASIC) {
-    UpdateToBasicStatus(col);
-  } else {
-    UpdateToNonBasicStatus(col, status);
   }
 }
 
@@ -129,15 +228,15 @@ EntryIndex VariablesInfo::GetNumEntriesInRelevantColumns() const {
 }
 
 VariableType VariablesInfo::ComputeVariableType(ColIndex col) const {
-  DCHECK_LE(lower_bound_[col], upper_bound_[col]);
-  if (lower_bound_[col] == -kInfinity) {
-    if (upper_bound_[col] == kInfinity) {
+  DCHECK_LE(lower_bounds_[col], upper_bounds_[col]);
+  if (lower_bounds_[col] == -kInfinity) {
+    if (upper_bounds_[col] == kInfinity) {
       return VariableType::UNCONSTRAINED;
     }
     return VariableType::UPPER_BOUNDED;
-  } else if (upper_bound_[col] == kInfinity) {
+  } else if (upper_bounds_[col] == kInfinity) {
     return VariableType::LOWER_BOUNDED;
-  } else if (lower_bound_[col] == upper_bound_[col]) {
+  } else if (lower_bounds_[col] == upper_bounds_[col]) {
     return VariableType::FIXED_VARIABLE;
   } else {
     return VariableType::UPPER_AND_LOWER_BOUNDED;

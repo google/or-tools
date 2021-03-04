@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_FLATZINC_MODEL_H_
 #define OR_TOOLS_FLATZINC_MODEL_H_
 
+#include <cstdint>
 #include <map>
 #include <string>
 
@@ -47,15 +48,15 @@ class Model;
 // instead of exactly one value.
 struct Domain {
   // The values will be sorted and duplicate values will be removed.
-  static Domain IntegerList(std::vector<int64> values);
+  static Domain IntegerList(std::vector<int64_t> values);
   static Domain AllInt64();
-  static Domain IntegerValue(int64 value);
-  static Domain Interval(int64 included_min, int64 included_max);
+  static Domain IntegerValue(int64_t value);
+  static Domain Interval(int64_t included_min, int64_t included_max);
   static Domain Boolean();
-  static Domain SetOfIntegerList(std::vector<int64> values);
+  static Domain SetOfIntegerList(std::vector<int64_t> values);
   static Domain SetOfAllInt64();
-  static Domain SetOfIntegerValue(int64 value);
-  static Domain SetOfInterval(int64 included_min, int64 included_max);
+  static Domain SetOfIntegerValue(int64_t value);
+  static Domain SetOfInterval(int64_t included_min, int64_t included_max);
   static Domain SetOfBoolean();
   static Domain EmptyDomain();
 
@@ -63,38 +64,38 @@ struct Domain {
   bool empty() const;
 
   // Returns the min of the domain.
-  int64 Min() const;
+  int64_t Min() const;
 
   // Returns the max of the domain.
-  int64 Max() const;
+  int64_t Max() const;
 
   // Returns the value of the domain. HasOneValue() must return true.
-  int64 Value() const;
+  int64_t Value() const;
 
   // Returns true if the domain is [kint64min..kint64max]
   bool IsAllInt64() const;
 
   // Various inclusion tests on a domain.
-  bool Contains(int64 value) const;
-  bool OverlapsIntList(const std::vector<int64>& vec) const;
-  bool OverlapsIntInterval(int64 lb, int64 ub) const;
+  bool Contains(int64_t value) const;
+  bool OverlapsIntList(const std::vector<int64_t>& vec) const;
+  bool OverlapsIntInterval(int64_t lb, int64_t ub) const;
   bool OverlapsDomain(const Domain& other) const;
 
   // All the following modifiers change the internal representation
   //   list to interval or interval to list.
-  bool IntersectWithSingleton(int64 value);
+  bool IntersectWithSingleton(int64_t value);
   bool IntersectWithDomain(const Domain& domain);
-  bool IntersectWithInterval(int64 interval_min, int64 interval_max);
-  bool IntersectWithListOfIntegers(const std::vector<int64>& integers);
+  bool IntersectWithInterval(int64_t interval_min, int64_t interval_max);
+  bool IntersectWithListOfIntegers(const std::vector<int64_t>& integers);
 
   // Returns true iff the value did belong to the domain, and was removed.
   // Try to remove the value. It returns true if it was actually removed.
   // If the value is inside a large interval, then it will not be removed.
-  bool RemoveValue(int64 value);
+  bool RemoveValue(int64_t value);
   std::string DebugString() const;
 
   // These should never be modified from outside the class.
-  std::vector<int64> values;
+  std::vector<int64_t> values;
   bool is_interval;
   bool display_as_boolean;
   // Indicates if the domain was created as a set domain.
@@ -151,9 +152,9 @@ struct Argument {
     VOID_ARGUMENT,
   };
 
-  static Argument IntegerValue(int64 value);
-  static Argument Interval(int64 imin, int64 imax);
-  static Argument IntegerList(std::vector<int64> values);
+  static Argument IntegerValue(int64_t value);
+  static Argument Interval(int64_t imin, int64_t imax);
+  static Argument IntegerList(std::vector<int64_t> values);
   static Argument DomainList(std::vector<Domain> domains);
   static Argument IntVarRef(IntegerVariable* const var);
   static Argument IntVarRefArray(std::vector<IntegerVariable*> vars);
@@ -168,16 +169,16 @@ struct Argument {
   // list of size 1, interval of size 1, or variable with a singleton domain).
   bool HasOneValue() const;
   // Returns the value of the argument. Does DCHECK(HasOneValue()).
-  int64 Value() const;
+  int64_t Value() const;
   // Returns true if it an integer list, or an array of integer
   // variables (or domain) each having only one value.
   bool IsArrayOfValues() const;
   // Returns true if the argument is an integer value, an integer
   // list, or an interval, and it contains the given value.
   // It will check that the type is actually one of the above.
-  bool Contains(int64 value) const;
+  bool Contains(int64_t value) const;
   // Returns the value of the pos-th element.
-  int64 ValueAt(int pos) const;
+  int64_t ValueAt(int pos) const;
   // Returns the variable inside the argument if the type is INT_VAR_REF,
   // or nullptr otherwise.
   IntegerVariable* Var() const;
@@ -186,7 +187,7 @@ struct Argument {
   IntegerVariable* VarAt(int pos) const;
 
   Type type;
-  std::vector<int64> values;
+  std::vector<int64_t> values;
   std::vector<IntegerVariable*> variables;
   std::vector<Domain> domains;
 };
@@ -253,8 +254,8 @@ struct Annotation {
   static Annotation FunctionCallWithArguments(const std::string& id,
                                               std::vector<Annotation> args);
   static Annotation FunctionCall(const std::string& id);
-  static Annotation Interval(int64 interval_min, int64 interval_max);
-  static Annotation IntegerValue(int64 value);
+  static Annotation Interval(int64_t interval_min, int64_t interval_max);
+  static Annotation IntegerValue(int64_t value);
   static Annotation Variable(IntegerVariable* const var);
   static Annotation VariableList(std::vector<IntegerVariable*> variables);
   static Annotation String(const std::string& str);
@@ -269,8 +270,8 @@ struct Annotation {
   void AppendAllIntegerVariables(std::vector<IntegerVariable*>* vars) const;
 
   Type type;
-  int64 interval_min;
-  int64 interval_max;
+  int64_t interval_min;
+  int64_t interval_max;
   std::string id;
   std::vector<Annotation> annotations;
   std::vector<IntegerVariable*> variables;
@@ -281,11 +282,11 @@ struct Annotation {
 // It follows the flatzinc specification (www.minizinc.org).
 struct SolutionOutputSpecs {
   struct Bounds {
-    Bounds(int64 min_value_, int64 max_value_)
+    Bounds(int64_t min_value_, int64_t max_value_)
         : min_value(min_value_), max_value(max_value_) {}
     std::string DebugString() const;
-    int64 min_value;
-    int64 max_value;
+    int64_t min_value;
+    int64_t max_value;
   };
 
   // Will output: name = <variable value>.
@@ -324,7 +325,7 @@ class Model {
   // are owned by the model and will remain live for its lifetime.
   IntegerVariable* AddVariable(const std::string& name, const Domain& domain,
                                bool defined);
-  IntegerVariable* AddConstant(int64 value);
+  IntegerVariable* AddConstant(int64_t value);
   // Creates and add a constraint to the model.
   void AddConstraint(const std::string& id, std::vector<Argument> arguments,
                      bool is_domain);

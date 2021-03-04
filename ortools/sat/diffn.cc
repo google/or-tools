@@ -14,6 +14,8 @@
 #include "ortools/sat/diffn.h"
 
 #include <algorithm>
+#include <cstdint>
+#include <limits>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_join.h"
@@ -77,8 +79,8 @@ void AddIsEqualToMaxOf(IntegerVariable max_var,
 void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x_intervals,
                              SchedulingConstraintHelper* x,
                              SchedulingConstraintHelper* y, Model* model) {
-  int64 min_starts = kint64max;
-  int64 max_ends = kint64min;
+  int64_t min_starts = std::numeric_limits<int64_t>::max();
+  int64_t max_ends = std::numeric_limits<int64_t>::min();
   std::vector<AffineExpression> sizes;
   for (int box = 0; box < y->NumTasks(); ++box) {
     min_starts = std::min(min_starts, y->StartMin(box).value());
@@ -97,7 +99,7 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x_intervals,
   // (max_end - min_start) >= capacity.
   const AffineExpression capacity(
       model->Add(NewIntegerVariable(0, CapSub(max_ends, min_starts))));
-  const std::vector<int64> coeffs = {-capacity.coeff.value(), -1, 1};
+  const std::vector<int64_t> coeffs = {-capacity.coeff.value(), -1, 1};
   model->Add(
       WeightedSumGreaterOrEqual({capacity.var, min_start_var, max_end_var},
                                 coeffs, capacity.constant.value()));
@@ -118,7 +120,7 @@ IntegerValue FindCanonicalValue(IntegerValue lb, IntegerValue ub) {
     return -FindCanonicalValue(-ub, -lb);
   }
 
-  int64 mask = 0;
+  int64_t mask = 0;
   IntegerValue candidate = ub;
   for (int o = 0; o < 62; ++o) {
     mask = 2 * mask + 1;
@@ -424,8 +426,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
     y_.ResetFromSubset(y, boxes);
 
     // Collect the common overlapping coordinates of all boxes.
-    IntegerValue lb(kint64min);
-    IntegerValue ub(kint64max);
+    IntegerValue lb(std::numeric_limits<int64_t>::min());
+    IntegerValue ub(std::numeric_limits<int64_t>::max());
     for (int i = 0; i < y_.NumTasks(); ++i) {
       lb = std::max(lb, y_.StartMax(i));
       ub = std::min(ub, y_.EndMin(i) - 1);

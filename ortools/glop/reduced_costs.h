@@ -183,6 +183,9 @@ class ReducedCosts {
   // Visible for testing.
   const DenseRow& GetCostPerturbations() const { return cost_perturbations_; }
 
+  // The deterministic time used by this class.
+  double DeterministicTime() const { return deterministic_time_; }
+
  private:
   // Statistics about this class.
   struct Stats : public StatsGroup {
@@ -283,6 +286,8 @@ class ReducedCosts {
 
   // Indicates if the dual-infeasible positions are maintained or not.
   bool are_dual_infeasible_positions_maintained_;
+
+  double deterministic_time_ = 0.0;
 
   DISALLOW_COPY_AND_ASSIGN(ReducedCosts);
 };

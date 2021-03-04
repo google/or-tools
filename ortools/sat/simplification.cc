@@ -14,6 +14,7 @@
 #include "ortools/sat/simplification.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <limits>
 #include <set>
 #include <utility>
@@ -330,7 +331,7 @@ bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed,
   WallTimer timer;
   timer.Start();
   if (log_info) {
-    int64 num_removable = 0;
+    int64_t num_removable = 0;
     for (const bool b : can_be_removed) {
       if (b) ++num_removable;
     }
@@ -536,10 +537,10 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
   AddToBvaPriorityQueue(l);
 }
 
-uint64 SatPresolver::ComputeSignatureOfClauseVariables(ClauseIndex ci) {
-  uint64 signature = 0;
+uint64_t SatPresolver::ComputeSignatureOfClauseVariables(ClauseIndex ci) {
+  uint64_t signature = 0;
   for (const Literal l : clauses_[ci]) {
-    signature |= (uint64{1} << (l.Variable().value() % 64));
+    signature |= (uint64_t{1} << (l.Variable().value() % 64));
   }
   DCHECK_EQ(signature == 0, clauses_[ci].empty());
   return signature;
@@ -551,7 +552,7 @@ uint64 SatPresolver::ComputeSignatureOfClauseVariables(ClauseIndex ci) {
 bool SatPresolver::ProcessClauseToSimplifyOthersUsingLiteral(
     ClauseIndex clause_index, Literal lit) {
   const std::vector<Literal>& clause = clauses_[clause_index];
-  const uint64 clause_signature = signatures_[clause_index];
+  const uint64_t clause_signature = signatures_[clause_index];
   LiteralIndex opposite_literal;
 
   // Try to simplify the clauses containing 'lit'. We take advantage of this
@@ -560,7 +561,7 @@ bool SatPresolver::ProcessClauseToSimplifyOthersUsingLiteral(
   bool need_cleaning = false;
   num_inspected_signatures_ += literal_to_clauses_[lit.Index()].size();
   for (const ClauseIndex ci : literal_to_clauses_[lit.Index()]) {
-    const uint64 ci_signature = signatures_[ci];
+    const uint64_t ci_signature = signatures_[ci];
 
     // This allows to check for empty clause without fetching the memory at
     // clause_[ci]. It can have a huge time impact on large problems.
@@ -648,9 +649,9 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
     int new_index = 0;
     bool something_removed = false;
     auto& occurrence_list_ref = literal_to_clauses_[lit.NegatedIndex()];
-    const uint64 clause_signature = signatures_[clause_index];
+    const uint64_t clause_signature = signatures_[clause_index];
     for (const ClauseIndex ci : occurrence_list_ref) {
-      const uint64 ci_signature = signatures_[ci];
+      const uint64_t ci_signature = signatures_[ci];
       DCHECK_EQ(ci_signature, ComputeSignatureOfClauseVariables(ci));
       if (ci_signature == 0) continue;
 
@@ -930,7 +931,7 @@ void SatPresolver::DisplayStats(double elapsed_seconds) {
 
 bool SimplifyClause(const std::vector<Literal>& a, std::vector<Literal>* b,
                     LiteralIndex* opposite_literal,
-                    int64* num_inspected_literals) {
+                    int64_t* num_inspected_literals) {
   if (b->size() < a.size()) return false;
   DCHECK(std::is_sorted(a.begin(), a.end()));
   DCHECK(std::is_sorted(b->begin(), b->end()));
@@ -1090,7 +1091,7 @@ class PropagationGraph {
   // Returns the set of node adjacent to the given one.
   // Interface needed by FindStronglyConnectedComponents(), note that it needs
   // to be const.
-  const std::vector<int32>& operator[](int32 index) const {
+  const std::vector<int32_t>& operator[](int32_t index) const {
     scratchpad_.clear();
     solver_->Backtrack(0);
 
@@ -1119,7 +1120,7 @@ class PropagationGraph {
   }
 
  private:
-  mutable std::vector<int32> scratchpad_;
+  mutable std::vector<int32_t> scratchpad_;
   SatSolver* const solver_;
   const double deterministic_time_limit;
 
@@ -1139,8 +1140,8 @@ void ProbeAndFindEquivalentLiteral(
 
   PropagationGraph graph(
       solver->parameters().presolve_probing_deterministic_time_limit(), solver);
-  const int32 size = solver->NumVariables() * 2;
-  std::vector<std::vector<int32>> scc;
+  const int32_t size = solver->NumVariables() * 2;
+  std::vector<std::vector<int32_t>> scc;
   FindStronglyConnectedComponents(size, graph, &scc);
 
   // We have no guarantee that the cycle of x and not(x) touch the same
@@ -1153,7 +1154,7 @@ void ProbeAndFindEquivalentLiteral(
   //
   // Because of this, we "merge" the cycles.
   MergingPartition partition(size);
-  for (const std::vector<int32>& component : scc) {
+  for (const std::vector<int32_t>& component : scc) {
     if (component.size() > 1) {
       if (mapping->empty()) mapping->resize(size, LiteralIndex(-1));
       const Literal representative((LiteralIndex(component[0])));

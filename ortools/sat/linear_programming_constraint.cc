@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <iterator>
 #include <limits>
 #include <string>
@@ -65,8 +66,10 @@ void ScatteredIntegerVector::ClearAndResize(int size) {
 }
 
 bool ScatteredIntegerVector::Add(glop::ColIndex col, IntegerValue value) {
-  const int64 add = CapAdd(value.value(), dense_vector_[col].value());
-  if (add == kint64min || add == kint64max) return false;
+  const int64_t add = CapAdd(value.value(), dense_vector_[col].value());
+  if (add == std::numeric_limits<int64_t>::min() ||
+      add == std::numeric_limits<int64_t>::max())
+    return false;
   dense_vector_[col] = IntegerValue(add);
   if (is_sparse_ && is_zeros_[col]) {
     is_zeros_[col] = false;
@@ -392,7 +395,7 @@ LPSolveInfo LinearProgrammingConstraint::SolveLpForBranching() {
     // Record the objective bound.
     info.lp_objective = simplex_.GetObjectiveValue();
     info.new_obj_bound = IntegerValue(
-        static_cast<int64>(std::ceil(info.lp_objective - kCpEpsilon)));
+        static_cast<int64_t>(std::ceil(info.lp_objective - kCpEpsilon)));
   }
   return info;
 }
@@ -1268,7 +1271,8 @@ void LinearProgrammingConstraint::AddMirCuts() {
       }
       if (CapAdd(CapProd(max_magnitude.value(), std::abs(mult1.value())),
                  CapProd(infinity_norms_[row_to_combine].value(),
-                         std::abs(mult2.value()))) == kint64max) {
+                         std::abs(mult2.value()))) ==
+          std::numeric_limits<int64_t>::max()) {
         break;
       }
 
@@ -1339,27 +1343,27 @@ void LinearProgrammingConstraint::AddZeroHalfCuts() {
 }
 
 void LinearProgrammingConstraint::UpdateSimplexIterationLimit(
-    const int64 min_iter, const int64 max_iter) {
+    const int64_t min_iter, const int64_t max_iter) {
   if (sat_parameters_.linearization_level() < 2) return;
-  const int64 num_degenerate_columns = CalculateDegeneracy();
-  const int64 num_cols = simplex_.GetProblemNumCols().value();
+  const int64_t num_degenerate_columns = CalculateDegeneracy();
+  const int64_t num_cols = simplex_.GetProblemNumCols().value();
   if (num_cols <= 0) {
     return;
   }
   CHECK_GT(num_cols, 0);
-  const int64 decrease_factor = (10 * num_degenerate_columns) / num_cols;
+  const int64_t decrease_factor = (10 * num_degenerate_columns) / num_cols;
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE) {
     // We reached here probably because we predicted wrong. We use this as a
     // signal to increase the iterations or punish less for degeneracy compare
     // to the other part.
     if (is_degenerate_) {
-      next_simplex_iter_ /= std::max(int64{1}, decrease_factor);
+      next_simplex_iter_ /= std::max(int64_t{1}, decrease_factor);
     } else {
       next_simplex_iter_ *= 2;
     }
   } else if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
     if (is_degenerate_) {
-      next_simplex_iter_ /= std::max(int64{1}, 2 * decrease_factor);
+      next_simplex_iter_ /= std::max(int64_t{1}, 2 * decrease_factor);
     } else {
       // This is the most common case. We use the size of the problem to
       // determine the limit and ignore the previous limit.
@@ -1492,8 +1496,8 @@ bool LinearProgrammingConstraint::Propagate() {
     // already take care of the scaling so that it returns an objective in the
     // CP world.
     const double relaxed_optimal_objective = simplex_.GetObjectiveValue();
-    const IntegerValue approximate_new_lb(
-        static_cast<int64>(std::ceil(relaxed_optimal_objective - kCpEpsilon)));
+    const IntegerValue approximate_new_lb(static_cast<int64_t>(
+        std::ceil(relaxed_optimal_objective - kCpEpsilon)));
 
     // TODO(user): Maybe do a bit less computation when we cannot propagate
     // anything.
@@ -1665,8 +1669,9 @@ bool LinearProgrammingConstraint::PossibleOverflow(
       return true;
     }
   }
-  const int64 slack = CapAdd(lower_bound.value(), -constraint.ub.value());
-  if (slack == kint64min || slack == kint64max) {
+  const int64_t slack = CapAdd(lower_bound.value(), -constraint.ub.value());
+  if (slack == std::numeric_limits<int64_t>::min() ||
+      slack == std::numeric_limits<int64_t>::max()) {
     return true;
   }
   return false;
@@ -1740,7 +1745,7 @@ void LinearProgrammingConstraint::PreventOverflow(LinearConstraint* constraint,
   constraint->vars.resize(new_size);
   constraint->coeffs.resize(new_size);
 
-  constraint->ub = IntegerValue(static_cast<int64>(
+  constraint->ub = IntegerValue(static_cast<int64_t>(
       FloorRatio128(absl::int128(constraint->ub.value()) - adjust, divisor)));
 }
 
@@ -2136,7 +2141,7 @@ bool LinearProgrammingConstraint::FillExactDualRayReason() {
   return true;
 }
 
-int64 LinearProgrammingConstraint::CalculateDegeneracy() {
+int64_t LinearProgrammingConstraint::CalculateDegeneracy() {
   const glop::ColIndex num_vars = simplex_.GetProblemNumCols();
   int num_non_basic_with_zero_rc = 0;
   for (glop::ColIndex i(0); i < num_vars; ++i) {
@@ -2147,7 +2152,7 @@ int64 LinearProgrammingConstraint::CalculateDegeneracy() {
     }
     num_non_basic_with_zero_rc++;
   }
-  const int64 num_cols = simplex_.GetProblemNumCols().value();
+  const int64_t num_cols = simplex_.GetProblemNumCols().value();
   is_degenerate_ = num_non_basic_with_zero_rc >= 0.3 * num_cols;
   return num_non_basic_with_zero_rc;
 }
@@ -2206,7 +2211,7 @@ void AddOutgoingCut(
     int num_nodes, int subset_size, const std::vector<bool>& in_subset,
     const std::vector<int>& tails, const std::vector<int>& heads,
     const std::vector<Literal>& literals,
-    const std::vector<double>& literal_lp_values, int64 rhs_lower_bound,
+    const std::vector<double>& literal_lp_values, int64_t rhs_lower_bound,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
     LinearConstraintManager* manager, Model* model) {
   // A node is said to be optional if it can be excluded from the subcircuit,
@@ -2301,7 +2306,7 @@ void SeparateSubtourInequalities(
     int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
     const std::vector<Literal>& literals,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
-    absl::Span<const int64> demands, int64 capacity,
+    absl::Span<const int64_t> demands, int64_t capacity,
     LinearConstraintManager* manager, Model* model) {
   if (num_nodes <= 2) return;
 
@@ -2433,9 +2438,9 @@ void SeparateSubtourInequalities(
 
   // Compute the total demands in order to know the minimum incoming/outgoing
   // flow.
-  int64 total_demands = 0;
+  int64_t total_demands = 0;
   if (!demands.empty()) {
-    for (const int64 demand : demands) total_demands += demand;
+    for (const int64_t demand : demands) total_demands += demand;
   }
 
   // Process each subsets and add any violated cut.
@@ -2447,7 +2452,7 @@ void SeparateSubtourInequalities(
 
     // These fields will be left untouched if demands.empty().
     bool contain_depot = false;
-    int64 subset_demand = 0;
+    int64_t subset_demand = 0;
 
     // Initialize "in_subset" and the subset demands.
     for (const int n : subset) {
@@ -2471,7 +2476,7 @@ void SeparateSubtourInequalities(
     //   [edge => value_head >= value_tail + edge_weight].
     // We could take the minimum incoming edge weight per node in the set, and
     // use the cumul variable domain to infer some capacity.
-    int64 min_outgoing_flow = 1;
+    int64_t min_outgoing_flow = 1;
     if (!demands.empty()) {
       min_outgoing_flow =
           contain_depot
@@ -2482,7 +2487,7 @@ void SeparateSubtourInequalities(
     // We still need to serve nodes with a demand of zero, and in the corner
     // case where all node in subset have a zero demand, the formula above
     // result in a min_outgoing_flow of zero.
-    min_outgoing_flow = std::max(min_outgoing_flow, int64{1});
+    min_outgoing_flow = std::max(min_outgoing_flow, int64_t{1});
 
     // Compute the current outgoing flow out of the subset.
     //
@@ -2558,8 +2563,8 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
                                     const std::vector<int>& tails,
                                     const std::vector<int>& heads,
                                     const std::vector<Literal>& literals,
-                                    const std::vector<int64>& demands,
-                                    int64 capacity, Model* model) {
+                                    const std::vector<int64_t>& demands,
+                                    int64_t capacity, Model* model) {
   CutGenerator result;
   result.vars = GetAssociatedVariables(literals, model);
   result.generate_cuts =

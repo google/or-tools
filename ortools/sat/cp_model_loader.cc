@@ -14,6 +14,8 @@
 #include "ortools/sat/cp_model_loader.h"
 
 #include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <map>
 #include <memory>
 #include <set>
@@ -58,20 +60,20 @@ namespace {
 
 template <typename Values>
 std::vector<int64> ValuesFromProto(const Values& values) {
-  return std::vector<int64>(values.begin(), values.end());
+  return std::vector<int64_t>(values.begin(), values.end());
 }
 
 void ComputeLinearBounds(const LinearConstraintProto& proto,
                          CpModelMapping* mapping, IntegerTrail* integer_trail,
-                         int64* sum_min, int64* sum_max) {
+                         int64_t* sum_min, int64_t* sum_max) {
   *sum_min = 0;
   *sum_max = 0;
 
   for (int i = 0; i < proto.vars_size(); ++i) {
-    const int64 coeff = proto.coeffs(i);
+    const int64_t coeff = proto.coeffs(i);
     const IntegerVariable var = mapping->Integer(proto.vars(i));
-    const int64 lb = integer_trail->LowerBound(var).value();
-    const int64 ub = integer_trail->UpperBound(var).value();
+    const int64_t lb = integer_trail->LowerBound(var).value();
+    const int64_t ub = integer_trail->UpperBound(var).value();
     if (coeff >= 0) {
       (*sum_min) += coeff * lb;
       (*sum_max) += coeff * ub;
@@ -90,16 +92,16 @@ bool ConstraintIsEq(const LinearConstraintProto& proto) {
 // We check if the constraint is a sum(ax * xi) != value.
 bool ConstraintIsNEq(const LinearConstraintProto& proto,
                      CpModelMapping* mapping, IntegerTrail* integer_trail,
-                     int64* single_value) {
-  int64 sum_min = 0;
-  int64 sum_max = 0;
+                     int64_t* single_value) {
+  int64_t sum_min = 0;
+  int64_t sum_max = 0;
   ComputeLinearBounds(proto, mapping, integer_trail, &sum_min, &sum_max);
 
   const Domain complement =
       Domain(sum_min, sum_max)
           .IntersectionWith(ReadDomainFromProto(proto).Complement());
   if (complement.IsEmpty()) return false;
-  const int64 value = complement.Min();
+  const int64_t value = complement.Min();
 
   if (complement.Size() == 1) {
     if (single_value != nullptr) {
@@ -346,7 +348,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
   struct EqualityDetectionHelper {
     const ConstraintProto* ct;
     sat::Literal literal;
-    int64 value;
+    int64_t value;
     bool is_equality;  // false if != instead.
 
     bool operator<(const EqualityDetectionHelper& o) const {
@@ -513,7 +515,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
     if (encoding.empty()) continue;
     num_constraints += encoding.size();
 
-    absl::flat_hash_set<int64> values;
+    absl::flat_hash_set<int64_t> values;
     for (int j = 0; j + 1 < encoding.size(); j++) {
       if ((encoding[j].value != encoding[j + 1].value) ||
           (encoding[j].literal != encoding[j + 1].literal.Negated()) ||
@@ -584,8 +586,8 @@ void CpModelMapping::PropagateEncodingFromEquivalenceRelations(
   auto* sat_solver = m->GetOrCreate<SatSolver>();
 
   // Loop over all contraints and find affine ones.
-  int64 num_associations = 0;
-  int64 num_set_to_false = 0;
+  int64_t num_associations = 0;
+  int64_t num_set_to_false = 0;
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (!ct.enforcement_literal().empty()) continue;
     if (ct.constraint_case() != ConstraintProto::kLinear) continue;
@@ -722,8 +724,8 @@ void CpModelMapping::DetectOptionalVariables(const CpModelProto& model_proto,
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   for (int var = 0; var < num_proto_variables; ++var) {
     const IntegerVariableProto& var_proto = model_proto.variables(var);
-    const int64 min = var_proto.domain(0);
-    const int64 max = var_proto.domain(var_proto.domain().size() - 1);
+    const int64_t min = var_proto.domain(0);
+    const int64_t max = var_proto.domain(var_proto.domain().size() - 1);
     if (min == max) continue;
     if (min == 0 && max == 1) continue;
     if (enforcement_intersection[var].empty()) continue;
@@ -753,7 +755,7 @@ class FullEncodingFixedPointComputer {
   void ComputeFixedPoint();
 
  private:
-  DEFINE_INT_TYPE(ConstraintIndex, int32);
+  DEFINE_INT_TYPE(ConstraintIndex, int32_t);
 
   // Constraint ct is interested by (full-encoding) state of variable.
   void Register(ConstraintIndex ct_index, int variable) {
@@ -852,13 +854,13 @@ void FullEncodingFixedPointComputer::ComputeFixedPoint() {
     if (!mapping_->IsInteger(var) || IsFullyEncoded(var)) continue;
     const IntegerVariableProto& int_var_proto = model_proto_.variables(var);
     const Domain domain = ReadDomainFromProto(int_var_proto);
-    int64 domain_size = domain.Size();
-    int64 num_diff_or_equal_var_constraints = 0;
-    int64 num_potential_encoded_values_without_bounds = 0;
+    int64_t domain_size = domain.Size();
+    int64_t num_diff_or_equal_var_constraints = 0;
+    int64_t num_potential_encoded_values_without_bounds = 0;
 
     if (domain_size <= 2) continue;
 
-    const absl::flat_hash_set<int64>& value_set =
+    const absl::flat_hash_set<int64_t>& value_set =
         mapping_->PotentialEncodedValues(var);
     for (const int value : value_set) {
       if (value > domain.Min() && value < domain.Max() &&
@@ -1154,7 +1156,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.linear().vars());
-  const std::vector<int64> coeffs = ValuesFromProto(ct.linear().coeffs());
+  const std::vector<int64_t> coeffs = ValuesFromProto(ct.linear().coeffs());
 
   // Compute the min/max to relax the bounds if needed.
   //
@@ -1195,7 +1197,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
                                IntegerValue(ct.linear().domain(0)), m);
     }
 
-    int64 single_value = 0;
+    int64_t single_value = 0;
     if (params.boolean_encoding_level() > 0 &&
         ConstraintIsNEq(ct.linear(), mapping, integer_trail, &single_value) &&
         single_value != min_sum && single_value != max_sum &&
@@ -1215,10 +1217,10 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   }
 
   if (ct.linear().domain_size() == 2) {
-    int64 lb = ct.linear().domain(0);
-    int64 ub = ct.linear().domain(1);
-    if (min_sum >= lb) lb = kint64min;
-    if (max_sum <= ub) ub = kint64max;
+    int64_t lb = ct.linear().domain(0);
+    int64_t ub = ct.linear().domain(1);
+    if (min_sum >= lb) lb = std::numeric_limits<int64_t>::min();
+    if (max_sum <= ub) ub = std::numeric_limits<int64_t>::max();
 
     if (!HasEnforcementLiteral(ct)) {
       if (all_booleans) {
@@ -1231,21 +1233,21 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
         }
         m->Add(BooleanLinearConstraint(lb, ub, &cst));
       } else {
-        if (lb != kint64min) {
+        if (lb != std::numeric_limits<int64_t>::min()) {
           m->Add(WeightedSumGreaterOrEqual(vars, coeffs, lb));
         }
-        if (ub != kint64max) {
+        if (ub != std::numeric_limits<int64_t>::max()) {
           m->Add(WeightedSumLowerOrEqual(vars, coeffs, ub));
         }
       }
     } else {
       const std::vector<Literal> enforcement_literals =
           mapping->Literals(ct.enforcement_literal());
-      if (lb != kint64min) {
+      if (lb != std::numeric_limits<int64_t>::min()) {
         m->Add(ConditionalWeightedSumGreaterOrEqual(enforcement_literals, vars,
                                                     coeffs, lb));
       }
-      if (ub != kint64max) {
+      if (ub != std::numeric_limits<int64_t>::max()) {
         m->Add(ConditionalWeightedSumLowerOrEqual(enforcement_literals, vars,
                                                   coeffs, ub));
       }
@@ -1258,21 +1260,21 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
 
     std::vector<Literal> clause;
     for (int i = 0; i < ct.linear().domain_size(); i += 2) {
-      int64 lb = ct.linear().domain(i);
-      int64 ub = ct.linear().domain(i + 1);
-      if (min_sum >= lb) lb = kint64min;
-      if (max_sum <= ub) ub = kint64max;
+      int64_t lb = ct.linear().domain(i);
+      int64_t ub = ct.linear().domain(i + 1);
+      if (min_sum >= lb) lb = std::numeric_limits<int64_t>::min();
+      if (max_sum <= ub) ub = std::numeric_limits<int64_t>::max();
 
       const Literal subdomain_literal(
           special_case && i > 0 ? clause.back().Negated()
                                 : Literal(m->Add(NewBooleanVariable()), true));
       clause.push_back(subdomain_literal);
 
-      if (lb != kint64min) {
+      if (lb != std::numeric_limits<int64_t>::min()) {
         m->Add(ConditionalWeightedSumGreaterOrEqual({subdomain_literal}, vars,
                                                     coeffs, lb));
       }
-      if (ub != kint64max) {
+      if (ub != std::numeric_limits<int64_t>::max()) {
         m->Add(ConditionalWeightedSumLowerOrEqual({subdomain_literal}, vars,
                                                   coeffs, ub));
       }
@@ -1293,13 +1295,13 @@ void LoadAllDiffConstraint(const ConstraintProto& ct, Model* m) {
   IntegerTrail* integer_trail = m->GetOrCreate<IntegerTrail>();
   IntegerEncoder* encoder = m->GetOrCreate<IntegerEncoder>();
   int num_fully_encoded = 0;
-  int64 max_domain_size = 0;
+  int64_t max_domain_size = 0;
   for (const IntegerVariable variable : vars) {
     if (encoder->VariableIsFullyEncoded(variable)) num_fully_encoded++;
 
     IntegerValue lb = integer_trail->LowerBound(variable);
     IntegerValue ub = integer_trail->UpperBound(variable);
-    const int64 domain_size = ub.value() - lb.value() + 1;
+    const int64_t domain_size = ub.value() - lb.value() + 1;
     max_domain_size = std::max(max_domain_size, domain_size);
   }
 
@@ -1511,10 +1513,10 @@ void LoadElementConstraintBounds(const ConstraintProto& ct, Model* m) {
 
     if (vars[i] == target) continue;
     if (m->Get(IsFixed(target))) {
-      const int64 value = m->Get(Value(target));
+      const int64_t value = m->Get(Value(target));
       m->Add(ImpliesInInterval(r, vars[i], value, value));
     } else if (m->Get(IsFixed(vars[i]))) {
-      const int64 value = m->Get(Value(vars[i]));
+      const int64_t value = m->Get(Value(vars[i]));
       m->Add(ImpliesInInterval(r, target, value, value));
     } else {
       m->Add(ConditionalLowerOrEqualWithOffset(vars[i], target, 0, r));
@@ -1744,10 +1746,10 @@ void LoadTableConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.table().vars());
-  const std::vector<int64> values = ValuesFromProto(ct.table().values());
+  const std::vector<int64_t> values = ValuesFromProto(ct.table().values());
   const int num_vars = vars.size();
   const int num_tuples = values.size() / num_vars;
-  std::vector<std::vector<int64>> tuples(num_tuples);
+  std::vector<std::vector<int64_t>> tuples(num_tuples);
   int count = 0;
   for (int i = 0; i < num_tuples; ++i) {
     for (int j = 0; j < num_vars; ++j) {
@@ -1767,7 +1769,7 @@ void LoadAutomatonConstraint(const ConstraintProto& ct, Model* m) {
       mapping->Integers(ct.automaton().vars());
 
   const int num_transitions = ct.automaton().transition_tail_size();
-  std::vector<std::vector<int64>> transitions;
+  std::vector<std::vector<int64_t>> transitions;
   transitions.reserve(num_transitions);
   for (int i = 0; i < num_transitions; ++i) {
     transitions.push_back({ct.automaton().transition_tail(i),
@@ -1775,8 +1777,8 @@ void LoadAutomatonConstraint(const ConstraintProto& ct, Model* m) {
                            ct.automaton().transition_head(i)});
   }
 
-  const int64 starting_state = ct.automaton().starting_state();
-  const std::vector<int64> final_states =
+  const int64_t starting_state = ct.automaton().starting_state();
+  const std::vector<int64_t> final_states =
       ValuesFromProto(ct.automaton().final_states());
   m->Add(TransitionConstraint(vars, transitions, starting_state, final_states));
 }

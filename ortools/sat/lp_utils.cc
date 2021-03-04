@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <string>
 #include <vector>
@@ -197,7 +198,7 @@ void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model) {
   // to zero coefficient around 1e-7. But for large domain, we need lower coeff
   // than that, around 1e-12 with the default params.mip_max_bound(). This also
   // depends on the size of the constraint.
-  int64 num_removed = 0;
+  int64_t num_removed = 0;
   double largest_removed = 0.0;
   const int num_constraints = mp_model->constraint_size();
   for (int c = 0; c < num_constraints; ++c) {
@@ -491,7 +492,7 @@ struct ConstraintScaler {
   double max_scaling_factor = 0.0;
 
   double wanted_precision = 1e-6;
-  int64 scaling_target = int64{1} << 50;
+  int64_t scaling_target = int64_t{1} << 50;
   std::vector<int> var_indices;
   std::vector<double> coefficients;
   std::vector<double> lower_bounds;
@@ -534,8 +535,8 @@ ConstraintProto* ConstraintScaler::AddConstraint(
   const int num_coeffs = mp_constraint.coefficient_size();
   for (int i = 0; i < num_coeffs; ++i) {
     const auto& var_proto = cp_model->variables(mp_constraint.var_index(i));
-    const int64 lb = var_proto.domain(0);
-    const int64 ub = var_proto.domain(var_proto.domain_size() - 1);
+    const int64_t lb = var_proto.domain(0);
+    const int64_t ub = var_proto.domain(var_proto.domain_size() - 1);
     if (lb == 0 && ub == 0) continue;
 
     const double coeff = mp_constraint.coefficient(i);
@@ -584,7 +585,7 @@ ConstraintProto* ConstraintScaler::AddConstraint(
     }
   }
 
-  const int64 gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
+  const int64_t gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
   max_relative_coeff_error =
       std::max(relative_coeff_error, max_relative_coeff_error);
   max_scaling_factor = std::max(scaling_factor / gcd, max_scaling_factor);
@@ -595,7 +596,7 @@ ConstraintProto* ConstraintScaler::AddConstraint(
 
   for (int i = 0; i < coefficients.size(); ++i) {
     const double scaled_value = coefficients[i] * scaling_factor;
-    const int64 value = static_cast<int64>(std::round(scaled_value)) / gcd;
+    const int64_t value = static_cast<int64_t>(std::round(scaled_value)) / gcd;
     if (value != 0) {
       if (!mp_model.variable(var_indices[i]).is_integer()) {
         relax_bound = true;
@@ -614,10 +615,10 @@ ConstraintProto* ConstraintScaler::AddConstraint(
     lb -= std::max(std::abs(lb), 1.0) * wanted_precision;
   }
   const Fractional scaled_lb = std::ceil(lb * scaling_factor);
-  if (lb == -kInfinity || scaled_lb <= kint64min) {
-    arg->add_domain(kint64min);
+  if (lb == -kInfinity || scaled_lb <= std::numeric_limits<int64_t>::min()) {
+    arg->add_domain(std::numeric_limits<int64_t>::min());
   } else {
-    arg->add_domain(CeilRatio(IntegerValue(static_cast<int64>(scaled_lb)),
+    arg->add_domain(CeilRatio(IntegerValue(static_cast<int64_t>(scaled_lb)),
                               IntegerValue(gcd))
                         .value());
   }
@@ -626,10 +627,10 @@ ConstraintProto* ConstraintScaler::AddConstraint(
     ub += std::max(std::abs(ub), 1.0) * wanted_precision;
   }
   const Fractional scaled_ub = std::floor(ub * scaling_factor);
-  if (ub == kInfinity || scaled_ub >= kint64max) {
-    arg->add_domain(kint64max);
+  if (ub == kInfinity || scaled_ub >= std::numeric_limits<int64_t>::max()) {
+    arg->add_domain(std::numeric_limits<int64_t>::max());
   } else {
-    arg->add_domain(FloorRatio(IntegerValue(static_cast<int64>(scaled_ub)),
+    arg->add_domain(FloorRatio(IntegerValue(static_cast<int64_t>(scaled_ub)),
                                IntegerValue(gcd))
                         .value());
   }
@@ -658,11 +659,12 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
   // similar condition in disguise because problem with a difference of more
   // than 6 magnitudes between the variable values will likely run into numeric
   // trouble.
-  const int64 kMaxVariableBound = static_cast<int64>(params.mip_max_bound());
+  const int64_t kMaxVariableBound =
+      static_cast<int64_t>(params.mip_max_bound());
 
   int num_truncated_bounds = 0;
   int num_small_domains = 0;
-  const int64 kSmallDomainSize = 1000;
+  const int64_t kSmallDomainSize = 1000;
   const double kWantedPrecision = params.mip_wanted_precision();
 
   // Add the variables.
@@ -680,14 +682,16 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
     if (mp_var.lower_bound() > kMaxVariableBound) {
       // Fix var to its lower bound.
       ++num_truncated_bounds;
-      const int64 value = static_cast<int64>(std::round(mp_var.lower_bound()));
+      const int64_t value =
+          static_cast<int64_t>(std::round(mp_var.lower_bound()));
       cp_var->add_domain(value);
       cp_var->add_domain(value);
       continue;
     } else if (mp_var.upper_bound() < -kMaxVariableBound) {
       // Fix var to its upper_bound.
       ++num_truncated_bounds;
-      const int64 value = static_cast<int64>(std::round(mp_var.upper_bound()));
+      const int64_t value =
+          static_cast<int64_t>(std::round(mp_var.upper_bound()));
       cp_var->add_domain(value);
       cp_var->add_domain(value);
       continue;
@@ -704,8 +708,8 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
 
       // Note that the cast is "perfect" because we forbid large values.
       cp_var->add_domain(
-          static_cast<int64>(lower ? std::ceil(bound - kWantedPrecision)
-                                   : std::floor(bound + kWantedPrecision)));
+          static_cast<int64_t>(lower ? std::ceil(bound - kWantedPrecision)
+                                     : std::floor(bound + kWantedPrecision)));
     }
 
     if (cp_var->domain(0) > cp_var->domain(1)) {
@@ -730,7 +734,8 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
       << kSmallDomainSize << " values.";
 
   ConstraintScaler scaler;
-  const int64 kScalingTarget = int64{1} << params.mip_max_activity_exponent();
+  const int64_t kScalingTarget = int64_t{1}
+                                 << params.mip_max_activity_exponent();
   scaler.wanted_precision = kWantedPrecision;
   scaler.scaling_target = kScalingTarget;
 
@@ -828,8 +833,8 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
     if (mp_var.objective_coefficient() == 0.0) continue;
 
     const auto& var_proto = cp_model->variables(i);
-    const int64 lb = var_proto.domain(0);
-    const int64 ub = var_proto.domain(var_proto.domain_size() - 1);
+    const int64_t lb = var_proto.domain(0);
+    const int64_t ub = var_proto.domain(var_proto.domain_size() - 1);
     if (lb == 0 && ub == 0) continue;
 
     var_indices.push_back(i);
@@ -877,7 +882,8 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
       }
     }
 
-    const int64 gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
+    const int64_t gcd =
+        ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
 
     // Display the objective error/scaling.
     LOG_IF(INFO, log_info)
@@ -898,8 +904,8 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
                           mult);
     objective->set_scaling_factor(1.0 / scaling_factor * gcd * mult);
     for (int i = 0; i < coefficients.size(); ++i) {
-      const int64 value =
-          static_cast<int64>(std::round(coefficients[i] * scaling_factor)) /
+      const int64_t value =
+          static_cast<int64_t>(std::round(coefficients[i] * scaling_factor)) /
           gcd;
       if (value != 0) {
         objective->add_vars(var_indices[i]);
@@ -968,7 +974,7 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
   }
 
   // Variables needed to scale the double coefficients into int64.
-  const int64 kInt64Max = std::numeric_limits<int64>::max();
+  const int64_t kInt64Max = std::numeric_limits<int64_t>::max();
   double max_relative_error = 0.0;
   double max_bound_error = 0.0;
   double max_scaling_factor = 0.0;
@@ -989,7 +995,8 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
     }
     GetBestScalingOfDoublesToInt64(coefficients, kInt64Max, &scaling_factor,
                                    &relative_error);
-    const int64 gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
+    const int64_t gcd =
+        ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
     max_relative_error = std::max(relative_error, max_relative_error);
     max_scaling_factor = std::max(scaling_factor / gcd, max_scaling_factor);
 
@@ -997,7 +1004,7 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
     for (int i = 0; i < num_coeffs; ++i) {
       const double scaled_value = mp_constraint.coefficient(i) * scaling_factor;
       bound_error += std::abs(round(scaled_value) - scaled_value);
-      const int64 value = static_cast<int64>(round(scaled_value)) / gcd;
+      const int64_t value = static_cast<int64_t>(round(scaled_value)) / gcd;
       if (value != 0) {
         constraint->add_literals(mp_constraint.var_index(i) + 1);
         constraint->add_coefficients(value);
@@ -1019,7 +1026,8 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
       if (lb * scaling_factor > -static_cast<double>(kInt64Max)) {
         // Otherwise, the constraint is not needed.
         constraint->set_lower_bound(
-            static_cast<int64>(round(lb * scaling_factor - bound_error)) / gcd);
+            static_cast<int64_t>(round(lb * scaling_factor - bound_error)) /
+            gcd);
       }
     }
     const Fractional ub = mp_constraint.upper_bound();
@@ -1031,7 +1039,8 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
       if (ub * scaling_factor < static_cast<double>(kInt64Max)) {
         // Otherwise, the constraint is not needed.
         constraint->set_upper_bound(
-            static_cast<int64>(round(ub * scaling_factor + bound_error)) / gcd);
+            static_cast<int64_t>(round(ub * scaling_factor + bound_error)) /
+            gcd);
       }
     }
   }
@@ -1049,7 +1058,7 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
   }
   GetBestScalingOfDoublesToInt64(coefficients, kInt64Max, &scaling_factor,
                                  &relative_error);
-  const int64 gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
+  const int64_t gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
   max_relative_error = std::max(relative_error, max_relative_error);
 
   // Display the objective error/scaling.
@@ -1064,9 +1073,10 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
   objective->set_scaling_factor(1.0 / scaling_factor * gcd);
   for (int var_id = 0; var_id < num_variables; ++var_id) {
     const MPVariableProto& mp_var = mp_model.variable(var_id);
-    const int64 value = static_cast<int64>(round(
-                            mp_var.objective_coefficient() * scaling_factor)) /
-                        gcd;
+    const int64_t value =
+        static_cast<int64_t>(
+            round(mp_var.objective_coefficient() * scaling_factor)) /
+        gcd;
     if (value != 0) {
       objective->add_literals(var_id + 1);
       objective->add_coefficients(value);

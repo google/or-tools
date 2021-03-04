@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_LINEAR_CONSTRAINT_MANAGER_H_
 
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -43,7 +44,7 @@ class LinearConstraintManager {
   struct ConstraintInfo {
     LinearConstraint constraint;
     double l2_norm = 0.0;
-    int64 inactive_count = 0;
+    int64_t inactive_count = 0;
     double objective_parallelism = 0.0;
     bool objective_parallelism_computed = false;
     bool is_in_lp = false;
@@ -75,7 +76,7 @@ class LinearConstraintManager {
   // basic preprocessing. If added is given, it will be set to true if this
   // constraint was actually a new one and to false if it was dominated by an
   // already existing one.
-  DEFINE_INT_TYPE(ConstraintIndex, int32);
+  DEFINE_INT_TYPE(ConstraintIndex, int32_t);
   ConstraintIndex Add(LinearConstraint ct, bool* added = nullptr);
 
   // Same as Add(), but logs some information about the newly added constraint.
@@ -122,9 +123,11 @@ class LinearConstraintManager {
     return lp_constraints_;
   }
 
-  int64 num_cuts() const { return num_cuts_; }
-  int64 num_shortened_constraints() const { return num_shortened_constraints_; }
-  int64 num_coeff_strenghtening() const { return num_coeff_strenghtening_; }
+  int64_t num_cuts() const { return num_cuts_; }
+  int64_t num_shortened_constraints() const {
+    return num_shortened_constraints_;
+  }
+  int64_t num_coeff_strenghtening() const { return num_coeff_strenghtening_; }
 
   // If a debug solution has been loaded, this checks if the given constaint cut
   // it or not. Returns true iff everything is fine and the cut does not violate
@@ -170,7 +173,7 @@ class LinearConstraintManager {
   bool current_lp_is_changed_ = false;
 
   // Optimization to avoid calling SimplifyConstraint() when not needed.
-  int64 last_simplification_timestamp_ = 0;
+  int64_t last_simplification_timestamp_ = 0;
 
   absl::StrongVector<ConstraintIndex, ConstraintInfo> constraint_infos_;
 
@@ -184,14 +187,14 @@ class LinearConstraintManager {
   // constraints.
   absl::flat_hash_map<size_t, ConstraintIndex> equiv_constraints_;
 
-  int64 num_simplifications_ = 0;
-  int64 num_merged_constraints_ = 0;
-  int64 num_shortened_constraints_ = 0;
-  int64 num_splitted_constraints_ = 0;
-  int64 num_coeff_strenghtening_ = 0;
+  int64_t num_simplifications_ = 0;
+  int64_t num_merged_constraints_ = 0;
+  int64_t num_shortened_constraints_ = 0;
+  int64_t num_splitted_constraints_ = 0;
+  int64_t num_coeff_strenghtening_ = 0;
 
-  int64 num_cuts_ = 0;
-  int64 num_add_cut_calls_ = 0;
+  int64_t num_cuts_ = 0;
+  int64_t num_add_cut_calls_ = 0;
   std::map<std::string, int> type_to_num_cuts_;
 
   bool objective_is_defined_ = false;
@@ -220,7 +223,7 @@ class LinearConstraintManager {
   // management.
   double constraint_active_count_increase_ = 1.0;
 
-  int32 num_deletable_constraints_ = 0;
+  int32_t num_deletable_constraints_ = 0;
 };
 
 // Keep the top n elements from a stream of elements.

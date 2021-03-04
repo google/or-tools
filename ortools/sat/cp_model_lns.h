@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_LNS_H_
 #define OR_TOOLS_SAT_CP_MODEL_LNS_H_
 
+#include <cstdint>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -48,7 +49,7 @@ struct Neighborhood {
   // Currently only used by WeightedRandomRelaxationNeighborhoodGenerator.
   // TODO(user): Make sure that the id is unique for each generated
   // neighborhood for each generator.
-  int64 id = 0;
+  int64_t id = 0;
 
   // Used for identifying the source of the neighborhood if it is generated
   // using solution repositories.
@@ -71,7 +72,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 
   // SubSolver interface.
   bool TaskIsAvailable() override { return false; }
-  std::function<void()> GenerateTask(int64 task_id) override { return {}; }
+  std::function<void()> GenerateTask(int64_t task_id) override { return {}; }
   void Synchronize() override;
 
   // Returns the LNS fragment where the given variables are fixed to the value
@@ -225,13 +226,13 @@ class NeighborhoodGenerator {
   // If the generator is called less than 10 times then the method returns
   // infinity as score in order to get more data about the generator
   // performance.
-  double GetUCBScore(int64 total_num_calls) const;
+  double GetUCBScore(int64_t total_num_calls) const;
 
   // Adds solve data about one "solved" neighborhood.
   struct SolveData {
     // Neighborhood Id. Used to identify the neighborhood by a generator.
     // Currently only used by WeightedRandomRelaxationNeighborhoodGenerator.
-    int64 neighborhood_id = 0;
+    int64_t neighborhood_id = 0;
 
     // The status of the sub-solve.
     CpSolverStatus status = CpSolverStatus::UNKNOWN;
@@ -289,13 +290,13 @@ class NeighborhoodGenerator {
   std::string name() const { return name_; }
 
   // Number of times this generator was called.
-  int64 num_calls() const {
+  int64_t num_calls() const {
     absl::MutexLock mutex_lock(&mutex_);
     return num_calls_;
   }
 
   // Number of time the neighborhood was fully solved (OPTIMAL/INFEASIBLE).
-  int64 num_fully_solved_calls() const {
+  int64_t num_fully_solved_calls() const {
     absl::MutexLock mutex_lock(&mutex_);
     return num_fully_solved_calls_;
   }
@@ -338,9 +339,9 @@ class NeighborhoodGenerator {
 
   // Current statistics of the last solved neighborhood.
   // Only updated on Synchronize().
-  int64 num_calls_ = 0;
-  int64 num_fully_solved_calls_ = 0;
-  int64 num_consecutive_non_improving_calls_ = 0;
+  int64_t num_calls_ = 0;
+  int64_t num_fully_solved_calls_ = 0;
+  int64_t num_consecutive_non_improving_calls_ = 0;
   double deterministic_time_ = 0.0;
   double current_average_ = 0.0;
 };
@@ -520,12 +521,12 @@ class WeightedRandomRelaxationNeighborhoodGenerator
   int num_removable_constraints_ = 0;
 
   // Indices of the removed constraints per generated neighborhood.
-  absl::flat_hash_map<int64, std::vector<int>> removed_constraints_
+  absl::flat_hash_map<int64_t, std::vector<int>> removed_constraints_
       ABSL_GUARDED_BY(mutex_);
 
   // TODO(user): Move this to parent class if other generators start using
   // feedbacks.
-  int64 next_available_id_ ABSL_GUARDED_BY(mutex_) = 0;
+  int64_t next_available_id_ ABSL_GUARDED_BY(mutex_) = 0;
 };
 
 }  // namespace sat

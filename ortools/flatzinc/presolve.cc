@@ -13,6 +13,7 @@
 
 #include "ortools/flatzinc/presolve.h"
 
+#include <cstdint>
 #include <map>
 #include <set>
 
@@ -40,7 +41,7 @@ bool Has01Values(IntegerVariable* var) {
   return var->domain.Min() == 0 && var->domain.Max() == 1;
 }
 
-bool Is0Or1(int64 value) { return !(value & ~1LL); }
+bool Is0Or1(int64_t value) { return !(value & ~1LL); }
 
 template <class T>
 bool IsArrayBoolean(const std::vector<T>& values) {
@@ -70,14 +71,14 @@ bool AtMostOne0OrAtMostOne1(const std::vector<T>& values) {
   return true;
 }
 
-absl::flat_hash_set<int64> GetValueSet(const Argument& arg) {
-  absl::flat_hash_set<int64> result;
+absl::flat_hash_set<int64_t> GetValueSet(const Argument& arg) {
+  absl::flat_hash_set<int64_t> result;
   if (arg.HasOneValue()) {
     result.insert(arg.Value());
   } else {
     const Domain& domain = arg.Var()->domain;
     if (domain.is_interval && !domain.values.empty()) {
-      for (int64 v = domain.values[0]; v <= domain.values[1]; ++v) {
+      for (int64_t v = domain.values[0]; v <= domain.values[1]; ++v) {
         result.insert(v);
       }
     } else {
@@ -87,7 +88,7 @@ absl::flat_hash_set<int64> GetValueSet(const Argument& arg) {
   return result;
 }
 
-void SetConstraintAsIntEq(Constraint* ct, IntegerVariable* var, int64 value) {
+void SetConstraintAsIntEq(Constraint* ct, IntegerVariable* var, int64_t value) {
   CHECK(var != nullptr);
   ct->type = "int_eq";
   ct->arguments.clear();
@@ -120,7 +121,7 @@ bool OverlapsAt(const Argument& array, int pos, const Argument& other) {
       }
     }
   } else if (array.type == Argument::INT_LIST) {
-    const int64 value = array.values[pos];
+    const int64_t value = array.values[pos];
     switch (other.type) {
       case Argument::INT_VALUE: {
         return value == other.values[0];
@@ -200,9 +201,9 @@ void Presolver::PresolveStoreAffineMapping(Constraint* ct) {
   CHECK_EQ(2, ct->arguments[1].variables.size());
   IntegerVariable* const var0 = ct->arguments[1].variables[0];
   IntegerVariable* const var1 = ct->arguments[1].variables[1];
-  const int64 coeff0 = ct->arguments[0].values[0];
-  const int64 coeff1 = ct->arguments[0].values[1];
-  const int64 rhs = ct->arguments[2].Value();
+  const int64_t coeff0 = ct->arguments[0].values[0];
+  const int64_t coeff1 = ct->arguments[0].values[1];
+  const int64_t rhs = ct->arguments[2].Value();
   if (coeff0 == -1 && !gtl::ContainsKey(affine_map_, var0)) {
     affine_map_[var0] = AffineMapping(var1, coeff0, -rhs, ct);
     UpdateRuleStats("int_lin_eq: store affine mapping");
@@ -217,10 +218,10 @@ void Presolver::PresolveStoreFlatteningMapping(Constraint* ct) {
   IntegerVariable* const var0 = ct->arguments[1].variables[0];
   IntegerVariable* const var1 = ct->arguments[1].variables[1];
   IntegerVariable* const var2 = ct->arguments[1].variables[2];
-  const int64 coeff0 = ct->arguments[0].values[0];
-  const int64 coeff1 = ct->arguments[0].values[1];
-  const int64 coeff2 = ct->arguments[0].values[2];
-  const int64 rhs = ct->arguments[2].Value();
+  const int64_t coeff0 = ct->arguments[0].values[0];
+  const int64_t coeff1 = ct->arguments[0].values[1];
+  const int64_t coeff2 = ct->arguments[0].values[2];
+  const int64_t rhs = ct->arguments[2].Value();
   if (coeff0 == -1 && coeff2 == 1 &&
       !gtl::ContainsKey(array2d_index_map_, var0)) {
     array2d_index_map_[var0] =
@@ -245,7 +246,7 @@ void Presolver::PresolveStoreFlatteningMapping(Constraint* ct) {
 }
 
 namespace {
-bool IsIncreasingAndContiguous(const std::vector<int64>& values) {
+bool IsIncreasingAndContiguous(const std::vector<int64_t>& values) {
   for (int i = 0; i < values.size() - 1; ++i) {
     if (values[i + 1] != values[i] + 1) {
       return false;
@@ -254,7 +255,7 @@ bool IsIncreasingAndContiguous(const std::vector<int64>& values) {
   return true;
 }
 
-bool AreOnesFollowedByMinusOne(const std::vector<int64>& coeffs) {
+bool AreOnesFollowedByMinusOne(const std::vector<int64_t>& coeffs) {
   CHECK(!coeffs.empty());
   for (int i = 0; i < coeffs.size() - 1; ++i) {
     if (coeffs[i] != 1) {
@@ -325,10 +326,10 @@ void Presolver::PresolveSimplifyElement(Constraint* ct) {
       return;
     } else if (mapping.offset + mapping.coefficient > 0 &&
                domain.values[0] > 0) {
-      const std::vector<int64>& values = ct->arguments[1].values;
-      std::vector<int64> new_values;
-      for (int64 i = 1; i <= domain.values.back(); ++i) {
-        const int64 index = i * mapping.coefficient + mapping.offset - 1;
+      const std::vector<int64_t>& values = ct->arguments[1].values;
+      std::vector<int64_t> new_values;
+      for (int64_t i = 1; i <= domain.values.back(); ++i) {
+        const int64_t index = i * mapping.coefficient + mapping.offset - 1;
         if (index < 0) {
           return;
         }
@@ -363,7 +364,7 @@ void Presolver::PresolveSimplifyElement(Constraint* ct) {
     // Rewrite constraint.
     ct->arguments[0] =
         Argument::IntVarRefArray({mapping.variable1, mapping.variable2});
-    std::vector<int64> coefs;
+    std::vector<int64_t> coefs;
     coefs.push_back(mapping.coefficient);
     coefs.push_back(1);
     ct->arguments.push_back(Argument::IntegerList(coefs));
@@ -385,7 +386,7 @@ void Presolver::PresolveSimplifyElement(Constraint* ct) {
   // Rule 4.
   if (IsIncreasingAndContiguous(ct->arguments[1].values) &&
       ct->arguments[2].type == Argument::INT_VAR_REF) {
-    const int64 start = ct->arguments[1].values.front();
+    const int64_t start = ct->arguments[1].values.front();
     IntegerVariable* const index = ct->arguments[0].Var();
     IntegerVariable* const target = ct->arguments[2].Var();
     UpdateRuleStats("array_int_element: rewrite as a linear constraint");
@@ -421,8 +422,8 @@ void Presolver::PresolveSimplifyExprElement(Constraint* ct) {
     }
     const std::vector<IntegerVariable*>& vars = ct->arguments[1].variables;
     std::vector<IntegerVariable*> new_vars;
-    for (int64 i = domain.values.front(); i <= domain.values.back(); ++i) {
-      const int64 index = i * mapping.coefficient + mapping.offset - 1;
+    for (int64_t i = domain.values.front(); i <= domain.values.back(); ++i) {
+      const int64_t index = i * mapping.coefficient + mapping.offset - 1;
       if (index < 0) {
         return;
       }

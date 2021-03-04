@@ -14,6 +14,8 @@
 #include "ortools/sat/cp_model_checker.h"
 
 #include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <memory>
 #include <utility>
 
@@ -64,8 +66,8 @@ bool VariableReferenceIsValid(const CpModelProto& model, int reference) {
 bool LiteralReferenceIsValid(const CpModelProto& model, int reference) {
   if (!VariableReferenceIsValid(model, reference)) return false;
   const auto& var_proto = model.variables(PositiveRef(reference));
-  const int64 min_domain = var_proto.domain(0);
-  const int64 max_domain = var_proto.domain(var_proto.domain_size() - 1);
+  const int64_t min_domain = var_proto.domain(0);
+  const int64_t max_domain = var_proto.domain(var_proto.domain_size() - 1);
   return min_domain >= 0 && max_domain <= 1;
 }
 
@@ -87,9 +89,10 @@ std::string ValidateIntegerVariable(const CpModelProto& model, int v) {
   // Internally, we often take the negation of a domain, and we also want to
   // have sentinel values greater than the min/max of a variable domain, so
   // the domain must fall in [kint64min + 2, kint64max - 1].
-  const int64 lb = proto.domain(0);
-  const int64 ub = proto.domain(proto.domain_size() - 1);
-  if (lb < kint64min + 2 || ub > kint64max - 1) {
+  const int64_t lb = proto.domain(0);
+  const int64_t ub = proto.domain(proto.domain_size() - 1);
+  if (lb < std::numeric_limits<int64_t>::min() + 2 ||
+      ub > std::numeric_limits<int64_t>::max() - 1) {
     return absl::StrCat(
         "var #", v, " domain do not fall in [kint64min + 2, kint64max - 1]. ",
         ProtobufShortDebugString(proto));
@@ -97,7 +100,7 @@ std::string ValidateIntegerVariable(const CpModelProto& model, int v) {
 
   // We do compute ub - lb in some place in the code and do not want to deal
   // with overflow everywhere. This seems like a reasonable precondition anyway.
-  if (lb < 0 && lb + kint64max < ub) {
+  if (lb < 0 && lb + std::numeric_limits<int64_t>::max() < ub) {
     return absl::StrCat(
         "var #", v,
         " has a domain that is too large, i.e. |UB - LB| overflow an int64: ",
@@ -150,31 +153,34 @@ std::string ValidateArgumentReferencesInConstraint(const CpModelProto& model,
 template <class LinearExpressionProto>
 bool PossibleIntegerOverflow(const CpModelProto& model,
                              const LinearExpressionProto& proto) {
-  int64 sum_min = 0;
-  int64 sum_max = 0;
+  int64_t sum_min = 0;
+  int64_t sum_max = 0;
   for (int i = 0; i < proto.vars_size(); ++i) {
     const int ref = proto.vars(i);
     const auto& var_proto = model.variables(PositiveRef(ref));
-    const int64 min_domain = var_proto.domain(0);
-    const int64 max_domain = var_proto.domain(var_proto.domain_size() - 1);
-    if (proto.coeffs(i) == kint64min) return true;
-    const int64 coeff = RefIsPositive(ref) ? proto.coeffs(i) : -proto.coeffs(i);
-    const int64 prod1 = CapProd(min_domain, coeff);
-    const int64 prod2 = CapProd(max_domain, coeff);
+    const int64_t min_domain = var_proto.domain(0);
+    const int64_t max_domain = var_proto.domain(var_proto.domain_size() - 1);
+    if (proto.coeffs(i) == std::numeric_limits<int64_t>::min()) return true;
+    const int64_t coeff =
+        RefIsPositive(ref) ? proto.coeffs(i) : -proto.coeffs(i);
+    const int64_t prod1 = CapProd(min_domain, coeff);
+    const int64_t prod2 = CapProd(max_domain, coeff);
 
     // Note that we use min/max with zero to disallow "alternative" terms and
     // be sure that we cannot have an overflow if we do the computation in a
     // different order.
-    sum_min = CapAdd(sum_min, std::min(int64{0}, std::min(prod1, prod2)));
-    sum_max = CapAdd(sum_max, std::max(int64{0}, std::max(prod1, prod2)));
-    for (const int64 v : {prod1, prod2, sum_min, sum_max}) {
-      if (v == kint64max || v == kint64min) return true;
+    sum_min = CapAdd(sum_min, std::min(int64_t{0}, std::min(prod1, prod2)));
+    sum_max = CapAdd(sum_max, std::max(int64_t{0}, std::max(prod1, prod2)));
+    for (const int64_t v : {prod1, prod2, sum_min, sum_max}) {
+      if (v == std::numeric_limits<int64_t>::max() ||
+          v == std::numeric_limits<int64_t>::min())
+        return true;
     }
   }
 
   // In addition to computing the min/max possible sum, we also often compare
   // it with the constraint bounds, so we do not want max - min to overflow.
-  if (sum_min < 0 && sum_min + kint64max < sum_max) {
+  if (sum_min < 0 && sum_min + std::numeric_limits<int64_t>::max() < sum_max) {
     return true;
   }
   return false;
@@ -325,10 +331,10 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
         ProtobufShortDebugString(ct));
   }
 
-  int64 sum_abs = 0;
-  for (const int64 demand : ct.reservoir().demands()) {
+  int64_t sum_abs = 0;
+  for (const int64_t demand : ct.reservoir().demands()) {
     sum_abs = CapAdd(sum_abs, std::abs(demand));
-    if (sum_abs == kint64max) {
+    if (sum_abs == std::numeric_limits<int64_t>::max()) {
       return "Possible integer overflow in constraint: " +
              ProtobufDebugString(ct);
     }
@@ -591,7 +597,7 @@ namespace {
 
 class ConstraintChecker {
  public:
-  explicit ConstraintChecker(const std::vector<int64>& variable_values)
+  explicit ConstraintChecker(const std::vector<int64_t>& variable_values)
       : variable_values_(variable_values) {}
 
   bool LiteralIsTrue(int l) const {
@@ -601,7 +607,7 @@ class ConstraintChecker {
 
   bool LiteralIsFalse(int l) const { return !LiteralIsTrue(l); }
 
-  int64 Value(int var) const {
+  int64_t Value(int var) const {
     if (var >= 0) return variable_values_[var];
     return -variable_values_[-var - 1];
   }
@@ -652,7 +658,7 @@ class ConstraintChecker {
   }
 
   bool LinearConstraintIsFeasible(const ConstraintProto& ct) {
-    int64 sum = 0;
+    int64_t sum = 0;
     const int num_variables = ct.linear().coeffs_size();
     for (int i = 0; i < num_variables; ++i) {
       sum += Value(ct.linear().vars(i)) * ct.linear().coeffs(i);
@@ -661,16 +667,16 @@ class ConstraintChecker {
   }
 
   bool IntMaxConstraintIsFeasible(const ConstraintProto& ct) {
-    const int64 max = Value(ct.int_max().target());
-    int64 actual_max = kint64min;
+    const int64_t max = Value(ct.int_max().target());
+    int64_t actual_max = std::numeric_limits<int64_t>::min();
     for (int i = 0; i < ct.int_max().vars_size(); ++i) {
       actual_max = std::max(actual_max, Value(ct.int_max().vars(i)));
     }
     return max == actual_max;
   }
 
-  int64 LinearExpressionValue(const LinearExpressionProto& expr) const {
-    int64 sum = expr.offset();
+  int64_t LinearExpressionValue(const LinearExpressionProto& expr) const {
+    int64_t sum = expr.offset();
     const int num_variables = expr.vars_size();
     for (int i = 0; i < num_variables; ++i) {
       sum += Value(expr.vars(i)) * expr.coeffs(i);
@@ -679,18 +685,18 @@ class ConstraintChecker {
   }
 
   bool LinMaxConstraintIsFeasible(const ConstraintProto& ct) {
-    const int64 max = LinearExpressionValue(ct.lin_max().target());
-    int64 actual_max = kint64min;
+    const int64_t max = LinearExpressionValue(ct.lin_max().target());
+    int64_t actual_max = std::numeric_limits<int64_t>::min();
     for (int i = 0; i < ct.lin_max().exprs_size(); ++i) {
-      const int64 expr_value = LinearExpressionValue(ct.lin_max().exprs(i));
+      const int64_t expr_value = LinearExpressionValue(ct.lin_max().exprs(i));
       actual_max = std::max(actual_max, expr_value);
     }
     return max == actual_max;
   }
 
   bool IntProdConstraintIsFeasible(const ConstraintProto& ct) {
-    const int64 prod = Value(ct.int_prod().target());
-    int64 actual_prod = 1;
+    const int64_t prod = Value(ct.int_prod().target());
+    int64_t actual_prod = 1;
     for (int i = 0; i < ct.int_prod().vars_size(); ++i) {
       actual_prod *= Value(ct.int_prod().vars(i));
     }
@@ -708,8 +714,8 @@ class ConstraintChecker {
   }
 
   bool IntMinConstraintIsFeasible(const ConstraintProto& ct) {
-    const int64 min = Value(ct.int_min().target());
-    int64 actual_min = kint64max;
+    const int64_t min = Value(ct.int_min().target());
+    int64_t actual_min = std::numeric_limits<int64_t>::max();
     for (int i = 0; i < ct.int_min().vars_size(); ++i) {
       actual_min = std::min(actual_min, Value(ct.int_min().vars(i)));
     }
@@ -717,17 +723,17 @@ class ConstraintChecker {
   }
 
   bool LinMinConstraintIsFeasible(const ConstraintProto& ct) {
-    const int64 min = LinearExpressionValue(ct.lin_min().target());
-    int64 actual_min = kint64max;
+    const int64_t min = LinearExpressionValue(ct.lin_min().target());
+    int64_t actual_min = std::numeric_limits<int64_t>::max();
     for (int i = 0; i < ct.lin_min().exprs_size(); ++i) {
-      const int64 expr_value = LinearExpressionValue(ct.lin_min().exprs(i));
+      const int64_t expr_value = LinearExpressionValue(ct.lin_min().exprs(i));
       actual_min = std::min(actual_min, expr_value);
     }
     return min == actual_min;
   }
 
   bool AllDiffConstraintIsFeasible(const ConstraintProto& ct) {
-    absl::flat_hash_set<int64> values;
+    absl::flat_hash_set<int64_t> values;
     for (const int v : ct.all_diff().vars()) {
       if (gtl::ContainsKey(values, Value(v))) return false;
       values.insert(Value(v));
@@ -735,32 +741,32 @@ class ConstraintChecker {
     return true;
   }
 
-  int64 IntervalStart(const IntervalConstraintProto& interval) const {
+  int64_t IntervalStart(const IntervalConstraintProto& interval) const {
     return interval.has_start_view()
                ? LinearExpressionValue(interval.start_view())
                : Value(interval.start());
   }
 
-  int64 IntervalSize(const IntervalConstraintProto& interval) const {
+  int64_t IntervalSize(const IntervalConstraintProto& interval) const {
     return interval.has_size_view()
                ? LinearExpressionValue(interval.size_view())
                : Value(interval.size());
   }
 
-  int64 IntervalEnd(const IntervalConstraintProto& interval) const {
+  int64_t IntervalEnd(const IntervalConstraintProto& interval) const {
     return interval.has_end_view() ? LinearExpressionValue(interval.end_view())
                                    : Value(interval.end());
   }
 
   bool IntervalConstraintIsFeasible(const ConstraintProto& ct) {
-    const int64 size = IntervalSize(ct.interval());
+    const int64_t size = IntervalSize(ct.interval());
     if (size < 0) return false;
     return IntervalStart(ct.interval()) + size == IntervalEnd(ct.interval());
   }
 
   bool NoOverlapConstraintIsFeasible(const CpModelProto& model,
                                      const ConstraintProto& ct) {
-    std::vector<std::pair<int64, int64>> start_durations_pairs;
+    std::vector<std::pair<int64_t, int64_t>> start_durations_pairs;
     for (const int i : ct.no_overlap().intervals()) {
       const ConstraintProto& interval_constraint = model.constraints(i);
       if (ConstraintIsEnforced(interval_constraint)) {
@@ -771,7 +777,7 @@ class ConstraintChecker {
       }
     }
     std::sort(start_durations_pairs.begin(), start_durations_pairs.end());
-    int64 previous_end = kint64min;
+    int64_t previous_end = std::numeric_limits<int64_t>::min();
     for (const auto pair : start_durations_pairs) {
       if (pair.first < previous_end) return false;
       previous_end = pair.first + pair.second;
@@ -837,19 +843,19 @@ class ConstraintChecker {
   bool CumulativeConstraintIsFeasible(const CpModelProto& model,
                                       const ConstraintProto& ct) {
     // TODO(user,user): Improve complexity for large durations.
-    const int64 capacity = Value(ct.cumulative().capacity());
+    const int64_t capacity = Value(ct.cumulative().capacity());
     const int num_intervals = ct.cumulative().intervals_size();
-    absl::flat_hash_map<int64, int64> usage;
+    absl::flat_hash_map<int64_t, int64_t> usage;
     for (int i = 0; i < num_intervals; ++i) {
       const ConstraintProto& interval_constraint =
           model.constraints(ct.cumulative().intervals(i));
       if (ConstraintIsEnforced(interval_constraint)) {
         const IntervalConstraintProto& interval =
             interval_constraint.interval();
-        const int64 start = IntervalStart(interval);
-        const int64 duration = IntervalSize(interval);
-        const int64 demand = Value(ct.cumulative().demands(i));
-        for (int64 t = start; t < start + duration; ++t) {
+        const int64_t start = IntervalStart(interval);
+        const int64_t duration = IntervalSize(interval);
+        const int64_t demand = Value(ct.cumulative().demands(i));
+        for (int64_t t = start; t < start + duration; ++t) {
           usage[t] += demand;
           if (usage[t] > capacity) return false;
         }
@@ -879,7 +885,7 @@ class ConstraintChecker {
 
   bool AutomatonConstraintIsFeasible(const ConstraintProto& ct) {
     // Build the transition table {tail, label} -> head.
-    absl::flat_hash_map<std::pair<int64, int64>, int64> transition_map;
+    absl::flat_hash_map<std::pair<int64_t, int64_t>, int64_t> transition_map;
     const int num_transitions = ct.automaton().transition_tail().size();
     for (int i = 0; i < num_transitions; ++i) {
       transition_map[{ct.automaton().transition_tail(i),
@@ -888,11 +894,11 @@ class ConstraintChecker {
     }
 
     // Walk the automaton.
-    int64 current_state = ct.automaton().starting_state();
+    int64_t current_state = ct.automaton().starting_state();
     const int num_steps = ct.automaton().vars_size();
     for (int i = 0; i < num_steps; ++i) {
-      const std::pair<int64, int64> key = {current_state,
-                                           Value(ct.automaton().vars(i))};
+      const std::pair<int64_t, int64_t> key = {current_state,
+                                               Value(ct.automaton().vars(i))};
       if (!gtl::ContainsKey(transition_map, key)) {
         return false;
       }
@@ -900,7 +906,7 @@ class ConstraintChecker {
     }
 
     // Check we are now in a final state.
-    for (const int64 final : ct.automaton().final_states()) {
+    for (const int64_t final : ct.automaton().final_states()) {
       if (current_state == final) return true;
     }
     return false;
@@ -1021,13 +1027,13 @@ class ConstraintChecker {
 
   bool ReservoirConstraintIsFeasible(const ConstraintProto& ct) {
     const int num_variables = ct.reservoir().times_size();
-    const int64 min_level = ct.reservoir().min_level();
-    const int64 max_level = ct.reservoir().max_level();
-    std::map<int64, int64> deltas;
+    const int64_t min_level = ct.reservoir().min_level();
+    const int64_t max_level = ct.reservoir().max_level();
+    std::map<int64_t, int64_t> deltas;
     deltas[0] = 0;
     const bool has_active_variables = ct.reservoir().actives_size() > 0;
     for (int i = 0; i < num_variables; i++) {
-      const int64 time = Value(ct.reservoir().times(i));
+      const int64_t time = Value(ct.reservoir().times(i));
       if (time < 0) {
         VLOG(1) << "reservoir times(" << i << ") is negative.";
         return false;
@@ -1036,7 +1042,7 @@ class ConstraintChecker {
         deltas[time] += ct.reservoir().demands(i);
       }
     }
-    int64 current_level = 0;
+    int64_t current_level = 0;
     for (const auto& delta : deltas) {
       current_level += delta.second;
       if (current_level < min_level || current_level > max_level) {
@@ -1049,13 +1055,13 @@ class ConstraintChecker {
   }
 
  private:
-  std::vector<int64> variable_values_;
+  std::vector<int64_t> variable_values_;
 };
 
 }  // namespace
 
 bool SolutionIsFeasible(const CpModelProto& model,
-                        const std::vector<int64>& variable_values,
+                        const std::vector<int64_t>& variable_values,
                         const CpModelProto* mapping_proto,
                         const std::vector<int>* postsolve_mapping) {
   if (variable_values.size() != model.variables_size()) {

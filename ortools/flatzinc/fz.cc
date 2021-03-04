@@ -15,6 +15,8 @@
 // of the funcionalities are fixed (name of parameters, format of the
 // input): see http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf
 
+#include <limits>
+
 #if defined(__GNUC__)  // Linux or Mac OS X.
 #include <signal.h>
 #endif  // __GNUC__
@@ -194,7 +196,9 @@ int main(int argc, char** argv) {
   parameters.verbose_logging = absl::GetFlag(FLAGS_fz_logging);
   if (absl::GetFlag(FLAGS_num_solutions) == 0) {
     absl::SetFlag(&FLAGS_num_solutions,
-                  absl::GetFlag(FLAGS_all_solutions) ? kint32max : 1);
+                  absl::GetFlag(FLAGS_all_solutions)
+                      ? std::numeric_limits<int32_t>::max()
+                      : 1);
   }
   parameters.max_number_of_solutions = absl::GetFlag(FLAGS_num_solutions);
   parameters.random_seed = absl::GetFlag(FLAGS_fz_seed);

@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_SAT_VAR_DOMINATION_H_
 #define OR_TOOLS_SAT_VAR_DOMINATION_H_
 
+#include <cstdint>
+
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -87,13 +89,13 @@ class VarDomination {
   // increase / decrease functions also refine the partition.
   void CanOnlyDominateEachOther(absl::Span<const int> refs);
   void ActivityShouldNotChange(absl::Span<const int> refs,
-                               absl::Span<const int64> coeffs);
+                               absl::Span<const int64_t> coeffs);
   void ActivityShouldNotDecrease(absl::Span<const int> enforcements,
                                  absl::Span<const int> refs,
-                                 absl::Span<const int64> coeffs);
+                                 absl::Span<const int64_t> coeffs);
   void ActivityShouldNotIncrease(absl::Span<const int> enforcements,
                                  absl::Span<const int> refs,
-                                 absl::Span<const int64> coeffs);
+                                 absl::Span<const int64_t> coeffs);
 
   // EndFirstPhase() must be called once all constraints have been processed
   // once. One then needs to redo the calls to ActivityShouldNotIncrease() and
@@ -124,7 +126,7 @@ class VarDomination {
   struct IntegerVariableWithRank {
     IntegerVariable var;
     int part;
-    int64 rank;
+    int64_t rank;
 
     bool operator<(const IntegerVariableWithRank& o) const {
       return rank < o.rank;
@@ -139,7 +141,7 @@ class VarDomination {
   void FillTempRanks(bool reverse_references,
                      absl::Span<const int> enforcements,
                      absl::Span<const int> refs,
-                     absl::Span<const int64> coeffs);
+                     absl::Span<const int64_t> coeffs);
 
   // First phase functions. We will keep for each variable a list of possible
   // candidates which is as short as possible.
@@ -177,8 +179,8 @@ class VarDomination {
 
   // For all one sided constraints, we keep the bitmap of constraint indices
   // modulo 64 that block on the lower side each variable.
-  int64 ct_index_for_signature_ = 0;
-  absl::StrongVector<IntegerVariable, uint64> block_down_signatures_;
+  int64_t ct_index_for_signature_ = 0;
+  absl::StrongVector<IntegerVariable, uint64_t> block_down_signatures_;
 
   // Used by FilterUsingTempRanks().
   int num_vars_with_negation_;
@@ -226,8 +228,8 @@ class DualBoundStrengthening {
   template <typename LinearProto>
   void ProcessLinearConstraint(bool is_objective,
                                const PresolveContext& context,
-                               const LinearProto& linear, int64 min_activity,
-                               int64 max_activity);
+                               const LinearProto& linear, int64_t min_activity,
+                               int64_t max_activity);
 
   // Once ALL constraints have been processed, call this to fix variables or
   // reduce their domain if possible.
@@ -240,7 +242,7 @@ class DualBoundStrengthening {
 
   // The given ref can always freely decrease until the returned value.
   // Note that this does not take into account the domain of the variable.
-  int64 CanFreelyDecreaseUntil(int ref) const {
+  int64_t CanFreelyDecreaseUntil(int ref) const {
     return can_freely_decrease_until_[RefToIntegerVariable(ref)].value();
   }
 
@@ -256,11 +258,11 @@ class DualBoundStrengthening {
 
   // How many times can_freely_decrease_until_[var] was set by a constraints.
   // If only one constraint is blocking, we can do more presolve.
-  absl::StrongVector<IntegerVariable, int64> num_locks_;
+  absl::StrongVector<IntegerVariable, int64_t> num_locks_;
 
   // If num_locks_[var] == 1, this will be the unique constraint that block var
   // in this direction. Note that it can be set to -1 if this wasn't recorded.
-  absl::StrongVector<IntegerVariable, int64> locking_ct_index_;
+  absl::StrongVector<IntegerVariable, int64_t> locking_ct_index_;
 };
 
 // Detect the variable dominance relations within the given model. Note that

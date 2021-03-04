@@ -13,6 +13,9 @@
 
 #include "ortools/sat/cp_model_postsolve.h"
 
+#include <cstdint>
+#include <limits>
+
 #include "ortools/sat/cp_model_utils.h"
 
 namespace operations_research {
@@ -81,13 +84,13 @@ void PostsolveExactlyOne(const ConstraintProto& ct,
 void PostsolveLinear(const ConstraintProto& ct,
                      const std::vector<bool>& prefer_lower_value,
                      std::vector<Domain>* domains) {
-  int64 fixed_activity = 0;
+  int64_t fixed_activity = 0;
   const int size = ct.linear().vars().size();
   std::vector<int> free_vars;
-  std::vector<int64> free_coeffs;
+  std::vector<int64_t> free_coeffs;
   for (int i = 0; i < size; ++i) {
     const int var = ct.linear().vars(i);
-    const int64 coeff = ct.linear().coeffs(i);
+    const int64_t coeff = ct.linear().coeffs(i);
     CHECK_LT(var, domains->size());
     if (coeff == 0) continue;
     if ((*domains)[var].IsFixed()) {
@@ -106,7 +109,7 @@ void PostsolveLinear(const ConstraintProto& ct,
     const Domain domain = initial_rhs.AdditionWith(Domain(-fixed_activity))
                               .InverseMultiplicationBy(free_coeffs[0])
                               .IntersectionWith((*domains)[var]);
-    const int64 value = prefer_lower_value[var] ? domain.Min() : domain.Max();
+    const int64_t value = prefer_lower_value[var] ? domain.Min() : domain.Max();
     (*domains)[var] = Domain(value);
     return;
   }
@@ -134,7 +137,7 @@ void PostsolveLinear(const ConstraintProto& ct,
     // fixed_activity. This will crash if the intersection is empty, but it
     // shouldn't be.
     const int var = free_vars[i];
-    const int64 coeff = free_coeffs[i];
+    const int64_t coeff = free_coeffs[i];
     const Domain domain = rhs_domains[i]
                               .AdditionWith(Domain(-fixed_activity))
                               .InverseMultiplicationBy(coeff)
@@ -144,7 +147,7 @@ void PostsolveLinear(const ConstraintProto& ct,
     // case, so if this fail, it might indicate an issue here and not in the
     // presolve/solver code.
     CHECK(!domain.IsEmpty()) << ct.ShortDebugString();
-    const int64 value = prefer_lower_value[var] ? domain.Min() : domain.Max();
+    const int64_t value = prefer_lower_value[var] ? domain.Min() : domain.Max();
     (*domains)[var] = Domain(value);
 
     fixed_activity += coeff * value;
@@ -155,17 +158,17 @@ void PostsolveLinear(const ConstraintProto& ct,
 // We assign any non fixed lhs variables to their minimum value. Then we assign
 // the target to the max. This should always be feasible.
 void PostsolveIntMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
-  int64 m = kint64min;
+  int64_t m = std::numeric_limits<int64_t>::min();
   for (const int ref : ct.int_max().vars()) {
     const int var = PositiveRef(ref);
     if (!(*domains)[var].IsFixed()) {
       // Assign to minimum value.
-      const int64 value =
+      const int64_t value =
           RefIsPositive(ref) ? (*domains)[var].Min() : (*domains)[var].Max();
       (*domains)[var] = Domain(value);
     }
 
-    const int64 value = (*domains)[var].FixedValue();
+    const int64_t value = (*domains)[var].FixedValue();
     m = std::max(m, RefIsPositive(ref) ? value : -value);
   }
   const int target_ref = ct.int_max().target();
@@ -190,7 +193,7 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
   // whatever the value of the index and selected variable, we can choose a
   // valid target, so we just fix the index to its min value in this case.
   if (!(*domains)[target_var].IsFixed() && !(*domains)[index_var].IsFixed()) {
-    const int64 index_value = (*domains)[index_var].Min();
+    const int64_t index_value = (*domains)[index_var].Min();
     (*domains)[index_var] = Domain(index_value);
 
     // If the selected variable is not fixed, we also need to fix it.
@@ -204,11 +207,11 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
 
   // Deal with fixed index (and constant vars).
   if ((*domains)[index_var].IsFixed()) {
-    const int64 index_value = (*domains)[index_var].FixedValue();
+    const int64_t index_value = (*domains)[index_var].FixedValue();
     const int selected_ref = ct.element().vars(
         RefIsPositive(index_ref) ? index_value : -index_value);
     const int selected_var = PositiveRef(selected_ref);
-    const int64 selected_value = (*domains)[selected_var].FixedValue();
+    const int64_t selected_value = (*domains)[selected_var].FixedValue();
     (*domains)[target_var] = (*domains)[target_var].IntersectionWith(
         Domain(RefIsPositive(target_ref) == RefIsPositive(selected_ref)
                    ? selected_value
@@ -218,12 +221,12 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
   }
 
   // Deal with fixed target (and constant vars).
-  const int64 target_value = (*domains)[target_var].FixedValue();
+  const int64_t target_value = (*domains)[target_var].FixedValue();
   int selected_index_value = -1;
   for (int i = 0; i < ct.element().vars().size(); ++i) {
     const int ref = ct.element().vars(i);
     const int var = PositiveRef(ref);
-    const int64 value = (*domains)[var].FixedValue();
+    const int64_t value = (*domains)[var].FixedValue();
     if (RefIsPositive(target_ref) == RefIsPositive(ref)) {
       if (value == target_value) {
         selected_index_value = i;
@@ -243,7 +246,7 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
   DCHECK(!(*domains)[index_var].IsEmpty());
 }
 
-void PostsolveResponse(const int64 num_variables_in_original_model,
+void PostsolveResponse(const int64_t num_variables_in_original_model,
                        const CpModelProto& mapping_proto,
                        const std::vector<int>& postsolve_mapping,
                        CpSolverResponse* response) {
@@ -285,7 +288,7 @@ void PostsolveResponse(const int64 num_variables_in_original_model,
     const int size = mapping_proto.objective().vars().size();
     for (int i = 0; i < size; ++i) {
       int var = mapping_proto.objective().vars(i);
-      int64 coeff = mapping_proto.objective().coeffs(i);
+      int64_t coeff = mapping_proto.objective().coeffs(i);
       if (!RefIsPositive(var)) {
         var = PositiveRef(var);
         coeff = -coeff;

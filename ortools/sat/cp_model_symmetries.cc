@@ -13,6 +13,8 @@
 
 #include "ortools/sat/cp_model_symmetries.h"
 
+#include <cstdint>
+#include <limits>
 #include <memory>
 
 #include "absl/container/flat_hash_map.h"
@@ -29,9 +31,9 @@ namespace sat {
 
 namespace {
 struct VectorHash {
-  std::size_t operator()(const std::vector<int64>& values) const {
+  std::size_t operator()(const std::vector<int64_t>& values) const {
     size_t hash = 0;
-    for (const int64 value : values) {
+    for (const int64_t value : values) {
       hash = util_hash::Hash(value, hash);
     }
     return hash;
@@ -46,14 +48,14 @@ class IdGenerator {
 
   // If the color was never seen before, then generate a new id, otherwise
   // return the previously generated id.
-  int GetId(const std::vector<int64>& color) {
+  int GetId(const std::vector<int64_t>& color) {
     return gtl::LookupOrInsert(&id_map_, color, id_map_.size());
   }
 
   int NextFreeId() const { return id_map_.size(); }
 
  private:
-  absl::flat_hash_map<std::vector<int64>, int, VectorHash> id_map_;
+  absl::flat_hash_map<std::vector<int64_t>, int, VectorHash> id_map_;
 };
 
 // Appends values in `repeated_field` to `vector`.
@@ -124,17 +126,17 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   // TODO(user): We could ignore the objective coefficients, and just make sure
   // that when we break symmetry amongst variables, we choose the possibility
   // with the smallest cost?
-  std::vector<int64> objective_by_var(num_variables, 0);
+  std::vector<int64_t> objective_by_var(num_variables, 0);
   for (int i = 0; i < problem.objective().vars_size(); ++i) {
     const int ref = problem.objective().vars(i);
     const int var = PositiveRef(ref);
-    const int64 coeff = problem.objective().coeffs(i);
+    const int64_t coeff = problem.objective().coeffs(i);
     objective_by_var[var] = RefIsPositive(ref) ? coeff : -coeff;
   }
 
   // Create one node for each variable. Note that the code rely on the fact that
   // the index of a VARIABLE_NODE type is the same as the variable index.
-  std::vector<int64> tmp_color;
+  std::vector<int64_t> tmp_color;
   for (int v = 0; v < num_variables; ++v) {
     tmp_color = {VARIABLE_NODE, objective_by_var[v]};
     Append(problem.variables(v).domain(), &tmp_color);
@@ -213,7 +215,8 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   // Add constraints to the graph.
   for (const ConstraintProto& constraint : problem.constraints()) {
     const int constraint_node = initial_equivalence_classes->size();
-    std::vector<int64> color = {CONSTRAINT_NODE, constraint.constraint_case()};
+    std::vector<int64_t> color = {CONSTRAINT_NODE,
+                                  constraint.constraint_case()};
 
     switch (constraint.constraint_case()) {
       case ConstraintProto::CONSTRAINT_NOT_SET:
@@ -228,9 +231,9 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         for (int i = 0; i < constraint.linear().vars_size(); ++i) {
           const int ref = constraint.linear().vars(i);
           const int variable_node = PositiveRef(ref);
-          const int64 coeff = RefIsPositive(ref)
-                                  ? constraint.linear().coeffs(i)
-                                  : -constraint.linear().coeffs(i);
+          const int64_t coeff = RefIsPositive(ref)
+                                    ? constraint.linear().coeffs(i)
+                                    : -constraint.linear().coeffs(i);
           graph->AddArc(get_coefficient_node(variable_node, coeff),
                         constraint_node);
         }
@@ -511,7 +514,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
 
   // Tricky: the equivalence relation are not part of the proto.
   // We thus add them temporarily to compute the symmetry.
-  int64 num_added = 0;
+  int64_t num_added = 0;
   const int initial_ct_index = proto.constraints().size();
   for (int var = 0; var < num_vars; ++var) {
     if (context->IsFixed(var)) continue;
@@ -547,7 +550,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   // Note(user): This relies on the fact that the pointers remain stable when
   // we adds new constraints. It should be the case, but it is a bit unsafe.
   // On the other hand it is annoying to deal with both cases below.
-  std::vector<const google::protobuf::RepeatedField<int32>*> at_most_ones;
+  std::vector<const google::protobuf::RepeatedField<int32_t>*> at_most_ones;
   for (int i = 0; i < proto.constraints_size(); ++i) {
     if (proto.constraints(i).constraint_case() == ConstraintProto::kAtMostOne) {
       at_most_ones.push_back(&proto.constraints(i).at_most_one().literals());
@@ -577,7 +580,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
 
     std::vector<int> tmp_to_clear;
     std::vector<int> tmp_sizes(num_vars, 0);
-    for (const google::protobuf::RepeatedField<int32>* literals :
+    for (const google::protobuf::RepeatedField<int32_t>* literals :
          at_most_ones) {
       tmp_to_clear.clear();
 
@@ -680,7 +683,8 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   // TODO(user): The code below requires that no variable appears twice in the
   // same at most one. In particular lit and not(lit) cannot appear in the same
   // at most one.
-  for (const google::protobuf::RepeatedField<int32>* literals : at_most_ones) {
+  for (const google::protobuf::RepeatedField<int32_t>* literals :
+       at_most_ones) {
     for (const int lit : *literals) {
       const int var = PositiveRef(lit);
       CHECK_NE(tmp_sizes[var], 1);
@@ -730,11 +734,11 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     // the set of best rows on which we have an at most one (or at most one
     // zero) on all their entries.
     bool at_most_one_in_best_rows;  // The alternative is at most one zero.
-    int64 best_score = 0;
+    int64_t best_score = 0;
     std::vector<int> best_rows;
 
     std::vector<int> rows_in_at_most_one;
-    for (const google::protobuf::RepeatedField<int32>* literals :
+    for (const google::protobuf::RepeatedField<int32_t>* literals :
          at_most_ones) {
       tmp_to_clear.clear();
       for (const int literal : *literals) {
@@ -796,7 +800,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       // we fix before choosing the next row to break symmetry on. If there are
       // multiple row involved, we could also take the intersection instead of
       // probably counting the same constraints more than once.
-      int64 score = 0;
+      int64_t score = 0;
       for (const int row : rows_in_at_most_one) {
         score +=
             context->VarToConstraints(PositiveRef(orbitope[row][0])).size();
@@ -897,7 +901,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       ct->mutable_linear()->add_coeffs(-1);
       ct->mutable_linear()->add_vars(orbitope[0][i + 1]);
       ct->mutable_linear()->add_domain(0);
-      ct->mutable_linear()->add_domain(kint64max);
+      ct->mutable_linear()->add_domain(std::numeric_limits<int64_t>::max());
       context->UpdateRuleStats("symmetry: added symmetry breaking inequality");
     }
     context->UpdateNewConstraintsVariableUsage();

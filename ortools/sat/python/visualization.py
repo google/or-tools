@@ -18,7 +18,6 @@ try:
     from IPython.display import display
     from IPython.display import SVG
     import plotly.figure_factory as ff
-    import plotly.offline as pyo
     import svgwrite
     correct_imports = True
 except ImportError:
@@ -78,8 +77,6 @@ def DisplayJobshop(starts, durations, machines, name):
 
     sorted_df = sorted(df, key=lambda k: k['Task'])
 
-    pyo.init_notebook_mode()
-
     colors = {}
     cm = ColorManager()
     cm.SeedRandomColor(0)
@@ -94,7 +91,7 @@ def DisplayJobshop(starts, durations, machines, name):
                           showgrid_x=True,
                           showgrid_y=True,
                           group_tasks=True)
-    pyo.iplot(fig)
+    fig.show()
 
 
 class SvgWrapper(object):

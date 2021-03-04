@@ -13,6 +13,8 @@
 
 #include "ortools/sat/symmetry_util.h"
 
+#include <cstdint>
+
 #include "ortools/algorithms/dynamic_partition.h"
 
 namespace operations_research {
@@ -50,7 +52,7 @@ std::vector<std::vector<int>> BasicOrbitopeExtraction(
     if (num_cycles_to_2cyclers[i].size() > 1) {
       const int num_perms = num_cycles_to_2cyclers[i].size() + 1;
       VLOG(1) << "Potential orbitope: " << i << " x " << num_perms;
-      const int64 score = std::min(i, num_perms);
+      const int64_t score = std::min(i, num_perms);
       if (score > best_score) {
         best = i;
         best_score = score;

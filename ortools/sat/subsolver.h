@@ -58,7 +58,7 @@ class SubSolver {
   // TODO(user): We could use a more complex selection logic and pass in the
   // deterministic time limit this subtask should run for. Unclear at this
   // stage.
-  virtual std::function<void()> GenerateTask(int64 task_id) = 0;
+  virtual std::function<void()> GenerateTask(int64_t task_id) = 0;
 
   // Synchronizes with the external world from this SubSolver point of view.
   // Also incorporate the results of the latest completed tasks if any.
@@ -95,7 +95,7 @@ class SynchronizationPoint : public SubSolver {
   explicit SynchronizationPoint(std::function<void()> f)
       : SubSolver(""), f_(std::move(f)) {}
   bool TaskIsAvailable() final { return false; }
-  std::function<void()> GenerateTask(int64 task_id) final { return nullptr; }
+  std::function<void()> GenerateTask(int64_t task_id) final { return nullptr; }
   void Synchronize() final { f_(); }
 
  private:

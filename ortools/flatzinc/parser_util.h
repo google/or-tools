@@ -18,6 +18,7 @@
 #define OR_TOOLS_FLATZINC_PARSER_UTIL_H_
 
 #include <cmath>
+#include <cstdint>
 
 #include "absl/container/flat_hash_map.h"
 #include "ortools/base/map_util.h"
@@ -27,8 +28,8 @@ namespace operations_research {
 namespace fz {
 // This is the context used during parsing.
 struct ParserContext {
-  absl::flat_hash_map<std::string, int64> integer_map;
-  absl::flat_hash_map<std::string, std::vector<int64>> integer_array_map;
+  absl::flat_hash_map<std::string, int64_t> integer_map;
+  absl::flat_hash_map<std::string, std::vector<int64_t>> integer_array_map;
   absl::flat_hash_map<std::string, double> float_map;
   absl::flat_hash_map<std::string, std::vector<double>> float_array_map;
   absl::flat_hash_map<std::string, IntegerVariable*> variable_map;
@@ -56,7 +57,7 @@ struct VariableRefOrValue {
     result.defined = true;
     return result;
   }
-  static VariableRefOrValue Value(int64 value) {
+  static VariableRefOrValue Value(int64_t value) {
     VariableRefOrValue result;
     result.variable = nullptr;
     result.value = value;
@@ -65,13 +66,13 @@ struct VariableRefOrValue {
   }
 
   IntegerVariable* variable;
-  int64 value;
+  int64_t value;
   bool defined;
 };
 
 struct VariableRefOrValueArray {
   std::vector<IntegerVariable*> variables;
-  std::vector<int64> values;
+  std::vector<int64_t> values;
 
   void PushBack(const VariableRefOrValue& v) {
     CHECK(v.defined);
@@ -85,12 +86,12 @@ struct VariableRefOrValueArray {
 // Class needed to pass information from the lexer to the parser.
 // TODO(user): Use std::unique_ptr<vector< >> to ease memory management.
 struct LexerInfo {
-  int64 integer_value;
+  int64_t integer_value;
   double double_value;
   std::string string_value;
   Domain domain;
   std::vector<Domain>* domains;
-  std::vector<int64>* integers;
+  std::vector<int64_t>* integers;
   std::vector<double>* doubles;
   Argument arg;
   std::vector<Argument>* args;
@@ -101,7 +102,7 @@ struct LexerInfo {
 };
 
 // If the argument is an integer, return it as int64. Otherwise, die.
-int64 ConvertAsIntegerOrDie(double d);
+int64_t ConvertAsIntegerOrDie(double d);
 }  // namespace fz
 }  // namespace operations_research
 #endif  // OR_TOOLS_FLATZINC_PARSER_UTIL_H_

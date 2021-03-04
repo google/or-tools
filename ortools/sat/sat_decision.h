@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_SAT_DECISION_H_
 #define OR_TOOLS_SAT_SAT_DECISION_H_
 
+#include <cstdint>
 #include <vector>
 
 #include "ortools/base/integral_types.h"
@@ -182,9 +183,9 @@ class SatDecisionPolicy {
   // summing the entry.count for all entries with a trail index greater than i.
   struct NumConflictsStackEntry {
     int trail_index;
-    int64 count;
+    int64_t count;
   };
-  int64 num_conflicts_ = 0;
+  int64_t num_conflicts_ = 0;
   std::vector<NumConflictsStackEntry> num_conflicts_stack_;
 
   // Whether the priority of the given variable needs to be updated in
@@ -202,7 +203,7 @@ class SatDecisionPolicy {
   // The later is only used with the ERWA heuristic.
   absl::StrongVector<BooleanVariable, double> activities_;
   absl::StrongVector<BooleanVariable, double> tie_breakers_;
-  absl::StrongVector<BooleanVariable, int64> num_bumps_;
+  absl::StrongVector<BooleanVariable, int64_t> num_bumps_;
 
   // If the polarity if forced (externally) we alway use this first.
   absl::StrongVector<BooleanVariable, bool> has_forced_polarity_;
@@ -219,8 +220,8 @@ class SatDecisionPolicy {
   // Each phase last for an arithmetically increasing number of conflicts.
   absl::StrongVector<BooleanVariable, bool> var_polarity_;
   bool maybe_enable_phase_saving_ = true;
-  int64 polarity_phase_ = 0;
-  int64 num_conflicts_until_rephase_ = 1000;
+  int64_t polarity_phase_ = 0;
+  int64_t num_conflicts_until_rephase_ = 1000;
 
   // The longest partial assignment since the last reset.
   std::vector<Literal> best_partial_assignment_;

@@ -14,6 +14,8 @@
 #include "ortools/sat/integer.h"
 
 #include <algorithm>
+#include <cstdint>
+#include <limits>
 #include <queue>
 #include <type_traits>
 
@@ -77,7 +79,7 @@ bool IntegerEncoder::VariableIsFullyEncoded(IntegerVariable var) const {
   // It might not be needed since if the variable is not fully encoded, then
   // PartialDomainEncoding() will filter unreachable values, and so the size
   // check will be false until further value have been encoded.
-  const int64 initial_domain_size = (*domains_)[var].Size();
+  const int64_t initial_domain_size = (*domains_)[var].Size();
   if (equality_by_var_[index].size() < initial_domain_size) return false;
 
   // This cleans equality_by_var_[index] as a side effect and in particular,
@@ -90,7 +92,7 @@ bool IntegerEncoder::VariableIsFullyEncoded(IntegerVariable var) const {
   const auto& ref = equality_by_var_[index];
   int i = 0;
   for (const ClosedInterval interval : (*domains_)[var]) {
-    for (int64 v = interval.start; v <= interval.end; ++v) {
+    for (int64_t v = interval.start; v <= interval.end; ++v) {
       if (i < ref.size() && v == ref[i].value) {
         i++;
       }
@@ -188,7 +190,7 @@ std::pair<IntegerLiteral, IntegerLiteral> IntegerEncoder::Canonicalize(
   IntegerValue before(i_lit.bound - 1);
   CHECK_GE(before, (*domains_)[var].Min());
   CHECK_LE(after, (*domains_)[var].Max());
-  int64 previous = kint64min;
+  int64_t previous = std::numeric_limits<int64_t>::min();
   for (const ClosedInterval& interval : (*domains_)[var]) {
     if (before > previous && before < interval.start) before = previous;
     if (after > previous && after < interval.start) after = interval.start;
@@ -605,7 +607,8 @@ IntegerVariable IntegerTrail::AddIntegerVariable(IntegerValue lower_bound,
   DCHECK_GE(lower_bound, kMinIntegerValue);
   DCHECK_LE(lower_bound, upper_bound);
   DCHECK_LE(upper_bound, kMaxIntegerValue);
-  DCHECK(lower_bound >= 0 || lower_bound + kint64max >= upper_bound);
+  DCHECK(lower_bound >= 0 ||
+         lower_bound + std::numeric_limits<int64_t>::max() >= upper_bound);
   DCHECK(integer_search_levels_.empty());
   DCHECK_EQ(vars_.size(), integer_trail_.size());
 
@@ -720,7 +723,8 @@ int IntegerTrail::FindTrailIndexOfVarBefore(IntegerVariable var,
   // for this var.
   const int index_in_queue = tmp_var_to_trail_index_in_queue_[var];
   if (threshold <= index_in_queue) {
-    if (index_in_queue != kint32max) has_dependency_ = true;
+    if (index_in_queue != std::numeric_limits<int32_t>::max())
+      has_dependency_ = true;
     return -1;
   }
 
@@ -857,7 +861,7 @@ void IntegerTrail::RelaxLinearReason(IntegerValue slack,
 
     // Note that both terms of the product are positive.
     const TrailEntry& previous_entry = integer_trail_[entry.prev_trail_index];
-    const int64 diff =
+    const int64_t diff =
         CapProd(coeff.value(), (entry.bound - previous_entry.bound).value());
     if (diff > slack) {
       (*trail_indices)[new_size++] = index;
@@ -898,8 +902,8 @@ void IntegerTrail::RelaxLinearReason(IntegerValue slack,
     }
 
     const TrailEntry& previous_entry = integer_trail_[entry.prev_trail_index];
-    const int64 diff = CapProd(heap_entry.coeff.value(),
-                               (entry.bound - previous_entry.bound).value());
+    const int64_t diff = CapProd(heap_entry.coeff.value(),
+                                 (entry.bound - previous_entry.bound).value());
     if (diff > slack) {
       trail_indices->push_back(index);
       continue;
@@ -1684,7 +1688,8 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output) const {
       // in the queue refering to the same variable.
       const int index_in_queue =
           tmp_var_to_trail_index_in_queue_[next_entry.var];
-      if (index_in_queue != kint32max) has_dependency_ = true;
+      if (index_in_queue != std::numeric_limits<int32_t>::max())
+        has_dependency_ = true;
       if (next_trail_index > index_in_queue) {
         tmp_var_to_trail_index_in_queue_[next_entry.var] = next_trail_index;
         tmp_queue_.push_back(next_trail_index);
@@ -1695,7 +1700,8 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output) const {
     // Special case for a "leaf", we will never need this variable again.
     if (!has_dependency_) {
       tmp_to_clear_.push_back(entry.var);
-      tmp_var_to_trail_index_in_queue_[entry.var] = kint32max;
+      tmp_var_to_trail_index_in_queue_[entry.var] =
+          std::numeric_limits<int32_t>::max();
     }
   }
 
@@ -1854,8 +1860,8 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
       }
 
       // This is needed to detect if the propagator propagated anything or not.
-      const int64 old_integer_timestamp = integer_trail_->num_enqueues();
-      const int64 old_boolean_timestamp = trail->Index();
+      const int64_t old_integer_timestamp = integer_trail_->num_enqueues();
+      const int64_t old_boolean_timestamp = trail->Index();
 
       // TODO(user): Maybe just provide one function Propagate(watch_indices) ?
       std::vector<int>& watch_indices_ref = id_to_watch_indices_[id];

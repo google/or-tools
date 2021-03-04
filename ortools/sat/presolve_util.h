@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_PRESOLVE_UTIL_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -85,7 +86,7 @@ class DomainDeductions {
 
 // Replaces the variable var in ct using the definition constraint.
 // Currently the coefficient in the definition must be 1 or -1.
-void SubstituteVariable(int var, int64 var_coeff_in_definition,
+void SubstituteVariable(int var, int64_t var_coeff_in_definition,
                         const ConstraintProto& definition, ConstraintProto* ct);
 
 }  // namespace sat

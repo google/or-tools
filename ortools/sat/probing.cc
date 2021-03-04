@@ -13,6 +13,7 @@
 
 #include "ortools/sat/probing.h"
 
+#include <cstdint>
 #include <set>
 
 #include "ortools/base/iterator_adaptors.h"
@@ -373,11 +374,11 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
   const int num_variables = sat_solver->NumVariables();
   SparseBitset<LiteralIndex> processed(LiteralIndex(2 * num_variables));
 
-  int64 num_probed = 0;
-  int64 num_explicit_fix = 0;
-  int64 num_conflicts = 0;
-  int64 num_new_binary = 0;
-  int64 num_subsumed = 0;
+  int64_t num_probed = 0;
+  int64_t num_explicit_fix = 0;
+  int64_t num_conflicts = 0;
+  int64_t num_new_binary = 0;
+  int64_t num_subsumed = 0;
 
   const auto& trail = *(model->Get<Trail>());
   const auto& assignment = trail.Assignment();

@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_THETA_TREE_H_
 #define OR_TOOLS_SAT_THETA_TREE_H_
 
+#include <cstdint>
 #include <vector>
 
 #include "ortools/base/logging.h"
@@ -245,7 +246,7 @@ class ThetaLambdaTree {
 
 // Explicit instantiations in theta_Tree.cc.
 extern template class ThetaLambdaTree<IntegerValue>;
-extern template class ThetaLambdaTree<int64>;
+extern template class ThetaLambdaTree<int64_t>;
 
 }  // namespace sat
 }  // namespace operations_research

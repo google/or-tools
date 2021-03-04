@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_CHECKER_H_
 #define OR_TOOLS_SAT_CP_MODEL_CHECKER_H_
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -40,7 +41,7 @@ std::string ValidateCpModel(const CpModelProto& model);
 // The last two arguments are optional and help debugging a failing constraint
 // due to presolve.
 bool SolutionIsFeasible(const CpModelProto& model,
-                        const std::vector<int64>& variable_values,
+                        const std::vector<int64_t>& variable_values,
                         const CpModelProto* mapping_proto = nullptr,
                         const std::vector<int>* postsolve_mapping = nullptr);
 

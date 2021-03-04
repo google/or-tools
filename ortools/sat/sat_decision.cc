@@ -13,6 +13,8 @@
 
 #include "ortools/sat/sat_decision.h"
 
+#include <cstdint>
+
 #include "ortools/sat/util.h"
 
 namespace operations_research {
@@ -428,7 +430,7 @@ void SatDecisionPolicy::Untrail(int target_trail_index) {
 
       // TODO(user): This heuristic can make this code quite slow because
       // all the untrailed variable will cause a priority queue update.
-      const int64 num_bumps = num_bumps_[var];
+      const int64_t num_bumps = num_bumps_[var];
       double new_rate = 0.0;
       if (num_bumps > 0) {
         DCHECK_GT(num_conflicts, 0);

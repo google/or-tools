@@ -18,6 +18,7 @@
 #ifndef OR_TOOLS_SAT_ENCODING_H_
 #define OR_TOOLS_SAT_ENCODING_H_
 
+#include <cstdint>
 #include <deque>
 #include <vector>
 
@@ -100,7 +101,7 @@ class EncodingNode {
 
   // Fix the right-side variables with indices >= to the given upper_bound to
   // false.
-  void ApplyUpperBound(int64 upper_bound, SatSolver* solver);
+  void ApplyUpperBound(int64_t upper_bound, SatSolver* solver);
 
   void set_weight(Coefficient w) { weight_ = w; }
   Coefficient weight() const { return weight_; }

@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_FLATZINC_PRESOLVE_H_
 #define OR_TOOLS_FLATZINC_PRESOLVE_H_
 
+#include <cstdint>
 #include <functional>
 #include <string>
 
@@ -47,13 +48,13 @@ class Presolver {
   // constraint that defines this mapping.
   struct AffineMapping {
     IntegerVariable* variable;
-    int64 coefficient;
-    int64 offset;
+    int64_t coefficient;
+    int64_t offset;
     Constraint* constraint;
 
     AffineMapping()
         : variable(nullptr), coefficient(0), offset(0), constraint(nullptr) {}
-    AffineMapping(IntegerVariable* v, int64 c, int64 o, Constraint* ct)
+    AffineMapping(IntegerVariable* v, int64_t c, int64_t o, Constraint* ct)
         : variable(v), coefficient(c), offset(o), constraint(ct) {}
   };
 
@@ -64,9 +65,9 @@ class Presolver {
   // Eg. new_index_var = index_var1 * int_coeff + index_var2 + int_offset
   struct Array2DIndexMapping {
     IntegerVariable* variable1;
-    int64 coefficient;
+    int64_t coefficient;
     IntegerVariable* variable2;
-    int64 offset;
+    int64_t offset;
     Constraint* constraint;
 
     Array2DIndexMapping()
@@ -75,8 +76,8 @@ class Presolver {
           variable2(nullptr),
           offset(0),
           constraint(nullptr) {}
-    Array2DIndexMapping(IntegerVariable* v1, int64 c, IntegerVariable* v2,
-                        int64 o, Constraint* ct)
+    Array2DIndexMapping(IntegerVariable* v1, int64_t c, IntegerVariable* v2,
+                        int64_t o, Constraint* ct)
         : variable1(v1),
           coefficient(c),
           variable2(v2),

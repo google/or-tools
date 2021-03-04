@@ -13,6 +13,8 @@
 
 #include "ortools/sat/linear_constraint.h"
 
+#include <cstdint>
+
 #include "ortools/base/mathutil.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
@@ -175,7 +177,7 @@ namespace {
 // TODO(user): Template for any integer type and expose this?
 IntegerValue ComputeGcd(const std::vector<IntegerValue>& values) {
   if (values.empty()) return IntegerValue(1);
-  int64 gcd = 0;
+  int64_t gcd = 0;
   for (const IntegerValue value : values) {
     gcd = MathUtil::GCD64(gcd, std::abs(value.value()));
     if (gcd == 1) break;

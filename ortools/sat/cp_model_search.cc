@@ -13,6 +13,7 @@
 
 #include "ortools/sat/cp_model_search.h"
 
+#include <cstdint>
 #include <random>
 
 #include "absl/container/flat_hash_map.h"
@@ -40,7 +41,7 @@ struct VarValue {
 };
 
 const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
-    const absl::flat_hash_map<int, std::pair<int64, int64>>&
+    const absl::flat_hash_map<int, std::pair<int64_t, int64_t>>&
         var_to_coeff_offset_pair,
     const std::vector<Strategy>& strategies, Model* model) {
   IntegerEncoder* const integer_encoder = model->GetOrCreate<IntegerEncoder>();
@@ -196,7 +197,8 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
   }
 
   std::vector<Strategy> strategies;
-  absl::flat_hash_map<int, std::pair<int64, int64>> var_to_coeff_offset_pair;
+  absl::flat_hash_map<int, std::pair<int64_t, int64_t>>
+      var_to_coeff_offset_pair;
   for (const DecisionStrategyProto& proto : cp_model_proto.search_strategy()) {
     strategies.push_back(Strategy());
     Strategy& strategy = strategies.back();
@@ -244,7 +246,7 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
            cp_model_proto.variables(j).name();
   });
 
-  std::vector<std::pair<int64, int64>> old_domains(variable_mapping.size());
+  std::vector<std::pair<int64_t, int64_t>> old_domains(variable_mapping.size());
   return [instrumented_strategy, model, variable_mapping, cp_model_proto,
           old_domains, ref_to_display]() mutable {
     const BooleanOrIntegerLiteral decision = instrumented_strategy();

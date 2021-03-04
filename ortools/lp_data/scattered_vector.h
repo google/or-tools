@@ -159,6 +159,12 @@ struct ScatteredVector {
   void ClearNonZerosIfTooDense() {
     ClearNonZerosIfTooDense(kDefaultRatioForUsingDenseIteration);
   }
+
+  // Returns an over-estimate of the number of non-zeros. This is actually
+  // exact for sparse vector, or the full size otherwise.
+  size_t NumNonZerosEstimate() const {
+    return non_zeros.empty() ? values.size().value() : non_zeros.size();
+  }
 };
 
 // Specializations used in the code.

@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_DRAT_CHECKER_H_
 #define OR_TOOLS_SAT_DRAT_CHECKER_H_
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -216,7 +217,7 @@ class DratChecker {
   std::vector<std::vector<Literal>> GetClausesNeededForProof(
       ClauseIndex begin, ClauseIndex end) const;
 
-  void LogStatistics(int64 duration_nanos) const;
+  void LogStatistics(int64_t duration_nanos) const;
 
   // The index of the first infered clause in 'clauses_', or kNoClauseIndex if
   // there is no infered clause.

@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_INTEGER_EXPR_H_
 #define OR_TOOLS_SAT_INTEGER_EXPR_H_
 
+#include <cstdint>
 #include <functional>
 #include <vector>
 
@@ -298,11 +299,11 @@ class SquarePropagator : public PropagatorInterface {
 template <typename VectorInt>
 inline std::function<void(Model*)> WeightedSumLowerOrEqual(
     const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
-    int64 upper_bound) {
+    int64_t upper_bound) {
   // Special cases.
   CHECK_GE(vars.size(), 1);
   if (vars.size() == 1) {
-    const int64 c = coefficients[0];
+    const int64_t c = coefficients[0];
     CHECK_NE(c, 0);
     if (c > 0) {
       return LowerOrEqual(
@@ -403,10 +404,10 @@ inline std::function<void(Model*)> WeightedSumLowerOrEqual(
 template <typename VectorInt>
 inline std::function<void(Model*)> WeightedSumGreaterOrEqual(
     const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
-    int64 lower_bound) {
+    int64_t lower_bound) {
   // We just negate everything and use an <= constraints.
-  std::vector<int64> negated_coeffs(coefficients.begin(), coefficients.end());
-  for (int64& ref : negated_coeffs) ref = -ref;
+  std::vector<int64_t> negated_coeffs(coefficients.begin(), coefficients.end());
+  for (int64_t& ref : negated_coeffs) ref = -ref;
   return WeightedSumLowerOrEqual(vars, negated_coeffs, -lower_bound);
 }
 
@@ -414,7 +415,7 @@ inline std::function<void(Model*)> WeightedSumGreaterOrEqual(
 template <typename VectorInt>
 inline std::function<void(Model*)> FixedWeightedSum(
     const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
-    int64 value) {
+    int64_t value) {
   return [=](Model* model) {
     model->Add(WeightedSumGreaterOrEqual(vars, coefficients, value));
     model->Add(WeightedSumLowerOrEqual(vars, coefficients, value));
@@ -426,7 +427,7 @@ template <typename VectorInt>
 inline std::function<void(Model*)> ConditionalWeightedSumLowerOrEqual(
     const std::vector<Literal>& enforcement_literals,
     const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
-    int64 upper_bound) {
+    int64_t upper_bound) {
   // Special cases.
   CHECK_GE(vars.size(), 1);
   if (vars.size() == 1) {
@@ -514,10 +515,10 @@ template <typename VectorInt>
 inline std::function<void(Model*)> ConditionalWeightedSumGreaterOrEqual(
     const std::vector<Literal>& enforcement_literals,
     const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
-    int64 lower_bound) {
+    int64_t lower_bound) {
   // We just negate everything and use an <= constraint.
-  std::vector<int64> negated_coeffs(coefficients.begin(), coefficients.end());
-  for (int64& ref : negated_coeffs) ref = -ref;
+  std::vector<int64_t> negated_coeffs(coefficients.begin(), coefficients.end());
+  for (int64_t& ref : negated_coeffs) ref = -ref;
   return ConditionalWeightedSumLowerOrEqual(enforcement_literals, vars,
                                             negated_coeffs, -lower_bound);
 }
@@ -526,7 +527,7 @@ inline std::function<void(Model*)> ConditionalWeightedSumGreaterOrEqual(
 template <typename VectorInt>
 inline std::function<void(Model*)> WeightedSumLowerOrEqualReif(
     Literal is_le, const std::vector<IntegerVariable>& vars,
-    const VectorInt& coefficients, int64 upper_bound) {
+    const VectorInt& coefficients, int64_t upper_bound) {
   return [=](Model* model) {
     model->Add(ConditionalWeightedSumLowerOrEqual({is_le}, vars, coefficients,
                                                   upper_bound));
@@ -539,7 +540,7 @@ inline std::function<void(Model*)> WeightedSumLowerOrEqualReif(
 template <typename VectorInt>
 inline std::function<void(Model*)> WeightedSumGreaterOrEqualReif(
     Literal is_ge, const std::vector<IntegerVariable>& vars,
-    const VectorInt& coefficients, int64 lower_bound) {
+    const VectorInt& coefficients, int64_t lower_bound) {
   return [=](Model* model) {
     model->Add(ConditionalWeightedSumGreaterOrEqual({is_ge}, vars, coefficients,
                                                     lower_bound));
@@ -557,7 +558,7 @@ inline void LoadLinearConstraint(const LinearConstraint& cst, Model* model) {
   }
 
   // TODO(user): Remove the conversion!
-  std::vector<int64> converted_coeffs;
+  std::vector<int64_t> converted_coeffs;
   for (const IntegerValue v : cst.coeffs) converted_coeffs.push_back(v.value());
   if (cst.ub < kMaxIntegerValue) {
     model->Add(
@@ -583,7 +584,7 @@ inline void LoadConditionalLinearConstraint(
   // TODO(user): Remove the conversion!
   std::vector<Literal> converted_literals(enforcement_literals.begin(),
                                           enforcement_literals.end());
-  std::vector<int64> converted_coeffs;
+  std::vector<int64_t> converted_coeffs;
   for (const IntegerValue v : cst.coeffs) converted_coeffs.push_back(v.value());
 
   if (cst.ub < kMaxIntegerValue) {
@@ -601,7 +602,7 @@ inline void LoadConditionalLinearConstraint(
 template <typename VectorInt>
 inline std::function<void(Model*)> FixedWeightedSumReif(
     Literal is_eq, const std::vector<IntegerVariable>& vars,
-    const VectorInt& coefficients, int64 value) {
+    const VectorInt& coefficients, int64_t value) {
   return [=](Model* model) {
     // We creates two extra Boolean variables in this case. The alternative is
     // to code a custom propagator for the direction equality => reified.
@@ -618,7 +619,7 @@ inline std::function<void(Model*)> FixedWeightedSumReif(
 template <typename VectorInt>
 inline std::function<void(Model*)> WeightedSumNotEqual(
     const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
-    int64 value) {
+    int64_t value) {
   return [=](Model* model) {
     // Exactly one of these alternative must be true.
     const Literal is_lt = Literal(model->Add(NewBooleanVariable()), true);

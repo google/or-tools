@@ -13,6 +13,9 @@
 
 #include "ortools/sat/synchronization.h"
 
+#include <cstdint>
+#include <limits>
+
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/file.h"
 #include "ortools/sat/cp_model_loader.h"
@@ -50,7 +53,7 @@ void SharedRelaxationSolutionRepository::NewRelaxationSolution(
   if (response.solution().empty()) return;
 
   // Add this solution to the pool.
-  SharedSolutionRepository<int64>::Solution solution;
+  SharedSolutionRepository<int64_t>::Solution solution;
   solution.variable_values.assign(response.solution().begin(),
                                   response.solution().end());
   // For now we use the negated lower bound as the "internal objective" to
@@ -393,12 +396,12 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
   absl::MutexLock mutex_lock(&mutex_);
 
   if (model_proto_.has_objective()) {
-    const int64 objective_value =
+    const int64_t objective_value =
         ComputeInnerObjective(model_proto_.objective(), response);
 
     // Add this solution to the pool, even if it is not improving.
     if (!response.solution().empty()) {
-      SharedSolutionRepository<int64>::Solution solution;
+      SharedSolutionRepository<int64_t>::Solution solution;
       solution.variable_values.assign(response.solution().begin(),
                                       response.solution().end());
       solution.rank = objective_value;
@@ -447,8 +450,8 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
   if (log_updates_) {
     std::string solution_info = response.solution_info();
     if (model != nullptr) {
-      const int64 num_bool = model->Get<Trail>()->NumVariables();
-      const int64 num_fixed = model->Get<SatSolver>()->NumFixedVariables();
+      const int64_t num_bool = model->Get<Trail>()->NumVariables();
+      const int64_t num_fixed = model->Get<SatSolver>()->NumFixedVariables();
       absl::StrAppend(&solution_info, " fixed_bools:", num_fixed, "/",
                       num_bool);
     }
@@ -522,7 +525,7 @@ void SharedResponseManager::LoadDebugSolution(Model* model) {
   if (objective_def == nullptr) return;
 
   const IntegerVariable objective_var = objective_def->objective_var;
-  const int64 objective_value =
+  const int64_t objective_value =
       ComputeInnerObjective(model_proto_.objective(), response);
   debug_solution[objective_var] = objective_value;
   debug_solution[NegationOf(objective_var)] = -objective_value;
@@ -550,7 +553,7 @@ void SharedResponseManager::SetStatsFromModelInternal(Model* model) {
   best_response_.set_deterministic_time(
       time_limit->GetElapsedDeterministicTime());
 
-  int64 num_lp_iters = 0;
+  int64_t num_lp_iters = 0;
   for (const LinearProgrammingConstraint* lp :
        *model->GetOrCreate<LinearProgrammingConstraintCollection>()) {
     num_lp_iters += lp->total_num_simplex_iterations();
@@ -621,10 +624,12 @@ void SharedResponseManager::DisplayImprovementStatistics() {
 SharedBoundsManager::SharedBoundsManager(const CpModelProto& model_proto)
     : num_variables_(model_proto.variables_size()),
       model_proto_(model_proto),
-      lower_bounds_(num_variables_, kint64min),
-      upper_bounds_(num_variables_, kint64max),
-      synchronized_lower_bounds_(num_variables_, kint64min),
-      synchronized_upper_bounds_(num_variables_, kint64max) {
+      lower_bounds_(num_variables_, std::numeric_limits<int64_t>::min()),
+      upper_bounds_(num_variables_, std::numeric_limits<int64_t>::max()),
+      synchronized_lower_bounds_(num_variables_,
+                                 std::numeric_limits<int64_t>::min()),
+      synchronized_upper_bounds_(num_variables_,
+                                 std::numeric_limits<int64_t>::max()) {
   changed_variables_since_last_synchronize_.ClearAndResize(num_variables_);
   for (int i = 0; i < num_variables_; ++i) {
     lower_bounds_[i] = model_proto.variables(i).domain(0);
@@ -638,8 +643,8 @@ SharedBoundsManager::SharedBoundsManager(const CpModelProto& model_proto)
 void SharedBoundsManager::ReportPotentialNewBounds(
     const CpModelProto& model_proto, const std::string& worker_name,
     const std::vector<int>& variables,
-    const std::vector<int64>& new_lower_bounds,
-    const std::vector<int64>& new_upper_bounds) {
+    const std::vector<int64_t>& new_lower_bounds,
+    const std::vector<int64_t>& new_upper_bounds) {
   CHECK_EQ(variables.size(), new_lower_bounds.size());
   CHECK_EQ(variables.size(), new_upper_bounds.size());
   int num_improvements = 0;
@@ -648,10 +653,10 @@ void SharedBoundsManager::ReportPotentialNewBounds(
   for (int i = 0; i < variables.size(); ++i) {
     const int var = variables[i];
     if (var >= num_variables_) continue;
-    const int64 old_lb = lower_bounds_[var];
-    const int64 old_ub = upper_bounds_[var];
-    const int64 new_lb = new_lower_bounds[i];
-    const int64 new_ub = new_upper_bounds[i];
+    const int64_t old_lb = lower_bounds_[var];
+    const int64_t old_ub = upper_bounds_[var];
+    const int64_t new_lb = new_lower_bounds[i];
+    const int64_t new_ub = new_upper_bounds[i];
     const bool changed_lb = new_lb > old_lb;
     const bool changed_ub = new_ub < old_ub;
     CHECK_GE(var, 0);
@@ -693,9 +698,9 @@ int SharedBoundsManager::RegisterNewId() {
   id_to_changed_variables_.resize(id + 1);
   id_to_changed_variables_[id].ClearAndResize(num_variables_);
   for (int var = 0; var < num_variables_; ++var) {
-    const int64 lb = model_proto_.variables(var).domain(0);
+    const int64_t lb = model_proto_.variables(var).domain(0);
     const int domain_size = model_proto_.variables(var).domain_size();
-    const int64 ub = model_proto_.variables(var).domain(domain_size - 1);
+    const int64_t ub = model_proto_.variables(var).domain(domain_size - 1);
     if (lb != synchronized_lower_bounds_[var] ||
         ub != synchronized_upper_bounds_[var]) {
       id_to_changed_variables_[id].Set(var);
@@ -705,8 +710,8 @@ int SharedBoundsManager::RegisterNewId() {
 }
 
 void SharedBoundsManager::GetChangedBounds(
-    int id, std::vector<int>* variables, std::vector<int64>* new_lower_bounds,
-    std::vector<int64>* new_upper_bounds) {
+    int id, std::vector<int>* variables, std::vector<int64_t>* new_lower_bounds,
+    std::vector<int64_t>* new_upper_bounds) {
   variables->clear();
   new_lower_bounds->clear();
   new_upper_bounds->clear();

@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_INTERVALS_H_
 #define OR_TOOLS_SAT_INTERVALS_H_
 
+#include <cstdint>
 #include <functional>
 #include <vector>
 
@@ -35,7 +36,7 @@
 namespace operations_research {
 namespace sat {
 
-DEFINE_INT_TYPE(IntervalVariable, int32);
+DEFINE_INT_TYPE(IntervalVariable, int32_t);
 const IntervalVariable kNoIntervalVariable(-1);
 
 // This class maintains a set of intervals which correspond to three integer
@@ -604,13 +605,13 @@ inline std::function<IntegerVariable(const Model&)> SizeVar(
   };
 }
 
-inline std::function<int64(const Model&)> MinSize(IntervalVariable v) {
+inline std::function<int64_t(const Model&)> MinSize(IntervalVariable v) {
   return [=](const Model& model) {
     return model.Get<IntervalsRepository>()->MinSize(v).value();
   };
 }
 
-inline std::function<int64(const Model&)> MaxSize(IntervalVariable v) {
+inline std::function<int64_t(const Model&)> MaxSize(IntervalVariable v) {
   return [=](const Model& model) {
     return model.Get<IntervalsRepository>()->MaxSize(v).value();
   };
@@ -629,9 +630,9 @@ inline std::function<Literal(const Model&)> IsPresentLiteral(
   };
 }
 
-inline std::function<IntervalVariable(Model*)> NewInterval(int64 min_start,
-                                                           int64 max_end,
-                                                           int64 size) {
+inline std::function<IntervalVariable(Model*)> NewInterval(int64_t min_start,
+                                                           int64_t max_end,
+                                                           int64_t size) {
   return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
         model->Add(NewIntegerVariable(min_start, max_end)),
@@ -649,7 +650,7 @@ inline std::function<IntervalVariable(Model*)> NewInterval(
 }
 
 inline std::function<IntervalVariable(Model*)> NewIntervalWithVariableSize(
-    int64 min_start, int64 max_end, int64 min_size, int64 max_size) {
+    int64_t min_start, int64_t max_end, int64_t min_size, int64_t max_size) {
   return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
         model->Add(NewIntegerVariable(min_start, max_end)),
@@ -660,7 +661,7 @@ inline std::function<IntervalVariable(Model*)> NewIntervalWithVariableSize(
 }
 
 inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
-    int64 min_start, int64 max_end, int64 size, Literal is_present) {
+    int64_t min_start, int64_t max_end, int64_t size, Literal is_present) {
   return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
         model->Add(NewIntegerVariable(min_start, max_end)),
@@ -670,8 +671,8 @@ inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
 }
 
 inline std::function<IntervalVariable(Model*)>
-NewOptionalIntervalWithOptionalVariables(int64 min_start, int64 max_end,
-                                         int64 size, Literal is_present) {
+NewOptionalIntervalWithOptionalVariables(int64_t min_start, int64_t max_end,
+                                         int64_t size, Literal is_present) {
   return [=](Model* model) {
     // Note that we need to mark the optionality first.
     const IntegerVariable start =
@@ -696,8 +697,8 @@ inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
 }
 
 inline std::function<IntervalVariable(Model*)>
-NewOptionalIntervalWithVariableSize(int64 min_start, int64 max_end,
-                                    int64 min_size, int64 max_size,
+NewOptionalIntervalWithVariableSize(int64_t min_start, int64_t max_end,
+                                    int64_t min_size, int64_t max_size,
                                     Literal is_present) {
   return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(

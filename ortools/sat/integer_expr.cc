@@ -14,6 +14,7 @@
 #include "ortools/sat/integer_expr.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -279,7 +280,7 @@ bool LevelZeroEquality::Propagate() {
   // miplib problem that we close quickly, so I didn't add the extra code yet.
   if (trail_->CurrentDecisionLevel() != 0) return true;
 
-  int64 gcd = 0;
+  int64_t gcd = 0;
   IntegerValue sum(0);
   for (int i = 0; i < vars_.size(); ++i) {
     if (integer_trail_->IsFixed(vars_[i])) {
@@ -693,7 +694,7 @@ namespace {
 
 // TODO(user): Find better implementation?
 IntegerValue FloorSquareRoot(IntegerValue a) {
-  IntegerValue result(static_cast<int64>(std::floor(std::sqrt(ToDouble(a)))));
+  IntegerValue result(static_cast<int64_t>(std::floor(std::sqrt(ToDouble(a)))));
   while (result * result > a) --result;
   while ((result + 1) * (result + 1) <= a) ++result;
   return result;
@@ -701,7 +702,7 @@ IntegerValue FloorSquareRoot(IntegerValue a) {
 
 // TODO(user): Find better implementation?
 IntegerValue CeilSquareRoot(IntegerValue a) {
-  IntegerValue result(static_cast<int64>(std::ceil(std::sqrt(ToDouble(a)))));
+  IntegerValue result(static_cast<int64_t>(std::ceil(std::sqrt(ToDouble(a)))));
   while (result * result < a) ++result;
   while ((result - 1) * (result - 1) >= a) --result;
   return result;

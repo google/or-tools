@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_UTIL_H_
 #define OR_TOOLS_SAT_UTIL_H_
 
+#include <cstdint>
 #include <deque>
 
 #include "absl/random/bit_gen_ref.h"
@@ -135,13 +136,13 @@ class IncrementalAverage {
   void Reset(double reset_value);
 
   double CurrentAverage() const { return average_; }
-  int64 NumRecords() const { return num_records_; }
+  int64_t NumRecords() const { return num_records_; }
 
   void AddData(double new_record);
 
  private:
   double average_ = 0.0;
-  int64 num_records_ = 0;
+  int64_t num_records_ = 0;
 };
 
 // Manages exponential moving averages defined as
@@ -160,13 +161,13 @@ class ExponentialMovingAverage {
   double CurrentAverage() const { return average_; }
 
   // Returns the total number of added records so far.
-  int64 NumRecords() const { return num_records_; }
+  int64_t NumRecords() const { return num_records_; }
 
   void AddData(double new_record);
 
  private:
   double average_ = 0.0;
-  int64 num_records_ = 0;
+  int64_t num_records_ = 0;
   const double decaying_factor_;
 };
 
@@ -185,7 +186,7 @@ class Percentile {
   void AddRecord(double record);
 
   // Returns number of stored records.
-  int64 NumRecords() const { return records_.size(); }
+  int64_t NumRecords() const { return records_.size(); }
 
   // Note that this is not fast and runs in O(n log n) for n records.
   double GetPercentile(double percent);
@@ -202,8 +203,8 @@ class Percentile {
 // regexps.
 //
 // This method is exposed for testing purposes.
-void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
-                    std::vector<std::vector<int64>>* tuples);
+void CompressTuples(absl::Span<const int64_t> domain_sizes, int64_t any_value,
+                    std::vector<std::vector<int64_t>>* tuples);
 
 }  // namespace sat
 }  // namespace operations_research

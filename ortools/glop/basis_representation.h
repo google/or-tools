@@ -282,6 +282,9 @@ class BasisFactorization {
   double DeterministicTime() const;
 
  private:
+  // Called by ForceRefactorization() or Refactorize() or Initialize().
+  Status ComputeFactorization();
+
   // Return true if the submatrix of matrix_ given by basis_ is exactly the
   // identity (without permutation).
   bool IsIdentityBasis() const;

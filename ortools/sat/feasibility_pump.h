@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_SAT_FEASIBILITY_PUMP_H_
 #define OR_TOOLS_SAT_FEASIBILITY_PUMP_H_
 
+#include <cstdint>
+
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/lp_data/lp_data.h"
@@ -61,13 +63,13 @@ class FeasibilityPump {
   // solution. These functions should only be called when HasIntegerSolution()
   // is true.
   bool HasIntegerSolution() const { return integer_solution_is_set_; }
-  int64 IntegerSolutionObjectiveValue() const {
+  int64_t IntegerSolutionObjectiveValue() const {
     return integer_solution_objective_;
   }
   bool IntegerSolutionIsFeasible() const {
     return integer_solution_is_feasible_;
   }
-  int64 GetIntegerSolutionValue(IntegerVariable variable) const;
+  int64_t GetIntegerSolutionValue(IntegerVariable variable) const;
 
   // Returns false if the model is proven to be infeasible.
   bool Solve();
@@ -213,16 +215,16 @@ class FeasibilityPump {
   // Rounded Integer solution. This might not be feasible.
   bool integer_solution_is_set_ = false;
   bool integer_solution_is_feasible_ = false;
-  int64 integer_solution_objective_;
-  std::vector<int64> integer_solution_;
-  std::vector<int64> best_integer_solution_;
+  int64_t integer_solution_objective_;
+  std::vector<int64_t> integer_solution_;
+  std::vector<int64_t> best_integer_solution_;
   int num_infeasible_constraints_;
   // We use max infeasibility of all constraints.
-  int64 integer_solution_infeasibility_;
+  int64_t integer_solution_infeasibility_;
 
   // Sum of all simplex iterations performed by this class. This is useful to
   // test the incrementality and compare to other solvers.
-  int64 total_num_simplex_iterations_ = 0;
+  int64_t total_num_simplex_iterations_ = 0;
 
   // TODO(user): Tune default value. Expose as parameter.
   int max_fp_iterations_ = 20;

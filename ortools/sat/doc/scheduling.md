@@ -363,6 +363,8 @@ NoOverlapSampleSat()
 ### C++ code
 
 ```cpp
+#include <cstdint>
+
 #include "ortools/sat/cp_model.h"
 
 namespace operations_research {
@@ -370,7 +372,7 @@ namespace sat {
 
 void NoOverlapSampleSat() {
   CpModelBuilder cp_model;
-  const int64 kHorizon = 21;  // 3 weeks.
+  const int64_t kHorizon = 21;  // 3 weeks.
 
   const Domain horizon(0, kHorizon);
   // Task 0, duration 2.
