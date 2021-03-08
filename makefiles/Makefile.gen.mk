@@ -186,6 +186,7 @@ UTIL_DEPS = \
  $(SRC_DIR)/ortools/util/graph_export.h \
  $(SRC_DIR)/ortools/util/integer_pq.h \
  $(SRC_DIR)/ortools/util/lazy_mutable_copy.h \
+ $(SRC_DIR)/ortools/util/logging.h \
  $(SRC_DIR)/ortools/util/monoid_operation_tree.h \
  $(SRC_DIR)/ortools/util/permutation.h \
  $(SRC_DIR)/ortools/util/piecewise_linear_function.h \
@@ -217,6 +218,7 @@ UTIL_LIB_OBJS = \
  $(OBJ_DIR)/util/file_util.$O \
  $(OBJ_DIR)/util/fp_utils.$O \
  $(OBJ_DIR)/util/graph_export.$O \
+ $(OBJ_DIR)/util/logging.$O \
  $(OBJ_DIR)/util/piecewise_linear_function.$O \
  $(OBJ_DIR)/util/proto_tools.$O \
  $(OBJ_DIR)/util/range_query_function.$O \
@@ -264,6 +266,13 @@ objs/util/graph_export.$O: ortools/util/graph_export.cc \
  ortools/base/logging_export.h ortools/base/macros.h \
  ortools/base/vlog_is_on.h | $(OBJ_DIR)/util
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sutil$Sgraph_export.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sgraph_export.$O
+
+objs/util/logging.$O: ortools/util/logging.cc ortools/util/logging.h \
+ ortools/base/logging.h ortools/base/commandlineflags.h \
+ ortools/base/integral_types.h ortools/base/log_severity.h \
+ ortools/base/logging_export.h ortools/base/macros.h \
+ ortools/base/vlog_is_on.h | $(OBJ_DIR)/util
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sutil$Slogging.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Slogging.$O
 
 objs/util/piecewise_linear_function.$O: \
  ortools/util/piecewise_linear_function.cc \
@@ -1331,6 +1340,7 @@ SAT_DEPS = \
  $(SRC_DIR)/ortools/sat/zero_half_cuts.h \
  $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
  $(GEN_DIR)/ortools/sat/cp_model.pb.h \
+ $(GEN_DIR)/ortools/sat/cp_model_service.pb.h \
  $(GEN_DIR)/ortools/sat/sat_parameters.pb.h
 
 SAT_LIB_OBJS = \
@@ -1398,6 +1408,7 @@ SAT_LIB_OBJS = \
  $(OBJ_DIR)/sat/zero_half_cuts.$O \
  $(OBJ_DIR)/sat/boolean_problem.pb.$O \
  $(OBJ_DIR)/sat/cp_model.pb.$O \
+ $(OBJ_DIR)/sat/cp_model_service.pb.$O \
  $(OBJ_DIR)/sat/sat_parameters.pb.$O
 
 objs/sat/all_different.$O: ortools/sat/all_different.cc \
@@ -2867,6 +2878,21 @@ $(OBJ_DIR)/sat/cp_model.pb.$O: \
  $(GEN_DIR)/ortools/sat/cp_model.pb.cc | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Ssat$Scp_model.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model.pb.$O
 
+ortools/sat/cp_model_service.proto: ;
+
+$(GEN_DIR)/ortools/sat/cp_model_service.pb.cc: \
+ $(SRC_DIR)/ortools/sat/cp_model_service.proto \
+ $(GEN_DIR)/ortools/sat/cp_model.pb.cc | $(GEN_DIR)/ortools/sat
+	$(PROTOC) --experimental_allow_proto3_optional --proto_path=$(INC_DIR) $(PROTOBUF_PROTOC_INC) --cpp_out=$(GEN_PATH) $(SRC_DIR)/ortools/sat/cp_model_service.proto
+
+$(GEN_DIR)/ortools/sat/cp_model_service.pb.h: \
+ $(GEN_DIR)/ortools/sat/cp_model_service.pb.cc
+	$(TOUCH) $(GEN_PATH)$Sortools$Ssat$Scp_model_service.pb.h
+
+$(OBJ_DIR)/sat/cp_model_service.pb.$O: \
+ $(GEN_DIR)/ortools/sat/cp_model_service.pb.cc | $(OBJ_DIR)/sat
+	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Ssat$Scp_model_service.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_service.pb.$O
+
 ortools/sat/sat_parameters.proto: ;
 
 $(GEN_DIR)/ortools/sat/sat_parameters.pb.cc: \
@@ -3431,8 +3457,8 @@ objs/linear_solver/glop_interface.$O: \
 
 objs/linear_solver/glop_utils.$O: ortools/linear_solver/glop_utils.cc \
  ortools/linear_solver/glop_utils.h ortools/linear_solver/linear_solver.h \
- ortools/base/commandlineflags.h ortools/base/integral_types.h \
- ortools/base/logging.h ortools/base/log_severity.h \
+ ortools/base/integral_types.h ortools/base/logging.h \
+ ortools/base/commandlineflags.h ortools/base/log_severity.h \
  ortools/base/logging_export.h ortools/base/macros.h \
  ortools/base/vlog_is_on.h ortools/base/timer.h ortools/base/basictypes.h \
  ortools/linear_solver/linear_expr.h \
@@ -3509,8 +3535,8 @@ objs/linear_solver/linear_expr.$O: ortools/linear_solver/linear_expr.cc \
 
 objs/linear_solver/linear_solver.$O: \
  ortools/linear_solver/linear_solver.cc \
- ortools/linear_solver/linear_solver.h ortools/base/commandlineflags.h \
- ortools/base/integral_types.h ortools/base/logging.h \
+ ortools/linear_solver/linear_solver.h ortools/base/integral_types.h \
+ ortools/base/logging.h ortools/base/commandlineflags.h \
  ortools/base/log_severity.h ortools/base/logging_export.h \
  ortools/base/macros.h ortools/base/vlog_is_on.h ortools/base/timer.h \
  ortools/base/basictypes.h ortools/linear_solver/linear_expr.h \
@@ -3666,8 +3692,8 @@ objs/linear_solver/scip_callback.$O: \
  ortools/linear_solver/scip_callback.cc \
  ortools/linear_solver/scip_callback.h \
  ortools/linear_solver/linear_expr.h \
- ortools/linear_solver/linear_solver.h ortools/base/commandlineflags.h \
- ortools/base/integral_types.h ortools/base/logging.h \
+ ortools/linear_solver/linear_solver.h ortools/base/integral_types.h \
+ ortools/base/logging.h ortools/base/commandlineflags.h \
  ortools/base/log_severity.h ortools/base/logging_export.h \
  ortools/base/macros.h ortools/base/vlog_is_on.h ortools/base/timer.h \
  ortools/base/basictypes.h \
