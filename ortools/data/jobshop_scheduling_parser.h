@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_DATA_JOBSHOP_SCHEDULING_PARSER_H_
 #define OR_TOOLS_DATA_JOBSHOP_SCHEDULING_PARSER_H_
 
+#include <cstdint>
+
 #include "absl/strings/match.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/data/jobshop_scheduling.pb.h"
@@ -72,7 +74,7 @@ class JsspParser {
   void SetJobs(int job_count);
   void SetMachines(int machine_count);
   int strtoint32(const std::string& word);
-  int64 strtoint64(const std::string& word);
+  int64_t strtoint64(const std::string& word);
 
   JsspInputProblem problem_;
   int declared_machine_count_ = -1;

@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <map>
 #include <queue>
 #include <string>
@@ -67,7 +68,7 @@ void DenseIntTopologicalSorterTpl<stable_sort>::AddEdge(int from, int to) {
   AddNode(std::max(from, to));
 
   AdjacencyList& adj_list = adjacency_lists_[from];
-  const uint32 adj_list_size = adj_list.size();
+  const uint32_t adj_list_size = adj_list.size();
   if (adj_list_size <= kLazyDuplicateDetectionSizeThreshold) {
     for (AdjacencyList::const_iterator it = adj_list.begin();
          it != adj_list.end(); ++it) {

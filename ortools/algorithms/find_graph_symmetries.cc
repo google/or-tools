@@ -14,6 +14,7 @@
 #include "ortools/algorithms/find_graph_symmetries.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <limits>
 #include <numeric>
 
@@ -179,7 +180,7 @@ inline void IncrementCounterForNonSingletons(const T& nodes,
                                              const DynamicPartition& partition,
                                              std::vector<int>* node_count,
                                              std::vector<int>* nodes_seen,
-                                             int64* num_operations) {
+                                             int64_t* num_operations) {
   *num_operations += nodes.end() - nodes.begin();
   for (const int node : nodes) {
     if (partition.ElementsInSamePartAs(node).size() == 1) continue;
@@ -201,7 +202,7 @@ void GraphSymmetryFinder::RecursivelyRefinePartitionByAdjacency(
   //
   // TODO(user): We are really imprecise in our counting, but it is fine. We
   // just need a way to enforce a deterministic limit on the computation effort.
-  int64 num_operations = 0;
+  int64_t num_operations = 0;
 
   // Assuming that the partition was refined based on the adjacency on
   // parts [0 .. first_unrefined_part_index) already, we simply need to

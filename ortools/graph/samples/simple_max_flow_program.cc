@@ -14,6 +14,8 @@
 // [START program]
 // From Taha 'Introduction to Operations Research', example 6.4-2."""
 // [START import]
+#include <cstdint>
+
 #include "ortools/graph/max_flow.h"
 // [END import]
 
@@ -25,9 +27,9 @@ void SimpleMaxFlowProgram() {
   // Define three parallel arrays: start_nodes, end_nodes, and the capacities
   // between each pair. For instance, the arc from node 0 to node 1 has a
   // capacity of 20.
-  std::vector<int64> start_nodes = {0, 0, 0, 1, 1, 2, 2, 3, 3};
-  std::vector<int64> end_nodes = {1, 2, 3, 2, 4, 3, 4, 2, 4};
-  std::vector<int64> capacities = {20, 30, 10, 40, 30, 10, 20, 5, 20};
+  std::vector<int64_t> start_nodes = {0, 0, 0, 1, 1, 2, 2, 3, 3};
+  std::vector<int64_t> end_nodes = {1, 2, 3, 2, 4, 3, 4, 2, 4};
+  std::vector<int64_t> capacities = {20, 30, 10, 40, 30, 10, 20, 5, 20};
   // [END data]
 
   // [START constraints]

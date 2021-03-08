@@ -14,6 +14,7 @@
 #include "ortools/algorithms/knapsack_solver_for_cuts.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <queue>
 #include <utility>
 
@@ -342,7 +343,7 @@ double KnapsackSolverForCuts::Solve(TimeLimit* time_limit,
     search_queue.push(search_nodes_.back().get());
   }
 
-  int64 number_of_nodes_visited = 0;
+  int64_t number_of_nodes_visited = 0;
   while (!search_queue.empty() &&
          search_queue.top()->profit_upper_bound() > best_solution_profit_) {
     if (time_limit->LimitReached()) {

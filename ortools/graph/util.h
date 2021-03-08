@@ -17,6 +17,7 @@
 #define UTIL_GRAPH_UTIL_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <set>
@@ -420,7 +421,7 @@ std::vector<int> ComputeOnePossibleReverseArcMapping(
   }
   // Algorithm check, for debugging.
   if (DEBUG_MODE) {
-    int64 num_unmapped_arcs = 0;
+    int64_t num_unmapped_arcs = 0;
     for (const auto& p : arc_map) {
       num_unmapped_arcs += p.second.size();
     }

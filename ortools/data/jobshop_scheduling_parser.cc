@@ -14,6 +14,7 @@
 #include "ortools/data/jobshop_scheduling_parser.h"
 
 #include <cmath>
+#include <cstdint>
 
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
@@ -25,7 +26,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/data/jobshop_scheduling.pb.h"
 
-ABSL_FLAG(int64, jssp_scaling_up_factor, 100000L,
+ABSL_FLAG(int64_t, jssp_scaling_up_factor, 100000L,
           "Scaling factor for floating point penalties.");
 
 namespace operations_research {
@@ -137,7 +138,7 @@ void JsspParser::ProcessJsspLine(const std::string& line) {
       Job* const job = problem_.mutable_jobs(current_job_index_);
       for (int i = 0; i < declared_machine_count_; ++i) {
         const int machine_id = strtoint32(words[2 * i]);
-        const int64 duration = strtoint64(words[2 * i + 1]);
+        const int64_t duration = strtoint64(words[2 * i + 1]);
         Task* const task = job->add_tasks();
         task->add_machine(machine_id);
         task->add_duration(duration);
@@ -218,7 +219,7 @@ void JsspParser::ProcessTaillardLine(const std::string& line) {
       CHECK_EQ(declared_machine_count_, words.size());
       Job* const job = problem_.mutable_jobs(current_job_index_);
       for (int i = 0; i < declared_machine_count_; ++i) {
-        const int64 duration = strtoint64(words[i]);
+        const int64_t duration = strtoint64(words[i]);
         Task* const task = job->add_tasks();
         task->add_machine(i);
         task->add_duration(duration);
@@ -254,7 +255,7 @@ void JsspParser::ProcessFlexibleLine(const std::string& line) {
         for (int alt = 0; alt < alternatives_count; alt++) {
           // Machine id are 1 based.
           const int machine_id = strtoint32(words[index++]) - 1;
-          const int64 duration = strtoint64(words[index++]);
+          const int64_t duration = strtoint64(words[index++]);
           task->add_machine(machine_id);
           task->add_duration(duration);
         }
@@ -290,7 +291,7 @@ void JsspParser::ProcessSdstLine(const std::string& line) {
       Job* const job = problem_.mutable_jobs(current_job_index_);
       for (int i = 0; i < declared_machine_count_; ++i) {
         const int machine_id = strtoint32(words[2 * i]);
-        const int64 duration = strtoint64(words[2 * i + 1]);
+        const int64_t duration = strtoint64(words[2 * i + 1]);
         Task* const task = job->add_tasks();
         task->add_machine(machine_id);
         task->add_duration(duration);
@@ -319,7 +320,7 @@ void JsspParser::ProcessSdstLine(const std::string& line) {
       Machine* const machine =
           problem_.mutable_machines(current_machine_index_);
       for (const std::string& w : words) {
-        const int64 t = strtoint64(w);
+        const int64_t t = strtoint64(w);
         machine->mutable_transition_time_matrix()->add_transition_time(t);
       }
       if (++current_job_index_ == declared_job_count_) {
@@ -351,19 +352,19 @@ void JsspParser::ProcessTardinessLine(const std::string& line) {
     case JOB_COUNT_READ: {
       CHECK_GE(words.size(), 6);
       Job* const job = problem_.mutable_jobs(current_job_index_);
-      const int64 est = strtoint64(words[0]);
+      const int64_t est = strtoint64(words[0]);
       if (est != 0L) {
         job->mutable_earliest_start()->set_value(est);
       }
       job->set_late_due_date(strtoint64(words[1]));
       const double weight = std::stod(words[2]);
-      const int64 tardiness = static_cast<int64>(
+      const int64_t tardiness = static_cast<int64_t>(
           round(weight * absl::GetFlag(FLAGS_jssp_scaling_up_factor)));
       job->set_lateness_cost_per_time_unit(tardiness);
       const int num_operations = strtoint32(words[3]);
       for (int i = 0; i < num_operations; ++i) {
         const int machine_id = strtoint32(words[4 + 2 * i]) - 1;  // 1 based.
-        const int64 duration = strtoint64(words[5 + 2 * i]);
+        const int64_t duration = strtoint64(words[5 + 2 * i]);
         Task* const task = job->add_tasks();
         task->add_machine(machine_id);
         task->add_duration(duration);
@@ -502,7 +503,7 @@ void JsspParser::ProcessEarlyTardyLine(const std::string& line) {
       Job* const job = problem_.mutable_jobs(current_job_index_);
       for (int i = 0; i < declared_machine_count_; ++i) {
         const int machine_id = strtoint32(words[2 * i]);
-        const int64 duration = strtoint64(words[2 * i + 1]);
+        const int64_t duration = strtoint64(words[2 * i + 1]);
         Task* const task = job->add_tasks();
         task->add_machine(machine_id);
         task->add_duration(duration);
@@ -533,8 +534,8 @@ int JsspParser::strtoint32(const std::string& word) {
   return result;
 }
 
-int64 JsspParser::strtoint64(const std::string& word) {
-  int64 result;
+int64_t JsspParser::strtoint64(const std::string& word) {
+  int64_t result;
   CHECK(absl::SimpleAtoi(word, &result));
   return result;
 }

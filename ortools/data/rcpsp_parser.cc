@@ -13,6 +13,8 @@
 
 #include "ortools/data/rcpsp_parser.h"
 
+#include <cstdint>
+
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
@@ -596,8 +598,8 @@ int RcpspParser::strtoint32(const std::string& word) {
   return result;
 }
 
-int64 RcpspParser::strtoint64(const std::string& word) {
-  int64 result;
+int64_t RcpspParser::strtoint64(const std::string& word) {
+  int64_t result;
   CHECK(absl::SimpleAtoi(word, &result));
   return result;
 }

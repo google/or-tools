@@ -54,7 +54,7 @@
       SWIG_Error(SWIG_TypeError, "sequence(type) expected");
     return NULL;
   }
-$1.swap(temp);
+  $1 = std::move(temp);
 }
 %typemap(in) const std::vector<type>& (std::vector<type> temp),
              const std::vector<type>* (std::vector<type> temp) {
@@ -184,7 +184,7 @@ PY_LIST_INPUT_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
       }
     }
   }
-$1.swap(temp);
+  $1 = std::move(temp);
 }
 %enddef  // PY_LIST_LIST_INPUT_TYPEMAP
 
