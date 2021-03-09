@@ -3,7 +3,7 @@
 This is the documentation page for the Java wrapper of OR-Tools.
 
 This project aim to explain how you build a Java 1.8 native (for win32-x86-64,
-linux-x86-64 and darwin) maven package using [`mvn`](http://maven.apache.org/)
+linux-x86-64 and darwin) maven multiple package using [`mvn`](http://maven.apache.org/)
 and few [POM.xml](http://maven.apache.org/pom.html).
 
 ## Table of Content
@@ -12,9 +12,9 @@ and few [POM.xml](http://maven.apache.org/pom.html).
 * [Directory Layout](#directory-layout)
 * [Build Process](#build-process)
   * [Local Package](#local-package)
-  * [Building a native Package](#building-local-native-package)
-  * [Building a Local Package](#building-local-package)
-  * [Testing the Local Package](#testing-local-package)
+    * [Building a native Package](#building-local-native-package)
+    * [Building a Local Package](#building-local-package)
+    * [Testing the Local Mizux.Foo Package](#testing-local-package)
 * [Appendices](#appendices)
   * [Resources](#resources)
 * [Misc](#misc)
@@ -50,7 +50,7 @@ runtime on which platform the code is currently running.
 
 ### Local Package
 
-The pipeline for `linux-x86-64` should be as follow: \
+The pipeline for `linux-x86-64` should be as follow:  
 note: The pipeline will be similar for `darwin` and `win32-x86-64` architecture,
 don't hesitate to look at the CI log! ![Local Pipeline](doc/local_pipeline.svg)
 ![Legend](doc/legend.svg)
@@ -93,7 +93,7 @@ So now, let's create the local `com.google.ortools:ortools-java.jar` maven
 package which will depend on our previous native package.
 
 Here some dev-note concerning this `POM.xml`.
-- Add runtime dependency on each native package(s) available:
+* Add runtime dependency on each native package(s) availabe:
   ```xml
   <dependency>
     <groupId>com.google.ortools</groupId>
