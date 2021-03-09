@@ -3126,10 +3126,12 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   int new_size = 0;
   bool changed = false;
   int num_zero_demand_removed = 0;
-  int64 sum_of_max_demands = 0;
+  int64_t sum_of_max_demands = 0;
+  int64_t max_of_performed_demand_mins = 0;
   for (int i = 0; i < proto.intervals_size(); ++i) {
-    if (context_->working_model->constraints(proto.intervals(i))
-            .constraint_case() ==
+    const ConstraintProto& interval_ct =
+        context_->working_model->constraints(proto.intervals(i));
+    if (interval_ct.constraint_case() ==
         ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) {
       continue;
     }
@@ -3142,15 +3144,27 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     }
     sum_of_max_demands += demand_max;
 
+    if (interval_ct.enforcement_literal().empty()) {
+      max_of_performed_demand_mins =
+          std::max(max_of_performed_demand_mins, context_->MinOf(demand_ref));
+    }
+
     ct->mutable_cumulative()->set_intervals(new_size, proto.intervals(i));
     ct->mutable_cumulative()->set_demands(new_size, proto.demands(i));
     new_size++;
   }
 
-  const int64 capacity_min = context_->MinOf(proto.capacity());
-  const int64 capacity_max = context_->MaxOf(proto.capacity());
+  const int capacity_ref = proto.capacity();
+  if (max_of_performed_demand_mins > context_->MinOf(capacity_ref)) {
+    context_->UpdateRuleStats("cumulative: propagate min capacity.");
+    if (!context_->IntersectDomainWith(
+            capacity_ref, Domain(max_of_performed_demand_mins,
+                                 std::numeric_limits<int64>::max()))) {
+      return true;
+    }
+  }
 
-  if (sum_of_max_demands <= capacity_min) {
+  if (sum_of_max_demands <= context_->MinOf(capacity_ref)) {
     context_->UpdateRuleStats("cumulative: capacity exceeds sum of demands");
     return RemoveConstraint(ct);
   }
@@ -3171,9 +3185,10 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   }
 
   if (HasEnforcementLiteral(*ct)) return changed;
-  const int64_t capacity = context_->MinOf(proto.capacity());
 
   const int num_intervals = proto.intervals_size();
+  const int64_t capacity_max = context_->MaxOf(capacity_ref);
+
   bool with_start_view = false;
   std::vector<int> start_refs(num_intervals, -1);
 
@@ -3243,6 +3258,31 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       return RemoveConstraint(ct);
     } else {
       context_->UpdateRuleStats("cumulative: convert to no_overlap");
+
+      // Before we remove the cumulative, add constraints to enforce that the
+      // capacity is greater than the demand of any performed intervals.
+      for (int i = 0; i < proto.demands_size(); ++i) {
+        const int demand_ref = proto.demands(i);
+        const int64_t demand_max = context_->MaxOf(demand_ref);
+        if (demand_max > context_->MinOf(capacity_ref)) {
+          ConstraintProto* capacity_gt =
+              context_->working_model->add_constraints();
+          for (const int literal :
+               context_->working_model->constraints(proto.intervals(i))
+                   .enforcement_literal()) {
+            capacity_gt->add_enforcement_literal(literal);
+          }
+          capacity_gt->mutable_linear()->add_vars(capacity_ref);
+          capacity_gt->mutable_linear()->add_coeffs(1);
+          capacity_gt->mutable_linear()->add_vars(demand_ref);
+          capacity_gt->mutable_linear()->add_coeffs(-1);
+          capacity_gt->mutable_linear()->add_domain(0);
+          capacity_gt->mutable_linear()->add_domain(
+              std::numeric_limits<int64_t>::max());
+          context_->UpdateNewConstraintsVariableUsage();
+        }
+      }
+
       ConstraintProto* new_ct = context_->working_model->add_constraints();
       auto* arg = new_ct->mutable_no_overlap();
       for (const int interval : proto.intervals()) {
@@ -5625,7 +5665,7 @@ std::vector<int> FindDuplicateConstraints(const CpModelProto& model_proto) {
     copy.clear_name();
     s = copy.SerializeAsString();
 
-    const int64 hash = std::hash<std::string>()(s);
+    const int64_t hash = std::hash<std::string>()(s);
     const auto insert = equiv_constraints.insert({hash, c});
     if (!insert.second) {
       // Already present!
