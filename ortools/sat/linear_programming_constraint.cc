@@ -695,7 +695,7 @@ bool LinearProgrammingConstraint::SolveLp() {
 bool LinearProgrammingConstraint::AddCutFromConstraints(
     const std::string& name,
     const std::vector<std::pair<RowIndex, IntegerValue>>& integer_multipliers) {
-  // This is initialized to a valid linear contraint (by taking linear
+  // This is initialized to a valid linear constraint (by taking linear
   // combination of the LP rows) and will be transformed into a cut if
   // possible.
   //

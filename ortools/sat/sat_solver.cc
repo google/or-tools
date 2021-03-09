@@ -2067,7 +2067,7 @@ void SatSolver::ComputePBConflict(int max_trail_index,
     }
   }
 
-  // Compute the cummulative version.
+  // Compute the cumulative version.
   for (int i = 1; i < sum_for_le_level.size(); ++i) {
     sum_for_le_level[i] += sum_for_le_level[i - 1];
   }
@@ -2164,7 +2164,7 @@ void SatSolver::MinimizeConflictSimple(std::vector<Literal>* conflict) {
 // the conflict, the literals of its reason are recursively expanded using their
 // reason and so on. The recusion stop until we show that the initial literal
 // can be infered from the conflict variables alone, or if we show that this is
-// not the case. The result of any variable expension will be cached in order
+// not the case. The result of any variable expansion will be cached in order
 // not to be expended again.
 void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
   SCOPED_TIME_STAT(&stats_);
@@ -2268,8 +2268,8 @@ bool SatSolver::CanBeInferedFromConflictVariables(BooleanVariable variable) {
     const int level = DecisionLevel(var);
     if (level == 0) {
       // Note that this is not needed if the solver is not configured to produce
-      // an unsat proof. However, the (level == 0) test shoud always be false in
-      // this case because there will never be literals of level zero in any
+      // an unsat proof. However, the (level == 0) test should always be false
+      // in this case because there will never be literals of level zero in any
       // reason when we don't want a proof.
       is_marked_.Set(var);
       continue;

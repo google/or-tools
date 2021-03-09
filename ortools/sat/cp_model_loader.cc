@@ -385,7 +385,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
   };
   std::vector<InequalityDetectionHelper> inequalities;
 
-  // Loop over all contraints and fill var_to_equalities and inequalities.
+  // Loop over all constraints and fill var_to_equalities and inequalities.
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (ct.constraint_case() != ConstraintProto::ConstraintCase::kLinear) {
       continue;
@@ -585,7 +585,7 @@ void CpModelMapping::PropagateEncodingFromEquivalenceRelations(
   auto* encoder = m->GetOrCreate<IntegerEncoder>();
   auto* sat_solver = m->GetOrCreate<SatSolver>();
 
-  // Loop over all contraints and find affine ones.
+  // Loop over all constraints and find affine ones.
   int64_t num_associations = 0;
   int64_t num_set_to_false = 0;
   for (const ConstraintProto& ct : model_proto.constraints()) {

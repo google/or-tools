@@ -15,7 +15,6 @@ syntax = "proto3";
 
 package operations_research.sat.v1;
 
-import "google/protobuf/duration.proto";
 import "ortools/sat/cp_model.proto";
 
 option csharp_namespace = "Google.OrTools.Sat";

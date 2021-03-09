@@ -103,7 +103,7 @@ class CpModelMapping {
       const CpModelProto& model_proto, Model* m);
 
   // Returns true if the given CpModelProto variable reference refers to a
-  // Boolean varaible. Such variable will always have an associated Literal(),
+  // Boolean variable. Such variable will always have an associated Literal(),
   // but not always an associated Integer().
   bool IsBoolean(int ref) const {
     DCHECK_LT(PositiveRef(ref), booleans_.size());
