@@ -1477,10 +1477,8 @@ void ExpandCpModel(PresolveContext* context) {
 
     // Early exit if the model is unsat.
     if (context->ModelIsUnsat()) {
-      if (VLOG_IS_ON(1) || context->params().log_search_progress()) {
-        LOG(INFO) << "UNSAT after expansion of "
-                  << ProtobufShortDebugString(*ct);
-      }
+      SOLVER_LOG(context->logger(), "UNSAT after expansion of ",
+                 ProtobufShortDebugString(*ct));
       return;
     }
   }

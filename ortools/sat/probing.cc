@@ -25,6 +25,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -37,10 +38,10 @@ Prober::Prober(Model* model)
       implied_bounds_(model->GetOrCreate<ImpliedBounds>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
-      implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()) {}
+      implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
+      logger_(model->GetOrCreate<SolverLogger>()) {}
 
-bool Prober::ProbeBooleanVariables(const double deterministic_time_limit,
-                                   bool log_info) {
+bool Prober::ProbeBooleanVariables(const double deterministic_time_limit) {
   const int num_variables = sat_solver_->NumVariables();
   std::vector<BooleanVariable> bool_vars;
   for (BooleanVariable b(0); b < num_variables; ++b) {
@@ -50,7 +51,7 @@ bool Prober::ProbeBooleanVariables(const double deterministic_time_limit,
     }
     bool_vars.push_back(b);
   }
-  return ProbeBooleanVariables(deterministic_time_limit, bool_vars, log_info);
+  return ProbeBooleanVariables(deterministic_time_limit, bool_vars);
 }
 
 bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
@@ -194,10 +195,9 @@ bool Prober::ProbeOneVariable(BooleanVariable b) {
   return ProbeOneVariableInternal(b);
 }
 
-bool Prober::ProbeBooleanVariables(const double deterministic_time_limit,
-                                   absl::Span<const BooleanVariable> bool_vars,
-                                   bool log_info) {
-  log_info |= VLOG_IS_ON(1);
+bool Prober::ProbeBooleanVariables(
+    const double deterministic_time_limit,
+    absl::Span<const BooleanVariable> bool_vars) {
   WallTimer wall_timer;
   wall_timer.Start();
 
@@ -244,33 +244,35 @@ bool Prober::ProbeBooleanVariables(const double deterministic_time_limit,
   }
 
   // Display stats.
-  if (log_info) {
+  if (logger_->LoggingIsEnabled()) {
     const double time_diff =
         time_limit_->GetElapsedDeterministicTime() - initial_deterministic_time;
     const int num_fixed = sat_solver_->LiteralTrail().Index();
     const int num_newly_fixed = num_fixed - initial_num_fixed;
-    LOG(INFO) << "Probing deterministic_time: " << time_diff
-              << " (limit: " << deterministic_time_limit
-              << ") wall_time: " << wall_timer.Get() << " ("
-              << (limit_reached ? "Aborted " : "") << num_probed << "/"
-              << bool_vars.size() << ")";
-    LOG_IF(INFO, num_newly_fixed > 0)
-        << "  - new fixed Boolean: " << num_newly_fixed << " (" << num_fixed
-        << "/" << sat_solver_->NumVariables() << ")";
-    LOG_IF(INFO, num_new_holes_ > 0)
-        << "  - new integer holes: " << num_new_holes_;
-    LOG_IF(INFO, num_new_integer_bounds_ > 0)
-        << "  - new integer bounds: " << num_new_integer_bounds_;
-    LOG_IF(INFO, num_new_binary_ > 0)
-        << "  - new binary clause: " << num_new_binary_;
+    SOLVER_LOG(logger_, "Probing deterministic_time: ", time_diff,
+               " (limit: ", deterministic_time_limit,
+               ") wall_time: ", wall_timer.Get(), " (",
+               (limit_reached ? "Aborted " : ""), num_probed, "/",
+               bool_vars.size(), ")");
+    if (num_newly_fixed > 0) {
+      SOLVER_LOG(logger_, "  - new fixed Boolean: ", num_newly_fixed, " (",
+                 num_fixed, "/", sat_solver_->NumVariables(), ")");
+    }
+    if (num_new_holes_ > 0) {
+      SOLVER_LOG(logger_, "  - new integer holes: ", num_new_holes_);
+    }
+    if (num_new_integer_bounds_ > 0) {
+      SOLVER_LOG(logger_, "  - new integer bounds: ", num_new_integer_bounds_);
+    }
+    if (num_new_binary_ > 0) {
+      SOLVER_LOG(logger_, "  - new binary clause: ", num_new_binary_);
+    }
   }
 
   return true;
 }
 
-bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
-                               bool log_info) {
-  log_info |= VLOG_IS_ON(1);
+bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model) {
   WallTimer wall_timer;
   wall_timer.Start();
 
@@ -281,6 +283,7 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
 
   auto* time_limit = model->GetOrCreate<TimeLimit>();
   const int initial_num_fixed = sat_solver->LiteralTrail().Index();
+  auto* logger = model->GetOrCreate<SolverLogger>();
 
   // Note that this code do not care about the non-Boolean part and just try to
   // assign the existing Booleans.
@@ -309,13 +312,13 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
     elapsed_dtime += time_limit->GetElapsedDeterministicTime();
 
     if (result == SatSolver::FEASIBLE) {
-      LOG_IF(INFO, log_info) << "Trivial exploration found feasible solution!";
+      SOLVER_LOG(logger, "Trivial exploration found feasible solution!");
       time_limit->AdvanceDeterministicTime(elapsed_dtime);
       return true;
     }
 
     if (!sat_solver->RestoreSolverToAssumptionLevel()) {
-      LOG_IF(INFO, log_info) << "UNSAT during trivial exploration heuristic.";
+      SOLVER_LOG(logger, "UNSAT during trivial exploration heuristic.");
       time_limit->AdvanceDeterministicTime(elapsed_dtime);
       return false;
     }
@@ -334,16 +337,15 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
   time_limit->AdvanceDeterministicTime(elapsed_dtime);
   if (!sat_solver->RestoreSolverToAssumptionLevel()) return false;
 
-  if (log_info) {
+  if (logger->LoggingIsEnabled()) {
     const int num_fixed = sat_solver->LiteralTrail().Index();
     const int num_newly_fixed = num_fixed - initial_num_fixed;
     const int num_variables = sat_solver->NumVariables();
-    LOG(INFO) << "Random exploration."
-              << " num_fixed: +" << num_newly_fixed << " (" << num_fixed << "/"
-              << num_variables << ")"
-              << " dtime: " << elapsed_dtime << "/" << deterministic_time_limit
-              << " wtime: " << wall_timer.Get()
-              << (limit_reached ? " (Aborted)" : "");
+    SOLVER_LOG(logger, "Random exploration.", " num_fixed: +", num_newly_fixed,
+               " (", num_fixed, "/", num_variables, ")",
+               " dtime: ", elapsed_dtime, "/", deterministic_time_limit,
+               " wtime: ", wall_timer.Get(),
+               (limit_reached ? " (Aborted)" : ""));
   }
   return sat_solver->FinishPropagation();
 }

@@ -3949,7 +3949,7 @@ void CpModelPresolver::PresolvePureSatPart() {
 
   const int num_variables = context_->working_model->variables_size();
   SatPostsolver sat_postsolver(num_variables);
-  SatPresolver sat_presolver(&sat_postsolver);
+  SatPresolver sat_presolver(&sat_postsolver, logger_);
   sat_presolver.SetNumVariables(num_variables);
   sat_presolver.SetTimeLimit(context_->time_limit());
 
@@ -4079,7 +4079,7 @@ void CpModelPresolver::PresolvePureSatPart() {
   const int num_passes = params.presolve_use_bva() ? 4 : 1;
   for (int i = 0; i < num_passes; ++i) {
     const int old_num_clause = sat_postsolver.NumClauses();
-    if (!sat_presolver.Presolve(can_be_removed, context_->log_info())) {
+    if (!sat_presolver.Presolve(can_be_removed)) {
       VLOG(1) << "UNSAT during SAT presolve.";
       return (void)context_->NotifyThatModelIsUnsat();
     }
@@ -4500,10 +4500,8 @@ void CpModelPresolver::TransformIntoMaxCliques() {
     context_->UpdateRuleStats("at_most_one: transformed into max clique.");
   }
 
-  if (context_->log_info()) {
-    LOG(INFO) << "Merged " << num_old_cliques << " into " << num_new_cliques
-              << " cliques.";
-  }
+  SOLVER_LOG(logger_, "Merged ", num_old_cliques, " into ", num_new_cliques,
+             " cliques.");
 }
 
 bool CpModelPresolver::PresolveOneConstraint(int c) {
@@ -4622,11 +4620,11 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
 bool CpModelPresolver::ProcessSetPPCSubset(
     int c1, int c2, const std::vector<int>& c2_minus_c1,
     const std::vector<int>& original_constraint_index,
-    std::vector<bool>* removed) {
+    std::vector<bool>* marked_for_removal) {
   if (context_->ModelIsUnsat()) return false;
 
-  CHECK(!(*removed)[c1]);
-  CHECK(!(*removed)[c2]);
+  CHECK(!(*marked_for_removal)[c1]);
+  CHECK(!(*marked_for_removal)[c2]);
 
   ConstraintProto* ct1 = context_->working_model->mutable_constraints(
       original_constraint_index[c1]);
@@ -4654,7 +4652,7 @@ bool CpModelPresolver::ProcessSetPPCSubset(
     }
 
     // Remove c1.
-    (*removed)[c1] = true;
+    (*marked_for_removal)[c1] = true;
     ct1->Clear();
     context_->UpdateConstraintVariableUsage(original_constraint_index[c1]);
     return true;
@@ -4665,7 +4663,7 @@ bool CpModelPresolver::ProcessSetPPCSubset(
       ct2->constraint_case() == ConstraintProto::kBoolOr) {
     context_->UpdateRuleStats("setppc: removed dominated constraints");
 
-    (*removed)[c2] = true;
+    (*marked_for_removal)[c2] = true;
     ct2->Clear();
     context_->UpdateConstraintVariableUsage(original_constraint_index[c2]);
     return true;
@@ -4675,7 +4673,7 @@ bool CpModelPresolver::ProcessSetPPCSubset(
       (ct2->constraint_case() == ConstraintProto::kAtMostOne ||
        ct2->constraint_case() == ConstraintProto::kExactlyOne)) {
     context_->UpdateRuleStats("setppc: removed dominated constraints");
-    (*removed)[c1] = true;
+    (*marked_for_removal)[c1] = true;
     ct1->Clear();
     context_->UpdateConstraintVariableUsage(original_constraint_index[c1]);
     return true;
@@ -4912,8 +4910,8 @@ void CpModelPresolver::EncodeAllAffineRelations() {
   // remove the special marker to have a proper constraint variable graph.
   context_->RemoveAllVariablesFromAffineRelationConstraint();
 
-  if (context_->log_info() && num_added > 0) {
-    LOG(INFO) << num_added << " affine relations still in the model.";
+  if (num_added > 0) {
+    SOLVER_LOG(logger_, num_added, " affine relations still in the model.");
   }
 }
 
@@ -5008,10 +5006,10 @@ void CpModelPresolver::PresolveToFixPoint() {
       const int old_num_constraint =
           context_->working_model->constraints_size();
       const bool changed = PresolveOneConstraint(c);
-      if (context_->ModelIsUnsat() && context_->log_info()) {
-        LOG(INFO) << "Unsat after presolving constraint #" << c
-                  << " (warning, dump might be inconsistent): "
-                  << context_->working_model->constraints(c).ShortDebugString();
+      if (context_->ModelIsUnsat()) {
+        SOLVER_LOG(logger_, "Unsat after presolving constraint #", c,
+                   " (warning, dump might be inconsistent): ",
+                   context_->working_model->constraints(c).ShortDebugString());
       }
 
       // Add to the queue any newly created constraints.
@@ -5172,18 +5170,19 @@ void CpModelPresolver::PresolveToFixPoint() {
 }
 
 void LogInfoFromContext(const PresolveContext* context) {
-  LOG(INFO) << "- " << context->NumAffineRelations()
-            << " affine relations were detected.";
-  LOG(INFO) << "- " << context->NumEquivRelations()
-            << " variable equivalence relations were detected.";
+  SolverLogger* logger = context->logger();
+  SOLVER_LOG(logger, "- ", context->NumAffineRelations(),
+             " affine relations were detected.");
+  SOLVER_LOG(logger, "- ", context->NumEquivRelations(),
+             " variable equivalence relations were detected.");
   std::map<std::string, int> sorted_rules(context->stats_by_rule_name.begin(),
                                           context->stats_by_rule_name.end());
   for (const auto& entry : sorted_rules) {
     if (entry.second == 1) {
-      LOG(INFO) << "- rule '" << entry.first << "' was applied 1 time.";
+      SOLVER_LOG(logger, "- rule '", entry.first, "' was applied 1 time.");
     } else {
-      LOG(INFO) << "- rule '" << entry.first << "' was applied " << entry.second
-                << " times.";
+      SOLVER_LOG(logger, "- rule '", entry.first, "' was applied ",
+                 entry.second, " times.");
     }
   }
 }
@@ -5200,7 +5199,9 @@ bool PresolveCpModel(PresolveContext* context,
 
 CpModelPresolver::CpModelPresolver(PresolveContext* context,
                                    std::vector<int>* postsolve_mapping)
-    : postsolve_mapping_(postsolve_mapping), context_(context) {
+    : postsolve_mapping_(postsolve_mapping),
+      context_(context),
+      logger_(context->logger()) {
   // TODO(user): move in the context.
   context_->keep_all_feasible_solutions =
       context_->params().keep_all_feasible_solutions_in_presolve() ||
@@ -5243,13 +5244,11 @@ CpModelPresolver::CpModelPresolver(PresolveContext* context,
 // - Everything will be remapped so that only the variables appearing in some
 //   constraints will be kept and their index will be in [0, num_new_variables).
 bool CpModelPresolver::Presolve() {
-  context_->enable_stats = context_->log_info();
-
   // If presolve is false, just run expansion.
   if (!context_->params().cp_model_presolve()) {
     context_->UpdateNewConstraintsVariableUsage();
     ExpandCpModel(context_);
-    if (context_->log_info()) LogInfoFromContext(context_);
+    if (logger_->LoggingIsEnabled()) LogInfoFromContext(context_);
     return true;
   }
 
@@ -5413,7 +5412,7 @@ bool CpModelPresolver::Presolve() {
   }
 
   if (context_->ModelIsUnsat()) {
-    if (context_->log_info()) LogInfoFromContext(context_);
+    if (logger_->LoggingIsEnabled()) LogInfoFromContext(context_);
 
     // Set presolved_model to the simplest UNSAT problem (empty clause).
     context_->working_model->Clear();
@@ -5515,7 +5514,7 @@ bool CpModelPresolver::Presolve() {
   }
 
   // Stats and checks.
-  if (context_->log_info()) LogInfoFromContext(context_);
+  if (logger_->LoggingIsEnabled()) LogInfoFromContext(context_);
 
   // One possible error that is difficult to avoid here: because of our
   // objective expansion, we might detect a possible overflow...
@@ -5524,18 +5523,15 @@ bool CpModelPresolver::Presolve() {
   {
     const std::string error = ValidateCpModel(*context_->working_model);
     if (!error.empty()) {
-      if (context_->log_info()) {
-        LOG(INFO) << "Error while validating postsolved model: " << error;
-      }
+      SOLVER_LOG(logger_, "Error while validating postsolved model: ", error);
       return false;
     }
   }
   {
     const std::string error = ValidateCpModel(*context_->mapping_model);
     if (!error.empty()) {
-      if (context_->log_info()) {
-        LOG(INFO) << "Error while validating mapping_model model: " << error;
-      }
+      SOLVER_LOG(logger_,
+                 "Error while validating mapping_model model: ", error);
       return false;
     }
   }

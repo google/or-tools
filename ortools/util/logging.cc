@@ -13,6 +13,7 @@
 
 #include "ortools/util/logging.h"
 
+#include "absl/strings/str_cat.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {
@@ -25,11 +26,12 @@ void SolverLogger::AddInfoLoggingCallback(
 void SolverLogger::LogInfo(const char* source_filename, int source_line,
                            const std::string& message) {
   if (info_callbacks_.empty() || force_standard_logging_) {
-    google::LogMessage(source_filename, source_line).stream() << message;
+    google::LogMessage(source_filename, source_line).stream()
+        << prefix_ << message;
   }
 
   for (const auto& callback : info_callbacks_) {
-    callback(message);
+    callback(absl::StrCat(prefix_, message));
   }
 }
 

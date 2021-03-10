@@ -32,6 +32,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -169,9 +170,10 @@ class SharedResponseManager {
  public:
   // If log_updates is true, then all updates to the global "state" will be
   // logged. This class is responsible for our solver log progress.
-  SharedResponseManager(bool log_updates, bool enumerate_all_solutions,
-                        const CpModelProto* proto, const WallTimer* wall_timer,
-                        SharedTimeLimit* shared_time_limit);
+  SharedResponseManager(bool enumerate_all_solutions, const CpModelProto* proto,
+                        const WallTimer* wall_timer,
+                        SharedTimeLimit* shared_time_limit,
+                        SolverLogger* logger);
 
   // Reports OPTIMAL and stop the search if any gap limit are specified and
   // crossed. By default, we only stop when we have the true optimal, which is
@@ -311,7 +313,6 @@ class SharedResponseManager {
   void RegisterObjectiveBoundImprovement(const std::string& improvement_info)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
-  const bool log_updates_;
   const bool enumerate_all_solutions_;
   const CpModelProto& model_proto_;
   const WallTimer& wall_timer_;
@@ -354,6 +355,8 @@ class SharedResponseManager {
   // Used for statistics of the improvements found by workers.
   std::map<std::string, int> primal_improvements_count_ ABSL_GUARDED_BY(mutex_);
   std::map<std::string, int> dual_improvements_count_ ABSL_GUARDED_BY(mutex_);
+
+  SolverLogger* logger_;
 };
 
 // This class manages a pool of lower and upper bounds on a set of variables in

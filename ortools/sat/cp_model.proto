@@ -661,7 +661,7 @@ enum CpSolverStatus {
 //
 // TODO(user): support returning multiple solutions. Look at the Stubby
 // streaming API as we probably wants to get them as they are found.
-// Next id: 26
+// Next id: 27
 message CpSolverResponse {
   // The status of the solve.
   CpSolverStatus status = 1;
@@ -747,4 +747,8 @@ message CpSolverResponse {
 
   // Additional information about how the solution was found.
   string solution_info = 20;
+
+  // The solve log will be filled if the fill_log_in_response parameter is set
+  // to true.
+  string solve_log = 26;
 }

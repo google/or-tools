@@ -191,6 +191,7 @@ class CpModelPresolver {
 
   std::vector<int>* postsolve_mapping_;
   PresolveContext* context_;
+  SolverLogger* logger_;
 
   // Used by CanonicalizeLinearExpressionInternal().
   std::vector<std::pair<int, int64_t>> tmp_terms_;

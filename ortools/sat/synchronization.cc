@@ -31,6 +31,7 @@
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
 ABSL_FLAG(bool, cp_model_dump_solutions, false,
@@ -102,34 +103,36 @@ void SharedIncompleteSolutionManager::AddNewSolution(
 }
 
 // TODO(user): Experiments and play with the num_solutions_to_keep parameter.
-SharedResponseManager::SharedResponseManager(bool log_updates,
-                                             bool enumerate_all_solutions,
+SharedResponseManager::SharedResponseManager(bool enumerate_all_solutions,
                                              const CpModelProto* proto,
                                              const WallTimer* wall_timer,
-                                             SharedTimeLimit* shared_time_limit)
-    : log_updates_(log_updates),
-      enumerate_all_solutions_(enumerate_all_solutions),
+                                             SharedTimeLimit* shared_time_limit,
+                                             SolverLogger* logger)
+    : enumerate_all_solutions_(enumerate_all_solutions),
       model_proto_(*proto),
       wall_timer_(*wall_timer),
       shared_time_limit_(shared_time_limit),
-      solutions_(/*num_solutions_to_keep=*/3) {}
+      solutions_(/*num_solutions_to_keep=*/3),
+      logger_(logger) {}
 
 namespace {
 
-void LogProgress(const std::string& event_or_solution_count,
-                 double time_in_seconds, double obj_best, double obj_lb,
-                 double obj_ub, const std::string& solution_info) {
+std::string ProgressMessage(const std::string& event_or_solution_count,
+                            double time_in_seconds, double obj_best,
+                            double obj_lb, double obj_ub,
+                            const std::string& solution_info) {
   const std::string obj_next =
       absl::StrFormat("next:[%.9g,%.9g]", obj_lb, obj_ub);
-  LOG(INFO) << absl::StrFormat("#%-5s %6.2fs best:%-5.9g %-15s %s",
-                               event_or_solution_count, time_in_seconds,
-                               obj_best, obj_next, solution_info);
+  return absl::StrFormat("#%-5s %6.2fs best:%-5.9g %-15s %s",
+                         event_or_solution_count, time_in_seconds, obj_best,
+                         obj_next, solution_info);
 }
 
-void LogSatProgress(const std::string& event_or_solution_count,
-                    double time_in_seconds, const std::string& solution_info) {
-  LOG(INFO) << absl::StrFormat("#%-5s %6.2fs  %s", event_or_solution_count,
-                               time_in_seconds, solution_info);
+std::string SatProgressMessage(const std::string& event_or_solution_count,
+                               double time_in_seconds,
+                               const std::string& solution_info) {
+  return absl::StrFormat("#%-5s %6.2fs  %s", event_or_solution_count,
+                         time_in_seconds, solution_info);
 }
 
 }  // namespace
@@ -193,8 +196,8 @@ void SharedResponseManager::TestGapLimitsIfNeeded() {
       ScaleObjectiveValue(obj, inner_objective_lower_bound_);
   const double gap = std::abs(user_best - user_bound);
   if (gap <= absolute_gap_limit_) {
-    LOG_IF(INFO, log_updates_)
-        << "Absolute gap limit of " << absolute_gap_limit_ << " reached.";
+    SOLVER_LOG(logger_, "Absolute gap limit of ", absolute_gap_limit_,
+               " reached.");
     best_response_.set_status(CpSolverStatus::OPTIMAL);
 
     // Note(user): Some code path in single-thread assumes that the problem
@@ -203,8 +206,8 @@ void SharedResponseManager::TestGapLimitsIfNeeded() {
     shared_time_limit_->Stop();
   }
   if (gap / std::max(1.0, std::abs(user_best)) < relative_gap_limit_) {
-    LOG_IF(INFO, log_updates_)
-        << "Relative gap limit of " << relative_gap_limit_ << " reached.";
+    SOLVER_LOG(logger_, "Relative gap limit of ", relative_gap_limit_,
+               " reached.");
     best_response_.set_status(CpSolverStatus::OPTIMAL);
 
     // Same as above.
@@ -248,10 +251,11 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
       best_response_.set_status(CpSolverStatus::INFEASIBLE);
     }
     if (update_integral_on_each_change_) UpdatePrimalIntegralInternal();
-    if (log_updates_) LogSatProgress("Done", wall_timer_.Get(), update_info);
+    SOLVER_LOG(logger_,
+               SatProgressMessage("Done", wall_timer_.Get(), update_info));
     return;
   }
-  if (log_updates_ && change) {
+  if (logger_->LoggingIsEnabled() && change) {
     const CpObjectiveProto& obj = model_proto_.objective();
     const double best =
         ScaleObjectiveValue(obj, best_solution_objective_value_);
@@ -261,7 +265,8 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
       std::swap(new_lb, new_ub);
     }
     RegisterObjectiveBoundImprovement(update_info);
-    LogProgress("Bound", wall_timer_.Get(), best, new_lb, new_ub, update_info);
+    SOLVER_LOG(logger_, ProgressMessage("Bound", wall_timer_.Get(), best,
+                                        new_lb, new_ub, update_info));
   }
   if (change) TestGapLimitsIfNeeded();
 }
@@ -289,7 +294,8 @@ void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
     CHECK_EQ(num_solutions_, 0);
     best_response_.set_status(CpSolverStatus::INFEASIBLE);
   }
-  if (log_updates_) LogSatProgress("Done", wall_timer_.Get(), worker_info);
+  SOLVER_LOG(logger_,
+             SatProgressMessage("Done", wall_timer_.Get(), worker_info));
 }
 
 void SharedResponseManager::AddUnsatCore(const std::vector<int>& core) {
@@ -447,7 +453,7 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
 
   // Logging.
   ++num_solutions_;
-  if (log_updates_) {
+  if (logger_->LoggingIsEnabled()) {
     std::string solution_info = response.solution_info();
     if (model != nullptr) {
       const int64_t num_bool = model->Get<Trail>()->NumVariables();
@@ -466,11 +472,12 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
         std::swap(lb, ub);
       }
       RegisterSolutionFound(solution_info);
-      LogProgress(absl::StrCat(num_solutions_), wall_timer_.Get(), best, lb, ub,
-                  solution_info);
+      SOLVER_LOG(logger_, ProgressMessage(absl::StrCat(num_solutions_),
+                                          wall_timer_.Get(), best, lb, ub,
+                                          solution_info));
     } else {
-      LogSatProgress(absl::StrCat(num_solutions_), wall_timer_.Get(),
-                     solution_info);
+      SOLVER_LOG(logger_, SatProgressMessage(absl::StrCat(num_solutions_),
+                                             wall_timer_.Get(), solution_info));
     }
   }
 
@@ -488,7 +495,7 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
 #if !defined(__PORTABLE_PLATFORM__)
   // We protect solution dumping with log_updates as LNS subsolvers share
   // another solution manager, and we do not want to dump those.
-  if (absl::GetFlag(FLAGS_cp_model_dump_solutions) && log_updates_) {
+  if (absl::GetFlag(FLAGS_cp_model_dump_solutions)) {
     const std::string file =
         absl::StrCat(dump_prefix_, "solution_", num_solutions_, ".pbtxt");
     LOG(INFO) << "Dumping solution to '" << file << "'.";
@@ -608,15 +615,15 @@ void SharedResponseManager::RegisterObjectiveBoundImprovement(
 void SharedResponseManager::DisplayImprovementStatistics() {
   absl::MutexLock mutex_lock(&mutex_);
   if (!primal_improvements_count_.empty()) {
-    LOG(INFO) << "Solutions found per subsolver:";
+    SOLVER_LOG(logger_, "Solutions found per subsolver:");
     for (const auto& entry : primal_improvements_count_) {
-      LOG(INFO) << "  '" << entry.first << "': " << entry.second;
+      SOLVER_LOG(logger_, "  '", entry.first, "': ", entry.second);
     }
   }
   if (!dual_improvements_count_.empty()) {
-    LOG(INFO) << "Objective bounds found per subsolver:";
+    SOLVER_LOG(logger_, "Objective bounds found per subsolver:");
     for (const auto& entry : dual_improvements_count_) {
-      LOG(INFO) << "  '" << entry.first << "': " << entry.second;
+      SOLVER_LOG(logger_, "  '", entry.first, "': ", entry.second);
     }
   }
 }

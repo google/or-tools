@@ -35,6 +35,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -146,10 +147,11 @@ class SatPresolver {
   // TODO(user): use IntType!
   typedef int32_t ClauseIndex;
 
-  explicit SatPresolver(SatPostsolver* postsolver)
+  explicit SatPresolver(SatPostsolver* postsolver, SolverLogger* logger)
       : postsolver_(postsolver),
         num_trivial_clauses_(0),
-        drat_proof_handler_(nullptr) {}
+        drat_proof_handler_(nullptr),
+        logger_(logger) {}
 
   void SetParameters(const SatParameters& params) { parameters_ = params; }
   void SetTimeLimit(TimeLimit* time_limit) { time_limit_ = time_limit; }
@@ -175,8 +177,7 @@ class SatPresolver {
 
   // Same as Presolve() but only allow to remove BooleanVariable whose index
   // is set to true in the given vector.
-  bool Presolve(const std::vector<bool>& var_that_can_be_removed,
-                bool log_info = false);
+  bool Presolve(const std::vector<bool>& var_that_can_be_removed);
 
   // All the clauses managed by this class.
   // Note that deleted clauses keep their indices (they are just empty).
@@ -362,6 +363,7 @@ class SatPresolver {
   SatParameters parameters_;
   DratProofHandler* drat_proof_handler_;
   TimeLimit* time_limit_ = nullptr;
+  SolverLogger* logger_;
 
   DISALLOW_COPY_AND_ASSIGN(SatPresolver);
 };
@@ -438,7 +440,8 @@ void ProbeAndFindEquivalentLiteral(
 SatSolver::Status SolveWithPresolve(
     std::unique_ptr<SatSolver>* solver, TimeLimit* time_limit,
     std::vector<bool>* solution /* only filled if SAT */,
-    DratProofHandler* drat_proof_handler /* can be nullptr */);
+    DratProofHandler* drat_proof_handler /* can be nullptr */,
+    SolverLogger* logger);
 
 }  // namespace sat
 }  // namespace operations_research

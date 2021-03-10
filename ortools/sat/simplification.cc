@@ -324,27 +324,25 @@ bool SatPresolver::Presolve() {
   return Presolve(can_be_removed);
 }
 
-bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed,
-                            bool log_info) {
-  log_info |= VLOG_IS_ON(1);
-
+bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed) {
   WallTimer timer;
   timer.Start();
-  if (log_info) {
+
+  if (logger_->LoggingIsEnabled()) {
     int64_t num_removable = 0;
     for (const bool b : can_be_removed) {
       if (b) ++num_removable;
     }
-    LOG(INFO) << "num removable Booleans: " << num_removable << " / "
-              << can_be_removed.size();
-    LOG(INFO) << "num trivial clauses: " << num_trivial_clauses_;
+    SOLVER_LOG(logger_, "num removable Booleans: ", num_removable, " / ",
+               can_be_removed.size());
+    SOLVER_LOG(logger_, "num trivial clauses: ", num_trivial_clauses_);
     DisplayStats(0);
   }
 
   // TODO(user): When a clause is strengthened, add it to a queue so it can
   // be processed again?
   if (!ProcessAllClauses()) return false;
-  if (log_info) DisplayStats(timer.Get());
+  if (logger_->LoggingIsEnabled()) DisplayStats(timer.Get());
 
   if (time_limit_ != nullptr && time_limit_->LimitReached()) return true;
   if (num_inspected_signatures_ + num_inspected_literals_ > 1e9) return true;
@@ -360,12 +358,12 @@ bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed,
     if (time_limit_ != nullptr && time_limit_->LimitReached()) return true;
     if (num_inspected_signatures_ + num_inspected_literals_ > 1e9) return true;
   }
-  if (log_info) DisplayStats(timer.Get());
+  if (logger_->LoggingIsEnabled()) DisplayStats(timer.Get());
 
   // We apply BVA after a pass of the other algorithms.
   if (parameters_.presolve_use_bva()) {
     PresolveWithBva();
-    if (log_info) DisplayStats(timer.Get());
+    if (logger_->LoggingIsEnabled()) DisplayStats(timer.Get());
   }
 
   return true;
@@ -703,7 +701,7 @@ bool SatPresolver::CrossProduct(Literal x) {
   const int s1 = literal_to_clause_sizes_[x.Index()];
   const int s2 = literal_to_clause_sizes_[x.NegatedIndex()];
 
-  // Note that if s1 or s2 is equal to 0, this function will implicitely just
+  // Note that if s1 or s2 is equal to 0, this function will implicitly just
   // fix the variable x.
   if (s1 == 0 && s2 == 0) return false;
 
@@ -922,11 +920,11 @@ void SatPresolver::DisplayStats(double elapsed_seconds) {
       num_simple_definition++;
     }
   }
-  LOG(INFO) << " [" << elapsed_seconds << "s]"
-            << " clauses:" << num_clauses << " literals:" << num_literals
-            << " vars:" << num_vars << " one_side_vars:" << num_one_side
-            << " simple_definition:" << num_simple_definition
-            << " singleton_clauses:" << num_singleton_clauses;
+  SOLVER_LOG(logger_, " [", elapsed_seconds, "s]", " clauses:", num_clauses,
+             " literals:", num_literals, " vars:", num_vars,
+             " one_side_vars:", num_one_side,
+             " simple_definition:", num_simple_definition,
+             " singleton_clauses:", num_singleton_clauses);
 }
 
 bool SimplifyClause(const std::vector<Literal>& a, std::vector<Literal>* b,
@@ -1248,7 +1246,8 @@ void ProbeAndFindEquivalentLiteral(
 SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
                                     TimeLimit* time_limit,
                                     std::vector<bool>* solution,
-                                    DratProofHandler* drat_proof_handler) {
+                                    DratProofHandler* drat_proof_handler,
+                                    SolverLogger* logger) {
   // We save the initial parameters.
   const SatParameters parameters = (*solver)->parameters();
   SatPostsolver postsolver((*solver)->NumVariables());
@@ -1262,7 +1261,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
   {
     Model* model = (*solver)->model();
     const double dtime = std::min(1.0, time_limit->GetDeterministicTimeLeft());
-    if (!LookForTrivialSatSolution(dtime, model, log_info)) {
+    if (!LookForTrivialSatSolution(dtime, model)) {
       VLOG(1) << "UNSAT during probing.";
       return SatSolver::INFEASIBLE;
     }
@@ -1333,7 +1332,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
     }
 
     // TODO(user): Pass the time_limit to the presolver.
-    SatPresolver presolver(&postsolver);
+    SatPresolver presolver(&postsolver, logger);
     presolver.SetParameters(parameters);
     presolver.SetDratProofHandler(drat_proof_handler);
     presolver.SetEquivalentLiteralMapping(equiv_map);
@@ -1349,10 +1348,10 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
 
     (*solver).reset(nullptr);
     std::vector<bool> can_be_removed(presolver.NumVariables(), true);
-    if (!presolver.Presolve(can_be_removed, log_info)) {
+    if (!presolver.Presolve(can_be_removed)) {
       VLOG(1) << "UNSAT during presolve.";
 
-      // This is just here to reset the SatSolver::Solve() satistics.
+      // This is just here to reset the SatSolver::Solve() statistics.
       (*solver) = absl::make_unique<SatSolver>();
       return SatSolver::INFEASIBLE;
     }

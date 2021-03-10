@@ -301,8 +301,8 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         // could associate to them an unique node so that their variables can
         // appear in no symmetry.
         if (log_info) {
-          LOG(INFO) << "Unsupported constraint type "
-                    << ConstraintCaseName(constraint.constraint_case());
+          VLOG(1) << "Unsupported constraint type "
+                  << ConstraintCaseName(constraint.constraint_case());
         }
         return nullptr;
       }

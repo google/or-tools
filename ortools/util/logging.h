@@ -44,12 +44,15 @@ class SolverLogger {
   // Returns true iff logging is enabled.
   bool LoggingIsEnabled() const { return is_enabled_; }
 
-  // Force standard logging, even if some callbacks have been added.
+  // Forces standard logging, even if some callbacks have been added.
   void ForceStandardLogging() { force_standard_logging_ = true; }
 
-  // Relax the standard logging. It will be used only if no callbacks have been
-  // added.
+  // Relaxes the standard logging. It will be used only if no callbacks have
+  // been added.
   void RelaxStandardLogging() { force_standard_logging_ = false; }
+
+  // Adds a prefix to all logs.
+  void SetLogPrefix(const std::string& prefix) { prefix_ = prefix; }
 
   // Add a callback listening to all information messages.
   //
@@ -62,14 +65,15 @@ class SolverLogger {
                const std::string& message);
 
  private:
-  bool is_enabled_ = true;
+  bool is_enabled_ = false;
   bool force_standard_logging_ = false;
+  std::string prefix_;
   std::vector<std::function<void(const std::string& message)>> info_callbacks_;
 };
 
-#define SOLVER_LOG(logger, message) \
+#define SOLVER_LOG(logger, args...) \
   if ((logger)->LoggingIsEnabled()) \
-  (logger)->LogInfo(__FILE__, __LINE__, message)
+  (logger)->LogInfo(__FILE__, __LINE__, absl::StrCat(args))
 
 }  // namespace operations_research
 

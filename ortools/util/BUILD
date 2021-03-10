@@ -388,3 +388,14 @@ cc_library(
         "//ortools/base",
     ],
 )
+
+cc_library(
+    name = "logging",
+    srcs = ["logging.cc"],
+    hdrs = ["logging.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/base",
+        "@com_google_absl//absl/strings",
+    ],
+)

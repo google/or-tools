@@ -26,6 +26,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
@@ -68,11 +69,11 @@ class SavedVariable {
 // in-memory domain of each variables and the constraint variable graph.
 class PresolveContext {
  public:
-  explicit PresolveContext(bool log_info, Model* model, CpModelProto* cp_model,
+  explicit PresolveContext(Model* model, CpModelProto* cp_model,
                            CpModelProto* mapping)
       : working_model(cp_model),
         mapping_model(mapping),
-        log_info_(log_info),
+        logger_(model->GetOrCreate<SolverLogger>()),
         params_(*model->GetOrCreate<SatParameters>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
         random_(model->GetOrCreate<ModelRandomGenerator>()) {}
@@ -356,7 +357,7 @@ class PresolveContext {
   // Clear the precedence cache.
   void ClearPrecedenceCache();
 
-  bool log_info() const { return log_info_; }
+  SolverLogger* logger() const { return logger_; }
   const SatParameters& params() const { return params_; }
   TimeLimit* time_limit() { return time_limit_; }
   ModelRandomGenerator* random() { return random_; }
@@ -381,10 +382,6 @@ class PresolveContext {
   // if the client wants to enumerate all solutions or wants correct tightened
   // bounds in the response.
   bool keep_all_feasible_solutions = false;
-
-  // If true, fills stats_by_rule_name, otherwise do not do that. This can take
-  // a few percent of the run time with a lot of LNS threads.
-  bool enable_stats = true;
 
   // Just used to display statistics on the presolve rules that were used.
   absl::flat_hash_map<std::string, int> stats_by_rule_name;
@@ -444,7 +441,7 @@ class PresolveContext {
   void InsertVarValueEncodingInternal(int literal, int var, int64_t value,
                                       bool add_constraints);
 
-  const bool log_info_;
+  SolverLogger* logger_;
   const SatParameters& params_;
   TimeLimit* time_limit_;
   ModelRandomGenerator* random_;

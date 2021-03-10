@@ -202,14 +202,14 @@ bool PresolveContext::VariableWasRemoved(int ref) const {
   if (IsFixed(ref)) return false;
   if (!removed_variables_.contains(PositiveRef(ref))) return false;
   if (!var_to_constraints_[PositiveRef(ref)].empty()) {
-    LOG(INFO) << "Variable " << PositiveRef(ref)
-              << " was removed, yet it appears in some constraints!";
-    LOG(INFO) << "affine relation: "
-              << AffineRelationDebugString(PositiveRef(ref));
+    SOLVER_LOG(logger_, "Variable ", PositiveRef(ref),
+               " was removed, yet it appears in some constraints!");
+    SOLVER_LOG(logger_, "affine relation: ",
+               AffineRelationDebugString(PositiveRef(ref)));
     for (const int c : var_to_constraints_[PositiveRef(ref)]) {
-      LOG(INFO) << "constraint #" << c << " : "
-                << (c >= 0 ? working_model->constraints(c).ShortDebugString()
-                           : "");
+      SOLVER_LOG(
+          logger_, "constraint #", c, " : ",
+          c >= 0 ? working_model->constraints(c).ShortDebugString() : "");
     }
   }
   return true;
@@ -286,7 +286,8 @@ ABSL_MUST_USE_RESULT bool PresolveContext::SetLiteralToTrue(int lit) {
 }
 
 void PresolveContext::UpdateRuleStats(const std::string& name, int num_times) {
-  if (enable_stats) {
+  // We only count if we are going to display it.
+  if (logger_->LoggingIsEnabled()) {
     VLOG(1) << num_presolve_operations << " : " << name;
     stats_by_rule_name[name] += num_times;
   }

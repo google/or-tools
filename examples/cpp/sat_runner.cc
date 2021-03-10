@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
@@ -135,7 +136,7 @@ namespace {
 double GetScaledTrivialBestBound(const LinearBooleanProblem& problem) {
   Coefficient best_bound(0);
   const LinearObjective& objective = problem.objective();
-  for (const int64 value : objective.coefficients()) {
+  for (const int64_t value : objective.coefficients()) {
     if (value < 0) best_bound += Coefficient(value);
   }
   return AddOffsetAndScaleObjectiveValue(problem, best_bound);
@@ -232,7 +233,7 @@ int Run() {
     const CpSolverResponse response = SolveCpModel(cp_model, &model);
 
     if (!absl::GetFlag(FLAGS_output).empty()) {
-      if (absl::EndsWith(absl::GetFlag(FLAGS_output), ".txt")) {
+      if (absl::EndsWith(absl::GetFlag(FLAGS_output), "txt")) {
         CHECK_OK(file::SetTextProto(absl::GetFlag(FLAGS_output), response,
                                     file::Defaults()));
       } else {
@@ -354,7 +355,9 @@ int Run() {
     if (absl::GetFlag(FLAGS_presolve)) {
       std::unique_ptr<TimeLimit> time_limit =
           TimeLimit::FromParameters(parameters);
-      result = SolveWithPresolve(&solver, time_limit.get(), &solution, nullptr);
+      SolverLogger logger;
+      result = SolveWithPresolve(&solver, time_limit.get(), &solution,
+                                 /*drat_proof_handler=*/nullptr, &logger);
       if (result == SatSolver::FEASIBLE) {
         CHECK(IsAssignmentValid(problem, solution));
       }
