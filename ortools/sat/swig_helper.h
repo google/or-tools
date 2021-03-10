@@ -77,11 +77,14 @@ class SolutionCallback {
   }
 
   void StopSearch() { stopped_ = true; }
+  void PauseSearch() { paused_ = true; }
+  void ResumeSearch() { paused_ = false; }
 
   // Reset the shared atomic Boolean used to stop the search.
   void ResetSharedBoolean() const { stopped_ = false; }
 
   std::atomic<bool>* stopped() const { return &stopped_; }
+  std::atomic<bool>* paused() const { return &paused_; }
 
   operations_research::sat::CpSolverResponse Response() const {
     return response_;
@@ -93,6 +96,7 @@ class SolutionCallback {
   mutable CpSolverResponse response_;
   mutable bool has_response_ = false;
   mutable std::atomic<bool> stopped_;
+  mutable std::atomic<bool> paused_;
 };
 
 class SatHelper {
@@ -140,6 +144,8 @@ class SatHelper {
         [&callback](const CpSolverResponse& r) { return callback.Run(r); }));
     model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
         callback.stopped());
+    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsPause(
+        callback.paused());
 
     return SolveCpModel(model_proto, &model);
   }
