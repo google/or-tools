@@ -166,8 +166,9 @@ Few links on the subject...
 
 * [POM.xml reference](http://maven.apache.org/pom.html)
 * [Maven Central POM requirement](https://central.sonatype.org/pages/requirements.html)
-* [Javadoc Plugin](https://maven.apache.org/plugins/maven-javadoc-plugin/)
-* [Java Source Plugin](https://maven.apache.org/plugins/maven-source-plugin/)
+* [Maven Javadoc Plugin](https://maven.apache.org/plugins/maven-javadoc-plugin/)
+* [Maven Source Plugin](https://maven.apache.org/plugins/maven-source-plugin/)
+* [Maven GPG Plugin](https://maven.apache.org/plugins/maven-gpg-plugin/)
 * [Java Native Access Project](https://github.com/java-native-access/jna)
 
 ## Misc
