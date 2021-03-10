@@ -359,7 +359,7 @@ SOURCE_PROJECT_PATH = $(subst /,$S,$(SOURCE_PROJECT_DIR))
 
 .PHONY: build # Build a Maven java program.
 build: $(SOURCE_PROJECT_DIR)/pom.xml $(SOURCE)
-	cd $(SOURCE_PROJECT_PATH) && "$(MVN_BIN)" compile
+	cd $(SOURCE_PROJECT_PATH) && "$(MVN_BIN)" compile -B
 
 .PHONY: run # Run a Maven Java program.
 run: build
@@ -400,9 +400,9 @@ $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/timestamp: \
 ifeq ($(SYSTEM),unix)
 	$(COPY) $(OR_TOOLS_LIBS) $(JAVA_NATIVE_PATH)$Sresources$S$(JAVA_NATIVE_IDENTIFIER)
 endif
-	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" compile
-	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" package
-	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" install
+	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" compile -B
+	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" package -B
+	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" install -B -Dgpg.skip=true
 	$(TOUCH) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)$Stimestamp
 
 
@@ -457,9 +457,9 @@ else
 	$(COPYREC) /E /I $(SRC_DIR)$Sortools$Sjava$Scom $(JAVA_PATH)$Sjava$Scom
 	$(COPYREC) /E /I $(GEN_PATH)$Sjava$Scom $(JAVA_PATH)$Sjava$Scom
 endif
-	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" compile
-	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" package
-	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" install
+	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" compile -B
+	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" package -B
+	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" install -B -Dgpg.skip=true
 	$(TOUCH) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Stimestamp
 
 #############################
@@ -514,7 +514,7 @@ rjava_%: \
  $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
  $$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java \
  FORCE
-	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" compile
+	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" compile -B
 	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" exec:java $$(ARGS)
 endef
 
@@ -563,7 +563,7 @@ rjava_%: \
  $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
  $$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java \
  FORCE
-	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" compile
+	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" compile -B
 	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" exec:java $$(ARGS)
 endef
 
@@ -609,7 +609,7 @@ rjava_%: \
  $(TEMP_JAVA_DIR)/tests/%/pom.xml \
  $(TEMP_JAVA_DIR)/tests/%/$(JAVA_TEST_DIR)/%.java \
  FORCE
-	cd $(TEMP_JAVA_DIR)$Stests$S$* && "$(MVN_BIN)" compile
+	cd $(TEMP_JAVA_DIR)$Stests$S$* && "$(MVN_BIN)" compile -B
 	cd $(TEMP_JAVA_DIR)$Stests$S$* && "$(MVN_BIN)" test $(ARGS)
 
 #############################
