@@ -519,7 +519,8 @@ class RevisedSimplex {
 
   // Same as Minimize() for the dual simplex algorithm.
   // TODO(user): remove duplicate code between the two functions.
-  ABSL_MUST_USE_RESULT Status DualMinimize(TimeLimit* time_limit);
+  ABSL_MUST_USE_RESULT Status DualMinimize(bool feasibility_phase,
+                                           TimeLimit* time_limit);
 
   // Experimental. This is useful in a MIP context. It performs a few degenerate
   // pivot to try to mimize the fractionality of the optimal basis.

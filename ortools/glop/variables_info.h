@@ -112,6 +112,34 @@ class VariablesInfo {
     return upper_bounds_[col] - lower_bounds_[col];
   }
 
+  // This is used for the (SP) method of "Progress in the dual simplex method
+  // for large scale LP problems: practical dual phase I algorithms". Achim
+  // Koberstein & Uwe H. Suhl.
+  //
+  // This just set the bounds according to the variable types:
+  // - Boxed variables get fixed at [0,0].
+  // - Upper bounded variables get [-1, 0] bounds
+  // - Lower bounded variables get [0, 1] bounds
+  // - Free variables get [-1000, 1000] to heuristically move them to the basis.
+  //   I.e. they cost in the dual infeasibility minimization problem is
+  //   multiplied by 1000.
+  //
+  // It then update the status to get an inital dual feasible solution, and
+  // then one just have to apply the phase II algo on this problem to try to
+  // find a feasible solution to the original problem.
+  //
+  // Optimization: When a variable become basic, its non-zero bounds are
+  // relaxed. This is a bit hacky as it requires that the status is updated
+  // before the bounds are read (which is the case). It is however an important
+  // optimization.
+  //
+  // TODO(user): Shall we re-add the bound when the variable is moved out of
+  // the base? it is not needed, but might allow for more bound flips?
+  void TransformToDualPhaseIProblem(Fractional dual_feasibility_tolerance,
+                                    const DenseRow& reduced_costs);
+  void EndDualPhaseI(Fractional dual_feasibility_tolerance,
+                     const DenseRow& reduced_costs);
+
  private:
   // Computes the initial/default variable status from its type. A constrained
   // variable is set to the lowest of its 2 bounds in absolute value.
@@ -126,6 +154,9 @@ class VariablesInfo {
   // Sets the column relevance and updates num_entries_in_relevant_columns_.
   void SetRelevance(ColIndex col, bool relevance);
 
+  // Used by TransformToDualPhaseIProblem()/EndDualPhaseI().
+  void UpdateStatusForNewType(ColIndex col);
+
   // Problem data that should be updated from outside.
   const CompactSparseMatrix& matrix_;
 
@@ -133,6 +164,11 @@ class VariablesInfo {
   // include the slacks.
   DenseRow lower_bounds_;
   DenseRow upper_bounds_;
+
+  // This is just used temporarily by the dual phase I algo to save the original
+  // bounds.
+  DenseRow saved_lower_bounds_;
+  DenseRow saved_upper_bounds_;
 
   // Array of variable statuses, indexed by column index.
   VariableStatusRow variable_status_;
@@ -166,6 +202,10 @@ class VariablesInfo {
 
   // Whether or not a boxed variable should be considered relevant.
   bool boxed_variables_are_relevant_ = true;
+
+  // Whether we are between the calls TransformToDualPhaseIProblem() and
+  // EndDualPhaseI().
+  bool in_dual_phase_one_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(VariablesInfo);
 };

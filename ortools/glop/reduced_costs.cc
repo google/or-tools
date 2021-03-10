@@ -156,6 +156,25 @@ Fractional ReducedCosts::ComputeMaximumDualInfeasibility() const {
   return maximum_dual_infeasibility;
 }
 
+Fractional ReducedCosts::ComputeMaximumDualInfeasibilityOnNonBoxedVariables()
+    const {
+  SCOPED_TIME_STAT(&stats_);
+  Fractional maximum_dual_infeasibility = 0.0;
+  const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
+  const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
+  const DenseBitRow& is_boxed = variables_info_.GetNonBasicBoxedVariables();
+  for (const ColIndex col : variables_info_.GetNotBasicBitRow()) {
+    if (is_boxed[col]) continue;
+    const Fractional rc = reduced_costs_[col];
+    if ((can_increase.IsSet(col) && rc < 0.0) ||
+        (can_decrease.IsSet(col) && rc > 0.0)) {
+      maximum_dual_infeasibility =
+          std::max(maximum_dual_infeasibility, std::abs(rc));
+    }
+  }
+  return maximum_dual_infeasibility;
+}
+
 Fractional ReducedCosts::ComputeSumOfDualInfeasibilities() const {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(!recompute_reduced_costs_);
@@ -313,6 +332,12 @@ void ReducedCosts::MaintainDualInfeasiblePositions(bool maintain) {
   if (are_dual_infeasible_positions_maintained_ && !recompute_reduced_costs_) {
     ResetDualInfeasibilityBitSet();
   }
+}
+
+const DenseRow& ReducedCosts::GetFullReducedCosts() {
+  SCOPED_TIME_STAT(&stats_);
+  if (!are_reduced_costs_recomputed_) recompute_reduced_costs_ = true;
+  return GetReducedCosts();
 }
 
 const DenseRow& ReducedCosts::GetReducedCosts() {

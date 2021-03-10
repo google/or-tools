@@ -22,7 +22,7 @@ syntax = "proto2";
 
 package operations_research.glop;
 
-// next id = 62
+// next id = 63
 message GlopParameters {
 
   // Supported algorithms for scaling:
@@ -412,6 +412,16 @@ message GlopParameters {
   // performance. For a good reference, see Huangfu Q (2013) "High performance
   // simplex solver", Ph.D, dissertation, University of Edinburgh.
   optional bool perturb_costs_in_dual_simplex = 53 [default = false];
+
+  // We have two possible dual phase I algorithms. Both work on an LP that
+  // minimize the sum of dual infeasiblities. One use dedicated code (when this
+  // param is true), the other one use exactly the same code as the dual phase
+  // II but on an auxiliary problem where the variable bounds of the original
+  // problem are changed.
+  //
+  // TODO(user): For now we have both, but ideally the non-dedicated version
+  // will win since it is a lot less code to maintain.
+  optional bool use_dedicated_dual_feasibility_algorithm = 62 [default = true];
 
   // The magnitude of the cost perturbation is given by
   // RandomIn(1.0, 2.0) * (

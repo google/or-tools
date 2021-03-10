@@ -74,6 +74,12 @@ class ReducedCosts {
   Fractional ComputeMaximumDualInfeasibility() const;
   Fractional ComputeSumOfDualInfeasibilities() const;
 
+  // Same as ComputeMaximumDualInfeasibility() but ignore boxed variables.
+  // Because we can always switch bounds of boxed variables, if this is under
+  // the dual tolerance, then we can easily have a dual feasible solution and do
+  // not need to run a dual phase I algorithm.
+  Fractional ComputeMaximumDualInfeasibilityOnNonBoxedVariables() const;
+
   // Updates any internal data BEFORE the given simplex pivot is applied to B.
   // Note that no updates are needed in case of a bound flip.
   // The arguments are in order:
@@ -157,6 +163,11 @@ class ReducedCosts {
   // then this is defined only for the columns in
   // variables_info_.GetIsRelevantBitRow().
   const DenseRow& GetReducedCosts();
+
+  // Same as GetReducedCosts() but trigger a recomputation if not already done
+  // to have access to the reduced costs on all positions, not just the relevant
+  // one.
+  const DenseRow& GetFullReducedCosts();
 
   // Returns the non-basic columns that are dual-infeasible. These are also
   // the primal simplex possible entering columns.

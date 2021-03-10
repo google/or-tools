@@ -97,7 +97,13 @@ void VariablesInfo::InitializeFromBasisState(ColIndex first_slack_col,
           UpdateToNonBasicStatus(col, DefaultVariableStatus(col));
         } else {
           ++num_basic_variables;
-          UpdateToBasicStatus(col);
+
+          // Because we just called ResetStatusInfo(), we optimize the call to
+          // UpdateToNonBasicStatus(col) here. In an incremental setting with
+          // almost no work per call, the update of all the DenseBitRow are
+          // visible.
+          variable_status_[col] = VariableStatus::BASIC;
+          is_basic_.Set(col, true);
         }
         break;
       case VariableStatus::AT_LOWER_BOUND:
@@ -165,6 +171,13 @@ void VariablesInfo::MakeBoxedVariableRelevant(bool value) {
 }
 
 void VariablesInfo::UpdateToBasicStatus(ColIndex col) {
+  if (in_dual_phase_one_) {
+    // TODO(user): A bit annoying that we need to test this even if we
+    // don't use the dual. But the cost is minimal.
+    if (lower_bounds_[col] != 0.0) lower_bounds_[col] = -kInfinity;
+    if (upper_bounds_[col] != 0.0) upper_bounds_[col] = +kInfinity;
+    variable_type_[col] = ComputeVariableType(col);
+  }
   variable_status_[col] = VariableStatus::BASIC;
   is_basic_.Set(col, true);
   not_basic_.Set(col, false);
@@ -251,6 +264,131 @@ void VariablesInfo::SetRelevance(ColIndex col, bool relevance) {
   } else {
     relevance_.Clear(col);
     num_entries_in_relevant_columns_ -= matrix_.ColumnNumEntries(col);
+  }
+}
+
+// This is really similar to InitializeFromBasisState() but there is less
+// cases to consider for TransformToDualPhaseIProblem()/EndDualPhaseI().
+void VariablesInfo::UpdateStatusForNewType(ColIndex col) {
+  switch (variable_status_[col]) {
+    case VariableStatus::BASIC:
+      UpdateToBasicStatus(col);
+      break;
+    case VariableStatus::AT_LOWER_BOUND:
+      if (lower_bounds_[col] == upper_bounds_[col]) {
+        UpdateToNonBasicStatus(col, VariableStatus::FIXED_VALUE);
+      } else if (lower_bounds_[col] == -kInfinity) {
+        UpdateToNonBasicStatus(col, DefaultVariableStatus(col));
+      } else {
+        // TODO(user): This is only needed for boxed variable to update their
+        // relevance. It should probably be done with the type and not the
+        // status update.
+        UpdateToNonBasicStatus(col, variable_status_[col]);
+      }
+      break;
+    case VariableStatus::AT_UPPER_BOUND:
+      if (lower_bounds_[col] == upper_bounds_[col]) {
+        UpdateToNonBasicStatus(col, VariableStatus::FIXED_VALUE);
+      } else if (upper_bounds_[col] == kInfinity) {
+        UpdateToNonBasicStatus(col, DefaultVariableStatus(col));
+      } else {
+        // TODO(user): Same as in the AT_LOWER_BOUND branch above.
+        UpdateToNonBasicStatus(col, variable_status_[col]);
+      }
+      break;
+    default:
+      // TODO(user): boxed variable that become fixed in
+      // TransformToDualPhaseIProblem() will be changed status twice. Once here,
+      // and once when we make them dual feasible according to their reduced
+      // cost. We should probably just do all at once.
+      UpdateToNonBasicStatus(col, DefaultVariableStatus(col));
+  }
+}
+
+void VariablesInfo::TransformToDualPhaseIProblem(
+    Fractional dual_feasibility_tolerance, const DenseRow& reduced_costs) {
+  DCHECK(!in_dual_phase_one_);
+  in_dual_phase_one_ = true;
+  saved_lower_bounds_ = lower_bounds_;
+  saved_upper_bounds_ = upper_bounds_;
+
+  // Transform the bound and type to get a new problem. If this problem has an
+  // optimal value of 0.0, then the problem is dual feasible. And more
+  // importantly, by keeping the same basis, we have a feasible solution of the
+  // original problem.
+  const ColIndex num_cols = matrix_.num_cols();
+  for (ColIndex col(0); col < num_cols; ++col) {
+    switch (variable_type_[col]) {
+      case VariableType::FIXED_VARIABLE:  // ABSL_FALLTHROUGH_INTENDED
+      case VariableType::UPPER_AND_LOWER_BOUNDED:
+        lower_bounds_[col] = 0.0;
+        upper_bounds_[col] = 0.0;
+        variable_type_[col] = VariableType::FIXED_VARIABLE;
+        break;
+      case VariableType::LOWER_BOUNDED:
+        lower_bounds_[col] = 0.0;
+        upper_bounds_[col] = 1.0;
+        variable_type_[col] = VariableType::UPPER_AND_LOWER_BOUNDED;
+        break;
+      case VariableType::UPPER_BOUNDED:
+        lower_bounds_[col] = -1.0;
+        upper_bounds_[col] = 0.0;
+        variable_type_[col] = VariableType::UPPER_AND_LOWER_BOUNDED;
+        break;
+      case VariableType::UNCONSTRAINED:
+        lower_bounds_[col] = -1000.0;
+        upper_bounds_[col] = 1000.0;
+        variable_type_[col] = VariableType::UPPER_AND_LOWER_BOUNDED;
+        break;
+    }
+
+    // Make sure we start with a feasible dual solution.
+    // If the reduced cost is close to zero, we keep the "default" status.
+    if (variable_type_[col] == VariableType::UPPER_AND_LOWER_BOUNDED) {
+      if (reduced_costs[col] > dual_feasibility_tolerance) {
+        variable_status_[col] = VariableStatus::AT_LOWER_BOUND;
+      } else if (reduced_costs[col] < -dual_feasibility_tolerance) {
+        variable_status_[col] = VariableStatus::AT_UPPER_BOUND;
+      }
+    }
+
+    UpdateStatusForNewType(col);
+  }
+}
+
+void VariablesInfo::EndDualPhaseI(Fractional dual_feasibility_tolerance,
+                                  const DenseRow& reduced_costs) {
+  DCHECK(in_dual_phase_one_);
+  in_dual_phase_one_ = false;
+  std::swap(saved_lower_bounds_, lower_bounds_);
+  std::swap(saved_upper_bounds_, upper_bounds_);
+
+  // This is to clear the memory of the saved bounds since it is no longer
+  // needed.
+  DenseRow empty1, empty2;
+  std::swap(empty1, saved_lower_bounds_);
+  std::swap(empty1, saved_upper_bounds_);
+
+  // Restore the type and update all other fields.
+  const ColIndex num_cols = matrix_.num_cols();
+  for (ColIndex col(0); col < num_cols; ++col) {
+    variable_type_[col] = ComputeVariableType(col);
+
+    // We make sure that the old fixed variables that are now boxed are dual
+    // feasible.
+    //
+    // TODO(user): When there is a choice, use the previous status that might
+    // have been warm-started ? but then this is not high priority since
+    // warm-starting with a non-dual feasible basis seems unfrequent.
+    if (variable_type_[col] == VariableType::UPPER_AND_LOWER_BOUNDED) {
+      if (reduced_costs[col] > dual_feasibility_tolerance) {
+        variable_status_[col] = VariableStatus::AT_LOWER_BOUND;
+      } else if (reduced_costs[col] < -dual_feasibility_tolerance) {
+        variable_status_[col] = VariableStatus::AT_UPPER_BOUND;
+      }
+    }
+
+    UpdateStatusForNewType(col);
   }
 }
 

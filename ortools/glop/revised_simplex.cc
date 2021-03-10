@@ -194,29 +194,92 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
       reduced_costs_.PerturbCosts();
     }
 
-    variables_info_.MakeBoxedVariableRelevant(false);
-    GLOP_RETURN_IF_ERROR(DualMinimize(time_limit));
-    DisplayIterationInfo();
+    if (parameters_.use_dedicated_dual_feasibility_algorithm()) {
+      variables_info_.MakeBoxedVariableRelevant(false);
+      GLOP_RETURN_IF_ERROR(DualMinimize(feasibility_phase_, time_limit));
+      DisplayIterationInfo();
 
-    if (problem_status_ != ProblemStatus::DUAL_INFEASIBLE) {
-      // Note(user): In most cases, the matrix will already be refactorized and
-      // both Refactorize() and PermuteBasis() will do nothing. However, if the
-      // time limit is reached during the first phase, this might not be the
-      // case and RecomputeBasicVariableValues() below DCHECKs that the matrix
-      // is refactorized. This is not required, but we currently only want to
-      // recompute values from scratch when the matrix was just refactorized to
-      // maximize precision.
-      GLOP_RETURN_IF_ERROR(basis_factorization_.Refactorize());
-      PermuteBasis();
+      if (problem_status_ != ProblemStatus::DUAL_INFEASIBLE) {
+        // Note(user): In most cases, the matrix will already be refactorized
+        // and both Refactorize() and PermuteBasis() will do nothing. However,
+        // if the time limit is reached during the first phase, this might not
+        // be the case and RecomputeBasicVariableValues() below DCHECKs that the
+        // matrix is refactorized. This is not required, but we currently only
+        // want to recompute values from scratch when the matrix was just
+        // refactorized to maximize precision.
+        GLOP_RETURN_IF_ERROR(basis_factorization_.Refactorize());
+        PermuteBasis();
 
-      variables_info_.MakeBoxedVariableRelevant(true);
+        variables_info_.MakeBoxedVariableRelevant(true);
+        reduced_costs_.MakeReducedCostsPrecise();
+
+        // This is needed to display errors properly.
+        MakeBoxedVariableDualFeasible(
+            variables_info_.GetNonBasicBoxedVariables(),
+            /*update_basic_values=*/false);
+        variable_values_.RecomputeBasicVariableValues();
+        variable_values_.ResetPrimalInfeasibilityInformation();
+      }
+    } else {
+      // Test initial dual infeasibility, ignoring boxed variables. We currently
+      // refactorize/recompute the reduced costs if not already done.
+      // TODO(user): Not ideal in an incremental setting.
+      reduced_costs_.MaintainDualInfeasiblePositions(false);
       reduced_costs_.MakeReducedCostsPrecise();
+      bool unused;
+      RefactorizeBasisIfNeeded(&unused);
+      reduced_costs_.GetReducedCosts();
 
-      // This is needed to display errors properly.
-      MakeBoxedVariableDualFeasible(variables_info_.GetNonBasicBoxedVariables(),
-                                    /*update_basic_values=*/false);
-      variable_values_.RecomputeBasicVariableValues();
-      variable_values_.ResetPrimalInfeasibilityInformation();
+      const Fractional initial_infeasibility =
+          reduced_costs_.ComputeMaximumDualInfeasibilityOnNonBoxedVariables();
+      if (initial_infeasibility <
+          reduced_costs_.GetDualFeasibilityTolerance()) {
+        if (log_info) LOG(INFO) << "Initial basis is dual feasible.";
+        problem_status_ = ProblemStatus::DUAL_FEASIBLE;
+        MakeBoxedVariableDualFeasible(
+            variables_info_.GetNonBasicBoxedVariables(),
+            /*update_basic_values=*/false);
+        variable_values_.RecomputeBasicVariableValues();
+        variable_values_.ResetPrimalInfeasibilityInformation();
+      } else {
+        // Transform problem and recompute variable values.
+        variables_info_.TransformToDualPhaseIProblem(
+            reduced_costs_.GetDualFeasibilityTolerance(),
+            reduced_costs_.GetReducedCosts());
+        variable_values_.ResetAllNonBasicVariableValues();
+        variable_values_.RecomputeBasicVariableValues();
+        variable_values_.ResetPrimalInfeasibilityInformation();
+
+        // Optimize.
+        DisplayErrors();
+        GLOP_RETURN_IF_ERROR(DualMinimize(false, time_limit));
+        DisplayIterationInfo();
+
+        // Restore original problem and recompute variable values. Note that we
+        // need the reduced cost on the fixed positions here.
+        variables_info_.EndDualPhaseI(
+            reduced_costs_.GetDualFeasibilityTolerance(),
+            reduced_costs_.GetFullReducedCosts());
+        variable_values_.ResetAllNonBasicVariableValues();
+        variable_values_.RecomputeBasicVariableValues();
+        variable_values_.ResetPrimalInfeasibilityInformation();
+
+        // TODO(user): Note that if there was cost shifts, we just keep them
+        // until the end of the optim.
+        //
+        // TODO(user): What if slightly infeasible? we shouldn't really stop.
+        // Call primal ? use higher tolerance ? It seems we can always kind of
+        // continue and deal with the issue later. Find a way.
+        if (problem_status_ == ProblemStatus::OPTIMAL) {
+          if (reduced_costs_.ComputeMaximumDualInfeasibility() <
+              reduced_costs_.GetDualFeasibilityTolerance()) {
+            problem_status_ = ProblemStatus::DUAL_FEASIBLE;
+          } else {
+            if (log_info) LOG(INFO) << "Infeasible after first phase.";
+            problem_status_ = ProblemStatus::DUAL_INFEASIBLE;
+          }
+        }
+      }
     }
   } else {
     reduced_costs_.MaintainDualInfeasiblePositions(true);
@@ -275,7 +338,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     } else {
       // Run the dual simplex.
       reduced_costs_.MaintainDualInfeasiblePositions(false);
-      GLOP_RETURN_IF_ERROR(DualMinimize(time_limit));
+      GLOP_RETURN_IF_ERROR(DualMinimize(feasibility_phase_, time_limit));
     }
 
     // Minimize() or DualMinimize() always double check the result with maximum
@@ -314,6 +377,10 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     // DUAL_INFEASIBLE or PRIMAL_INFEASIBLE. For instance we currently report
     // PRIMAL_UNBOUNDED with the primal on the problem l30.mps instead of
     // OPTIMAL and the dual does not have issues on this problem.
+    //
+    // TODO(user): There is another issue on infeas/qual.mps. I think we should
+    // just check the dual ray, not really the current solution dual
+    // feasibility.
     if (problem_status_ == ProblemStatus::DUAL_UNBOUNDED) {
       const Fractional tolerance = parameters_.solution_feasibility_tolerance();
       if (reduced_costs_.ComputeMaximumDualResidual() > tolerance ||
@@ -2680,13 +2747,15 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
 // PhD thesis seem worth trying at some point:
 // - The subproblem approach, which enables one to use a normal phase II dual,
 //   but requires an efficient bound-flipping ratio test since the new problem
-//   has all its variables boxed.
+//   has all its variables boxed. This one is implemented now, but require
+//   a bit more tunning.
 // - Pan's method, which is really fast but have no theoretical guarantee of
 //   terminating and thus needs to use one of the other methods as a fallback if
 //   it fails to make progress.
 //
 // Note that the returned status applies to the primal problem!
-Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
+Status RevisedSimplex::DualMinimize(bool feasibility_phase,
+                                    TimeLimit* time_limit) {
   Cleanup update_deterministic_time_on_return(
       [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
   num_consecutive_degenerate_iterations_ = 0;
@@ -2726,7 +2795,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
       //
       // Reduced costs are needed by MakeBoxedVariableDualFeasible(), so if we
       // do recompute them, it is better to do that first.
-      if (!feasibility_phase_ && !reduced_costs_.AreReducedCostsRecomputed() &&
+      if (!feasibility_phase && !reduced_costs_.AreReducedCostsRecomputed() &&
           !old_refactorize_value) {
         const Fractional dual_residual_error =
             reduced_costs_.ComputeMaximumDualResidual();
@@ -2748,7 +2817,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
       // refactorize the matrix, like for the reduced costs? That may lead to
       // a worse behavior than keeping the "imprecise" version and only
       // recomputing it when its precision is above a threshold.
-      if (!feasibility_phase_) {
+      if (!feasibility_phase) {
         MakeBoxedVariableDualFeasible(
             variables_info_.GetNonBasicBoxedVariables(),
             /*update_basic_values=*/false);
@@ -2757,7 +2826,13 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
 
         // Computing the objective at each iteration takes time, so we just
         // check the limit when the basis is refactorized.
-        if (ComputeObjectiveValue() > dual_objective_limit_) {
+        //
+        // Hack: We need the feasibility_phase_ here and not the local variable
+        // because this must not be checked for the dual phase I algo that use
+        // the same code as the dual phase II (i.e. the local feasibility_phase
+        // will be false).
+        if (!feasibility_phase_ && dual_objective_limit_ != kInfinity &&
+            ComputeObjectiveValue() > dual_objective_limit_) {
           VLOG(1) << "Stopping the dual simplex because"
                   << " the objective limit " << dual_objective_limit_
                   << " has been reached.";
@@ -2772,7 +2847,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
     } else {
       // Updates from the previous iteration that can be skipped if we
       // recompute everything (see other case above).
-      if (!feasibility_phase_) {
+      if (!feasibility_phase) {
         // Make sure the boxed variables are dual-feasible before choosing the
         // leaving variable row.
         MakeBoxedVariableDualFeasible(bound_flip_candidates_,
@@ -2786,7 +2861,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
       }
     }
 
-    if (feasibility_phase_) {
+    if (feasibility_phase) {
       GLOP_RETURN_IF_ERROR(DualPhaseIChooseLeavingVariableRow(
           &leaving_row, &cost_variation, &target_bound));
     } else {
@@ -2799,7 +2874,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
         refactorize = true;
         continue;
       }
-      if (feasibility_phase_) {
+      if (feasibility_phase) {
         // Note that since the basis is refactorized, the variable values
         // will be recomputed at the beginning of the second phase. The boxed
         // variable values will also be corrected by
@@ -2821,7 +2896,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
         update_row_.IgnoreUpdatePosition(pair.second);
       }
     }
-    if (feasibility_phase_) {
+    if (feasibility_phase) {
       GLOP_RETURN_IF_ERROR(entering_variable_.DualPhaseIChooseEnteringColumn(
           update_row_, cost_variation, &entering_col, &ratio));
     } else {
@@ -2830,7 +2905,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
           &ratio));
     }
 
-    // No entering_col: Unbounded problem / Infeasible problem.
+    // No entering_col: dual unbounded (i.e. primal infeasible).
     if (entering_col == kInvalidCol) {
       if (!reduced_costs_.AreReducedCostsPrecise()) {
         VLOG(1) << "No entering column. Double checking...";
@@ -2838,7 +2913,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
         continue;
       }
       DCHECK(basis_factorization_.IsRefactorized());
-      if (feasibility_phase_) {
+      if (feasibility_phase) {
         // This shouldn't happen by construction.
         VLOG(1) << "Unbounded dual feasibility problem !?";
         problem_status_ = ProblemStatus::ABNORMAL;
@@ -2910,7 +2985,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
     //
     // During phase I, we do not need the basic variable values at all.
     Fractional primal_step = 0.0;
-    if (feasibility_phase_) {
+    if (feasibility_phase) {
       DualPhaseIUpdatePrice(leaving_row, entering_col);
     } else {
       primal_step =
@@ -3007,22 +3082,36 @@ void RevisedSimplex::PropagateParameters() {
 
 void RevisedSimplex::DisplayIterationInfo() const {
   if (parameters_.log_search_progress() || VLOG_IS_ON(1)) {
+    Fractional objective;
+    std::string name;
+    if (!feasibility_phase_) {
+      // Note that in the dual phase II, ComputeObjectiveValue() is also
+      // computing the dual objective even if it uses the variable values. This
+      // is because if we modify the bounds to make the problem primal-feasible,
+      // we are at the optimal and hence the two objectives are the same.
+      objective = ComputeInitialProblemObjectiveValue();
+      name = "objective";
+    } else if (parameters_.use_dual_simplex()) {
+      if (parameters_.use_dedicated_dual_feasibility_algorithm()) {
+        objective = reduced_costs_.ComputeSumOfDualInfeasibilities();
+      } else {
+        // The internal objective of the transformed problem is the negation
+        // of the sum of the dual infeasibility of the original problem.
+        objective = -PreciseScalarProduct(
+            objective_, Transpose(variable_values_.GetDenseRow()));
+      }
+      name = "sum_dual_infeasibilities";
+    } else {
+      objective = variable_values_.ComputeSumOfPrimalInfeasibilities();
+      name = "sum_primal_infeasibilities";
+    }
+
     const int iter = feasibility_phase_
                          ? num_iterations_
                          : num_iterations_ - num_feasibility_iterations_;
-    // Note that in the dual phase II, ComputeObjectiveValue() is also computing
-    // the dual objective even if it uses the variable values. This is because
-    // if we modify the bounds to make the problem primal-feasible, we are at
-    // the optimal and hence the two objectives are the same.
-    const Fractional objective =
-        !feasibility_phase_
-            ? ComputeInitialProblemObjectiveValue()
-            : (parameters_.use_dual_simplex()
-                   ? reduced_costs_.ComputeSumOfDualInfeasibilities()
-                   : variable_values_.ComputeSumOfPrimalInfeasibilities());
     LOG(INFO) << (feasibility_phase_ ? "Feasibility" : "Optimization")
-              << " phase, iteration # " << iter
-              << ", objective = " << absl::StrFormat("%.15E", objective);
+              << " phase, iteration # " << iter << ", " << name << " = "
+              << absl::StrFormat("%.15E", objective);
   }
 }
 
