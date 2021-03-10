@@ -139,9 +139,9 @@ add_custom_target(java_native_package
     $<TARGET_FILE:jniortools>
     $<$<NOT:$<PLATFORM_ID:Windows>>:$<TARGET_SONAME_FILE:${PROJECT_NAME}>>
     ${JAVA_RESOURCES_PATH}/${NATIVE_IDENTIFIER}/
-  COMMAND ${MAVEN_EXECUTABLE} compile
-  COMMAND ${MAVEN_EXECUTABLE} package
-  COMMAND ${MAVEN_EXECUTABLE} install
+  COMMAND ${MAVEN_EXECUTABLE} compile -B
+  COMMAND ${MAVEN_EXECUTABLE} package -B
+  COMMAND ${MAVEN_EXECUTABLE} install -B $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>
   BYPRODUCTS
     ${JAVA_NATIVE_PROJECT_PATH}/target
   WORKING_DIRECTORY ${JAVA_NATIVE_PROJECT_PATH})
@@ -182,9 +182,9 @@ add_custom_target(java_package ALL
   DEPENDS
   ${JAVA_PROJECT_PATH}/pom.xml
   ${JAVA_SRCS}
-  COMMAND ${MAVEN_EXECUTABLE} compile
-  COMMAND ${MAVEN_EXECUTABLE} package
-  COMMAND ${MAVEN_EXECUTABLE} install
+  COMMAND ${MAVEN_EXECUTABLE} compile -B
+  COMMAND ${MAVEN_EXECUTABLE} package -B
+  COMMAND ${MAVEN_EXECUTABLE} install -B $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>
   BYPRODUCTS
     ${JAVA_PROJECT_PATH}/target
   WORKING_DIRECTORY ${JAVA_PROJECT_PATH})
@@ -208,7 +208,7 @@ if(BUILD_TESTING)
 
   add_custom_target(java_test_Test ALL
     DEPENDS ${TEST_PATH}/pom.xml
-    COMMAND ${MAVEN_EXECUTABLE} compile
+    COMMAND ${MAVEN_EXECUTABLE} compile -B
     BYPRODUCTS
       ${TEST_PATH}/target
     WORKING_DIRECTORY ${TEST_PATH})
@@ -249,7 +249,7 @@ function(add_java_sample FILE_NAME)
 
   add_custom_target(java_sample_${SAMPLE_NAME} ALL
     DEPENDS ${SAMPLE_PATH}/pom.xml
-    COMMAND ${MAVEN_EXECUTABLE} compile
+    COMMAND ${MAVEN_EXECUTABLE} compile -B
     BYPRODUCTS
       ${SAMPLE_PATH}/target
     WORKING_DIRECTORY ${SAMPLE_PATH})
@@ -292,7 +292,7 @@ function(add_java_example FILE_NAME)
 
   add_custom_target(java_example_${EXAMPLE_NAME} ALL
     DEPENDS ${EXAMPLE_PATH}/pom.xml
-    COMMAND ${MAVEN_EXECUTABLE} compile
+    COMMAND ${MAVEN_EXECUTABLE} compile -B
     BYPRODUCTS
       ${EXAMPLE_PATH}/target
     WORKING_DIRECTORY ${EXAMPLE_PATH})
@@ -333,7 +333,7 @@ function(add_java_test FILE_NAME)
 
   add_custom_target(java_test_${TEST_NAME} ALL
     DEPENDS ${TEST_PATH}/pom.xml
-    COMMAND ${MAVEN_EXECUTABLE} compile
+    COMMAND ${MAVEN_EXECUTABLE} compile -B
     BYPRODUCTS
       ${TEST_PATH}/target
     WORKING_DIRECTORY ${TEST_PATH})

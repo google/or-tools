@@ -138,6 +138,11 @@ message(STATUS "Build .Net examples: ${BUILD_DOTNET_EXAMPLES}")
 #option(BUILD_DOC "Build doxygen" OFF)
 #message(STATUS "Build doxygen: ${BUILD_DOC}")
 
+if(BUILD_JAVA)
+  option(SKIP_GPG "Disable GPG sign" OFF)
+  message(STATUS "Java disable gpg:sign: ${SKIP_GPG}")
+endif()
+
 # By default all dependencies are NOT built (i.e. BUILD_DEPS=OFF),
 # BUT if building any wrappers (Python, Java or .Net) then BUILD_DEPS=ON.
 if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
