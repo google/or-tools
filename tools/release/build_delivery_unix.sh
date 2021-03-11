@@ -6,6 +6,11 @@ if [[ -z "${DOTNET_SNK}" ]]; then
   exit 1
 fi
 
+if [[ -z "${ORTOOLS_TOKEN}" ]]; then
+  echo "ORTOOLS_TOKEN: not found !" | tee build.log
+  exit 1
+fi
+
 # Clean everything
 make clean
 make clean_third_party
@@ -18,6 +23,7 @@ make print-OR_TOOLS_VERSION | tee build.log
 command -v gcc | xargs echo "gcc: " | tee -a build.log
 command -v cmake | xargs echo "cmake: " | tee -a build.log
 command -v make | xargs echo "make: " | tee -a build.log
+
 command -v swig | xargs echo "swig: " | tee -a build.log
 
 # python
@@ -35,8 +41,13 @@ else
   command -v jar | xargs echo "jar: " | tee -a build.log
   command -v mvn | xargs echo "mvn: " | tee -a build.log
 fi
+# Maven central need gpg sign and we store the release key encoded using openssl
+command -v openssl
+command -v openssl | xargs echo "openssl: " | tee -a build.log
+command -v gpg
+command -v gpg | xargs echo "gpg: " | tee -a build.log
 
-# dotnet
+# .Net
 command -v dotnet | xargs echo "dotnet: " | tee -a build.log
 
 ###############################
@@ -59,6 +70,16 @@ echo "DONE" | tee -a build.log
 #########################
 echo -n "Build Third Party..." | tee -a build.log
 make third_party UNIX_PYTHON_VER=3
+echo "DONE" | tee -a build.log
+
+########################
+##  Install Java gpg  ##
+########################
+echo -n "Install Java gpg" | tee -a build.log
+openssl aes-256-cbc -pass pass:$ORTOOLS_TOKEN -in tools/release/private-key.gpg.enc -out private-key.gpg -d
+gpg --batch --import private-key.gpg
+mkdir -p ~/.m2
+openssl aes-256-cbc -pass pass:$ORTOOLS_TOKEN -in tools/release/settings.xml.enc -out ~/.m2/settings.xml -d
 echo "DONE" | tee -a build.log
 
 #####################

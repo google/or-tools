@@ -6,6 +6,11 @@ if [[ -z "${DOTNET_SNK}" ]]; then
   exit 1
 fi
 
+if [[ -z "${ORTOOLS_TOKEN}" ]]; then
+  echo "ORTOOLS_TOKEN: not found !" | tee build.log
+  exit 1
+fi
+
 # Clean everything
 make clean
 make clean_third_party
@@ -52,8 +57,13 @@ else
   command -v mvn | xargs echo "mvn: " | tee -a build.log
   java -version 2>&1 | head -n 1 | grep 1.8
 fi
+# Maven central need gpg sign and we store the release key encoded using openssl
+command -v openssl
+command -v openssl | xargs echo "openssl: " | tee -a build.log
+command -v gpg
+command -v gpg | xargs echo "gpg: " | tee -a build.log
 
-# C#
+#.Net
 command -v dotnet
 command -v dotnet | xargs echo "dotnet: " | tee -a build.log
 
@@ -77,6 +87,16 @@ echo "DONE" | tee -a build.log
 #########################
 echo -n "Build Third Party..." | tee -a build.log
 make third_party UNIX_PYTHON_VER=3.9
+echo "DONE" | tee -a build.log
+
+########################
+##  Install Java gpg  ##
+########################
+echo -n "Install Java gpg" | tee -a build.log
+openssl aes-256-cbc -pass pass:$ORTOOLS_TOKEN -in tools/release/private-key.gpg.enc -out private-key.gpg -d
+gpg --batch --import private-key.gpg
+mkdir -p ~/.m2
+openssl aes-256-cbc -pass pass:$ORTOOLS_TOKEN -in tools/release/settings.xml.enc -out ~/.m2/settings.xml -d
 echo "DONE" | tee -a build.log
 
 #####################
