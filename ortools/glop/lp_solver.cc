@@ -555,6 +555,11 @@ void LPSolver::RunRevisedSimplexIfNeeded(ProblemSolution* solution,
                                          TimeLimit* time_limit) {
   // Note that the transpose matrix is no longer needed at this point.
   // This helps reduce the peak memory usage of the solver.
+  //
+  // TODO(user): actually, once the linear_program is loaded into the internal
+  // glop memory, there is no point keeping it around. Add a more complex
+  // Load/Solve API to RevisedSimplex so we can completely reclaim its memory
+  // right away.
   current_linear_program_.ClearTransposeMatrix();
   if (solution->status != ProblemStatus::INIT) return;
   if (revised_simplex_ == nullptr) {

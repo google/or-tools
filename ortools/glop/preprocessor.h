@@ -134,6 +134,33 @@ class MainLpPreprocessor : public Preprocessor {
 // --------------------------------------------------------
 // ColumnDeletionHelper
 // --------------------------------------------------------
+
+// Some preprocessors need to save columns/rows of the matrix for the postsolve.
+// This class helps them do that.
+//
+// Note that we used to simply use a SparseMatrix, which is like a vector of
+// SparseColumn. However on large problem with 10+ millions columns, each empty
+// SparseColumn take 48 bytes, so if we run like 10 presolve step that save as
+// little as 1 columns, we already are at 4GB memory for nothing!
+class ColumnsSaver {
+ public:
+  // Saves a column. The first version CHECKs that it is not already done.
+  void SaveColumn(ColIndex col, const SparseColumn& column);
+  void SaveColumnIfNotAlreadyDone(ColIndex col, const SparseColumn& column);
+
+  // Returns the saved column. The first version CHECKs that it was saved.
+  const SparseColumn& SavedColumn(ColIndex col) const;
+  const SparseColumn& SavedOrEmptyColumn(ColIndex col) const;
+
+ private:
+  SparseColumn empty_column_;
+  absl::flat_hash_map<ColIndex, int> saved_columns_index_;
+
+  // TODO(user): We could optimize further since all these are read only, we
+  // could use a CompactSparseMatrix instead.
+  std::deque<SparseColumn> saved_columns_;
+};
+
 // Help preprocessors deal with column deletion.
 class ColumnDeletionHelper {
  public:
@@ -354,24 +381,25 @@ class SingletonUndo {
   SingletonUndo(OperationType type, const LinearProgram& lp, MatrixEntry e,
                 ConstraintStatus status);
 
-  // Undo the operation saved in this class, taking into account the deleted
-  // columns and rows passed by the calling instance of SingletonPreprocessor.
-  // Note that the operations must be undone in the reverse order of the one
-  // in which they were applied.
-  void Undo(const GlopParameters& parameters,
-            const SparseMatrix& deleted_columns,
-            const SparseMatrix& deleted_rows, ProblemSolution* solution) const;
+  // Undo the operation saved in this class, taking into account the saved
+  // column and row (at the row/col given by Entry()) passed by the calling
+  // instance of SingletonPreprocessor. Note that the operations must be undone
+  // in the reverse order of the one in which they were applied.
+  void Undo(const GlopParameters& parameters, const SparseColumn& saved_column,
+            const SparseColumn& saved_row, ProblemSolution* solution) const;
+
+  const MatrixEntry& Entry() const { return e_; }
 
  private:
   // Actual undo functions for each OperationType.
   // Undo() just calls the correct one.
-  void SingletonRowUndo(const SparseMatrix& deleted_columns,
+  void SingletonRowUndo(const SparseColumn& saved_column,
                         ProblemSolution* solution) const;
   void ZeroCostSingletonColumnUndo(const GlopParameters& parameters,
-                                   const SparseMatrix& deleted_rows,
+                                   const SparseColumn& saved_row,
                                    ProblemSolution* solution) const;
   void SingletonColumnInEqualityUndo(const GlopParameters& parameters,
-                                     const SparseMatrix& deleted_rows,
+                                     const SparseColumn& saved_row,
                                      ProblemSolution* solution) const;
   void MakeConstraintAnEqualityUndo(ProblemSolution* solution) const;
 
@@ -471,11 +499,12 @@ class SingletonPreprocessor : public Preprocessor {
   absl::StrongVector<RowIndex, SumWithPositiveInfiniteAndOneMissing>
       row_ub_sum_;
 
-  // The columns that are deleted by this preprocessor.
-  SparseMatrix deleted_columns_;
-  // The transpose of the rows that are deleted by this preprocessor.
-  // TODO(user): implement a RowMajorSparseMatrix class to simplify the code.
-  SparseMatrix deleted_rows_;
+  // TODO(user): It is annoying that we need to store a part of the matrix that
+  // is not deleted here. This extra memory usage might show the limit of our
+  // presolve architecture that does not require a new matrix factorization on
+  // the original problem to reconstruct the solution.
+  ColumnsSaver columns_saver_;
+  ColumnsSaver rows_saver_;
 };
 
 // --------------------------------------------------------
@@ -532,11 +561,11 @@ class ForcingAndImpliedFreeConstraintPreprocessor : public Preprocessor {
 
  private:
   bool lp_is_maximization_problem_;
-  SparseMatrix deleted_columns_;
   DenseRow costs_;
   DenseBooleanColumn is_forcing_up_;
   ColumnDeletionHelper column_deletion_helper_;
   RowDeletionHelper row_deletion_helper_;
+  ColumnsSaver columns_saver_;
 };
 
 // --------------------------------------------------------
@@ -702,12 +731,10 @@ class UnconstrainedVariablePreprocessor : public Preprocessor {
 
   ColumnDeletionHelper column_deletion_helper_;
   RowDeletionHelper row_deletion_helper_;
+  ColumnsSaver rows_saver_;
   DenseColumn rhs_;
   DenseColumn activity_sign_correction_;
   DenseBooleanRow is_unbounded_;
-
-  SparseMatrix deleted_columns_;
-  SparseMatrix deleted_rows_as_column_;
 };
 
 // --------------------------------------------------------
@@ -839,7 +866,6 @@ class DoubletonEqualityRowPreprocessor : public Preprocessor {
     Fractional coeff[NUM_DOUBLETON_COLS];
     Fractional lb[NUM_DOUBLETON_COLS];
     Fractional ub[NUM_DOUBLETON_COLS];
-    SparseColumn column[NUM_DOUBLETON_COLS];
     Fractional objective_coefficient[NUM_DOUBLETON_COLS];
 
     // If the modified variable has status AT_[LOWER,UPPER]_BOUND, then we'll
@@ -863,6 +889,9 @@ class DoubletonEqualityRowPreprocessor : public Preprocessor {
   std::vector<RestoreInfo> restore_stack_;
   DenseColumn saved_row_lower_bounds_;
   DenseColumn saved_row_upper_bounds_;
+
+  ColumnsSaver columns_saver_;
+  DenseRow saved_objective_;
 };
 
 // Because of numerical imprecision, a preprocessor like
@@ -1025,6 +1054,12 @@ class ToMinimizationPreprocessor : public Preprocessor {
 // As a consequence, the matrix of the linear program always has full row rank
 // after this preprocessor. Note that the slack variables are always added last,
 // so that the rightmost square sub-matrix is always the identity matrix.
+//
+// TODO(user): Do not require this step to talk to the revised simplex. On large
+// LPs like supportcase11.mps, this step alone can add 1.5 GB to the solver peak
+// memory for no good reason. The internal matrix representation used in glop is
+// a lot more efficient, and there is no point keeping the slacks in
+// LinearProgram. It is also bad for incrementaly modifying the LP.
 class AddSlackVariablesPreprocessor : public Preprocessor {
  public:
   explicit AddSlackVariablesPreprocessor(const GlopParameters* parameters)
