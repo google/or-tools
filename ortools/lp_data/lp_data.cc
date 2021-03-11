@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <string>
 #include <utility>
 
@@ -429,13 +430,14 @@ std::string LinearProgram::GetDimensionString() const {
       "%d rows, %d columns, %d entries with magnitude in [%e, %e]",
       num_constraints().value(), num_variables().value(),
       // static_cast<int64> is needed because the Android port uses int32.
-      static_cast<int64>(num_entries().value()), min_magnitude, max_magnitude);
+      static_cast<int64_t>(num_entries().value()), min_magnitude,
+      max_magnitude);
 }
 
 namespace {
 
 template <typename FractionalValues>
-void UpdateStats(const FractionalValues& values, int64* num_non_zeros,
+void UpdateStats(const FractionalValues& values, int64_t* num_non_zeros,
                  Fractional* min_value, Fractional* max_value) {
   for (const Fractional v : values) {
     if (v == 0 || v == kInfinity || v == -kInfinity) continue;
@@ -448,7 +450,7 @@ void UpdateStats(const FractionalValues& values, int64* num_non_zeros,
 }  // namespace
 
 std::string LinearProgram::GetObjectiveStatsString() const {
-  int64 num_non_zeros = 0;
+  int64_t num_non_zeros = 0;
   Fractional min_value = +kInfinity;
   Fractional max_value = -kInfinity;
   UpdateStats(objective_coefficients_, &num_non_zeros, &min_value, &max_value);
@@ -461,7 +463,7 @@ std::string LinearProgram::GetObjectiveStatsString() const {
 }
 
 std::string LinearProgram::GetBoundsStatsString() const {
-  int64 num_non_zeros = 0;
+  int64_t num_non_zeros = 0;
   Fractional min_value = +kInfinity;
   Fractional max_value = -kInfinity;
   UpdateStats(variable_lower_bounds_, &num_non_zeros, &min_value, &max_value);
@@ -1441,8 +1443,8 @@ std::string LinearProgram::NonZeroStatFormatter(
 
   // To avoid division by 0 if there are no columns or no rows, we set
   // height and width to be at least one.
-  const int64 height = std::max(RowToIntIndex(num_constraints()), 1);
-  const int64 width = std::max(ColToIntIndex(num_variables()), 1);
+  const int64_t height = std::max(RowToIntIndex(num_constraints()), 1);
+  const int64_t width = std::max(ColToIntIndex(num_variables()), 1);
   const double fill_rate = 100.0 * static_cast<double>(num_entries.value()) /
                            static_cast<double>(height * width);
 

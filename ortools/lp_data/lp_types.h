@@ -17,6 +17,7 @@
 #define OR_TOOLS_LP_DATA_LP_TYPES_H_
 
 #include <cmath>
+#include <cstdint>
 #include <limits>
 
 #include "ortools/base/basictypes.h"
@@ -34,7 +35,7 @@ namespace glop {
 // This type is defined to avoid cast issues during index conversions,
 // e.g. converting ColIndex into RowIndex.
 // All types should use 'Index' instead of int32.
-typedef int32 Index;
+typedef int32_t Index;
 
 // ColIndex is the type for integers representing column/variable indices.
 // int32s are enough for handling even the largest problems.
@@ -62,7 +63,7 @@ inline Index RowToIntIndex(RowIndex row) { return row.value(); }
 #if defined(__ANDROID__)
 DEFINE_INT_TYPE(EntryIndex, int32);
 #else
-DEFINE_INT_TYPE(EntryIndex, int64);
+DEFINE_INT_TYPE(EntryIndex, int64_t);
 #endif
 
 static inline double ToDouble(double f) { return f; }
@@ -376,7 +377,7 @@ class VectorIterator : EntryType {
 // This is used during the deterministic time computation to convert a given
 // number of floating-point operations to something in the same order of
 // magnitude as a second (on a 2014 desktop).
-static inline double DeterministicTimeForFpOperations(int64 n) {
+static inline double DeterministicTimeForFpOperations(int64_t n) {
   const double kConversionFactor = 2e-9;
   return kConversionFactor * static_cast<double>(n);
 }

@@ -13,6 +13,8 @@
 
 #include "ortools/lp_data/mps_reader.h"
 
+#include <cstdint>
+
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
@@ -213,7 +215,7 @@ class MPSReaderImpl {
   absl::flat_hash_set<std::string> integer_type_names_set_;
 
   // The current line number in the file being parsed.
-  int64 line_num_;
+  int64_t line_num_;
 
   // The current line in the file being parsed.
   std::string line_;

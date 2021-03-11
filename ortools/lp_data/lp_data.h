@@ -25,6 +25,7 @@
 #define OR_TOOLS_LP_DATA_LP_DATA_H_
 
 #include <algorithm>  // for max
+#include <cstdint>
 #include <map>
 #include <string>  // for string
 #include <vector>  // for vector
@@ -543,6 +544,15 @@ class LinearProgram {
 
   // If true, checks bound validity in debug mode.
   void SetDcheckBounds(bool dcheck_bounds) { dcheck_bounds_ = dcheck_bounds; }
+
+  // In our presolve, the calls and the extra test inside SetConstraintBounds()
+  // can be visible when a lot of substitutions are performed.
+  DenseColumn* mutable_constraint_lower_bounds() {
+    return &constraint_lower_bounds_;
+  }
+  DenseColumn* mutable_constraint_upper_bounds() {
+    return &constraint_upper_bounds_;
+  }
 
  private:
   // A helper function that updates the vectors integer_variables_list_,
