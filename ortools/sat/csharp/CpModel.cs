@@ -486,7 +486,7 @@ namespace Google.OrTools.Sat
             ct.Proto.IntProd = args;
             return ct;
         }
-        
+
         public Constraint AddProdEquality(IntVar target, IEnumerable<IntVar> vars)
         {
             return AddMultiplicationEquality(target, vars);
@@ -693,17 +693,17 @@ namespace Google.OrTools.Sat
 
         public String ModelStats()
         {
-            return SatHelper.ModelStats(model_);
+            return CpSatHelper.ModelStats(model_);
         }
 
         public Boolean ExportToFile(String filename)
         {
-            return SatHelper.WriteModelToFile(model_, filename);
+            return CpSatHelper.WriteModelToFile(model_, filename);
         }
 
         public String Validate()
         {
-            return SatHelper.ValidateModel(model_);
+            return CpSatHelper.ValidateModel(model_);
         }
 
         private int ConvertConstant(long value)

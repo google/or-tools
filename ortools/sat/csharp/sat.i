@@ -51,6 +51,11 @@ PROTO_INPUT(operations_research::sat::IntegerVariableProto,
 PROTO2_RETURN(operations_research::sat::CpSolverResponse,
               Google.OrTools.Sat.CpSolverResponse);
 
+%pragma(csharp) imclassimports=%{
+// Used to wrap log callbacks (std::function<void(const std::string&>)
+public delegate void StringToVoidDelegate(string message);
+%}
+
 %ignoreall
 
 // SatParameters are proto2, thus not compatible with C# Protobufs.
@@ -58,17 +63,24 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 
 %unignore operations_research;
 %unignore operations_research::sat;
-%unignore operations_research::sat::SatHelper;
-%unignore operations_research::sat::SatHelper::Solve;
-%unignore operations_research::sat::SatHelper::SolveWithStringParameters;
-%unignore operations_research::sat::SatHelper::SolveWithStringParametersAndSolutionCallback;
-%unignore operations_research::sat::SatHelper::ModelStats;
-%unignore operations_research::sat::SatHelper::SolverResponseStats;
-%unignore operations_research::sat::SatHelper::ValidateModel;
-%unignore operations_research::sat::SatHelper::VariableDomain;
-%unignore operations_research::sat::SatHelper::WriteModelToFile;
 
-%typemap(csimports) operations_research::sat::SatHelper %{
+// Wrap the SolveWrapper class.
+%unignore operations_research::sat::SolveWrapper;
+%unignore operations_research::sat::SolveWrapper::SetStringParameters;
+%unignore operations_research::sat::SolveWrapper::AddSolutionCallback;
+%unignore operations_research::sat::SolveWrapper::AddLogCallbackFromClass;
+%unignore operations_research::sat::SolveWrapper::SetEnumerateAllSolutions;
+%unignore operations_research::sat::SolveWrapper::Solve;
+
+// Wrap the CpSatHelper class.
+%unignore operations_research::sat::CpSatHelper;
+%unignore operations_research::sat::CpSatHelper::ModelStats;
+%unignore operations_research::sat::CpSatHelper::SolverResponseStats;
+%unignore operations_research::sat::CpSatHelper::ValidateModel;
+%unignore operations_research::sat::CpSatHelper::VariableDomain;
+%unignore operations_research::sat::CpSatHelper::WriteModelToFile;
+
+%typemap(csimports) operations_research::sat::CpSatHelper %{
 using Google.OrTools.Util;
 %}
 
@@ -102,6 +114,11 @@ using Google.OrTools.Util;
 %feature("nodirector") operations_research::sat::SolutionCallback::UserTime;
 %unignore operations_research::sat::SolutionCallback::WallTime;
 %feature("nodirector") operations_research::sat::SolutionCallback::WallTime;
+
+%feature("director") operations_research::sat::LogCallback;
+%unignore operations_research::sat::LogCallback;
+%unignore operations_research::sat::LogCallback::~LogCallback;
+%unignore operations_research::sat::LogCallback::NewMessage;
 
 %include "ortools/sat/swig_helper.h"
 

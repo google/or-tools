@@ -748,7 +748,7 @@ message CpSolverResponse {
   // Additional information about how the solution was found.
   string solution_info = 20;
 
-  // The solve log will be filled if the fill_log_in_response parameter is set
-  // to true.
+  // The solve log will be filled if the parameter log_to_response is set to
+  // true.
   string solve_log = 26;
 }

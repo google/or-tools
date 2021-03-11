@@ -1586,15 +1586,15 @@ class CpModel(object):
 
     def ModelStats(self):
         """Returns a string containing some model statistics."""
-        return pywrapsat.SatHelper.ModelStats(self.__model)
+        return pywrapsat.CpSatHelper.ModelStats(self.__model)
 
     def Validate(self):
         """Returns a string indicating that the model is invalid."""
-        return pywrapsat.SatHelper.ValidateModel(self.__model)
+        return pywrapsat.CpSatHelper.ValidateModel(self.__model)
 
     def ExportToFile(self, file):
         """Write the model as a ascii protocol buffer to 'file'."""
-        return pywrapsat.SatHelper.WriteModelToFile(self.__model, file)
+        return pywrapsat.CpSatHelper.WriteModelToFile(self.__model, file)
 
     def AssertIsBooleanVariable(self, x):
         if isinstance(x, IntVar):
@@ -1689,19 +1689,25 @@ class CpSolver(object):
         self.__model = None
         self.__solution: cp_model_pb2.CpSolverResponse = None
         self.parameters = sat_parameters_pb2.SatParameters()
+        self.log_callback = None
 
-    def Solve(self, model):
-        """Solves the given model and returns the solve status."""
-        self.__solution = pywrapsat.SatHelper.SolveWithParameters(
-            model.Proto(), self.parameters)
+    def Solve(self, model, solution_callback=None):
+        """Solves a problem and passes each solution to the callback if not null."""
+        solve_wrapper = pywrapsat.SolveWrapper()
+        solve_wrapper.SetParameters(self.parameters)
+        if solution_callback is not None:
+            solve_wrapper.AddSolutionCallback(solution_callback)
+
+        if self.log_callback:
+            solve_wrapper.AddLogCallback(self.log_callback)
+
+        self.__solution = solve_wrapper.Solve(model.Proto())
         return self.__solution.status
 
+    # DEPRECATED, just use Solve() with the callback argument.
     def SolveWithSolutionCallback(self, model, callback):
-        """Solves a problem and passes each solution found to the callback."""
-        self.__solution = (
-            pywrapsat.SatHelper.SolveWithParametersAndSolutionCallback(
-                model.Proto(), self.parameters, callback))
-        return self.__solution.status
+        """DEPRECATED Use Solve() with the callback argument."""
+        return self.Solve(model, callback)
 
     def SearchForAllSolutions(self, model, callback):
         """Search for all solutions of a satisfiability problem.
@@ -1728,9 +1734,9 @@ class CpSolver(object):
         # Store old values.
         enumerate_all = self.parameters.enumerate_all_solutions
         self.parameters.enumerate_all_solutions = True
-        self.__solution = (
-            pywrapsat.SatHelper.SolveWithParametersAndSolutionCallback(
-                model.Proto(), self.parameters, callback))
+
+        self.Solve(model, callback)
+
         # Restore parameters.
         self.parameters.enumerate_all_solutions = enumerate_all
         return self.__solution.status
@@ -1783,7 +1789,7 @@ class CpSolver(object):
 
     def ResponseStats(self):
         """Returns some statistics on the solution found as a string."""
-        return pywrapsat.SatHelper.SolverResponseStats(self.__solution)
+        return pywrapsat.CpSatHelper.SolverResponseStats(self.__solution)
 
     def ResponseProto(self):
         """Returns the response object."""

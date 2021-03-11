@@ -20,49 +20,59 @@ namespace Google.OrTools.Sat
     {
         public CpSolverStatus Solve(CpModel model)
         {
+            SolveWrapper solve_wrapper = new SolveWrapper();
             if (string_parameters_ != null)
             {
-                response_ = SatHelper.SolveWithStringParameters(model.Model, string_parameters_);
+                solve_wrapper.SetStringParameters(string_parameters_);
             }
-            else
+            if (log_callback_ != null)
             {
-                response_ = SatHelper.Solve(model.Model);
+                solve_wrapper.AddLogCallbackFromClass(log_callback_);
             }
+            response_ = solve_wrapper.Solve(model.Model);
             return response_.Status;
         }
 
         public CpSolverStatus SolveWithSolutionCallback(CpModel model, SolutionCallback cb)
         {
+            solution_callback_ = cb;
+            SolveWrapper solve_wrapper = new SolveWrapper();
             if (string_parameters_ != null)
             {
-                response_ = SatHelper.SolveWithStringParametersAndSolutionCallback(model.Model, string_parameters_, cb);
+                solve_wrapper.SetStringParameters(string_parameters_);
             }
-            else
+            if (log_callback_ != null)
             {
-                response_ = SatHelper.SolveWithStringParametersAndSolutionCallback(model.Model, "", cb);
+                solve_wrapper.AddLogCallbackFromClass(log_callback_);
             }
+            solve_wrapper.AddSolutionCallback(cb);
+            response_ = solve_wrapper.Solve(model.Model);
+            solution_callback_ = null;
             return response_.Status;
         }
 
         public CpSolverStatus SearchAllSolutions(CpModel model, SolutionCallback cb)
         {
+            solution_callback_ = cb;
+            SolveWrapper solve_wrapper = new SolveWrapper();
             if (string_parameters_ != null)
             {
-                string extra_parameters = " enumerate_all_solutions:true";
-                response_ = SatHelper.SolveWithStringParametersAndSolutionCallback(
-                    model.Model, string_parameters_ + extra_parameters, cb);
+                solve_wrapper.SetStringParameters(string_parameters_);
             }
-            else
+            if (log_callback_ != null)
             {
-                string parameters = "enumerate_all_solutions:true";
-                response_ = SatHelper.SolveWithStringParametersAndSolutionCallback(model.Model, parameters, cb);
+                solve_wrapper.AddLogCallbackFromClass(log_callback_);
             }
+            solve_wrapper.AddSolutionCallback(cb);
+            solve_wrapper.SetEnumerateAllSolutions();
+            response_ = solve_wrapper.Solve(model.Model);
+            solution_callback_ = null;
             return response_.Status;
         }
 
         public String ResponseStats()
         {
-            return SatHelper.SolverResponseStats(response_);
+            return CpSatHelper.SolverResponseStats(response_);
         }
 
         public double ObjectiveValue
@@ -87,6 +97,11 @@ namespace Google.OrTools.Sat
             set {
                 string_parameters_ = value;
             }
+        }
+
+        public void SetLogCallback(StringToVoidDelegate del)
+        {
+            log_callback_ = new LogCallbackDelegate(del);
         }
 
         public CpSolverResponse Response
@@ -192,7 +207,24 @@ namespace Google.OrTools.Sat
 
         private CpModelProto model_;
         private CpSolverResponse response_;
+        SolutionCallback solution_callback_;
+        LogCallback log_callback_;
         string string_parameters_;
+    }
+
+    class LogCallbackDelegate : LogCallback
+    {
+        public LogCallbackDelegate(StringToVoidDelegate del)
+        {
+            this.delegate_ = del;
+        }
+
+        public override void NewMessage(string message)
+        {
+            delegate_(message);
+        }
+
+        private StringToVoidDelegate delegate_;
     }
 
 } // namespace Google.OrTools.Sat

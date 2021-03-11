@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 187
+// NEXT TAG: 188
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -373,21 +373,11 @@ message SatParameters {
   // Add a prefix to all logs.
   optional string log_prefix = 185 [default = ""];
 
-  // Enum to control the recipient of the log.
-  enum LogDestination {
-    // Use the C++ Logging facilities.
-    USE_STANDARD_LOGGING = 0;
-    // Use the C++ Logging facilities.
-    FILL_IN_RESPONSE = 1;
-    // Use the C++ Logging facilities.
-    LOG_TO_BOTH = 2;
-    // No destination specified. This is useful if a custom destination has been
-    // manually added to the logger class.
-    NO_DESTINATION = 3;
-  }
-  // Copy logs in the final response.
-  optional LogDestination log_destination = 186
-      [default = USE_STANDARD_LOGGING];
+  // Log to stdout.
+  optional bool log_to_stdout = 186 [default = true];
+
+  // Log to response proto.
+  optional bool log_to_response = 187 [default = false];
 
   // Whether to use pseudo-Boolean resolution to analyze a conflict. Note that
   // this option only make sense if your problem is modelized using

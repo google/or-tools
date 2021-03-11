@@ -537,7 +537,7 @@ namespace Google.OrTools.Sat
         public Domain Domain
         {
             get {
-                return SatHelper.VariableDomain(var_);
+                return CpSatHelper.VariableDomain(var_);
             }
         }
 

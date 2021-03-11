@@ -3861,6 +3861,7 @@ void CpModelPresolver::Probe() {
   // TODO(user): Maybe do not load slow to propagate constraints? for instance
   // we do not use any linear relaxation here.
   Model model;
+  model.Register<SolverLogger>(context_->logger());
 
   // Adapt some of the parameters during this probing phase.
   auto* local_param = model.GetOrCreate<SatParameters>();
@@ -4446,6 +4447,7 @@ void CpModelPresolver::TransformIntoMaxCliques() {
     }
   }
 
+  int64 num_literals_before = 0;
   const int num_old_cliques = cliques.size();
 
   // We reuse the max-clique code from sat.
@@ -4455,6 +4457,7 @@ void CpModelPresolver::TransformIntoMaxCliques() {
   auto* graph = local_model.GetOrCreate<BinaryImplicationGraph>();
   graph->Resize(num_variables);
   for (const std::vector<Literal>& clique : cliques) {
+    num_literals_before += clique.size();
     if (!graph->AddAtMostOne(clique)) {
       return (void)context_->NotifyThatModelIsUnsat();
     }
@@ -4479,9 +4482,11 @@ void CpModelPresolver::TransformIntoMaxCliques() {
   }
 
   int num_new_cliques = 0;
+  int64 num_literals_after = 0;
   for (const std::vector<Literal>& clique : cliques) {
     if (clique.empty()) continue;
     num_new_cliques++;
+    num_literals_after += clique.size();
     ConstraintProto* ct = context_->working_model->add_constraints();
     for (const Literal literal : clique) {
       if (literal.IsPositive()) {
@@ -4500,8 +4505,12 @@ void CpModelPresolver::TransformIntoMaxCliques() {
     context_->UpdateRuleStats("at_most_one: transformed into max clique.");
   }
 
-  SOLVER_LOG(logger_, "Merged ", num_old_cliques, " into ", num_new_cliques,
-             " cliques.");
+  if (num_old_cliques != num_new_cliques ||
+      num_literals_before != num_literals_after) {
+    SOLVER_LOG(logger_, "[MaxClique] Merged ", num_old_cliques, "(",
+               num_literals_before, " literals) into ", num_new_cliques, "(",
+               num_literals_after, " literals) at_most_ones.");
+  }
 }
 
 bool CpModelPresolver::PresolveOneConstraint(int c) {
@@ -5171,17 +5180,19 @@ void CpModelPresolver::PresolveToFixPoint() {
 
 void LogInfoFromContext(const PresolveContext* context) {
   SolverLogger* logger = context->logger();
-  SOLVER_LOG(logger, "- ", context->NumAffineRelations(),
+  SOLVER_LOG(logger, "");
+  SOLVER_LOG(logger, "Presolve summary:");
+  SOLVER_LOG(logger, "  - ", context->NumAffineRelations(),
              " affine relations were detected.");
-  SOLVER_LOG(logger, "- ", context->NumEquivRelations(),
+  SOLVER_LOG(logger, "  - ", context->NumEquivRelations(),
              " variable equivalence relations were detected.");
   std::map<std::string, int> sorted_rules(context->stats_by_rule_name.begin(),
                                           context->stats_by_rule_name.end());
   for (const auto& entry : sorted_rules) {
     if (entry.second == 1) {
-      SOLVER_LOG(logger, "- rule '", entry.first, "' was applied 1 time.");
+      SOLVER_LOG(logger, "  - rule '", entry.first, "' was applied 1 time.");
     } else {
-      SOLVER_LOG(logger, "- rule '", entry.first, "' was applied ",
+      SOLVER_LOG(logger, "  - rule '", entry.first, "' was applied ",
                  entry.second, " times.");
     }
   }

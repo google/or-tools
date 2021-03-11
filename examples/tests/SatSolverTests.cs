@@ -85,8 +85,8 @@ namespace Google.OrTools.Tests
             model.Constraints.Add(NewLinear3(0, 1, 2, 1, 2, -1, 0, 100000));
             model.Objective = NewMaximize1(2, 1);
             // Console.WriteLine("model = " + model.ToString());
-
-            CpSolverResponse response = SatHelper.Solve(model);
+            SolveWrapper solve_wrapper = new SolveWrapper();
+            CpSolverResponse response = solve_wrapper.Solve(model);
             Assert.Equal(CpSolverStatus.Optimal, response.Status);
             Assert.Equal(30, response.ObjectiveValue);
             Assert.Equal(new long[] { 10, 10, 30 }, response.Solution);
@@ -103,7 +103,8 @@ namespace Google.OrTools.Tests
             model.Objective = NewMaximize2(0, 1, 1, -2);
             // Console.WriteLine("model = " + model.ToString());
 
-            CpSolverResponse response = SatHelper.Solve(model);
+            SolveWrapper solve_wrapper = new SolveWrapper();
+            CpSolverResponse response = solve_wrapper.Solve(model);
             Assert.Equal(CpSolverStatus.Optimal, response.Status);
             Assert.Equal(30, response.ObjectiveValue);
             Assert.Equal(new long[] { 10, -10 }, response.Solution);
@@ -393,9 +394,31 @@ namespace Google.OrTools.Tests
               ]
             }";
             CpModelProto model = Google.Protobuf.JsonParser.Default.Parse<CpModelProto>(model_str);
-
-            CpSolverResponse response = SatHelper.Solve(model);
+            SolveWrapper solve_wrapper = new SolveWrapper();
+            CpSolverResponse response = solve_wrapper.Solve(model);
             Console.WriteLine(response);
+        }
+
+        [Fact]
+        public void CaptureLog() {
+            Console.WriteLine("CaptureLog test");
+            CpModel model = new CpModel();
+            IntVar v1 = model.NewIntVar(-10, 10, "v1");
+            IntVar v2 = model.NewIntVar(-10, 10, "v2");
+            IntVar v3 = model.NewIntVar(-100000, 100000, "v3");
+            model.AddLinearConstraint(v1 + v2, -1000000, 100000);
+            model.AddLinearConstraint(v1 + 2 * v2 - v3, 0, 100000);
+            model.Maximize(v3);
+            Assert.Equal(v1.Domain.FlattenedIntervals(), new long[] { -10, 10 });
+            // Console.WriteLine("model = " + model.Model.ToString());
+
+            CpSolver solver = new CpSolver();
+            solver.StringParameters = "log_search_progress:true log_to_stdout:false";
+            string log = "";
+            solver.SetLogCallback(message => log += message + "\n");
+            solver.Solve(model);
+            Assert.NotEmpty(log);
+            Assert.Contains("OPTIMAL", log);
         }
     }
 } // namespace Google.OrTools.Tests

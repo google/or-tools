@@ -333,9 +333,11 @@ bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed) {
     for (const bool b : can_be_removed) {
       if (b) ++num_removable;
     }
-    SOLVER_LOG(logger_, "num removable Booleans: ", num_removable, " / ",
+    SOLVER_LOG(logger_,
+               "[SAT presolve] num removable Booleans: ", num_removable, " / ",
                can_be_removed.size());
-    SOLVER_LOG(logger_, "num trivial clauses: ", num_trivial_clauses_);
+    SOLVER_LOG(logger_,
+               "[SAT presolve] num trivial clauses: ", num_trivial_clauses_);
     DisplayStats(0);
   }
 
@@ -920,9 +922,9 @@ void SatPresolver::DisplayStats(double elapsed_seconds) {
       num_simple_definition++;
     }
   }
-  SOLVER_LOG(logger_, " [", elapsed_seconds, "s]", " clauses:", num_clauses,
-             " literals:", num_literals, " vars:", num_vars,
-             " one_side_vars:", num_one_side,
+  SOLVER_LOG(logger_, "[SAT presolve] [", elapsed_seconds, "s]",
+             " clauses:", num_clauses, " literals:", num_literals,
+             " vars:", num_vars, " one_side_vars:", num_one_side,
              " simple_definition:", num_simple_definition,
              " singleton_clauses:", num_singleton_clauses);
 }

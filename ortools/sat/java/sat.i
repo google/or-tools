@@ -24,6 +24,18 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/swig_helper.h"
 #include "ortools/util/sorted_interval_list.h"
+
+/* Global JNI reference deleter. Instantiate it via std::make_shared<> */
+class GlobalRefGuard {
+  JNIEnv *jenv_;
+  jobject jref_;
+  // non-copyable
+  GlobalRefGuard(const GlobalRefGuard &) = delete;
+  GlobalRefGuard &operator=(const GlobalRefGuard &) = delete;
+ public:
+  GlobalRefGuard(JNIEnv *jenv, jobject jref): jenv_(jenv), jref_(jref) {}
+  ~GlobalRefGuard() { jenv_->DeleteGlobalRef(jref_); }
+};
 %}
 
 %module(directors="1") operations_research_sat
@@ -48,25 +60,51 @@ PROTO_INPUT(operations_research::sat::CpSolverResponse,
 PROTO2_RETURN(operations_research::sat::CpSolverResponse,
               com.google.ortools.sat.CpSolverResponse);
 
+
+%typemap(in) std::function<void(const std::string&)> %{
+  jclass $input_object_class = jenv->GetObjectClass($input);
+  if (nullptr == $input_object_class) return $null;
+
+
+  jmethodID $input_method_id = jenv->GetMethodID(
+    $input_object_class, "accept", "(Ljava/lang/Object;)V");
+  assert($input_method_id != nullptr);
+  // $input will be deleted once this function return.
+  jobject $input_object = jenv->NewGlobalRef($input);
+
+  // Global JNI reference deleter
+  auto $input_guard = std::make_shared<GlobalRefGuard>(jenv, $input_object);
+  $1 = [jenv, $input_object, $input_method_id, $input_guard](
+      const std::string& message) -> void {
+    return jenv->CallVoidMethod($input_object, $input_method_id,
+                                (jenv)->NewStringUTF(message.c_str()));
+  };
+%}
+%typemap(jni) std::function<void(const std::string&)> "jobject" // Type used in the JNI C.
+%typemap(jtype) std::function<void(const std::string&)> "java.util.function.Consumer<String>" // Type used in the JNI.java.
+%typemap(jstype) std::function<void(const std::string&)> "java.util.function.Consumer<String>" // Type used in the Proxy class.
+%typemap(javain) std::function<void(const std::string&)> "$javainput" // passing the Callback to JNI java class.
+
 %ignoreall
 
 %unignore operations_research;
 %unignore operations_research::sat;
 
-// Wrap the relevant part of the SatHelper.
-%unignore operations_research::sat::SatHelper;
-%rename (solve) operations_research::sat::SatHelper::Solve;
-%rename (solveWithParameters) operations_research::sat::SatHelper::SolveWithParameters;
-%rename (solveWithParametersAndSolutionCallback) operations_research::sat::SatHelper::SolveWithParametersAndSolutionCallback;
-%rename (modelStats) operations_research::sat::SatHelper::ModelStats;
-%rename (solverResponseStats) operations_research::sat::SatHelper::SolverResponseStats;
-%rename (validateModel) operations_research::sat::SatHelper::ValidateModel;
-%rename (variableDomain) operations_research::sat::SatHelper::VariableDomain;
-%rename (writeModelToFile) operations_research::sat::SatHelper::WriteModelToFile;
+// Wrap the SolveWrapper class.
+%unignore operations_research::sat::SolveWrapper;
+%rename (setParameters) operations_research::sat::SolveWrapper::SetParameters;
+%rename (addSolutionCallback) operations_research::sat::SolveWrapper::AddSolutionCallback;
+%rename (addLogCallback) operations_research::sat::SolveWrapper::AddLogCallback;
+%rename (setEnumerateAllSolutions) operations_research::sat::SolveWrapper::SetEnumerateAllSolutions;
+%rename (solve) operations_research::sat::SolveWrapper::Solve;
 
-%typemap(javaimports) operations_research::sat::SatHelper %{
-import com.google.ortools.util.Domain;
-%}
+// Wrap the relevant part of the CpSatHelper.
+%unignore operations_research::sat::CpSatHelper;
+%rename (modelStats) operations_research::sat::CpSatHelper::ModelStats;
+%rename (solverResponseStats) operations_research::sat::CpSatHelper::SolverResponseStats;
+%rename (validateModel) operations_research::sat::CpSatHelper::ValidateModel;
+%rename (variableDomain) operations_research::sat::CpSatHelper::VariableDomain;
+%rename (writeModelToFile) operations_research::sat::CpSatHelper::WriteModelToFile;
 
 // We use directors for the solution callback.
 %feature("director") operations_research::sat::SolutionCallback;
@@ -86,6 +124,10 @@ import com.google.ortools.util.Domain;
 %rename (stopSearch) operations_research::sat::SolutionCallback::StopSearch;
 %rename (userTime) operations_research::sat::SolutionCallback::UserTime;
 %rename (wallTime) operations_research::sat::SolutionCallback::WallTime;
+
+%typemap(javaimports) operations_research::sat::CpSatHelper %{
+import com.google.ortools.util.Domain;
+%}
 
 %include "ortools/sat/swig_helper.h"
 

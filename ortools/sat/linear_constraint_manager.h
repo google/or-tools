@@ -25,6 +25,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -68,7 +69,8 @@ class LinearConstraintManager {
       : sat_parameters_(*model->GetOrCreate<SatParameters>()),
         integer_trail_(*model->GetOrCreate<IntegerTrail>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
-        model_(model) {}
+        model_(model),
+        logger_(model->GetOrCreate<SolverLogger>()) {}
   ~LinearConstraintManager();
 
   // Add a new constraint to the manager. Note that we canonicalize constraints
@@ -213,6 +215,7 @@ class LinearConstraintManager {
 
   TimeLimit* time_limit_;
   Model* model_;
+  SolverLogger* logger_;
 
   // We want to decay the active counts of all constraints at each call and
   // increase the active counts of active/violated constraints. However this can

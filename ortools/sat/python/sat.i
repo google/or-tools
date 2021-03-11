@@ -53,15 +53,22 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 
 %unignore operations_research;
 %unignore operations_research::sat;
-%unignore operations_research::sat::SatHelper;
-%unignore operations_research::sat::SatHelper::Solve;
-%unignore operations_research::sat::SatHelper::SolveWithParameters;
-%unignore operations_research::sat::SatHelper::SolveWithParametersAndSolutionCallback;
-%unignore operations_research::sat::SatHelper::ModelStats;
-%unignore operations_research::sat::SatHelper::SolverResponseStats;
-%unignore operations_research::sat::SatHelper::ValidateModel;
-%unignore operations_research::sat::SatHelper::VariableDomain;
-%unignore operations_research::sat::SatHelper::WriteModelToFile;
+
+// Wrap the SolveWrapper class.
+%unignore operations_research::sat::SolveWrapper;
+%unignore operations_research::sat::SolveWrapper::SetParameters;
+%unignore operations_research::sat::SolveWrapper::AddSolutionCallback;
+%unignore operations_research::sat::SolveWrapper::AddLogCallback;
+%unignore operations_research::sat::SolveWrapper::SetEnumerateAllSolutions;
+%unignore operations_research::sat::SolveWrapper::Solve;
+
+// Wrap the CpSatHelper class.
+%unignore operations_research::sat::CpSatHelper;
+%unignore operations_research::sat::CpSatHelper::ModelStats;
+%unignore operations_research::sat::CpSatHelper::SolverResponseStats;
+%unignore operations_research::sat::CpSatHelper::ValidateModel;
+%unignore operations_research::sat::CpSatHelper::VariableDomain;
+%unignore operations_research::sat::CpSatHelper::WriteModelToFile;
 
 %feature("director") operations_research::sat::SolutionCallback;
 %unignore operations_research::sat::SolutionCallback;

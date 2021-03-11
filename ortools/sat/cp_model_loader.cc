@@ -50,6 +50,7 @@
 #include "ortools/sat/symmetry.h"
 #include "ortools/sat/table.h"
 #include "ortools/sat/timetable.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -274,7 +275,6 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
 
 void CpModelMapping::LoadBooleanSymmetries(const CpModelProto& model_proto,
                                            Model* m) {
-  const SatParameters& params = *m->GetOrCreate<SatParameters>();
   const SymmetryProto symmetry = model_proto.symmetry();
   if (symmetry.permutations().empty()) return;
 
@@ -320,11 +320,9 @@ void CpModelMapping::LoadBooleanSymmetries(const CpModelProto& model_proto,
     symmetry_handler->AddSymmetry(std::move(literal_permutation));
   }
 
-  const bool log_info = VLOG_IS_ON(1) || params.log_search_progress();
-  if (log_info) {
-    LOG(INFO) << "Added " << symmetry_handler->num_permutations()
-              << " symmetry to the SAT solver.";
-  }
+  SOLVER_LOG(m->GetOrCreate<SolverLogger>(), "Added ",
+             symmetry_handler->num_permutations(),
+             " symmetry to the SAT solver.");
 }
 
 // The logic assumes that the linear constraints have been presolved, so that

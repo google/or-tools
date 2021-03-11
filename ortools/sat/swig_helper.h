@@ -23,13 +23,14 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
 
 // Base class for SWIG director based on solution callbacks.
-// See http://www.swig.org/Doc3.0/SWIGDocumentation.html#CSharp_directors.
+// See http://www.swig.org/Doc4.0/SWIGDocumentation.html#CSharp_directors.
 class SolutionCallback {
  public:
   virtual ~SolutionCallback() {}
@@ -95,7 +96,15 @@ class SolutionCallback {
   mutable std::atomic<bool> stopped_;
 };
 
-class SatHelper {
+// Simple director class for C#.
+class LogCallback {
+ public:
+  virtual ~LogCallback() {}
+  virtual void NewMessage(const std::string& message) = 0;
+};
+
+// This class is not meant to be reused after one solve.
+class SolveWrapper {
  public:
   // The arguments of the functions defined below must follow these rules
   // to be wrapped by swig correctly:
@@ -105,61 +114,63 @@ class SatHelper {
   //    file (see the python/ and java/ subdirectories).
   // 3) String variations of the parameters have been added for C# as
   //    C# protobufs do not support proto2.
-  static operations_research::sat::CpSolverResponse Solve(
+
+  void SetParameters(
+      const operations_research::sat::SatParameters& parameters) {
+    model_.Add(NewSatParameters(parameters));
+  }
+
+  void SetStringParameters(const std::string& string_parameters) {
+    model_.Add(NewSatParameters(string_parameters));
+  }
+
+  void AddSolutionCallback(const SolutionCallback& callback) {
+    model_.Add(NewFeasibleSolutionObserver(
+        [&callback](const CpSolverResponse& r) { return callback.Run(r); }));
+    if (!stopped_ptr_) {
+      stopped_ptr_ = callback.stopped();
+    }
+  }
+
+  void AddLogCallback(std::function<void(const std::string&)> log_callback) {
+    if (log_callback != nullptr) {
+      model_.GetOrCreate<SolverLogger>()->AddInfoLoggingCallback(log_callback);
+    }
+  }
+
+  // Workaround for C#.
+  void AddLogCallbackFromClass(LogCallback* log_callback) {
+    model_.GetOrCreate<SolverLogger>()->AddInfoLoggingCallback(
+        [log_callback](const std::string& message) {
+          log_callback->NewMessage(message);
+        });
+  }
+
+  operations_research::sat::CpSolverResponse Solve(
       const operations_research::sat::CpModelProto& model_proto) {
     FixFlagsAndEnvironmentForSwig();
-    return operations_research::sat::Solve(model_proto);
+    if (stopped_ptr_ != nullptr) {
+      (*stopped_ptr_) = false;
+      model_.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
+          stopped_ptr_);
+    }
+    return operations_research::sat::SolveCpModel(model_proto, &model_);
   }
 
-  static operations_research::sat::CpSolverResponse SolveWithParameters(
-      const operations_research::sat::CpModelProto& model_proto,
-      const operations_research::sat::SatParameters& parameters) {
-    FixFlagsAndEnvironmentForSwig();
-    return operations_research::sat::SolveWithParameters(model_proto,
-                                                         parameters);
+  void SetEnumerateAllSolutions() {
+    model_.GetOrCreate<SatParameters>()->set_enumerate_all_solutions(true);
   }
 
-  static operations_research::sat::CpSolverResponse SolveWithStringParameters(
-      const operations_research::sat::CpModelProto& model_proto,
-      const std::string& parameters) {
-    FixFlagsAndEnvironmentForSwig();
-    return operations_research::sat::SolveWithParameters(model_proto,
-                                                         parameters);
-  }
+ private:
+  Model model_;
+  std::atomic<bool>* stopped_ptr_ = nullptr;
+};
 
-  static operations_research::sat::CpSolverResponse
-  SolveWithParametersAndSolutionCallback(
-      const operations_research::sat::CpModelProto& model_proto,
-      const operations_research::sat::SatParameters& parameters,
-      const SolutionCallback& callback) {
-    FixFlagsAndEnvironmentForSwig();
-    callback.ResetSharedBoolean();
-    Model model;
-    model.Add(NewSatParameters(parameters));
-    model.Add(NewFeasibleSolutionObserver(
-        [&callback](const CpSolverResponse& r) { return callback.Run(r); }));
-    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
-        callback.stopped());
-
-    return SolveCpModel(model_proto, &model);
-  }
-
-  static operations_research::sat::CpSolverResponse
-  SolveWithStringParametersAndSolutionCallback(
-      const operations_research::sat::CpModelProto& model_proto,
-      const std::string& parameters, const SolutionCallback& callback) {
-    FixFlagsAndEnvironmentForSwig();
-    callback.ResetSharedBoolean();
-    Model model;
-    model.Add(NewSatParameters(parameters));
-    model.Add(NewFeasibleSolutionObserver(
-        [&callback](const CpSolverResponse& r) { return callback.Run(r); }));
-    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
-        callback.stopped());
-
-    return SolveCpModel(model_proto, &model);
-  }
-
+// Static methods are stored in a module which name can vary.
+// To avoid this issue, we put all global functions as a static method of the
+// CpSatHelper class.
+struct CpSatHelper {
+ public:
   // Returns a string with some statistics on the given CpModelProto.
   static std::string ModelStats(
       const operations_research::sat::CpModelProto& model_proto) {

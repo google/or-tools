@@ -249,23 +249,24 @@ bool Prober::ProbeBooleanVariables(
         time_limit_->GetElapsedDeterministicTime() - initial_deterministic_time;
     const int num_fixed = sat_solver_->LiteralTrail().Index();
     const int num_newly_fixed = num_fixed - initial_num_fixed;
-    SOLVER_LOG(logger_, "Probing deterministic_time: ", time_diff,
+    SOLVER_LOG(logger_, "[Probing] deterministic_time: ", time_diff,
                " (limit: ", deterministic_time_limit,
                ") wall_time: ", wall_timer.Get(), " (",
                (limit_reached ? "Aborted " : ""), num_probed, "/",
                bool_vars.size(), ")");
     if (num_newly_fixed > 0) {
-      SOLVER_LOG(logger_, "  - new fixed Boolean: ", num_newly_fixed, " (",
-                 num_fixed, "/", sat_solver_->NumVariables(), ")");
+      SOLVER_LOG(logger_, "[Probing]  - new fixed Boolean: ", num_newly_fixed,
+                 " (", num_fixed, "/", sat_solver_->NumVariables(), ")");
     }
     if (num_new_holes_ > 0) {
-      SOLVER_LOG(logger_, "  - new integer holes: ", num_new_holes_);
+      SOLVER_LOG(logger_, "[Probing]  - new integer holes: ", num_new_holes_);
     }
     if (num_new_integer_bounds_ > 0) {
-      SOLVER_LOG(logger_, "  - new integer bounds: ", num_new_integer_bounds_);
+      SOLVER_LOG(logger_,
+                 "[Probing]  - new integer bounds: ", num_new_integer_bounds_);
     }
     if (num_new_binary_ > 0) {
-      SOLVER_LOG(logger_, "  - new binary clause: ", num_new_binary_);
+      SOLVER_LOG(logger_, "[Probing]  - new binary clause: ", num_new_binary_);
     }
   }
 

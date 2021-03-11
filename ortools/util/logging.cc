@@ -13,6 +13,8 @@
 
 #include "ortools/util/logging.h"
 
+#include <iostream>
+
 #include "absl/strings/str_cat.h"
 #include "ortools/base/logging.h"
 
@@ -25,9 +27,8 @@ void SolverLogger::AddInfoLoggingCallback(
 
 void SolverLogger::LogInfo(const char* source_filename, int source_line,
                            const std::string& message) {
-  if (info_callbacks_.empty() || force_standard_logging_) {
-    google::LogMessage(source_filename, source_line).stream()
-        << prefix_ << message;
+  if (log_to_stdout_) {
+    std::cout << prefix_ << message << std::endl;
   }
 
   for (const auto& callback : info_callbacks_) {

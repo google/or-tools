@@ -44,12 +44,8 @@ class SolverLogger {
   // Returns true iff logging is enabled.
   bool LoggingIsEnabled() const { return is_enabled_; }
 
-  // Forces standard logging, even if some callbacks have been added.
-  void ForceStandardLogging() { force_standard_logging_ = true; }
-
-  // Relaxes the standard logging. It will be used only if no callbacks have
-  // been added.
-  void RelaxStandardLogging() { force_standard_logging_ = false; }
+  // Should all messages be displayed on stdout ?
+  void SetLogToStdOut(bool enable) { log_to_stdout_ = enable; }
 
   // Adds a prefix to all logs.
   void SetLogPrefix(const std::string& prefix) { prefix_ = prefix; }
@@ -66,7 +62,7 @@ class SolverLogger {
 
  private:
   bool is_enabled_ = false;
-  bool force_standard_logging_ = false;
+  bool log_to_stdout_ = false;
   std::string prefix_;
   std::vector<std::function<void(const std::string& message)>> info_callbacks_;
 };

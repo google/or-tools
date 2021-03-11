@@ -87,8 +87,8 @@ void Append(
 // between each other.
 template <typename Graph>
 std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
-    bool log_info, const CpModelProto& problem,
-    std::vector<int>* initial_equivalence_classes) {
+    const CpModelProto& problem, std::vector<int>* initial_equivalence_classes,
+    SolverLogger* logger) {
   CHECK(initial_equivalence_classes != nullptr);
 
   const int num_variables = problem.variables_size();
@@ -278,11 +278,11 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         // The other cases should be presolved before this is called.
         // TODO(user): not 100% true, this happen on rmatr200-p5, Fix.
         if (constraint.enforcement_literal_size() != 1) {
-          if (log_info) {
-            LOG(INFO) << "BoolAnd with multiple enforcement literal are not "
-                         "supported in symmetry code:"
-                      << constraint.ShortDebugString();
-          }
+          SOLVER_LOG(
+              logger,
+              "[Symmetry] BoolAnd with multiple enforcement literal are not "
+              "supported in symmetry code:",
+              constraint.ShortDebugString());
           return nullptr;
         }
 
@@ -300,10 +300,8 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         // TODO(user): support other types of constraints. Or at least, we
         // could associate to them an unique node so that their variables can
         // appear in no symmetry.
-        if (log_info) {
-          VLOG(1) << "Unsupported constraint type "
-                  << ConstraintCaseName(constraint.constraint_case());
-        }
+        VLOG(1) << "Unsupported constraint type "
+                << ConstraintCaseName(constraint.constraint_case());
         return nullptr;
       }
     }
@@ -338,7 +336,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   }
   for (int i = 0; i < num_nodes; ++i) {
     if (in_degree[i] >= num_nodes || out_degree[i] >= num_nodes) {
-      if (log_info) LOG(INFO) << "Too many multi-arcs in symmetry code.";
+      SOLVER_LOG(logger, "[Symmetry] Too many multi-arcs in symmetry code.");
       return nullptr;
     }
   }
@@ -376,8 +374,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 void FindCpModelSymmetries(
     const SatParameters& params, const CpModelProto& problem,
     std::vector<std::unique_ptr<SparsePermutation>>* generators,
-    double deterministic_limit) {
-  const bool log_info = params.log_search_progress() || VLOG_IS_ON(1);
+    double deterministic_limit, SolverLogger* logger) {
   CHECK(generators != nullptr);
   generators->clear();
 
@@ -385,13 +382,11 @@ void FindCpModelSymmetries(
 
   std::vector<int> equivalence_classes;
   std::unique_ptr<Graph> graph(GenerateGraphForSymmetryDetection<Graph>(
-      log_info, problem, &equivalence_classes));
+      problem, &equivalence_classes, logger));
   if (graph == nullptr) return;
 
-  if (log_info) {
-    LOG(INFO) << "Graph for symmetry has " << graph->num_nodes()
-              << " nodes and " << graph->num_arcs() << " arcs.";
-  }
+  SOLVER_LOG(logger, "[Symmetry] Graph for symmetry has ", graph->num_nodes(),
+             " nodes and ", graph->num_arcs(), " arcs.");
   if (graph->num_nodes() == 0) return;
 
   GraphSymmetryFinder symmetry_finder(*graph, /*is_undirected=*/false);
@@ -404,8 +399,9 @@ void FindCpModelSymmetries(
 
   // TODO(user): Change the API to not return an error when the time limit is
   // reached.
-  if (log_info && !status.ok()) {
-    LOG(INFO) << "GraphSymmetryFinder error: " << status.message();
+  if (!status.ok()) {
+    SOLVER_LOG(logger,
+               "[Symmetry] GraphSymmetryFinder error: ", status.message());
   }
 
   // Remove from the permutations the part not concerning the variables.
@@ -443,30 +439,28 @@ void FindCpModelSymmetries(
   }
   generators->resize(num_generators);
   average_support_size /= num_generators;
-  if (log_info) {
-    LOG(INFO) << "Symmetry computation done. time: "
-              << time_limit->GetElapsedTime()
-              << " dtime: " << time_limit->GetElapsedDeterministicTime();
-    if (num_generators > 0) {
-      LOG(INFO) << "# of generators: " << num_generators;
-      LOG(INFO) << "Average support size: " << average_support_size;
-      if (num_duplicate_constraints > 0) {
-        LOG(INFO) << "The model contains " << num_duplicate_constraints
-                  << " duplicate constraints !";
-      }
+  SOLVER_LOG(logger, "[Symmetry] Symmetry computation done. time: ",
+             time_limit->GetElapsedTime(),
+             " dtime: ", time_limit->GetElapsedDeterministicTime());
+  if (num_generators > 0) {
+    SOLVER_LOG(logger, "[Symmetry] # of generators: ", num_generators);
+    SOLVER_LOG(logger,
+               "[Symmetry] Average support size: ", average_support_size);
+    if (num_duplicate_constraints > 0) {
+      SOLVER_LOG(logger, "[Symmetry] The model contains ",
+                 num_duplicate_constraints, " duplicate constraints !");
     }
   }
 }
 
 void DetectAndAddSymmetryToProto(const SatParameters& params,
-                                 CpModelProto* proto) {
-  const bool log_info = params.log_search_progress() || VLOG_IS_ON(1);
+                                 CpModelProto* proto, SolverLogger* logger) {
   SymmetryProto* symmetry = proto->mutable_symmetry();
   symmetry->Clear();
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
   FindCpModelSymmetries(params, *proto, &generators,
-                        /*deterministic_limit=*/1.0);
+                        /*deterministic_limit=*/1.0, logger);
   if (generators.empty()) return;
 
   for (const std::unique_ptr<SparsePermutation>& perm : generators) {
@@ -483,10 +477,8 @@ void DetectAndAddSymmetryToProto(const SatParameters& params,
 
   std::vector<std::vector<int>> orbitope = BasicOrbitopeExtraction(generators);
   if (orbitope.empty()) return;
-  if (log_info) {
-    LOG(INFO) << "Found orbitope of size " << orbitope.size() << " x "
-              << orbitope[0].size();
-  }
+  SOLVER_LOG(logger, "[Symmetry] Found orbitope of size ", orbitope.size(),
+             " x ", orbitope[0].size());
   DenseMatrixProto* matrix = symmetry->add_orbitopes();
   matrix->set_num_rows(orbitope.size());
   matrix->set_num_cols(orbitope[0].size());
@@ -499,7 +491,6 @@ void DetectAndAddSymmetryToProto(const SatParameters& params,
 
 bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   const SatParameters& params = context->params();
-  const bool log_info = params.log_search_progress() || VLOG_IS_ON(1);
   const CpModelProto& proto = *context->working_model;
 
   // We need to make sure the proto is up to date before computing symmetries!
@@ -537,7 +528,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
   FindCpModelSymmetries(params, proto, &generators,
-                        /*deterministic_limit=*/1.0);
+                        /*deterministic_limit=*/1.0, context->logger());
 
   // Remove temporary affine relation.
   context->working_model->mutable_constraints()->DeleteSubrange(
@@ -621,11 +612,10 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       }
     }
 
-    if (log_info) {
-      LOG(INFO) << "Num fixable by intersecting at_most_one with orbits: "
-                << can_be_fixed_to_false.size()
-                << " largest_orbit: " << max_orbit_size;
-    }
+    SOLVER_LOG(
+        context->logger(),
+        "[Symmetry] Num fixable by intersecting at_most_one with orbits: ",
+        can_be_fixed_to_false.size(), " largest_orbit: ", max_orbit_size);
   }
 
   // Orbitope approach.
@@ -644,9 +634,9 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   //
   // TODO(user): code the generic approach with orbits and stabilizer.
   std::vector<std::vector<int>> orbitope = BasicOrbitopeExtraction(generators);
-  if (!orbitope.empty() && log_info) {
-    LOG(INFO) << "Found orbitope of size " << orbitope.size() << " x "
-              << orbitope[0].size();
+  if (!orbitope.empty()) {
+    SOLVER_LOG(context->logger(), "[Symmetry] Found orbitope of size ",
+               orbitope.size(), " x ", orbitope[0].size());
   }
 
   // Supper simple heuristic to use the orbitope or not.

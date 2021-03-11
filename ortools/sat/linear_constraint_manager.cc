@@ -56,17 +56,16 @@ LinearConstraintManager::~LinearConstraintManager() {
   if (num_coeff_strenghtening_ > 0) {
     VLOG(2) << "num_coeff_strenghtening: " << num_coeff_strenghtening_;
   }
-  if (VLOG_IS_ON(1) && sat_parameters_.log_search_progress() && num_cuts_ > 0) {
-    VLOG(1) << "Total cuts added: " << num_cuts_ << " (out of "
-            << num_add_cut_calls_ << " calls) worker: '" << model_->Name()
-            << "'";
-    VLOG(1) << "  - num simplifications: " << num_simplifications_;
+  if (logger_->LoggingIsEnabled() && num_cuts_ > 0) {
+    SOLVER_LOG(logger_, "Total cuts added: ", num_cuts_, " (out of ",
+               num_add_cut_calls_, " calls) worker: '", model_->Name(), "'");
+    SOLVER_LOG(logger_, "  - num simplifications: ", num_simplifications_);
     for (const auto& entry : type_to_num_cuts_) {
       if (entry.second == 1) {
-        VLOG(1) << "  - added 1 cut of type '" << entry.first << "'.";
+        SOLVER_LOG(logger_, "  - added 1 cut of type '", entry.first, "'.");
       } else {
-        VLOG(1) << "  - added " << entry.second << " cuts of type '"
-                << entry.first << "'.";
+        SOLVER_LOG(logger_, "  - added ", entry.second, " cuts of type '",
+                   entry.first, "'.");
       }
     }
   }
@@ -228,7 +227,7 @@ bool LinearConstraintManager::AddCut(
   // them undeletable.
   constraint_infos_[ct_index].is_deletable = true;
 
-  VLOG(2) << "Cut '" << type_name << "'"
+  VLOG(1) << "Cut '" << type_name << "'"
           << " size=" << constraint_infos_[ct_index].constraint.vars.size()
           << " max_magnitude="
           << ComputeInfinityNorm(constraint_infos_[ct_index].constraint)
@@ -291,7 +290,7 @@ void LinearConstraintManager::PermanentlyRemoveSomeConstraints() {
   }
 
   if (num_deleted_constraints > 0) {
-    VLOG(2) << "Constraint manager cleanup: #deleted:"
+    VLOG(1) << "Constraint manager cleanup: #deleted:"
             << num_deleted_constraints;
   }
   num_deletable_constraints_ -= num_deleted_constraints;

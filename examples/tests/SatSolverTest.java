@@ -19,6 +19,7 @@ import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
 import com.google.ortools.util.Domain;
+import java.util.function.Consumer;
 import java.util.Random;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.Test;
@@ -158,6 +159,32 @@ public class SatSolverTest {
 
     final CpSolver solver = new CpSolver();
     solver.solve(model);
+  }
+
+  @Test
+  public void testLogCapture() {
+    // Creates the model.
+    CpModel model = new CpModel();
+    // Creates the variables.
+    int numVals = 3;
+
+    IntVar x = model.newIntVar(0, numVals - 1, "x");
+    IntVar y = model.newIntVar(0, numVals - 1, "y");
+    // Creates the constraints.
+    model.addDifferent(x, y);
+
+    // Creates a solver and solves the model.
+    CpSolver solver = new CpSolver();
+    StringBuilder logBuilder = new StringBuilder();
+    Consumer<String> appendToLog = (String message) -> logBuilder.append(message).append('\n');
+    solver.setLogCallback(appendToLog);
+    solver.getParameters().setLogToStdout(false).setLogSearchProgress(true);
+    CpSolverStatus status = solver.solve(model);
+
+    String log = logBuilder.toString();
+    if (log.isEmpty()) {
+      throw new RuntimeException("Log should not be empty");
+    }
   }
 
   private void addEqualities(
