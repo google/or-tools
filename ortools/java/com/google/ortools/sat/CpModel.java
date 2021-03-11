@@ -1043,17 +1043,17 @@ public final class CpModel {
 
   /** Returns some statistics on model as a string. */
   public String modelStats() {
-    return SatHelper.modelStats(model());
+    return CpSatHelper.modelStats(model());
   }
 
   /** Returns a non empty string explaining the issue if the model is invalid. */
   public String validate() {
-    return SatHelper.validateModel(model());
+    return CpSatHelper.validateModel(model());
   }
 
   /** Write the model as a ascii protocol buffer to 'file'. */
   public Boolean exportToFile(String file) {
-    return SatHelper.writeModelToFile(model(), file);
+    return CpSatHelper.writeModelToFile(model(), file);
   }
 
   // Helpers

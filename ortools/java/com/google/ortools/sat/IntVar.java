@@ -72,7 +72,7 @@ public final class IntVar implements Literal, LinearExpr {
   @Override
   public long getOffset() {
     return 0;
-  }  
+  }
 
   /** Returns a short string describing the variable. */
   @Override
@@ -115,7 +115,7 @@ public final class IntVar implements Literal, LinearExpr {
 
   /** Returns the domain of the variable. */
   public Domain getDomain() {
-    return SatHelper.variableDomain(varBuilder.build());
+    return CpSatHelper.variableDomain(varBuilder.build());
   }
 
   private final CpModelProto.Builder modelBuilder;

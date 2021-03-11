@@ -17,6 +17,7 @@ import com.google.ortools.sat.CpSolverResponse;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.SatParameters;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Wrapper around the SAT solver.
@@ -28,18 +29,29 @@ public final class CpSolver {
   /** Main construction of the CpSolver class. */
   public CpSolver() {
     this.solveParameters = SatParameters.newBuilder();
+    this.logCallback = null;
   }
 
   /** Solves the given module, and returns the solve status. */
   public CpSolverStatus solve(CpModel model) {
-    solveResponse = SatHelper.solveWithParameters(model.model(), solveParameters.build());
+    SolveWrapper solveWrapper = new SolveWrapper();
+    solveWrapper.setParameters(solveParameters.build());
+    if (logCallback != null) {
+      solveWrapper.addLogCallback(logCallback);
+    }
+    solveResponse = solveWrapper.solve(model.model());
     return solveResponse.getStatus();
   }
 
   /** Solves a problem and passes each solution found to the callback. */
   public CpSolverStatus solveWithSolutionCallback(CpModel model, CpSolverSolutionCallback cb) {
-    solveResponse = SatHelper.solveWithParametersAndSolutionCallback(
-        model.model(), solveParameters.build(), cb);
+    SolveWrapper solveWrapper = new SolveWrapper();
+    solveWrapper.setParameters(solveParameters.build());
+    solveWrapper.addSolutionCallback(cb);
+    if (logCallback != null) {
+      solveWrapper.addLogCallback(logCallback);
+    }
+    solveResponse = solveWrapper.solve(model.model());
     return solveResponse.getStatus();
   }
 
@@ -56,10 +68,16 @@ public final class CpSolver {
    * @return the status of the solve (FEASIBLE, INFEASIBLE...)
    */
   public CpSolverStatus searchAllSolutions(CpModel model, CpSolverSolutionCallback cb) {
+    boolean oldValue = solveParameters.getEnumerateAllSolutions();
     solveParameters.setEnumerateAllSolutions(true);
-    solveResponse = SatHelper.solveWithParametersAndSolutionCallback(
-        model.model(), solveParameters.build(), cb);
-    solveParameters.setEnumerateAllSolutions(true);
+    SolveWrapper solveWrapper = new SolveWrapper();
+    solveWrapper.setParameters(solveParameters.build());
+    solveWrapper.addSolutionCallback(cb);
+    if (logCallback != null) {
+      solveWrapper.addLogCallback(logCallback);
+    }
+    solveResponse = solveWrapper.solve(model.model());
+    solveParameters.setEnumerateAllSolutions(oldValue);
     return solveResponse.getStatus();
   }
 
@@ -125,11 +143,17 @@ public final class CpSolver {
     return solveParameters;
   }
 
+  /** Sets the log callback for the solver. */
+  public void setLogCallback(Consumer<String> cb) {
+    this.logCallback = cb;
+  }
+
   /** Returns some statistics on the solution found as a string. */
   public String responseStats() {
-    return SatHelper.solverResponseStats(solveResponse);
+    return CpSatHelper.solverResponseStats(solveResponse);
   }
 
   private CpSolverResponse solveResponse;
   private final SatParameters.Builder solveParameters;
+  private Consumer<String> logCallback;
 }
