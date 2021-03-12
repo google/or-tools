@@ -32,6 +32,15 @@ using System.Collections;
 
 %module(directors="1") operations_research_sat
 
+%typemap(csimports) operations_research::sat::CpSatHelper %{
+using Google.OrTools.Util;
+%}
+
+%typemap(csimports) operations_research::sat::SolveWrapper %{
+// Used to wrap log callbacks (std::function<void(const std::string&>)
+public delegate void StringToVoidDelegate(string message);
+%}
+
 PROTO_INPUT(operations_research::sat::CpModelProto,
             Google.OrTools.Sat.CpModelProto,
             model_proto);
@@ -51,15 +60,6 @@ PROTO_INPUT(operations_research::sat::IntegerVariableProto,
 PROTO2_RETURN(operations_research::sat::CpSolverResponse,
               Google.OrTools.Sat.CpSolverResponse);
 
-%typemap(csimports) operations_research::sat::CpSatHelper %{
-using Google.OrTools.Util;
-%}
-
-%typemap(csimports) operations_research::sat::SolveWrapper %{
-// Used to wrap log callbacks (std::function<void(const std::string&>)
-public delegate void StringToVoidDelegate(string message);
-%}
-
 %ignoreall
 
 // SatParameters are proto2, thus not compatible with C# Protobufs.
@@ -76,9 +76,10 @@ public delegate void StringToVoidDelegate(string message);
 
 // Wrap the SolveWrapper class.
 %unignore operations_research::sat::SolveWrapper;
-%unignore operations_research::sat::SolveWrapper::SetStringParameters;
-%unignore operations_research::sat::SolveWrapper::AddSolutionCallback;
 %unignore operations_research::sat::SolveWrapper::AddLogCallbackFromClass;
+%unignore operations_research::sat::SolveWrapper::AddSolutionCallback;
+%unignore operations_research::sat::SolveWrapper::ClearSolutionCallback;
+%unignore operations_research::sat::SolveWrapper::SetStringParameters;
 %unignore operations_research::sat::SolveWrapper::Solve;
 %unignore operations_research::sat::SolveWrapper::StopSearch;
 

@@ -27,6 +27,7 @@ namespace Google.OrTools.Sat
 
         public CpSolverStatus SolveWithSolutionCallback(CpModel model, SolutionCallback cb)
         {
+            // Setup search.
             CreateSolveWrapper();
             if (string_parameters_ != null)
             {
@@ -36,16 +37,18 @@ namespace Google.OrTools.Sat
             {
                 solve_wrapper_.AddLogCallbackFromClass(log_callback_);
             }
-            // Store locally to avoid the callback being destroyed by the GC.
-            solution_callback_ = cb;
             if (cb != null)
             {
                 solve_wrapper_.AddSolutionCallback(cb);
             }
+
             response_ = solve_wrapper_.Solve(model.Model);
 
-            // Release temporary objects.
-            solution_callback_ = null;
+            // Cleanup search.
+            if (cb != null)
+            {
+                solve_wrapper_.ClearSolutionCallback(cb);
+            }
             ReleaseSolveWrapper();
 
             return response_.Status;
@@ -218,7 +221,6 @@ namespace Google.OrTools.Sat
 
         private CpModelProto model_;
         private CpSolverResponse response_;
-        private SolutionCallback solution_callback_;
         private LogCallback log_callback_;
         private string string_parameters_;
         private SolveWrapper solve_wrapper_;

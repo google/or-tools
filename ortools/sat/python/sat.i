@@ -30,11 +30,11 @@
 #include "ortools/sat/swig_helper.h"
 %}
 
+%module(directors="1", threads="1") operations_research_sat
+
 %pythoncode {
 import numbers
 }
-
-%module(directors="1", threads="1") operations_research_sat
 
 PY_PROTO_TYPEMAP(ortools.sat.cp_model_pb2,
                  CpModelProto,
@@ -56,9 +56,10 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 
 // Wrap the SolveWrapper class.
 %unignore operations_research::sat::SolveWrapper;
-%unignore operations_research::sat::SolveWrapper::SetParameters;
-%unignore operations_research::sat::SolveWrapper::AddSolutionCallback;
 %unignore operations_research::sat::SolveWrapper::AddLogCallback;
+%unignore operations_research::sat::SolveWrapper::AddSolutionCallback;
+%unignore operations_research::sat::SolveWrapper::ClearSolutionCallback;
+%unignore operations_research::sat::SolveWrapper::SetParameters;
 %unignore operations_research::sat::SolveWrapper::Solve;
 %unignore operations_research::sat::SolveWrapper::StopSearch;
 

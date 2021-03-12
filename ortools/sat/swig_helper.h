@@ -79,8 +79,9 @@ class SolutionCallback {
 
   // Stops the search.
   void StopSearch() {
-    CHECK(stopped_ptr_ != nullptr);
-    (*stopped_ptr_) = true;
+    if (stopped_ptr_ != nullptr) {
+      (*stopped_ptr_) = true;
+    }
   }
 
   operations_research::sat::CpSolverResponse Response() const {
@@ -133,6 +134,11 @@ class SolveWrapper {
     callback.SetAtomicBooleanToStopTheSearch(&stopped_);
     model_.Add(NewFeasibleSolutionObserver(
         [&callback](const CpSolverResponse& r) { return callback.Run(r); }));
+  }
+
+  void ClearSolutionCallback(const SolutionCallback& callback) {
+    // cleanup the atomic bool.
+    callback.SetAtomicBooleanToStopTheSearch(nullptr);
   }
 
   void AddLogCallback(std::function<void(const std::string&)> log_callback) {

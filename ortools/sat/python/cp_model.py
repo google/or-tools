@@ -1698,6 +1698,7 @@ class CpSolver(object):
         """Solves a problem and passes each solution to the callback if not null."""
         with self.__lock:
             solve_wrapper = pywrapsat.SolveWrapper()
+
         solve_wrapper.SetParameters(self.parameters)
         if solution_callback is not None:
             solve_wrapper.AddSolutionCallback(solution_callback)
@@ -1706,6 +1707,10 @@ class CpSolver(object):
             solve_wrapper.AddLogCallback(self.log_callback)
 
         self.__solution = solve_wrapper.Solve(model.Proto())
+
+        if solution_callback is not None:
+            solve_wrapper.ClearSolutionCallback(solution_callback)
+
         with self.__lock:
             self.__solve_wrapper = None
 

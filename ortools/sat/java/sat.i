@@ -40,6 +40,9 @@ class GlobalRefGuard {
 
 %module(directors="1") operations_research_sat
 
+%typemap(javaimports) operations_research::sat::CpSatHelper %{
+import com.google.ortools.util.Domain;
+%}
 
 PROTO_INPUT(operations_research::sat::CpModelProto,
             com.google.ortools.sat.CpModelProto,
@@ -96,9 +99,10 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 
 // Wrap the SolveWrapper class.
 %unignore operations_research::sat::SolveWrapper;
-%rename (setParameters) operations_research::sat::SolveWrapper::SetParameters;
-%rename (addSolutionCallback) operations_research::sat::SolveWrapper::AddSolutionCallback;
 %rename (addLogCallback) operations_research::sat::SolveWrapper::AddLogCallback;
+%rename (addSolutionCallback) operations_research::sat::SolveWrapper::AddSolutionCallback;
+%rename (clearSolutionCallback) operations_research::sat::SolveWrapper::ClearSolutionCallback;
+%rename (setParameters) operations_research::sat::SolveWrapper::SetParameters;
 %rename (solve) operations_research::sat::SolveWrapper::Solve;
 %rename (stopSearch) operations_research::sat::SolveWrapper::StopSearch;
 
@@ -128,10 +132,6 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %rename (stopSearch) operations_research::sat::SolutionCallback::StopSearch;
 %rename (userTime) operations_research::sat::SolutionCallback::UserTime;
 %rename (wallTime) operations_research::sat::SolutionCallback::WallTime;
-
-%typemap(javaimports) operations_research::sat::CpSatHelper %{
-import com.google.ortools.util.Domain;
-%}
 
 %include "ortools/sat/swig_helper.h"
 
