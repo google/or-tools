@@ -39,6 +39,7 @@
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/parser.h"
 #include "ortools/flatzinc/presolve.h"
+#include "ortools/util/logging.h"
 
 ABSL_FLAG(double, time_limit, 0, "time limit in seconds.");
 ABSL_FLAG(bool, all_solutions, false, "Search for all solutions.");
@@ -120,7 +121,8 @@ std::vector<char*> FixAndParseParameters(int* argc, char*** argv) {
   return residual_flags;
 }
 
-Model ParseFlatzincModel(const std::string& input, bool input_is_filename) {
+Model ParseFlatzincModel(const std::string& input, bool input_is_filename,
+                         SolverLogger* logger) {
   WallTimer timer;
   timer.Start();
   // Read model.
@@ -142,21 +144,21 @@ Model ParseFlatzincModel(const std::string& input, bool input_is_filename) {
     CHECK(ParseFlatzincString(input, &model));
   }
 
-  FZLOG << "File " << (input_is_filename ? input : "stdin") << " parsed in "
-        << timer.GetInMs() << " ms" << std::endl;
-  FZLOG << std::endl;
+  SOLVER_LOG(logger, "File ", (input_is_filename ? input : "stdin"),
+             " parsed in ", timer.GetInMs(), " ms");
+  SOLVER_LOG(logger);
 
   // Presolve the model.
-  Presolver presolve;
-  FZLOG << "Presolve model" << std::endl;
+  Presolver presolve(logger);
+  SOLVER_LOG(logger, "Presolve model");
   timer.Reset();
   timer.Start();
   presolve.Run(&model);
-  FZLOG << "  - done in " << timer.GetInMs() << " ms" << std::endl;
-  FZLOG << std::endl;
+  SOLVER_LOG(logger, "  - done in ", timer.GetInMs(), " ms");
+  SOLVER_LOG(logger);
 
   // Print statistics.
-  ModelStatistics stats(model);
+  ModelStatistics stats(model, logger);
   stats.BuildStatistics();
   stats.PrintStatistics();
   return model;
@@ -185,9 +187,18 @@ int main(int argc, char** argv) {
     input = residual_flags.back();
   }
 
+  operations_research::SolverLogger logger;
+  logger.AddInfoLoggingCallback(operations_research::fz::LogInFlatzincFormat);
+  if (absl::GetFlag(FLAGS_fz_logging)) {
+    logger.EnableLogging();
+  } else {
+    logger.DisableLogging();
+  }
+  logger.SetLogToStdOut(false);
+
   operations_research::fz::Model model =
       operations_research::fz::ParseFlatzincModel(
-          input, !absl::GetFlag(FLAGS_read_from_stdin));
+          input, !absl::GetFlag(FLAGS_read_from_stdin), &logger);
   operations_research::fz::FlatzincSatParameters parameters;
   parameters.display_all_solutions = absl::GetFlag(FLAGS_all_solutions);
   parameters.use_free_search = absl::GetFlag(FLAGS_free_search);
@@ -205,6 +216,6 @@ int main(int argc, char** argv) {
   parameters.max_time_in_seconds = absl::GetFlag(FLAGS_time_limit);
 
   operations_research::sat::SolveFzWithCpModelProto(
-      model, parameters, absl::GetFlag(FLAGS_params));
+      model, parameters, absl::GetFlag(FLAGS_params), &logger);
   return EXIT_SUCCESS;
 }

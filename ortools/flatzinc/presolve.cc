@@ -463,11 +463,10 @@ void Presolver::Run(Model* model) {
   if (!successful_rules_.empty()) {
     for (const auto& rule : successful_rules_) {
       if (rule.second == 1) {
-        FZLOG << "  - rule '" << rule.first << "' was applied 1 time"
-              << std::endl;
+        SOLVER_LOG(logger_, "  - rule '", rule.first, "' was applied 1 time");
       } else {
-        FZLOG << "  - rule '" << rule.first << "' was applied " << rule.second
-              << " times" << std::endl;
+        SOLVER_LOG(logger_, "  - rule '", rule.first, "' was applied ",
+                   rule.second, " times");
       }
     }
   }

@@ -26,9 +26,6 @@ ABSL_DECLARE_FLAG(bool, fz_logging);
 ABSL_DECLARE_FLAG(bool, fz_verbose);
 ABSL_DECLARE_FLAG(bool, fz_debug);
 
-#define FZLOG \
-  if (absl::GetFlag(FLAGS_fz_logging)) std::cout << "%% "
-
 #define FZVLOG \
   if (absl::GetFlag(FLAGS_fz_verbose)) std::cout << "%%%% "
 

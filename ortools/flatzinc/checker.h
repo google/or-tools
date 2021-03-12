@@ -18,6 +18,7 @@
 #include <functional>
 
 #include "ortools/flatzinc/model.h"
+#include "ortools/util/logging.h"
 
 namespace operations_research {
 namespace fz {
@@ -26,7 +27,8 @@ namespace fz {
 // feasible solution of the given model. Returns true iff this is the
 // case.
 bool CheckSolution(const Model& model,
-                   const std::function<int64_t(IntegerVariable*)>& evaluator);
+                   const std::function<int64_t(IntegerVariable*)>& evaluator,
+                   SolverLogger* logger);
 
 }  // namespace fz
 }  // namespace operations_research

@@ -25,6 +25,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/flatzinc/model.h"
+#include "ortools/util/logging.h"
 
 namespace operations_research {
 namespace fz {
@@ -34,6 +35,7 @@ namespace fz {
 // TODO(user): Error reporting of unfeasible models.
 class Presolver {
  public:
+  explicit Presolver(SolverLogger* logger) : logger_(logger) {}
   // Recursively apply all the pre-solve rules to the model, until exhaustion.
   // The reduced model will:
   // - Have some unused variables.
@@ -123,6 +125,8 @@ class Presolver {
   // Count applications of presolve rules. Use a sorted map for reporting
   // purposes.
   std::map<std::string, int> successful_rules_;
+
+  SolverLogger* logger_;
 };
 }  // namespace fz
 }  // namespace operations_research

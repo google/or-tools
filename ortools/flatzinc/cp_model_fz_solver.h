@@ -36,7 +36,8 @@ namespace sat {
 
 void SolveFzWithCpModelProto(const fz::Model& model,
                              const fz::FlatzincSatParameters& p,
-                             const std::string& sat_params);
+                             const std::string& sat_params,
+                             SolverLogger* logger);
 
 }  // namespace sat
 }  // namespace operations_research

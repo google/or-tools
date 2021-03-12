@@ -1000,10 +1000,9 @@ void OutputFlatzincStats(const CpSolverResponse& response) {
 
 void SolveFzWithCpModelProto(const fz::Model& fz_model,
                              const fz::FlatzincSatParameters& p,
-                             const std::string& sat_params) {
-  if (p.verbose_logging) {
-    FZLOG << "Starting translation to CP-SAT" << std::endl;
-  }
+                             const std::string& sat_params,
+                             SolverLogger* logger) {
+  SOLVER_LOG(logger, "Starting translation to CP-SAT");
 
   CpModelProtoWithMapping m;
   m.proto.set_name(fz_model.name());
@@ -1125,16 +1124,19 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   }
   // Setup logging.
   sat_model.GetOrCreate<SatParameters>()->set_log_to_stdout(false);
-  sat_model.GetOrCreate<SolverLogger>()->AddInfoLoggingCallback(
-      fz::LogInFlatzincFormat);
+  sat_model.Register<SolverLogger>(logger);
+
   const CpSolverResponse response = SolveCpModel(m.proto, &sat_model);
 
   // Check the returned solution with the fz model checker.
   if (response.status() == CpSolverStatus::FEASIBLE ||
       response.status() == CpSolverStatus::OPTIMAL) {
-    CHECK(CheckSolution(fz_model, [&response, &m](fz::IntegerVariable* v) {
-      return response.solution(gtl::FindOrDie(m.fz_var_to_index, v));
-    }));
+    CHECK(CheckSolution(
+        fz_model,
+        [&response, &m](fz::IntegerVariable* v) {
+          return response.solution(gtl::FindOrDie(m.fz_var_to_index, v));
+        },
+        logger));
   }
 
   // Output the solution in the flatzinc official format.

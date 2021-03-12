@@ -926,17 +926,18 @@ bool Model::IsInconsistent() const {
 // ----- Model statistics -----
 
 void ModelStatistics::PrintStatistics() const {
-  FZLOG << "Model " << model_.name() << std::endl;
+  SOLVER_LOG(logger_, "Model ", model_.name());
   for (const auto& it : constraints_per_type_) {
-    FZLOG << "  - " << it.first << ": " << it.second.size() << std::endl;
+    SOLVER_LOG(logger_, "  - ", it.first, ": ", it.second.size());
   }
   if (model_.objective() == nullptr) {
-    FZLOG << "  - Satisfaction problem" << std::endl;
+    SOLVER_LOG(logger_, "  - Satisfaction problem");
   } else {
-    FZLOG << "  - " << (model_.maximize() ? "Maximization" : "Minimization")
-          << " problem" << std::endl;
+    SOLVER_LOG(logger_, "  - ",
+               (model_.maximize() ? "Maximization" : "Minimization"),
+               " problem");
   }
-  FZLOG << std::endl;
+  SOLVER_LOG(logger_);
 }
 
 void ModelStatistics::BuildStatistics() {

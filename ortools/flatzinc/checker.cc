@@ -1284,14 +1284,15 @@ CallMap CreateCallMap() {
 }  // namespace
 
 bool CheckSolution(const Model& model,
-                   const std::function<int64_t(IntegerVariable*)>& evaluator) {
+                   const std::function<int64_t(IntegerVariable*)>& evaluator,
+                   SolverLogger* logger) {
   bool ok = true;
   const CallMap call_map = CreateCallMap();
   for (Constraint* ct : model.constraints()) {
     if (!ct->active) continue;
     const auto& checker = gtl::FindOrDie(call_map, ct->type);
     if (!checker(*ct, evaluator)) {
-      FZLOG << "Failing constraint " << ct->DebugString() << std::endl;
+      SOLVER_LOG(logger, "Failing constraint ", ct->DebugString());
       ok = false;
     }
   }

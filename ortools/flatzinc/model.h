@@ -22,6 +22,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/iterators.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/string_array.h"
 
 namespace operations_research {
@@ -390,7 +391,8 @@ class Model {
 // TODO(user): Clean up API to pass a Model* in argument.
 class ModelStatistics {
  public:
-  explicit ModelStatistics(const Model& model) : model_(model) {}
+  explicit ModelStatistics(const Model& model, SolverLogger* logger)
+      : model_(model), logger_(logger) {}
   int NumVariableOccurrences(IntegerVariable* var) {
     return constraints_per_variables_[var].size();
   }
@@ -399,6 +401,7 @@ class ModelStatistics {
 
  private:
   const Model& model_;
+  SolverLogger* logger_;
   std::map<std::string, std::vector<Constraint*>> constraints_per_type_;
   absl::flat_hash_map<const IntegerVariable*, std::vector<Constraint*>>
       constraints_per_variables_;
