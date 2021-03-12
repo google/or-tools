@@ -21,14 +21,11 @@
 #include "ortools/base/logging.h"
 
 // This file offers logging tool for the flatzinc interpreter.
-// It supports internal logging mechanisms as well as official mechanism from
-// the flatzinc specifications.
 
 ABSL_DECLARE_FLAG(bool, fz_logging);
 ABSL_DECLARE_FLAG(bool, fz_verbose);
 ABSL_DECLARE_FLAG(bool, fz_debug);
 
-#define FZENDL std::endl
 #define FZLOG \
   if (absl::GetFlag(FLAGS_fz_logging)) std::cout << "%% "
 
@@ -38,5 +35,13 @@ ABSL_DECLARE_FLAG(bool, fz_debug);
 #define FZDLOG \
   if (absl::GetFlag(FLAGS_fz_debug)) std::cout << "%%%%%% "
 
-#define HASVLOG absl::GetFlag(FLAGS_fz_verbose)
+namespace operations_research {
+namespace fz {
+
+// Logs information as a flatzinc comment on stdout.
+void LogInFlatzincFormat(const std::string& multi_line_input);
+
+}  // namespace fz
+}  // namespace operations_research
+
 #endif  // OR_TOOLS_FLATZINC_LOGGING_H_

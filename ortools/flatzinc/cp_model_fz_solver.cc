@@ -20,9 +20,9 @@
 #include <tuple>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "absl/strings/str_split.h"
 #include "absl/synchronization/mutex.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/iterator_adaptors.h"
@@ -47,6 +47,7 @@
 #include "ortools/sat/optimization.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/table.h"
+#include "ortools/util/logging.h"
 
 ABSL_FLAG(bool, use_flatzinc_format, true, "Output uses the flatzinc format");
 ABSL_FLAG(int64_t, fz_int_max, int64_t{1} << 50,
@@ -979,14 +980,6 @@ std::string SolutionString(
   return solution_string;
 }
 
-void LogInFlatzincFormat(const std::string& multi_line_input) {
-  std::vector<std::string> lines =
-      absl::StrSplit(multi_line_input, '\n', absl::SkipEmpty());
-  for (const std::string& line : lines) {
-    FZLOG << line << FZENDL;
-  }
-}
-
 void OutputFlatzincStats(const CpSolverResponse& response) {
   std::cout << "%%%mzn-stat: objective=" << response.objective_value()
             << std::endl;
@@ -1008,10 +1001,8 @@ void OutputFlatzincStats(const CpSolverResponse& response) {
 void SolveFzWithCpModelProto(const fz::Model& fz_model,
                              const fz::FlatzincSatParameters& p,
                              const std::string& sat_params) {
-  if (!absl::GetFlag(FLAGS_use_flatzinc_format)) {
-    LOG(INFO) << "*** Starting translation to CP-SAT";
-  } else if (p.verbose_logging) {
-    FZLOG << "*** Starting translation to CP-SAT" << FZENDL;
+  if (p.verbose_logging) {
+    FZLOG << "Starting translation to CP-SAT" << std::endl;
   }
 
   CpModelProtoWithMapping m;
@@ -1077,11 +1068,6 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   // Fill the search order.
   m.TranslateSearchAnnotations(fz_model.search_annotations());
 
-  // Print model statistics.
-  if (absl::GetFlag(FLAGS_use_flatzinc_format) && p.verbose_logging) {
-    LogInFlatzincFormat(CpModelStats(m.proto));
-  }
-
   if (p.display_all_solutions && !m.proto.has_objective()) {
     // Enumerate all sat solutions.
     m.parameters.set_enumerate_all_solutions(true);
@@ -1137,6 +1123,10 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   if (solution_observer != nullptr) {
     sat_model.Add(NewFeasibleSolutionObserver(solution_observer));
   }
+  // Setup logging.
+  sat_model.GetOrCreate<SatParameters>()->set_log_to_stdout(false);
+  sat_model.GetOrCreate<SolverLogger>()->AddInfoLoggingCallback(
+      fz::LogInFlatzincFormat);
   const CpSolverResponse response = SolveCpModel(m.proto, &sat_model);
 
   // Check the returned solution with the fz model checker.

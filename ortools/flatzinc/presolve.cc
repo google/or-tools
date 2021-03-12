@@ -36,13 +36,6 @@ namespace fz {
 namespace {
 enum PresolveState { ALWAYS_FALSE, ALWAYS_TRUE, UNDECIDED };
 
-// TODO(user): accept variables fixed to 0 or 1.
-bool Has01Values(IntegerVariable* var) {
-  return var->domain.Min() == 0 && var->domain.Max() == 1;
-}
-
-bool Is0Or1(int64_t value) { return !(value & ~1LL); }
-
 template <class T>
 bool IsArrayBoolean(const std::vector<T>& values) {
   for (int i = 0; i < values.size(); ++i) {
@@ -69,82 +62,6 @@ bool AtMostOne0OrAtMostOne1(const std::vector<T>& values) {
     }
   }
   return true;
-}
-
-absl::flat_hash_set<int64_t> GetValueSet(const Argument& arg) {
-  absl::flat_hash_set<int64_t> result;
-  if (arg.HasOneValue()) {
-    result.insert(arg.Value());
-  } else {
-    const Domain& domain = arg.Var()->domain;
-    if (domain.is_interval && !domain.values.empty()) {
-      for (int64_t v = domain.values[0]; v <= domain.values[1]; ++v) {
-        result.insert(v);
-      }
-    } else {
-      result.insert(domain.values.begin(), domain.values.end());
-    }
-  }
-  return result;
-}
-
-void SetConstraintAsIntEq(Constraint* ct, IntegerVariable* var, int64_t value) {
-  CHECK(var != nullptr);
-  ct->type = "int_eq";
-  ct->arguments.clear();
-  ct->arguments.push_back(Argument::IntVarRef(var));
-  ct->arguments.push_back(Argument::IntegerValue(value));
-}
-
-bool OverlapsAt(const Argument& array, int pos, const Argument& other) {
-  if (array.type == Argument::INT_VAR_REF_ARRAY) {
-    const Domain& domain = array.variables[pos]->domain;
-    if (domain.IsAllInt64()) {
-      return true;
-    }
-    switch (other.type) {
-      case Argument::INT_VALUE: {
-        return domain.Contains(other.Value());
-      }
-      case Argument::INT_INTERVAL: {
-        return domain.OverlapsIntInterval(other.values[0], other.values[1]);
-      }
-      case Argument::INT_LIST: {
-        return domain.OverlapsIntList(other.values);
-      }
-      case Argument::INT_VAR_REF: {
-        return domain.OverlapsDomain(other.variables[0]->domain);
-      }
-      default: {
-        LOG(FATAL) << "Case not supported in OverlapsAt";
-        return false;
-      }
-    }
-  } else if (array.type == Argument::INT_LIST) {
-    const int64_t value = array.values[pos];
-    switch (other.type) {
-      case Argument::INT_VALUE: {
-        return value == other.values[0];
-      }
-      case Argument::INT_INTERVAL: {
-        return other.values[0] <= value && value <= other.values[1];
-      }
-      case Argument::INT_LIST: {
-        return std::find(other.values.begin(), other.values.end(), value) !=
-               other.values.end();
-      }
-      case Argument::INT_VAR_REF: {
-        return other.variables[0]->domain.Contains(value);
-      }
-      default: {
-        LOG(FATAL) << "Case not supported in OverlapsAt";
-        return false;
-      }
-    }
-  } else {
-    LOG(FATAL) << "First argument not supported in OverlapsAt";
-    return false;
-  }
 }
 
 template <class T>
@@ -195,7 +112,7 @@ void Presolver::PresolveBool2Int(Constraint* ct) {
 // Minizinc flattens 2d element constraints (x = A[y][z]) into 1d element
 // constraint with an affine mapping between y, z and the new index.
 // This rule stores the mapping to reconstruct the 2d element constraint.
-// This mapping can involve 1 or 2 variables dependening if y or z in A[y][z]
+// This mapping can involve 1 or 2 variables depending if y or z in A[y][z]
 // is a constant in the model).
 void Presolver::PresolveStoreAffineMapping(Constraint* ct) {
   CHECK_EQ(2, ct->arguments[1].variables.size());
@@ -475,7 +392,7 @@ void Presolver::Run(Model* model) {
       if (ct->type == "int_lin_eq" && ct->arguments[0].values.size() == 3 &&
           AreOnesFollowedByMinusOne(ct->arguments[0].values) &&
           ct->arguments[1].values.empty() && ct->arguments[2].Value() == 0) {
-        FZVLOG << "Recognize assignment " << ct->DebugString() << FZENDL;
+        FZVLOG << "Recognize assignment " << ct->DebugString() << std::endl;
         current_variables = ct->arguments[1].variables;
         target_variable = current_variables.back();
         current_variables.pop_back();
@@ -486,7 +403,8 @@ void Presolver::Run(Model* model) {
           AreOnesFollowedByMinusOne(ct->arguments[0].values) &&
           ct->arguments[0].values.size() == current_variables.size() + 2 &&
           IsStrictPrefix(current_variables, ct->arguments[1].variables)) {
-        FZVLOG << "Recognize hidden int_plus " << ct->DebugString() << FZENDL;
+        FZVLOG << "Recognize hidden int_plus " << ct->DebugString()
+               << std::endl;
         current_variables = ct->arguments[1].variables;
         // Rewrite ct into int_plus.
         ct->type = "int_plus";
@@ -497,7 +415,7 @@ void Presolver::Run(Model* model) {
         ct->arguments.push_back(Argument::IntVarRef(current_variables.back()));
         target_variable = current_variables.back();
         current_variables.pop_back();
-        FZVLOG << "  -> " << ct->DebugString() << FZENDL;
+        FZVLOG << "  -> " << ct->DebugString() << std::endl;
         // We clean the first constraint too.
         if (first_constraint != nullptr) {
           first_constraint = nullptr;
@@ -545,10 +463,11 @@ void Presolver::Run(Model* model) {
   if (!successful_rules_.empty()) {
     for (const auto& rule : successful_rules_) {
       if (rule.second == 1) {
-        FZLOG << "  - rule '" << rule.first << "' was applied 1 time" << FZENDL;
+        FZLOG << "  - rule '" << rule.first << "' was applied 1 time"
+              << std::endl;
       } else {
         FZLOG << "  - rule '" << rule.first << "' was applied " << rule.second
-              << " times" << FZENDL;
+              << " times" << std::endl;
       }
     }
   }
@@ -571,7 +490,7 @@ void Presolver::AddVariableSubstitution(IntegerVariable* from,
   }
   if (from != to) {
     FZVLOG << "Mark " << from->DebugString() << " as equivalent to "
-           << to->DebugString() << FZENDL;
+           << to->DebugString() << std::endl;
     CHECK(to->Merge(from->name, from->domain, from->temporary));
     from->active = false;
     var_representative_map_[from] = to;

@@ -1291,7 +1291,7 @@ bool CheckSolution(const Model& model,
     if (!ct->active) continue;
     const auto& checker = gtl::FindOrDie(call_map, ct->type);
     if (!checker(*ct, evaluator)) {
-      FZLOG << "Failing constraint " << ct->DebugString() << FZENDL;
+      FZLOG << "Failing constraint " << ct->DebugString() << std::endl;
       ok = false;
     }
   }

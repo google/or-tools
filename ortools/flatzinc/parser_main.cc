@@ -38,7 +38,7 @@ void ParseFile(const std::string& filename, bool presolve) {
   WallTimer timer;
   timer.Start();
 
-  FZLOG << "Loading " << filename << FZENDL;
+  FZLOG << "Loading " << filename << std::endl;
 
   std::string problem_name = filename;
   // Remove the .fzn extension.
@@ -49,17 +49,17 @@ void ParseFile(const std::string& filename, bool presolve) {
   if (found != std::string::npos) {
     problem_name = problem_name.substr(found + 1);
   }
-  FZLOG << "  - parsed in " << timer.GetInMs() << " ms" << FZENDL;
+  FZLOG << "  - parsed in " << timer.GetInMs() << " ms" << std::endl;
 
   Model model(problem_name);
   CHECK(ParseFlatzincFile(filename, &model));
   if (presolve) {
-    FZLOG << "Presolve model" << FZENDL;
+    FZLOG << "Presolve model" << std::endl;
     timer.Reset();
     timer.Start();
     Presolver presolve;
     presolve.Run(&model);
-    FZLOG << "  - done in " << timer.GetInMs() << " ms" << FZENDL;
+    FZLOG << "  - done in " << timer.GetInMs() << " ms" << std::endl;
   }
   if (absl::GetFlag(FLAGS_statistics)) {
     ModelStatistics stats(model);
@@ -67,7 +67,7 @@ void ParseFile(const std::string& filename, bool presolve) {
     stats.PrintStatistics();
   }
   if (absl::GetFlag(FLAGS_print)) {
-    FZLOG << model.DebugString() << FZENDL;
+    FZLOG << model.DebugString() << std::endl;
   }
 }
 }  // namespace fz

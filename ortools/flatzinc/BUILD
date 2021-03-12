@@ -14,6 +14,7 @@ cc_library(
     hdrs = ["logging.h"],
     deps = [
         "//ortools/base",
+        "@com_google_absl//absl/strings",
     ],
 )
 

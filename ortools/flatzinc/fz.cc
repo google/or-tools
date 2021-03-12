@@ -57,14 +57,10 @@ ABSL_FLAG(std::string, fz_model_name, "stdin",
           "Define problem name when reading from stdin.");
 ABSL_FLAG(std::string, params, "", "SatParameters as a text proto.");
 
-ABSL_DECLARE_FLAG(bool, log_prefix);
-
 namespace operations_research {
 namespace fz {
 
 std::vector<char*> FixAndParseParameters(int* argc, char*** argv) {
-  absl::SetFlag(&FLAGS_log_prefix, false);
-
   char all_param[] = "--all_solutions";
   char free_param[] = "--free_search";
   char threads_param[] = "--threads";
@@ -147,15 +143,17 @@ Model ParseFlatzincModel(const std::string& input, bool input_is_filename) {
   }
 
   FZLOG << "File " << (input_is_filename ? input : "stdin") << " parsed in "
-        << timer.GetInMs() << " ms" << FZENDL;
+        << timer.GetInMs() << " ms" << std::endl;
+  FZLOG << std::endl;
 
   // Presolve the model.
   Presolver presolve;
-  FZLOG << "Presolve model" << FZENDL;
+  FZLOG << "Presolve model" << std::endl;
   timer.Reset();
   timer.Start();
   presolve.Run(&model);
-  FZLOG << "  - done in " << timer.GetInMs() << " ms" << FZENDL;
+  FZLOG << "  - done in " << timer.GetInMs() << " ms" << std::endl;
+  FZLOG << std::endl;
 
   // Print statistics.
   ModelStatistics stats(model);
