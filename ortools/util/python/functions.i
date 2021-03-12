@@ -218,7 +218,7 @@ static ReturnT InvokePythonCallableReturning(PyObject* pyfunc) {
     PyObject* py_str = PyUnicode_FromStringAndSize(str.c_str(), str.size());
     PyObject* result;
     SWIG_PYTHON_THREAD_BEGIN_BLOCK;
-    result = PyObject_CallOneArg(input.get(), py_str);
+    result = PyObject_CallFunction(input.get(), "O", py_str);
     SWIG_PYTHON_THREAD_END_BLOCK;
     Py_DECREF(py_str);
     return result;
