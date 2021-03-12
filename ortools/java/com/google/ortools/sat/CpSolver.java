@@ -40,7 +40,8 @@ public final class CpSolver {
 
   /** Solves a problem and passes each solution found to the callback. */
   public CpSolverStatus solveWithSolutionCallback(CpModel model, CpSolverSolutionCallback cb) {
-    createSolveWrapper();
+    // Setup search.
+    createSolveWrapper(); // Synchronized.
     solveWrapper.setParameters(solveParameters.build());
     if (cb != null) {
       solveWrapper.addSolutionCallback(cb);
@@ -48,8 +49,15 @@ public final class CpSolver {
     if (logCallback != null) {
       solveWrapper.addLogCallback(logCallback);
     }
+
     solveResponse = solveWrapper.solve(model.model());
-    releaseSolveWrapper();
+
+    // Cleanup search.
+    if (cb != null) {
+      solveWrapper.clearSolutionCallback(cb);
+    }
+    releaseSolveWrapper(); // Synchronized.
+
     return solveResponse.getStatus();
   }
 
