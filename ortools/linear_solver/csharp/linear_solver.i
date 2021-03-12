@@ -141,9 +141,11 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 %unignore operations_research::MPSolver::SetSolverSpecificParametersAsString;
 %rename (WallTime) operations_research::MPSolver::wall_time;
 %unignore operations_research::MPSolver::Clear;
+%rename (Constraint) operations_research::MPSolver::constraint;
 %unignore operations_research::MPSolver::constraints;
 %unignore operations_research::MPSolver::NumConstraints;
 %unignore operations_research::MPSolver::NumVariables;
+%rename (Variable) operations_research::MPSolver::variable;
 %unignore operations_research::MPSolver::variables;
 %unignore operations_research::MPSolver::EnableOutput;
 %unignore operations_research::MPSolver::SuppressOutput;

@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include <atomic>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -73,8 +74,8 @@ class BopInterface : public MPSolverInterface {
   void ClearObjective() override;
 
   // ------ Query statistics on the solution and the solve ------
-  int64 iterations() const override;
-  int64 nodes() const override;
+  int64_t iterations() const override;
+  int64_t nodes() const override;
   MPSolver::BasisStatus row_status(int constraint_index) const override;
   MPSolver::BasisStatus column_status(int variable_index) const override;
 
@@ -253,12 +254,12 @@ void BopInterface::SetObjectiveOffset(double value) { NonIncrementalChange(); }
 
 void BopInterface::ClearObjective() { NonIncrementalChange(); }
 
-int64 BopInterface::iterations() const {
+int64_t BopInterface::iterations() const {
   LOG(DFATAL) << "Number of iterations not available";
   return kUnknownNumberOfIterations;
 }
 
-int64 BopInterface::nodes() const {
+int64_t BopInterface::nodes() const {
   LOG(DFATAL) << "Number of nodes not available";
   return kUnknownNumberOfNodes;
 }

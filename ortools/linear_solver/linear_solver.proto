@@ -460,6 +460,7 @@ message MPModelRequest {
   // definition of MPModelDeltaProto.
   optional MPModelDeltaProto model_delta = 8;
 
+
 }
 
 // Status returned by the solver. They follow a hierarchical nomenclature, to

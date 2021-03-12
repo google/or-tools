@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include <atomic>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -58,8 +59,8 @@ class GLOPInterface : public MPSolverInterface {
   void ClearObjective() override;
 
   // ------ Query statistics on the solution and the solve ------
-  int64 iterations() const override;
-  int64 nodes() const override;
+  int64_t iterations() const override;
+  int64_t nodes() const override;
   MPSolver::BasisStatus row_status(int constraint_index) const override;
   MPSolver::BasisStatus column_status(int variable_index) const override;
 
@@ -235,11 +236,11 @@ void GLOPInterface::SetObjectiveOffset(double value) { NonIncrementalChange(); }
 
 void GLOPInterface::ClearObjective() { NonIncrementalChange(); }
 
-int64 GLOPInterface::iterations() const {
+int64_t GLOPInterface::iterations() const {
   return lp_solver_.GetNumberOfSimplexIterations();
 }
 
-int64 GLOPInterface::nodes() const {
+int64_t GLOPInterface::nodes() const {
   LOG(DFATAL) << "Number of nodes only available for discrete problems";
   return kUnknownNumberOfNodes;
 }

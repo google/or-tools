@@ -303,6 +303,11 @@ class MPSolver {
   const std::vector<MPVariable*>& variables() const { return variables_; }
 
   /**
+   * Returns the variable at position index.
+   */
+  MPVariable* variable(int index) const { return variables_[index]; }
+
+  /**
    * Looks up a variable by name, and returns nullptr if it does not exist. The
    * first call has a O(n) complexity, as the variable name index is lazily
    * created upon first use. Will crash if variable names are not unique.
@@ -367,6 +372,9 @@ class MPSolver {
    * They are listed in the order in which they were created.
    */
   const std::vector<MPConstraint*>& constraints() const { return constraints_; }
+
+  /** Returns the constraint at the given index. */
+  MPConstraint* constraint(int index) const { return constraints_[index]; }
 
   /**
    *  Looks up a constraint by name, and returns nullptr if it does not exist.
@@ -570,6 +578,8 @@ class MPSolver {
    *     like it should be):
    * - loading a solution whose variables don't correspond to the solver's
    *   current variables
+   * - loading a dual solution whose constraints don't correspond to the
+   *   solver's current constraints
    * - loading a solution with a status other than OPTIMAL / FEASIBLE.
    *
    * Note: the objective value isn't checked. You can use VerifySolution() for

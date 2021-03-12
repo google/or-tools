@@ -179,7 +179,8 @@ double GetIntegralityMultiplier(const MPModelProto& mp_model,
 
 }  // namespace
 
-void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model) {
+void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model,
+                         SolverLogger* logger) {
   const int num_variables = mp_model->variable_size();
 
   // Compute for each variable its current maximum magnitude. Note that we will
@@ -224,16 +225,15 @@ void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model) {
     ct->mutable_coefficient()->Truncate(new_size);
   }
 
-  const bool log_info = VLOG_IS_ON(1) || params.log_search_progress();
-  if (log_info && num_removed > 0) {
-    LOG(INFO) << "Removed " << num_removed
-              << " near zero terms with largest magnitude of "
-              << largest_removed << ".";
+  if (num_removed > 0) {
+    SOLVER_LOG(logger, "Removed ", num_removed,
+               " near zero terms with largest magnitude of ", largest_removed,
+               ".");
   }
 }
 
-std::vector<double> DetectImpliedIntegers(bool log_info,
-                                          MPModelProto* mp_model) {
+std::vector<double> DetectImpliedIntegers(MPModelProto* mp_model,
+                                          SolverLogger* logger) {
   const int num_variables = mp_model->variable_size();
   std::vector<double> var_scaling(num_variables, 1.0);
 
@@ -461,18 +461,17 @@ std::vector<double> DetectImpliedIntegers(bool log_info,
           << " num_rhs_fail: " << num_fail_due_to_rhs
           << " num_multiplier_fail: " << num_fail_due_to_large_multiplier;
 
-  if (log_info && num_to_be_handled > 0) {
-    LOG(INFO) << "Missed " << num_to_be_handled
-              << " potential implied integer.";
+  if (num_to_be_handled > 0) {
+    SOLVER_LOG(logger, "Missed ", num_to_be_handled,
+               " potential implied integer.");
   }
 
   const int num_integers = initial_num_integers + num_detected;
-  LOG_IF(INFO, log_info) << "Num integers: " << num_integers << "/"
-                         << num_variables << " (implied: " << num_detected
-                         << " in_inequalities: " << num_in_inequalities
-                         << " max_scaling: " << max_scaling << ")"
-                         << (num_integers == num_variables ? " [IP] "
-                                                           : " [MIP] ");
+  SOLVER_LOG(logger, "Num integers: ", num_integers, "/", num_variables,
+             " (implied: ", num_detected,
+             " in_inequalities: ", num_in_inequalities,
+             " max_scaling: ", max_scaling, ")",
+             (num_integers == num_variables ? " [IP] " : " [MIP] "));
 
   ApplyVarScaling(var_scaling, mp_model);
   return var_scaling;
@@ -642,7 +641,8 @@ ConstraintProto* ConstraintScaler::AddConstraint(
 
 bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
                                        const MPModelProto& mp_model,
-                                       CpModelProto* cp_model) {
+                                       CpModelProto* cp_model,
+                                       SolverLogger* logger) {
   CHECK(cp_model != nullptr);
   cp_model->Clear();
   cp_model->set_name(mp_model.name());
@@ -808,17 +808,15 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
   }
 
   // Display the error/scaling on the constraints.
-  const bool log_info = VLOG_IS_ON(1) || params.log_search_progress();
-  LOG_IF(INFO, log_info) << "Maximum constraint coefficient relative error: "
-                         << scaler.max_relative_coeff_error;
-  LOG_IF(INFO, log_info)
-      << "Maximum constraint worst-case activity relative error: "
-      << scaler.max_relative_rhs_error
-      << (scaler.max_relative_rhs_error > params.mip_check_precision()
-              ? " [Potentially IMPRECISE]"
-              : "");
-  LOG_IF(INFO, log_info) << "Maximum constraint scaling factor: "
-                         << scaler.max_scaling_factor;
+  SOLVER_LOG(logger, "Maximum constraint coefficient relative error: ",
+             scaler.max_relative_coeff_error);
+  SOLVER_LOG(logger, "Maximum constraint worst-case activity relative error: ",
+             scaler.max_relative_rhs_error,
+             (scaler.max_relative_rhs_error > params.mip_check_precision()
+                  ? " [Potentially IMPRECISE]"
+                  : ""));
+  SOLVER_LOG(logger,
+             "Maximum constraint scaling factor: ", scaler.max_scaling_factor);
 
   // Add the objective.
   std::vector<int> var_indices;
@@ -848,9 +846,8 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
   if (!coefficients.empty()) {
     const double average_magnitude =
         l1_norm / static_cast<double>(coefficients.size());
-    LOG_IF(INFO, log_info) << "Objective magnitude in [" << min_magnitude
-                           << ", " << max_magnitude
-                           << "] average = " << average_magnitude;
+    SOLVER_LOG(logger, "Objective magnitude in [", min_magnitude, ", ",
+               max_magnitude, "] average = ", average_magnitude);
   }
   if (!coefficients.empty() || mp_model.objective_offset() != 0.0) {
     double scaling_factor = GetBestScalingOfDoublesToInt64(
@@ -886,14 +883,13 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
         ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
 
     // Display the objective error/scaling.
-    LOG_IF(INFO, log_info)
-        << "Objective coefficient relative error: " << relative_coeff_error
-        << (relative_coeff_error > params.mip_check_precision() ? " [IMPRECISE]"
-                                                                : "");
-    LOG_IF(INFO, log_info) << "Objective worst-case absolute error: "
-                           << scaled_sum_error / scaling_factor;
-    LOG_IF(INFO, log_info) << "Objective scaling factor: "
-                           << scaling_factor / gcd;
+    SOLVER_LOG(
+        logger, "Objective coefficient relative error: ", relative_coeff_error,
+        (relative_coeff_error > params.mip_check_precision() ? " [IMPRECISE]"
+                                                             : ""));
+    SOLVER_LOG(logger, "Objective worst-case absolute error: ",
+               scaled_sum_error / scaling_factor);
+    SOLVER_LOG(logger, "Objective scaling factor: ", scaling_factor / gcd);
 
     // Note that here we set the scaling factor for the inverse operation of
     // getting the "true" objective value from the scaled one. Hence the

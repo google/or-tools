@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include <atomic>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -67,8 +68,8 @@ class SatInterface : public MPSolverInterface {
   bool AddIndicatorConstraint(MPConstraint* const ct) override { return true; }
 
   // ------ Query statistics on the solution and the solve ------
-  int64 iterations() const override;
-  int64 nodes() const override;
+  int64_t iterations() const override;
+  int64_t nodes() const override;
   MPSolver::BasisStatus row_status(int constraint_index) const override;
   MPSolver::BasisStatus column_status(int variable_index) const override;
 
@@ -231,11 +232,11 @@ void SatInterface::SetObjectiveOffset(double value) { NonIncrementalChange(); }
 
 void SatInterface::ClearObjective() { NonIncrementalChange(); }
 
-int64 SatInterface::iterations() const {
+int64_t SatInterface::iterations() const {
   return 0;  // FIXME
 }
 
-int64 SatInterface::nodes() const { return 0; }
+int64_t SatInterface::nodes() const { return 0; }
 
 MPSolver::BasisStatus SatInterface::row_status(int constraint_index) const {
   return MPSolver::BasisStatus::FREE;  // FIXME

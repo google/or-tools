@@ -15,6 +15,8 @@
 
 #include "ortools/linear_solver/scip_callback.h"
 
+#include <cstdint>
+
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
@@ -77,11 +79,11 @@ double ScipConstraintHandlerContext::VariableValue(
   return SCIPgetSolVal(scip_, solution_, ScipGetVar(scip_, variable->index()));
 }
 
-int64 ScipConstraintHandlerContext::NumNodesProcessed() const {
+int64_t ScipConstraintHandlerContext::NumNodesProcessed() const {
   return SCIPgetNNodes(scip_);
 }
 
-int64 ScipConstraintHandlerContext::CurrentNodeId() const {
+int64_t ScipConstraintHandlerContext::CurrentNodeId() const {
   return SCIPgetCurrentNode(scip_)->number;
 }
 

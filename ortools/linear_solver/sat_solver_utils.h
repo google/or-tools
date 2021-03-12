@@ -18,6 +18,7 @@
 
 #include "ortools/glop/preprocessor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/util/logging.h"
 
 namespace operations_research {
 
@@ -29,8 +30,9 @@ namespace operations_research {
 // Returns the presolve status which is currently UNKNOWN for most cases but
 // might be INFEASIBLE if there is some trivial infeasiblity in the model.
 MPSolverResponseStatus ApplyMipPresolveSteps(
-    bool log_info, const glop::GlopParameters& glop_params, MPModelProto* model,
-    std::vector<std::unique_ptr<glop::Preprocessor>>* for_postsolve);
+    const glop::GlopParameters& glop_params, MPModelProto* model,
+    std::vector<std::unique_ptr<glop::Preprocessor>>* for_postsolve,
+    SolverLogger* logger);
 
 }  // namespace operations_research
 #endif  // OR_TOOLS_LINEAR_SOLVER_SAT_SOLVER_UTILS_H_

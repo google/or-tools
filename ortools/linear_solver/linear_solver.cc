@@ -21,6 +21,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <utility>
 
 #include "absl/status/status.h"
@@ -1041,9 +1042,30 @@ absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
           "'"));
     }
   }
-  // TODO(user): Load the reduced costs too, if available.
   for (int i = 0; i < response.variable_value_size(); ++i) {
     variables_[i]->set_solution_value(response.variable_value(i));
+  }
+  if (response.dual_value_size() > 0) {
+    if (response.dual_value_size() != constraints_.size()) {
+      return absl::InvalidArgumentError(absl::StrCat(
+          "Trying to load a dual solution whose number of entries (",
+          response.dual_value_size(), ") does not correspond to the Solver's (",
+          constraints_.size(), ")"));
+    }
+    for (int i = 0; i < response.dual_value_size(); ++i) {
+      constraints_[i]->set_dual_value(response.dual_value(i));
+    }
+  }
+  if (response.reduced_cost_size() > 0) {
+    if (response.reduced_cost_size() != variables_.size()) {
+      return absl::InvalidArgumentError(absl::StrCat(
+          "Trying to load a reduced cost solution whose number of entries (",
+          response.reduced_cost_size(),
+          ") does not correspond to the Solver's (", variables_.size(), ")"));
+    }
+    for (int i = 0; i < response.reduced_cost_size(); ++i) {
+      variables_[i]->set_reduced_cost(response.reduced_cost(i));
+    }
   }
   // Set the objective value, if is known.
   // NOTE(user): We do not verify the objective, even though we could!
@@ -1272,8 +1294,8 @@ std::string PrettyPrintVar(const MPVariable& var) {
   // Special case: integer variable with at most two possible values
   // (and potentially none).
   if (var.integer() && var.ub() - var.lb() <= 1) {
-    const int64 lb = static_cast<int64>(ceil(var.lb()));
-    const int64 ub = static_cast<int64>(floor(var.ub()));
+    const int64_t lb = static_cast<int64_t>(ceil(var.lb()));
+    const int64_t ub = static_cast<int64_t>(floor(var.ub()));
     if (lb > ub) {
       return prefix + "∅";
     } else if (lb == ub) {
@@ -1507,9 +1529,9 @@ void MPSolver::EnableOutput() { interface_->set_quiet(false); }
 
 void MPSolver::SuppressOutput() { interface_->set_quiet(true); }
 
-int64 MPSolver::iterations() const { return interface_->iterations(); }
+int64_t MPSolver::iterations() const { return interface_->iterations(); }
 
-int64 MPSolver::nodes() const { return interface_->nodes(); }
+int64_t MPSolver::nodes() const { return interface_->nodes(); }
 
 double MPSolver::ComputeExactConditionNumber() const {
   return interface_->ComputeExactConditionNumber();

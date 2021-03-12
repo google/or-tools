@@ -16,6 +16,7 @@
 #include <stddef.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <string>
@@ -84,8 +85,8 @@ class SCIPInterface : public MPSolverInterface {
   void ClearObjective() override;
   void BranchingPriorityChangedForVariable(int var_index) override;
 
-  int64 iterations() const override;
-  int64 nodes() const override;
+  int64_t iterations() const override;
+  int64_t nodes() const override;
   MPSolver::BasisStatus row_status(int constraint_index) const override {
     LOG(DFATAL) << "Basis status only available for continuous problems";
     return MPSolver::FREE;
@@ -894,14 +895,14 @@ bool SCIPInterface::NextSolution() {
   return true;
 }
 
-int64 SCIPInterface::iterations() const {
+int64_t SCIPInterface::iterations() const {
   // NOTE(user): As of 2018-12 it doesn't run in the stubby server, and is
   // a specialized call, so it's ok to crash if the status is broken.
   if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
   return SCIPgetNLPIterations(scip_);
 }
 
-int64 SCIPInterface::nodes() const {
+int64_t SCIPInterface::nodes() const {
   // NOTE(user): Same story as iterations(): it's OK to crash here.
   if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
   // This is the total number of nodes used in the solve, potentially across
@@ -1087,7 +1088,7 @@ class ScipMPCallbackContext : public MPCallbackContext {
     LOG(FATAL) << "SuggestSolution() not currently supported for SCIP.";
   }
 
-  int64 NumExploredNodes() override {
+  int64_t NumExploredNodes() override {
     // scip_context_->NumNodesProcessed() returns:
     //   0 before the root node is solved, e.g. if a heuristic finds a solution.
     //   1 at the root node
@@ -1095,7 +1096,7 @@ class ScipMPCallbackContext : public MPCallbackContext {
     // The NumExploredNodes spec requires that we return 0 at the root node,
     // (this is consistent with gurobi).  Below is a bandaid to try and make the
     // behavior consistent, although some information is lost.
-    return std::max(int64{0}, scip_context_->NumNodesProcessed() - 1);
+    return std::max(int64_t{0}, scip_context_->NumNodesProcessed() - 1);
   }
 
   const std::vector<CallbackRangeConstraint>& constraints_added() {

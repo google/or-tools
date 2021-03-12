@@ -13,6 +13,7 @@
 
 #include "ortools/linear_solver/sat_proto_solver.h"
 
+#include <cstdint>
 #include <vector>
 
 #include "absl/status/statusor.h"
@@ -24,6 +25,7 @@
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/lp_utils.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -92,14 +94,28 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
         static_cast<double>(request.solver_time_limit_seconds()) / 1000.0);
   }
 
+  // TODO(user): We do not support all the parameters here. In particular the
+  // logs before the solver is called will not be appended to the response. Fix
+  // that, and remove code duplication for the logger config. One way should be
+  // to not touch/configure anything if the logger is already created while
+  // calling SolveCpModel() and call a common config function from here or from
+  // inside Solve()?
+  SolverLogger logger;
+  if (params.log_search_progress()) {
+    logger.EnableLogging();
+    logger.SetLogToStdOut(params.log_to_stdout());
+  } else {
+    logger.DisableLogging();
+  }
+
   MPSolutionResponse response;
   if (!ExtractValidMPModelInPlaceOrPopulateResponseStatus(&request,
                                                           &response)) {
-    if (params.log_search_progress()) {
+    if (logger.LoggingIsEnabled()) {
       // This is needed for our benchmark scripts.
       sat::CpSolverResponse cp_response;
       cp_response.set_status(sat::CpSolverStatus::MODEL_INVALID);
-      LOG(INFO) << CpSolverResponseStats(cp_response);
+      SOLVER_LOG(&logger, CpSolverResponseStats(cp_response));
     }
     return response;
   }
@@ -109,9 +125,8 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   const glop::GlopParameters glop_params;
   MPModelProto* const mp_model = request.mutable_model();
   std::vector<std::unique_ptr<glop::Preprocessor>> for_postsolve;
-  const bool log_info = VLOG_IS_ON(1) || params.log_search_progress();
   const auto status =
-      ApplyMipPresolveSteps(log_info, glop_params, mp_model, &for_postsolve);
+      ApplyMipPresolveSteps(glop_params, mp_model, &for_postsolve, &logger);
   if (status == MPSolverResponseStatus::MPSOLVER_INFEASIBLE) {
     if (params.log_search_progress()) {
       // This is needed for our benchmark scripts.
@@ -125,12 +140,15 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   }
 
   // We need to do that before the automatic detection of integers.
-  RemoveNearZeroTerms(params, mp_model);
+  RemoveNearZeroTerms(params, mp_model, &logger);
+
+  SOLVER_LOG(&logger, "");
+  SOLVER_LOG(&logger, "Scaling to pure integer problem.");
 
   const int num_variables = mp_model->variable_size();
   std::vector<double> var_scaling(num_variables, 1.0);
   if (params.mip_automatically_scale_variables()) {
-    var_scaling = sat::DetectImpliedIntegers(log_info, mp_model);
+    var_scaling = sat::DetectImpliedIntegers(mp_model, &logger);
   }
   if (params.mip_var_scaling() != 1.0) {
     const std::vector<double> other_scaling = sat::ScaleContinuousVariables(
@@ -141,7 +159,8 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   }
 
   sat::CpModelProto cp_model;
-  if (!ConvertMPModelProtoToCpModelProto(params, *mp_model, &cp_model)) {
+  if (!ConvertMPModelProtoToCpModelProto(params, *mp_model, &cp_model,
+                                         &logger)) {
     if (params.log_search_progress()) {
       // This is needed for our benchmark scripts.
       sat::CpSolverResponse cp_response;
@@ -173,7 +192,7 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
       }
 
       cp_model_hint->add_vars(var);
-      cp_model_hint->add_values(static_cast<int64>(std::round(value)));
+      cp_model_hint->add_values(static_cast<int64_t>(std::round(value)));
     }
   }
 
@@ -182,13 +201,16 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   const int old_num_constraints = mp_model->constraint().size();
   request.Clear();
 
-  // Solve.
+  // Configure model.
   sat::Model sat_model;
+  sat_model.Register<SolverLogger>(&logger);
   sat_model.Add(NewSatParameters(params));
   if (interrupt_solve != nullptr) {
     sat_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
         interrupt_solve);
   }
+
+  // Solve.
   const sat::CpSolverResponse cp_response =
       sat::SolveCpModel(cp_model, &sat_model);
 

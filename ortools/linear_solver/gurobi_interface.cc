@@ -44,6 +44,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -118,9 +119,9 @@ class GurobiInterface : public MPSolverInterface {
 
   // ------ Query statistics on the solution and the solve ------
   // Number of simplex or interior-point iterations
-  int64 iterations() const override;
+  int64_t iterations() const override;
   // Number of branch-and-bound nodes. Only available for discrete problems.
-  int64 nodes() const override;
+  int64_t nodes() const override;
 
   // Returns the basis status of a row.
   MPSolver::BasisStatus row_status(int constraint_index) const override;
@@ -289,7 +290,7 @@ class GurobiMPCallbackContext : public MPCallbackContext {
   void AddLazyConstraint(const LinearRange& lazy_constraint) override;
   double SuggestSolution(
       const absl::flat_hash_map<const MPVariable*, double>& solution) override;
-  int64 NumExploredNodes() override;
+  int64_t NumExploredNodes() override;
 
   // Call this method to update the internal state of the callback context
   // before passing it to MPCallback::RunCallback().
@@ -342,13 +343,13 @@ void GurobiMPCallbackContext::UpdateFromGurobiState(
   variable_values_extracted_ = false;
 }
 
-int64 GurobiMPCallbackContext::NumExploredNodes() {
+int64_t GurobiMPCallbackContext::NumExploredNodes() {
   switch (Event()) {
     case MPCallbackEvent::kMipNode:
-      return static_cast<int64>(GurobiCallbackGet<double>(
+      return static_cast<int64_t>(GurobiCallbackGet<double>(
           current_gurobi_internal_callback_context_, GRB_CB_MIPNODE_NODCNT));
     case MPCallbackEvent::kMipSolution:
-      return static_cast<int64>(GurobiCallbackGet<double>(
+      return static_cast<int64_t>(GurobiCallbackGet<double>(
           current_gurobi_internal_callback_context_, GRB_CB_MIPSOL_NODCNT));
     default:
       LOG(FATAL) << "Node count is supported only for callback events MIP_NODE "
@@ -788,17 +789,17 @@ void GurobiInterface::BranchingPriorityChangedForVariable(int var_index) {
 
 // ------ Query statistics on the solution and the solve ------
 
-int64 GurobiInterface::iterations() const {
+int64_t GurobiInterface::iterations() const {
   double iter;
   if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
   CheckedGurobiCall(GRBgetdblattr(model_, GRB_DBL_ATTR_ITERCOUNT, &iter));
-  return static_cast<int64>(iter);
+  return static_cast<int64_t>(iter);
 }
 
-int64 GurobiInterface::nodes() const {
+int64_t GurobiInterface::nodes() const {
   if (mip_) {
     if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
-    return static_cast<int64>(GetDoubleAttr(GRB_DBL_ATTR_NODECOUNT));
+    return static_cast<int64_t>(GetDoubleAttr(GRB_DBL_ATTR_NODECOUNT));
   } else {
     LOG(DFATAL) << "Number of nodes only available for discrete problems.";
     return kUnknownNumberOfNodes;

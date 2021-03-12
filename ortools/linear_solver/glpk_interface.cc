@@ -17,6 +17,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <string>
@@ -133,9 +134,9 @@ class GLPKInterface : public MPSolverInterface {
 
   // ------ Query statistics on the solution and the solve ------
   // Number of simplex iterations
-  int64 iterations() const override;
+  int64_t iterations() const override;
   // Number of branch-and-bound nodes. Only available for discrete problems.
-  int64 nodes() const override;
+  int64_t nodes() const override;
 
   // Returns the basis status of a row.
   MPSolver::BasisStatus row_status(int constraint_index) const override;
@@ -667,7 +668,7 @@ MPSolver::BasisStatus GLPKInterface::TransformGLPKBasisStatus(
 
 // ------ Query statistics on the solution and the solve ------
 
-int64 GLPKInterface::iterations() const {
+int64_t GLPKInterface::iterations() const {
 #if GLP_MAJOR_VERSION == 4 && GLP_MINOR_VERSION < 49
   if (!mip_ && CheckSolutionIsSynchronized()) {
     return lpx_get_int_parm(lp_, LPX_K_ITCNT);
@@ -681,7 +682,7 @@ int64 GLPKInterface::iterations() const {
   return kUnknownNumberOfIterations;
 }
 
-int64 GLPKInterface::nodes() const {
+int64_t GLPKInterface::nodes() const {
   if (mip_) {
     if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
     return mip_callback_info_->num_all_nodes_;
