@@ -13,6 +13,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace Google.OrTools.Sat
 {
@@ -20,54 +21,64 @@ namespace Google.OrTools.Sat
     {
         public CpSolverStatus Solve(CpModel model)
         {
-            SolveWrapper solve_wrapper = new SolveWrapper();
-            if (string_parameters_ != null)
-            {
-                solve_wrapper.SetStringParameters(string_parameters_);
-            }
-            if (log_callback_ != null)
-            {
-                solve_wrapper.AddLogCallbackFromClass(log_callback_);
-            }
-            response_ = solve_wrapper.Solve(model.Model);
+            SolveWithSolutionCallback(model, null);
             return response_.Status;
         }
 
         public CpSolverStatus SolveWithSolutionCallback(CpModel model, SolutionCallback cb)
         {
-            solution_callback_ = cb;
-            SolveWrapper solve_wrapper = new SolveWrapper();
+            CreateSolveWrapper();
             if (string_parameters_ != null)
             {
-                solve_wrapper.SetStringParameters(string_parameters_);
+                solve_wrapper_.SetStringParameters(string_parameters_);
             }
             if (log_callback_ != null)
             {
-                solve_wrapper.AddLogCallbackFromClass(log_callback_);
+                solve_wrapper_.AddLogCallbackFromClass(log_callback_);
             }
-            solve_wrapper.AddSolutionCallback(cb);
-            response_ = solve_wrapper.Solve(model.Model);
+            // Store locally to avoid the callback being destroyed by the GC.
+            solution_callback_ = cb;
+            if (cb != null)
+            {
+                solve_wrapper_.AddSolutionCallback(cb);
+            }
+            response_ = solve_wrapper_.Solve(model.Model);
+
+            // Release temporary objects.
             solution_callback_ = null;
+            ReleaseSolveWrapper();
+
             return response_.Status;
         }
 
         public CpSolverStatus SearchAllSolutions(CpModel model, SolutionCallback cb)
         {
-            solution_callback_ = cb;
-            SolveWrapper solve_wrapper = new SolveWrapper();
-            if (string_parameters_ != null)
-            {
-                solve_wrapper.SetStringParameters(string_parameters_);
-            }
-            if (log_callback_ != null)
-            {
-                solve_wrapper.AddLogCallbackFromClass(log_callback_);
-            }
-            solve_wrapper.AddSolutionCallback(cb);
-            solve_wrapper.SetEnumerateAllSolutions();
-            response_ = solve_wrapper.Solve(model.Model);
-            solution_callback_ = null;
+            string old_parameters = string_parameters_;
+            string_parameters_ += " enumerate_all_solutions:true";
+            SolveWithSolutionCallback(model, cb);
+            string_parameters_ = old_parameters;
             return response_.Status;
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        public void StopSearch()
+        {
+            if (solve_wrapper_ != null)
+            {
+                solve_wrapper_.StopSearch();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        private void CreateSolveWrapper()
+        {
+            solve_wrapper_ = new SolveWrapper();
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        private void ReleaseSolveWrapper()
+        {
+            solve_wrapper_ = null;
         }
 
         public String ResponseStats()
@@ -207,9 +218,10 @@ namespace Google.OrTools.Sat
 
         private CpModelProto model_;
         private CpSolverResponse response_;
-        SolutionCallback solution_callback_;
-        LogCallback log_callback_;
-        string string_parameters_;
+        private SolutionCallback solution_callback_;
+        private LogCallback log_callback_;
+        private string string_parameters_;
+        private SolveWrapper solve_wrapper_;
     }
 
     class LogCallbackDelegate : LogCallback

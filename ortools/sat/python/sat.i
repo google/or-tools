@@ -59,8 +59,8 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %unignore operations_research::sat::SolveWrapper::SetParameters;
 %unignore operations_research::sat::SolveWrapper::AddSolutionCallback;
 %unignore operations_research::sat::SolveWrapper::AddLogCallback;
-%unignore operations_research::sat::SolveWrapper::SetEnumerateAllSolutions;
 %unignore operations_research::sat::SolveWrapper::Solve;
+%unignore operations_research::sat::SolveWrapper::StopSearch;
 
 // Wrap the CpSatHelper class.
 %unignore operations_research::sat::CpSatHelper;

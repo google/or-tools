@@ -51,7 +51,11 @@ PROTO_INPUT(operations_research::sat::IntegerVariableProto,
 PROTO2_RETURN(operations_research::sat::CpSolverResponse,
               Google.OrTools.Sat.CpSolverResponse);
 
-%pragma(csharp) imclassimports=%{
+%typemap(csimports) operations_research::sat::CpSatHelper %{
+using Google.OrTools.Util;
+%}
+
+%typemap(csimports) operations_research::sat::SolveWrapper %{
 // Used to wrap log callbacks (std::function<void(const std::string&>)
 public delegate void StringToVoidDelegate(string message);
 %}
@@ -64,13 +68,19 @@ public delegate void StringToVoidDelegate(string message);
 %unignore operations_research;
 %unignore operations_research::sat;
 
+// Temporary wrapper class for the StringToVoidDelegate.
+%feature("director") operations_research::sat::LogCallback;
+%unignore operations_research::sat::LogCallback;
+%unignore operations_research::sat::LogCallback::~LogCallback;
+%unignore operations_research::sat::LogCallback::NewMessage;
+
 // Wrap the SolveWrapper class.
 %unignore operations_research::sat::SolveWrapper;
 %unignore operations_research::sat::SolveWrapper::SetStringParameters;
 %unignore operations_research::sat::SolveWrapper::AddSolutionCallback;
 %unignore operations_research::sat::SolveWrapper::AddLogCallbackFromClass;
-%unignore operations_research::sat::SolveWrapper::SetEnumerateAllSolutions;
 %unignore operations_research::sat::SolveWrapper::Solve;
+%unignore operations_research::sat::SolveWrapper::StopSearch;
 
 // Wrap the CpSatHelper class.
 %unignore operations_research::sat::CpSatHelper;
@@ -79,10 +89,6 @@ public delegate void StringToVoidDelegate(string message);
 %unignore operations_research::sat::CpSatHelper::ValidateModel;
 %unignore operations_research::sat::CpSatHelper::VariableDomain;
 %unignore operations_research::sat::CpSatHelper::WriteModelToFile;
-
-%typemap(csimports) operations_research::sat::CpSatHelper %{
-using Google.OrTools.Util;
-%}
 
 %feature("director") operations_research::sat::SolutionCallback;
 %unignore operations_research::sat::SolutionCallback;
@@ -114,11 +120,6 @@ using Google.OrTools.Util;
 %feature("nodirector") operations_research::sat::SolutionCallback::UserTime;
 %unignore operations_research::sat::SolutionCallback::WallTime;
 %feature("nodirector") operations_research::sat::SolutionCallback::WallTime;
-
-%feature("director") operations_research::sat::LogCallback;
-%unignore operations_research::sat::LogCallback;
-%unignore operations_research::sat::LogCallback::~LogCallback;
-%unignore operations_research::sat::LogCallback::NewMessage;
 
 %include "ortools/sat/swig_helper.h"
 

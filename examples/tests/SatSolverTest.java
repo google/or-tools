@@ -163,6 +163,8 @@ public class SatSolverTest {
 
   @Test
   public void testLogCapture() {
+    System.out.println("testLogCapture");
+
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the variables.

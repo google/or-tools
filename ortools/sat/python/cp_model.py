@@ -50,6 +50,7 @@ from __future__ import print_function
 
 import collections
 import numbers
+import threading
 import time
 
 from ortools.sat import cp_model_pb2
@@ -1690,18 +1691,24 @@ class CpSolver(object):
         self.__solution: cp_model_pb2.CpSolverResponse = None
         self.parameters = sat_parameters_pb2.SatParameters()
         self.log_callback = None
+        self.__solve_wrapper: pywrapsat.SolveWrapper = None
+        self.__lock = threading.Lock()
 
     def Solve(self, model, solution_callback=None):
         """Solves a problem and passes each solution to the callback if not null."""
-        solve_wrapper = pywrapsat.SolveWrapper()
+        with self.__lock:
+            solve_wrapper = pywrapsat.SolveWrapper()
         solve_wrapper.SetParameters(self.parameters)
         if solution_callback is not None:
             solve_wrapper.AddSolutionCallback(solution_callback)
 
-        if self.log_callback:
+        if self.log_callback is not None:
             solve_wrapper.AddLogCallback(self.log_callback)
 
         self.__solution = solve_wrapper.Solve(model.Proto())
+        with self.__lock:
+            self.__solve_wrapper = None
+
         return self.__solution.status
 
     # DEPRECATED, just use Solve() with the callback argument.
@@ -1731,15 +1738,21 @@ class CpSolver(object):
         if model.HasObjective():
             raise TypeError('Search for all solutions is only defined on '
                             'satisfiability problems')
-        # Store old values.
+        # Store old parameter.
         enumerate_all = self.parameters.enumerate_all_solutions
         self.parameters.enumerate_all_solutions = True
 
         self.Solve(model, callback)
 
-        # Restore parameters.
+        # Restore parameter.
         self.parameters.enumerate_all_solutions = enumerate_all
         return self.__solution.status
+
+    def StopSearch(self):
+        """Stops the current search asynchronously."""
+        with self.__lock:
+            if self.__solve_wrapper:
+                self.__solve_wrapper.StopSearch()
 
     def Value(self, expression):
         """Returns the value of a linear expression after solve."""

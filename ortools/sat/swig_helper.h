@@ -77,15 +77,19 @@ class SolutionCallback {
                       : response_.solution(-index - 1) == 0;
   }
 
-  void StopSearch() { stopped_ = true; }
-
-  // Reset the shared atomic Boolean used to stop the search.
-  void ResetSharedBoolean() const { stopped_ = false; }
-
-  std::atomic<bool>* stopped() const { return &stopped_; }
+  // Stops the search.
+  void StopSearch() {
+    CHECK(stopped_ptr_ != nullptr);
+    (*stopped_ptr_) = true;
+  }
 
   operations_research::sat::CpSolverResponse Response() const {
     return response_;
+  }
+
+  // We use mutable and non const methods to overcome SWIG difficulties.
+  void SetAtomicBooleanToStopTheSearch(std::atomic<bool>* stopped_ptr) const {
+    stopped_ptr_ = stopped_ptr;
   }
 
   bool HasResponse() const { return has_response_; }
@@ -93,7 +97,7 @@ class SolutionCallback {
  private:
   mutable CpSolverResponse response_;
   mutable bool has_response_ = false;
-  mutable std::atomic<bool> stopped_;
+  mutable std::atomic<bool>* stopped_ptr_;
 };
 
 // Simple director class for C#.
@@ -125,11 +129,10 @@ class SolveWrapper {
   }
 
   void AddSolutionCallback(const SolutionCallback& callback) {
+    // Overwrite the atomic bool.
+    callback.SetAtomicBooleanToStopTheSearch(&stopped_);
     model_.Add(NewFeasibleSolutionObserver(
         [&callback](const CpSolverResponse& r) { return callback.Run(r); }));
-    if (!stopped_ptr_) {
-      stopped_ptr_ = callback.stopped();
-    }
   }
 
   void AddLogCallback(std::function<void(const std::string&)> log_callback) {
@@ -149,21 +152,16 @@ class SolveWrapper {
   operations_research::sat::CpSolverResponse Solve(
       const operations_research::sat::CpModelProto& model_proto) {
     FixFlagsAndEnvironmentForSwig();
-    if (stopped_ptr_ != nullptr) {
-      (*stopped_ptr_) = false;
-      model_.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
-          stopped_ptr_);
-    }
+    stopped_ = false;
+    model_.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped_);
     return operations_research::sat::SolveCpModel(model_proto, &model_);
   }
 
-  void SetEnumerateAllSolutions() {
-    model_.GetOrCreate<SatParameters>()->set_enumerate_all_solutions(true);
-  }
+  void StopSearch() { stopped_ = true; }
 
  private:
   Model model_;
-  std::atomic<bool>* stopped_ptr_ = nullptr;
+  std::atomic<bool> stopped_;
 };
 
 // Static methods are stored in a module which name can vary.

@@ -60,7 +60,11 @@ PROTO_INPUT(operations_research::sat::CpSolverResponse,
 PROTO2_RETURN(operations_research::sat::CpSolverResponse,
               com.google.ortools.sat.CpSolverResponse);
 
-
+// This typemap is inspired by the constraints_solver java typemaps.
+// The only difference is that the argument is not a basic type, and needs
+// processing to be passed to the std::function.
+//
+// TODO(user): cleanup java/functions.i and move the code there.
 %typemap(in) std::function<void(const std::string&)> %{
   jclass $input_object_class = jenv->GetObjectClass($input);
   if (nullptr == $input_object_class) return $null;
@@ -95,8 +99,8 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %rename (setParameters) operations_research::sat::SolveWrapper::SetParameters;
 %rename (addSolutionCallback) operations_research::sat::SolveWrapper::AddSolutionCallback;
 %rename (addLogCallback) operations_research::sat::SolveWrapper::AddLogCallback;
-%rename (setEnumerateAllSolutions) operations_research::sat::SolveWrapper::SetEnumerateAllSolutions;
 %rename (solve) operations_research::sat::SolveWrapper::Solve;
+%rename (stopSearch) operations_research::sat::SolveWrapper::StopSearch;
 
 // Wrap the relevant part of the CpSatHelper.
 %unignore operations_research::sat::CpSatHelper;
