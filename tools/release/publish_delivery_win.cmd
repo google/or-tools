@@ -6,6 +6,7 @@ set PATH=%PATH%;C:\python39-64;C:\python39-64\Scripts
 REM Print version
 make.exe print-OR_TOOLS_VERSION | tee.exe publish.log
 
+REM Python
 which.exe twine || exit 1
 which.exe twine | tee.exe -a publish.log
 

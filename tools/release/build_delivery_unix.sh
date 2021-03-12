@@ -76,10 +76,10 @@ echo "DONE" | tee -a build.log
 ##  Install Java gpg  ##
 ########################
 echo -n "Install Java gpg" | tee -a build.log
-openssl aes-256-cbc -pass pass:$ORTOOLS_TOKEN -in tools/release/private-key.gpg.enc -out private-key.gpg -d
+openssl aes-256-cbc -iter 42 -pass pass:$ORTOOLS_TOKEN -in tools/release/private-key.gpg.enc -out private-key.gpg -d
 gpg --batch --import private-key.gpg
 mkdir -p ~/.m2
-openssl aes-256-cbc -pass pass:$ORTOOLS_TOKEN -in tools/release/settings.xml.enc -out ~/.m2/settings.xml -d
+openssl aes-256-cbc -iter 42 -pass pass:$ORTOOLS_TOKEN -in tools/release/settings.xml.enc -out ~/.m2/settings.xml -d
 echo "DONE" | tee -a build.log
 
 #####################
