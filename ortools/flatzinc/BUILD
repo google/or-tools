@@ -136,6 +136,7 @@ cc_library(
         "//ortools/sat:optimization",
         "//ortools/sat:sat_solver",
         "//ortools/sat:table",
+        "//ortools/util:logging",
         ":checker",
         ":logging",
         ":model",
