@@ -30,28 +30,26 @@ public final class CpSolver {
   public CpSolver() {
     this.solveParameters = SatParameters.newBuilder();
     this.logCallback = null;
+    this.solveWrapper = null;
   }
 
   /** Solves the given module, and returns the solve status. */
   public CpSolverStatus solve(CpModel model) {
-    SolveWrapper solveWrapper = new SolveWrapper();
-    solveWrapper.setParameters(solveParameters.build());
-    if (logCallback != null) {
-      solveWrapper.addLogCallback(logCallback);
-    }
-    solveResponse = solveWrapper.solve(model.model());
-    return solveResponse.getStatus();
+    return solveWithSolutionCallback(model, null);
   }
 
   /** Solves a problem and passes each solution found to the callback. */
   public CpSolverStatus solveWithSolutionCallback(CpModel model, CpSolverSolutionCallback cb) {
-    SolveWrapper solveWrapper = new SolveWrapper();
+    createSolveWrapper();
     solveWrapper.setParameters(solveParameters.build());
-    solveWrapper.addSolutionCallback(cb);
+    if (cb != null) {
+      solveWrapper.addSolutionCallback(cb);
+    }
     if (logCallback != null) {
       solveWrapper.addLogCallback(logCallback);
     }
     solveResponse = solveWrapper.solve(model.model());
+    releaseSolveWrapper();
     return solveResponse.getStatus();
   }
 
@@ -70,15 +68,24 @@ public final class CpSolver {
   public CpSolverStatus searchAllSolutions(CpModel model, CpSolverSolutionCallback cb) {
     boolean oldValue = solveParameters.getEnumerateAllSolutions();
     solveParameters.setEnumerateAllSolutions(true);
-    SolveWrapper solveWrapper = new SolveWrapper();
-    solveWrapper.setParameters(solveParameters.build());
-    solveWrapper.addSolutionCallback(cb);
-    if (logCallback != null) {
-      solveWrapper.addLogCallback(logCallback);
-    }
-    solveResponse = solveWrapper.solve(model.model());
+    solveWithSolutionCallback(model, cb);
     solveParameters.setEnumerateAllSolutions(oldValue);
     return solveResponse.getStatus();
+  }
+
+  private synchronized void createSolveWrapper() {
+    solveWrapper = new SolveWrapper();
+  }
+
+  private synchronized void releaseSolveWrapper() {
+    solveWrapper = null;
+  }
+
+  /** Stops the search asynchronously. */
+  public synchronized void stopSearch() {
+    if (solveWrapper != null) {
+      solveWrapper.stopSearch();
+    }
   }
 
   /** Returns the best objective value found during search. */
@@ -156,4 +163,5 @@ public final class CpSolver {
   private CpSolverResponse solveResponse;
   private final SatParameters.Builder solveParameters;
   private Consumer<String> logCallback;
+  private SolveWrapper solveWrapper;
 }
