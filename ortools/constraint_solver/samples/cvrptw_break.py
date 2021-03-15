@@ -296,23 +296,20 @@ def main():
     # Add breaks
     time_dimension = routing.GetDimensionOrDie("Time")
     node_visit_transit = {}
-    for n in range(routing.Size()):
-        if n >= data['num_locations']:
-            node_visit_transit[n] = 0
-        else:
-            node_visit_transit[n] = int(
-                data['demands'][n] * data['time_per_demand_unit'])
+    for index in range(routing.Size()):
+        node = manager.IndexToNode(index)
+        node_visit_transit[index] = int(
+            data['demands'][node] * data['time_per_demand_unit'])
 
     break_intervals = {}
-    #for v in range(data['num_vehicles']):
-    for v in [0]:
+    for v in range(data['num_vehicles']):
         vehicle_break = data['breaks'][v]
         break_intervals[v] = [
             routing.solver().FixedDurationIntervalVar(
-                15, 100, vehicle_break[0], vehicle_break[1], 'Break for vehicle {}'.format(v))
+                15, 100, vehicle_break[0], vehicle_break[1], f'Break for vehicle {v}')
             ]
         time_dimension.SetBreakIntervalsOfVehicle(
-            break_intervals[v], v, node_visit_transit)
+            break_intervals[v], v, node_visit_transit.values())
 
     # Setting first solution heuristic (cheapest addition).
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()

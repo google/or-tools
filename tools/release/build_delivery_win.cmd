@@ -1,17 +1,25 @@
 @echo off
 REM /!\ THIS SCRIPT SUPPOSE A FIXED PATH FOR PYTHON /!\
 REM Each blocks could be triggered independently (i.e. commenting others)
-REM run it as: cmd /c tools\release\build_delivery_win.cmd
+REM run it as:
+REM set PATH=%PATH%;tools;tools\win
+REM cmd /c tools\release\build_delivery_win.cmd
 
 REM Check all prerequisite
-REM C++
 set PATH=%PATH%;tools;tools\win
 
-make.exe clean_third_party || exit 1
-make.exe clean || exit 1
+if "%ORTOOLS_TOKEN%" == "" (
+  echo ORTOOLS_TOKEN: NOT FOUND | tee.exe build.log
+  exit 1
+)
 
 REM Print version
 make.exe print-OR_TOOLS_VERSION | tee.exe build.log
+
+REM clean everything
+echo clean everything... | tee.exe -a build.log
+make.exe clean_third_party || exit 1
+make.exe clean || exit 1
 
 which.exe cmake || exit 1
 which.exe cmake | tee.exe -a build.log
@@ -38,6 +46,13 @@ which.exe java || exit 1
 which.exe java | tee.exe -a build.log
 which.exe mvn || exit 1
 which.exe mvn | tee.exe -a build.log
+
+which.exe gpg || exit 1
+which.exe gpg | tee.exe -a build.log
+which.exe openssl || exit 1
+which.exe openssl | tee.exe -a build.log
+
+
 REM .Net
 which.exe dotnet || exit 1
 which.exe dotnet | tee.exe -a build.log
@@ -63,6 +78,24 @@ REM ###################
 echo make third_party: ... | tee.exe -a build.log
 make.exe third_party WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
 echo make third_party: DONE | tee.exe -a build.log
+
+REM ########################
+REM ##  Install Java gpg  ##
+REM ########################
+echo Install Java gpg | tee.exe -a build.log
+openssl aes-256-cbc -iter 42 -pass pass:%ORTOOLS_TOKEN% -in tools\release\private-key.gpg.enc -out private-key.gpg -d
+gpg --batch --import private-key.gpg
+del private-key.gpg
+mkdir -p %userprofile%/.m2
+openssl aes-256-cbc -iter 42 -pass pass:%ORTOOLS_TOKEN% -in tools\release\settings.xml.enc -out %userprofile%/.m2/settings.xml -d
+echo "DONE" | tee -a build.log
+
+REM ########################
+REM ##  Install .Net snk  ##
+REM ########################
+echo Install .Net snk | tee.exe -a build.log
+openssl aes-256-cbc -iter 42 -pass pass:%ORTOOLS_TOKEN% -in tools\release\or-tools.snk.enc -out or-tools.snk -d
+set DOTNET_SNK=or-tools.snk
 
 REM ####################
 REM ##  CC/JAVA/.Net  ##

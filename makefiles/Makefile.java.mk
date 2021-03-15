@@ -366,6 +366,12 @@ run: build
 	cd $(SOURCE_PROJECT_PATH) && "$(MVN_BIN)" exec:java $(ARGS)
 endif
 
+ifneq ($(ORTOOLS_TOKEN),)
+GPG_SIGN=
+else
+GPG_SIGN= -Dgpg.skip=true
+endif
+
 ###################
 ## Maven package ##
 ###################
@@ -402,7 +408,7 @@ ifeq ($(SYSTEM),unix)
 endif
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" compile -B
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" package -B
-	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" install -B -Dgpg.skip=true
+	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" install -B $(GPG_SIGN)
 	$(TOUCH) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)$Stimestamp
 
 
@@ -459,7 +465,7 @@ else
 endif
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" compile -B
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" package -B
-	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" install -B -Dgpg.skip=true
+	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" install -B $(GPG_SIGN)
 	$(TOUCH) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Stimestamp
 
 #############################
