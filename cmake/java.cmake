@@ -152,10 +152,17 @@ add_custom_target(java_native_package
 set(JAVA_PROJECT_PATH ${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT})
 file(MAKE_DIRECTORY ${JAVA_PROJECT_PATH}/${JAVA_PACKAGE_PATH})
 
-configure_file(
-  ${PROJECT_SOURCE_DIR}/ortools/java/pom-local.xml.in
-  ${JAVA_PROJECT_PATH}/pom.xml
-  @ONLY)
+if(COMPLETE_JAVA_PACKAGE)
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/java/pom-full.xml.in
+    ${JAVA_PROJECT_PATH}/pom.xml
+    @ONLY)
+else()
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/java/pom-local.xml.in
+    ${JAVA_PROJECT_PATH}/pom.xml
+    @ONLY)
+endif()
 
 file(GLOB_RECURSE java_files RELATIVE ${PROJECT_SOURCE_DIR}/ortools/java
   "ortools/java/*.java")

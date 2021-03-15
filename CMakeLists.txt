@@ -141,6 +141,9 @@ message(STATUS "Build .Net examples: ${BUILD_DOTNET_EXAMPLES}")
 if(BUILD_JAVA)
   option(SKIP_GPG "Disable GPG sign" OFF)
   message(STATUS "Java disable gpg:sign: ${SKIP_GPG}")
+
+  option(COMPLETE_JAVA_PACKAGE "Build a Java multi OS Package" OFF)
+  message(STATUS "Java multiple os package: ${COMPLETE_JAVA_PACKAGE}")
 endif()
 
 # By default all dependencies are NOT built (i.e. BUILD_DEPS=OFF),
