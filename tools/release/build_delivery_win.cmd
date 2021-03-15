@@ -85,6 +85,7 @@ REM ########################
 echo Install Java gpg | tee.exe -a build.log
 openssl aes-256-cbc -iter 42 -pass pass:%ORTOOLS_TOKEN% -in tools\release\private-key.gpg.enc -out private-key.gpg -d
 gpg --batch --import private-key.gpg
+del private-key.gpg
 mkdir -p %userprofile%/.m2
 openssl aes-256-cbc -iter 42 -pass pass:%ORTOOLS_TOKEN% -in tools\release\settings.xml.enc -out %userprofile%/.m2/settings.xml -d
 echo "DONE" | tee -a build.log
