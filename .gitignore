@@ -40,6 +40,13 @@ bin/
 install/
 examples/notebook/.ipynb_checkpoints
 
+# Release stuff
+or-tools.snk
+private-key.gpg
+settings.xml
+export
+
+
 ortools/bazel-*
 examples/bazel-*
 bazel-*
