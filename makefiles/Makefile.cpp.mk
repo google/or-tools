@@ -223,7 +223,6 @@ FLATZINC_PATH = $(subst /,$S,$(FLATZINC_LIBS))
 FLATZINC_DEPS = \
 	$(SRC_DIR)/ortools/flatzinc/checker.h \
 	$(SRC_DIR)/ortools/flatzinc/cp_model_fz_solver.h \
-	$(SRC_DIR)/ortools/flatzinc/logging.h \
 	$(SRC_DIR)/ortools/flatzinc/model.h \
 	$(SRC_DIR)/ortools/flatzinc/parser.h \
 	$(SRC_DIR)/ortools/flatzinc/parser.tab.hh \
@@ -238,7 +237,6 @@ endif
 FLATZINC_OBJS=\
 	$(OBJ_DIR)/flatzinc/checker.$O \
 	$(OBJ_DIR)/flatzinc/cp_model_fz_solver.$O \
-	$(OBJ_DIR)/flatzinc/logging.$O \
 	$(OBJ_DIR)/flatzinc/model.$O \
 	$(OBJ_DIR)/flatzinc/parser.$O \
 	$(OBJ_DIR)/flatzinc/parser.tab.$O \
