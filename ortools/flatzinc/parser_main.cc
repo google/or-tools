@@ -22,7 +22,6 @@
 #include "absl/flags/usage.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/timer.h"
-#include "ortools/flatzinc/logging.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/parser.h"
 #include "ortools/flatzinc/presolve.h"
@@ -40,9 +39,8 @@ void ParseFile(const std::string& filename, bool presolve) {
   timer.Start();
 
   SolverLogger logger;
-  logger.AddInfoLoggingCallback(LogInFlatzincFormat);
-  logger.EnableLogging();
-  logger.SetLogToStdOut(false);
+  logger.EnableLogging(true);
+  logger.SetLogToStdOut(true);
 
   SOLVER_LOG(&logger, "Loading ", filename);
 

@@ -36,19 +36,13 @@ class SolverLogger {
   //
   // Note that this is used by the logging macro, but it actually do not
   // disable logging if LogInfo() is called directly.
-  void EnableLogging() { is_enabled_ = true; }
-
-  // Disable all logging.
-  void DisableLogging() { is_enabled_ = false; }
+  void EnableLogging(bool enable) { is_enabled_ = enable; }
 
   // Returns true iff logging is enabled.
   bool LoggingIsEnabled() const { return is_enabled_; }
 
   // Should all messages be displayed on stdout ?
   void SetLogToStdOut(bool enable) { log_to_stdout_ = enable; }
-
-  // Adds a prefix to all logs.
-  void SetLogPrefix(const std::string& prefix) { prefix_ = prefix; }
 
   // Add a callback listening to all information messages.
   //
@@ -63,7 +57,6 @@ class SolverLogger {
  private:
   bool is_enabled_ = false;
   bool log_to_stdout_ = false;
-  std::string prefix_;
   std::vector<std::function<void(const std::string& message)>> info_callbacks_;
 };
 

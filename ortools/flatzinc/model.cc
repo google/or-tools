@@ -24,7 +24,7 @@
 #include "absl/strings/str_join.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/flatzinc/logging.h"
+#include "ortools/util/logging.h"
 
 namespace operations_research {
 namespace fz {

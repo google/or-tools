@@ -28,11 +28,11 @@ void SolverLogger::AddInfoLoggingCallback(
 void SolverLogger::LogInfo(const char* source_filename, int source_line,
                            const std::string& message) {
   if (log_to_stdout_) {
-    std::cout << prefix_ << message << std::endl;
+    std::cout << message << std::endl;
   }
 
   for (const auto& callback : info_callbacks_) {
-    callback(absl::StrCat(prefix_, message));
+    callback(message);
   }
 }
 

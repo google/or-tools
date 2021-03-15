@@ -30,7 +30,6 @@
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/checker.h"
-#include "ortools/flatzinc/logging.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -49,7 +48,6 @@
 #include "ortools/sat/table.h"
 #include "ortools/util/logging.h"
 
-ABSL_FLAG(bool, use_flatzinc_format, true, "Output uses the flatzinc format");
 ABSL_FLAG(int64_t, fz_int_max, int64_t{1} << 50,
           "Default max value for unbounded integer variables.");
 
@@ -980,20 +978,20 @@ std::string SolutionString(
   return solution_string;
 }
 
-void OutputFlatzincStats(const CpSolverResponse& response) {
-  std::cout << "%%%mzn-stat: objective=" << response.objective_value()
-            << std::endl;
-  std::cout << "%%%mzn-stat: objectiveBound=" << response.best_objective_bound()
-            << std::endl;
-  std::cout << "%%%mzn-stat: boolVariables=" << response.num_booleans()
-            << std::endl;
-  std::cout << "%%%mzn-stat: failures=" << response.num_conflicts()
-            << std::endl;
-  std::cout << "%%%mzn-stat: propagations="
-            << response.num_binary_propagations() +
-                   response.num_integer_propagations()
-            << std::endl;
-  std::cout << "%%%mzn-stat: solveTime=" << response.wall_time() << std::endl;
+void OutputFlatzincStats(const CpSolverResponse& response,
+                         SolverLogger* solution_logger) {
+  SOLVER_LOG(solution_logger,
+             "%%%mzn-stat: objective=", response.objective_value());
+  SOLVER_LOG(solution_logger,
+             "%%%mzn-stat: objectiveBound=", response.best_objective_bound());
+  SOLVER_LOG(solution_logger,
+             "%%%mzn-stat: boolVariables=", response.num_booleans());
+  SOLVER_LOG(solution_logger,
+             "%%%mzn-stat: failures=", response.num_conflicts());
+  SOLVER_LOG(
+      solution_logger, "%%%mzn-stat: propagations=",
+      response.num_binary_propagations() + response.num_integer_propagations());
+  SOLVER_LOG(solution_logger, "%%%mzn-stat: solveTime=", response.wall_time());
 }
 
 }  // namespace
@@ -1001,9 +999,8 @@ void OutputFlatzincStats(const CpSolverResponse& response) {
 void SolveFzWithCpModelProto(const fz::Model& fz_model,
                              const fz::FlatzincSatParameters& p,
                              const std::string& sat_params,
-                             SolverLogger* logger) {
-  SOLVER_LOG(logger, "Starting translation to CP-SAT");
-
+                             SolverLogger* logger,
+                             SolverLogger* solution_logger) {
   CpModelProtoWithMapping m;
   m.proto.set_name(fz_model.name());
 
@@ -1071,6 +1068,9 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     // Enumerate all sat solutions.
     m.parameters.set_enumerate_all_solutions(true);
   }
+
+  m.parameters.set_log_search_progress(p.log_search_progress);
+
   if (p.use_free_search) {
     m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     if (p.number_of_threads <= 1) {
@@ -1103,17 +1103,18 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
 
   // We only need an observer if 'p.all_solutions' is true.
   std::function<void(const CpSolverResponse&)> solution_observer = nullptr;
-  if (p.display_all_solutions && absl::GetFlag(FLAGS_use_flatzinc_format)) {
-    solution_observer = [&fz_model, &m, &p](const CpSolverResponse& r) {
+  if (p.display_all_solutions) {
+    solution_observer = [&fz_model, &m, &p,
+                         solution_logger](const CpSolverResponse& r) {
       const std::string solution_string =
           SolutionString(fz_model, [&m, &r](fz::IntegerVariable* v) {
             return r.solution(gtl::FindOrDie(m.fz_var_to_index, v));
           });
-      std::cout << solution_string << std::endl;
-      if (p.display_statistics && absl::GetFlag(FLAGS_use_flatzinc_format)) {
-        OutputFlatzincStats(r);
+      SOLVER_LOG(solution_logger, solution_string);
+      if (p.display_statistics) {
+        OutputFlatzincStats(r, solution_logger);
       }
-      std::cout << "----------" << std::endl;
+      SOLVER_LOG(solution_logger, "----------");
     };
   }
 
@@ -1140,7 +1141,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   }
 
   // Output the solution in the flatzinc official format.
-  if (absl::GetFlag(FLAGS_use_flatzinc_format)) {
+  if (solution_logger->LoggingIsEnabled()) {
     if (response.status() == CpSolverStatus::FEASIBLE ||
         response.status() == CpSolverStatus::OPTIMAL) {
       if (!p.display_all_solutions) {  // Already printed otherwise.
@@ -1148,27 +1149,27 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
             SolutionString(fz_model, [&response, &m](fz::IntegerVariable* v) {
               return response.solution(gtl::FindOrDie(m.fz_var_to_index, v));
             });
-        std::cout << solution_string << std::endl;
-        std::cout << "----------" << std::endl;
+        SOLVER_LOG(solution_logger, solution_string);
+        SOLVER_LOG(solution_logger, "----------");
       }
       if (response.status() == CpSolverStatus::OPTIMAL) {
-        std::cout << "==========" << std::endl;
+        SOLVER_LOG(solution_logger, "==========");
       }
     } else if (response.status() == CpSolverStatus::INFEASIBLE) {
-      std::cout << "=====UNSATISFIABLE=====" << std::endl;
+      SOLVER_LOG(solution_logger, "=====UNSATISFIABLE=====");
     } else if (response.status() == CpSolverStatus::MODEL_INVALID) {
       const std::string error_message = ValidateCpModel(m.proto);
       VLOG(1) << "%% Error message = '" << error_message << "'";
       if (absl::StrContains(error_message, "overflow")) {
-        std::cout << "=====OVERFLOW=====" << std::endl;
+        SOLVER_LOG(solution_logger, "=====OVERFLOW=====");
       } else {
-        std::cout << "=====MODEL INVALID=====" << std::endl;
+        SOLVER_LOG(solution_logger, "=====MODEL INVALID=====");
       }
     } else {
-      std::cout << "%% TIMEOUT" << std::endl;
+      SOLVER_LOG(solution_logger, "%% TIMEOUT");
     }
-    if (p.display_statistics && absl::GetFlag(FLAGS_use_flatzinc_format)) {
-      OutputFlatzincStats(response);
+    if (p.display_statistics) {
+      OutputFlatzincStats(response, solution_logger);
     }
   }
 }

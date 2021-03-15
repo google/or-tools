@@ -22,7 +22,6 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/map_util.h"
-#include "ortools/flatzinc/logging.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/graph/cliques.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -392,7 +391,6 @@ void Presolver::Run(Model* model) {
       if (ct->type == "int_lin_eq" && ct->arguments[0].values.size() == 3 &&
           AreOnesFollowedByMinusOne(ct->arguments[0].values) &&
           ct->arguments[1].values.empty() && ct->arguments[2].Value() == 0) {
-        FZVLOG << "Recognize assignment " << ct->DebugString() << std::endl;
         current_variables = ct->arguments[1].variables;
         target_variable = current_variables.back();
         current_variables.pop_back();
@@ -403,8 +401,6 @@ void Presolver::Run(Model* model) {
           AreOnesFollowedByMinusOne(ct->arguments[0].values) &&
           ct->arguments[0].values.size() == current_variables.size() + 2 &&
           IsStrictPrefix(current_variables, ct->arguments[1].variables)) {
-        FZVLOG << "Recognize hidden int_plus " << ct->DebugString()
-               << std::endl;
         current_variables = ct->arguments[1].variables;
         // Rewrite ct into int_plus.
         ct->type = "int_plus";
@@ -415,7 +411,7 @@ void Presolver::Run(Model* model) {
         ct->arguments.push_back(Argument::IntVarRef(current_variables.back()));
         target_variable = current_variables.back();
         current_variables.pop_back();
-        FZVLOG << "  -> " << ct->DebugString() << std::endl;
+
         // We clean the first constraint too.
         if (first_constraint != nullptr) {
           first_constraint = nullptr;
@@ -488,8 +484,6 @@ void Presolver::AddVariableSubstitution(IntegerVariable* from,
     from = tmp;
   }
   if (from != to) {
-    FZVLOG << "Mark " << from->DebugString() << " as equivalent to "
-           << to->DebugString() << std::endl;
     CHECK(to->Merge(from->name, from->domain, from->temporary));
     from->active = false;
     var_representative_map_[from] = to;

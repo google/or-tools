@@ -2967,22 +2967,13 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   SolverLogger* logger = model->GetOrCreate<SolverLogger>();
   std::string log_string;
 
-  if (log_search) {
-    logger->EnableLogging();
-    if (!params.log_prefix().empty()) {
-      logger->SetLogPrefix(params.log_prefix());
-    }
-
-    logger->SetLogToStdOut(params.log_to_stdout());
-
-    if (params.log_to_response()) {
-      const auto append_to_string = [&log_string](const std::string& message) {
-        absl::StrAppend(&log_string, message, "\n");
-      };
-      logger->AddInfoLoggingCallback(append_to_string);
-    }
-  } else {
-    logger->DisableLogging();
+  logger->EnableLogging(log_search);
+  logger->SetLogToStdOut(params.log_to_stdout());
+  if (params.log_to_response()) {
+    const auto append_to_string = [&log_string](const std::string& message) {
+      absl::StrAppend(&log_string, message, "\n");
+    };
+    logger->AddInfoLoggingCallback(append_to_string);
   }
 
   SOLVER_LOG(logger, "");

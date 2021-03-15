@@ -22,7 +22,7 @@ namespace fz {
 struct FlatzincSatParameters {
   bool display_all_solutions = false;
   bool use_free_search = false;
-  bool verbose_logging = false;
+  bool log_search_progress = false;
   bool display_statistics = false;
   int max_number_of_solutions = 1;
   int random_seed = 0;
@@ -37,7 +37,8 @@ namespace sat {
 void SolveFzWithCpModelProto(const fz::Model& model,
                              const fz::FlatzincSatParameters& p,
                              const std::string& sat_params,
-                             SolverLogger* logger);
+                             SolverLogger* logger,
+                             SolverLogger* solution_logger);
 
 }  // namespace sat
 }  // namespace operations_research

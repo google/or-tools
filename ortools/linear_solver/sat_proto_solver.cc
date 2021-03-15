@@ -101,12 +101,8 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   // calling SolveCpModel() and call a common config function from here or from
   // inside Solve()?
   SolverLogger logger;
-  if (params.log_search_progress()) {
-    logger.EnableLogging();
-    logger.SetLogToStdOut(params.log_to_stdout());
-  } else {
-    logger.DisableLogging();
-  }
+  logger.EnableLogging(params.log_search_progress());
+  logger.SetLogToStdOut(params.log_to_stdout());
 
   MPSolutionResponse response;
   if (!ExtractValidMPModelInPlaceOrPopulateResponseStatus(&request,

@@ -20,8 +20,8 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "ortools/base/map_util.h"
-#include "ortools/flatzinc/logging.h"
 #include "ortools/flatzinc/model.h"
+#include "ortools/util/logging.h"
 
 namespace operations_research {
 namespace fz {
