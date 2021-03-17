@@ -25,14 +25,15 @@ namespace operations_research {
 
 bool GurobiIsCorrectlyInstalled(
     const std::string& gurobi_shared_library_full_path) {
-  GRBenv* env;
-  if (!LoadGurobiEnvironment(&env, gurobi_shared_library_full_path).ok()) {
+  absl::StatusOr<GRBenv*> status =
+      LoadGurobiEnvironment(gurobi_shared_library_full_path);
+  if (!status.ok()) {
     return false;
   }
 
-  if (env == nullptr) return false;
+  if (status.value() == nullptr) return false;
 
-  GRBfreeenv(env);
+  GRBfreeenv(status.value());
 
   return true;
 }
@@ -280,9 +281,10 @@ bool LoadGurobiSharedLibrary(
 
 }  // namespace
 
-absl::Status LoadGurobiEnvironment(
-    GRBenv** env, const std::string& gurobi_shared_library_full_path) {
+absl::StatusOr<GRBenv*> LoadGurobiEnvironment(
+    const std::string& gurobi_shared_library_full_path) {
   constexpr int GRB_OK = 0;
+  GRBenv* env = nullptr;
   const char kGurobiEnvErrorMsg[] =
       "Could not load Gurobi environment. Is gurobi correctly installed and"
       " licensed on this machine ? ";
@@ -294,10 +296,10 @@ absl::Status LoadGurobiEnvironment(
     return absl::FailedPreconditionError(kGurobiEnvNoSharedLibraryMsg);
   }
 
-  if (GRBloadenv(env, nullptr) != 0 || *env == nullptr) {
+  if (GRBloadenv(&env, nullptr) != 0 || env == nullptr) {
     return absl::FailedPreconditionError(
-        absl::StrFormat("%s %s", kGurobiEnvErrorMsg, GRBgeterrormsg(*env)));
+        absl::StrFormat("%s %s", kGurobiEnvErrorMsg, GRBgeterrormsg(env)));
   }
-  return absl::OkStatus();
+  return env;
 }
 }  // namespace operations_research

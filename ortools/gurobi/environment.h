@@ -15,6 +15,7 @@
 #define OR_TOOLS_GUROBI_ENVIRONMENT_H_
 
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/dynamic_library.h"
 #include "ortools/base/logging.h"
@@ -36,11 +37,11 @@ namespace operations_research {
 // successfully created and assigned to 'env'.
 // You can add the full path for the shared library by passing the
 // 'gurobi_shared_library_full_path' argument.
-absl::Status LoadGurobiEnvironment(
-    GRBenv** env, const std::string& gurobi_shared_library_full_path);
+absl::StatusOr<GRBenv*> LoadGurobiEnvironment(
+    const std::string& gurobi_shared_library_full_path);
 
 // Checks the that Gurobi is correctly installed, and that licenses can be
-// obtained. This method will attempt grab a license, and then release it.
+// obtained. This method will try to grab a license, and then release it.
 bool GurobiIsCorrectlyInstalled(
     const std::string& gurobi_shared_library_full_path);
 

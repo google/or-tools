@@ -612,7 +612,10 @@ GurobiInterface::GurobiInterface(MPSolver* const solver, bool mip)
       env_(nullptr),
       mip_(mip),
       current_solution_index_(0) {
-  CHECK_OK(LoadGurobiEnvironment(&env_, GurobiSharedLibraryFullPath()));
+  const absl::StatusOr<GRBenv*> status =
+      LoadGurobiEnvironment(GurobiSharedLibraryFullPath());
+  CHECK_OK(status.status());
+  env_ = status.value();
   CheckedGurobiCall(GRBnewmodel(env_, &model_, solver_->name_.c_str(),
                                 0,          // numvars
                                 nullptr,    // obj

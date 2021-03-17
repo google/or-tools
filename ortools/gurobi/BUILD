@@ -9,11 +9,12 @@ cc_library(
         "environment.h",
     ],
     deps = [
+        "//ortools/base",
+        "//ortools/base:dynamic_library",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/types:optional",
-        "//ortools/base:dynamic_library",
-        "//ortools/base",
-    ]
+    ],
 )

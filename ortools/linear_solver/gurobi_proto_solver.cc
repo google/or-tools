@@ -283,8 +283,8 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
     // `LoadGurobiEnvironment()` since this function still returns a non null
     // value even when it fails.
     gurobi_env_was_created = true;
-    RETURN_IF_ERROR(
-        LoadGurobiEnvironment(&gurobi_env, GurobiSharedLibraryFullPath()));
+    ASSIGN_OR_RETURN(gurobi_env,
+                     LoadGurobiEnvironment(GurobiSharedLibraryFullPath()));
   }
 
   GRBmodel* gurobi_model = nullptr;
