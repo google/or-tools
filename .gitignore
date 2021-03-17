@@ -55,6 +55,7 @@ bazel-*
 
 tools/docker/export
 
+# IDE stuff
 CMakeLists.txt.user
 *.userprefs
 *build*/*
@@ -68,6 +69,7 @@ cache/
 
 ortools/linear_solver/lpi_glop.cc
 
+# .Net code gen
 ortools/dotnet/*.props
 ortools/dotnet/*.png
 ortools/dotnet/*/*.csproj
@@ -84,5 +86,3 @@ examples/contrib/obj
 examples/dotnet/bin
 examples/dotnet/obj
 
-# Release key
-tools/docker/or-tools.snk
