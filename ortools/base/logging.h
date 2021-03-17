@@ -36,8 +36,10 @@
 #include "ortools/base/vlog_is_on.h"
 
 #define QCHECK CHECK
+#define QCHECK_EQ CHECK_EQ
 #define ABSL_DIE_IF_NULL CHECK_NOTNULL
 #define CHECK_OK(x) CHECK((x).ok())
+#define QCHECK_OK CHECK_OK
 
 // used by or-tools non C++ ports to bridge with the C++ layer.
 void FixFlagsAndEnvironmentForSwig();
