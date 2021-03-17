@@ -16,7 +16,7 @@
 
 #include "absl/status/status.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/dynamic_library.h"  // NOLINT
+#include "ortools/base/dynamic_library.h"
 #include "ortools/base/logging.h"
 
 extern "C" {
@@ -258,9 +258,8 @@ extern std::function<int(GRBmodel* model, int numqnz, int* qrow, int* qcol,
 #define GRB_INT_ATTR_GENCONSTRTYPE \
   "GenConstrType"  // Type of general constraint
 #define GRB_STR_ATTR_GENCONSTRNAME \
-  "GenConstrName"  // Name of general constraint
-#define GRB_INT_ATTR_FUNCPIECES \
-  "FuncPieces"  // An option for PWL translation \ \
+  "GenConstrName"                             // Name of general constraint
+#define GRB_INT_ATTR_FUNCPIECES "FuncPieces"  // An option for PWL translation
 
 #define GRB_DBL_ATTR_FUNCPIECEERROR \
   "FuncPieceError"  // An option for PWL translation
@@ -368,7 +367,9 @@ extern std::function<int(GRBmodel* model, int numqnz, int* qrow, int* qcol,
 #define GRB_INT_ATTR_IIS_CONSTR "IISConstr"    // Boolean: Is constr in IIS?
 #define GRB_INT_ATTR_IIS_SOS "IISSOS"          // Boolean: Is SOS in IIS?
 #define GRB_INT_ATTR_IIS_QCONSTR "IISQConstr"  // Boolean: Is QConstr in IIS?
-#define GRB_INT_ATTR_IIS_GENCONSTR "IISGenConstr" // Boolean: Is general constr in IIS?
+#define GRB_INT_ATTR_IIS_GENCONSTR \
+  "IISGenConstr"  // Boolean: Is general constr
+                  // in IIS?
 #define GRB_INT_ATTR_TUNE_RESULTCOUNT "TuneResultCount"
 #define GRB_DBL_ATTR_FARKASDUAL "FarkasDual"
 #define GRB_DBL_ATTR_FARKASPROOF "FarkasProof"

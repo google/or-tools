@@ -459,13 +459,13 @@ MPSolver::MPSolver(const std::string& name,
 
 MPSolver::~MPSolver() { Clear(); }
 
-bool GurobiIsCorrectlyInstalled(
-    const std::string& gurobi_shared_library_full_path);
-
 std::string GurobiSharedLibraryFullPath() {
   return MPSolver::gurobi_shared_library_full_path_;
 }
 std::string MPSolver::gurobi_shared_library_full_path_;
+
+bool GurobiIsCorrectlyInstalled(
+    const std::string& gurobi_shared_library_full_path);
 
 // static
 bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
