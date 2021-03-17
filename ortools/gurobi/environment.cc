@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/linear_solver/gurobi_environment.h"
+#include "ortools/gurobi/environment.h"
 
 #include <string>
 
@@ -20,20 +20,21 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
-#include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {
-absl::Status LoadGurobiEnvironment(GRBenv** env) {
-  constexpr int GRB_OK = 0;
-  const char kGurobiEnvErrorMsg[] =
-      "Could not load Gurobi environment. Is gurobi correctly installed and "
-      "licensed on this machine?";
 
-  if (GRBloadenv(env, nullptr) != 0 || *env == nullptr) {
-    return absl::FailedPreconditionError(
-        absl::StrFormat("%s %s", kGurobiEnvErrorMsg, GRBgeterrormsg(*env)));
+bool GurobiIsCorrectlyInstalled(
+    const std::string& gurobi_shared_library_full_path) {
+  GRBenv* env;
+  if (!LoadGurobiEnvironment(&env, gurobi_shared_library_full_path).ok()) {
+    return false;
   }
-  return absl::OkStatus();
+
+  if (env == nullptr) return false;
+
+  GRBfreeenv(env);
+
+  return true;
 }
 
 std::function<int(GRBmodel*, int, int*, double*, double, double, const char*)>
@@ -68,7 +69,7 @@ std::function<int(GRBenv*, GRBmodel**, const char*, int numvars, double*,
                   double*, double*, char*, char**)>
     GRBnewmodel = nullptr;
 std::function<int(GRBmodel*)> GRBoptimize = nullptr;
-std::function<int(GRBenv *dest, GRBenv *src)> GRBcopyparams = nullptr;
+std::function<int(GRBenv* dest, GRBenv* src)> GRBcopyparams = nullptr;
 std::function<int(GRBenv*, const char*)> GRBreadparams = nullptr;
 std::function<int(GRBenv*)> GRBresetparams = nullptr;
 std::function<int(GRBmodel*, const char*, int, char)> GRBsetcharattrelement =
@@ -103,7 +104,8 @@ std::function<int(GRBmodel* model, const char* name, int binvar, int binval,
 std::function<int(GRBmodel* model, const char* attrname, int element,
                   int newvalue)>
     GRBsetintattrelement = nullptr;
-std::function<int(GRBmodel* model, int(STDCALL* cb)(CB_ARGS), void* usrdata)>
+std::function<int(GRBmodel* model, int(GUROBI_STDCALL* cb)(CB_ARGS),
+                  void* usrdata)>
     GRBsetcallbackfunc = nullptr;
 std::function<int(GRBenv* env, const char* paramname, const char* value)>
     GRBsetparam = nullptr;
@@ -133,7 +135,6 @@ std::function<int(GRBmodel* model, int numqnz, int* qrow, int* qcol,
     GRBaddqpterms = nullptr;
 
 std::unique_ptr<DynamicLibrary> gurobi_dynamic_library;
-std::string gurobi_library_path;
 
 void LoadGurobiFunctions() {
   gurobi_dynamic_library->GetFunction(&GRBaddrangeconstr,
@@ -210,11 +211,11 @@ bool LoadSpecificGurobiLibrary(const std::string& full_library_path) {
 namespace {
 const std::vector<std::vector<std::string>> GurobiVersionLib = {
     {"911", "91"}, {"910", "91"}, {"903", "90"}, {"902", "90"}};
-}
 
-bool SearchForGurobiDynamicLibrary() {
-  if (!gurobi_library_path.empty() &&
-      LoadSpecificGurobiLibrary(gurobi_library_path)) {
+bool SearchForGurobiDynamicLibrary(
+    const std::string& gurobi_shared_library_full_path) {
+  if (!gurobi_shared_library_full_path.empty() &&
+      LoadSpecificGurobiLibrary(gurobi_shared_library_full_path)) {
     return true;
   }
 
@@ -228,9 +229,9 @@ bool SearchForGurobiDynamicLibrary() {
             gurobi_home_from_env, "\\bin\\gurobi", number, ".dll"))) {
       return true;
     }
-    if (LoadSpecificGurobiLibrary(
-            absl::StrCat("C:\\Program Files\\gurobi", dir,
-                         "\\win64\\bin\\gurobi", number, ".dll"))) {
+    if (LoadSpecificGurobiLibrary(absl::StrCat("C:\\Program Files\\gurobi", dir,
+                                               "\\win64\\bin\\gurobi", number,
+                                               ".dll"))) {
       return true;
     }
 #elif defined(__APPLE__)  // OS X
@@ -239,8 +240,9 @@ bool SearchForGurobiDynamicLibrary() {
             gurobi_home_from_env, "/lib/libgurobi", number, ".dylib"))) {
       return true;
     }
-    if (LoadSpecificGurobiLibrary(absl::StrCat(
-        "/Library/gurobi", dir, "/mac64/lib/libgurobi", number, ".dylib"))) {
+    if (LoadSpecificGurobiLibrary(absl::StrCat("/Library/gurobi", dir,
+                                               "/mac64/lib/libgurobi", number,
+                                               ".dylib"))) {
       return true;
     }
 #elif defined(__GNUC__)   // Linux
@@ -260,14 +262,15 @@ bool SearchForGurobiDynamicLibrary() {
   return false;
 }
 
-bool MPSolver::LoadGurobiSharedLibrary() {
+bool LoadGurobiSharedLibrary(
+    const std::string& gurobi_shared_library_full_path) {
   if (gurobi_dynamic_library.get() != nullptr) {
     return gurobi_dynamic_library->LibraryIsLoaded();
   }
 
   gurobi_dynamic_library.reset(new DynamicLibrary());
 
-  if (SearchForGurobiDynamicLibrary()) {
+  if (SearchForGurobiDynamicLibrary(gurobi_shared_library_full_path)) {
     LoadGurobiFunctions();
     return true;
   }
@@ -275,18 +278,26 @@ bool MPSolver::LoadGurobiSharedLibrary() {
   return false;
 }
 
-void MPSolver::SetGurobiLibraryPath(const std::string& full_library_path) {
-  gurobi_library_path = full_library_path;
+}  // namespace
+
+absl::Status LoadGurobiEnvironment(
+    GRBenv** env, const std::string& gurobi_shared_library_full_path) {
+  constexpr int GRB_OK = 0;
+  const char kGurobiEnvErrorMsg[] =
+      "Could not load Gurobi environment. Is gurobi correctly installed and"
+      " licensed on this machine ? ";
+  const char kGurobiEnvNoSharedLibraryMsg[] =
+      "Could not find the gurobi shared library. Please check your environment,"
+      " or use MPSolver::SetGurobiSharedLibraryFullPath().";
+
+  if (!LoadGurobiSharedLibrary(gurobi_shared_library_full_path)) {
+    return absl::FailedPreconditionError(kGurobiEnvNoSharedLibraryMsg);
+  }
+
+  if (GRBloadenv(env, nullptr) != 0 || *env == nullptr) {
+    return absl::FailedPreconditionError(
+        absl::StrFormat("%s %s", kGurobiEnvErrorMsg, GRBgeterrormsg(*env)));
+  }
+  return absl::OkStatus();
 }
-
-bool MPSolver::GurobiIsCorrectlyInstalled() {
-  if (!LoadGurobiSharedLibrary()) return false;
-  GRBenv* env;
-  if (GRBloadenv(&env, nullptr) != 0 || env == nullptr) return false;
-
-  GRBfreeenv(env);
-
-  return true;
-}
-
 }  // namespace operations_research

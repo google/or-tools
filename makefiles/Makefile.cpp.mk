@@ -130,6 +130,9 @@ $(OBJ_DIR)/graph: | $(OBJ_DIR)
 $(OBJ_DIR)/gscip: | $(OBJ_DIR)
 	-$(MKDIR_P) $(OBJ_DIR)$Sgscip
 
+$(OBJ_DIR)/gurobi: | $(OBJ_DIR)
+	-$(MKDIR_P) $(OBJ_DIR)$Sgurobi
+
 $(OBJ_DIR)/linear_solver: | $(OBJ_DIR)
 	-$(MKDIR_P) $(OBJ_DIR)$Slinear_solver
 
@@ -196,7 +199,8 @@ $(OR_TOOLS_LIBS): \
  $(ALGORITHMS_LIB_OBJS) \
  $(SAT_LIB_OBJS) \
  $(CP_LIB_OBJS) \
- $(GSCIP_LIB_OBJS) | $(LIB_DIR)
+ $(GSCIP_LIB_OBJS) \
+ $(GUROBI_LIB_OBJS) | $(LIB_DIR)
 	$(LINK_CMD) \
  $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)ortools.$L \
  $(BASE_LIB_OBJS) \
@@ -212,6 +216,7 @@ $(OR_TOOLS_LIBS): \
  $(LP_LIB_OBJS) \
  $(CP_LIB_OBJS) \
  $(GSCIP_LIB_OBJS) \
+ $(GUROBI_LIB_OBJS) \
  $(DEPENDENCIES_LNK) \
  $(LDFLAGS)
 

@@ -15,7 +15,7 @@
 #define OR_TOOLS_LINEAR_SOLVER_GUROBI_PROTO_SOLVER_H_
 
 #include "absl/status/statusor.h"
-#include "ortools/linear_solver/gurobi_environment.h"
+#include "ortools/gurobi/environment.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 namespace operations_research {

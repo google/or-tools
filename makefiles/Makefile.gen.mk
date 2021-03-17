@@ -3305,7 +3305,6 @@ $(OBJ_DIR)/bop/bop_parameters.pb.$O: \
 
 LP_DEPS = \
  $(SRC_DIR)/ortools/linear_solver/glop_utils.h \
- $(SRC_DIR)/ortools/linear_solver/gurobi_environment.h \
  $(SRC_DIR)/ortools/linear_solver/gurobi_proto_solver.h \
  $(SRC_DIR)/ortools/linear_solver/linear_expr.h \
  $(SRC_DIR)/ortools/linear_solver/linear_solver_callback.h \
@@ -3329,7 +3328,6 @@ LP_LIB_OBJS = \
  $(OBJ_DIR)/linear_solver/glop_interface.$O \
  $(OBJ_DIR)/linear_solver/glop_utils.$O \
  $(OBJ_DIR)/linear_solver/glpk_interface.$O \
- $(OBJ_DIR)/linear_solver/gurobi_environment.$O \
  $(OBJ_DIR)/linear_solver/gurobi_interface.$O \
  $(OBJ_DIR)/linear_solver/gurobi_proto_solver.$O \
  $(OBJ_DIR)/linear_solver/linear_expr.$O \
@@ -3492,28 +3490,13 @@ objs/linear_solver/glpk_interface.$O: \
  ortools/linear_solver/glpk_interface.cc | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sglpk_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sglpk_interface.$O
 
-objs/linear_solver/gurobi_environment.$O: \
- ortools/linear_solver/gurobi_environment.cc \
- ortools/linear_solver/gurobi_environment.h \
- ortools/base/commandlineflags.h ortools/base/dynamic_library.h \
- ortools/base/logging.h ortools/base/integral_types.h \
- ortools/base/log_severity.h ortools/base/logging_export.h \
- ortools/base/macros.h ortools/base/vlog_is_on.h \
- ortools/linear_solver/linear_solver.h ortools/base/timer.h \
- ortools/base/basictypes.h ortools/linear_solver/linear_expr.h \
- ortools/gen/ortools/linear_solver/linear_solver.pb.h \
- ortools/gen/ortools/util/optional_boolean.pb.h \
- ortools/linear_solver/linear_solver_callback.h \
- ortools/port/proto_utils.h | $(OBJ_DIR)/linear_solver
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sgurobi_environment.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sgurobi_environment.$O
-
 objs/linear_solver/gurobi_interface.$O: \
  ortools/linear_solver/gurobi_interface.cc \
  ortools/base/commandlineflags.h ortools/base/integral_types.h \
  ortools/base/logging.h ortools/base/log_severity.h \
  ortools/base/logging_export.h ortools/base/macros.h \
  ortools/base/vlog_is_on.h ortools/base/map_util.h ortools/base/timer.h \
- ortools/base/basictypes.h ortools/linear_solver/gurobi_environment.h \
+ ortools/base/basictypes.h ortools/gurobi/environment.h \
  ortools/base/dynamic_library.h \
  ortools/linear_solver/gurobi_proto_solver.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
@@ -3527,7 +3510,7 @@ objs/linear_solver/gurobi_interface.$O: \
 objs/linear_solver/gurobi_proto_solver.$O: \
  ortools/linear_solver/gurobi_proto_solver.cc \
  ortools/linear_solver/gurobi_proto_solver.h \
- ortools/linear_solver/gurobi_environment.h \
+ ortools/gurobi/environment.h \
  ortools/base/commandlineflags.h ortools/base/dynamic_library.h \
  ortools/base/logging.h ortools/base/integral_types.h \
  ortools/base/log_severity.h ortools/base/logging_export.h \
@@ -4950,9 +4933,20 @@ $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssolver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
 
+GUROBI_DEPS = \
+ $(SRC_DIR)/ortools/gurobi/environment.h
+
+GUROBI_LIB_OBJS = \
+ $(OBJ_DIR)/gurobi/environment.$O
+
+
+objs/gurobi/environment.$O: ortools/gurobi/environment.cc \
+ ortools/gurobi/environment.h | $(OBJ_DIR)/gurobi
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sgurobi$Senvironment.cc $(OBJ_OUT)$(OBJ_DIR)$Sgurobi$Senvironment.$O
+
 GSCIP_DEPS = \
  $(SRC_DIR)/ortools/gscip/gscip_ext.h \
- $(SRC_DIR)/ortools/gscip/gscip.h \
+ $(Src_DIR)/ortools/gscip/gscip.h \
  $(SRC_DIR)/ortools/gscip/gscip_parameters.h \
  $(SRC_DIR)/ortools/gscip/legacy_scip_params.h \
  $(GEN_DIR)/ortools/gscip/gscip.pb.h
@@ -5012,4 +5006,3 @@ $(GEN_DIR)/ortools/gscip/gscip.pb.h: \
 $(OBJ_DIR)/gscip/gscip.pb.$O: \
  $(GEN_DIR)/ortools/gscip/gscip.pb.cc | $(OBJ_DIR)/gscip
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sgscip$Sgscip.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sgscip$Sgscip.pb.$O
-

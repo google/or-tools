@@ -274,6 +274,8 @@ class MPSolver {
   static OptimizationProblemType ParseSolverTypeOrDie(
       const std::string& solver_id);
 
+  bool LicenseIsValid() const;
+
   bool IsMIP() const;
 
   /// Returns the name of the model set at construction.
@@ -806,10 +808,6 @@ class MPSolver {
     return absl::ToInt64Milliseconds(DurationSinceConstruction());
   }
 
-  // Supports search and loading Gurobi shared library.
-  static bool LoadGurobiSharedLibrary();
-  static void SetGurobiLibraryPath(const std::string& full_library_path);
-
   friend class GLPKInterface;
   friend class CLPInterface;
   friend class CBCInterface;
@@ -823,9 +821,14 @@ class MPSolver {
   friend class BopInterface;
   friend class SatInterface;
   friend class KnapsackInterface;
+  friend std::string GurobiSharedLibraryFullPath();
 
   // Debugging: verify that the given MPVariable* belongs to this solver.
   bool OwnsVariable(const MPVariable* var) const;
+
+  static void SetGurobiLibraryPath(const std::string& path) {
+    gurobi_shared_library_full_path_ = path;
+  }
 
  private:
   // Computes the size of the constraint with the largest number of
@@ -845,10 +848,6 @@ class MPSolver {
 
   // Generates the map from constraint names to their indices.
   void GenerateConstraintNameIndex() const;
-
-  // Checks licenses for commercial solver, and checks shared library loading
-  // for or-tools.
-  static bool GurobiIsCorrectlyInstalled();
 
   // The name of the linear programming problem.
   const std::string name_;
@@ -896,6 +895,9 @@ class MPSolver {
 
   // Permanent storage for SetSolverSpecificParametersAsString().
   std::string solver_specific_parameter_string_;
+
+  // static string to indicate where to find the gurobi shared library path.
+  static std::string gurobi_shared_library_full_path_;
 
   MPSolverResponseStatus LoadModelFromProtoInternal(
       const MPModelProto& input_model, bool clear_names,
@@ -1658,6 +1660,9 @@ class MPSolverInterface {
   virtual bool IsLP() const = 0;
   // Returns true if the problem is discrete and linear.
   virtual bool IsMIP() const = 0;
+
+  // Checks the license if needed.
+  virtual bool LicenseIsValid() { return true; }
 
   // Returns the index of the last variable extracted.
   int last_variable_index() const { return last_variable_index_; }

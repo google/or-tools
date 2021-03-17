@@ -53,7 +53,6 @@ cc_library(
         "bop_interface.cc",
         "glop_interface.cc",
         "glop_utils.cc",
-        "gurobi_environment.cc",
         "gurobi_interface.cc",
         "gurobi_proto_solver.cc",
         "linear_expr.cc",
@@ -87,7 +86,6 @@ cc_library(
     hdrs = [
         "glop_interface.cc",
         "glop_utils.h",
-        "gurobi_environment.h",
         "gurobi_proto_solver.h",
         "linear_expr.h",
         "linear_solver.h",
@@ -121,6 +119,7 @@ cc_library(
         "//ortools/glop:lp_solver",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/gscip:legacy_scip_params",
+        "//ortools/gurobi:environment",
         "//ortools/port:file",
         "//ortools/port:proto_utils",
         "//ortools/sat:cp_model_cc_proto",

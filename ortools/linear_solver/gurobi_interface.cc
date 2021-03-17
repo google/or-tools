@@ -60,7 +60,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/timer.h"
-#include "ortools/linear_solver/gurobi_environment.h"
+#include "ortools/gurobi/environment.h"
 #include "ortools/linear_solver/gurobi_proto_solver.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver_callback.h"
@@ -70,11 +70,18 @@ ABSL_FLAG(int, num_gurobi_threads, 4,
 
 namespace operations_research {
 
+extern std::string GurobiSharedLibraryFullPath();
+
 class GurobiInterface : public MPSolverInterface {
  public:
   // Constructor that takes a name for the underlying GRB solver.
   explicit GurobiInterface(MPSolver* const solver, bool mip);
   ~GurobiInterface() override;
+
+  // Preemptive check of the license at the solver creation.
+  bool LicenseIsValid() override {
+    return GurobiIsCorrectlyInstalled(GurobiSharedLibraryFullPath());
+  }
 
   // Sets the optimization direction (min/max).
   void SetOptimizationDirection(bool maximize) override;
@@ -516,8 +523,9 @@ struct MPCallbackWithGurobiContext {
 
 // NOTE(user): This function must have this exact API, because we are passing
 // it to Gurobi as a callback.
-int STDCALL CallbackImpl(GRBmodel* model, void* gurobi_internal_callback_data,
-                         int where, void* raw_model_and_callback) {
+int GUROBI_STDCALL CallbackImpl(GRBmodel* model,
+                                void* gurobi_internal_callback_data, int where,
+                                void* raw_model_and_callback) {
   MPCallbackWithGurobiContext* const callback_with_context =
       static_cast<MPCallbackWithGurobiContext*>(raw_model_and_callback);
   CHECK(callback_with_context != nullptr);
@@ -604,7 +612,7 @@ GurobiInterface::GurobiInterface(MPSolver* const solver, bool mip)
       env_(nullptr),
       mip_(mip),
       current_solution_index_(0) {
-  CHECK_OK(LoadGurobiEnvironment(&env_));
+  CHECK_OK(LoadGurobiEnvironment(&env_, GurobiSharedLibraryFullPath()));
   CheckedGurobiCall(GRBnewmodel(env_, &model_, solver_->name_.c_str(),
                                 0,          // numvars
                                 nullptr,    // obj

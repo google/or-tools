@@ -28,7 +28,7 @@
 #include "absl/types/optional.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/linear_solver/gurobi_environment.h"
+#include "ortools/gurobi/environment.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/util/lazy_mutable_copy.h"
@@ -259,6 +259,8 @@ absl::Status SetSolverSpecificParameters(const std::string& parameters,
   return absl::InvalidArgumentError(absl::StrJoin(error_messages, "\n"));
 }
 
+extern std::string GurobiSharedLibraryFullPath();
+
 absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
     const MPModelRequest& request, GRBenv* gurobi_env) {
   MPSolutionResponse response;
@@ -281,7 +283,8 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
     // `LoadGurobiEnvironment()` since this function still returns a non null
     // value even when it fails.
     gurobi_env_was_created = true;
-    RETURN_IF_ERROR(LoadGurobiEnvironment(&gurobi_env));
+    RETURN_IF_ERROR(
+        LoadGurobiEnvironment(&gurobi_env, GurobiSharedLibraryFullPath()));
   }
 
   GRBmodel* gurobi_model = nullptr;
