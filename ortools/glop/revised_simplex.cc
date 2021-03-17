@@ -399,9 +399,12 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     if (problem_status_ == ProblemStatus::OPTIMAL) {
       const Fractional solution_tolerance =
           parameters_.solution_feasibility_tolerance();
-      if (variable_values_.ComputeMaximumPrimalResidual() >
-              solution_tolerance ||
-          reduced_costs_.ComputeMaximumDualResidual() > solution_tolerance) {
+      const Fractional primal_residual =
+          variable_values_.ComputeMaximumPrimalResidual();
+      const Fractional dual_residual =
+          reduced_costs_.ComputeMaximumDualResidual();
+      if (primal_residual > solution_tolerance ||
+          dual_residual > solution_tolerance) {
         if (log_info) {
           LOG(INFO) << "OPTIMAL was reported, yet one of the residuals is "
                        "above the solution feasibility tolerance after the "
@@ -412,11 +415,14 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
         }
       } else {
         // We use the "precise" tolerances here to try to report the best
-        // possible solution.
-        const Fractional primal_tolerance =
-            parameters_.primal_feasibility_tolerance();
+        // possible solution. Note however that we cannot really hope for an
+        // infeasibility lower than its corresponding residual error. Note that
+        // we already adapt the tolerance like this during the simplex
+        // execution.
+        const Fractional primal_tolerance = std::max(
+            primal_residual, parameters_.primal_feasibility_tolerance());
         const Fractional dual_tolerance =
-            parameters_.dual_feasibility_tolerance();
+            std::max(dual_residual, parameters_.dual_feasibility_tolerance());
         const Fractional primal_infeasibility =
             variable_values_.ComputeMaximumPrimalInfeasibility();
         const Fractional dual_infeasibility =

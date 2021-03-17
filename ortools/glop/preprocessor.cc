@@ -1471,9 +1471,17 @@ bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
       // variables and of (-activity), then coeff * X + Y = 0. Since Y's bounds
       // are [lb_sum without X, ub_sum without X], it is easy to derive the
       // implied bounds on X.
-      Fractional implied_lb = -ub_sums[e.row()].SumWithout(entry_ub) / coeff;
-      Fractional implied_ub = -lb_sums[e.row()].SumWithout(entry_lb) / coeff;
-      if (coeff < 0.0) std::swap(implied_lb, implied_ub);
+      //
+      // Important: If entry_lb (resp. entry_ub) are large, we cannot have a
+      // good precision on the sum without. So we do add a defensive tolerance
+      // that depends on these magnitude.
+      const Fractional implied_lb =
+          coeff > 0.0 ? -ub_sums[e.row()].SumWithoutUb(entry_ub) / coeff
+                      : -lb_sums[e.row()].SumWithoutLb(entry_lb) / coeff;
+      const Fractional implied_ub =
+          coeff > 0.0 ? -lb_sums[e.row()].SumWithoutLb(entry_lb) / coeff
+                      : -ub_sums[e.row()].SumWithoutUb(entry_ub) / coeff;
+
       overall_implied_lb = std::max(overall_implied_lb, implied_lb);
       overall_implied_ub = std::min(overall_implied_ub, implied_ub);
     }
@@ -1553,6 +1561,7 @@ bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
   VLOG(1) << num_already_free_variables << " free variables in the problem.";
   VLOG(1) << num_implied_free_variables << " implied free columns.";
   VLOG(1) << num_fixed_variables << " variables can be fixed.";
+
   return num_implied_free_variables > 0;
 }
 
@@ -1965,14 +1974,16 @@ bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
       const RowIndex row = e.row();
       if (col_ub == kInfinity) {
         if (c > 0.0) {
-          const Fractional candidate = rc_ub.SumWithout(-c * dual_lb_[row]) / c;
+          const Fractional candidate =
+              rc_ub.SumWithoutUb(-c * dual_lb_[row]) / c;
           if (candidate < dual_ub_[row]) {
             dual_ub_[row] = candidate;
             may_have_participated_lb_[col] = true;
             changed_rows.push_back(row);
           }
         } else {
-          const Fractional candidate = rc_ub.SumWithout(-c * dual_ub_[row]) / c;
+          const Fractional candidate =
+              rc_ub.SumWithoutUb(-c * dual_ub_[row]) / c;
           if (candidate > dual_lb_[row]) {
             dual_lb_[row] = candidate;
             may_have_participated_lb_[col] = true;
@@ -1982,14 +1993,16 @@ bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
       }
       if (col_lb == -kInfinity) {
         if (c > 0.0) {
-          const Fractional candidate = rc_lb.SumWithout(-c * dual_ub_[row]) / c;
+          const Fractional candidate =
+              rc_lb.SumWithoutLb(-c * dual_ub_[row]) / c;
           if (candidate > dual_lb_[row]) {
             dual_lb_[row] = candidate;
             may_have_participated_ub_[col] = true;
             changed_rows.push_back(row);
           }
         } else {
-          const Fractional candidate = rc_lb.SumWithout(-c * dual_lb_[row]) / c;
+          const Fractional candidate =
+              rc_lb.SumWithoutLb(-c * dual_lb_[row]) / c;
           if (candidate < dual_ub_[row]) {
             dual_ub_[row] = candidate;
             may_have_participated_ub_[col] = true;
@@ -2641,11 +2654,11 @@ bool SingletonPreprocessor::MakeConstraintAnEqualityIfPossible(
   // variables.
   const Fractional c = e.coeff;
   const Fractional lb =
-      c > 0.0 ? row_lb_sum_[e.row].SumWithout(-c * variable_ubs[e.col]) / c
-              : row_ub_sum_[e.row].SumWithout(-c * variable_ubs[e.col]) / c;
+      c > 0.0 ? row_lb_sum_[e.row].SumWithoutLb(-c * variable_ubs[e.col]) / c
+              : row_ub_sum_[e.row].SumWithoutUb(-c * variable_ubs[e.col]) / c;
   const Fractional ub =
-      c > 0.0 ? row_ub_sum_[e.row].SumWithout(-c * variable_lbs[e.col]) / c
-              : row_lb_sum_[e.row].SumWithout(-c * variable_lbs[e.col]) / c;
+      c > 0.0 ? row_ub_sum_[e.row].SumWithoutUb(-c * variable_lbs[e.col]) / c
+              : row_lb_sum_[e.row].SumWithoutLb(-c * variable_lbs[e.col]) / c;
 
   // Note that we could do the same for singleton variables with a cost of
   // 0.0, but such variable are already dealt with by
