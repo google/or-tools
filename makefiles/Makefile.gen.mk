@@ -18,6 +18,7 @@ BASE_DEPS = \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/iterator_adaptors.h \
  $(SRC_DIR)/ortools/base/jniutil.h \
+ $(SRC_DIR)/ortools/base/linked_hash_map.h \
  $(SRC_DIR)/ortools/base/logging_export.h \
  $(SRC_DIR)/ortools/base/logging.h \
  $(SRC_DIR)/ortools/base/logging_utilities.h \
@@ -249,7 +250,8 @@ objs/util/file_util.$O: ortools/util/file_util.cc ortools/util/file_util.h \
  ortools/base/commandlineflags.h ortools/base/log_severity.h \
  ortools/base/logging_export.h ortools/base/macros.h \
  ortools/base/vlog_is_on.h ortools/base/recordio.h \
- ortools/base/gzipstring.h ortools/base/status_macros.h | $(OBJ_DIR)/util
+ ortools/base/gzipstring.h ortools/base/status_macros.h \
+ ortools/base/status_builder.h | $(OBJ_DIR)/util
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sutil$Sfile_util.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sfile_util.$O
 
 objs/util/fp_utils.$O: ortools/util/fp_utils.cc ortools/util/fp_utils.h \
@@ -616,6 +618,7 @@ objs/lp_data/mps_reader.$O: ortools/lp_data/mps_reader.cc \
  ortools/base/vlog_is_on.h ortools/base/hash.h ortools/base/basictypes.h \
  ortools/base/int_type.h ortools/base/map_util.h \
  ortools/base/protobuf_util.h ortools/base/status_macros.h \
+ ortools/base/status_builder.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h ortools/lp_data/lp_data.h \
  ortools/gen/ortools/glop/parameters.pb.h ortools/lp_data/lp_types.h \
@@ -623,8 +626,7 @@ objs/lp_data/mps_reader.$O: ortools/lp_data/mps_reader.cc \
  ortools/lp_data/sparse.h ortools/lp_data/permutation.h \
  ortools/util/return_macros.h ortools/lp_data/scattered_vector.h \
  ortools/lp_data/sparse_column.h ortools/lp_data/sparse_vector.h \
- ortools/graph/iterators.h ortools/util/fp_utils.h \
- ortools/base/status_builder.h | $(OBJ_DIR)/lp_data
+ ortools/graph/iterators.h ortools/util/fp_utils.h | $(OBJ_DIR)/lp_data
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slp_data$Smps_reader.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Smps_reader.$O
 
 objs/lp_data/proto_utils.$O: ortools/lp_data/proto_utils.cc \
@@ -1714,49 +1716,49 @@ objs/sat/cp_model_solver.$O: ortools/sat/cp_model_solver.cc \
  ortools/base/log_severity.h ortools/base/logging_export.h \
  ortools/base/macros.h ortools/base/vlog_is_on.h ortools/base/map_util.h \
  ortools/base/typeid.h ortools/gen/ortools/sat/sat_parameters.pb.h \
- ortools/base/cleanup.h ortools/sat/feasibility_pump.h \
- ortools/base/strong_vector.h ortools/base/int_type.h \
+ ortools/base/file.h ortools/util/sigint.h ortools/base/cleanup.h \
+ ortools/base/int_type.h ortools/base/threadpool.h ortools/base/timer.h \
+ ortools/base/basictypes.h ortools/graph/connected_components.h \
+ ortools/base/ptr_util.h ortools/port/proto_utils.h ortools/sat/circuit.h \
+ ortools/sat/integer.h ortools/base/hash.h ortools/base/strong_vector.h \
+ ortools/graph/iterators.h ortools/sat/sat_base.h ortools/util/bitset.h \
+ ortools/sat/sat_solver.h ortools/sat/clause.h \
+ ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
+ ortools/sat/drat_writer.h ortools/sat/util.h \
+ ortools/util/random_engine.h ortools/util/stats.h \
+ ortools/util/time_limit.h ortools/util/running_stat.h \
+ ortools/sat/pb_constraint.h ortools/sat/restart.h \
+ ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
+ ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
+ ortools/sat/cp_model_checker.h ortools/sat/cp_model_lns.h \
+ ortools/sat/subsolver.h ortools/sat/synchronization.h \
+ ortools/base/stl_util.h ortools/util/logging.h \
+ ortools/util/adaptative_parameter_value.h ortools/sat/cp_model_loader.h \
+ ortools/sat/cp_model_utils.h ortools/sat/intervals.h \
+ ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
+ ortools/base/mathutil.h ortools/sat/linear_constraint.h \
+ ortools/sat/precedences.h ortools/sat/cp_model_postsolve.h \
+ ortools/sat/cp_model_presolve.h ortools/sat/presolve_context.h \
+ ortools/sat/presolve_util.h ortools/util/affine_relation.h \
+ ortools/base/iterator_adaptors.h ortools/sat/cp_model_search.h \
+ ortools/sat/integer_search.h ortools/sat/cp_model_symmetries.h \
+ ortools/algorithms/sparse_permutation.h ortools/sat/cuts.h \
+ ortools/sat/implied_bounds.h ortools/sat/linear_constraint_manager.h \
  ortools/glop/revised_simplex.h ortools/glop/basis_representation.h \
  ortools/glop/lu_factorization.h ortools/glop/markowitz.h \
  ortools/gen/ortools/glop/parameters.pb.h ortools/glop/status.h \
- ortools/lp_data/lp_types.h ortools/base/basictypes.h \
- ortools/util/bitset.h ortools/lp_data/permutation.h \
+ ortools/lp_data/lp_types.h ortools/lp_data/permutation.h \
  ortools/util/return_macros.h ortools/lp_data/sparse.h \
  ortools/lp_data/scattered_vector.h ortools/lp_data/sparse_column.h \
- ortools/lp_data/sparse_vector.h ortools/graph/iterators.h \
- ortools/util/stats.h ortools/base/timer.h ortools/glop/rank_one_update.h \
+ ortools/lp_data/sparse_vector.h ortools/glop/rank_one_update.h \
  ortools/lp_data/lp_utils.h ortools/base/accurate_sum.h \
  ortools/glop/dual_edge_norms.h ortools/lp_data/lp_data.h \
- ortools/base/hash.h ortools/util/fp_utils.h \
- ortools/glop/entering_variable.h ortools/glop/primal_edge_norms.h \
- ortools/glop/update_row.h ortools/glop/variables_info.h \
- ortools/glop/reduced_costs.h ortools/util/random_engine.h \
+ ortools/util/fp_utils.h ortools/glop/entering_variable.h \
+ ortools/glop/primal_edge_norms.h ortools/glop/update_row.h \
+ ortools/glop/variables_info.h ortools/glop/reduced_costs.h \
  ortools/glop/variable_values.h ortools/lp_data/lp_print_utils.h \
- ortools/lp_data/sparse_row.h ortools/util/time_limit.h \
- ortools/util/running_stat.h ortools/lp_data/lp_data_utils.h \
- ortools/lp_data/matrix_scaler.h ortools/sat/cp_model_loader.h \
- ortools/sat/cp_model_utils.h ortools/util/sorted_interval_list.h \
- ortools/sat/integer.h ortools/sat/sat_base.h ortools/sat/sat_solver.h \
- ortools/sat/clause.h ortools/sat/drat_proof_handler.h \
- ortools/sat/drat_checker.h ortools/sat/drat_writer.h ortools/base/file.h \
- ortools/sat/util.h ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/sat/intervals.h \
- ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
- ortools/base/mathutil.h ortools/sat/linear_constraint.h \
- ortools/sat/precedences.h ortools/sat/synchronization.h \
- ortools/base/stl_util.h ortools/util/logging.h ortools/util/sigint.h \
- ortools/base/threadpool.h ortools/graph/connected_components.h \
- ortools/base/ptr_util.h ortools/port/proto_utils.h ortools/sat/circuit.h \
- ortools/sat/cp_model_checker.h ortools/sat/cp_model_lns.h \
- ortools/sat/subsolver.h ortools/util/adaptative_parameter_value.h \
- ortools/sat/cp_model_postsolve.h ortools/sat/cp_model_presolve.h \
- ortools/sat/presolve_context.h ortools/sat/presolve_util.h \
- ortools/util/affine_relation.h ortools/base/iterator_adaptors.h \
- ortools/sat/cp_model_search.h ortools/sat/integer_search.h \
- ortools/sat/cp_model_symmetries.h \
- ortools/algorithms/sparse_permutation.h ortools/sat/cuts.h \
- ortools/sat/implied_bounds.h ortools/sat/linear_constraint_manager.h \
+ ortools/lp_data/sparse_row.h ortools/sat/feasibility_pump.h \
+ ortools/lp_data/lp_data_utils.h ortools/lp_data/matrix_scaler.h \
  ortools/sat/linear_programming_constraint.h ortools/sat/zero_half_cuts.h \
  ortools/sat/linear_relaxation.h ortools/sat/optimization.h \
  ortools/gen/ortools/sat/boolean_problem.pb.h ortools/sat/probing.h \
@@ -3303,6 +3305,84 @@ $(OBJ_DIR)/bop/bop_parameters.pb.$O: \
  $(GEN_DIR)/ortools/bop/bop_parameters.pb.cc | $(OBJ_DIR)/bop
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sbop$Sbop_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sbop$Sbop_parameters.pb.$O
 
+GSCIP_DEPS = \
+ $(SRC_DIR)/ortools/gscip/gscip_ext.h \
+ $(SRC_DIR)/ortools/gscip/gscip.h \
+ $(SRC_DIR)/ortools/gscip/gscip_parameters.h \
+ $(SRC_DIR)/ortools/gscip/legacy_scip_params.h \
+ $(GEN_DIR)/ortools/gscip/gscip.pb.h
+
+GSCIP_LIB_OBJS = \
+ $(OBJ_DIR)/gscip/gscip.$O \
+ $(OBJ_DIR)/gscip/gscip_ext.$O \
+ $(OBJ_DIR)/gscip/gscip_parameters.$O \
+ $(OBJ_DIR)/gscip/legacy_scip_params.$O \
+ $(OBJ_DIR)/gscip/gscip.pb.$O
+
+objs/gscip/gscip.$O: ortools/gscip/gscip.cc ortools/gscip/gscip.h \
+ ortools/gen/ortools/gscip/gscip.pb.h ortools/base/logging.h \
+ ortools/base/commandlineflags.h ortools/base/integral_types.h \
+ ortools/base/log_severity.h ortools/base/logging_export.h \
+ ortools/base/macros.h ortools/base/vlog_is_on.h \
+ ortools/base/status_builder.h ortools/base/status_macros.h \
+ ortools/gscip/gscip_parameters.h ortools/gscip/legacy_scip_params.h \
+ ortools/linear_solver/scip_helper_macros.h ortools/port/proto_utils.h | $(OBJ_DIR)/gscip
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sgscip$Sgscip.cc $(OBJ_OUT)$(OBJ_DIR)$Sgscip$Sgscip.$O
+
+objs/gscip/gscip_ext.$O: ortools/gscip/gscip_ext.cc \
+ ortools/gscip/gscip_ext.h ortools/gscip/gscip.h \
+ ortools/gen/ortools/gscip/gscip.pb.h ortools/base/logging.h \
+ ortools/base/commandlineflags.h ortools/base/integral_types.h \
+ ortools/base/log_severity.h ortools/base/logging_export.h \
+ ortools/base/macros.h ortools/base/vlog_is_on.h \
+ ortools/base/status_macros.h ortools/base/status_builder.h | $(OBJ_DIR)/gscip
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sgscip$Sgscip_ext.cc $(OBJ_OUT)$(OBJ_DIR)$Sgscip$Sgscip_ext.$O
+
+objs/gscip/gscip_parameters.$O: ortools/gscip/gscip_parameters.cc \
+ ortools/gscip/gscip_parameters.h ortools/gen/ortools/gscip/gscip.pb.h \
+ ortools/base/logging.h ortools/base/commandlineflags.h \
+ ortools/base/integral_types.h ortools/base/log_severity.h \
+ ortools/base/logging_export.h ortools/base/macros.h \
+ ortools/base/vlog_is_on.h | $(OBJ_DIR)/gscip
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sgscip$Sgscip_parameters.cc $(OBJ_OUT)$(OBJ_DIR)$Sgscip$Sgscip_parameters.$O
+
+objs/gscip/legacy_scip_params.$O: ortools/gscip/legacy_scip_params.cc \
+ ortools/gscip/legacy_scip_params.h ortools/base/logging.h \
+ ortools/base/commandlineflags.h ortools/base/integral_types.h \
+ ortools/base/log_severity.h ortools/base/logging_export.h \
+ ortools/base/macros.h ortools/base/vlog_is_on.h \
+ ortools/linear_solver/scip_helper_macros.h ortools/base/status_macros.h \
+ ortools/base/status_builder.h | $(OBJ_DIR)/gscip
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sgscip$Slegacy_scip_params.cc $(OBJ_OUT)$(OBJ_DIR)$Sgscip$Slegacy_scip_params.$O
+
+ortools/gscip/gscip.proto: ;
+
+$(GEN_DIR)/ortools/gscip/gscip.pb.cc: \
+ $(SRC_DIR)/ortools/gscip/gscip.proto | $(GEN_DIR)/ortools/gscip
+	$(PROTOC) --experimental_allow_proto3_optional --proto_path=$(INC_DIR) $(PROTOBUF_PROTOC_INC) --cpp_out=$(GEN_PATH) $(SRC_DIR)/ortools/gscip/gscip.proto
+
+$(GEN_DIR)/ortools/gscip/gscip.pb.h: \
+ $(GEN_DIR)/ortools/gscip/gscip.pb.cc
+	$(TOUCH) $(GEN_PATH)$Sortools$Sgscip$Sgscip.pb.h
+
+$(OBJ_DIR)/gscip/gscip.pb.$O: \
+ $(GEN_DIR)/ortools/gscip/gscip.pb.cc | $(OBJ_DIR)/gscip
+	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sgscip$Sgscip.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sgscip$Sgscip.pb.$O
+
+GUROBI_DEPS = \
+ $(SRC_DIR)/ortools/gurobi/environment.h
+
+GUROBI_LIB_OBJS = \
+ $(OBJ_DIR)/gurobi/environment.$O
+
+objs/gurobi/environment.$O: ortools/gurobi/environment.cc \
+ ortools/gurobi/environment.h ortools/base/commandlineflags.h \
+ ortools/base/dynamic_library.h ortools/base/logging.h \
+ ortools/base/integral_types.h ortools/base/log_severity.h \
+ ortools/base/logging_export.h ortools/base/macros.h \
+ ortools/base/vlog_is_on.h | $(OBJ_DIR)/gurobi
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sgurobi$Senvironment.cc $(OBJ_OUT)$(OBJ_DIR)$Sgurobi$Senvironment.$O
+
 LP_DEPS = \
  $(SRC_DIR)/ortools/linear_solver/glop_utils.h \
  $(SRC_DIR)/ortools/linear_solver/gurobi_proto_solver.h \
@@ -3509,16 +3589,15 @@ objs/linear_solver/gurobi_interface.$O: \
 
 objs/linear_solver/gurobi_proto_solver.$O: \
  ortools/linear_solver/gurobi_proto_solver.cc \
- ortools/linear_solver/gurobi_proto_solver.h \
- ortools/gurobi/environment.h \
+ ortools/linear_solver/gurobi_proto_solver.h ortools/gurobi/environment.h \
  ortools/base/commandlineflags.h ortools/base/dynamic_library.h \
  ortools/base/logging.h ortools/base/integral_types.h \
  ortools/base/log_severity.h ortools/base/logging_export.h \
  ortools/base/macros.h ortools/base/vlog_is_on.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h ortools/base/cleanup.h \
- ortools/base/status_macros.h ortools/linear_solver/model_validator.h \
- ortools/util/lazy_mutable_copy.h | $(OBJ_DIR)/linear_solver
+ ortools/base/status_macros.h ortools/base/status_builder.h \
+ ortools/linear_solver/model_validator.h ortools/util/lazy_mutable_copy.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sgurobi_proto_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sgurobi_proto_solver.$O
 
 objs/linear_solver/linear_expr.$O: ortools/linear_solver/linear_expr.cc \
@@ -3546,10 +3625,10 @@ objs/linear_solver/linear_solver.$O: \
  ortools/linear_solver/linear_solver_callback.h \
  ortools/port/proto_utils.h ortools/base/accurate_sum.h \
  ortools/base/map_util.h ortools/base/status_macros.h \
- ortools/base/stl_util.h ortools/linear_solver/model_exporter.h \
- ortools/base/hash.h ortools/linear_solver/model_validator.h \
- ortools/util/lazy_mutable_copy.h ortools/port/file.h \
- ortools/util/fp_utils.h | $(OBJ_DIR)/linear_solver
+ ortools/base/status_builder.h ortools/base/stl_util.h \
+ ortools/linear_solver/model_exporter.h ortools/base/hash.h \
+ ortools/linear_solver/model_validator.h ortools/util/lazy_mutable_copy.h \
+ ortools/port/file.h ortools/util/fp_utils.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Slinear_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slinear_solver.$O
 
 objs/linear_solver/linear_solver_callback.$O: \
@@ -3703,7 +3782,7 @@ objs/linear_solver/scip_callback.$O: \
  ortools/gen/ortools/util/optional_boolean.pb.h \
  ortools/linear_solver/linear_solver_callback.h \
  ortools/port/proto_utils.h ortools/linear_solver/scip_helper_macros.h \
- ortools/base/status_macros.h | $(OBJ_DIR)/linear_solver
+ ortools/base/status_macros.h ortools/base/status_builder.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sscip_callback.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sscip_callback.$O
 
 objs/linear_solver/scip_interface.$O: \
@@ -3712,8 +3791,9 @@ objs/linear_solver/scip_interface.$O: \
  ortools/base/integral_types.h ortools/base/log_severity.h \
  ortools/base/logging_export.h ortools/base/macros.h \
  ortools/base/vlog_is_on.h ortools/base/hash.h ortools/base/basictypes.h \
- ortools/base/status_macros.h ortools/base/timer.h \
- ortools/gscip/legacy_scip_params.h ortools/linear_solver/linear_solver.h \
+ ortools/base/status_macros.h ortools/base/status_builder.h \
+ ortools/base/timer.h ortools/gscip/legacy_scip_params.h \
+ ortools/linear_solver/linear_solver.h \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
@@ -3732,7 +3812,7 @@ objs/linear_solver/scip_proto_solver.$O: \
  ortools/base/integral_types.h ortools/base/log_severity.h \
  ortools/base/logging_export.h ortools/base/macros.h \
  ortools/base/vlog_is_on.h ortools/base/status_macros.h \
- ortools/gscip/legacy_scip_params.h \
+ ortools/base/status_builder.h ortools/gscip/legacy_scip_params.h \
  ortools/linear_solver/model_validator.h ortools/util/lazy_mutable_copy.h \
  ortools/linear_solver/scip_helper_macros.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sscip_proto_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sscip_proto_solver.$O
@@ -4933,76 +5013,3 @@ $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssolver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
 
-GUROBI_DEPS = \
- $(SRC_DIR)/ortools/gurobi/environment.h
-
-GUROBI_LIB_OBJS = \
- $(OBJ_DIR)/gurobi/environment.$O
-
-
-objs/gurobi/environment.$O: ortools/gurobi/environment.cc \
- ortools/gurobi/environment.h | $(OBJ_DIR)/gurobi
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sgurobi$Senvironment.cc $(OBJ_OUT)$(OBJ_DIR)$Sgurobi$Senvironment.$O
-
-GSCIP_DEPS = \
- $(SRC_DIR)/ortools/gscip/gscip_ext.h \
- $(Src_DIR)/ortools/gscip/gscip.h \
- $(SRC_DIR)/ortools/gscip/gscip_parameters.h \
- $(SRC_DIR)/ortools/gscip/legacy_scip_params.h \
- $(GEN_DIR)/ortools/gscip/gscip.pb.h
-
-GSCIP_LIB_OBJS = \
- $(OBJ_DIR)/gscip/gscip.$O \
- $(OBJ_DIR)/gscip/gscip_ext.$O \
- $(OBJ_DIR)/gscip/gscip_parameters.$O \
- $(OBJ_DIR)/gscip/legacy_scip_params.$O \
- $(OBJ_DIR)/gscip/gscip.pb.$O
-
-objs/gscip/gscip.$O: ortools/gscip/gscip.cc ortools/gscip/gscip.h \
- ortools/gen/ortools/gscip/gscip.pb.h ortools/base/logging.h \
- ortools/base/commandlineflags.h ortools/base/integral_types.h \
- ortools/base/log_severity.h ortools/base/logging_export.h \
- ortools/base/macros.h ortools/base/vlog_is_on.h \
- ortools/base/status_builder.h ortools/base/status_macros.h \
- ortools/gscip/gscip_parameters.h ortools/gscip/legacy_scip_params.h \
- ortools/linear_solver/scip_helper_macros.h ortools/port/proto_utils.h | $(OBJ_DIR)/gscip
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sgscip$Sgscip.cc $(OBJ_OUT)$(OBJ_DIR)$Sgscip$Sgscip.$O
-
-objs/gscip/gscip_ext.$O: ortools/gscip/gscip_ext.cc \
- ortools/gscip/gscip_ext.h ortools/gscip/gscip.h \
- ortools/gen/ortools/gscip/gscip.pb.h ortools/base/logging.h \
- ortools/base/commandlineflags.h ortools/base/integral_types.h \
- ortools/base/log_severity.h ortools/base/logging_export.h \
- ortools/base/macros.h ortools/base/vlog_is_on.h \
- ortools/base/status_macros.h | $(OBJ_DIR)/gscip
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sgscip$Sgscip_ext.cc $(OBJ_OUT)$(OBJ_DIR)$Sgscip$Sgscip_ext.$O
-
-objs/gscip/gscip_parameters.$O: ortools/gscip/gscip_parameters.cc \
- ortools/gscip/gscip_parameters.h ortools/gen/ortools/gscip/gscip.pb.h \
- ortools/base/logging.h ortools/base/commandlineflags.h \
- ortools/base/integral_types.h ortools/base/log_severity.h \
- ortools/base/logging_export.h ortools/base/macros.h \
- ortools/base/vlog_is_on.h | $(OBJ_DIR)/gscip
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sgscip$Sgscip_parameters.cc $(OBJ_OUT)$(OBJ_DIR)$Sgscip$Sgscip_parameters.$O
-
-objs/gscip/legacy_scip_params.$O: ortools/gscip/legacy_scip_params.cc \
- ortools/gscip/legacy_scip_params.h ortools/base/logging.h \
- ortools/base/commandlineflags.h ortools/base/integral_types.h \
- ortools/base/log_severity.h ortools/base/logging_export.h \
- ortools/base/macros.h ortools/base/vlog_is_on.h \
- ortools/linear_solver/scip_helper_macros.h ortools/base/status_macros.h | $(OBJ_DIR)/gscip
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sgscip$Slegacy_scip_params.cc $(OBJ_OUT)$(OBJ_DIR)$Sgscip$Slegacy_scip_params.$O
-
-ortools/gscip/gscip.proto: ;
-
-$(GEN_DIR)/ortools/gscip/gscip.pb.cc: \
- $(SRC_DIR)/ortools/gscip/gscip.proto | $(GEN_DIR)/ortools/gscip
-	$(PROTOC) --experimental_allow_proto3_optional --proto_path=$(INC_DIR) $(PROTOBUF_PROTOC_INC) --cpp_out=$(GEN_PATH) $(SRC_DIR)/ortools/gscip/gscip.proto
-
-$(GEN_DIR)/ortools/gscip/gscip.pb.h: \
- $(GEN_DIR)/ortools/gscip/gscip.pb.cc
-	$(TOUCH) $(GEN_PATH)$Sortools$Sgscip$Sgscip.pb.h
-
-$(OBJ_DIR)/gscip/gscip.pb.$O: \
- $(GEN_DIR)/ortools/gscip/gscip.pb.cc | $(OBJ_DIR)/gscip
-	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sgscip$Sgscip.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sgscip$Sgscip.pb.$O
