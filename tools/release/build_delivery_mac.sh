@@ -9,17 +9,18 @@ function help() {
 ${BOLD}NAME${RESET}
 \t$NAME - Build delivery using the ${BOLD}local host system${RESET}.
 ${BOLD}SYNOPSIS${RESET}
-\t$NAME [-h|--help] [examples|dotnet|java|all]
+\t$NAME [-h|--help] [examples|dotnet|java|python|all|reset]
 ${BOLD}DESCRIPTION${RESET}
 \tBuild Google OR-Tools deliveries.
 \tYou ${BOLD}MUST${RESET} define the following variables before running this script:
 \t* ORTOOLS_TOKEN: secret use to decrypt key to sign dotent and java package.
 
 ${BOLD}OPTIONS${RESET}
-\t-h --help: show this help text
-\tdotnet: Build dotnet packages
-\tjava: Build java packages
-\texamples: Build examples archives
+\t-h --help: display this help text
+\tdotnet: build all .Net packages
+\tjava: build all Java packages
+\tpython: build all Pyhon packages
+\texamples: build examples archives
 \tall: build everything (default)
 
 ${BOLD}EXAMPLES${RESET}
@@ -27,11 +28,11 @@ Using export to define the ${BOLD}ORTOOLS_TOKEN${RESET} env and only building th
 export ORTOOLS_TOKEN=SECRET
 $0 java
 
-note: the 'export ...' should be placed in your bashrc to avoid leak of the secret
-in your bash history
+note: the 'export ...' should be placed in your bashrc to avoid any leak
+of the secret in your bash history
 EOF
 )
-echo -e "$help"
+  echo -e "$help"
 }
 
 function assert_defined(){
@@ -88,10 +89,10 @@ function build_dotnet() {
   command -v dotnet | xargs echo "dotnet: " | tee -a build.log
 
   # Install .Net SNK
-  echo -n "Install .Net snk" | tee -a build.log
-  openssl aes-256-cbc -iter 42 -pass pass:$ORTOOLS_TOKEN \
-    -in ${RELEASE_DIR}/or-tools.snk.enc \
-    -out ${ROOT_DIR}/export/or-tools.snk -d
+  echo -n "Install .Net SNK..." | tee -a build.log
+  openssl aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
+    -in "${RELEASE_DIR}/or-tools.snk.enc" \
+    -out "${ROOT_DIR}/export/or-tools.snk" -d
   DOTNET_SNK=export/or-tools.snk
   echo "DONE" | tee -a build.log
 
@@ -142,15 +143,19 @@ function build_java() {
   command -v gpg | xargs echo "gpg: " | tee -a build.log
 
   # Install Java GPG
-  echo -n "Install Java gpg" | tee -a build.log
-  openssl aes-256-cbc -iter 42 -pass pass:$ORTOOLS_TOKEN -in tools/release/private-key.gpg.enc -out private-key.gpg -d
+  echo -n "Install Java GPG..." | tee -a build.log
+  openssl aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
+  -in tools/release/private-key.gpg.enc \
+  -out private-key.gpg -d
   gpg --batch --import private-key.gpg
   # Don't need to trust the key
   #expect -c "spawn gpg --edit-key "corentinl@google.com" trust quit; send \"5\ry\r\"; expect eof"
 
   # Install the maven settings.xml having the GPG passphrase
   mkdir -p ~/.m2
-  openssl aes-256-cbc -iter 42 -pass pass:$ORTOOLS_TOKEN -in tools/release/settings.xml.enc -out ~/.m2/settings.xml -d
+  openssl aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
+  -in tools/release/settings.xml.enc \
+  -out ~/.m2/settings.xml -d
   echo "DONE" | tee -a build.log
 
   # Clean java
@@ -163,7 +168,7 @@ function build_java() {
   #make test_java -l 4 UNIX_PYTHON_VER=3.9
   #echo "make test_java: DONE" | tee -a build.log
 
-  cp temp_java/ortools-linux-x86-64/target/*.jar* export/
+  cp temp_java/ortools-darwin/target/*.jar* export/
   cp temp_java/ortools-java/target/*.jar* export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/java_build"
 }
@@ -259,19 +264,19 @@ function build_python() {
 
   for i in "${PY[@]}"; do
     echo -n "Cleaning Python 3..." | tee -a build.log
-    make clean_python UNIX_PYTHON_VER=$i
+    make clean_python UNIX_PYTHON_VER="$i"
     echo "DONE" | tee -a build.log
 
     echo -n "Build Python $i..." | tee -a build.log
-    make python -l 4 UNIX_PYTHON_VER=$i
+    make python -l 4 UNIX_PYTHON_VER="$i"
     echo "DONE" | tee -a build.log
     #make test_python UNIX_PYTHON_VER=$i
     #echo "make test_python$i: DONE" | tee -a build.log
     echo -n "Build Python $i wheel archive..." | tee -a build.log
-    make package_python UNIX_PYTHON_VER=$i
+    make package_python UNIX_PYTHON_VER="$i"
     echo "DONE" | tee -a build.log
     echo -n "Test Python $i wheel archive..." | tee -a build.log
-    make test_package_python UNIX_PYTHON_VER=$i
+    make test_package_python UNIX_PYTHON_VER="$i"
     echo "DONE" | tee -a build.log
 
     cp "temp_python$i"/ortools/dist/*.whl export/
@@ -290,15 +295,18 @@ function main() {
   echo "ORTOOLS_TOKEN: FOUND" | tee build.log
   make print-OR_TOOLS_VERSION | tee -a build.log
 
-  declare -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
+  declare -r ROOT_DIR
+  ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
   echo "ROOT_DIR: '${ROOT_DIR}'"
-  declare -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+
+  declare -r RELEASE_DIR
+  RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
   echo "RELEASE_DIR: '${RELEASE_DIR}'"
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
-  mkdir -p export
 
+  mkdir -p export
   case ${1} in
     cxx|dotnet|java|python|archive|examples)
       "build_$1"
