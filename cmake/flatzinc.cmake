@@ -49,8 +49,6 @@ add_library(flatzinc
   ortools/flatzinc/checker.h
   ortools/flatzinc/cp_model_fz_solver.cc
   ortools/flatzinc/cp_model_fz_solver.h
-  ortools/flatzinc/logging.cc
-  ortools/flatzinc/logging.h
   ortools/flatzinc/model.cc
   ortools/flatzinc/model.h
   ortools/flatzinc/parser.cc

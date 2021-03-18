@@ -68,7 +68,21 @@
 <dependencies>
   <dependency>
     <groupId>@JAVA_PACKAGE@</groupId>
-    <artifactId>@JAVA_NATIVE_PROJECT@</artifactId>
+    <artifactId>ortools-linux-x86-64</artifactId>
+    <version>@PROJECT_VERSION@</version>
+    <type>jar</type>
+    <scope>runtime</scope>
+  </dependency>
+  <dependency>
+    <groupId>@JAVA_PACKAGE@</groupId>
+    <artifactId>ortools-darwin</artifactId>
+    <version>@PROJECT_VERSION@</version>
+    <type>jar</type>
+    <scope>runtime</scope>
+  </dependency>
+  <dependency>
+    <groupId>@JAVA_PACKAGE@</groupId>
+    <artifactId>ortools-win32-x86-64</artifactId>
     <version>@PROJECT_VERSION@</version>
     <type>jar</type>
     <scope>runtime</scope>
