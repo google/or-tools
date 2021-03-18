@@ -83,10 +83,10 @@ function build_dotnet() {
   command -v dotnet | xargs echo "dotnet: " | tee -a build.log
 
   # Install .Net SNK
-  echo -n "Install .Net snk" | tee -a build.log
-  openssl aes-256-cbc -iter 42 -pass pass:$ORTOOLS_TOKEN \
-    -in ${RELEASE_DIR}/or-tools.snk.enc \
-    -out ${ROOT_DIR}/export/or-tools.snk -d
+  echo -n "Install .Net SNK..." | tee -a build.log
+  openssl aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
+    -in "${RELEASE_DIR}"/or-tools.snk.enc \
+    -out "${ROOT_DIR}"/export/or-tools.snk -d
   DOTNET_SNK=export/or-tools.snk
   echo "DONE" | tee -a build.log
 
@@ -131,15 +131,15 @@ function build_java() {
   command -v gpg | xargs echo "gpg: " | tee -a build.log
 
   # Install Java GPG
-  echo -n "Install Java gpg" | tee -a build.log
-  openssl aes-256-cbc -iter 42 -pass pass:$ORTOOLS_TOKEN -in tools/release/private-key.gpg.enc -out private-key.gpg -d
+  echo -n "Install Java GPG..." | tee -a build.log
+  openssl aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" -in tools/release/private-key.gpg.enc -out private-key.gpg -d
   gpg --batch --import private-key.gpg
   # Don't need to trust the key
   #expect -c "spawn gpg --edit-key "corentinl@google.com" trust quit; send \"5\ry\r\"; expect eof"
 
   # Install the maven settings.xml having the GPG passphrase
   mkdir -p ~/.m2
-  openssl aes-256-cbc -iter 42 -pass pass:$ORTOOLS_TOKEN -in tools/release/settings.xml.enc -out ~/.m2/settings.xml -d
+  openssl aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" -in tools/release/settings.xml.enc -out ~/.m2/settings.xml -d
   echo "DONE" | tee -a build.log
 
   # Clean java
@@ -270,9 +270,12 @@ function main() {
   echo "ORTOOLS_TOKEN: FOUND" | tee build.log
   make print-OR_TOOLS_VERSION | tee -a build.log
 
-  declare -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
+  declare -r ROOT_DIR
+  ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
   echo "ROOT_DIR: '${ROOT_DIR}'"
-  declare -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+
+  declare -r RELEASE_DIR
+  RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
   echo "RELEASE_DIR: '${RELEASE_DIR}'"
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
