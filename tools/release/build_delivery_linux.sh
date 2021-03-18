@@ -237,6 +237,7 @@ function build_python() {
 
   command -v swig | xargs echo "swig: " | tee -a build.log
   command -v python3 | xargs echo "python3: " | tee -a build.log
+  command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
 
   echo -n "Cleaning Python 3..." | tee -a build.log
   make clean_python UNIX_PYTHON_VER=3
@@ -297,3 +298,4 @@ function main() {
 }
 
 main "${1:-all}"
+
