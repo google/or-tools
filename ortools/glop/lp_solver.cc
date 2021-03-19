@@ -55,6 +55,9 @@ ABSL_FLAG(std::string, lp_dump_file_basename, "",
           "Base name for dump files. LinearProgram::name_ is used if "
           "lp_dump_file_basename is empty. If LinearProgram::name_ is "
           "empty, \"linear_program_dump_file\" is used.");
+ABSL_FLAG(std::string, glop_params, "",
+          "Override any user parameters with the value of this flag. This is "
+          "interpreted as a GlopParameters proto in text format.");
 
 namespace operations_research {
 namespace glop {
@@ -112,6 +115,14 @@ LPSolver::LPSolver() : num_solves_(0) {}
 
 void LPSolver::SetParameters(const GlopParameters& parameters) {
   parameters_ = parameters;
+#ifndef __PORTABLE_PLATFORM__
+  if (!absl::GetFlag(FLAGS_glop_params).empty()) {
+    GlopParameters flag_params;
+    CHECK(google::protobuf::TextFormat::ParseFromString(
+        absl::GetFlag(FLAGS_glop_params), &flag_params));
+    parameters_.MergeFrom(flag_params);
+  }
+#endif
 }
 
 const GlopParameters& LPSolver::GetParameters() const { return parameters_; }
