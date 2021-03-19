@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-function help {
+function help() {
   local -r NAME=$(basename "$0")
   local -r BOLD="\e[1m"
   local -r RESET="\e[0m"
@@ -9,7 +9,7 @@ function help {
 ${BOLD}NAME${RESET}
 \t$NAME - Build delivery using an ${BOLD}Ubuntu 18.04 LTS docker image${RESET}.
 ${BOLD}SYNOPSIS${RESET}
-\t$NAME [-h|--help] [examples|dotnet|java|python|all]
+\t$NAME [-h|--help] [examples|dotnet|java|python|all|reset]
 ${BOLD}DESCRIPTION${RESET}
 \tBuild Google OR-Tools deliveries.
 \tYou ${BOLD}MUST${RESET} define the following variables before running this script:
@@ -17,9 +17,10 @@ ${BOLD}DESCRIPTION${RESET}
 
 ${BOLD}OPTIONS${RESET}
 \t-h --help: display this help text
+\tdotnet: build all .Net packages
+\tjava: build all Java packages
+\tpython: build all Pyhon packages
 \texamples: build examples archives
-\tdotnet: build dotnet packages
-\tjava: build java packages
 \tall: build everything (default)
 
 ${BOLD}EXAMPLES${RESET}
@@ -96,17 +97,24 @@ function build_examples() {
 function build_dotnet() {
   local -r ORTOOLS_DELIVERY=dotnet
   build_delivery
+
+  docker run --rm --init \
+  -w /root/or-tools \
+  -v "${ROOT_DIR}/export":/export \
+  ortools:linux_delivery /bin/bash -c \
+  "cp export/*nupkg /export/"
 }
 
+# Java build
 function build_java() {
   local -r ORTOOLS_DELIVERY=java
   build_delivery
 
-	docker run --rm --init \
+  docker run --rm --init \
   -w /root/or-tools \
   -v "${ROOT_DIR}/export":/export \
   ortools:linux_delivery /bin/bash -c \
-  "cp temp_java/ortools-linux-x86-64/target/*.jar* /export/"
+  "cp export/*.jar* /export/"
 }
 
 function build_archive() {
@@ -129,9 +137,12 @@ function main() {
   assert_defined ORTOOLS_TOKEN
   echo "ORTOOLS_TOKEN: FOUND"
 
-  declare -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
+  declare -r ROOT_DIR
+  ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
   echo "ROOT_DIR: '${ROOT_DIR}'"
-  declare -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+
+  declare -r RELEASE_DIR
+  RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
   echo "RELEASE_DIR: '${RELEASE_DIR}'"
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -153,6 +164,7 @@ function main() {
       >&2 echo "Target '${1}' unknown"
       exit 1
   esac
+  exit 0
 }
 
 main "${1:-all}"
