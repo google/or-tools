@@ -259,8 +259,6 @@ absl::Status SetSolverSpecificParameters(const std::string& parameters,
   return absl::InvalidArgumentError(absl::StrJoin(error_messages, "\n"));
 }
 
-extern std::string GurobiSharedLibraryFullPath();
-
 absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
     const MPModelRequest& request, GRBenv* gurobi_env) {
   MPSolutionResponse response;
@@ -280,11 +278,10 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
   });
   if (gurobi_env == nullptr) {
     // We activate the deletion of `gurobi_env` before making the call to
-    // `LoadGurobiEnvironment()` since this function still returns a non null
+    // `GetGurobiEnv()` since this function still returns a non null
     // value even when it fails.
     gurobi_env_was_created = true;
-    ASSIGN_OR_RETURN(gurobi_env,
-                     LoadGurobiEnvironment(GurobiSharedLibraryFullPath()));
+    ASSIGN_OR_RETURN(gurobi_env, GetGurobiEnv());
   }
 
   GRBmodel* gurobi_model = nullptr;

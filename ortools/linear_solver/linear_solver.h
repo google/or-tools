@@ -821,14 +821,9 @@ class MPSolver {
   friend class BopInterface;
   friend class SatInterface;
   friend class KnapsackInterface;
-  friend std::string GurobiSharedLibraryFullPath();
 
   // Debugging: verify that the given MPVariable* belongs to this solver.
   bool OwnsVariable(const MPVariable* var) const;
-
-  static void SetGurobiLibraryPath(const std::string& path) {
-    gurobi_shared_library_full_path_ = path;
-  }
 
  private:
   // Computes the size of the constraint with the largest number of
@@ -895,9 +890,6 @@ class MPSolver {
 
   // Permanent storage for SetSolverSpecificParametersAsString().
   std::string solver_specific_parameter_string_;
-
-  // static string to indicate where to find the gurobi shared library path.
-  static std::string gurobi_shared_library_full_path_;
 
   MPSolverResponseStatus LoadModelFromProtoInternal(
       const MPModelProto& input_model, bool clear_names,

@@ -459,13 +459,7 @@ MPSolver::MPSolver(const std::string& name,
 
 MPSolver::~MPSolver() { Clear(); }
 
-std::string GurobiSharedLibraryFullPath() {
-  return MPSolver::gurobi_shared_library_full_path_;
-}
-std::string MPSolver::gurobi_shared_library_full_path_;
-
-bool GurobiIsCorrectlyInstalled(
-    const std::string& gurobi_shared_library_full_path);
+extern bool GurobiIsCorrectlyInstalled();
 
 // static
 bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
@@ -483,7 +477,7 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
   if (problem_type == GLOP_LINEAR_PROGRAMMING) return true;
   if (problem_type == GUROBI_LINEAR_PROGRAMMING ||
       problem_type == GUROBI_MIXED_INTEGER_PROGRAMMING) {
-    return GurobiIsCorrectlyInstalled(GurobiSharedLibraryFullPath());
+    return GurobiIsCorrectlyInstalled();
   }
 #ifdef USE_SCIP
   if (problem_type == SCIP_MIXED_INTEGER_PROGRAMMING) return true;

@@ -70,8 +70,6 @@ ABSL_FLAG(int, num_gurobi_threads, 4,
 
 namespace operations_research {
 
-extern std::string GurobiSharedLibraryFullPath();
-
 class GurobiInterface : public MPSolverInterface {
  public:
   // Constructor that takes a name for the underlying GRB solver.
@@ -79,9 +77,7 @@ class GurobiInterface : public MPSolverInterface {
   ~GurobiInterface() override;
 
   // Preemptive check of the license at the solver creation.
-  bool LicenseIsValid() override {
-    return GurobiIsCorrectlyInstalled(GurobiSharedLibraryFullPath());
-  }
+  bool LicenseIsValid() override { return GurobiIsCorrectlyInstalled(); }
 
   // Sets the optimization direction (min/max).
   void SetOptimizationDirection(bool maximize) override;
@@ -612,10 +608,7 @@ GurobiInterface::GurobiInterface(MPSolver* const solver, bool mip)
       env_(nullptr),
       mip_(mip),
       current_solution_index_(0) {
-  const absl::StatusOr<GRBenv*> status =
-      LoadGurobiEnvironment(GurobiSharedLibraryFullPath());
-  CHECK_OK(status.status());
-  env_ = status.value();
+  env_ = GetGurobiEnv().value();
   CheckedGurobiCall(GRBnewmodel(env_, &model_, solver_->name_.c_str(),
                                 0,          // numvars
                                 nullptr,    // obj
