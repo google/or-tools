@@ -46,6 +46,7 @@ PYLP_LIBS = $(LIB_DIR)/_pywraplp.$(SWIG_PYTHON_LIB_SUFFIX)
 PYSAT_LIBS = $(LIB_DIR)/_pywrapsat.$(SWIG_PYTHON_LIB_SUFFIX)
 PYDATA_LIBS = $(LIB_DIR)/_pywraprcpsp.$(SWIG_PYTHON_LIB_SUFFIX)
 PYSORTED_INTERVAL_LIST_LIBS = $(LIB_DIR)/_sorted_interval_list.$(SWIG_PYTHON_LIB_SUFFIX)
+PYINIT_LIBS = $(LIB_DIR)/_init.$(SWIG_PYTHON_LIB_SUFFIX)
 PYTHON_OR_TOOLS_LIBS = \
  $(GEN_DIR)/ortools/__init__.py \
  $(PYALGORITHMS_LIBS) \
@@ -54,7 +55,8 @@ PYTHON_OR_TOOLS_LIBS = \
  $(PYLP_LIBS) \
  $(PYSAT_LIBS) \
  $(PYDATA_LIBS) \
- $(PYSORTED_INTERVAL_LIST_LIBS)
+ $(PYSORTED_INTERVAL_LIST_LIBS) \
+ $(PYINIT_LIBS)
 
 # Main target
 .PHONY: python # Build Python OR-Tools.
@@ -492,6 +494,49 @@ ifeq ($(SYSTEM),win)
 	copy $(LIB_DIR)$S_sorted_interval_list.$(SWIG_PYTHON_LIB_SUFFIX) $(GEN_PATH)\\ortools\\util\\_sorted_interval_list.pyd
 else
 	cp $(PYSORTED_INTERVAL_LIST_LIBS) $(GEN_PATH)/ortools/util
+endif
+
+# init
+ifeq ($(PLATFORM),MACOSX)
+PYINIT_LDFLAGS = -install_name @rpath/_init.$(SWIG_PYTHON_LIB_SUFFIX) #
+endif
+
+$(GEN_DIR)/ortools/init/init.py: \
+ $(SRC_DIR)/ortools/init/init.h \
+ $(SRC_DIR)/ortools/base/base.i \
+ $(SRC_DIR)/ortools/util/python/vector.i \
+ $(SRC_DIR)/ortools/init/python/init.i \
+ $(INIT_DEPS) \
+ | $(GEN_DIR)/ortools/init
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_DOXYGEN) $(SWIG_PYTHON3_FLAG) \
+ -o $(GEN_PATH)$Sortools$Sinit$Sinit_python_wrap.cc \
+ -module init \
+ $(SRC_DIR)$Sortools$Sinit$Spython$Sinit.i
+
+$(GEN_DIR)/ortools/init/init_python_wrap.cc: \
+ $(GEN_DIR)/ortools/init/init.py
+
+$(OBJ_DIR)/swig/init_python_wrap.$O: \
+ $(GEN_DIR)/ortools/init/init_python_wrap.cc \
+ $(INIT_DEPS) \
+ | $(OBJ_DIR)/swig
+	$(CCC) $(CFLAGS) $(PYTHON_INC) $(PYTHON3_CFLAGS) \
+ -c $(GEN_PATH)$Sortools$Sinit$Sinit_python_wrap.cc \
+ $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sinit_python_wrap.$O
+
+$(PYINIT_LIBS): $(OBJ_DIR)/swig/init_python_wrap.$O $(OR_TOOLS_LIBS)
+	$(DYNAMIC_LD) \
+ $(PYINIT_LDFLAGS) \
+ $(LD_OUT)$(LIB_DIR)$S_init.$(SWIG_PYTHON_LIB_SUFFIX) \
+ $(OBJ_DIR)$Sswig$Sinit_python_wrap.$O \
+ $(OR_TOOLS_LNK) \
+ $(SYS_LNK) \
+ $(PYTHON_LNK) \
+ $(PYTHON_LDFLAGS)
+ifeq ($(SYSTEM),win)
+	copy $(LIB_DIR)$S_init.$(SWIG_PYTHON_LIB_SUFFIX) $(GEN_PATH)\\ortools\\init\\_init.pyd
+else
+	cp $(PYINIT_LIBS) $(GEN_PATH)/ortools/init
 endif
 
 #######################
@@ -1132,6 +1177,11 @@ clean_python:
 	-$(DELREC) ortools$Sutil$S__pycache__
 	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*_python_wrap.*
 	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S_*
+	-$(DEL) $(GEN_PATH)$Sortools$Sinit$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Sinit$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Sinit$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Sinit$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sinit$S_*
 	-$(DEL) $(LIB_DIR)$S_*.$(SWIG_PYTHON_LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$Sswig$S*python_wrap.$O
 	-$(DELREC) temp_python*

@@ -88,6 +88,9 @@ $(GEN_DIR)/ortools/sat: | $(GEN_DIR)/ortools
 $(GEN_DIR)/ortools/util: | $(GEN_DIR)/ortools
 	-$(MKDIR) $(GEN_PATH)$Sortools$Sutil
 
+$(GEN_DIR)/ortools/init: | $(GEN_DIR)/ortools
+	-$(MKDIR) $(GEN_PATH)$Sortools$Sinit
+
 $(GEN_DIR)/examples: | $(GEN_DIR)
 	-$(MKDIR) $(GEN_PATH)$Sexamples
 

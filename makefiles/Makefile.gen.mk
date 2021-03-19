@@ -352,6 +352,10 @@ $(OBJ_DIR)/util/optional_boolean.pb.$O: \
  $(GEN_DIR)/ortools/util/optional_boolean.pb.cc | $(OBJ_DIR)/util
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sutil$Soptional_boolean.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Soptional_boolean.pb.$O
 
+INIT_DEPS = \
+ $(SRC_DIR)/ortools/init/init.h \
+
+
 DATA_DEPS = \
  $(SRC_DIR)/ortools/data/jobshop_scheduling_parser.h \
  $(SRC_DIR)/ortools/data/rcpsp_parser.h \
