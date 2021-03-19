@@ -11,13 +11,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/sysinfo.h"
+#endif  // !defined(__PORTABLE_PLATFORM__)
+
 #include "ortools/port/sysinfo.h"
 
 namespace operations_research {
 namespace sysinfo {
 
-int64 MemoryUsageProcess() { return ::MemoryUsage(0); }
+int64 MemoryUsageProcess() {
+#if defined(__PORTABLE_PLATFORM__)
+  return -1;
+#else   // defined(__PORTABLE_PLATFORM__)
+  return ::MemoryUsage(0);
+#endif  // !defined(__PORTABLE_PLATFORM__)
+}
 
 }  // namespace sysinfo
 }  // namespace operations_research

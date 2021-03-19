@@ -11,9 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "absl/status/status.h"
 #include "ortools/port/file.h"
 
+#include "absl/status/status.h"
+#include "ortools/base/logging.h"
+
+#if !defined(__PORTABLE_PLATFORM__)
 #if !defined(_MSC_VER)
 #include <unistd.h>
 #endif
@@ -21,21 +24,36 @@
 #include "absl/strings/str_format.h"
 #include "absl/time/clock.h"
 #include "ortools/base/file.h"
+#endif  // !defined(__PORTABLE_PLATFORM__)
 
 namespace operations_research {
 
 ::absl::Status PortableFileSetContents(absl::string_view file_name,
                                        absl::string_view content) {
+#if defined(__PORTABLE_PLATFORM__)
+  return absl::Status(absl::StatusCode::kUnimplemented,
+                      "File io is not implemented for this platform.");
+#else   // defined(__PORTABLE_PLATFORM__)
   return file::SetContents(file_name, content, file::Defaults());
+#endif  // !defined(__PORTABLE_PLATFORM__)
 }
 
 ::absl::Status PortableFileGetContents(absl::string_view file_name,
                                        std::string* output) {
+#if defined(__PORTABLE_PLATFORM__)
+  return absl::Status(absl::StatusCode::kUnimplemented,
+                      "File io is not implemented for this platform.");
+#else   // defined(__PORTABLE_PLATFORM__)
   return file::GetContents(file_name, output, file::Defaults());
+#endif  // !defined(__PORTABLE_PLATFORM__)
 }
 
 bool PortableTemporaryFile(const char* directory_prefix,
                            std::string* filename_out) {
+#if defined(__PORTABLE_PLATFORM__)
+  LOG(ERROR) << "Temporary files are not implemented for this platform.";
+  return false;
+#else  // defined(__PORTABLE_PLATFORM__)
 #if defined(__linux)
   int32 tid = static_cast<int32>(pthread_self());
 #else   // defined(__linux__)
@@ -50,10 +68,15 @@ bool PortableTemporaryFile(const char* directory_prefix,
   std::string filename =
       absl::StrFormat("/tmp/parameters-tempfile-%x-%d-%llx", tid, pid, now);
   return true;
+#endif  // !defined(__PORTABLE_PLATFORM__)
 }
 
 ::absl::Status PortableDeleteFile(absl::string_view file_name) {
+#if defined(__PORTABLE_PLATFORM__)
+  return absl::Status(absl::StatusCode::kUnimplemented,
+                      "File io is not implemented for this platform.");
+#else   // defined(__PORTABLE_PLATFORM__)
   return file::Delete(file_name, file::Defaults());
+#endif  // !defined(__PORTABLE_PLATFORM__)
 }
-
 }  // namespace operations_research

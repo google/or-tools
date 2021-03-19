@@ -157,23 +157,23 @@ PORT_DEPS = \
  $(SRC_DIR)/ortools/port/utf8.h
 
 PORT_LIB_OBJS = \
- $(OBJ_DIR)/port/file_nonport.$O \
- $(OBJ_DIR)/port/sysinfo_nonport.$O
+ $(OBJ_DIR)/port/file.$O \
+ $(OBJ_DIR)/port/sysinfo.$O
 
-objs/port/file_nonport.$O: ortools/port/file_nonport.cc \
+objs/port/file.$O: ortools/port/file.cc \
  ortools/port/file.h ortools/base/file.h ortools/base/integral_types.h \
  ortools/base/logging.h ortools/base/commandlineflags.h \
  ortools/base/log_severity.h ortools/base/logging_export.h \
  ortools/base/macros.h ortools/base/vlog_is_on.h | $(OBJ_DIR)/port
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sport$Sfile_nonport.cc $(OBJ_OUT)$(OBJ_DIR)$Sport$Sfile_nonport.$O
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sport$Sfile.cc $(OBJ_OUT)$(OBJ_DIR)$Sport$Sfile.$O
 
-objs/port/sysinfo_nonport.$O: ortools/port/sysinfo_nonport.cc \
+objs/port/sysinfo.$O: ortools/port/sysinfo.cc \
  ortools/base/sysinfo.h ortools/base/basictypes.h \
  ortools/base/integral_types.h ortools/base/logging.h \
  ortools/base/commandlineflags.h ortools/base/log_severity.h \
  ortools/base/logging_export.h ortools/base/macros.h \
  ortools/base/vlog_is_on.h ortools/port/sysinfo.h | $(OBJ_DIR)/port
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sport$Ssysinfo_nonport.cc $(OBJ_OUT)$(OBJ_DIR)$Sport$Ssysinfo_nonport.$O
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sport$Ssysinfo.cc $(OBJ_OUT)$(OBJ_DIR)$Sport$Ssysinfo.$O
 
 UTIL_DEPS = \
  $(SRC_DIR)/ortools/util/adaptative_parameter_value.h \

@@ -11,7 +11,7 @@ cc_library(
 
 cc_library(
     name = "sysinfo",
-    srcs = ["sysinfo_nonport.cc"],
+    srcs = ["sysinfo.cc"],
     hdrs = ["sysinfo.h"],
     deps = [
         "//ortools/base",
@@ -22,7 +22,7 @@ cc_library(
 cc_library(
     name = "file",
     srcs = [
-        "file_nonport.cc",
+        "file.cc",
     ],
     hdrs = [
         "file.h",
