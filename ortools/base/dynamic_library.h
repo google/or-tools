@@ -27,7 +27,7 @@
 #include <dlfcn.h>
 #endif
 
-#define NAMEOF(x) #x
+#define STRINGIFY(x) #x
 
 class DynamicLibrary {
  public:
