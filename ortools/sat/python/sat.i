@@ -13,8 +13,6 @@
 
 // This .i file exposes the sat cp_model API.
 
-%include "stdint.i"
-
 %include "ortools/base/base.i"
 %include "ortools/util/python/proto.i"
 
