@@ -55,7 +55,7 @@
       <Link>constraint_solver/%(Filename)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="../../gen/ortools/init/*.cs">
+    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/init/*.cs">
       <Link>init/%(Filename)%(Extension)</Link>
     </Compile>
 
