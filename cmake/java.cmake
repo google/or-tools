@@ -116,7 +116,7 @@ elseif(UNIX)
 endif()
 
 # Swig wrap all libraries
-foreach(SUBPROJECT IN ITEMS algorithms graph linear_solver constraint_solver sat util)
+foreach(SUBPROJECT IN ITEMS algorithms graph init linear_solver constraint_solver sat util)
   add_subdirectory(ortools/${SUBPROJECT}/java)
   target_link_libraries(jniortools PRIVATE jni${SUBPROJECT})
 endforeach()

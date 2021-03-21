@@ -95,7 +95,7 @@ else()
 endif()
 set(DOTNET_NATIVE_PROJECT ${DOTNET_PROJECT}.runtime.${RUNTIME_IDENTIFIER})
 
-foreach(SUBPROJECT IN ITEMS algorithms graph linear_solver constraint_solver sat util)
+foreach(SUBPROJECT IN ITEMS algorithms graph init linear_solver constraint_solver sat util)
   add_subdirectory(ortools/${SUBPROJECT}/csharp)
   target_link_libraries(google-ortools-native PRIVATE dotnet_${SUBPROJECT})
 endforeach()

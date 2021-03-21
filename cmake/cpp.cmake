@@ -214,6 +214,7 @@ foreach(SUBPROJECT IN ITEMS
  glop
  graph
  gurobi
+ init
  linear_solver
  lp_data
  port

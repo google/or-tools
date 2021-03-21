@@ -109,7 +109,7 @@ if(USE_COINOR)
 endif()
 list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
 
-foreach(SUBPROJECT IN ITEMS algorithms graph linear_solver constraint_solver sat data util)
+foreach(SUBPROJECT IN ITEMS algorithms graph init linear_solver constraint_solver sat data util)
   add_subdirectory(ortools/${SUBPROJECT}/python)
 endforeach()
 
@@ -118,14 +118,15 @@ endforeach()
 #######################
 #file(MAKE_DIRECTORY python/${PROJECT_NAME})
 file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME})
-file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/util)
-file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/constraint_solver)
+file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/init)
+file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/algorithms)
+file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/graph)
 file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/linear_solver)
+file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/constraint_solver)
 file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/sat)
 file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/sat/python)
-file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/graph)
-file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/algorithms)
 file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/data)
+file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/util)
 
 file(COPY
     ortools/linear_solver/linear_solver_natural_api.py
@@ -163,6 +164,7 @@ add_custom_target(python_package ALL
   # Don't need to copy static lib on windows.
   COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:${UNIX}>,copy,true>
   $<$<BOOL:${UNIX}>:$<TARGET_SONAME_FILE:ortools>> ${PROJECT_NAME}/.libs
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapinit> ${PROJECT_NAME}/init
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapknapsack_solver> ${PROJECT_NAME}/algorithms
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapgraph> ${PROJECT_NAME}/graph
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapcp> ${PROJECT_NAME}/constraint_solver
