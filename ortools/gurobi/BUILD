@@ -10,6 +10,7 @@ cc_library(
     ],
     deps = [
         "//ortools/base",
+        "//ortools/base:status_macros",
         "//ortools/base:dynamic_library",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",

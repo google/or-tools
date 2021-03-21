@@ -89,6 +89,7 @@ cc_library(
     ],
     deps = [
         ":base",
+        ":status_builder",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
     ],
