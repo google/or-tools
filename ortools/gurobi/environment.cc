@@ -14,6 +14,7 @@
 #include "ortools/gurobi/environment.h"
 
 #include <string>
+#include <mutex>
 
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
