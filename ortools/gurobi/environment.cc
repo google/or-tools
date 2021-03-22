@@ -704,7 +704,8 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
 std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
   std::vector<std::string> potential_paths;
   const std::vector<std::vector<std::string>> GurobiVersionLib = {
-      {"911", "91"}, {"910", "91"}, {"903", "90"}, {"902", "90"}};
+      {"911", "91"}, {"910", "91"}, {"903", "90"}, {"902", "90"}, 
+      {"811", "81"}, {"801", "80"}, {"752", "75"}};
 
   const char* gurobi_home_from_env = getenv("GUROBI_HOME");
   for (const std::vector<std::string>& version_lib : GurobiVersionLib) {
@@ -736,6 +737,10 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
       potential_paths.push_back(absl::StrCat(
           gurobi_home_from_env, "/lib64/libgurobi", number, ".so"));
     }
+    potential_paths.push_back(absl::StrCat(
+        "/opt/gurobi", dir, "/linux/lib/libgurobi", number, ".so"));
+    potential_paths.push_back(absl::StrCat(
+        "/opt/gurobi", dir, "/linux/lib64/libgurobi", number, ".so"));
 #else
     LOG(ERROR) << "OS Not recognized by gurobi/environment.cc."
                << " You won't be able to use Gurobi.";
