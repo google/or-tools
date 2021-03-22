@@ -674,7 +674,7 @@ class CpModelTest(unittest.TestCase):
         v0 = model.NewBoolVar("buggyVarIndexToVarProto")
         v1 = model.NewBoolVar("v1")
 
-        self.assertEqual(model.VarIndexToVarProto(0).name(), v0.name())
+        self.assertEqual(model.VarIndexToVarProto(0).name, v0.Name())
 
 
 if __name__ == '__main__':
