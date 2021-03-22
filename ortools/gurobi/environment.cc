@@ -14,7 +14,6 @@
 #include "ortools/gurobi/environment.h"
 
 #include <string>
-#include <mutex>
 
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
@@ -704,7 +703,7 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
 std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
   std::vector<std::string> potential_paths;
   const std::vector<std::vector<std::string>> GurobiVersionLib = {
-      {"911", "91"}, {"910", "91"}, {"903", "90"}, {"902", "90"}, 
+      {"911", "91"}, {"910", "91"}, {"903", "90"}, {"902", "90"},
       {"811", "81"}, {"801", "80"}, {"752", "75"}};
 
   // Look for libraries pointed by GUROBI_HOME first.
@@ -753,7 +752,7 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
 #endif
   }
   return potential_paths;
-  }
+}
 
 namespace {
 std::once_flag gurobi_loading_done;
@@ -764,19 +763,21 @@ std::unique_ptr<DynamicLibrary> keep_gurobi_library_alive;
 bool LoadGurobiDynamicLibrary(
     const std::vector<std::string>& additional_paths) {
   std::call_once(gurobi_loading_done, [&additional_paths]() {
+    // We need to keep the dynamic library alive during the execution of the
+    // solve.
     keep_gurobi_library_alive = absl::make_unique<DynamicLibrary>();
     // Check additional paths first.
-    for (const std::string &path : additional_paths) {
+    for (const std::string& path : additional_paths) {
       if (keep_gurobi_library_alive->TryToLoad(path)) {
         LOG(INFO) << "Found the Gurobi library in '" << path << ".";
         break;
       }
     }
     // Fallback to canonical paths.
-    const std::vector<std::string> &canonical_paths =
+    const std::vector<std::string>& canonical_paths =
         GurobiDynamicLibraryPotentialPaths();
     if (!keep_gurobi_library_alive->LibraryIsLoaded()) {
-      for (const std::string &path : canonical_paths) {
+      for (const std::string& path : canonical_paths) {
         if (keep_gurobi_library_alive->TryToLoad(path)) {
           LOG(INFO) << "Found the Gurobi library in '" << path << ".";
           break;
