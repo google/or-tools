@@ -710,16 +710,16 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
   gurobi_dynamic_library->GetFunction(&GRBversion, STRINGIFY(GRBversion));
   gurobi_dynamic_library->GetFunction(&GRBplatform, STRINGIFY(GRBplatform));
   gurobi_dynamic_library->GetFunction(&GRBlisttokens, STRINGIFY(GRBlisttokens));
-  gurobi_dynamic_library->GetFunction(&GRBlistclients,
-                                      STRINGIFY(GRBlistclients));
-  gurobi_dynamic_library->GetFunction(&GRBchangeuserpassword,
-                                      STRINGIFY(GRBchangeuserpassword));
-  gurobi_dynamic_library->GetFunction(&GRBchangeadminpassword,
-                                      STRINGIFY(GRBchangeadminpassword));
-  gurobi_dynamic_library->GetFunction(&GRBchangejoblimit,
-                                      STRINGIFY(GRBchangejoblimit));
-  gurobi_dynamic_library->GetFunction(&GRBkilljob, STRINGIFY(GRBkilljob));
-  gurobi_dynamic_library->GetFunction(&GRBshutdown, STRINGIFY(GRBshutdown));
+//   gurobi_dynamic_library->GetFunction(&GRBlistclients,
+//                                       STRINGIFY(GRBlistclients));
+//   gurobi_dynamic_library->GetFunction(&GRBchangeuserpassword,
+//                                       STRINGIFY(GRBchangeuserpassword));
+//   gurobi_dynamic_library->GetFunction(&GRBchangeadminpassword,
+//                                       STRINGIFY(GRBchangeadminpassword));
+//   gurobi_dynamic_library->GetFunction(&GRBchangejoblimit,
+//                                       STRINGIFY(GRBchangejoblimit));
+//   gurobi_dynamic_library->GetFunction(&GRBkilljob, STRINGIFY(GRBkilljob));
+//   gurobi_dynamic_library->GetFunction(&GRBshutdown, STRINGIFY(GRBshutdown));
   gurobi_dynamic_library->GetFunction(&GRBtunemodel, STRINGIFY(GRBtunemodel));
   gurobi_dynamic_library->GetFunction(&GRBtunemodels, STRINGIFY(GRBtunemodels));
   gurobi_dynamic_library->GetFunction(&GRBgettuneresult,
