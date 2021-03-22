@@ -806,6 +806,7 @@ bool LoadGurobiDynamicLibrary(
                 << absl::StrJoin(canonical_paths, "', '")
                 << "]. If you know where it is, pass the full path to "
                    "'LoadGurobiDynamicLibrary()'.";
+      return;
     }
 
     LoadGurobiFunctions(library.get());
