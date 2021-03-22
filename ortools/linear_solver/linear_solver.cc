@@ -459,8 +459,6 @@ MPSolver::MPSolver(const std::string& name,
 
 MPSolver::~MPSolver() { Clear(); }
 
-extern bool GurobiIsCorrectlyInstalled();
-
 // static
 bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
 #ifdef USE_CLP
