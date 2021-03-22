@@ -736,9 +736,9 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
           gurobi_home_from_env, "/lib64/libgurobi", number, ".so"));
     }
     potential_paths.push_back(absl::StrCat(
-        "/opt/gurobi", dir, "/linux/lib/libgurobi", number, ".so"));
+        "/opt/gurobi", dir, "/linux64/lib/libgurobi", number, ".so"));
     potential_paths.push_back(absl::StrCat(
-        "/opt/gurobi", dir, "/linux/lib64/libgurobi", number, ".so"));
+        "/opt/gurobi", dir, "/linux64/lib64/libgurobi", number, ".so"));
 #else
     LOG(ERROR) << "OS Not recognized by gurobi/environment.cc."
                << " You won't be able to use Gurobi.";
