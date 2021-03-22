@@ -422,24 +422,6 @@ std::function<const char*(GRBmodel* model)> GRBgetmerrormsg = nullptr;
 std::function<void(int* majorP, int* minorP, int* technicalP)> GRBversion =
     nullptr;
 std::function<char*(void)> GRBplatform = nullptr;
-std::function<int(void)> GRBlisttokens = nullptr;
-std::function<int(const char* computeServer, int port)> GRBlistclients =
-    nullptr;
-std::function<int(const char* computeServer, int port,
-                  const char* admin_password, const char* new_user_password)>
-    GRBchangeuserpassword = nullptr;
-std::function<int(const char* computeServer, int port,
-                  const char* admin_password, const char* new_admin_password)>
-    GRBchangeadminpassword = nullptr;
-std::function<int(const char* computeServer, int port, int newlimit,
-                  const char* admin_password)>
-    GRBchangejoblimit = nullptr;
-std::function<int(const char* computeServer, int port, const char* jobID,
-                  const char* admin_password)>
-    GRBkilljob = nullptr;
-std::function<int(const char* computeServer, int port,
-                  const char* admin_password)>
-    GRBshutdown = nullptr;
 std::function<int(GRBmodel* model)> GRBtunemodel = nullptr;
 std::function<int(int nummodels, GRBmodel** models, GRBmodel* ignore,
                   GRBmodel* hint)>
@@ -709,17 +691,6 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
                                       STRINGIFY(GRBgetmerrormsg));
   gurobi_dynamic_library->GetFunction(&GRBversion, STRINGIFY(GRBversion));
   gurobi_dynamic_library->GetFunction(&GRBplatform, STRINGIFY(GRBplatform));
-  gurobi_dynamic_library->GetFunction(&GRBlisttokens, STRINGIFY(GRBlisttokens));
-//   gurobi_dynamic_library->GetFunction(&GRBlistclients,
-//                                       STRINGIFY(GRBlistclients));
-//   gurobi_dynamic_library->GetFunction(&GRBchangeuserpassword,
-//                                       STRINGIFY(GRBchangeuserpassword));
-//   gurobi_dynamic_library->GetFunction(&GRBchangeadminpassword,
-//                                       STRINGIFY(GRBchangeadminpassword));
-//   gurobi_dynamic_library->GetFunction(&GRBchangejoblimit,
-//                                       STRINGIFY(GRBchangejoblimit));
-//   gurobi_dynamic_library->GetFunction(&GRBkilljob, STRINGIFY(GRBkilljob));
-//   gurobi_dynamic_library->GetFunction(&GRBshutdown, STRINGIFY(GRBshutdown));
   gurobi_dynamic_library->GetFunction(&GRBtunemodel, STRINGIFY(GRBtunemodel));
   gurobi_dynamic_library->GetFunction(&GRBtunemodels, STRINGIFY(GRBtunemodels));
   gurobi_dynamic_library->GetFunction(&GRBgettuneresult,

@@ -897,25 +897,6 @@ extern std::function<const char*(GRBmodel* model)> GRBgetmerrormsg;
 extern std::function<void(int* majorP, int* minorP, int* technicalP)>
     GRBversion;
 extern std::function<char*(void)> GRBplatform;
-extern std::function<int(void)> GRBlisttokens;
-extern std::function<int(const char* computeServer, int port)> GRBlistclients;
-extern std::function<int(const char* computeServer, int port,
-                         const char* admin_password,
-                         const char* new_user_password)>
-    GRBchangeuserpassword;
-extern std::function<int(const char* computeServer, int port,
-                         const char* admin_password,
-                         const char* new_admin_password)>
-    GRBchangeadminpassword;
-extern std::function<int(const char* computeServer, int port, int newlimit,
-                         const char* admin_password)>
-    GRBchangejoblimit;
-extern std::function<int(const char* computeServer, int port, const char* jobID,
-                         const char* admin_password)>
-    GRBkilljob;
-extern std::function<int(const char* computeServer, int port,
-                         const char* admin_password)>
-    GRBshutdown;
 extern std::function<int(GRBmodel* model)> GRBtunemodel;
 extern std::function<int(int nummodels, GRBmodel** models, GRBmodel* ignore,
                          GRBmodel* hint)>
