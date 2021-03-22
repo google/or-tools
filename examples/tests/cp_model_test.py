@@ -665,6 +665,17 @@ class CpModelTest(unittest.TestCase):
         print(log_callback.Log())
         self.assertRegex(log_callback.Log(), 'Parameters.*log_to_stdout.*')
 
+    def testIndexToProto(self):
+        print('testIndexToProto')
+
+        model = cp_model.CpModel()
+
+        # Creates the variables.
+        v0 = model.NewBoolVar("buggyVarIndexToVarProto")
+        v1 = model.NewBoolVar("v1")
+
+        self.assertEqual(model.VarIndexToVarProto(0).name(), v0.name())
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
