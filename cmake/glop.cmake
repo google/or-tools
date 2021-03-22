@@ -125,7 +125,7 @@ add_library(glop
   ortools/lp_data/sparse.h
   ortools/lp_data/sparse_column.cc
   ortools/port/sysinfo.h
-  ortools/port/sysinfo_nonport.cc
+  ortools/port/sysinfo.cc
   ortools/util/file_util.cc
   ortools/util/file_util.h
   ortools/util/fp_utils.cc
