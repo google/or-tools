@@ -6,6 +6,7 @@ REM cmd /c tools\release\build_delivery_win.cmd all
 
 REM make few tools available
 set PATH=%PATH%;tools;tools\win
+set PRG=%0
 
 REM Print version
 make.exe print-OR_TOOLS_VERSION | tee.exe build.log
@@ -87,26 +88,26 @@ exit /B 1
 
 :PRINT_HELP
 echo NAME
-echo 	%0 - Build delivery using the local host system.
+echo   %PRG% - Build delivery using the local host system.
 echo SYNOPSIS
-echo 	%0 [help] dotnet^|java^|python^|archive^|examples^|all^|reset
+echo   %PRG% [help] dotnet^|java^|python^|archive^|examples^|all^|reset
 echo DESCRIPTION
-echo 	Build Google OR-Tools deliveries.
-echo 	You MUST define the following variables before running this script:
-echo 	* ORTOOLS_TOKEN: secret use to decrypt key to sign dotnet and java package.
+echo   Build Google OR-Tools deliveries.
+echo   You MUST define the following variables before running this script:
+echo   * ORTOOLS_TOKEN: secret use to decrypt key to sign dotnet and java package.
 echo.
 echo OPTIONS
-echo 	help: show this help text (default)
-echo 	dotnet: Build dotnet packages
-echo 	java: Build java packages
-echo 	python: Build python packages
-echo 	archive: Build archive
-echo 	examples: Build examples archives
-echo 	all: build everything
-echo 	reset: delete all artifacts and suppress cache file
+echo   help: show this help text (default)
+echo   dotnet: Build dotnet packages
+echo   java: Build java packages
+echo   python: Build python packages
+echo   archive: Build archive
+echo   examples: Build examples archives
+echo   all: build everything
+echo   reset: delete all artifacts and suppress cache file
 echo.
 echo EXAMPLES
-echo 	cmd /c tools/release/%0
+echo   cmd /c %PRG%
 exit /B 0
 
 :BUILD_CXX
