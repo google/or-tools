@@ -707,34 +707,42 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
       {"911", "91"}, {"910", "91"}, {"903", "90"}, {"902", "90"}, 
       {"811", "81"}, {"801", "80"}, {"752", "75"}};
 
+  // Look for libraries pointed by GUROBI_HOME first.
   const char* gurobi_home_from_env = getenv("GUROBI_HOME");
+  if (gurobi_home_from_env != nullptr) {
+    for (const std::vector<std::string>& version_lib : GurobiVersionLib) {
+      const std::string& dir = version_lib[0];
+      const std::string& number = version_lib[1];
+#if defined(_MSC_VER)  // Windows
+      potential_paths.push_back(
+          absl::StrCat(gurobi_home_from_env, "\\bin\\gurobi", number, ".dll"));
+#elif defined(__APPLE__)  // OS X
+      potential_paths.push_back(absl::StrCat(
+          gurobi_home_from_env, "/lib/libgurobi", number, ".dylib"));
+#elif defined(__GNUC__)   // Linux
+      potential_paths.push_back(
+          absl::StrCat(gurobi_home_from_env, "/lib/libgurobi", number, ".so"));
+      potential_paths.push_back(absl::StrCat(
+          gurobi_home_from_env, "/lib64/libgurobi", number, ".so"));
+#else
+      LOG(ERROR) << "OS Not recognized by gurobi/environment.cc."
+                 << " You won't be able to use Gurobi.";
+#endif
+    }
+  }
+
+  // Search for canonical places.
   for (const std::vector<std::string>& version_lib : GurobiVersionLib) {
     const std::string& dir = version_lib[0];
     const std::string& number = version_lib[1];
 #if defined(_MSC_VER)  // Windows
-    if (gurobi_home_from_env != nullptr) {
-      potential_paths.push_back(
-          absl::StrCat(gurobi_home_from_env, "\\bin\\gurobi", number, ".dll"));
-    }
     potential_paths.push_back(absl::StrCat("C:\\Program Files\\gurobi", dir,
                                            "\\win64\\bin\\gurobi", number,
                                            ".dll"));
 #elif defined(__APPLE__)  // OS X
-    if (gurobi_home_from_env != nullptr) {
-      potential_paths.push_back(absl::StrCat(
-          gurobi_home_from_env, "/lib/libgurobi", number, ".dylib"));
-    }
     potential_paths.push_back(absl::StrCat(
         "/Library/gurobi", dir, "/mac64/lib/libgurobi", number, ".dylib"));
 #elif defined(__GNUC__)   // Linux
-    if (gurobi_home_from_env != nullptr) {
-      potential_paths.push_back(
-          absl::StrCat(gurobi_home_from_env, "/lib/libgurobi", number, ".so"));
-    }
-    if (gurobi_home_from_env != nullptr) {
-      potential_paths.push_back(absl::StrCat(
-          gurobi_home_from_env, "/lib64/libgurobi", number, ".so"));
-    }
     potential_paths.push_back(absl::StrCat(
         "/opt/gurobi", dir, "/linux64/lib/libgurobi", number, ".so"));
     potential_paths.push_back(absl::StrCat(
@@ -745,7 +753,7 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
 #endif
   }
   return potential_paths;
-}
+  }
 
 namespace {
 std::once_flag gurobi_loading_done;
