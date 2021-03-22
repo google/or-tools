@@ -709,9 +709,7 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
 
   const char* gurobi_home_from_env = getenv("GUROBI_HOME");
   for (const std::vector<std::string>& version_lib : GurobiVersionLib) {
-#if !defined(__GNUC__) || defined(__APPLE__)
     const std::string& dir = version_lib[0];
-#endif
     const std::string& number = version_lib[1];
 #if defined(_MSC_VER)  // Windows
     if (gurobi_home_from_env != nullptr) {
