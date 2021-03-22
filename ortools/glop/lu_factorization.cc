@@ -65,6 +65,10 @@ Status LuFactorization::ComputeFactorization(
   return Status::OK();
 }
 
+double LuFactorization::DeterministicTimeOfLastFactorization() const {
+  return markowitz_.DeterministicTimeOfLastFactorization();
+}
+
 void LuFactorization::RightSolve(DenseColumn* x) const {
   SCOPED_TIME_STAT(&stats_);
   if (is_identity_factorization_) return;

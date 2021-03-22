@@ -135,7 +135,7 @@ MPSolver::ResultStatus GLOPInterface::Solve(const MPSolverParameters& param) {
       solver_->solver_specific_parameter_string_);
   lp_solver_.SetParameters(parameters_);
   std::unique_ptr<TimeLimit> time_limit =
-      TimeLimit::FromParameters(parameters_);
+      TimeLimit::FromParameters(lp_solver_.GetParameters());
   time_limit->RegisterExternalBooleanAsLimit(&interrupt_solver_);
   const glop::ProblemStatus status =
       lp_solver_.SolveWithTimeLimit(linear_program_, time_limit.get());

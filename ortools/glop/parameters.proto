@@ -22,7 +22,7 @@ syntax = "proto2";
 
 package operations_research.glop;
 
-// next id = 63
+// next id = 64
 message GlopParameters {
 
   // Supported algorithms for scaling:
@@ -228,6 +228,13 @@ message GlopParameters {
   // conditions in the algorithm may trigger a refactorization before this
   // period is reached. Set this to 0 if you want to refactorize at each step.
   optional int32 basis_refactorization_period = 19 [default = 64];
+
+  // If this is true, then basis_refactorization_period becomes a lower bound on
+  // the number of iterations between two refactorization (provided there is no
+  // numerical accuracy issues). Depending on the estimated time to refactorize
+  // vs the extra time spend in each solves because of the LU update, we try to
+  // balance the two times.
+  optional bool dynamically_adjust_refactorization_period = 63 [default = true];
 
   // Whether or not we solve the dual of the given problem.
   // With a value of auto, the algorithm decide which approach is probably the

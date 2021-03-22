@@ -206,6 +206,9 @@ class LuFactorization {
     product->PopulateFromProduct(temp_lower, temp_upper);
   }
 
+  // Returns the deterministic time of the last factorization.
+  double DeterministicTimeOfLastFactorization() const;
+
   // Visible for testing.
   const RowPermutation& row_perm() const { return row_perm_; }
   const ColumnPermutation& inverse_col_perm() const {

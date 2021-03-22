@@ -227,10 +227,10 @@ Status BasisFactorization::ForceRefactorization() {
 Status BasisFactorization::ComputeFactorization() {
   CompactSparseMatrixView basis_matrix(&compact_matrix_, &basis_);
   const Status status = lu_factorization_.ComputeFactorization(basis_matrix);
-  const double kLuComplexityFactor = 10;
-  deterministic_time_ +=
-      kLuComplexityFactor * DeterministicTimeForFpOperations(
-                                lu_factorization_.NumberOfEntries().value());
+  last_factorization_deterministic_time_ =
+      lu_factorization_.DeterministicTimeOfLastFactorization();
+  deterministic_time_ += last_factorization_deterministic_time_;
+  rank_one_factorization_.ResetDeterministicTime();
   return status;
 }
 
@@ -286,23 +286,39 @@ Status BasisFactorization::MiddleProductFormUpdate(
 Status BasisFactorization::Update(ColIndex entering_col,
                                   RowIndex leaving_variable_row,
                                   const ScatteredColumn& direction) {
-  if (num_updates_ < max_num_updates_) {
-    SCOPED_TIME_STAT(&stats_);
-
-    // Note(user): in some rare case (to investigate!) MiddleProductFormUpdate()
-    // will trigger a full refactorization. Because of this, it is important to
-    // increment num_updates_ first as this counter is used by IsRefactorized().
-    ++num_updates_;
-    if (use_middle_product_form_update_) {
-      GLOP_RETURN_IF_ERROR(
-          MiddleProductFormUpdate(entering_col, leaving_variable_row));
-    } else {
-      eta_factorization_.Update(entering_col, leaving_variable_row, direction);
+  // Note that in addition to the logic here, we also refactorize when we detect
+  // numerical imprecisions. There is various tests for that during an
+  // iteration.
+  if (num_updates_ >= max_num_updates_) {
+    if (!parameters_.dynamically_adjust_refactorization_period()) {
+      return ForceRefactorization();
     }
-    tau_computation_can_be_optimized_ = false;
-    return Status::OK();
+
+    // We try to equilibrate the factorization time with the EXTRA solve time
+    // incurred since the last factorization.
+    //
+    // Note(user): The deterministic time is not really super precise for now.
+    // We tend to undercount the factorization, but this tends to favorize more
+    // refactorization which is good for numerical stability.
+    if (last_factorization_deterministic_time_ <
+        rank_one_factorization_.DeterministicTimeSinceLastReset()) {
+      return ForceRefactorization();
+    }
   }
-  return ForceRefactorization();
+
+  // Note(user): in some rare case (to investigate!) MiddleProductFormUpdate()
+  // will trigger a full refactorization. Because of this, it is important to
+  // increment num_updates_ first as this counter is used by IsRefactorized().
+  SCOPED_TIME_STAT(&stats_);
+  ++num_updates_;
+  if (use_middle_product_form_update_) {
+    GLOP_RETURN_IF_ERROR(
+        MiddleProductFormUpdate(entering_col, leaving_variable_row));
+  } else {
+    eta_factorization_.Update(entering_col, leaving_variable_row, direction);
+  }
+  tau_computation_can_be_optimized_ = false;
+  return Status::OK();
 }
 
 void BasisFactorization::LeftSolve(ScatteredRow* y) const {

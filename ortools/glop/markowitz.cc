@@ -134,6 +134,11 @@ Status Markowitz::ComputeRowAndColumnPermutation(
     ++index;
   }
 
+  // To get a better deterministic time, we add a factor that depend on the
+  // final number of entries in the result.
+  num_fp_operations_ += 10 * lower_.num_entries().value();
+  num_fp_operations_ += 10 * upper_.num_entries().value();
+
   stats_.pivots_without_fill_in_ratio.Add(
       1.0 * stats_num_pivots_without_fill_in / end_index);
   stats_.degree_two_pivot_columns.Add(1.0 * stats_degree_two_pivot_columns /
@@ -168,6 +173,7 @@ void Markowitz::Clear() {
   residual_matrix_non_zero_.Clear();
   col_by_degree_.Clear();
   examined_col_.clear();
+  num_fp_operations_ = 0;
   is_col_by_degree_initialized_ = false;
 }
 
@@ -272,6 +278,8 @@ const SparseColumn& Markowitz::ComputeColumn(const RowPermutation& row_perm,
     lower_.PermutedLowerSparseSolve(input, row_perm, lower_column,
                                     permuted_upper_.mutable_column(col));
     permuted_lower_column_needs_solve_[col] = false;
+    num_fp_operations_ +=
+        lower_.NumFpOperationsInLastPermutedLowerSparseSolve();
     return *lower_column;
   }
 
@@ -286,11 +294,14 @@ const SparseColumn& Markowitz::ComputeColumn(const RowPermutation& row_perm,
   // appropriate ColumnView in basis_matrix_.
   // TODO(user): add PopulateFromColumnView if it is useful elsewhere.
   if (first_time) {
-    lower_column->Reserve(basis_matrix_->column(col).num_entries());
+    const EntryIndex num_entries = basis_matrix_->column(col).num_entries();
+    num_fp_operations_ += num_entries.value();
+    lower_column->Reserve(num_entries);
     for (const auto e : basis_matrix_->column(col)) {
       lower_column->SetCoefficient(e.row(), e.coefficient());
     }
   }
+  num_fp_operations_ += lower_column->num_entries().value();
   lower_column->MoveTaggedEntriesTo(row_perm,
                                     permuted_upper_.mutable_column(col));
   return *lower_column;
@@ -537,6 +548,10 @@ void Markowitz::UpdateResidualMatrix(RowIndex pivot_row, ColIndex pivot_col) {
     permuted_lower_column_needs_solve_[col] = true;
   }
   RemoveColumnFromResidualMatrix(pivot_row, pivot_col);
+}
+
+double Markowitz::DeterministicTimeOfLastFactorization() const {
+  return DeterministicTimeForFpOperations(num_fp_operations_);
 }
 
 void MatrixNonZeroPattern::Clear() {

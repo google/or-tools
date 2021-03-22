@@ -303,6 +303,9 @@ class Markowitz {
   // Releases the memory used by this class.
   void Clear();
 
+  // Returns an estimate of the time spent in the last factorization.
+  double DeterministicTimeOfLastFactorization() const;
+
   // Returns a string containing the statistics for this class.
   std::string StatString() const { return stats_.StatString(); }
 
@@ -440,6 +443,9 @@ class Markowitz {
 
   // Proto holding all the parameters of this algorithm.
   GlopParameters parameters_;
+
+  // Number of floating point operations of the last factorization.
+  int64 num_fp_operations_;
 
   DISALLOW_COPY_AND_ASSIGN(Markowitz);
 };

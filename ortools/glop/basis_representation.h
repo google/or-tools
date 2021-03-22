@@ -362,6 +362,7 @@ class BasisFactorization {
   LuFactorization lu_factorization_;
 
   // mutable because the Solve() functions are const but need to update this.
+  double last_factorization_deterministic_time_ = 0.0;
   mutable double deterministic_time_;
 
   DISALLOW_COPY_AND_ASSIGN(BasisFactorization);
