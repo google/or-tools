@@ -747,31 +747,32 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
 namespace {
 std::once_flag gurobi_loading_done;
 std::atomic<bool> gurobi_successfully_loaded = false;
+std::unique_ptr<DynamicLibrary> keep_gurobi_library_alive;
 }  // namespace
 
 bool LoadGurobiDynamicLibrary(
     const std::vector<std::string>& additional_paths) {
   std::call_once(gurobi_loading_done, [&additional_paths]() {
-    auto library = absl::make_unique<DynamicLibrary>();
+    keep_gurobi_library_alive = absl::make_unique<DynamicLibrary>();
     // Check additional paths first.
-    for (const std::string& path : additional_paths) {
-      if (library->TryToLoad(path)) {
+    for (const std::string &path : additional_paths) {
+      if (keep_gurobi_library_alive->TryToLoad(path)) {
         LOG(INFO) << "Found the Gurobi library in '" << path << ".";
         break;
       }
     }
     // Fallback to canonical paths.
-    const std::vector<std::string>& canonical_paths =
+    const std::vector<std::string> &canonical_paths =
         GurobiDynamicLibraryPotentialPaths();
-    if (!library->LibraryIsLoaded()) {
-      for (const std::string& path : canonical_paths) {
-        if (library->TryToLoad(path)) {
+    if (!keep_gurobi_library_alive->LibraryIsLoaded()) {
+      for (const std::string &path : canonical_paths) {
+        if (keep_gurobi_library_alive->TryToLoad(path)) {
           LOG(INFO) << "Found the Gurobi library in '" << path << ".";
           break;
         }
       }
     }
-    if (!library->LibraryIsLoaded()) {
+    if (!keep_gurobi_library_alive->LibraryIsLoaded()) {
       LOG(INFO) << "Could not find the Gurobi shared library. Looked in: ["
                 << absl::StrJoin(additional_paths, "', '") << "], and ["
                 << absl::StrJoin(canonical_paths, "', '")
@@ -780,7 +781,7 @@ bool LoadGurobiDynamicLibrary(
       return;
     }
 
-    LoadGurobiFunctions(library.get());
+    LoadGurobiFunctions(keep_gurobi_library_alive.get());
     gurobi_successfully_loaded = true;
   });
   return gurobi_successfully_loaded;
