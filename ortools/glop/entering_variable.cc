@@ -111,6 +111,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
       reduced_costs_->GetDualFeasibilityTolerance();
   Fractional harris_ratio = std::numeric_limits<Fractional>::max();
 
+  num_operations_ += 10 * update_row.GetNonZeroPositions().size();
   for (const ColIndex col : update_row.GetNonZeroPositions()) {
     // We will add ratio * coeff to this column with a ratio positive or zero.
     // cost_variation makes sure the leaving variable will be dual-feasible
@@ -286,6 +287,7 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
   const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
   const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
   const VariableTypeRow& variable_type = variables_info_.GetTypeRow();
+  num_operations_ += 10 * update_row.GetNonZeroPositions().size();
   for (const ColIndex col : update_row.GetNonZeroPositions()) {
     // Boxed variables shouldn't be in the update position list because they
     // will be dealt with afterwards by MakeBoxedVariableDualFeasible().

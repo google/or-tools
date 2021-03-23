@@ -91,6 +91,13 @@ class EnteringVariable {
   // Stats related functions.
   std::string StatString() const { return stats_.StatString(); }
 
+  // Deterministic time used by some of the functions of this class.
+  //
+  // TODO(user): Be exhausitive and more precise.
+  double DeterministicTime() const {
+    return DeterministicTimeForFpOperations(num_operations_);
+  }
+
   // Recomputes the set of unused columns used during nested pricing.
   // Visible for testing (the returns value is also there for testing).
   DenseBitRow* ResetUnusedColumns();
@@ -163,6 +170,9 @@ class EnteringVariable {
 
   // Temporary vector used to hold breakpoints.
   std::vector<ColWithRatio> breakpoints_;
+
+  // Counter for the deterministic time.
+  int64 num_operations_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(EnteringVariable);
 };

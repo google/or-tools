@@ -601,7 +601,9 @@ double RevisedSimplex::DeterministicTime() const {
   // TODO(user): Count what is missing.
   return DeterministicTimeForFpOperations(num_update_price_operations_) +
          basis_factorization_.DeterministicTime() +
-         update_row_.DeterministicTime() + reduced_costs_.DeterministicTime() +
+         update_row_.DeterministicTime() +
+         entering_variable_.DeterministicTime() +
+         reduced_costs_.DeterministicTime() +
          primal_edge_norms_.DeterministicTime();
 }
 

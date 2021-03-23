@@ -127,7 +127,11 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
     if (row_wise < 0.5 * static_cast<double>(num_col_wise_entries.value())) {
       if (row_wise < 1.1 * static_cast<double>(matrix_.num_cols().value())) {
         ComputeUpdatesRowWiseHypersparse();
-        num_operations_ += num_row_wise_entries.value();
+
+        // We use a multiplicative factor because these entries are often widely
+        // spread in memory. There is also some overhead to each fp operations.
+        num_operations_ +=
+            5 * num_row_wise_entries.value() + matrix_.num_cols().value() / 64;
       } else {
         ComputeUpdatesRowWise();
         num_operations_ +=
