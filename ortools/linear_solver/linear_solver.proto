@@ -385,7 +385,7 @@ message MPModelDeltaProto {
   // NOTE(user): We may also add more deltas, eg. objective offset.
 }
 
-// Next id: 11.
+// Next id: 12.
 message MPModelRequest {
   // The model to be optimized by the server.
   optional MPModelProto model = 1;
@@ -461,6 +461,15 @@ message MPModelRequest {
   optional MPModelDeltaProto model_delta = 8;
 
 
+
+  // Controls the recovery of additional solutions, if any, saved by the
+  // underlying solver back in the MPSolutionResponse.additional_solutions.
+  // The repeated field will be length
+  //    min(populate_addition_solutions_up_to,
+  //        #additional_solutions_available_in_underlying_solver)
+  // These additional solutions may have a worse objective than the main
+  // solution returned in the response.
+  optional int32 populate_additional_solutions_up_to = 11 [default = 0];
 }
 
 // Status returned by the solver. They follow a hierarchical nomenclature, to
@@ -540,6 +549,12 @@ enum MPSolverResponseStatus {
 
 }
 
+message MPSolution {
+  optional double objective_value = 1;
+  repeated double variable_value = 2 [packed = true];
+}
+
+// Next id: 9.
 message MPSolutionResponse {
   // Result of the optimization.
   optional /*required*/ MPSolverResponseStatus status = 1
@@ -583,4 +598,11 @@ message MPSolutionResponse {
   // is actually a linear program).
   // These are set iff 'status' is OPTIMAL or FEASIBLE.
   repeated double reduced_cost = 6 [packed = true];
+
+  // [Advanced usage.]
+  // If `MPModelRequest.populate_additional_solutions_up_to` > 0, up to that
+  // number of additional solutions may be populated here, if available. These
+  // additional solutions are different than the main solution described by the
+  // above fields `objective_value` and `variable_value`.
+  repeated MPSolution additional_solutions = 8;
 }

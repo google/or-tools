@@ -323,8 +323,6 @@ void MPVariable::SetBranchingPriority(int priority) {
 
 // ----- Interface shortcuts -----
 
-bool MPSolver::LicenseIsValid() const { return interface_->LicenseIsValid(); }
-
 bool MPSolver::IsMIP() const { return interface_->IsMIP(); }
 
 std::string MPSolver::SolverVersion() const {
@@ -458,6 +456,8 @@ MPSolver::MPSolver(const std::string& name,
 }
 
 MPSolver::~MPSolver() { Clear(); }
+
+extern bool GurobiIsCorrectlyInstalled();
 
 // static
 bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
@@ -614,10 +614,6 @@ MPSolver* MPSolver::CreateSolver(const std::string& solver_id) {
     return nullptr;
   }
   MPSolver* solver = new MPSolver("", problem_type);
-  if (!solver->LicenseIsValid()) {
-    delete solver;
-    return nullptr;
-  }
   return solver;
 }
 

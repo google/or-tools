@@ -38,8 +38,8 @@ typedef struct _GRBsvec {
 
 namespace operations_research {
 
-// Creates a Gurobi env and returns OK if it was successfully created and
-// assigned to 'env'.
+// Creates a Gurobi env and returns it if possible. Otherwise, it will return
+// the error.
 absl::StatusOr<GRBenv*> GetGurobiEnv();
 
 // Checks the that Gurobi is correctly installed -- and installs it of it was
@@ -52,7 +52,12 @@ bool GurobiIsCorrectlyInstalled();
 // Successive calls are no-op.
 //
 // Note that it does not check if a token license can be grabbed.
-bool LoadGurobiDynamicLibrary(const std::vector<std::string>& additional_paths);
+absl::Status LoadGurobiDynamicLibrary(
+    const std::vector<std::string>& additional_paths);
+
+// The list of #define and extern std::function<> below is generated directly
+// from gurobi_c.h via parse_header.py
+// See the top comment on the parse_header.py file.
 
 #define GRB_VERSION_MAJOR 7
 #define GRB_VERSION_MINOR 5
@@ -84,6 +89,7 @@ bool LoadGurobiDynamicLibrary(const std::vector<std::string>& additional_paths);
 #define GRB_ERROR_NETWORK 10022
 #define GRB_ERROR_JOB_REJECTED 10023
 #define GRB_ERROR_NOT_SUPPORTED 10024
+#define GRB_ERROR_EXCEED_2B_NONZEROS 10025
 #define GRB_ERROR_INVALID_PIECEWISE_OBJ 10026
 #define GRB_ERROR_UPDATEMODE_CHANGE 10027
 #define GRB_ERROR_CLOUD 10028

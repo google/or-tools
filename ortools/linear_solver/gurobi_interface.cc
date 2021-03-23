@@ -76,9 +76,6 @@ class GurobiInterface : public MPSolverInterface {
   explicit GurobiInterface(MPSolver* const solver, bool mip);
   ~GurobiInterface() override;
 
-  // Preemptive check of the license at the solver creation.
-  bool LicenseIsValid() override { return GurobiIsCorrectlyInstalled(); }
-
   // Sets the optimization direction (min/max).
   void SetOptimizationDirection(bool maximize) override;
 
