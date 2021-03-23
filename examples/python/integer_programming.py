@@ -116,5 +116,7 @@ def main():
 
 
 if __name__ == '__main__':
-    init.Init.InitCppLogging('integer_programming.py', False)
+    init.Init.InitCppLogging('integer_programming.py',
+                             /*logtostderr=*/True, 
+                             /*log_prefix=*/False);
     main()

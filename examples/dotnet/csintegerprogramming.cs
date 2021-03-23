@@ -100,6 +100,8 @@ public class CsIntegerProgramming
 
     static void Main()
     {
+        Google.OrTools.Init.Init.InitCppLogging("csintegerprogramming.cs", true, false);
+
         Console.WriteLine("---- Integer programming example with GLPK ----");
         RunIntegerProgrammingExample("GLPK");
         Console.WriteLine("---- Linear programming example with CBC ----");
