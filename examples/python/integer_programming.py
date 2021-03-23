@@ -13,6 +13,7 @@
 """Integer programming examples that show how to use the APIs."""
 
 from ortools.linear_solver import pywraplp
+from ortools.init import init
 
 
 def Announce(solver, api_type):
@@ -98,6 +99,7 @@ def RunAllIntegerExampleNaturalLanguageAPI():
     RunIntegerExampleNaturalLanguageAPI('CBC')
     RunIntegerExampleNaturalLanguageAPI('SCIP')
     RunIntegerExampleNaturalLanguageAPI('SAT')
+    RunIntegerExampleNaturalLanguageAPI('Gurobi')
 
 
 def RunAllIntegerExampleCppStyleAPI():
@@ -105,6 +107,7 @@ def RunAllIntegerExampleCppStyleAPI():
     RunIntegerExampleCppStyleAPI('CBC')
     RunIntegerExampleCppStyleAPI('SCIP')
     RunIntegerExampleCppStyleAPI('SAT')
+    RunIntegerExampleCppStyleAPI('Gurobi')
 
 
 def main():
@@ -113,4 +116,5 @@ def main():
 
 
 if __name__ == '__main__':
+    init.Init.InitCppLogging('integer_programming.py', False)
     main()
