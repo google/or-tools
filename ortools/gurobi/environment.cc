@@ -21,6 +21,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/synchronization/mutex.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 
@@ -765,8 +766,11 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
 absl::Status LoadGurobiDynamicLibrary(
     const std::vector<std::string>& additional_paths) {
   static std::once_flag gurobi_loading_done;
-  static std::atomic<bool> gurobi_successfully_loaded = false;
+  static absl::Status gurobi_load_status;
   static std::unique_ptr<DynamicLibrary> keep_gurobi_library_alive;
+  static absl::Mutex mutex;
+
+  absl::MutexLock lock(&mutex);
 
   std::call_once(gurobi_loading_done, [&additional_paths]() {
     // We need to keep the dynamic library alive during the execution of the
@@ -791,7 +795,7 @@ absl::Status LoadGurobiDynamicLibrary(
       }
     }
     if (!keep_gurobi_library_alive->LibraryIsLoaded()) {
-      return absl::NotFoundError(
+      gurobi_load_status = absl::NotFoundError(
           absl::StrCat("Could not find the Gurobi shared library. Looked in: [",
                        absl::StrJoin(additional_paths, "', '"), "], and [",
                        absl::StrJoin(canonical_paths, "', '"),
@@ -800,10 +804,9 @@ absl::Status LoadGurobiDynamicLibrary(
     }
 
     LoadGurobiFunctions(keep_gurobi_library_alive.get());
-    gurobi_successfully_loaded = true;
-    return absl::OkStatus();
+    gurobi_load_status = absl::OkStatus();
   });
-  return absl::OkStatus();
+  return gurobi_load_status;
 }
 
 absl::StatusOr<GRBenv*> GetGurobiEnv() {
