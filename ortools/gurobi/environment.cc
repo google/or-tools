@@ -13,6 +13,7 @@
 
 #include "ortools/gurobi/environment.h"
 
+#include <mutex>
 #include <string>
 
 #include "absl/status/status.h"
