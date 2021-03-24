@@ -842,14 +842,37 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
   }
   RETURN_IF_SCIP_ERROR(SCIPsolve(scip));
 
-  SCIP_SOL* const solution = SCIPgetBestSol(scip);
-  if (solution != nullptr) {
-    response.set_objective_value(SCIPgetSolOrigObj(scip, solution));
+  const int solution_count = std::min(
+      SCIPgetNSols(scip), request.populate_additional_solutions_up_to() + 1);
+  if (solution_count > 0) {
+    // can't make 'scip_solution' const, as SCIPxxx does not offer const
+    // parameter functions.
+    auto scip_solution_to_repeated_field = [&](SCIP_SOL* scip_solution) {
+      google::protobuf::RepeatedField<double> variable_value;
+      variable_value.Reserve(model.variable_size());
+      for (int v = 0; v < model.variable_size(); ++v) {
+        double value = SCIPgetSolVal(scip, scip_solution, scip_variables[v]);
+        if (model.variable(v).is_integer()) {
+          value = std::round(value);
+        }
+        variable_value.AddAlreadyReserved(value);
+      }
+      return variable_value;
+    };
+
+    // NOTE(user): As of SCIP 7.0.1, getting the pointer to all
+    // solutions is as fast as getting the pointer to the best solution.
+    // See google3/scip/scip_sol.c?l=2264&rcl=322332899.
+    SCIP_SOL** const scip_solutions = SCIPgetSols(scip);
+    response.set_objective_value(SCIPgetSolOrigObj(scip, scip_solutions[0]));
     response.set_best_objective_bound(SCIPgetDualbound(scip));
-    for (int v = 0; v < model.variable_size(); ++v) {
-      double value = SCIPgetSolVal(scip, solution, scip_variables[v]);
-      if (model.variable(v).is_integer()) value = std::round(value);
-      response.add_variable_value(value);
+    *response.mutable_variable_value() =
+        scip_solution_to_repeated_field(scip_solutions[0]);
+    for (int i = 1; i < solution_count; ++i) {
+      MPSolution* solution = response.add_additional_solutions();
+      solution->set_objective_value(SCIPgetSolOrigObj(scip, scip_solutions[i]));
+      *solution->mutable_variable_value() =
+          scip_solution_to_repeated_field(scip_solutions[i]);
     }
   }
 
@@ -882,7 +905,7 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
       response.set_status(MPSOLVER_UNBOUNDED);
       break;
     default:
-      if (solution != nullptr) {
+      if (solution_count > 0) {
         response.set_status(MPSOLVER_FEASIBLE);
       } else {
         response.set_status(MPSOLVER_NOT_SOLVED);
