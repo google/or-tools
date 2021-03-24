@@ -373,7 +373,6 @@ XpressInterface::XpressInterface(MPSolver* const solver, bool mip)
 
 XpressInterface::~XpressInterface() {
   CHECK_STATUS(XPRSdestroyprob(mLp));
-  google::ShutdownGoogleLogging();
 }
 
 std::string XpressInterface::SolverVersion() const {
