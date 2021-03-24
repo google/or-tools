@@ -8,18 +8,24 @@
 
 namespace operations_research {
 
+struct CppFlags {
+  bool logtostderr = false;
+  bool log_prefix = false;
+};
+
 // This class performs various C++ initialization.
 // It is meant to be used once at the start of a program.
-class Init {
+class CppBridge {
  public:
    // Initialize the C++ logging layer.
-   // If logtostderr is false, all C++ logging will be ignored.
-   // If true, all logging will the displayed on stderr.
-  static void InitCppLogging(const std::string& program_name, bool logtostderr,
-                             bool log_prefix) {
-    absl::SetFlag(&FLAGS_logtostderr, logtostderr);
-    absl::SetFlag(&FLAGS_log_prefix, log_prefix);
+  static void InitLogging(const std::string& program_name) {
     google::InitGoogleLogging(program_name.c_str());
+  }
+  
+  // Sets all the C++ flags contained in the CppFlags structure.
+  static void SetFlags(const CppFlags& flags)  {
+    absl::SetFlag(&FLAGS_logtostderr, flags.logtostderr);
+    absl::SetFlag(&FLAGS_log_prefix, flags.log_prefix);
   }
 
   // Load the gurobi shared library.

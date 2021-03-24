@@ -10,9 +10,16 @@
 
 %unignore operations_research;
 
-%unignore operations_research::Init;
-%unignore operations_research::Init::InitCppLogging;
-%unignore operations_research::Init::LoadGurobiSharedLibrary;
+// Expose the flags structure.
+%unignore operations_research::CppFlags;
+%unignore operations_research::CppFlags::logtostderr;
+%unignore operations_research::CppFlags::log_prefix;
+
+// Expose the static methods of the bridge class.
+%unignore operations_research::CppBridge;
+%unignore operations_research::CppBridge::InitLogging;
+%unignore operations_research::CppBridge::SetFlags;
+%unignore operations_research::CppBridge::LoadGurobiSharedLibrary;
 
 %include "ortools/init/init.h"
 

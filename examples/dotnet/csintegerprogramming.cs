@@ -12,6 +12,7 @@
 // limitations under the License.
 
 using System;
+using Google.OrTools.Init;
 using Google.OrTools.LinearSolver;
 
 public class CsIntegerProgramming
@@ -100,7 +101,11 @@ public class CsIntegerProgramming
 
     static void Main()
     {
-        Google.OrTools.Init.Init.InitCppLogging("csintegerprogramming.cs", true, false);
+        CppBridge.InitLogging("csintegerprogramming.cs");
+        CppFlags flags = new CppFlags();
+        flags.logtostderr = true;
+        flags.log_prefix = false;
+        CppBridge.SetFlags(flags);
 
         Console.WriteLine("---- Integer programming example with GLPK ----");
         RunIntegerProgrammingExample("GLPK");
