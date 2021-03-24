@@ -73,9 +73,6 @@ class UpdateRow {
   // all the non-relevant positions that where not filled by ComputeUpdateRow().
   void RecomputeFullUpdateRow(RowIndex leaving_row);
 
-  // Sets to zero the coefficient for column col.
-  void IgnoreUpdatePosition(ColIndex col);
-
   // Sets the algorithm parameters.
   void SetParameters(const GlopParameters& parameters);
 

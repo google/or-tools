@@ -87,9 +87,9 @@ Status EnteringVariable::PrimalChooseEnteringColumn(ColIndex* entering_col) {
 }
 
 Status EnteringVariable::DualChooseEnteringColumn(
-    const UpdateRow& update_row, Fractional cost_variation,
-    std::vector<ColIndex>* bound_flip_candidates, ColIndex* entering_col,
-    Fractional* step) {
+    bool nothing_to_recompute, const UpdateRow& update_row,
+    Fractional cost_variation, std::vector<ColIndex>* bound_flip_candidates,
+    ColIndex* entering_col, Fractional* step) {
   GLOP_RETURN_ERROR_IF_NULL(entering_col);
   GLOP_RETURN_ERROR_IF_NULL(step);
   const DenseRow& update_coefficient = update_row.GetCoefficients();
@@ -98,10 +98,21 @@ Status EnteringVariable::DualChooseEnteringColumn(
 
   breakpoints_.clear();
   breakpoints_.reserve(update_row.GetNonZeroPositions().size());
-  const Fractional threshold = parameters_.ratio_test_zero_threshold();
   const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
   const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
   const DenseBitRow& is_boxed = variables_info_.GetNonBasicBoxedVariables();
+
+  // If everything has the best possible precision currently, we ignore
+  // low coefficients. This make sure we will never choose a pivot too small. It
+  // however can degrade the dual feasibility of the solution, but we can always
+  // fix that later.
+  //
+  // TODO(user): It is unclear if this is a good idea, but the primal simplex
+  // have pretty good/stable behavior with a similar logic. Experiment seems
+  // to show that this works well with the dual too.
+  const Fractional threshold = nothing_to_recompute
+                                   ? parameters_.minimum_acceptable_pivot()
+                                   : parameters_.ratio_test_zero_threshold();
 
   // Harris ratio test. See below for more explanation. Here this is used to
   // prune the first pass by not enqueueing ColWithRatio for columns that have
@@ -245,6 +256,34 @@ Status EnteringVariable::DualChooseEnteringColumn(
 
   if (*entering_col == kInvalidCol) return Status::OK();
 
+  // If best_coeff is small and they are potential bound flips, we can take a
+  // smaller step but use a good pivot.
+  const Fractional pivot_limit = parameters_.minimum_acceptable_pivot();
+  if (best_coeff < pivot_limit && !bound_flip_candidates->empty()) {
+    // Note that it is okay to leave more candidate than necessary in the
+    // returned bound_flip_candidates vector.
+    for (int i = bound_flip_candidates->size() - 1; i >= 0; --i) {
+      const ColIndex col = (*bound_flip_candidates)[i];
+      if (std::abs(update_coefficient[col]) < pivot_limit) continue;
+
+      VLOG(1) << "Used bound flip to avoid bad pivot. Before: " << best_coeff
+              << " now: " << std::abs(update_coefficient[col]);
+      const Fractional coeff = (cost_variation > 0.0)
+                                   ? update_coefficient[col]
+                                   : -update_coefficient[col];
+      *entering_col = col;
+      if (can_decrease.IsSet(col) && coeff > threshold) {
+        ColWithRatio temp(col, -reduced_costs[col], coeff);
+        *step = temp.ratio;
+      }
+      if (can_increase.IsSet(col) && coeff < -threshold) {
+        ColWithRatio temp(col, reduced_costs[col], -coeff);
+        *step = temp.ratio;
+      }
+      break;
+    }
+  }
+
   // If the step is 0.0, we make sure the reduced cost is 0.0 so
   // UpdateReducedCosts() will not take a step that goes in the wrong way (a few
   // experiments seems to indicate that this is not a good idea). See comment
@@ -267,8 +306,8 @@ Status EnteringVariable::DualChooseEnteringColumn(
 }
 
 Status EnteringVariable::DualPhaseIChooseEnteringColumn(
-    const UpdateRow& update_row, Fractional cost_variation,
-    ColIndex* entering_col, Fractional* step) {
+    bool nothing_to_recompute, const UpdateRow& update_row,
+    Fractional cost_variation, ColIndex* entering_col, Fractional* step) {
   GLOP_RETURN_ERROR_IF_NULL(entering_col);
   GLOP_RETURN_ERROR_IF_NULL(step);
   const DenseRow& update_coefficient = update_row.GetCoefficients();
@@ -281,7 +320,9 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
   breakpoints_.reserve(update_row.GetNonZeroPositions().size());
 
   // Ratio test.
-  const Fractional threshold = parameters_.ratio_test_zero_threshold();
+  const Fractional threshold = nothing_to_recompute
+                                   ? parameters_.minimum_acceptable_pivot()
+                                   : parameters_.ratio_test_zero_threshold();
   const Fractional dual_feasibility_tolerance =
       reduced_costs_->GetDualFeasibilityTolerance();
   const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();

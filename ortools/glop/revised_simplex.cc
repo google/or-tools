@@ -2770,7 +2770,6 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
   bool refactorize = false;
 
   bound_flip_candidates_.clear();
-  pair_to_ignore_.clear();
 
   // Leaving variable.
   RowIndex leaving_row;
@@ -2899,18 +2898,14 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
     }
 
     update_row_.ComputeUpdateRow(leaving_row);
-    for (std::pair<RowIndex, ColIndex> pair : pair_to_ignore_) {
-      if (pair.first == leaving_row) {
-        update_row_.IgnoreUpdatePosition(pair.second);
-      }
-    }
     if (feasibility_phase) {
       GLOP_RETURN_IF_ERROR(entering_variable_.DualPhaseIChooseEnteringColumn(
-          update_row_, cost_variation, &entering_col, &ratio));
+          reduced_costs_.AreReducedCostsPrecise(), update_row_, cost_variation,
+          &entering_col, &ratio));
     } else {
       GLOP_RETURN_IF_ERROR(entering_variable_.DualChooseEnteringColumn(
-          update_row_, cost_variation, &bound_flip_candidates_, &entering_col,
-          &ratio));
+          reduced_costs_.AreReducedCostsPrecise(), update_row_, cost_variation,
+          &bound_flip_candidates_, &entering_col, &ratio));
     }
 
     // No entering_col: dual unbounded (i.e. primal infeasible).
@@ -2943,7 +2938,9 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
       return Status::OK();
     }
 
-    // If the coefficient is too small, we recompute the reduced costs.
+    // If the coefficient is too small, we recompute the reduced costs if not
+    // already done. This is an extra heuristic to avoid computing the direction
+    // If the pivot is small. But the real recomputation step is just below.
     const Fractional entering_coeff = update_row_.GetCoefficient(entering_col);
     if (std::abs(entering_coeff) < parameters_.dual_small_pivot_threshold() &&
         !reduced_costs_.AreReducedCostsPrecise()) {
@@ -2952,20 +2949,23 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
       continue;
     }
 
-    // If the reduced cost is already precise, we check with the direction_.
-    // This is at least needed to avoid corner cases where
-    // direction_[leaving_row] is actually 0 which causes a floating
-    // point exception below.
     ComputeDirection(entering_col);
+
+    // If the pivot is small compared to others in the direction_ vector we try
+    // to recompute everything. If we cannot, then note that
+    // DualChooseEnteringColumn() should guaranteed that the pivot is not too
+    // small when everything has already been recomputed.
     if (std::abs(direction_[leaving_row]) <
-        parameters_.minimum_acceptable_pivot()) {
-      VLOG(1) << "Do not pivot by " << entering_coeff
-              << " because the direction is " << direction_[leaving_row];
-      refactorize = true;
-      pair_to_ignore_.push_back({leaving_row, entering_col});
-      continue;
+        parameters_.small_pivot_threshold() * direction_infinity_norm_) {
+      if (!reduced_costs_.AreReducedCostsPrecise()) {
+        VLOG(1) << "Trying not pivot by " << entering_coeff << " ("
+                << direction_[leaving_row]
+                << ") because the direction has a norm of "
+                << direction_infinity_norm_;
+        refactorize = true;
+        continue;
+      }
     }
-    pair_to_ignore_.clear();
 
     // This test takes place after the check for optimality/feasibility because
     // when running with 0 iterations, we still want to report

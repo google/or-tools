@@ -42,12 +42,6 @@ void UpdateRow::Invalidate() {
   compute_update_row_ = true;
 }
 
-void UpdateRow::IgnoreUpdatePosition(ColIndex col) {
-  SCOPED_TIME_STAT(&stats_);
-  if (col >= coefficient_.size()) return;
-  coefficient_[col] = 0.0;
-}
-
 const ScatteredRow& UpdateRow::GetUnitRowLeftInverse() const {
   DCHECK(!compute_update_row_);
   return unit_row_left_inverse_;
