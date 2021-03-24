@@ -18,6 +18,7 @@
 #include <numeric>
 #include <vector>
 
+#include "absl/synchronization/mutex.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -51,7 +52,7 @@ NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
 }
 
 void NeighborhoodGeneratorHelper::Synchronize() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(&data_mutex_);
   if (shared_bounds_ != nullptr) {
     std::vector<int> model_variables;
     std::vector<int64_t> new_lower_bounds;
@@ -112,19 +113,16 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // presolve?
   var_to_constraint_.assign(model_proto_.variables_size(), {});
   constraint_to_var_.assign(model_proto_.constraints_size(), {});
-  const auto register_var = [&](int var, int ct_index) {
-    DCHECK(RefIsPositive(var));
-    if (IsConstant(var)) return;
-    var_to_constraint_[var].push_back(ct_index);
-    constraint_to_var_[ct_index].push_back(var);
-    CHECK_GE(var, 0);
-    CHECK_LT(var, model_proto_.variables_size());
-  };
 
   for (int ct_index = 0; ct_index < model_proto_.constraints_size();
        ++ct_index) {
     for (const int var : UsedVariables(model_proto_.constraints(ct_index))) {
-      register_var(var, ct_index);
+      DCHECK(RefIsPositive(var));
+      if (IsConstant(var)) continue;
+      var_to_constraint_[var].push_back(ct_index);
+      constraint_to_var_[ct_index].push_back(var);
+      CHECK_GE(var, 0);
+      CHECK_LT(var, model_proto_.variables_size());
     }
 
     // We replace intervals by their underlying integer variables.
@@ -133,7 +131,12 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
            UsedIntervals(model_proto_.constraints(ct_index))) {
         for (const int var :
              UsedVariables(model_proto_.constraints(interval))) {
-          register_var(var, ct_index);
+          DCHECK(RefIsPositive(var));
+          if (IsConstant(var)) continue;
+          var_to_constraint_[var].push_back(ct_index);
+          constraint_to_var_[ct_index].push_back(var);
+          CHECK_GE(var, 0);
+          CHECK_LT(var, model_proto_.variables_size());
         }
       }
     }
@@ -304,7 +307,7 @@ bool NeighborhoodGenerator::ReadyToGenerate() const {
 }
 
 double NeighborhoodGenerator::GetUCBScore(int64_t total_num_calls) const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::ReaderMutexLock mutex_lock(&mutex_);
   DCHECK_GE(total_num_calls, num_calls_);
   if (num_calls_ <= 10) return std::numeric_limits<double>::infinity();
   return current_average_ + sqrt((2 * log(total_num_calls)) / num_calls_);
@@ -394,6 +397,8 @@ namespace {
 
 void GetRandomSubset(double relative_size, std::vector<int>* base,
                      absl::BitGenRef random) {
+  if (base->empty()) return;
+
   // TODO(user): we could generate this more efficiently than using random
   // shuffle.
   std::shuffle(base->begin(), base->end(), random);
@@ -406,6 +411,7 @@ void GetRandomSubset(double relative_size, std::vector<int>* base,
 Neighborhood SimpleNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
+  absl::ReaderMutexLock lock(&helper_.data_mutex_);
   std::vector<int> fixed_variables = helper_.ActiveVariables();
   GetRandomSubset(1.0 - difficulty, &fixed_variables, random);
   return helper_.FixGivenVariables(initial_solution, fixed_variables);
@@ -414,6 +420,7 @@ Neighborhood SimpleNeighborhoodGenerator::Generate(
 Neighborhood SimpleConstraintNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
+  absl::ReaderMutexLock lock(&helper_.data_mutex_);
   std::vector<int> active_constraints;
   for (int ct = 0; ct < helper_.ModelProto().constraints_size(); ++ct) {
     if (helper_.ModelProto().constraints(ct).constraint_case() ==
@@ -455,6 +462,7 @@ Neighborhood SimpleConstraintNeighborhoodGenerator::Generate(
 Neighborhood VariableGraphNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
+  absl::ReaderMutexLock lock(&helper_.data_mutex_);
   const int num_active_vars = helper_.ActiveVariables().size();
   const int num_model_vars = helper_.ModelProto().variables_size();
   const int target_size = std::ceil(difficulty * num_active_vars);
@@ -506,6 +514,7 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
 Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
+  absl::ReaderMutexLock lock(&helper_.data_mutex_);
   const int num_active_vars = helper_.ActiveVariables().size();
   const int num_model_vars = helper_.ModelProto().variables_size();
   const int target_size = std::ceil(difficulty * num_active_vars);
@@ -561,7 +570,8 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
 Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
     const absl::Span<const int> intervals_to_relax,
     const CpSolverResponse& initial_solution,
-    const NeighborhoodGeneratorHelper& helper) {
+    const NeighborhoodGeneratorHelper& helper)
+    ABSL_SHARED_LOCKS_REQUIRED(helper.data_mutex_) {
   Neighborhood neighborhood = helper.FullNeighborhood();
   neighborhood.is_reduced =
       (intervals_to_relax.size() <
@@ -659,6 +669,7 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
 Neighborhood SchedulingNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
+  absl::ReaderMutexLock lock(&helper_.data_mutex_);
   std::vector<int> intervals_to_relax =
       helper_.GetActiveIntervals(initial_solution);
   GetRandomSubset(difficulty, &intervals_to_relax, random);
@@ -670,24 +681,31 @@ Neighborhood SchedulingNeighborhoodGenerator::Generate(
 Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
+  absl::ReaderMutexLock lock(&helper_.data_mutex_);
   std::vector<std::pair<int64_t, int>> start_interval_pairs;
-  for (const int i : helper_.GetActiveIntervals(initial_solution)) {
-    const ConstraintProto& interval_ct = helper_.ModelProto().constraints(i);
-    const int start_var = interval_ct.interval().start();
-    const int64_t start_value = initial_solution.solution(start_var);
-    start_interval_pairs.push_back({start_value, i});
-  }
-  std::sort(start_interval_pairs.begin(), start_interval_pairs.end());
-  const int relaxed_size = std::floor(difficulty * start_interval_pairs.size());
-
-  std::uniform_int_distribution<int> random_var(
-      0, start_interval_pairs.size() - relaxed_size - 1);
-  const int random_start_index = random_var(random);
+  const std::vector<int>& active_intervals =
+      helper_.GetActiveIntervals(initial_solution);
   std::vector<int> intervals_to_relax;
-  // TODO(user,user): Consider relaxing more than one time window intervals.
-  // This seems to help with Giza models.
-  for (int i = random_start_index; i < relaxed_size; ++i) {
-    intervals_to_relax.push_back(start_interval_pairs[i].second);
+
+  if (!active_intervals.empty()) {
+    for (const int i : active_intervals) {
+      const ConstraintProto& interval_ct = helper_.ModelProto().constraints(i);
+      const int start_var = interval_ct.interval().start();
+      const int64_t start_value = initial_solution.solution(start_var);
+      start_interval_pairs.push_back({start_value, i});
+    }
+    std::sort(start_interval_pairs.begin(), start_interval_pairs.end());
+    const int relaxed_size =
+        std::floor(difficulty * start_interval_pairs.size());
+
+    std::uniform_int_distribution<int> random_var(
+        0, start_interval_pairs.size() - relaxed_size - 1);
+    const int random_start_index = random_var(random);
+    // TODO(user,user): Consider relaxing more than one time window
+    // intervals. This seems to help with Giza models.
+    for (int i = random_start_index; i < relaxed_size; ++i) {
+      intervals_to_relax.push_back(start_interval_pairs[i].second);
+    }
   }
   return GenerateSchedulingNeighborhoodForRelaxation(intervals_to_relax,
                                                      initial_solution, helper_);
@@ -720,6 +738,7 @@ bool RelaxationInducedNeighborhoodGenerator::ReadyToGenerate() const {
 Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
+  absl::ReaderMutexLock lock(&helper_.data_mutex_);
   Neighborhood neighborhood = helper_.FullNeighborhood();
   neighborhood.is_generated = false;
 
@@ -843,6 +862,7 @@ Neighborhood ConsecutiveConstraintsRelaxationNeighborhoodGenerator::Generate(
     }
   }
 
+  absl::ReaderMutexLock lock(&helper_.data_mutex_);
   return helper_.RemoveMarkedConstraints(removed_constraints);
 }
 
@@ -965,7 +985,12 @@ Neighborhood WeightedRandomRelaxationNeighborhoodGenerator::Generate(
     removed_constraints.push_back(constraint_removal_scores[i].second);
   }
 
-  Neighborhood result = helper_.RemoveMarkedConstraints(removed_constraints);
+  Neighborhood result;
+  {
+    absl::ReaderMutexLock data_lock(&helper_.data_mutex_);
+    result = helper_.RemoveMarkedConstraints(removed_constraints);
+  }
+
   absl::MutexLock mutex_lock(&mutex_);
   result.id = next_available_id_;
   next_available_id_++;

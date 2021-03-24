@@ -2460,12 +2460,9 @@ class LnsSolver : public SubSolver {
         }
       }
 
-      Neighborhood neighborhood;
-      {
-        absl::MutexLock mutex_lock(helper_->MutableMutex());
-        neighborhood =
-            generator_->Generate(base_response, data.difficulty, random);
-      }
+      Neighborhood neighborhood =
+          generator_->Generate(base_response, data.difficulty, random);
+
       neighborhood.cp_model.set_name(absl::StrCat("lns_", task_id));
       if (!neighborhood.is_generated) return;
       data.neighborhood_id = neighborhood.id;
