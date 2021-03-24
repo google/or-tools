@@ -444,272 +444,223 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
 
   // This is the 'assign' section.
 
-  gurobi_dynamic_library->GetFunction(&GRBisqp, STRINGIFY(GRBisqp));
-  gurobi_dynamic_library->GetFunction(&GRBgetattrinfo,
-                                      STRINGIFY(GRBgetattrinfo));
+  gurobi_dynamic_library->GetFunction(&GRBisqp, "GRBisqp");
+  gurobi_dynamic_library->GetFunction(&GRBgetattrinfo, "GRBgetattrinfo");
   gurobi_dynamic_library->GetFunction(&GRBisattravailable,
-                                      STRINGIFY(GRBisattravailable));
-  gurobi_dynamic_library->GetFunction(&GRBgetintattr, STRINGIFY(GRBgetintattr));
-  gurobi_dynamic_library->GetFunction(&GRBsetintattr, STRINGIFY(GRBsetintattr));
+                                      "GRBisattravailable");
+  gurobi_dynamic_library->GetFunction(&GRBgetintattr, "GRBgetintattr");
+  gurobi_dynamic_library->GetFunction(&GRBsetintattr, "GRBsetintattr");
   gurobi_dynamic_library->GetFunction(&GRBgetintattrelement,
-                                      STRINGIFY(GRBgetintattrelement));
+                                      "GRBgetintattrelement");
   gurobi_dynamic_library->GetFunction(&GRBsetintattrelement,
-                                      STRINGIFY(GRBsetintattrelement));
+                                      "GRBsetintattrelement");
   gurobi_dynamic_library->GetFunction(&GRBgetintattrarray,
-                                      STRINGIFY(GRBgetintattrarray));
+                                      "GRBgetintattrarray");
   gurobi_dynamic_library->GetFunction(&GRBsetintattrarray,
-                                      STRINGIFY(GRBsetintattrarray));
-  gurobi_dynamic_library->GetFunction(&GRBgetintattrlist,
-                                      STRINGIFY(GRBgetintattrlist));
-  gurobi_dynamic_library->GetFunction(&GRBsetintattrlist,
-                                      STRINGIFY(GRBsetintattrlist));
+                                      "GRBsetintattrarray");
+  gurobi_dynamic_library->GetFunction(&GRBgetintattrlist, "GRBgetintattrlist");
+  gurobi_dynamic_library->GetFunction(&GRBsetintattrlist, "GRBsetintattrlist");
   gurobi_dynamic_library->GetFunction(&GRBgetcharattrelement,
-                                      STRINGIFY(GRBgetcharattrelement));
+                                      "GRBgetcharattrelement");
   gurobi_dynamic_library->GetFunction(&GRBsetcharattrelement,
-                                      STRINGIFY(GRBsetcharattrelement));
+                                      "GRBsetcharattrelement");
   gurobi_dynamic_library->GetFunction(&GRBgetcharattrarray,
-                                      STRINGIFY(GRBgetcharattrarray));
+                                      "GRBgetcharattrarray");
   gurobi_dynamic_library->GetFunction(&GRBsetcharattrarray,
-                                      STRINGIFY(GRBsetcharattrarray));
+                                      "GRBsetcharattrarray");
   gurobi_dynamic_library->GetFunction(&GRBgetcharattrlist,
-                                      STRINGIFY(GRBgetcharattrlist));
+                                      "GRBgetcharattrlist");
   gurobi_dynamic_library->GetFunction(&GRBsetcharattrlist,
-                                      STRINGIFY(GRBsetcharattrlist));
-  gurobi_dynamic_library->GetFunction(&GRBgetdblattr, STRINGIFY(GRBgetdblattr));
-  gurobi_dynamic_library->GetFunction(&GRBsetdblattr, STRINGIFY(GRBsetdblattr));
+                                      "GRBsetcharattrlist");
+  gurobi_dynamic_library->GetFunction(&GRBgetdblattr, "GRBgetdblattr");
+  gurobi_dynamic_library->GetFunction(&GRBsetdblattr, "GRBsetdblattr");
   gurobi_dynamic_library->GetFunction(&GRBgetdblattrelement,
-                                      STRINGIFY(GRBgetdblattrelement));
+                                      "GRBgetdblattrelement");
   gurobi_dynamic_library->GetFunction(&GRBsetdblattrelement,
-                                      STRINGIFY(GRBsetdblattrelement));
+                                      "GRBsetdblattrelement");
   gurobi_dynamic_library->GetFunction(&GRBgetdblattrarray,
-                                      STRINGIFY(GRBgetdblattrarray));
+                                      "GRBgetdblattrarray");
   gurobi_dynamic_library->GetFunction(&GRBsetdblattrarray,
-                                      STRINGIFY(GRBsetdblattrarray));
-  gurobi_dynamic_library->GetFunction(&GRBgetdblattrlist,
-                                      STRINGIFY(GRBgetdblattrlist));
-  gurobi_dynamic_library->GetFunction(&GRBsetdblattrlist,
-                                      STRINGIFY(GRBsetdblattrlist));
-  gurobi_dynamic_library->GetFunction(&GRBgetstrattr, STRINGIFY(GRBgetstrattr));
-  gurobi_dynamic_library->GetFunction(&GRBsetstrattr, STRINGIFY(GRBsetstrattr));
+                                      "GRBsetdblattrarray");
+  gurobi_dynamic_library->GetFunction(&GRBgetdblattrlist, "GRBgetdblattrlist");
+  gurobi_dynamic_library->GetFunction(&GRBsetdblattrlist, "GRBsetdblattrlist");
+  gurobi_dynamic_library->GetFunction(&GRBgetstrattr, "GRBgetstrattr");
+  gurobi_dynamic_library->GetFunction(&GRBsetstrattr, "GRBsetstrattr");
   gurobi_dynamic_library->GetFunction(&GRBgetstrattrelement,
-                                      STRINGIFY(GRBgetstrattrelement));
+                                      "GRBgetstrattrelement");
   gurobi_dynamic_library->GetFunction(&GRBsetstrattrelement,
-                                      STRINGIFY(GRBsetstrattrelement));
+                                      "GRBsetstrattrelement");
   gurobi_dynamic_library->GetFunction(&GRBgetstrattrarray,
-                                      STRINGIFY(GRBgetstrattrarray));
+                                      "GRBgetstrattrarray");
   gurobi_dynamic_library->GetFunction(&GRBsetstrattrarray,
-                                      STRINGIFY(GRBsetstrattrarray));
-  gurobi_dynamic_library->GetFunction(&GRBgetstrattrlist,
-                                      STRINGIFY(GRBgetstrattrlist));
-  gurobi_dynamic_library->GetFunction(&GRBsetstrattrlist,
-                                      STRINGIFY(GRBsetstrattrlist));
+                                      "GRBsetstrattrarray");
+  gurobi_dynamic_library->GetFunction(&GRBgetstrattrlist, "GRBgetstrattrlist");
+  gurobi_dynamic_library->GetFunction(&GRBsetstrattrlist, "GRBsetstrattrlist");
   gurobi_dynamic_library->GetFunction(&GRBsetcallbackfunc,
-                                      STRINGIFY(GRBsetcallbackfunc));
+                                      "GRBsetcallbackfunc");
   gurobi_dynamic_library->GetFunction(&GRBgetcallbackfunc,
-                                      STRINGIFY(GRBgetcallbackfunc));
+                                      "GRBgetcallbackfunc");
   gurobi_dynamic_library->GetFunction(&GRBsetlogcallbackfunc,
-                                      STRINGIFY(GRBsetlogcallbackfunc));
+                                      "GRBsetlogcallbackfunc");
   gurobi_dynamic_library->GetFunction(&GRBsetlogcallbackfuncenv,
-                                      STRINGIFY(GRBsetlogcallbackfuncenv));
-  gurobi_dynamic_library->GetFunction(&GRBcbget, STRINGIFY(GRBcbget));
-  gurobi_dynamic_library->GetFunction(&GRBcbsetparam, STRINGIFY(GRBcbsetparam));
-  gurobi_dynamic_library->GetFunction(&GRBcbsolution, STRINGIFY(GRBcbsolution));
-  gurobi_dynamic_library->GetFunction(&GRBcbcut, STRINGIFY(GRBcbcut));
-  gurobi_dynamic_library->GetFunction(&GRBcblazy, STRINGIFY(GRBcblazy));
-  gurobi_dynamic_library->GetFunction(&GRBgetcoeff, STRINGIFY(GRBgetcoeff));
-  gurobi_dynamic_library->GetFunction(&GRBgetconstrs, STRINGIFY(GRBgetconstrs));
-  gurobi_dynamic_library->GetFunction(&GRBXgetconstrs,
-                                      STRINGIFY(GRBXgetconstrs));
-  gurobi_dynamic_library->GetFunction(&GRBgetvars, STRINGIFY(GRBgetvars));
-  gurobi_dynamic_library->GetFunction(&GRBXgetvars, STRINGIFY(GRBXgetvars));
-  gurobi_dynamic_library->GetFunction(&GRBgetsos, STRINGIFY(GRBgetsos));
+                                      "GRBsetlogcallbackfuncenv");
+  gurobi_dynamic_library->GetFunction(&GRBcbget, "GRBcbget");
+  gurobi_dynamic_library->GetFunction(&GRBcbsetparam, "GRBcbsetparam");
+  gurobi_dynamic_library->GetFunction(&GRBcbsolution, "GRBcbsolution");
+  gurobi_dynamic_library->GetFunction(&GRBcbcut, "GRBcbcut");
+  gurobi_dynamic_library->GetFunction(&GRBcblazy, "GRBcblazy");
+  gurobi_dynamic_library->GetFunction(&GRBgetcoeff, "GRBgetcoeff");
+  gurobi_dynamic_library->GetFunction(&GRBgetconstrs, "GRBgetconstrs");
+  gurobi_dynamic_library->GetFunction(&GRBXgetconstrs, "GRBXgetconstrs");
+  gurobi_dynamic_library->GetFunction(&GRBgetvars, "GRBgetvars");
+  gurobi_dynamic_library->GetFunction(&GRBXgetvars, "GRBXgetvars");
+  gurobi_dynamic_library->GetFunction(&GRBgetsos, "GRBgetsos");
   gurobi_dynamic_library->GetFunction(&GRBgetgenconstrMax,
-                                      STRINGIFY(GRBgetgenconstrMax));
+                                      "GRBgetgenconstrMax");
   gurobi_dynamic_library->GetFunction(&GRBgetgenconstrMin,
-                                      STRINGIFY(GRBgetgenconstrMin));
+                                      "GRBgetgenconstrMin");
   gurobi_dynamic_library->GetFunction(&GRBgetgenconstrAbs,
-                                      STRINGIFY(GRBgetgenconstrAbs));
+                                      "GRBgetgenconstrAbs");
   gurobi_dynamic_library->GetFunction(&GRBgetgenconstrAnd,
-                                      STRINGIFY(GRBgetgenconstrAnd));
-  gurobi_dynamic_library->GetFunction(&GRBgetgenconstrOr,
-                                      STRINGIFY(GRBgetgenconstrOr));
+                                      "GRBgetgenconstrAnd");
+  gurobi_dynamic_library->GetFunction(&GRBgetgenconstrOr, "GRBgetgenconstrOr");
   gurobi_dynamic_library->GetFunction(&GRBgetgenconstrIndicator,
-                                      STRINGIFY(GRBgetgenconstrIndicator));
-  gurobi_dynamic_library->GetFunction(&GRBgetq, STRINGIFY(GRBgetq));
-  gurobi_dynamic_library->GetFunction(&GRBgetqconstr, STRINGIFY(GRBgetqconstr));
-  gurobi_dynamic_library->GetFunction(&GRBgetvarbyname,
-                                      STRINGIFY(GRBgetvarbyname));
+                                      "GRBgetgenconstrIndicator");
+  gurobi_dynamic_library->GetFunction(&GRBgetq, "GRBgetq");
+  gurobi_dynamic_library->GetFunction(&GRBgetqconstr, "GRBgetqconstr");
+  gurobi_dynamic_library->GetFunction(&GRBgetvarbyname, "GRBgetvarbyname");
   gurobi_dynamic_library->GetFunction(&GRBgetconstrbyname,
-                                      STRINGIFY(GRBgetconstrbyname));
-  gurobi_dynamic_library->GetFunction(&GRBgetpwlobj, STRINGIFY(GRBgetpwlobj));
-  gurobi_dynamic_library->GetFunction(&GRBoptimize, STRINGIFY(GRBoptimize));
-  gurobi_dynamic_library->GetFunction(&GRBoptimizeasync,
-                                      STRINGIFY(GRBoptimizeasync));
-  gurobi_dynamic_library->GetFunction(&GRBcopymodel, STRINGIFY(GRBcopymodel));
-  gurobi_dynamic_library->GetFunction(&GRBfixedmodel, STRINGIFY(GRBfixedmodel));
-  gurobi_dynamic_library->GetFunction(&GRBfeasrelax, STRINGIFY(GRBfeasrelax));
-  gurobi_dynamic_library->GetFunction(&GRBgetcbwhatinfo,
-                                      STRINGIFY(GRBgetcbwhatinfo));
-  gurobi_dynamic_library->GetFunction(&GRBrelaxmodel, STRINGIFY(GRBrelaxmodel));
-  gurobi_dynamic_library->GetFunction(&GRBconverttofixed,
-                                      STRINGIFY(GRBconverttofixed));
-  gurobi_dynamic_library->GetFunction(&GRBpresolvemodel,
-                                      STRINGIFY(GRBpresolvemodel));
-  gurobi_dynamic_library->GetFunction(&GRBiismodel, STRINGIFY(GRBiismodel));
-  gurobi_dynamic_library->GetFunction(&GRBfeasibility,
-                                      STRINGIFY(GRBfeasibility));
-  gurobi_dynamic_library->GetFunction(&GRBlinearizemodel,
-                                      STRINGIFY(GRBlinearizemodel));
-  gurobi_dynamic_library->GetFunction(&GRBloadenvsyscb,
-                                      STRINGIFY(GRBloadenvsyscb));
-  gurobi_dynamic_library->GetFunction(&GRBreadmodel, STRINGIFY(GRBreadmodel));
-  gurobi_dynamic_library->GetFunction(&GRBread, STRINGIFY(GRBread));
-  gurobi_dynamic_library->GetFunction(&GRBwrite, STRINGIFY(GRBwrite));
-  gurobi_dynamic_library->GetFunction(&GRBismodelfile,
-                                      STRINGIFY(GRBismodelfile));
-  gurobi_dynamic_library->GetFunction(&GRBfiletype, STRINGIFY(GRBfiletype));
-  gurobi_dynamic_library->GetFunction(&GRBisrecordfile,
-                                      STRINGIFY(GRBisrecordfile));
-  gurobi_dynamic_library->GetFunction(&GRBnewmodel, STRINGIFY(GRBnewmodel));
-  gurobi_dynamic_library->GetFunction(&GRBloadmodel, STRINGIFY(GRBloadmodel));
-  gurobi_dynamic_library->GetFunction(&GRBXloadmodel, STRINGIFY(GRBXloadmodel));
-  gurobi_dynamic_library->GetFunction(&GRBaddvar, STRINGIFY(GRBaddvar));
-  gurobi_dynamic_library->GetFunction(&GRBaddvars, STRINGIFY(GRBaddvars));
-  gurobi_dynamic_library->GetFunction(&GRBXaddvars, STRINGIFY(GRBXaddvars));
-  gurobi_dynamic_library->GetFunction(&GRBaddconstr, STRINGIFY(GRBaddconstr));
-  gurobi_dynamic_library->GetFunction(&GRBaddconstrs, STRINGIFY(GRBaddconstrs));
-  gurobi_dynamic_library->GetFunction(&GRBXaddconstrs,
-                                      STRINGIFY(GRBXaddconstrs));
-  gurobi_dynamic_library->GetFunction(&GRBaddrangeconstr,
-                                      STRINGIFY(GRBaddrangeconstr));
+                                      "GRBgetconstrbyname");
+  gurobi_dynamic_library->GetFunction(&GRBgetpwlobj, "GRBgetpwlobj");
+  gurobi_dynamic_library->GetFunction(&GRBoptimize, "GRBoptimize");
+  gurobi_dynamic_library->GetFunction(&GRBoptimizeasync, "GRBoptimizeasync");
+  gurobi_dynamic_library->GetFunction(&GRBcopymodel, "GRBcopymodel");
+  gurobi_dynamic_library->GetFunction(&GRBfixedmodel, "GRBfixedmodel");
+  gurobi_dynamic_library->GetFunction(&GRBfeasrelax, "GRBfeasrelax");
+  gurobi_dynamic_library->GetFunction(&GRBgetcbwhatinfo, "GRBgetcbwhatinfo");
+  gurobi_dynamic_library->GetFunction(&GRBrelaxmodel, "GRBrelaxmodel");
+  gurobi_dynamic_library->GetFunction(&GRBconverttofixed, "GRBconverttofixed");
+  gurobi_dynamic_library->GetFunction(&GRBpresolvemodel, "GRBpresolvemodel");
+  gurobi_dynamic_library->GetFunction(&GRBiismodel, "GRBiismodel");
+  gurobi_dynamic_library->GetFunction(&GRBfeasibility, "GRBfeasibility");
+  gurobi_dynamic_library->GetFunction(&GRBlinearizemodel, "GRBlinearizemodel");
+  gurobi_dynamic_library->GetFunction(&GRBloadenvsyscb, "GRBloadenvsyscb");
+  gurobi_dynamic_library->GetFunction(&GRBreadmodel, "GRBreadmodel");
+  gurobi_dynamic_library->GetFunction(&GRBread, "GRBread");
+  gurobi_dynamic_library->GetFunction(&GRBwrite, "GRBwrite");
+  gurobi_dynamic_library->GetFunction(&GRBismodelfile, "GRBismodelfile");
+  gurobi_dynamic_library->GetFunction(&GRBfiletype, "GRBfiletype");
+  gurobi_dynamic_library->GetFunction(&GRBisrecordfile, "GRBisrecordfile");
+  gurobi_dynamic_library->GetFunction(&GRBnewmodel, "GRBnewmodel");
+  gurobi_dynamic_library->GetFunction(&GRBloadmodel, "GRBloadmodel");
+  gurobi_dynamic_library->GetFunction(&GRBXloadmodel, "GRBXloadmodel");
+  gurobi_dynamic_library->GetFunction(&GRBaddvar, "GRBaddvar");
+  gurobi_dynamic_library->GetFunction(&GRBaddvars, "GRBaddvars");
+  gurobi_dynamic_library->GetFunction(&GRBXaddvars, "GRBXaddvars");
+  gurobi_dynamic_library->GetFunction(&GRBaddconstr, "GRBaddconstr");
+  gurobi_dynamic_library->GetFunction(&GRBaddconstrs, "GRBaddconstrs");
+  gurobi_dynamic_library->GetFunction(&GRBXaddconstrs, "GRBXaddconstrs");
+  gurobi_dynamic_library->GetFunction(&GRBaddrangeconstr, "GRBaddrangeconstr");
   gurobi_dynamic_library->GetFunction(&GRBaddrangeconstrs,
-                                      STRINGIFY(GRBaddrangeconstrs));
+                                      "GRBaddrangeconstrs");
   gurobi_dynamic_library->GetFunction(&GRBXaddrangeconstrs,
-                                      STRINGIFY(GRBXaddrangeconstrs));
-  gurobi_dynamic_library->GetFunction(&GRBaddsos, STRINGIFY(GRBaddsos));
+                                      "GRBXaddrangeconstrs");
+  gurobi_dynamic_library->GetFunction(&GRBaddsos, "GRBaddsos");
   gurobi_dynamic_library->GetFunction(&GRBaddgenconstrMax,
-                                      STRINGIFY(GRBaddgenconstrMax));
+                                      "GRBaddgenconstrMax");
   gurobi_dynamic_library->GetFunction(&GRBaddgenconstrMin,
-                                      STRINGIFY(GRBaddgenconstrMin));
+                                      "GRBaddgenconstrMin");
   gurobi_dynamic_library->GetFunction(&GRBaddgenconstrAbs,
-                                      STRINGIFY(GRBaddgenconstrAbs));
+                                      "GRBaddgenconstrAbs");
   gurobi_dynamic_library->GetFunction(&GRBaddgenconstrAnd,
-                                      STRINGIFY(GRBaddgenconstrAnd));
-  gurobi_dynamic_library->GetFunction(&GRBaddgenconstrOr,
-                                      STRINGIFY(GRBaddgenconstrOr));
+                                      "GRBaddgenconstrAnd");
+  gurobi_dynamic_library->GetFunction(&GRBaddgenconstrOr, "GRBaddgenconstrOr");
   gurobi_dynamic_library->GetFunction(&GRBaddgenconstrIndicator,
-                                      STRINGIFY(GRBaddgenconstrIndicator));
-  gurobi_dynamic_library->GetFunction(&GRBaddqconstr, STRINGIFY(GRBaddqconstr));
-  gurobi_dynamic_library->GetFunction(&GRBaddcone, STRINGIFY(GRBaddcone));
-  gurobi_dynamic_library->GetFunction(&GRBaddqpterms, STRINGIFY(GRBaddqpterms));
-  gurobi_dynamic_library->GetFunction(&GRBdelvars, STRINGIFY(GRBdelvars));
-  gurobi_dynamic_library->GetFunction(&GRBdelconstrs, STRINGIFY(GRBdelconstrs));
-  gurobi_dynamic_library->GetFunction(&GRBdelsos, STRINGIFY(GRBdelsos));
-  gurobi_dynamic_library->GetFunction(&GRBdelgenconstrs,
-                                      STRINGIFY(GRBdelgenconstrs));
-  gurobi_dynamic_library->GetFunction(&GRBdelqconstrs,
-                                      STRINGIFY(GRBdelqconstrs));
-  gurobi_dynamic_library->GetFunction(&GRBdelq, STRINGIFY(GRBdelq));
-  gurobi_dynamic_library->GetFunction(&GRBchgcoeffs, STRINGIFY(GRBchgcoeffs));
-  gurobi_dynamic_library->GetFunction(&GRBXchgcoeffs, STRINGIFY(GRBXchgcoeffs));
-  gurobi_dynamic_library->GetFunction(&GRBsetpwlobj, STRINGIFY(GRBsetpwlobj));
-  gurobi_dynamic_library->GetFunction(&GRBupdatemodel,
-                                      STRINGIFY(GRBupdatemodel));
-  gurobi_dynamic_library->GetFunction(&GRBresetmodel, STRINGIFY(GRBresetmodel));
-  gurobi_dynamic_library->GetFunction(&GRBfreemodel, STRINGIFY(GRBfreemodel));
-  gurobi_dynamic_library->GetFunction(&GRBcomputeIIS, STRINGIFY(GRBcomputeIIS));
-  gurobi_dynamic_library->GetFunction(&GRBFSolve, STRINGIFY(GRBFSolve));
-  gurobi_dynamic_library->GetFunction(&GRBBinvColj, STRINGIFY(GRBBinvColj));
-  gurobi_dynamic_library->GetFunction(&GRBBinvj, STRINGIFY(GRBBinvj));
-  gurobi_dynamic_library->GetFunction(&GRBBSolve, STRINGIFY(GRBBSolve));
-  gurobi_dynamic_library->GetFunction(&GRBBinvi, STRINGIFY(GRBBinvi));
-  gurobi_dynamic_library->GetFunction(&GRBBinvRowi, STRINGIFY(GRBBinvRowi));
-  gurobi_dynamic_library->GetFunction(&GRBgetBasisHead,
-                                      STRINGIFY(GRBgetBasisHead));
-  gurobi_dynamic_library->GetFunction(&GRBstrongbranch,
-                                      STRINGIFY(GRBstrongbranch));
-  gurobi_dynamic_library->GetFunction(&GRBcheckmodel, STRINGIFY(GRBcheckmodel));
-  gurobi_dynamic_library->GetFunction(&GRBsetsignal, STRINGIFY(GRBsetsignal));
-  gurobi_dynamic_library->GetFunction(&GRBterminate, STRINGIFY(GRBterminate));
-  gurobi_dynamic_library->GetFunction(&GRBreplay, STRINGIFY(GRBreplay));
-  gurobi_dynamic_library->GetFunction(&GRBsetobjective,
-                                      STRINGIFY(GRBsetobjective));
-  gurobi_dynamic_library->GetFunction(&GRBsetobjectiven,
-                                      STRINGIFY(GRBsetobjectiven));
-  gurobi_dynamic_library->GetFunction(&GRBmsg, STRINGIFY(GRBmsg));
-  gurobi_dynamic_library->GetFunction(&GRBgetlogfile, STRINGIFY(GRBgetlogfile));
-  gurobi_dynamic_library->GetFunction(&GRBsetlogfile, STRINGIFY(GRBsetlogfile));
-  gurobi_dynamic_library->GetFunction(&GRBgetintparam,
-                                      STRINGIFY(GRBgetintparam));
-  gurobi_dynamic_library->GetFunction(&GRBgetdblparam,
-                                      STRINGIFY(GRBgetdblparam));
-  gurobi_dynamic_library->GetFunction(&GRBgetstrparam,
-                                      STRINGIFY(GRBgetstrparam));
+                                      "GRBaddgenconstrIndicator");
+  gurobi_dynamic_library->GetFunction(&GRBaddqconstr, "GRBaddqconstr");
+  gurobi_dynamic_library->GetFunction(&GRBaddcone, "GRBaddcone");
+  gurobi_dynamic_library->GetFunction(&GRBaddqpterms, "GRBaddqpterms");
+  gurobi_dynamic_library->GetFunction(&GRBdelvars, "GRBdelvars");
+  gurobi_dynamic_library->GetFunction(&GRBdelconstrs, "GRBdelconstrs");
+  gurobi_dynamic_library->GetFunction(&GRBdelsos, "GRBdelsos");
+  gurobi_dynamic_library->GetFunction(&GRBdelgenconstrs, "GRBdelgenconstrs");
+  gurobi_dynamic_library->GetFunction(&GRBdelqconstrs, "GRBdelqconstrs");
+  gurobi_dynamic_library->GetFunction(&GRBdelq, "GRBdelq");
+  gurobi_dynamic_library->GetFunction(&GRBchgcoeffs, "GRBchgcoeffs");
+  gurobi_dynamic_library->GetFunction(&GRBXchgcoeffs, "GRBXchgcoeffs");
+  gurobi_dynamic_library->GetFunction(&GRBsetpwlobj, "GRBsetpwlobj");
+  gurobi_dynamic_library->GetFunction(&GRBupdatemodel, "GRBupdatemodel");
+  gurobi_dynamic_library->GetFunction(&GRBresetmodel, "GRBresetmodel");
+  gurobi_dynamic_library->GetFunction(&GRBfreemodel, "GRBfreemodel");
+  gurobi_dynamic_library->GetFunction(&GRBcomputeIIS, "GRBcomputeIIS");
+  gurobi_dynamic_library->GetFunction(&GRBFSolve, "GRBFSolve");
+  gurobi_dynamic_library->GetFunction(&GRBBinvColj, "GRBBinvColj");
+  gurobi_dynamic_library->GetFunction(&GRBBinvj, "GRBBinvj");
+  gurobi_dynamic_library->GetFunction(&GRBBSolve, "GRBBSolve");
+  gurobi_dynamic_library->GetFunction(&GRBBinvi, "GRBBinvi");
+  gurobi_dynamic_library->GetFunction(&GRBBinvRowi, "GRBBinvRowi");
+  gurobi_dynamic_library->GetFunction(&GRBgetBasisHead, "GRBgetBasisHead");
+  gurobi_dynamic_library->GetFunction(&GRBstrongbranch, "GRBstrongbranch");
+  gurobi_dynamic_library->GetFunction(&GRBcheckmodel, "GRBcheckmodel");
+  gurobi_dynamic_library->GetFunction(&GRBsetsignal, "GRBsetsignal");
+  gurobi_dynamic_library->GetFunction(&GRBterminate, "GRBterminate");
+  gurobi_dynamic_library->GetFunction(&GRBreplay, "GRBreplay");
+  gurobi_dynamic_library->GetFunction(&GRBsetobjective, "GRBsetobjective");
+  gurobi_dynamic_library->GetFunction(&GRBsetobjectiven, "GRBsetobjectiven");
+  gurobi_dynamic_library->GetFunction(&GRBmsg, "GRBmsg");
+  gurobi_dynamic_library->GetFunction(&GRBgetlogfile, "GRBgetlogfile");
+  gurobi_dynamic_library->GetFunction(&GRBsetlogfile, "GRBsetlogfile");
+  gurobi_dynamic_library->GetFunction(&GRBgetintparam, "GRBgetintparam");
+  gurobi_dynamic_library->GetFunction(&GRBgetdblparam, "GRBgetdblparam");
+  gurobi_dynamic_library->GetFunction(&GRBgetstrparam, "GRBgetstrparam");
   gurobi_dynamic_library->GetFunction(&GRBgetintparaminfo,
-                                      STRINGIFY(GRBgetintparaminfo));
+                                      "GRBgetintparaminfo");
   gurobi_dynamic_library->GetFunction(&GRBgetdblparaminfo,
-                                      STRINGIFY(GRBgetdblparaminfo));
+                                      "GRBgetdblparaminfo");
   gurobi_dynamic_library->GetFunction(&GRBgetstrparaminfo,
-                                      STRINGIFY(GRBgetstrparaminfo));
-  gurobi_dynamic_library->GetFunction(&GRBsetparam, STRINGIFY(GRBsetparam));
-  gurobi_dynamic_library->GetFunction(&GRBsetintparam,
-                                      STRINGIFY(GRBsetintparam));
-  gurobi_dynamic_library->GetFunction(&GRBsetdblparam,
-                                      STRINGIFY(GRBsetdblparam));
-  gurobi_dynamic_library->GetFunction(&GRBsetstrparam,
-                                      STRINGIFY(GRBsetstrparam));
-  gurobi_dynamic_library->GetFunction(&GRBgetparamtype,
-                                      STRINGIFY(GRBgetparamtype));
-  gurobi_dynamic_library->GetFunction(&GRBresetparams,
-                                      STRINGIFY(GRBresetparams));
-  gurobi_dynamic_library->GetFunction(&GRBcopyparams, STRINGIFY(GRBcopyparams));
-  gurobi_dynamic_library->GetFunction(&GRBwriteparams,
-                                      STRINGIFY(GRBwriteparams));
-  gurobi_dynamic_library->GetFunction(&GRBreadparams, STRINGIFY(GRBreadparams));
-  gurobi_dynamic_library->GetFunction(&GRBgetnumparams,
-                                      STRINGIFY(GRBgetnumparams));
-  gurobi_dynamic_library->GetFunction(&GRBgetparamname,
-                                      STRINGIFY(GRBgetparamname));
+                                      "GRBgetstrparaminfo");
+  gurobi_dynamic_library->GetFunction(&GRBsetparam, "GRBsetparam");
+  gurobi_dynamic_library->GetFunction(&GRBsetintparam, "GRBsetintparam");
+  gurobi_dynamic_library->GetFunction(&GRBsetdblparam, "GRBsetdblparam");
+  gurobi_dynamic_library->GetFunction(&GRBsetstrparam, "GRBsetstrparam");
+  gurobi_dynamic_library->GetFunction(&GRBgetparamtype, "GRBgetparamtype");
+  gurobi_dynamic_library->GetFunction(&GRBresetparams, "GRBresetparams");
+  gurobi_dynamic_library->GetFunction(&GRBcopyparams, "GRBcopyparams");
+  gurobi_dynamic_library->GetFunction(&GRBwriteparams, "GRBwriteparams");
+  gurobi_dynamic_library->GetFunction(&GRBreadparams, "GRBreadparams");
+  gurobi_dynamic_library->GetFunction(&GRBgetnumparams, "GRBgetnumparams");
+  gurobi_dynamic_library->GetFunction(&GRBgetparamname, "GRBgetparamname");
   gurobi_dynamic_library->GetFunction(&GRBgetnumattributes,
-                                      STRINGIFY(GRBgetnumattributes));
-  gurobi_dynamic_library->GetFunction(&GRBgetattrname,
-                                      STRINGIFY(GRBgetattrname));
-  gurobi_dynamic_library->GetFunction(&GRBloadenv, STRINGIFY(GRBloadenv));
-  gurobi_dynamic_library->GetFunction(&GRBloadenvadv, STRINGIFY(GRBloadenvadv));
-  gurobi_dynamic_library->GetFunction(&GRBloadclientenv,
-                                      STRINGIFY(GRBloadclientenv));
+                                      "GRBgetnumattributes");
+  gurobi_dynamic_library->GetFunction(&GRBgetattrname, "GRBgetattrname");
+  gurobi_dynamic_library->GetFunction(&GRBloadenv, "GRBloadenv");
+  gurobi_dynamic_library->GetFunction(&GRBloadenvadv, "GRBloadenvadv");
+  gurobi_dynamic_library->GetFunction(&GRBloadclientenv, "GRBloadclientenv");
   gurobi_dynamic_library->GetFunction(&GRBloadclientenvadv,
-                                      STRINGIFY(GRBloadclientenvadv));
-  gurobi_dynamic_library->GetFunction(&GRBloadcloudenv,
-                                      STRINGIFY(GRBloadcloudenv));
+                                      "GRBloadclientenvadv");
+  gurobi_dynamic_library->GetFunction(&GRBloadcloudenv, "GRBloadcloudenv");
   gurobi_dynamic_library->GetFunction(&GRBloadcloudenvadv,
-                                      STRINGIFY(GRBloadcloudenvadv));
-  gurobi_dynamic_library->GetFunction(&GRBgetenv, STRINGIFY(GRBgetenv));
+                                      "GRBloadcloudenvadv");
+  gurobi_dynamic_library->GetFunction(&GRBgetenv, "GRBgetenv");
   gurobi_dynamic_library->GetFunction(&GRBgetconcurrentenv,
-                                      STRINGIFY(GRBgetconcurrentenv));
+                                      "GRBgetconcurrentenv");
   gurobi_dynamic_library->GetFunction(&GRBdiscardconcurrentenvs,
-                                      STRINGIFY(GRBdiscardconcurrentenvs));
-  gurobi_dynamic_library->GetFunction(&GRBgetmultiobjenv,
-                                      STRINGIFY(GRBgetmultiobjenv));
+                                      "GRBdiscardconcurrentenvs");
+  gurobi_dynamic_library->GetFunction(&GRBgetmultiobjenv, "GRBgetmultiobjenv");
   gurobi_dynamic_library->GetFunction(&GRBdiscardmultiobjenvs,
-                                      STRINGIFY(GRBdiscardmultiobjenvs));
-  gurobi_dynamic_library->GetFunction(&GRBreleaselicense,
-                                      STRINGIFY(GRBreleaselicense));
-  gurobi_dynamic_library->GetFunction(&GRBfreeenv, STRINGIFY(GRBfreeenv));
-  gurobi_dynamic_library->GetFunction(&GRBgeterrormsg,
-                                      STRINGIFY(GRBgeterrormsg));
-  gurobi_dynamic_library->GetFunction(&GRBgetmerrormsg,
-                                      STRINGIFY(GRBgetmerrormsg));
-  gurobi_dynamic_library->GetFunction(&GRBversion, STRINGIFY(GRBversion));
-  gurobi_dynamic_library->GetFunction(&GRBplatform, STRINGIFY(GRBplatform));
-  gurobi_dynamic_library->GetFunction(&GRBtunemodel, STRINGIFY(GRBtunemodel));
-  gurobi_dynamic_library->GetFunction(&GRBtunemodels, STRINGIFY(GRBtunemodels));
-  gurobi_dynamic_library->GetFunction(&GRBgettuneresult,
-                                      STRINGIFY(GRBgettuneresult));
-  gurobi_dynamic_library->GetFunction(&GRBgettunelog, STRINGIFY(GRBgettunelog));
-  gurobi_dynamic_library->GetFunction(&GRBtunemodeladv,
-                                      STRINGIFY(GRBtunemodeladv));
-  gurobi_dynamic_library->GetFunction(&GRBsync, STRINGIFY(GRBsync));
+                                      "GRBdiscardmultiobjenvs");
+  gurobi_dynamic_library->GetFunction(&GRBreleaselicense, "GRBreleaselicense");
+  gurobi_dynamic_library->GetFunction(&GRBfreeenv, "GRBfreeenv");
+  gurobi_dynamic_library->GetFunction(&GRBgeterrormsg, "GRBgeterrormsg");
+  gurobi_dynamic_library->GetFunction(&GRBgetmerrormsg, "GRBgetmerrormsg");
+  gurobi_dynamic_library->GetFunction(&GRBversion, "GRBversion");
+  gurobi_dynamic_library->GetFunction(&GRBplatform, "GRBplatform");
+  gurobi_dynamic_library->GetFunction(&GRBtunemodel, "GRBtunemodel");
+  gurobi_dynamic_library->GetFunction(&GRBtunemodels, "GRBtunemodels");
+  gurobi_dynamic_library->GetFunction(&GRBgettuneresult, "GRBgettuneresult");
+  gurobi_dynamic_library->GetFunction(&GRBgettunelog, "GRBgettunelog");
+  gurobi_dynamic_library->GetFunction(&GRBtunemodeladv, "GRBtunemodeladv");
+  gurobi_dynamic_library->GetFunction(&GRBsync, "GRBsync");
 }
 
 std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
@@ -764,47 +715,36 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
 }
 
 absl::Status LoadGurobiDynamicLibrary(
-    const std::vector<std::string>& additional_paths) {
+    std::vector<std::string> potential_paths) {
   static std::once_flag gurobi_loading_done;
   static absl::Status gurobi_load_status;
-  static std::unique_ptr<DynamicLibrary> keep_gurobi_library_alive;
+  static DynamicLibrary gurobi_library;
   static absl::Mutex mutex;
 
   absl::MutexLock lock(&mutex);
 
-  std::call_once(gurobi_loading_done, [&additional_paths]() {
-    // We need to keep the dynamic library alive during the execution of the
-    // solve.
-    keep_gurobi_library_alive = absl::make_unique<DynamicLibrary>();
-    // Check additional paths first.
-    for (const std::string& path : additional_paths) {
-      if (keep_gurobi_library_alive->TryToLoad(path)) {
+  std::call_once(gurobi_loading_done, [&potential_paths]() {
+    const std::vector<std::string> canonical_paths =
+        GurobiDynamicLibraryPotentialPaths();
+    potential_paths.insert(potential_paths.end(), canonical_paths.begin(),
+                           canonical_paths.end());
+    for (const std::string& path : potential_paths) {
+      if (gurobi_library.TryToLoad(path)) {
         LOG(INFO) << "Found the Gurobi library in '" << path << ".";
         break;
       }
     }
-    // Fallback to canonical paths.
-    const std::vector<std::string>& canonical_paths =
-        GurobiDynamicLibraryPotentialPaths();
-    if (!keep_gurobi_library_alive->LibraryIsLoaded()) {
-      for (const std::string& path : canonical_paths) {
-        if (keep_gurobi_library_alive->TryToLoad(path)) {
-          LOG(INFO) << "Found the Gurobi library in '" << path << ".";
-          break;
-        }
-      }
-    }
-    if (!keep_gurobi_library_alive->LibraryIsLoaded()) {
-      gurobi_load_status = absl::NotFoundError(
-          absl::StrCat("Could not find the Gurobi shared library. Looked in: [",
-                       absl::StrJoin(additional_paths, "', '"), "], and [",
-                       absl::StrJoin(canonical_paths, "', '"),
-                       "]. If you know where it is, pass the full path to "
-                       "'LoadGurobiDynamicLibrary()'."));
-    }
 
-    LoadGurobiFunctions(keep_gurobi_library_alive.get());
-    gurobi_load_status = absl::OkStatus();
+    if (gurobi_library.LibraryIsLoaded()) {
+      LoadGurobiFunctions(&gurobi_library);
+      gurobi_load_status = absl::OkStatus();
+    } else {
+      gurobi_load_status = absl::NotFoundError(absl::StrCat(
+          "Could not find the Gurobi shared library. Looked in: [",
+          absl::StrJoin(potential_paths, "', '"),
+          "]. If you know where it"
+          " is, pass the full path to 'LoadGurobiDynamicLibrary()'."));
+    }
   });
   return gurobi_load_status;
 }
@@ -816,8 +756,8 @@ absl::StatusOr<GRBenv*> GetGurobiEnv() {
 
   if (GRBloadenv(&env, nullptr) != 0 || env == nullptr) {
     return absl::FailedPreconditionError(
-        absl::StrCat("Could not create a Gurobi environment. Is Gurobi "
-                     "correctly installed and licensed on this machine ? ",
+        absl::StrCat("Found the Gurobi shared library, but could not create "
+                     "Gurobi environment: is Gurobi licensed on this machine?",
                      GRBgeterrormsg(env)));
   }
   return env;

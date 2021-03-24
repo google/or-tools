@@ -38,13 +38,11 @@ typedef struct _GRBsvec {
 
 namespace operations_research {
 
-// Creates a Gurobi env and returns it if possible. Otherwise, it will return
-// the error.
 absl::StatusOr<GRBenv*> GetGurobiEnv();
 
-// Checks the that Gurobi is correctly installed -- and installs it of it was
-// not done -- and that licenses can be obtained. This method will try to grab a
-// license, and then release it.
+// This returns true if the Gurobi shared library is properly loaded (otherwise,
+// tries to find it and load it) and if a Gurobi license can be obtained (it
+// does that by trying to grab a license and then release it).
 bool GurobiIsCorrectlyInstalled();
 
 // Force the loading of the gurobi dynamic library. It returns true if the
@@ -52,8 +50,7 @@ bool GurobiIsCorrectlyInstalled();
 // Successive calls are no-op.
 //
 // Note that it does not check if a token license can be grabbed.
-absl::Status LoadGurobiDynamicLibrary(
-    const std::vector<std::string>& additional_paths);
+absl::Status LoadGurobiDynamicLibrary(std::vector<std::string> potential_paths);
 
 // The list of #define and extern std::function<> below is generated directly
 // from gurobi_c.h via parse_header.py
