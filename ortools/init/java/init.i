@@ -18,6 +18,7 @@
 // Expose the static methods of the bridge class.
 %unignore operations_research::CppBridge;
 %rename (initLogging) operations_research::CppBridge::InitLogging;
+%rename (shutdownLogging) operations_research::CppBridge::ShutdownLogging;
 %rename (setFlags) operations_research::CppBridge::SetFlags;
 %rename (logGurobiSharedLibrary) operations_research::CppBridge::LoadGurobiSharedLibrary;
 

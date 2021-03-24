@@ -18,6 +18,7 @@
 // Expose the static methods of the bridge class.
 %unignore operations_research::CppBridge;
 %unignore operations_research::CppBridge::InitLogging;
+%unignore operations_research::CppBridge::ShutdownLogging;
 %unignore operations_research::CppBridge::SetFlags;
 %unignore operations_research::CppBridge::LoadGurobiSharedLibrary;
 

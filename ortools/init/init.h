@@ -21,6 +21,11 @@ class CppBridge {
   static void InitLogging(const std::string& program_name) {
     google::InitGoogleLogging(program_name.c_str());
   }
+
+  // Shutdown the C++ logging layer.
+  static void ShutdownLogging() {
+    google::ShutdownGoogleLogging();
+  }
   
   // Sets all the C++ flags contained in the CppFlags structure.
   static void SetFlags(const CppFlags& flags)  {
