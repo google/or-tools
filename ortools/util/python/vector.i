@@ -86,6 +86,7 @@
 PY_LIST_INPUT_OUTPUT_TYPEMAP(int, PyInt_Check, PyInt_FromLong);
 PY_LIST_INPUT_OUTPUT_TYPEMAP(int64, SwigPyIntOrLong_Check, PyLong_FromLongLong);
 PY_LIST_INPUT_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
+PY_LIST_INPUT_OUTPUT_TYPEMAP(std::string, SwigString_Check, SwigString_FromString);
 
 // Add conversion list(tuple(int)) -> std::vector<std::vector>.
 // TODO(user): see if we can also get rid of this and utilize already
