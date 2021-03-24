@@ -24,14 +24,12 @@
 
    Distances are in meters.
 
-   Differences with respect to cvrp.py:
-
    In order to implement multiple trips, new nodes are introduced at the same
    locations of the original depots. These additional nodes can be dropped
    from the schedule at 0 cost.
 
    The max_slack parameter associated to the capacity constraints of all nodes
-   can be set to be the maximum of the vehicles capacities, rather than 0 like
+   can be set to be the maximum of the vehicles' capacities, rather than 0 like
    in a traditional CVRP. Slack is required since before a solution is found,
    it is not known how much capacity will be transferred at the new nodes. For
    all the other (original) nodes, the slack is then re-set to 0.
