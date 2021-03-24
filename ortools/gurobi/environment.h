@@ -45,6 +45,7 @@ absl::StatusOr<GRBenv*> GetGurobiEnv();
 // does that by trying to grab a license and then release it).
 bool GurobiIsCorrectlyInstalled();
 
+// clang-format off
 // Force the loading of the gurobi dynamic library. It returns true if the
 // library was successfully loaded. This method can only be called once.
 // Successive calls are no-op.
@@ -55,6 +56,7 @@ absl::Status LoadGurobiDynamicLibrary(std::vector<std::string> potential_paths);
 // The list of #define and extern std::function<> below is generated directly
 // from gurobi_c.h via parse_header.py
 // See the top comment on the parse_header.py file.
+// This is the header section
 
 #define GRB_VERSION_MAJOR 7
 #define GRB_VERSION_MINOR 5
@@ -109,123 +111,49 @@ absl::Status LoadGurobiDynamicLibrary(std::vector<std::string> potential_paths);
 #define GRB_MAX_NAMELEN 255
 #define GRB_MAX_STRLEN 512
 #define GRB_MAX_CONCURRENT 64
-extern std::function<int(GRBenv**, const char*, const char*, const char*, int,
-                         const char*)>
-    GRBisqp;
-extern std::function<int(GRBmodel* model, const char* attrname, int* datatypeP,
-                         int* sizeP, int* settableP)>
-    GRBgetattrinfo;
-extern std::function<int(GRBmodel* model, const char* attrname)>
-    GRBisattravailable;
-extern std::function<int(GRBmodel* model, const char* attrname, int* valueP)>
-    GRBgetintattr;
-extern std::function<int(GRBmodel* model, const char* attrname, int newvalue)>
-    GRBsetintattr;
-extern std::function<int(GRBmodel* model, const char* attrname, int element,
-                         int* valueP)>
-    GRBgetintattrelement;
-extern std::function<int(GRBmodel* model, const char* attrname, int element,
-                         int newvalue)>
-    GRBsetintattrelement;
-extern std::function<int(GRBmodel* model, const char* attrname, int first,
-                         int len, int* values)>
-    GRBgetintattrarray;
-extern std::function<int(GRBmodel* model, const char* attrname, int first,
-                         int len, int* newvalues)>
-    GRBsetintattrarray;
-extern std::function<int(GRBmodel* model, const char* attrname, int len,
-                         int* ind, int* values)>
-    GRBgetintattrlist;
-extern std::function<int(GRBmodel* model, const char* attrname, int len,
-                         int* ind, int* newvalues)>
-    GRBsetintattrlist;
-extern std::function<int(GRBmodel* model, const char* attrname, int element,
-                         char* valueP)>
-    GRBgetcharattrelement;
-extern std::function<int(GRBmodel* model, const char* attrname, int element,
-                         char newvalue)>
-    GRBsetcharattrelement;
-extern std::function<int(GRBmodel* model, const char* attrname, int first,
-                         int len, char* values)>
-    GRBgetcharattrarray;
-extern std::function<int(GRBmodel* model, const char* attrname, int first,
-                         int len, char* newvalues)>
-    GRBsetcharattrarray;
-extern std::function<int(GRBmodel* model, const char* attrname, int len,
-                         int* ind, char* values)>
-    GRBgetcharattrlist;
-extern std::function<int(GRBmodel* model, const char* attrname, int len,
-                         int* ind, char* newvalues)>
-    GRBsetcharattrlist;
-extern std::function<int(GRBmodel* model, const char* attrname, double* valueP)>
-    GRBgetdblattr;
-extern std::function<int(GRBmodel* model, const char* attrname,
-                         double newvalue)>
-    GRBsetdblattr;
-extern std::function<int(GRBmodel* model, const char* attrname, int element,
-                         double* valueP)>
-    GRBgetdblattrelement;
-extern std::function<int(GRBmodel* model, const char* attrname, int element,
-                         double newvalue)>
-    GRBsetdblattrelement;
-extern std::function<int(GRBmodel* model, const char* attrname, int first,
-                         int len, double* values)>
-    GRBgetdblattrarray;
-extern std::function<int(GRBmodel* model, const char* attrname, int first,
-                         int len, double* newvalues)>
-    GRBsetdblattrarray;
-extern std::function<int(GRBmodel* model, const char* attrname, int len,
-                         int* ind, double* values)>
-    GRBgetdblattrlist;
-extern std::function<int(GRBmodel* model, const char* attrname, int len,
-                         int* ind, double* newvalues)>
-    GRBsetdblattrlist;
-extern std::function<int(GRBmodel* model, const char* attrname, char** valueP)>
-    GRBgetstrattr;
-extern std::function<int(GRBmodel* model, const char* attrname,
-                         const char* newvalue)>
-    GRBsetstrattr;
-extern std::function<int(GRBmodel* model, const char* attrname, int element,
-                         char** valueP)>
-    GRBgetstrattrelement;
-extern std::function<int(GRBmodel* model, const char* attrname, int element,
-                         const char* newvalue)>
-    GRBsetstrattrelement;
-extern std::function<int(GRBmodel* model, const char* attrname, int first,
-                         int len, char** values)>
-    GRBgetstrattrarray;
-extern std::function<int(GRBmodel* model, const char* attrname, int first,
-                         int len, char** newvalues)>
-    GRBsetstrattrarray;
-extern std::function<int(GRBmodel* model, const char* attrname, int len,
-                         int* ind, char** values)>
-    GRBgetstrattrlist;
-extern std::function<int(GRBmodel* model, const char* attrname, int len,
-                         int* ind, char** newvalues)>
-    GRBsetstrattrlist;
+extern std::function<int(GRBenv **, const char *, const char *, const char *, int,const char *)> GRBisqp;
+extern std::function<int(GRBmodel *model, const char *attrname, int *datatypeP,int *sizeP, int *settableP)> GRBgetattrinfo;
+extern std::function<int(GRBmodel *model, const char *attrname)> GRBisattravailable;
+extern std::function<int(GRBmodel *model, const char *attrname, int *valueP)> GRBgetintattr;
+extern std::function<int(GRBmodel *model, const char *attrname, int newvalue)> GRBsetintattr;
+extern std::function<int(GRBmodel *model, const char *attrname,int element, int *valueP)> GRBgetintattrelement;
+extern std::function<int(GRBmodel *model, const char *attrname,int element, int newvalue)> GRBsetintattrelement;
+extern std::function<int(GRBmodel *model, const char *attrname,int first, int len, int *values)> GRBgetintattrarray;
+extern std::function<int(GRBmodel *model, const char *attrname,int first, int len, int *newvalues)> GRBsetintattrarray;
+extern std::function<int(GRBmodel *model, const char *attrname,int len, int *ind, int *values)> GRBgetintattrlist;
+extern std::function<int(GRBmodel *model, const char *attrname,int len, int *ind, int *newvalues)> GRBsetintattrlist;
+extern std::function<int(GRBmodel *model, const char *attrname,int element, char *valueP)> GRBgetcharattrelement;
+extern std::function<int(GRBmodel *model, const char *attrname,int element, char newvalue)> GRBsetcharattrelement;
+extern std::function<int(GRBmodel *model, const char *attrname,int first, int len, char *values)> GRBgetcharattrarray;
+extern std::function<int(GRBmodel *model, const char *attrname,int first, int len, char *newvalues)> GRBsetcharattrarray;
+extern std::function<int(GRBmodel *model, const char *attrname,int len, int *ind, char *values)> GRBgetcharattrlist;
+extern std::function<int(GRBmodel *model, const char *attrname,int len, int *ind, char *newvalues)> GRBsetcharattrlist;
+extern std::function<int(GRBmodel *model, const char *attrname, double *valueP)> GRBgetdblattr;
+extern std::function<int(GRBmodel *model, const char *attrname, double newvalue)> GRBsetdblattr;
+extern std::function<int(GRBmodel *model, const char *attrname,int element, double *valueP)> GRBgetdblattrelement;
+extern std::function<int(GRBmodel *model, const char *attrname,int element, double newvalue)> GRBsetdblattrelement;
+extern std::function<int(GRBmodel *model, const char *attrname,int first, int len, double *values)> GRBgetdblattrarray;
+extern std::function<int(GRBmodel *model, const char *attrname,int first, int len, double *newvalues)> GRBsetdblattrarray;
+extern std::function<int(GRBmodel *model, const char *attrname,int len, int *ind, double *values)> GRBgetdblattrlist;
+extern std::function<int(GRBmodel *model, const char *attrname,int len, int *ind, double *newvalues)> GRBsetdblattrlist;
+extern std::function<int(GRBmodel *model, const char *attrname, char **valueP)> GRBgetstrattr;
+extern std::function<int(GRBmodel *model, const char *attrname, const char *newvalue)> GRBsetstrattr;
+extern std::function<int(GRBmodel *model, const char *attrname,int element, char **valueP)> GRBgetstrattrelement;
+extern std::function<int(GRBmodel *model, const char *attrname,int element, const char *newvalue)> GRBsetstrattrelement;
+extern std::function<int(GRBmodel *model, const char *attrname,int first, int len, char **values)> GRBgetstrattrarray;
+extern std::function<int(GRBmodel *model, const char *attrname,int first, int len, char **newvalues)> GRBsetstrattrarray;
+extern std::function<int(GRBmodel *model, const char *attrname,int len, int *ind, char **values)> GRBgetstrattrlist;
+extern std::function<int(GRBmodel *model, const char *attrname,int len, int *ind, char **newvalues)> GRBsetstrattrlist;
 #define CB_ARGS GRBmodel *model, void *cbdata, int where, void *usrdata
-extern std::function<int(GRBmodel* model, int(GUROBI_STDCALL* cb)(CB_ARGS),
-                         void* usrdata)>
-    GRBsetcallbackfunc;
-extern std::function<int(GRBmodel* model, int(GUROBI_STDCALL** cbP)(CB_ARGS))>
-    GRBgetcallbackfunc;
-extern std::function<int(GRBmodel* model, int(GUROBI_STDCALL* cb)(char* msg))>
-    GRBsetlogcallbackfunc;
-extern std::function<int(GRBenv* env, int(GUROBI_STDCALL* cb)(char* msg))>
-    GRBsetlogcallbackfuncenv;
-extern std::function<int(void* cbdata, int where, int what, void* resultP)>
-    GRBcbget;
-extern std::function<int(void* cbdata, const char* paramname,
-                         const char* newvalue)>
-    GRBcbsetparam;
-extern std::function<int(void* cbdata, const double* solution, double* objvalP)>
-    GRBcbsolution;
-extern std::function<int(void* cbdata, int cutlen, const int* cutind,
-                         const double* cutval, char cutsense, double cutrhs)>
-    GRBcbcut;
-extern std::function<int(void* cbdata, int lazylen, const int* lazyind,
-                         const double* lazyval, char lazysense, double lazyrhs)>
-    GRBcblazy;
+extern std::function<int(GRBmodel *model,int (GUROBI_STDCALL *cb)(CB_ARGS),void  *usrdata)> GRBsetcallbackfunc;
+extern std::function<int(GRBmodel *model,int (GUROBI_STDCALL **cbP)(CB_ARGS))> GRBgetcallbackfunc;
+extern std::function<int(GRBmodel *model,int (GUROBI_STDCALL *cb)(char *msg))> GRBsetlogcallbackfunc;
+extern std::function<int(GRBenv *env,int (GUROBI_STDCALL *cb)(char *msg))> GRBsetlogcallbackfuncenv;
+extern std::function<int(void *cbdata, int where, int what, void *resultP)> GRBcbget;
+extern std::function<int(void *cbdata, const char *paramname, const char *newvalue)> GRBcbsetparam;
+extern std::function<int(void *cbdata, const double *solution, double *objvalP)> GRBcbsolution;
+extern std::function<int(void *cbdata, int cutlen, const int *cutind, const double *cutval,char cutsense, double cutrhs)> GRBcbcut;
+extern std::function<int(void *cbdata, int lazylen, const int *lazyind,const double *lazyval, char lazysense, double lazyrhs)> GRBcblazy;
 #define GRB_INT_ATTR_NUMCONSTRS "NumConstrs"
 #define GRB_INT_ATTR_NUMVARS "NumVars"
 #define GRB_INT_ATTR_NUMSOS "NumSOS"
@@ -441,203 +369,90 @@ extern std::function<int(void* cbdata, int lazylen, const int* lazyind,
 #define GRB_FEASRELAX_LINEAR 0
 #define GRB_FEASRELAX_QUADRATIC 1
 #define GRB_FEASRELAX_CARDINALITY 2
-extern std::function<int(GRBmodel* model, int constr, int var, double* valP)>
-    GRBgetcoeff;
-extern std::function<int(GRBmodel* model, int* numnzP, int* cbeg, int* cind,
-                         double* cval, int start, int len)>
-    GRBgetconstrs;
-extern std::function<int(GRBmodel* model, size_t* numnzP, size_t* cbeg,
-                         int* cind, double* cval, int start, int len)>
-    GRBXgetconstrs;
-extern std::function<int(GRBmodel* model, int* numnzP, int* vbeg, int* vind,
-                         double* vval, int start, int len)>
-    GRBgetvars;
-extern std::function<int(GRBmodel* model, size_t* numnzP, size_t* vbeg,
-                         int* vind, double* vval, int start, int len)>
-    GRBXgetvars;
-extern std::function<int(GRBmodel* model, int* nummembersP, int* sostype,
-                         int* beg, int* ind, double* weight, int start,
-                         int len)>
-    GRBgetsos;
-extern std::function<int(GRBmodel* model, int genconstr, int* resvarP,
-                         int* nvarsP, int* vars, double* constantP)>
-    GRBgetgenconstrMax;
-extern std::function<int(GRBmodel* model, int genconstr, int* resvarP,
-                         int* nvarsP, int* vars, double* constantP)>
-    GRBgetgenconstrMin;
-extern std::function<int(GRBmodel* model, int genconstr, int* resvarP,
-                         int* argvarP)>
-    GRBgetgenconstrAbs;
-extern std::function<int(GRBmodel* model, int genconstr, int* resvarP,
-                         int* nvarsP, int* vars)>
-    GRBgetgenconstrAnd;
-extern std::function<int(GRBmodel* model, int genconstr, int* resvarP,
-                         int* nvarsP, int* vars)>
-    GRBgetgenconstrOr;
-extern std::function<int(GRBmodel* model, int genconstr, int* binvarP,
-                         int* binvalP, int* nvarsP, int* vars, double* vals,
-                         char* senseP, double* rhsP)>
-    GRBgetgenconstrIndicator;
-extern std::function<int(GRBmodel* model, int* numqnzP, int* qrow, int* qcol,
-                         double* qval)>
-    GRBgetq;
-extern std::function<int(GRBmodel* model, int qconstr, int* numlnzP, int* lind,
-                         double* lval, int* numqnzP, int* qrow, int* qcol,
-                         double* qval)>
-    GRBgetqconstr;
-extern std::function<int(GRBmodel* model, const char* name, int* indexP)>
-    GRBgetvarbyname;
-extern std::function<int(GRBmodel* model, const char* name, int* indexP)>
-    GRBgetconstrbyname;
-extern std::function<int(GRBmodel* model, int var, int* pointsP, double* x,
-                         double* y)>
-    GRBgetpwlobj;
-extern std::function<int(GRBmodel* model)> GRBoptimize;
-extern std::function<int(GRBmodel* model)> GRBoptimizeasync;
-extern std::function<GRBmodel*(GRBmodel* model)> GRBcopymodel;
-extern std::function<GRBmodel*(GRBmodel* model)> GRBfixedmodel;
-extern std::function<int(GRBmodel* model, int relaxobjtype, int minrelax,
-                         double* lbpen, double* ubpen, double* rhspen,
-                         double* feasobjP)>
-    GRBfeasrelax;
-extern std::function<int(void* cbdata, int what, int* typeP, int* sizeP)>
-    GRBgetcbwhatinfo;
-extern std::function<GRBmodel*(GRBmodel* model)> GRBrelaxmodel;
-extern std::function<int(GRBmodel* model)> GRBconverttofixed;
-extern std::function<GRBmodel*(GRBmodel* model)> GRBpresolvemodel;
-extern std::function<GRBmodel*(GRBmodel* model)> GRBiismodel;
-extern std::function<GRBmodel*(GRBmodel* model)> GRBfeasibility;
-extern std::function<GRBmodel*(GRBmodel* model)> GRBlinearizemodel;
+extern std::function<int(GRBmodel *model, int constr, int var, double *valP)> GRBgetcoeff;
+extern std::function<int(GRBmodel *model, int *numnzP, int *cbeg,int *cind, double *cval, int start, int len)> GRBgetconstrs;
+extern std::function<int(GRBmodel *model, size_t *numnzP, size_t *cbeg,int *cind, double *cval, int start, int len)> GRBXgetconstrs;
+extern std::function<int(GRBmodel *model, int *numnzP, int *vbeg, int *vind,double *vval, int start, int len)> GRBgetvars;
+extern std::function<int(GRBmodel *model, size_t *numnzP, size_t *vbeg, int *vind,double *vval, int start, int len)> GRBXgetvars;
+extern std::function<int(GRBmodel *model, int *nummembersP, int *sostype, int *beg,int *ind, double *weight, int start, int len)> GRBgetsos;
+extern std::function<int(GRBmodel *model, int genconstr, int *resvarP,int *nvarsP, int *vars, double *constantP)> GRBgetgenconstrMax;
+extern std::function<int(GRBmodel *model, int genconstr, int *resvarP,int *nvarsP, int *vars, double *constantP)> GRBgetgenconstrMin;
+extern std::function<int(GRBmodel *model, int genconstr, int *resvarP, int *argvarP)> GRBgetgenconstrAbs;
+extern std::function<int(GRBmodel *model, int genconstr, int *resvarP,int *nvarsP, int *vars)> GRBgetgenconstrAnd;
+extern std::function<int(GRBmodel *model, int genconstr, int *resvarP,int *nvarsP, int *vars)> GRBgetgenconstrOr;
+extern std::function<int(GRBmodel *model, int genconstr, int *binvarP, int *binvalP,int *nvarsP, int *vars, double *vals,char *senseP, double *rhsP)> GRBgetgenconstrIndicator;
+extern std::function<int(GRBmodel *model, int *numqnzP, int *qrow, int *qcol, double *qval)> GRBgetq;
+extern std::function<int(GRBmodel *model, int qconstr,int *numlnzP, int *lind, double *lval,int *numqnzP, int *qrow, int *qcol, double *qval)> GRBgetqconstr;
+extern std::function<int(GRBmodel *model, const char *name, int *indexP)> GRBgetvarbyname;
+extern std::function<int(GRBmodel *model, const char *name, int *indexP)> GRBgetconstrbyname;
+extern std::function<int(GRBmodel *model, int var, int *pointsP,double *x, double *y)> GRBgetpwlobj;
+extern std::function<int(GRBmodel *model)> GRBoptimize;
+extern std::function<int(GRBmodel *model)> GRBoptimizeasync;
+extern std::function<GRBmodel *(GRBmodel *model)> GRBcopymodel;
+extern std::function<GRBmodel *(GRBmodel *model)> GRBfixedmodel;
+extern std::function<int(GRBmodel *model, int relaxobjtype, int minrelax,double *lbpen, double *ubpen, double *rhspen,double *feasobjP)> GRBfeasrelax;
+extern std::function<int(void *cbdata, int what, int *typeP, int *sizeP)> GRBgetcbwhatinfo;
+extern std::function<GRBmodel *(GRBmodel *model)> GRBrelaxmodel;
+extern std::function<int(GRBmodel *model)> GRBconverttofixed;
+extern std::function<GRBmodel *(GRBmodel *model)> GRBpresolvemodel;
+extern std::function<GRBmodel *(GRBmodel *model)> GRBiismodel;
+extern std::function<GRBmodel *(GRBmodel *model)> GRBfeasibility;
+extern std::function<GRBmodel *(GRBmodel *model)> GRBlinearizemodel;
 #define MALLOCCB_ARGS size_t size, void *syscbusrdata
 #define CALLOCCB_ARGS size_t nmemb, size_t size, void *syscbusrdata
 #define REALLOCCB_ARGS void *ptr, size_t size, void *syscbusrdata
 #define FREECB_ARGS void *ptr, void *syscbusrdata
-#define THREADCREATECB_ARGS \
-  void **threadP, void (*start_routine)(void*), void *arg, void *syscbusrdata
+#define THREADCREATECB_ARGS void **threadP, void (*start_routine)(void *), void *arg, void *syscbusrdata
 #define THREADJOINCB_ARGS void *thread, void *syscbusrdata
-extern std::function<int(
-    GRBenv** envP, const char* logfilename,
-    void*(GUROBI_STDCALL* malloccb)(MALLOCCB_ARGS),
-    void*(GUROBI_STDCALL* calloccb)(CALLOCCB_ARGS),
-    void*(GUROBI_STDCALL* realloccb)(REALLOCCB_ARGS),
-    void(GUROBI_STDCALL* freecb)(FREECB_ARGS),
-    int(GUROBI_STDCALL* threadcreatecb)(THREADCREATECB_ARGS),
-    void(GUROBI_STDCALL* threadjoincb)(THREADJOINCB_ARGS), void* syscbusrdata)>
-    GRBloadenvsyscb;
-extern std::function<int(GRBenv* env, const char* filename, GRBmodel** modelP)>
-    GRBreadmodel;
-extern std::function<int(GRBmodel* model, const char* filename)> GRBread;
-extern std::function<int(GRBmodel* model, const char* filename)> GRBwrite;
-extern std::function<int(const char* filename)> GRBismodelfile;
-extern std::function<int(const char* filename)> GRBfiletype;
-extern std::function<int(const char* filename)> GRBisrecordfile;
-extern std::function<int(GRBenv* env, GRBmodel** modelP, const char* Pname,
-                         int numvars, double* obj, double* lb, double* ub,
-                         char* vtype, char** varnames)>
-    GRBnewmodel;
-extern std::function<int(
-    GRBenv* env, GRBmodel** modelP, const char* Pname, int numvars,
-    int numconstrs, int objsense, double objcon, double* obj, char* sense,
-    double* rhs, int* vbeg, int* vlen, int* vind, double* vval, double* lb,
-    double* ub, char* vtype, char** varnames, char** constrnames)>
-    GRBloadmodel;
-extern std::function<int(
-    GRBenv* env, GRBmodel** modelP, const char* Pname, int numvars,
-    int numconstrs, int objsense, double objcon, double* obj, char* sense,
-    double* rhs, size_t* vbeg, int* vlen, int* vind, double* vval, double* lb,
-    double* ub, char* vtype, char** varnames, char** constrnames)>
-    GRBXloadmodel;
-extern std::function<int(GRBmodel* model, int numnz, int* vind, double* vval,
-                         double obj, double lb, double ub, char vtype,
-                         const char* varname)>
-    GRBaddvar;
-extern std::function<int(GRBmodel* model, int numvars, int numnz, int* vbeg,
-                         int* vind, double* vval, double* obj, double* lb,
-                         double* ub, char* vtype, char** varnames)>
-    GRBaddvars;
-extern std::function<int(GRBmodel* model, int numvars, size_t numnz,
-                         size_t* vbeg, int* vind, double* vval, double* obj,
-                         double* lb, double* ub, char* vtype, char** varnames)>
-    GRBXaddvars;
-extern std::function<int(GRBmodel* model, int numnz, int* cind, double* cval,
-                         char sense, double rhs, const char* constrname)>
-    GRBaddconstr;
-extern std::function<int(GRBmodel* model, int numconstrs, int numnz, int* cbeg,
-                         int* cind, double* cval, char* sense, double* rhs,
-                         char** constrnames)>
-    GRBaddconstrs;
-extern std::function<int(GRBmodel* model, int numconstrs, size_t numnz,
-                         size_t* cbeg, int* cind, double* cval, char* sense,
-                         double* rhs, char** constrnames)>
-    GRBXaddconstrs;
-extern std::function<int(GRBmodel* model, int numnz, int* cind, double* cval,
-                         double lower, double upper, const char* constrname)>
-    GRBaddrangeconstr;
-extern std::function<int(GRBmodel* model, int numconstrs, int numnz, int* cbeg,
-                         int* cind, double* cval, double* lower, double* upper,
-                         char** constrnames)>
-    GRBaddrangeconstrs;
-extern std::function<int(GRBmodel* model, int numconstrs, size_t numnz,
-                         size_t* cbeg, int* cind, double* cval, double* lower,
-                         double* upper, char** constrnames)>
-    GRBXaddrangeconstrs;
-extern std::function<int(GRBmodel* model, int numsos, int nummembers,
-                         int* types, int* beg, int* ind, double* weight)>
-    GRBaddsos;
-extern std::function<int(GRBmodel* model, const char* name, int resvar,
-                         int nvars, const int* vars, double constant)>
-    GRBaddgenconstrMax;
-extern std::function<int(GRBmodel* model, const char* name, int resvar,
-                         int nvars, const int* vars, double constant)>
-    GRBaddgenconstrMin;
-extern std::function<int(GRBmodel* model, const char* name, int resvar,
-                         int argvar)>
-    GRBaddgenconstrAbs;
-extern std::function<int(GRBmodel* model, const char* name, int resvar,
-                         int nvars, const int* vars)>
-    GRBaddgenconstrAnd;
-extern std::function<int(GRBmodel* model, const char* name, int resvar,
-                         int nvars, const int* vars)>
-    GRBaddgenconstrOr;
-extern std::function<int(GRBmodel* lp, const char* name, int binvar, int binval,
-                         int nvars, const int* vars, const double* vals,
-                         char sense, double rhs)>
-    GRBaddgenconstrIndicator;
-extern std::function<int(GRBmodel* model, int numlnz, int* lind, double* lval,
-                         int numqnz, int* qrow, int* qcol, double* qval,
-                         char sense, double rhs, const char* QCname)>
-    GRBaddqconstr;
-extern std::function<int(GRBmodel* model, int nummembers, int* members)>
-    GRBaddcone;
-extern std::function<int(GRBmodel* model, int numqnz, int* qrow, int* qcol,
-                         double* qval)>
-    GRBaddqpterms;
-extern std::function<int(GRBmodel* model, int len, int* ind)> GRBdelvars;
-extern std::function<int(GRBmodel* model, int len, int* ind)> GRBdelconstrs;
-extern std::function<int(GRBmodel* model, int len, int* ind)> GRBdelsos;
-extern std::function<int(GRBmodel* model, int len, int* ind)> GRBdelgenconstrs;
-extern std::function<int(GRBmodel* model, int len, int* ind)> GRBdelqconstrs;
-extern std::function<int(GRBmodel* model)> GRBdelq;
-extern std::function<int(GRBmodel* model, int cnt, int* cind, int* vind,
-                         double* val)>
-    GRBchgcoeffs;
-extern std::function<int(GRBmodel* model, size_t cnt, int* cind, int* vind,
-                         double* val)>
-    GRBXchgcoeffs;
-extern std::function<int(GRBmodel* model, int var, int points, double* x,
-                         double* y)>
-    GRBsetpwlobj;
-extern std::function<int(GRBmodel* model)> GRBupdatemodel;
-extern std::function<int(GRBmodel* model)> GRBresetmodel;
-extern std::function<int(GRBmodel* model)> GRBfreemodel;
-extern std::function<int(GRBmodel* model)> GRBcomputeIIS;
-extern std::function<int(GRBmodel* model, GRBsvec* b, GRBsvec* x)> GRBFSolve;
-extern std::function<int(GRBmodel* model, int j, GRBsvec* x)> GRBBinvColj;
-extern std::function<int(GRBmodel* model, int j, GRBsvec* x)> GRBBinvj;
-extern std::function<int(GRBmodel* model, GRBsvec* b, GRBsvec* x)> GRBBSolve;
-extern std::function<int(GRBmodel* model, int i, GRBsvec* x)> GRBBinvi;
-extern std::function<int(GRBmodel* model, int i, GRBsvec* x)> GRBBinvRowi;
-extern std::function<int(GRBmodel* model, int* bhead)> GRBgetBasisHead;
+extern std::function<int(GRBenv **envP, const char *logfilename,void * (GUROBI_STDCALL *malloccb)(MALLOCCB_ARGS),void * (GUROBI_STDCALL *calloccb)(CALLOCCB_ARGS),void * (GUROBI_STDCALL *realloccb)(REALLOCCB_ARGS),void (GUROBI_STDCALL *freecb)(FREECB_ARGS),int (GUROBI_STDCALL *threadcreatecb)(THREADCREATECB_ARGS),void (GUROBI_STDCALL *threadjoincb)(THREADJOINCB_ARGS),void *syscbusrdata)> GRBloadenvsyscb;
+extern std::function<int(GRBenv *env, const char *filename, GRBmodel **modelP)> GRBreadmodel;
+extern std::function<int(GRBmodel *model, const char *filename)> GRBread;
+extern std::function<int(GRBmodel *model, const char *filename)> GRBwrite;
+extern std::function<int(const char *filename)> GRBismodelfile;
+extern std::function<int(const char *filename)> GRBfiletype;
+extern std::function<int(const char *filename)> GRBisrecordfile;
+extern std::function<int(GRBenv *env, GRBmodel **modelP, const char *Pname, int numvars,double *obj, double *lb, double *ub, char *vtype,char **varnames)> GRBnewmodel;
+extern std::function<int(GRBenv *env, GRBmodel **modelP, const char *Pname,int numvars, int numconstrs,int objsense, double objcon, double *obj,char *sense, double *rhs,int *vbeg, int *vlen, int *vind, double *vval,double *lb, double *ub, char *vtype,char **varnames, char **constrnames)> GRBloadmodel;
+extern std::function<int(GRBenv *env, GRBmodel **modelP, const char *Pname,int numvars, int numconstrs,int objsense, double objcon, double *obj,char *sense, double *rhs,size_t *vbeg, int *vlen, int *vind, double *vval,double *lb, double *ub, char *vtype,char **varnames, char **constrnames)> GRBXloadmodel;
+extern std::function<int(GRBmodel *model, int numnz, int *vind, double *vval,double obj, double lb, double ub, char vtype,const char *varname)> GRBaddvar;
+extern std::function<int(GRBmodel *model, int numvars, int numnz,int *vbeg, int *vind, double *vval,double *obj, double *lb, double *ub, char *vtype,char **varnames)> GRBaddvars;
+extern std::function<int(GRBmodel *model, int numvars, size_t numnz,size_t *vbeg, int *vind, double *vval,double *obj, double *lb, double *ub, char *vtype,char **varnames)> GRBXaddvars;
+extern std::function<int(GRBmodel *model, int numnz, int *cind, double *cval,char sense, double rhs, const char *constrname)> GRBaddconstr;
+extern std::function<int(GRBmodel *model, int numconstrs, int numnz,int *cbeg, int *cind, double *cval,char *sense, double *rhs, char **constrnames)> GRBaddconstrs;
+extern std::function<int(GRBmodel *model, int numconstrs, size_t numnz,size_t *cbeg, int *cind, double *cval,char *sense, double *rhs, char **constrnames)> GRBXaddconstrs;
+extern std::function<int(GRBmodel *model, int numnz, int *cind, double *cval,double lower, double upper, const char *constrname)> GRBaddrangeconstr;
+extern std::function<int(GRBmodel *model, int numconstrs, int numnz,int *cbeg, int *cind, double *cval,double *lower, double *upper, char **constrnames)> GRBaddrangeconstrs;
+extern std::function<int(GRBmodel *model, int numconstrs, size_t numnz,size_t *cbeg, int *cind, double *cval,double *lower, double *upper, char **constrnames)> GRBXaddrangeconstrs;
+extern std::function<int(GRBmodel *model, int numsos, int nummembers, int *types,int *beg, int *ind, double *weight)> GRBaddsos;
+extern std::function<int(GRBmodel *model, const char *name,int resvar, int nvars, const int *vars,double constant)> GRBaddgenconstrMax;
+extern std::function<int(GRBmodel *model, const char *name,int resvar, int nvars, const int *vars,double constant)> GRBaddgenconstrMin;
+extern std::function<int(GRBmodel *model, const char *name,int resvar, int argvar)> GRBaddgenconstrAbs;
+extern std::function<int(GRBmodel *model, const char *name,int resvar, int nvars, const int *vars)> GRBaddgenconstrAnd;
+extern std::function<int(GRBmodel *model, const char *name,int resvar, int nvars, const int *vars)> GRBaddgenconstrOr;
+extern std::function<int(GRBmodel *lp, const char *name,int binvar, int binval, int nvars, const int *vars,const double *vals, char sense, double rhs)> GRBaddgenconstrIndicator;
+extern std::function<int(GRBmodel *model, int numlnz, int *lind, double *lval,int numqnz, int *qrow, int *qcol, double *qval,char sense, double rhs, const char *QCname)> GRBaddqconstr;
+extern std::function<int(GRBmodel *model, int nummembers, int *members)> GRBaddcone;
+extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,double *qval)> GRBaddqpterms;
+extern std::function<int(GRBmodel *model, int len, int *ind)> GRBdelvars;
+extern std::function<int(GRBmodel *model, int len, int *ind)> GRBdelconstrs;
+extern std::function<int(GRBmodel *model, int len, int *ind)> GRBdelsos;
+extern std::function<int(GRBmodel *model, int len, int *ind)> GRBdelgenconstrs;
+extern std::function<int(GRBmodel *model, int len, int *ind)> GRBdelqconstrs;
+extern std::function<int(GRBmodel *model)> GRBdelq;
+extern std::function<int(GRBmodel *model, int cnt, int *cind, int *vind, double *val)> GRBchgcoeffs;
+extern std::function<int(GRBmodel *model, size_t cnt, int *cind, int *vind, double *val)> GRBXchgcoeffs;
+extern std::function<int(GRBmodel *model, int var, int points, double *x,double *y)> GRBsetpwlobj;
+extern std::function<int(GRBmodel *model)> GRBupdatemodel;
+extern std::function<int(GRBmodel *model)> GRBresetmodel;
+extern std::function<int(GRBmodel *model)> GRBfreemodel;
+extern std::function<int(GRBmodel *model)> GRBcomputeIIS;
+extern std::function<int(GRBmodel *model, GRBsvec *b, GRBsvec *x)> GRBFSolve;
+extern std::function<int(GRBmodel *model, int j, GRBsvec *x)> GRBBinvColj;
+extern std::function<int(GRBmodel *model, int j, GRBsvec *x)> GRBBinvj;
+extern std::function<int(GRBmodel *model, GRBsvec *b, GRBsvec *x)> GRBBSolve;
+extern std::function<int(GRBmodel *model, int i, GRBsvec *x)> GRBBinvi;
+extern std::function<int(GRBmodel *model, int i, GRBsvec *x)> GRBBinvRowi;
+extern std::function<int(GRBmodel *model, int *bhead)> GRBgetBasisHead;
 #define GRB_LOADED 1
 #define GRB_OPTIMAL 2
 #define GRB_INFEASIBLE 3
@@ -657,9 +472,7 @@ extern std::function<int(GRBmodel* model, int* bhead)> GRBgetBasisHead;
 #define GRB_NONBASIC_LOWER -1
 #define GRB_NONBASIC_UPPER -2
 #define GRB_SUPERBASIC -3
-extern std::function<int(GRBmodel* model, int num, int* cand, double* downobjbd,
-                         double* upobjbd, int* statusP)>
-    GRBstrongbranch;
+extern std::function<int(GRBmodel *model, int num, int *cand,double *downobjbd, double *upobjbd, int *statusP)> GRBstrongbranch;
 #define GRB_INT_PAR_BARITERLIMIT "BarIterLimit"
 #define GRB_DBL_PAR_CUTOFF "Cutoff"
 #define GRB_DBL_PAR_ITERATIONLIMIT "IterationLimit"
@@ -817,102 +630,59 @@ extern std::function<int(GRBmodel* model, int num, int* cand, double* downobjbd,
 #define GRB_VARBRANCH_PSEUDO_SHADOW 1
 #define GRB_VARBRANCH_MAX_INFEAS 2
 #define GRB_VARBRANCH_STRONG 3
-extern std::function<int(GRBmodel* model)> GRBcheckmodel;
-extern std::function<void(GRBmodel* model)> GRBsetsignal;
-extern std::function<void(GRBmodel* model)> GRBterminate;
-extern std::function<int(const char* filename)> GRBreplay;
-extern std::function<int(GRBmodel* model, int sense, double constant, int lnz,
-                         int* lind, double* lval, int qnz, int* qrow, int* qcol,
-                         double* qval)>
-    GRBsetobjective;
-extern std::function<int(GRBmodel* model, int index, int priority,
-                         double weight, double abstol, double reltol,
-                         const char* name, double constant, int lnz, int* lind,
-                         double* lval)>
-    GRBsetobjectiven;
-extern std::function<void(GRBenv* env, const char* message)> GRBmsg;
-extern std::function<int(GRBenv* env, FILE** logfileP)> GRBgetlogfile;
-extern std::function<int(GRBenv* env, FILE* logfile)> GRBsetlogfile;
-extern std::function<int(GRBenv* env, const char* paramname, int* valueP)>
-    GRBgetintparam;
-extern std::function<int(GRBenv* env, const char* paramname, double* valueP)>
-    GRBgetdblparam;
-extern std::function<int(GRBenv* env, const char* paramname, char* valueP)>
-    GRBgetstrparam;
-extern std::function<int(GRBenv* env, const char* paramname, int* valueP,
-                         int* minP, int* maxP, int* defP)>
-    GRBgetintparaminfo;
-extern std::function<int(GRBenv* env, const char* paramname, double* valueP,
-                         double* minP, double* maxP, double* defP)>
-    GRBgetdblparaminfo;
-extern std::function<int(GRBenv* env, const char* paramname, char* valueP,
-                         char* defP)>
-    GRBgetstrparaminfo;
-extern std::function<int(GRBenv* env, const char* paramname, const char* value)>
-    GRBsetparam;
-extern std::function<int(GRBenv* env, const char* paramname, int value)>
-    GRBsetintparam;
-extern std::function<int(GRBenv* env, const char* paramname, double value)>
-    GRBsetdblparam;
-extern std::function<int(GRBenv* env, const char* paramname, const char* value)>
-    GRBsetstrparam;
-extern std::function<int(GRBenv* env, const char* paramname)> GRBgetparamtype;
-extern std::function<int(GRBenv* env)> GRBresetparams;
-extern std::function<int(GRBenv* dest, GRBenv* src)> GRBcopyparams;
-extern std::function<int(GRBenv* env, const char* filename)> GRBwriteparams;
-extern std::function<int(GRBenv* env, const char* filename)> GRBreadparams;
-extern std::function<int(GRBenv* env)> GRBgetnumparams;
-extern std::function<int(GRBenv* env, int i, char** paramnameP)>
-    GRBgetparamname;
-extern std::function<int(GRBmodel* model)> GRBgetnumattributes;
-extern std::function<int(GRBmodel* model, int i, char** attrnameP)>
-    GRBgetattrname;
-extern std::function<int(GRBenv** envP, const char* logfilename)> GRBloadenv;
-extern std::function<int(GRBenv** envP, const char* logfilename, int apitype,
-                         int major, int minor, int tech,
-                         int(GUROBI_STDCALL* cb)(CB_ARGS), void* usrdata)>
-    GRBloadenvadv;
-extern std::function<int(GRBenv** envP, const char* logfilename,
-                         const char* computeservers, int port,
-                         const char* password, int priority, double timeout)>
-    GRBloadclientenv;
-extern std::function<int(GRBenv** envP, const char* logfilename,
-                         const char* computeservers, int port,
-                         const char* password, int priority, double timeout,
-                         int apitype, int major, int minor, int tech,
-                         int(GUROBI_STDCALL* cb)(CB_ARGS), void* usrdata)>
-    GRBloadclientenvadv;
-extern std::function<int(GRBenv** envP, const char* logfilename,
-                         const char* accessID, const char* secretKey,
-                         const char* pool)>
-    GRBloadcloudenv;
-extern std::function<int(
-    GRBenv** envP, const char* logfilename, const char* accessID,
-    const char* secretKey, const char* pool, int apitype, int major, int minor,
-    int tech, int(GUROBI_STDCALL* cb)(CB_ARGS), void* usrdata)>
-    GRBloadcloudenvadv;
-extern std::function<GRBenv*(GRBmodel* model)> GRBgetenv;
-extern std::function<GRBenv*(GRBmodel* model, int num)> GRBgetconcurrentenv;
-extern std::function<void(GRBmodel* model)> GRBdiscardconcurrentenvs;
-extern std::function<GRBenv*(GRBmodel* model, int num)> GRBgetmultiobjenv;
-extern std::function<void(GRBmodel* model)> GRBdiscardmultiobjenvs;
-extern std::function<void(GRBenv* env)> GRBreleaselicense;
-extern std::function<void(GRBenv* env)> GRBfreeenv;
-extern std::function<const char*(GRBenv* env)> GRBgeterrormsg;
-extern std::function<const char*(GRBmodel* model)> GRBgetmerrormsg;
-extern std::function<void(int* majorP, int* minorP, int* technicalP)>
-    GRBversion;
-extern std::function<char*(void)> GRBplatform;
-extern std::function<int(GRBmodel* model)> GRBtunemodel;
-extern std::function<int(int nummodels, GRBmodel** models, GRBmodel* ignore,
-                         GRBmodel* hint)>
-    GRBtunemodels;
-extern std::function<int(GRBmodel* model, int i)> GRBgettuneresult;
-extern std::function<int(GRBmodel* model, int i, char** logP)> GRBgettunelog;
-extern std::function<int(GRBmodel* model, GRBmodel* ignore, GRBmodel* hint)>
-    GRBtunemodeladv;
-extern std::function<int(GRBmodel* model)> GRBsync;
+extern std::function<int(GRBmodel *model)> GRBcheckmodel;
+extern std::function<void(GRBmodel *model)> GRBsetsignal;
+extern std::function<void(GRBmodel *model)> GRBterminate;
+extern std::function<int(const char *filename)> GRBreplay;
+extern std::function<int(GRBmodel *model, int sense, double constant,int lnz, int *lind, double *lval,int qnz, int *qrow, int *qcol, double *qval)> GRBsetobjective;
+extern std::function<int(GRBmodel *model, int index, int priority, double weight,double abstol, double reltol, const char *name,double constant, int lnz, int *lind, double *lval)> GRBsetobjectiven;
+extern std::function<void(GRBenv *env, const char *message)> GRBmsg;
+extern std::function<int(GRBenv *env, FILE **logfileP)> GRBgetlogfile;
+extern std::function<int(GRBenv *env, FILE *logfile)> GRBsetlogfile;
+extern std::function<int(GRBenv *env, const char *paramname, int *valueP)> GRBgetintparam;
+extern std::function<int(GRBenv *env, const char *paramname, double *valueP)> GRBgetdblparam;
+extern std::function<int(GRBenv *env, const char *paramname, char *valueP)> GRBgetstrparam;
+extern std::function<int(GRBenv *env, const char *paramname, int *valueP,int *minP, int *maxP, int *defP)> GRBgetintparaminfo;
+extern std::function<int(GRBenv *env, const char *paramname, double *valueP,double *minP, double *maxP, double *defP)> GRBgetdblparaminfo;
+extern std::function<int(GRBenv *env, const char *paramname, char *valueP,char *defP)> GRBgetstrparaminfo;
+extern std::function<int(GRBenv *env, const char *paramname, const char *value)> GRBsetparam;
+extern std::function<int(GRBenv *env, const char *paramname, int value)> GRBsetintparam;
+extern std::function<int(GRBenv *env, const char *paramname, double value)> GRBsetdblparam;
+extern std::function<int(GRBenv *env, const char *paramname, const char *value)> GRBsetstrparam;
+extern std::function<int(GRBenv *env, const char *paramname)> GRBgetparamtype;
+extern std::function<int(GRBenv *env)> GRBresetparams;
+extern std::function<int(GRBenv *dest, GRBenv *src)> GRBcopyparams;
+extern std::function<int(GRBenv *env, const char *filename)> GRBwriteparams;
+extern std::function<int(GRBenv *env, const char *filename)> GRBreadparams;
+extern std::function<int(GRBenv *env)> GRBgetnumparams;
+extern std::function<int(GRBenv *env, int i, char **paramnameP)> GRBgetparamname;
+extern std::function<int(GRBmodel *model)> GRBgetnumattributes;
+extern std::function<int(GRBmodel *model, int i, char **attrnameP)> GRBgetattrname;
+extern std::function<int(GRBenv **envP, const char *logfilename)> GRBloadenv;
+extern std::function<int(GRBenv **envP, const char *logfilename,int apitype, int major, int minor, int tech,int (GUROBI_STDCALL *cb)(CB_ARGS), void *usrdata)> GRBloadenvadv;
+extern std::function<int(GRBenv **envP, const char *logfilename,const char *computeservers, int port, const char *password,int priority, double timeout)> GRBloadclientenv;
+extern std::function<int(GRBenv **envP, const char *logfilename,const char *computeservers, int port,const char *password, int priority, double timeout,int apitype, int major, int minor, int tech,int (GUROBI_STDCALL *cb)(CB_ARGS), void *usrdata)> GRBloadclientenvadv;
+extern std::function<int(GRBenv **envP, const char *logfilename,const char *accessID, const char *secretKey,const char *pool)> GRBloadcloudenv;
+extern std::function<int(GRBenv **envP, const char *logfilename,const char *accessID, const char *secretKey,const char *pool, int apitype, int major,int minor, int tech,int (GUROBI_STDCALL *cb)(CB_ARGS), void *usrdata)> GRBloadcloudenvadv;
+extern std::function<GRBenv *(GRBmodel *model)> GRBgetenv;
+extern std::function<GRBenv *(GRBmodel *model, int num)> GRBgetconcurrentenv;
+extern std::function<void(GRBmodel *model)> GRBdiscardconcurrentenvs;
+extern std::function<GRBenv *(GRBmodel *model, int num)> GRBgetmultiobjenv;
+extern std::function<void(GRBmodel *model)> GRBdiscardmultiobjenvs;
+extern std::function<void(GRBenv *env)> GRBreleaselicense;
+extern std::function<void(GRBenv *env)> GRBfreeenv;
+extern std::function<const char *(GRBenv *env)> GRBgeterrormsg;
+extern std::function<const char *(GRBmodel *model)> GRBgetmerrormsg;
+extern std::function<void(int *majorP, int *minorP, int *technicalP)> GRBversion;
+extern std::function<char *(void)> GRBplatform;
+extern std::function<int(GRBmodel *model)> GRBtunemodel;
+extern std::function<int(int nummodels, GRBmodel **models,GRBmodel *ignore, GRBmodel *hint)> GRBtunemodels;
+extern std::function<int(GRBmodel *model, int i)> GRBgettuneresult;
+extern std::function<int(GRBmodel *model, int i, char **logP)> GRBgettunelog;
+extern std::function<int(GRBmodel *model, GRBmodel *ignore, GRBmodel *hint)> GRBtunemodeladv;
+extern std::function<int(GRBmodel *model)> GRBsync;
 
+// clang-format on
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_GUROBI_ENVIRONMENT_H_

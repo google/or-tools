@@ -27,8 +27,6 @@
 #include <dlfcn.h>
 #endif
 
-#define STRINGIFY(x) #x
-
 class DynamicLibrary {
  public:
   DynamicLibrary() : library_handle_(nullptr) {}
