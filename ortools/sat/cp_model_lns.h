@@ -79,46 +79,47 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // they take in the given solution.
   Neighborhood FixGivenVariables(const CpSolverResponse& initial_solution,
                                  const std::vector<int>& variables_to_fix) const
-      ABSL_SHARED_LOCKS_REQUIRED(mutex_);
+      ABSL_SHARED_LOCKS_REQUIRED(helper_mutex_);
 
   // Returns the neighborhood where the given constraints are removed.
   Neighborhood RemoveMarkedConstraints(
       const std::vector<int>& constraints_to_remove) const
-      ABSL_SHARED_LOCKS_REQUIRED(mutex_);
+      ABSL_SHARED_LOCKS_REQUIRED(helper_mutex_);
 
   // Returns the LNS fragment which will relax all inactive variables and all
   // variables in relaxed_variables.
   Neighborhood RelaxGivenVariables(const CpSolverResponse& initial_solution,
                                    const std::vector<int>& relaxed_variables)
-      const ABSL_SHARED_LOCKS_REQUIRED(mutex_);
+      const ABSL_SHARED_LOCKS_REQUIRED(helper_mutex_);
 
   // Returns a trivial model by fixing all active variables to the initial
   // solution values.
   Neighborhood FixAllVariables(const CpSolverResponse& initial_solution) const
-      ABSL_SHARED_LOCKS_REQUIRED(mutex_);
+      ABSL_SHARED_LOCKS_REQUIRED(helper_mutex_);
 
   // Return a neighborhood that correspond to the full problem.
-  Neighborhood FullNeighborhood() const ABSL_SHARED_LOCKS_REQUIRED(mutex_);
+  Neighborhood FullNeighborhood() const
+      ABSL_SHARED_LOCKS_REQUIRED(helper_mutex_);
 
   // Indicates if the variable can be frozen. It happens if the variable is non
   // constant, and if it is a decision variable, or if
   // focus_on_decision_variables is false.
-  bool IsActive(int var) const ABSL_SHARED_LOCKS_REQUIRED(mutex_);
+  bool IsActive(int var) const ABSL_SHARED_LOCKS_REQUIRED(helper_mutex_);
 
   // Returns the list of "active" variables.
   const std::vector<int>& ActiveVariables() const
-      ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
+      ABSL_SHARED_LOCKS_REQUIRED(helper_mutex_) {
     return active_variables_;
   }
 
   // Constraints <-> Variables graph.
   // Note that only non-constant variable are listed here.
   const std::vector<std::vector<int>>& ConstraintToVar() const
-      ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
+      ABSL_SHARED_LOCKS_REQUIRED(helper_mutex_) {
     return constraint_to_var_;
   }
   const std::vector<std::vector<int>>& VarToConstraint() const
-      ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
+      ABSL_SHARED_LOCKS_REQUIRED(helper_mutex_) {
     return var_to_constraint_;
   }
 
@@ -134,7 +135,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // If true, this method returns the list of performed intervals in the
   // solution. If false, it returns all intervals of the model.
   std::vector<int> GetActiveIntervals(const CpSolverResponse& initial_solution)
-      const ABSL_SHARED_LOCKS_REQUIRED(mutex_);
+      const ABSL_SHARED_LOCKS_REQUIRED(helper_mutex_);
 
   // The initial problem.
   // Note that the domain of the variables are not updated here.
@@ -146,15 +147,19 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   }
 
   // The mutex for the helper data needs to be public for thread annotations.
-  mutable absl::Mutex mutex_;
+  //
+  // TODO(user): Refactor the class to be thread-safe instead, it should be
+  // safer and more easily maintenable. Some complication with accessing the
+  // variable<->constraint graph efficiently though.
+  mutable absl::Mutex helper_mutex_;
 
  private:
   // Recompute most of the class member. This needs to be called when the
   // domains of the variables are updated.
-  void RecomputeHelperData() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  void RecomputeHelperData() ABSL_EXCLUSIVE_LOCKS_REQUIRED(helper_mutex_);
 
   // Indicates if a variable is fixed in the model.
-  bool IsConstant(int var) const ABSL_SHARED_LOCKS_REQUIRED(mutex_);
+  bool IsConstant(int var) const ABSL_SHARED_LOCKS_REQUIRED(helper_mutex_);
 
   const SatParameters& parameters_;
   const CpModelProto& model_proto_;
@@ -169,21 +174,23 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // reduce the memory footprint of the helper when the model is large.
   //
   // TODO(user): Use custom domain repository rather than a proto?
-  CpModelProto model_proto_with_only_variables_ ABSL_GUARDED_BY(mutex_);
+  CpModelProto model_proto_with_only_variables_ ABSL_GUARDED_BY(helper_mutex_);
 
   // Constraints by types.
   std::vector<std::vector<int>> type_to_constraints_;
 
   // Variable-Constraint graph.
-  std::vector<std::vector<int>> constraint_to_var_ ABSL_GUARDED_BY(mutex_);
-  std::vector<std::vector<int>> var_to_constraint_ ABSL_GUARDED_BY(mutex_);
+  std::vector<std::vector<int>> constraint_to_var_
+      ABSL_GUARDED_BY(helper_mutex_);
+  std::vector<std::vector<int>> var_to_constraint_
+      ABSL_GUARDED_BY(helper_mutex_);
 
   // The set of active variables, that is the list of non constant variables if
   // parameters_.focus_on_decision_variables() is false, or the list of non
   // constant decision variables otherwise. It is stored both as a list and as a
   // set (using a Boolean vector).
-  std::vector<bool> active_variables_set_ ABSL_GUARDED_BY(mutex_);
-  std::vector<int> active_variables_ ABSL_GUARDED_BY(mutex_);
+  std::vector<bool> active_variables_set_ ABSL_GUARDED_BY(helper_mutex_);
+  std::vector<int> active_variables_ ABSL_GUARDED_BY(helper_mutex_);
 };
 
 // Base class for a CpModelProto neighborhood generator.
@@ -278,7 +285,7 @@ class NeighborhoodGenerator {
     }
   };
   void AddSolveData(SolveData data) {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(&generator_mutex_);
     solve_data_.push_back(data);
   }
 
@@ -291,31 +298,31 @@ class NeighborhoodGenerator {
 
   // Number of times this generator was called.
   int64_t num_calls() const {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(&generator_mutex_);
     return num_calls_;
   }
 
   // Number of time the neighborhood was fully solved (OPTIMAL/INFEASIBLE).
   int64_t num_fully_solved_calls() const {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(&generator_mutex_);
     return num_fully_solved_calls_;
   }
 
   // The current difficulty of this generator
   double difficulty() const {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(&generator_mutex_);
     return difficulty_.value();
   }
 
   // The current time limit that the sub-solve should use on this generator.
   double deterministic_limit() const {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(&generator_mutex_);
     return deterministic_limit_;
   }
 
   // The sum of the deterministic time spent in this generator.
   double deterministic_time() const {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(&generator_mutex_);
     return deterministic_time_;
   }
 
@@ -327,7 +334,7 @@ class NeighborhoodGenerator {
 
   const std::string name_;
   const NeighborhoodGeneratorHelper& helper_;
-  mutable absl::Mutex mutex_;
+  mutable absl::Mutex generator_mutex_;
 
  private:
   std::vector<SolveData> solve_data_;
@@ -400,7 +407,8 @@ class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
 Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
     const absl::Span<const int> intervals_to_relax,
     const CpSolverResponse& initial_solution,
-    const NeighborhoodGeneratorHelper& helper);
+    const NeighborhoodGeneratorHelper& helper)
+    ABSL_SHARED_LOCKS_REQUIRED(helper.helper_mutex_);
 
 // Only make sense for scheduling problem. This select a random set of interval
 // of the problem according to the difficulty. Then, for each no_overlap
@@ -514,7 +522,7 @@ class WeightedRandomRelaxationNeighborhoodGenerator
   // Adjusts the weights of the constraints removed to get the neighborhood
   // based on the solve_data.
   void AdditionalProcessingOnSynchronize(const SolveData& solve_data) override
-      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(generator_mutex_);
 
   // Higher weighted constraints are more likely to get removed.
   std::vector<double> constraint_weights_;
@@ -522,11 +530,11 @@ class WeightedRandomRelaxationNeighborhoodGenerator
 
   // Indices of the removed constraints per generated neighborhood.
   absl::flat_hash_map<int64_t, std::vector<int>> removed_constraints_
-      ABSL_GUARDED_BY(mutex_);
+      ABSL_GUARDED_BY(generator_mutex_);
 
   // TODO(user): Move this to parent class if other generators start using
   // feedbacks.
-  int64_t next_available_id_ ABSL_GUARDED_BY(mutex_) = 0;
+  int64_t next_available_id_ ABSL_GUARDED_BY(generator_mutex_) = 0;
 };
 
 }  // namespace sat
