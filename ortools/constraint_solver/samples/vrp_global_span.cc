@@ -152,7 +152,11 @@ void VrpGlobalSpan() {
 
   // Print solution on console.
   // [START print_solution]
-  PrintSolution(data, manager, routing, *solution);
+  if (solution != nullptr) {
+    PrintSolution(data, manager, routing, *solution);
+  } else {
+    LOG(INFO) << "No solution found.";
+  }
   // [END print_solution]
 }
 }  // namespace operations_research
