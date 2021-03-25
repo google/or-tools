@@ -427,6 +427,7 @@ test_cc_constraint_solver_samples: \
  rcc_tsp_circuit_board \
  rcc_tsp_distance_matrix \
  rcc_vrp \
+ rcc_vrp_breaks \
  rcc_vrp_capacity \
  rcc_vrp_drop_nodes \
  rcc_vrp_global_span \
