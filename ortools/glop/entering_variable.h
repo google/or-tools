@@ -72,7 +72,7 @@ class EnteringVariable {
   ABSL_MUST_USE_RESULT Status DualChooseEnteringColumn(
       bool nothing_to_recompute, const UpdateRow& update_row,
       Fractional cost_variation, std::vector<ColIndex>* bound_flip_candidates,
-      ColIndex* entering_col, Fractional* step);
+      ColIndex* entering_col);
 
   // Dual feasibility phase (i.e. phase I) ratio test.
   // Similar to the optimization phase test, but allows a step that increases
@@ -80,7 +80,7 @@ class EnteringVariable {
   // the one that minimize the sum of infeasibilities when applied.
   ABSL_MUST_USE_RESULT Status DualPhaseIChooseEnteringColumn(
       bool nothing_to_recompute, const UpdateRow& update_row,
-      Fractional cost_variation, ColIndex* entering_col, Fractional* step);
+      Fractional cost_variation, ColIndex* entering_col);
 
   // Sets the pricing parameters. This does not change the pricing rule.
   void SetParameters(const GlopParameters& parameters);

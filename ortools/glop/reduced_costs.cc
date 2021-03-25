@@ -307,19 +307,35 @@ void ReducedCosts::PerturbCosts() {
   }
 }
 
-void ReducedCosts::ShiftCost(ColIndex col) {
+void ReducedCosts::ShiftCostIfNeeded(bool increasing_rc_is_needed,
+                                     ColIndex col) {
   SCOPED_TIME_STAT(&stats_);
-  const Fractional kToleranceFactor = parameters_.degenerate_ministep_factor();
-  const Fractional small_step =
-      dual_feasibility_tolerance_ *
-      (reduced_costs_[col] > 0.0 ? kToleranceFactor : -kToleranceFactor);
-  IF_STATS_ENABLED(stats_.cost_shift.Add(reduced_costs_[col] + small_step));
-  cost_perturbations_[col] -= reduced_costs_[col] + small_step;
-  reduced_costs_[col] = -small_step;
+
+  // We always want a minimum step size, so if we have a negative step or
+  // a step that is really small, we will shift the cost of the given column.
+  const Fractional minimum_delta =
+      parameters_.degenerate_ministep_factor() * dual_feasibility_tolerance_;
+  if (increasing_rc_is_needed && reduced_costs_[col] <= -minimum_delta) return;
+  if (!increasing_rc_is_needed && reduced_costs_[col] >= minimum_delta) return;
+
+  const Fractional delta =
+      increasing_rc_is_needed ? minimum_delta : -minimum_delta;
+  IF_STATS_ENABLED(stats_.cost_shift.Add(reduced_costs_[col] + delta));
+  cost_perturbations_[col] -= reduced_costs_[col] + delta;
+  reduced_costs_[col] = -delta;
+  has_cost_shift_ = true;
+}
+
+bool ReducedCosts::StepIsDualDegenerate(bool increasing_rc_is_needed,
+                                        ColIndex col) {
+  if (increasing_rc_is_needed && reduced_costs_[col] >= 0.0) return true;
+  if (!increasing_rc_is_needed && reduced_costs_[col] <= 0.0) return true;
+  return false;
 }
 
 void ReducedCosts::ClearAndRemoveCostShifts() {
   SCOPED_TIME_STAT(&stats_);
+  has_cost_shift_ = false;
   cost_perturbations_.AssignToZero(matrix_.num_cols());
   recompute_basic_objective_ = true;
   recompute_basic_objective_left_inverse_ = true;

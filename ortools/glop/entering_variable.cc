@@ -89,9 +89,8 @@ Status EnteringVariable::PrimalChooseEnteringColumn(ColIndex* entering_col) {
 Status EnteringVariable::DualChooseEnteringColumn(
     bool nothing_to_recompute, const UpdateRow& update_row,
     Fractional cost_variation, std::vector<ColIndex>* bound_flip_candidates,
-    ColIndex* entering_col, Fractional* step) {
+    ColIndex* entering_col) {
   GLOP_RETURN_ERROR_IF_NULL(entering_col);
-  GLOP_RETURN_ERROR_IF_NULL(step);
   const DenseRow& update_coefficient = update_row.GetCoefficients();
   const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
   SCOPED_TIME_STAT(&stats_);
@@ -122,6 +121,12 @@ Status EnteringVariable::DualChooseEnteringColumn(
       reduced_costs_->GetDualFeasibilityTolerance();
   Fractional harris_ratio = std::numeric_limits<Fractional>::max();
 
+  // Like for the primal, we always allow a positive ministep, even if a
+  // variable is already infeasible by more than the tolerance.
+  const Fractional minimum_delta =
+      parameters_.degenerate_ministep_factor() *
+      reduced_costs_->GetDualFeasibilityTolerance();
+
   num_operations_ += 10 * update_row.GetNonZeroPositions().size();
   for (const ColIndex col : update_row.GetNonZeroPositions()) {
     // We will add ratio * coeff to this column with a ratio positive or zero.
@@ -137,7 +142,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
         if (-reduced_costs[col] > harris_ratio * coeff) continue;
         harris_ratio = std::min(
             harris_ratio, (-reduced_costs[col] + harris_tolerance) / coeff);
-        harris_ratio = std::max(0.0, harris_ratio);
+        harris_ratio = std::max(minimum_delta / coeff, harris_ratio);
       }
       breakpoints_.push_back(ColWithRatio(col, -reduced_costs[col], coeff));
       continue;
@@ -150,7 +155,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
         if (reduced_costs[col] > harris_ratio * -coeff) continue;
         harris_ratio = std::min(
             harris_ratio, (reduced_costs[col] + harris_tolerance) / -coeff);
-        harris_ratio = std::max(0.0, harris_ratio);
+        harris_ratio = std::max(minimum_delta / -coeff, harris_ratio);
       }
       breakpoints_.push_back(ColWithRatio(col, reduced_costs[col], -coeff));
       continue;
@@ -177,6 +182,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
 
   *entering_col = kInvalidCol;
   bound_flip_candidates->clear();
+  Fractional step = 0.0;
   Fractional best_coeff = -1.0;
   Fractional variation_magnitude = std::abs(cost_variation);
   equivalent_entering_choices_.clear();
@@ -222,9 +228,10 @@ Status EnteringVariable::DualChooseEnteringColumn(
       // negative. In this case we set it to 0.0, allowing any infeasible
       // position to enter the basis. This is quite important because its
       // helps in the choice of a stable pivot.
-      harris_ratio = std::max(harris_ratio, 0.0);
+      harris_ratio =
+          std::max(harris_ratio, minimum_delta / top.coeff_magnitude);
 
-      if (top.coeff_magnitude == best_coeff && top.ratio == *step) {
+      if (top.coeff_magnitude == best_coeff && top.ratio == step) {
         DCHECK_NE(*entering_col, kInvalidCol);
         equivalent_entering_choices_.push_back(top.col);
       } else {
@@ -234,7 +241,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
 
         // Note that the step is not directly used, so it is okay to leave it
         // negative.
-        *step = top.ratio;
+        step = top.ratio;
       }
     }
 
@@ -268,48 +275,18 @@ Status EnteringVariable::DualChooseEnteringColumn(
 
       VLOG(1) << "Used bound flip to avoid bad pivot. Before: " << best_coeff
               << " now: " << std::abs(update_coefficient[col]);
-      const Fractional coeff = (cost_variation > 0.0)
-                                   ? update_coefficient[col]
-                                   : -update_coefficient[col];
       *entering_col = col;
-      if (can_decrease.IsSet(col) && coeff > threshold) {
-        ColWithRatio temp(col, -reduced_costs[col], coeff);
-        *step = temp.ratio;
-      }
-      if (can_increase.IsSet(col) && coeff < -threshold) {
-        ColWithRatio temp(col, reduced_costs[col], -coeff);
-        *step = temp.ratio;
-      }
       break;
     }
   }
 
-  // If the step is 0.0, we make sure the reduced cost is 0.0 so
-  // UpdateReducedCosts() will not take a step that goes in the wrong way (a few
-  // experiments seems to indicate that this is not a good idea). See comment
-  // at the top of UpdateReducedCosts().
-  //
-  // Note that ShiftCost() actually shifts the cost a bit more in order to do a
-  // non-zero step. This helps on degenerate problems. See the comment of
-  // ShiftCost() for more detail.
-  //
-  // TODO(user): Do not do that if we do not end up using this pivot?
-  if (*step <= 0.0) {
-    // In order to be mathematically consistent, we shift the cost of the
-    // entering column in such a way that its reduced cost is indeed zero. This
-    // is called cost-shifting or perturbation in the literature and it does
-    // really help on degenerate problems. The pertubation will be removed once
-    // the pertubed problem is solved to the optimal.
-    reduced_costs_->ShiftCost(*entering_col);
-  }
   return Status::OK();
 }
 
 Status EnteringVariable::DualPhaseIChooseEnteringColumn(
     bool nothing_to_recompute, const UpdateRow& update_row,
-    Fractional cost_variation, ColIndex* entering_col, Fractional* step) {
+    Fractional cost_variation, ColIndex* entering_col) {
   GLOP_RETURN_ERROR_IF_NULL(entering_col);
-  GLOP_RETURN_ERROR_IF_NULL(step);
   const DenseRow& update_coefficient = update_row.GetCoefficients();
   const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
   SCOPED_TIME_STAT(&stats_);
@@ -319,12 +296,16 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
   breakpoints_.clear();
   breakpoints_.reserve(update_row.GetNonZeroPositions().size());
 
-  // Ratio test.
   const Fractional threshold = nothing_to_recompute
                                    ? parameters_.minimum_acceptable_pivot()
                                    : parameters_.ratio_test_zero_threshold();
   const Fractional dual_feasibility_tolerance =
       reduced_costs_->GetDualFeasibilityTolerance();
+  const Fractional harris_tolerance =
+      parameters_.harris_tolerance_ratio() * dual_feasibility_tolerance;
+  const Fractional minimum_delta =
+      parameters_.degenerate_ministep_factor() * dual_feasibility_tolerance;
+
   const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
   const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
   const VariableTypeRow& variable_type = variables_info_.GetTypeRow();
@@ -350,25 +331,31 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
                                                     : -update_coefficient[col];
 
     // Only proceed if there is a transition, note that if reduced_costs[col]
-    // is close to zero, then the variable is supposed to be dual-feasible.
+    // is close to zero, then the variable is counted as dual-feasible.
     if (std::abs(reduced_costs[col]) <= dual_feasibility_tolerance) {
       // Continue if the variation goes in the dual-feasible direction.
       if (coeff > 0 && !can_decrease.IsSet(col)) continue;
       if (coeff < 0 && !can_increase.IsSet(col)) continue;
 
-      // Note that here, a variable which is already dual-infeasible will still
-      // have a positive ratio. This may sounds weird, but the idea is to put
-      // first in the sorted breakpoint list a variable which has a reduced
-      // costs close to zero in order to minimize the magnitude of a step in the
-      // wrong direction.
+      // For an already dual-infeasible variable, we allow to push it until
+      // the harris_tolerance. But if it is past that or close to it, we also
+      // always enforce a minimum push.
+      if (coeff * reduced_costs[col] > 0.0) {
+        breakpoints_.push_back(ColWithRatio(
+            col,
+            std::max(minimum_delta,
+                     harris_tolerance - std::abs(reduced_costs[col])),
+            std::abs(coeff)));
+        continue;
+      }
     } else {
       // If the two are of the same sign, there is no transition, skip.
-      if (coeff * reduced_costs[col] > 0) continue;
+      if (coeff * reduced_costs[col] > 0.0) continue;
     }
 
     // We are sure there is a transition, add it to the set of breakpoints.
-    breakpoints_.push_back(
-        ColWithRatio(col, std::abs(reduced_costs[col]), std::abs(coeff)));
+    breakpoints_.push_back(ColWithRatio(
+        col, std::abs(reduced_costs[col]) + harris_tolerance, std::abs(coeff)));
   }
 
   // Process the breakpoints in priority order.
@@ -382,17 +369,17 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
   // Select the last breakpoint that still improves the infeasibility and has a
   // numerically stable pivot.
   *entering_col = kInvalidCol;
-  *step = -1.0;
+  Fractional step = -1.0;
   Fractional improvement = std::abs(cost_variation);
   while (!breakpoints_.empty()) {
     const ColWithRatio top = breakpoints_.front();
 
     // We keep the greatest coeff_magnitude for the same ratio.
-    DCHECK(top.ratio > *step ||
-           (top.ratio == *step && top.coeff_magnitude <= pivot_magnitude));
-    if (top.ratio > *step && top.coeff_magnitude >= pivot_magnitude) {
+    DCHECK(top.ratio > step ||
+           (top.ratio == step && top.coeff_magnitude <= pivot_magnitude));
+    if (top.ratio > step && top.coeff_magnitude >= pivot_magnitude) {
       *entering_col = top.col;
-      *step = top.ratio;
+      step = top.ratio;
       pivot_magnitude = top.coeff_magnitude;
     }
     improvement -= top.coeff_magnitude;

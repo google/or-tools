@@ -438,9 +438,25 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
             problem_status_ = ProblemStatus::IMPRECISE;
           }
         } else if (primal_infeasibility > primal_tolerance) {
+          if (num_optims == parameters_.max_number_of_reoptimizations()) {
+            if (log_info) {
+              LOG(INFO) << "The primal infeasibility is still higher than the "
+                           "requested internal tolerance, but the maximum "
+                           "number of optimization is reached.";
+            }
+            break;
+          }
           if (log_info) LOG(INFO) << "Re-optimizing with dual simplex ... ";
           problem_status_ = ProblemStatus::DUAL_FEASIBLE;
         } else if (dual_infeasibility > dual_tolerance) {
+          if (num_optims == parameters_.max_number_of_reoptimizations()) {
+            if (log_info) {
+              LOG(INFO) << "The dual infeasibility is still higher than the "
+                           "requested internal tolerance, but the maximum "
+                           "number of optimization is reached.";
+            }
+            break;
+          }
           if (log_info) LOG(INFO) << "Re-optimizing with primal simplex ... ";
           problem_status_ = ProblemStatus::PRIMAL_FEASIBLE;
         }
@@ -450,7 +466,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
 
   // Check that the return status is "precise".
   //
-  // TODO(user): we curretnly skip the DUAL_INFEASIBLE status because the
+  // TODO(user): we currently skip the DUAL_INFEASIBLE status because the
   // quantities are not up to date in this case.
   if (parameters_.change_status_to_imprecise() &&
       problem_status_ != ProblemStatus::DUAL_INFEASIBLE) {
@@ -2778,7 +2794,6 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
 
   // Entering variable.
   ColIndex entering_col;
-  Fractional ratio;
 
   while (true) {
     // TODO(user): we may loop a bit more than the actual number of iteration.
@@ -2876,8 +2891,12 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
           &leaving_row, &cost_variation, &target_bound));
     }
     if (leaving_row == kInvalidRow) {
-      if (!basis_factorization_.IsRefactorized()) {
+      // TODO(user): integrate this with the main "re-optimization" loop.
+      // Also distinguish cost perturbation and shifts?
+      if (!basis_factorization_.IsRefactorized() ||
+          reduced_costs_.HasCostShift()) {
         VLOG(1) << "Optimal reached, double checking.";
+        reduced_costs_.ClearAndRemoveCostShifts();
         refactorize = true;
         continue;
       }
@@ -2889,6 +2908,7 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
         if (num_dual_infeasible_positions_ == 0) {
           problem_status_ = ProblemStatus::DUAL_FEASIBLE;
         } else {
+          VLOG(1) << "DUAL infeasible in dual phase I.";
           problem_status_ = ProblemStatus::DUAL_INFEASIBLE;
         }
       } else {
@@ -2901,11 +2921,11 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
     if (feasibility_phase) {
       GLOP_RETURN_IF_ERROR(entering_variable_.DualPhaseIChooseEnteringColumn(
           reduced_costs_.AreReducedCostsPrecise(), update_row_, cost_variation,
-          &entering_col, &ratio));
+          &entering_col));
     } else {
       GLOP_RETURN_IF_ERROR(entering_variable_.DualChooseEnteringColumn(
           reduced_costs_.AreReducedCostsPrecise(), update_row_, cost_variation,
-          &bound_flip_candidates_, &entering_col, &ratio));
+          &bound_flip_candidates_, &entering_col));
     }
 
     // No entering_col: dual unbounded (i.e. primal infeasible).
@@ -2977,8 +2997,22 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
       return Status::OK();
     }
 
+    // Before we update the reduced costs, if its sign is already dual
+    // infeasible and the update direction will make it worse we make sure the
+    // reduced cost is 0.0 so UpdateReducedCosts() will not take a step that
+    // goes in the wrong direction (a few experiments seems to indicate that
+    // this is not a good idea). See comment at the top of UpdateReducedCosts().
+    //
+    // Note that ShiftCostIfNeeded() actually shifts the cost a bit more in
+    // order to do a non-zero step. This helps on degenerate problems. Like the
+    // pertubation, we will remove all these shifts at the end.
+    const bool increasing_rc_is_needed =
+        (cost_variation > 0.0) == (entering_coeff > 0.0);
+    reduced_costs_.ShiftCostIfNeeded(increasing_rc_is_needed, entering_col);
+
     IF_STATS_ENABLED({
-      if (ratio == 0.0) {
+      if (reduced_costs_.StepIsDualDegenerate(increasing_rc_is_needed,
+                                              entering_col)) {
         timer.AlsoUpdate(&iteration_stats_.degenerate);
       } else {
         timer.AlsoUpdate(&iteration_stats_.normal);

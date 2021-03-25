@@ -133,15 +133,23 @@ class ReducedCosts {
   void PerturbCosts();
 
   // Shifts the cost of the given non-basic column such that its current reduced
-  // cost becomes 0.0. Actually, this shifts the cost a bit more, so that the
-  // reduced cost becomes slightly of the other sign.
+  // cost becomes 0.0. Actually, this shifts the cost a bit more according to
+  // the positive_direction parameter.
   //
   // This is explained in Koberstein's thesis (section 6.2.2.3) and helps on
   // degenerate problems. As of july 2013, this allowed to pass dano3mip and
   // dbic1 without cycling forever. Note that contrary to what is explained in
   // the thesis, we do not shift any other variable costs. If any becomes
   // infeasible, it will be selected and shifted in subsequent iterations.
-  void ShiftCost(ColIndex col);
+  void ShiftCostIfNeeded(bool increasing_rc_is_needed, ColIndex col);
+
+  // Returns true if ShiftCostIfNeeded() was applied since the last
+  // ClearAndRemoveCostShifts().
+  bool HasCostShift() const { return has_cost_shift_; }
+
+  // Returns true if this step direction make the given column even more
+  // infeasible. This is just used for reporting stats.
+  bool StepIsDualDegenerate(bool increasing_rc_is_needed, ColIndex col);
 
   // Removes any cost shift and cost perturbation. This also lazily forces a
   // recomputation of all the derived quantities. This effectively resets the
@@ -262,6 +270,8 @@ class ReducedCosts {
   // Indicates if we have computed the reduced costs with a good precision.
   bool are_reduced_costs_precise_;
   bool are_reduced_costs_recomputed_;
+
+  bool has_cost_shift_ = false;
 
   // Values of the objective on the columns of the basis. The order is given by
   // the basis_ mapping. It is usually denoted as 'c_B' in the literature .
