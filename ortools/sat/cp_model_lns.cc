@@ -60,6 +60,8 @@ void NeighborhoodGeneratorHelper::Synchronize() {
     shared_bounds_->GetChangedBounds(shared_bounds_id_, &model_variables,
                                      &new_lower_bounds, &new_upper_bounds);
 
+    bool fixed_variables = false;                                     
+
     for (int i = 0; i < model_variables.size(); ++i) {
       const int var = model_variables[i];
       const int64_t new_lb = new_lower_bounds[i];
@@ -95,10 +97,11 @@ void NeighborhoodGeneratorHelper::Synchronize() {
       }
       FillDomainInProto(
           new_domain, model_proto_with_only_variables_.mutable_variables(var));
+      fixed_variables |= new_domain.IsFixed();          
     }
 
     // Only trigger the computation if needed.
-    if (!model_variables.empty()) {
+    if (fixed_variables) {
       RecomputeHelperData();
     }
   }
