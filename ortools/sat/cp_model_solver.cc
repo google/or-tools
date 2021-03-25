@@ -130,6 +130,10 @@ ABSL_FLAG(bool, cp_model_check_intermediate_solutions, false,
           "When true, all intermediate solutions found by the solver will be "
           "checked. This can be expensive, therefore it is off by default.");
 
+ABSL_FLAG(std::string, contention_profile, "",
+          "If non-empty, dump a contention pprof proto to the specified "
+          "destination at the end of the solve.");
+
 namespace operations_research {
 namespace sat {
 
@@ -958,7 +962,7 @@ void RegisterVariableBoundsLevelZeroExport(
     Model* model) {
   CHECK(shared_bounds_manager != nullptr);
   int saved_trail_index = 0;
-  const auto broadcast_level_zero_bounds =
+  auto broadcast_level_zero_bounds =
       [&model_proto, saved_trail_index, model, shared_bounds_manager](
           const std::vector<IntegerVariable>& modified_vars) mutable {
         CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
@@ -1021,13 +1025,29 @@ void RegisterVariableBoundsLevelZeroExport(
           shared_bounds_manager->ReportPotentialNewBounds(
               model_proto, model->Name(), model_variables, new_lower_bounds,
               new_upper_bounds);
-        }
 
-        // If we are not in interleave_search we synchronize right away.
-        if (!model->Get<SatParameters>()->interleave_search()) {
-          shared_bounds_manager->Synchronize();
+          // If we are not in interleave_search we synchronize right away.
+          if (!model->Get<SatParameters>()->interleave_search()) {
+            shared_bounds_manager->Synchronize();
+          }
         }
       };
+
+  // The callback will just be called on NEWLY modified var. So initially,
+  // we do want to read all variables.
+  //
+  // TODO(user): Find a better way? It seems nicer to register this before
+  // any variable is modified. But then we don't want to call it each time
+  // we reach level zero during probing. It should be better to only call
+  // it when a new variable has been fixed.
+  const IntegerVariable num_vars =
+      model->GetOrCreate<IntegerTrail>()->NumIntegerVariables();
+  std::vector<IntegerVariable> all_variables;
+  all_variables.reserve(num_vars.value());
+  for (IntegerVariable var(0); var < num_vars; ++var) {
+    all_variables.push_back(var);
+  }
+  broadcast_level_zero_bounds(all_variables);
 
   model->GetOrCreate<GenericLiteralWatcher>()
       ->RegisterLevelZeroModifiedVariablesCallback(broadcast_level_zero_bounds);
@@ -2173,14 +2193,6 @@ class FullProblemSolver : public SubSolver {
       local_model_->Register<SharedIncompleteSolutionManager>(
           shared->incomplete_solutions);
     }
-
-    // Level zero variable bounds sharing.
-    if (shared_->bounds != nullptr) {
-      RegisterVariableBoundsLevelZeroExport(
-          *shared_->model_proto, shared_->bounds, local_model_.get());
-      RegisterVariableBoundsLevelZeroImport(
-          *shared_->model_proto, shared_->bounds, local_model_.get());
-    }
   }
 
   bool TaskIsAvailable() override {
@@ -2199,6 +2211,18 @@ class FullProblemSolver : public SubSolver {
       if (solving_first_chunk_) {
         LoadCpModel(*shared_->model_proto, shared_->response,
                     local_model_.get());
+
+        // Level zero variable bounds sharing. It is important to register
+        // that after the probing that takes place in LoadCpModel() otherwise
+        // we will have a mutex contention issue when all the thread probes
+        // at the same time.
+        if (shared_->bounds != nullptr) {
+          RegisterVariableBoundsLevelZeroExport(
+              *shared_->model_proto, shared_->bounds, local_model_.get());
+          RegisterVariableBoundsLevelZeroImport(
+              *shared_->model_proto, shared_->bounds, local_model_.get());
+        }
+
         if (local_model_->GetOrCreate<SatParameters>()->repair_hint()) {
           MinimizeL1DistanceWithHint(*shared_->model_proto, shared_->response,
                                      shared_->wall_timer, shared_->time_limit,
@@ -3285,6 +3309,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     SOLVER_LOG(logger, "");
     shared_response_manager.DisplayImprovementStatistics();
   }
+
   return final_response;
 }
 

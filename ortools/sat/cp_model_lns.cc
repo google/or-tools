@@ -52,7 +52,6 @@ NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
 }
 
 void NeighborhoodGeneratorHelper::Synchronize() {
-  absl::MutexLock mutex_lock(&helper_mutex_);
   if (shared_bounds_ != nullptr) {
     std::vector<int> model_variables;
     std::vector<int64_t> new_lower_bounds;
@@ -62,42 +61,47 @@ void NeighborhoodGeneratorHelper::Synchronize() {
 
     bool new_variables_have_been_fixed = false;
 
-    for (int i = 0; i < model_variables.size(); ++i) {
-      const int var = model_variables[i];
-      const int64_t new_lb = new_lower_bounds[i];
-      const int64_t new_ub = new_upper_bounds[i];
-      if (VLOG_IS_ON(3)) {
-        const auto& domain =
-            model_proto_with_only_variables_.variables(var).domain();
-        const int64_t old_lb = domain.Get(0);
-        const int64_t old_ub = domain.Get(domain.size() - 1);
-        VLOG(3) << "Variable: " << var << " old domain: [" << old_lb << ", "
-                << old_ub << "] new domain: [" << new_lb << ", " << new_ub
-                << "]";
+    {
+      absl::MutexLock domain_lock(&domain_mutex_);
+
+      for (int i = 0; i < model_variables.size(); ++i) {
+        const int var = model_variables[i];
+        const int64_t new_lb = new_lower_bounds[i];
+        const int64_t new_ub = new_upper_bounds[i];
+        if (VLOG_IS_ON(3)) {
+          const auto& domain =
+              model_proto_with_only_variables_.variables(var).domain();
+          const int64_t old_lb = domain.Get(0);
+          const int64_t old_ub = domain.Get(domain.size() - 1);
+          VLOG(3) << "Variable: " << var << " old domain: [" << old_lb << ", "
+                  << old_ub << "] new domain: [" << new_lb << ", " << new_ub
+                  << "]";
+        }
+        const Domain old_domain = ReadDomainFromProto(
+            model_proto_with_only_variables_.variables(var));
+        const Domain new_domain =
+            old_domain.IntersectionWith(Domain(new_lb, new_ub));
+        if (new_domain.IsEmpty()) {
+          // This can mean two things:
+          // 1/ This variable is a normal one and the problem is UNSAT or
+          // 2/ This variable is optional, and its associated literal must be
+          //    set to false.
+          //
+          // Currently, we wait for any full solver to pick the crossing bounds
+          // and do the correct stuff on their own. We do not want to have empty
+          // domain in the proto as this would means INFEASIBLE. So we just
+          // ignore such bounds here.
+          //
+          // TODO(user): We could set the optional literal to false directly in
+          // the bound sharing manager. We do have to be careful that all the
+          // different solvers have the same optionality definition though.
+          continue;
+        }
+        FillDomainInProto(
+            new_domain,
+            model_proto_with_only_variables_.mutable_variables(var));
+        new_variables_have_been_fixed |= new_domain.IsFixed();
       }
-      const Domain old_domain =
-          ReadDomainFromProto(model_proto_with_only_variables_.variables(var));
-      const Domain new_domain =
-          old_domain.IntersectionWith(Domain(new_lb, new_ub));
-      if (new_domain.IsEmpty()) {
-        // This can mean two things:
-        // 1/ This variable is a normal one and the problem is UNSAT or
-        // 2/ This variable is optional, and its associated literal must be
-        //    set to false.
-        //
-        // Currently, we wait for any full solver to pick the crossing bounds
-        // and do the correct stuff on their own. We do not want to have empty
-        // domain in the proto as this would means INFEASIBLE. So we just ignore
-        // such bounds here.
-        //
-        // TODO(user): We could set the optional literal to false directly in
-        // the bound sharing manager. We do have to be careful that all the
-        // different solvers have the same optionality definition though.
-        continue;
-      }
-      FillDomainInProto(
-          new_domain, model_proto_with_only_variables_.mutable_variables(var));
-      new_variables_have_been_fixed |= new_domain.IsFixed();
     }
 
     // Only trigger the computation if needed.
@@ -114,6 +118,9 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // this will duplicate already existing code :-( we should probably still do
   // at least enforcement literal and clauses? We could maybe run a light
   // presolve?
+  absl::MutexLock graph_lock(&graph_mutex_);
+  absl::ReaderMutexLock domain_lock(&domain_mutex_);
+
   var_to_constraint_.assign(model_proto_.variables_size(), {});
   constraint_to_var_.assign(model_proto_.constraints_size(), {});
 
@@ -190,17 +197,17 @@ bool NeighborhoodGeneratorHelper::IsConstant(int var) const {
 
 Neighborhood NeighborhoodGeneratorHelper::FullNeighborhood() const {
   // Copying the proto can take a lot of time.
-  // As it is read-only, we release the reader lock on the geenrator_mutex_
+  // As it is read-only, we release the reader lock on the helper_mutex_
   // during the copy.
   Neighborhood neighborhood;
   neighborhood.is_reduced = false;
   neighborhood.is_generated = true;
-  helper_mutex_.ReaderUnlock();
   neighborhood.cp_model = model_proto_;
-  helper_mutex_.ReaderLock();
-
-  *neighborhood.cp_model.mutable_variables() =
-      model_proto_with_only_variables_.variables();
+  {
+    absl::ReaderMutexLock lock(&domain_mutex_);
+    *neighborhood.cp_model.mutable_variables() =
+        model_proto_with_only_variables_.variables();
+  }
   return neighborhood;
 }
 
@@ -290,9 +297,12 @@ Neighborhood NeighborhoodGeneratorHelper::RelaxGivenVariables(
   std::vector<bool> relaxed_variables_set(model_proto_.variables_size(), false);
   for (const int var : relaxed_variables) relaxed_variables_set[var] = true;
   std::vector<int> fixed_variables;
-  for (const int i : active_variables_) {
-    if (!relaxed_variables_set[i]) {
-      fixed_variables.push_back(i);
+  {
+    absl::ReaderMutexLock graph_lock(&graph_mutex_);
+    for (const int i : active_variables_) {
+      if (!relaxed_variables_set[i]) {
+        fixed_variables.push_back(i);
+      }
     }
   }
   return FixGivenVariables(initial_solution, fixed_variables);
@@ -301,8 +311,11 @@ Neighborhood NeighborhoodGeneratorHelper::RelaxGivenVariables(
 Neighborhood NeighborhoodGeneratorHelper::FixAllVariables(
     const CpSolverResponse& initial_solution) const {
   std::vector<int> fixed_variables;
-  for (const int i : active_variables_) {
-    fixed_variables.push_back(i);
+  {
+    absl::ReaderMutexLock graph_lock(&graph_mutex_);
+    for (const int i : active_variables_) {
+      fixed_variables.push_back(i);
+    }
   }
   return FixGivenVariables(initial_solution, fixed_variables);
 }
@@ -416,8 +429,11 @@ void GetRandomSubset(double relative_size, std::vector<int>* base,
 Neighborhood SimpleNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
-  absl::ReaderMutexLock lock(&helper_.helper_mutex_);
-  std::vector<int> fixed_variables = helper_.ActiveVariables();
+  std::vector<int> fixed_variables;
+  {
+    absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
+    fixed_variables = helper_.ActiveVariables();
+  }
   GetRandomSubset(1.0 - difficulty, &fixed_variables, random);
   return helper_.FixGivenVariables(initial_solution, fixed_variables);
 }
@@ -425,7 +441,7 @@ Neighborhood SimpleNeighborhoodGenerator::Generate(
 Neighborhood SimpleConstraintNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
-  absl::ReaderMutexLock lock(&helper_.helper_mutex_);
+  helper_.graph_mutex_.Lock();
   std::vector<int> active_constraints;
   for (int ct = 0; ct < helper_.ModelProto().constraints_size(); ++ct) {
     if (helper_.ModelProto().constraints(ct).constraint_case() ==
@@ -440,6 +456,7 @@ Neighborhood SimpleConstraintNeighborhoodGenerator::Generate(
   const int target_size = std::ceil(difficulty * num_active_vars);
   const int num_constraints = helper_.ConstraintToVar().size();
   if (num_constraints == 0 || target_size == num_active_vars) {
+    helper_.graph_mutex_.Unlock();
     return helper_.FullNeighborhood();
   }
   CHECK_GT(target_size, 0);
@@ -461,17 +478,19 @@ Neighborhood SimpleConstraintNeighborhoodGenerator::Generate(
     }
     if (relaxed_variables.size() == target_size) break;
   }
+  helper_.graph_mutex_.Unlock();
   return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
 }
 
 Neighborhood VariableGraphNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
-  absl::ReaderMutexLock lock(&helper_.helper_mutex_);
+  helper_.graph_mutex_.Lock();
   const int num_active_vars = helper_.ActiveVariables().size();
   const int num_model_vars = helper_.ModelProto().variables_size();
   const int target_size = std::ceil(difficulty * num_active_vars);
   if (target_size == num_active_vars) {
+    helper_.graph_mutex_.Unlock();
     return helper_.FullNeighborhood();
   }
   CHECK_GT(target_size, 0) << difficulty << " " << num_active_vars;
@@ -479,6 +498,10 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
   std::vector<bool> visited_variables_set(num_model_vars, false);
   std::vector<int> relaxed_variables;
   std::vector<int> visited_variables;
+
+  // It is important complexity wise to never scan a constraint twice!
+  const int num_model_constraints = helper_.ModelProto().constraints_size();
+  std::vector<bool> scanned_constraints(num_model_constraints, false);
 
   const int first_var =
       helper_.ActiveVariables()[absl::Uniform<int>(random, 0, num_active_vars)];
@@ -492,13 +515,16 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
     // Collect all the variables that appears in the same constraints as
     // visited_variables[i].
     for (const int ct : helper_.VarToConstraint()[visited_variables[i]]) {
+      if (scanned_constraints[ct]) continue;
+      scanned_constraints[ct] = true;
       for (const int var : helper_.ConstraintToVar()[ct]) {
         if (visited_variables_set[var]) continue;
         visited_variables_set[var] = true;
         random_variables.push_back(var);
       }
     }
-    // We always randomize to change the partial subgraph explored afterwards.
+    // We always randomize to change the partial subgraph explored
+    // afterwards.
     std::shuffle(random_variables.begin(), random_variables.end(), random);
     for (const int var : random_variables) {
       if (relaxed_variables.size() < target_size) {
@@ -512,19 +538,20 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
     }
     if (relaxed_variables.size() >= target_size) break;
   }
-
+  helper_.graph_mutex_.Unlock();
   return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
 }
 
 Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
-  absl::ReaderMutexLock lock(&helper_.helper_mutex_);
+  helper_.graph_mutex_.Lock();
   const int num_active_vars = helper_.ActiveVariables().size();
   const int num_model_vars = helper_.ModelProto().variables_size();
   const int target_size = std::ceil(difficulty * num_active_vars);
   const int num_constraints = helper_.ConstraintToVar().size();
   if (num_constraints == 0 || target_size == num_active_vars) {
+    helper_.graph_mutex_.Unlock();
     return helper_.FullNeighborhood();
   }
   CHECK_GT(target_size, 0);
@@ -569,6 +596,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
       }
     }
   }
+  helper_.graph_mutex_.Unlock();
   return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
 }
 
@@ -673,9 +701,10 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
 Neighborhood SchedulingNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
-  absl::ReaderMutexLock lock(&helper_.helper_mutex_);
-  std::vector<int> intervals_to_relax =
-      helper_.GetActiveIntervals(initial_solution);
+  std::vector<int> intervals_to_relax;
+  helper_.domain_mutex_.Lock();
+  intervals_to_relax = helper_.GetActiveIntervals(initial_solution);
+  helper_.domain_mutex_.Unlock();
   GetRandomSubset(difficulty, &intervals_to_relax, random);
 
   return GenerateSchedulingNeighborhoodForRelaxation(intervals_to_relax,
@@ -685,10 +714,11 @@ Neighborhood SchedulingNeighborhoodGenerator::Generate(
 Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
-  absl::ReaderMutexLock lock(&helper_.helper_mutex_);
   std::vector<std::pair<int64_t, int>> start_interval_pairs;
+  helper_.domain_mutex_.Lock();
   const std::vector<int>& active_intervals =
       helper_.GetActiveIntervals(initial_solution);
+  helper_.domain_mutex_.Unlock();
   std::vector<int> intervals_to_relax;
 
   if (active_intervals.empty()) return helper_.FullNeighborhood();
@@ -743,7 +773,6 @@ bool RelaxationInducedNeighborhoodGenerator::ReadyToGenerate() const {
 Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
-  absl::ReaderMutexLock lock(&helper_.helper_mutex_);
   Neighborhood neighborhood = helper_.FullNeighborhood();
   neighborhood.is_generated = false;
 
@@ -793,6 +822,7 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
     return neighborhood;
   }
 
+  absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
   // Fix the variables in the local model.
   for (const std::pair</*model_var*/ int, /*value*/ int64_t> fixed_var :
        rins_neighborhood.fixed_vars) {
@@ -867,7 +897,6 @@ Neighborhood ConsecutiveConstraintsRelaxationNeighborhoodGenerator::Generate(
     }
   }
 
-  absl::ReaderMutexLock lock(&helper_.helper_mutex_);
   return helper_.RemoveMarkedConstraints(removed_constraints);
 }
 
@@ -990,11 +1019,7 @@ Neighborhood WeightedRandomRelaxationNeighborhoodGenerator::Generate(
     removed_constraints.push_back(constraint_removal_scores[i].second);
   }
 
-  Neighborhood result;
-  {
-    absl::ReaderMutexLock data_lock(&helper_.helper_mutex_);
-    result = helper_.RemoveMarkedConstraints(removed_constraints);
-  }
+  Neighborhood result = helper_.RemoveMarkedConstraints(removed_constraints);
 
   absl::MutexLock mutex_lock(&generator_mutex_);
   result.id = next_available_id_;
