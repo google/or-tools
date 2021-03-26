@@ -3,7 +3,7 @@ set_property(SOURCE init.i PROPERTY SWIG_MODULE_NAME operations_research_init)
 set_property(SOURCE init.i PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 set_property(SOURCE init.i PROPERTY COMPILE_OPTIONS
-  -namespace ${DOTNET_PROJECT}.init
+  -namespace ${DOTNET_PROJECT}.Init
   -dllimport google-ortools-native)
 swig_add_library(dotnet_init
   TYPE OBJECT
