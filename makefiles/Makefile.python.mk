@@ -39,6 +39,7 @@ SWIG_PYTHON3_FLAG := -py3 -DPY3
 PYTHON3_CFLAGS := -DPY3
 
 # All libraries and dependecies
+PYINIT_LIBS = $(LIB_DIR)/_pywrapinit.$(SWIG_PYTHON_LIB_SUFFIX)
 PYALGORITHMS_LIBS = $(LIB_DIR)/_pywrapknapsack_solver.$(SWIG_PYTHON_LIB_SUFFIX)
 PYGRAPH_LIBS = $(LIB_DIR)/_pywrapgraph.$(SWIG_PYTHON_LIB_SUFFIX)
 PYCP_LIBS = $(LIB_DIR)/_pywrapcp.$(SWIG_PYTHON_LIB_SUFFIX)
@@ -46,17 +47,16 @@ PYLP_LIBS = $(LIB_DIR)/_pywraplp.$(SWIG_PYTHON_LIB_SUFFIX)
 PYSAT_LIBS = $(LIB_DIR)/_pywrapsat.$(SWIG_PYTHON_LIB_SUFFIX)
 PYDATA_LIBS = $(LIB_DIR)/_pywraprcpsp.$(SWIG_PYTHON_LIB_SUFFIX)
 PYSORTED_INTERVAL_LIST_LIBS = $(LIB_DIR)/_sorted_interval_list.$(SWIG_PYTHON_LIB_SUFFIX)
-PYINIT_LIBS = $(LIB_DIR)/_init.$(SWIG_PYTHON_LIB_SUFFIX)
 PYTHON_OR_TOOLS_LIBS = \
  $(GEN_DIR)/ortools/__init__.py \
+ $(PYINIT_LIBS) \
  $(PYALGORITHMS_LIBS) \
  $(PYGRAPH_LIBS) \
  $(PYCP_LIBS) \
  $(PYLP_LIBS) \
  $(PYSAT_LIBS) \
  $(PYDATA_LIBS) \
- $(PYSORTED_INTERVAL_LIST_LIBS) \
- $(PYINIT_LIBS)
+ $(PYSORTED_INTERVAL_LIST_LIBS)
 
 # Main target
 .PHONY: python # Build Python OR-Tools.
@@ -104,6 +104,49 @@ $(GEN_DIR)/ortools/__init__.py: | $(GEN_DIR)/ortools
 #######################
 ##  Python Wrappers  ##
 #######################
+# init
+ifeq ($(PLATFORM),MACOSX)
+PYINIT_LDFLAGS = -install_name @rpath/_pywrapinit.$(SWIG_PYTHON_LIB_SUFFIX) #
+endif
+
+$(GEN_DIR)/ortools/init/pywrapinit.py: \
+ $(SRC_DIR)/ortools/init/init.h \
+ $(SRC_DIR)/ortools/base/base.i \
+ $(SRC_DIR)/ortools/util/python/vector.i \
+ $(SRC_DIR)/ortools/init/python/init.i \
+ $(INIT_DEPS) \
+ | $(GEN_DIR)/ortools/init
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_DOXYGEN) $(SWIG_PYTHON3_FLAG) \
+ -o $(GEN_PATH)$Sortools$Sinit$Sinit_python_wrap.cc \
+ -module pywrapinit \
+ ortools$Sinit$Spython$Sinit.i
+
+$(GEN_DIR)/ortools/init/init_python_wrap.cc: \
+ $(GEN_DIR)/ortools/init/pywrapinit.py
+
+$(OBJ_DIR)/swig/init_python_wrap.$O: \
+ $(GEN_DIR)/ortools/init/init_python_wrap.cc \
+ $(INIT_DEPS) \
+ | $(OBJ_DIR)/swig
+	$(CCC) $(CFLAGS) $(PYTHON_INC) $(PYTHON3_CFLAGS) \
+ -c $(GEN_PATH)$Sortools$Sinit$Sinit_python_wrap.cc \
+ $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sinit_python_wrap.$O
+
+$(PYINIT_LIBS): $(OBJ_DIR)/swig/init_python_wrap.$O $(OR_TOOLS_LIBS)
+	$(DYNAMIC_LD) \
+ $(PYINIT_LDFLAGS) \
+ $(LD_OUT)$(LIB_DIR)$S_pywrapinit.$(SWIG_PYTHON_LIB_SUFFIX) \
+ $(OBJ_DIR)$Sswig$Sinit_python_wrap.$O \
+ $(OR_TOOLS_LNK) \
+ $(SYS_LNK) \
+ $(PYTHON_LNK) \
+ $(PYTHON_LDFLAGS)
+ifeq ($(SYSTEM),win)
+	copy $(LIB_DIR)$S_pywrapinit.$(SWIG_PYTHON_LIB_SUFFIX) $(GEN_PATH)\\ortools\\init\\_pywrapinit.pyd
+else
+	cp $(PYINIT_LIBS) $(GEN_PATH)/ortools/init
+endif
+
 # pywrapknapsack_solver
 ifeq ($(PLATFORM),MACOSX)
 PYALGORITHMS_LDFLAGS = -install_name @rpath/_pywrapknapsack_solver.$(SWIG_PYTHON_LIB_SUFFIX) #
@@ -496,49 +539,6 @@ else
 	cp $(PYSORTED_INTERVAL_LIST_LIBS) $(GEN_PATH)/ortools/util
 endif
 
-# init
-ifeq ($(PLATFORM),MACOSX)
-PYINIT_LDFLAGS = -install_name @rpath/_init.$(SWIG_PYTHON_LIB_SUFFIX) #
-endif
-
-$(GEN_DIR)/ortools/init/init.py: \
- $(SRC_DIR)/ortools/init/init.h \
- $(SRC_DIR)/ortools/base/base.i \
- $(SRC_DIR)/ortools/util/python/vector.i \
- $(SRC_DIR)/ortools/init/python/init.i \
- $(INIT_DEPS) \
- | $(GEN_DIR)/ortools/init
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_DOXYGEN) $(SWIG_PYTHON3_FLAG) \
- -o $(GEN_PATH)$Sortools$Sinit$Sinit_python_wrap.cc \
- -module init \
- $(SRC_DIR)$Sortools$Sinit$Spython$Sinit.i
-
-$(GEN_DIR)/ortools/init/init_python_wrap.cc: \
- $(GEN_DIR)/ortools/init/init.py
-
-$(OBJ_DIR)/swig/init_python_wrap.$O: \
- $(GEN_DIR)/ortools/init/init_python_wrap.cc \
- $(INIT_DEPS) \
- | $(OBJ_DIR)/swig
-	$(CCC) $(CFLAGS) $(PYTHON_INC) $(PYTHON3_CFLAGS) \
- -c $(GEN_PATH)$Sortools$Sinit$Sinit_python_wrap.cc \
- $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sinit_python_wrap.$O
-
-$(PYINIT_LIBS): $(OBJ_DIR)/swig/init_python_wrap.$O $(OR_TOOLS_LIBS)
-	$(DYNAMIC_LD) \
- $(PYINIT_LDFLAGS) \
- $(LD_OUT)$(LIB_DIR)$S_init.$(SWIG_PYTHON_LIB_SUFFIX) \
- $(OBJ_DIR)$Sswig$Sinit_python_wrap.$O \
- $(OR_TOOLS_LNK) \
- $(SYS_LNK) \
- $(PYTHON_LNK) \
- $(PYTHON_LDFLAGS)
-ifeq ($(SYSTEM),win)
-	copy $(LIB_DIR)$S_init.$(SWIG_PYTHON_LIB_SUFFIX) $(GEN_PATH)\\ortools\\init\\_init.pyd
-else
-	cp $(PYINIT_LIBS) $(GEN_PATH)/ortools/init
-endif
-
 #######################
 ##  Python SOURCE  ##
 #######################
@@ -877,6 +877,7 @@ MISSING_PYPI_FILES = \
  $(PYPI_ARCHIVE_TEMP_DIR)/ortools/README.txt \
  $(PYPI_ARCHIVE_TEMP_DIR)/ortools/LICENSE-2.0.txt \
  $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/__init__.py \
+ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/init \
  $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/algorithms \
  $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/graph \
  $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/constraint_solver \
@@ -936,6 +937,13 @@ else
  $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S__init__.py
 endif
 
+$(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/init: $(PYINIT_LIBS) | $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools
+	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sinit
+	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sinit
+	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sinit$S__init__.py
+	$(COPY) $(GEN_PATH)$Sortools$Sinit$Spywrapinit.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sinit
+	$(COPY) $(GEN_PATH)$Sortools$Sinit$S_pywrapinit.* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sinit
+
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/algorithms: $(PYALGORITHMS_LIBS) | $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Salgorithms
 	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Salgorithms
@@ -989,13 +997,6 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/util: $(PYSORTED_INTERVAL_LIST_LIBS) | 
 	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sutil$S__init__.py
 	$(COPY) $(GEN_PATH)$Sortools$Sutil$S*.py* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sutil
 	$(COPY) $(GEN_PATH)$Sortools$Sutil$S_sorted_interval_list.* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sutil
-
-$(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/init: $(PYINIT_LIBS) | $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools
-	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sinit
-	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sinit
-	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sinit$S__init__.py
-	$(COPY) $(GEN_PATH)$Sortools$Sinit$S*.py* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sinit
-	$(COPY) $(GEN_PATH)$Sortools$Sinit$S_init.* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sinit
 
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs: | $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
@@ -1134,6 +1135,13 @@ clean_python:
 	-$(DEL) $(GEN_PATH)$Sortools$S__init__.py
 	-$(DEL) ortools$S*.pyc
 	-$(DELREC) ortools$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Sinit$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Sinit$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Sinit$S__pycache__
+	-$(DEL) ortools$Sinit$S*.pyc
+	-$(DELREC) ortools$Sinit$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Sinit$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sinit$S_pywrap*
 	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.py
 	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.pyc
 	-$(DELREC) $(GEN_PATH)$Sortools$Salgorithms$S__pycache__
@@ -1185,11 +1193,6 @@ clean_python:
 	-$(DELREC) ortools$Sutil$S__pycache__
 	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*_python_wrap.*
 	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S_*
-	-$(DEL) $(GEN_PATH)$Sortools$Sinit$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Sinit$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Sinit$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Sinit$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sinit$S_*
 	-$(DEL) $(LIB_DIR)$S_*.$(SWIG_PYTHON_LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$Sswig$S*python_wrap.$O
 	-$(DELREC) temp_python*
