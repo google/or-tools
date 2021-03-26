@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
@@ -71,8 +72,8 @@ void PrintSolution(const RoutingIndexManager& manager,
   LOG(INFO) << "Objective: " << solution.ObjectiveValue();
 
   LOG(INFO) << "Breaks:";
-  auto intervals = solution.IntervalVarContainer();
-  for (const auto& break_interval : intervals.elements()) {
+  const Assignment::IntervalContainer& intervals = solution.IntervalVarContainer();
+  for (const IntervalVarElement& break_interval : intervals.elements()) {
     if (break_interval.PerformedValue()) {
       LOG(INFO) << break_interval.Var()->name() << " " << break_interval.DebugString();
     } else {
@@ -83,16 +84,16 @@ void PrintSolution(const RoutingIndexManager& manager,
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie("Time");
   int64_t total_time{0};
   for (int vehicle_id = 0; vehicle_id < manager.num_vehicles(); ++vehicle_id) {
-    int64_t index = routing.Start(vehicle_id);
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
+    int64_t index = routing.Start(vehicle_id);
     std::stringstream route;
     while (routing.IsEnd(index) == false) {
-      auto time_var = time_dimension.CumulVar(index);
+      const IntVar* time_var = time_dimension.CumulVar(index);
       route << manager.IndexToNode(index).value() << " Time("
             << solution.Value(time_var) << ") -> ";
       index = solution.Value(routing.NextVar(index));
     }
-    auto time_var = time_dimension.CumulVar(index);
+    const IntVar* time_var = time_dimension.CumulVar(index);
     route << manager.IndexToNode(index).value() << " Time("
           << solution.Value(time_var) << ")";
     LOG(INFO) << route.str();
@@ -127,8 +128,8 @@ void VrpBreaks() {
   const int transit_callback_index = routing.RegisterTransitCallback(
       [&data, &manager](int64_t from_index, int64_t to_index) -> int64_t {
         // Convert from routing variable Index to distance matrix NodeIndex.
-        auto from_node = manager.IndexToNode(from_index).value();
-        auto to_node = manager.IndexToNode(to_index).value();
+        int from_node = manager.IndexToNode(from_index).value();
+        int to_node = manager.IndexToNode(to_index).value();
         return data.time_matrix[from_node][to_node] +
                data.service_time[from_node];
       });
