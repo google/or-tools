@@ -34,8 +34,15 @@ OR-Tools depends on severals mandatory libraries.
 ## Compilation
 You must compile OR-Tools using C++17:
 
-* on UNIX: `--cxxopt=-std=c++17`
-* on Windows when using MSVC: `--cxxopt="-std:c++17"`
+* on UNIX:
+  ```sh
+  bazel build --cxxopt=-std=c++17 //...:all
+  ```
+
+* on Windows when using MSVC:
+  ```sh
+  bazel build --cxxopt="-std:c++17" //...:all
+  ```
 
 <a name="integration"></a>
 ## Integrating OR-Tools in your Bazel Project

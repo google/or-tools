@@ -666,6 +666,7 @@ test_java_constraint_solver_samples: \
  rjava_TspCircuitBoard \
  rjava_TspDistanceMatrix \
  rjava_Vrp \
+ rjava_VrpBreaks \
  rjava_VrpCapacity \
  rjava_VrpDropNodes \
  rjava_VrpGlobalSpan \

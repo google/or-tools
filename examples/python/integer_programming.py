@@ -13,7 +13,7 @@
 """Integer programming examples that show how to use the APIs."""
 
 from ortools.linear_solver import pywraplp
-from ortools.init import init
+from ortools.init import pywrapinit
 
 
 def Announce(solver, api_type):
@@ -116,9 +116,9 @@ def main():
 
 
 if __name__ == '__main__':
-    init.CppBridge.InitLogging('integer_programming.py')
-    cpp_flags = init.CppFlags()
+    pywrapinit.CppBridge.InitLogging('integer_programming.py')
+    cpp_flags = pywrapinit.CppFlags()
     cpp_flags.logtostderr = True
     cpp_flags.log_prefix = False
-    init.CppBridge.SetFlags(cpp_flags)
+    pywrapinit.CppBridge.SetFlags(cpp_flags)
     main()

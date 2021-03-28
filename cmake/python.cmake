@@ -109,7 +109,7 @@ if(USE_COINOR)
 endif()
 list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
 
-foreach(SUBPROJECT IN ITEMS algorithms graph init linear_solver constraint_solver sat data util)
+foreach(SUBPROJECT IN ITEMS init algorithms graph linear_solver constraint_solver sat data util)
   add_subdirectory(ortools/${SUBPROJECT}/python)
 endforeach()
 

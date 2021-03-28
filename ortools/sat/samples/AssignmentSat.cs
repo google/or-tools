@@ -19,7 +19,7 @@ using Google.OrTools.Sat;
 
 public class AssignmentSat
 {
-    static void Main()
+    public static void Main(String[] args)
     {
         // Data.
         // [START data_model]
