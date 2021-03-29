@@ -542,7 +542,9 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
           response.mutable_dual_value()->mutable_data()));
     }
     const int additional_solutions = std::min(
-        solution_count, request.populate_additional_solutions_up_to() + 1);
+        solution_count,
+        std::min(request.populate_additional_solutions_up_to(), kint32max - 1) +
+            1);
     for (int i = 1; i < additional_solutions; ++i) {
       RETURN_IF_GUROBI_ERROR(
           GRBsetintparam(model_env, GRB_INT_PAR_SOLUTIONNUMBER, i));

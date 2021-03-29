@@ -843,7 +843,9 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
   RETURN_IF_SCIP_ERROR(SCIPsolve(scip));
 
   const int solution_count = std::min(
-      SCIPgetNSols(scip), request.populate_additional_solutions_up_to() + 1);
+      SCIPgetNSols(scip),
+      std::min(request.populate_additional_solutions_up_to(), kint32max - 1) +
+          1);
   if (solution_count > 0) {
     // can't make 'scip_solution' const, as SCIPxxx does not offer const
     // parameter functions.
