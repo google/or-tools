@@ -19,9 +19,9 @@ or-tools*.zip
 *.ass
 *.swp
 
-build.log
+build*.log
 test.log
-publish.log
+publish*.log
 ortools/gen/
 objs/
 classes/
