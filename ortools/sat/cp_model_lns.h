@@ -104,9 +104,16 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   bool IsActive(int var) const ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_);
 
   // Returns the list of "active" variables.
-  const std::vector<int>& ActiveVariables() const
-      ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_) {
-    return active_variables_;
+  std::vector<int> ActiveVariables() const {
+    std::vector<int> result;
+    absl::ReaderMutexLock lock(&graph_mutex_);
+    result = active_variables_;
+    return result;
+  }
+
+  int NumActiveVariables() const {
+    absl::ReaderMutexLock lock(&graph_mutex_);
+    return active_variables_.size();
   }
 
   // Constraints <-> Variables graph.
@@ -131,8 +138,8 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // to the initial_solution and the parameter lns_focus_on_performed_intervals.
   // If true, this method returns the list of performed intervals in the
   // solution. If false, it returns all intervals of the model.
-  std::vector<int> GetActiveIntervals(const CpSolverResponse& initial_solution)
-      const ABSL_SHARED_LOCKS_REQUIRED(domain_mutex_);
+  std::vector<int> GetActiveIntervals(
+      const CpSolverResponse& initial_solution) const;
 
   // The initial problem.
   // Note that the domain of the variables are not updated here.
@@ -147,10 +154,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // safer and more easily maintenable. Some complication with accessing the
   // variable<->constraint graph efficiently though.
 
-  // Note: The mutexes for the helper data needs to be public for thread
-  // annotations.
-
-  mutable absl::Mutex domain_mutex_;
+  // Note: This mutex needs to be public for thread annotations.
   mutable absl::Mutex graph_mutex_;
 
  private:
@@ -191,6 +195,8 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // set (using a Boolean vector).
   std::vector<bool> active_variables_set_ ABSL_GUARDED_BY(graph_mutex_);
   std::vector<int> active_variables_ ABSL_GUARDED_BY(graph_mutex_);
+
+  mutable absl::Mutex domain_mutex_;
 };
 
 // Base class for a CpModelProto neighborhood generator.
