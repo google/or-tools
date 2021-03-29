@@ -1,5 +1,7 @@
 FROM ortools/cmake:archlinux_swig AS env
-RUN pacman -Syu --noconfirm dotnet-sdk
+# Currently dotnet-sdk (.Net 5) is broken
+# see: https://github.com/google/or-tools/issues/2465
+RUN pacman -Syu --noconfirm dotnet-sdk-3.1
 
 FROM env AS devel
 WORKDIR /home/project

@@ -35,6 +35,7 @@ JAVAFLAGS := -Djava.library.path=$(LIB_DIR)
 .PHONY: java # Build Java OR-Tools.
 .PHONY: test_java # Test Java OR-Tools using various examples.
 .PHONY: package_java # Create Java OR-Tools maven package.
+.PHONY: publish_java # Publish Java OR-Tools maven package to Sonatype.
 ifndef HAS_JAVA
 java:
 	@echo JAVA_HOME = $(JAVA_HOME)
@@ -48,11 +49,13 @@ java:
 check_java: java
 test_java: java
 package_java: java
+publish_java: java
 else
 java: java_package
 check_java: check_java_pimpl
 test_java: test_java_pimpl
 package_java: java
+publish_java: publish_java_pimpl
 BUILT_LANGUAGES +=, Java
 endif
 
@@ -796,6 +799,11 @@ test_java_pimpl: \
  test_java_tests \
  test_java_contrib \
  test_java_java
+
+.PHONY: publish_java_pimpl
+publish_java_pimpl: java
+	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" deploy
+	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" deploy
 
 #######################
 ##  EXAMPLE ARCHIVE  ##

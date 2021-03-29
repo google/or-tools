@@ -290,8 +290,8 @@ $(OBJ_DIR)/swig/init_csharp_wrap.$O: \
 	$(CCC) $(CFLAGS) \
  -c $(GEN_PATH)$Sortools$Sinit$Sinit_csharp_wrap.cc \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sinit_csharp_wrap.$O
- 
- $(GEN_DIR)/ortools/util/sorted_interval_list_csharp_wrap.cc: \
+
+$(GEN_DIR)/ortools/util/sorted_interval_list_csharp_wrap.cc: \
  $(SRC_DIR)/ortools/base/base.i \
  $(SRC_DIR)/ortools/util/csharp/sorted_interval_list.i \
  $(SRC_DIR)/ortools/util/csharp/proto.i \
@@ -328,22 +328,23 @@ endif
 ##########################################
 $(LIB_DIR)/$(DOTNET_ORTOOLS_NATIVE).$(SWIG_DOTNET_LIB_SUFFIX): \
  $(OR_TOOLS_LIBS) \
+ $(OBJ_DIR)/swig/init_csharp_wrap.$O \
  $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O \
  $(OBJ_DIR)/swig/sat_csharp_wrap.$O \
  $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O \
  $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O \
  $(OBJ_DIR)/swig/graph_csharp_wrap.$O \
  $(OBJ_DIR)/swig/sorted_interval_list_csharp_wrap.$O \
- $(OBJ_DIR)/swig/init_csharp_wrap.$O \
  | $(LIB_DIR)
 	$(DYNAMIC_LD) \
  $(LD_OUT)$(LIB_DIR)$S$(DOTNET_ORTOOLS_NATIVE).$(SWIG_DOTNET_LIB_SUFFIX) \
+ $(OBJ_DIR)$Sswig$Sinit_csharp_wrap.$O \
+ $(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap.$O \
+ $(OBJ_DIR)$Sswig$Sgraph_csharp_wrap.$O \
  $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O \
  $(OBJ_DIR)$Sswig$Ssat_csharp_wrap.$O \
  $(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap.$O \
- $(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap.$O \
- $(OBJ_DIR)$Sswig$Sgraph_csharp_wrap.$O \
- $(OBJ_DIR)/swig/init_csharp_wrap.$O \
+ $(OBJ_DIR)$Sswig$Ssorted_interval_list_csharp_wrap.$O \
  $(OR_TOOLS_LNK) \
  $(OR_TOOLS_LDFLAGS)
 
