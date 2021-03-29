@@ -58,26 +58,6 @@ if [ "${BUILDER}" == make ]; then
       installdotnetsdk
       echo 'travis_fold:end:dotnet'
     fi
-  elif [ "${TRAVIS_OS_NAME}" == linux-ppc64le ]; then
-    echo 'travis_fold:start:c++'
-    sudo apt-get -qq update
-    sudo apt-get -yqq install autoconf libtool zlib1g-dev gawk curl lsb-release
-    echo 'travis_fold:end:c++'
-    if [ "${LANGUAGE}" != cc ]; then
-      echo 'travis_fold:start:swig'
-      installswig
-      echo 'travis_fold:end:swig'
-    fi
-    if [ "${LANGUAGE}" == python3 ]; then
-      echo 'travis_fold:start:python3'
-      pyenv global system 3.7
-      python3.7 -m pip install -q virtualenv wheel absl-py mypy-protobuf
-      echo 'travis_fold:end:python3'
-    elif [ "${LANGUAGE}" == dotnet ]; then
-      echo 'travis_fold:start:dotnet'
-      installdotnetsdk
-      echo 'travis_fold:end:dotnet'
-    fi
   elif [ "${TRAVIS_OS_NAME}" == osx ]; then
     echo 'travis_fold:start:c++'
     brew update

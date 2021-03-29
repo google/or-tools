@@ -5,9 +5,8 @@ cache:
 
 matrix:
   include:
-    ## Makefile builder
-
-    # Linux, AMD64
+    # Makefile builder
+    ## Linux, AMD64
     - os: linux
       dist: bionic
       compiler: gcc
@@ -24,8 +23,7 @@ matrix:
       dist: bionic
       compiler: gcc
       env: BUILDER=make LANGUAGE=dotnet ARCH=amd64
-
-    # Mac OS X, AMD64
+    ## Mac OS X, AMD64
     - os: osx
       osx_image: xcode11.4
       compiler: clang
@@ -45,28 +43,9 @@ matrix:
       compiler: clang
       env: BUILDER=make LANGUAGE=dotnet ARCH=amd64
 
-    # Linux, PPC64LE
-    - os: linux
-      arch: ppc64le
-      dist: bionic
-      compiler: gcc
-      env: BUILDER=make LANGUAGE=cc ARCH=ppc64le
-    - os: linux
-      arch: ppc64le
-      dist: bionic
-      compiler: gcc
-      env: BUILDER=make LANGUAGE=python3 ARCH=ppc64le
 
-    # Linux, ARM64
-    - os: linux
-      arch: arm64
-      dist: bionic
-      compiler: gcc
-      env: BUILDER=make LANGUAGE=cc ARCH=arm64
-
-    ## CMake Build Generator
-
-    # Linux, AMD64
+    # CMake Build Generator
+    ## Linux, AMD64
     - os: linux
       dist: bionic
       compiler: gcc
@@ -75,8 +54,7 @@ matrix:
       dist: bionic
       compiler: clang
       env: BUILDER=cmake ARCH=amd64
-
-    # Mac OS X, AMD64
+    ## Mac OS X, AMD64
     - os: osx
       osx_image: xcode11.4
       compiler: gcc
@@ -86,21 +64,8 @@ matrix:
       compiler: clang
       env: BUILDER=cmake ARCH=amd64
 
-    # Linux, PPC64LE
-    - os: linux
-      arch: ppc64le
-      dist: bionic
-      compiler: gcc
-      env: BUILDER=cmake LANGUAGE=cc ARCH=ppc64le
-
-    # Linux, ARM64
-    - os: linux
-      arch: arm64
-      dist: bionic
-      compiler: gcc
-      env: BUILDER=cmake LANGUAGE=cc ARCH=arm64
-
-    ## Bazel builds and tests
+    # Bazel Builds
+    ## Linux, AMD64
     - os: linux
       dist: bionic
       cache: false
@@ -135,31 +100,6 @@ matrix:
     - os: linux
       dist: bionic
       env: BUILDER=bazel ARCH=amd64
-    - os: linux
-      arch: ppc64le
-      dist: bionic
-      compiler: gcc
-      env: BUILDER=make LANGUAGE=cc ARCH=ppc64le
-    - os: linux
-      arch: ppc64le
-      dist: bionic
-      compiler: gcc
-      env: BUILDER=make LANGUAGE=python3 ARCH=ppc64le
-    - os: linux
-      arch: ppc64le
-      dist: bionic
-      compiler: gcc
-      env: BUILDER=cmake LANGUAGE=cc ARCH=ppc64le
-    - os: linux
-      arch: arm64
-      dist: bionic
-      compiler: gcc
-      env: BUILDER=make LANGUAGE=cc ARCH=arm64
-    - os: linux
-      arch: arm64
-      dist: bionic
-      compiler: gcc
-      env: BUILDER=cmake LANGUAGE=cc ARCH=arm64
 
 install:
   - ./.travis/install.sh
