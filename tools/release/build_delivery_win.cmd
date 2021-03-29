@@ -30,8 +30,8 @@ exit /B 1
 
 FOR /F "tokens=* USEBACKQ" %%F IN (`git rev-parse --abbrev-ref HEAD`) DO (SET BRANCH=%%F)
 FOR /F "tokens=* USEBACKQ" %%F IN (`git rev-parse --verify HEAD`) DO (SET SHA1=%%F)
-echo BRANCH: %BRANCH%
-echo SHA1: %SHA1%
+echo BRANCH: %BRANCH% | tee.exe -a build.log
+echo SHA1: %SHA1% | tee.exe -a build.log
 
 md export
 
@@ -77,7 +77,13 @@ exit /B %ERRORLEVEL%
 )
 
 if "%1"=="reset" (
+echo clean everything... | tee.exe -a build.log
+make.exe clean || exit 1
+make.exe clean_third_party || exit 1
 rm.exe -rf export
+del or-tools.snk
+for %%i in (*.zip) DO del %%i
+for %%i in (*.whl) DO del %%i
 for %%i in (*.log) DO del %%i
 exit /B %ERRORLEVEL%
 )
