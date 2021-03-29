@@ -143,7 +143,7 @@ if [ "${BUILDER}" == make ];then
     if [ "${LANGUAGE}" == cc ]; then
       make detect
     elif [ "${LANGUAGE}" == python3 ]; then
-      make detect UNIX_PYTHON_VER=3.7
+      make detect UNIX_PYTHON_VER=3.9
     elif [ "${LANGUAGE}" == java ] || [ "${LANGUAGE}" == dotnet ] ; then
       make detect
     fi
