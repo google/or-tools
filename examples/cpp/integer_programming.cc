@@ -89,6 +89,7 @@ void RunAllExamples() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  absl::SetFlag(&FLAGS_alsologtostderr, true);
   google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
   operations_research::RunAllExamples();
