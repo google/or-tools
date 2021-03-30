@@ -438,7 +438,7 @@ endif
 	$(TOUCH) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)$Stimestamp
 
 # ortools-java
-ifeq ($(COMPLETE_JAVA_PACKAGE),1)
+ifeq ($(UNIVERSAL_JAVA_PACKAGE),1)
 JAVA_ORTOOLS_POM=pom-full.xml.in
 else
 JAVA_ORTOOLS_POM=pom-local.xml.in
