@@ -120,7 +120,7 @@ endif
 ifdef WINDOWS_CPLEX_DIR
   CPLEX_INC = /I"$(WINDOWS_CPLEX_DIR)\\cplex\\include" /DUSE_CPLEX
   CPLEX_SWIG = -I"$(WINDOWS_CPLEX_DIR)/cplex/include" -DUSE_CPLEX
-  STATIC_CPLEX_LNK = "$(WINDOWS_CPLEX_DIR)\\cplex\\lib\\x64_windows_msvc14\\stat_mda\\cplex12100.lib"
+  STATIC_CPLEX_LNK = "$(WINDOWS_CPLEX_DIR)\\cplex\\lib\\x64_windows_msvc14\\stat_mda\\cplex$(WINDOWS_CPLEX_VERSION).lib"
   DYNAMIC_CPLEX_LNK = $(STATIC_CPLEX_LNK)
 endif
 ifdef WINDOWS_XPRESS_DIR

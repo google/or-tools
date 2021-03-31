@@ -178,7 +178,10 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # >> Makefile.local
 	@echo ## OPTIONAL DEPENDENCIES ## >> Makefile.local
 	@echo # Define WINDOWS_CPLEX_DIR to point to a installation directory of the CPLEX Studio >> Makefile.local
-	@echo #   e.g.: WINDOWS_CPLEX_DIR = C:\Progra~1\CPLEX_STUDIO1210 >> Makefile.local
+	@echo #   e.g.: WINDOWS_CPLEX_DIR = C:\Progra~1\CPLEX_STUDIO2010\IBM\ILOG\CPLEX_STUDIO2010 >> Makefile.local
+	@echo # >> Makefile.local
+	@echo # Define WINDOWS_CPLEX_VERSION to specify the suffix of the library >> Makefile.local
+	@echo #   e.g.: WINDOWS_CPLEX_VERSION = 2010 >> Makefile.local
 	@echo # >> Makefile.local
 	@echo # Define WINDOWS_XPRESS_DIR to point to a installation directory of the XPRESS-MP >> Makefile.local
 	@echo #   e.g.: WINDOWS_XPRESS_DIR = C:\xpressmp>> Makefile.local
