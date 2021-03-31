@@ -22,6 +22,10 @@ void SimpleMipProgram() {
   // [START solver]
   // Create the mip solver with the SCIP backend.
   std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("SCIP"));
+  if (!solver) {
+    LOG(WARNING) << "SCIP solver unavailable.";
+    return;
+  }
   // [END solver]
 
   // [START variables]
