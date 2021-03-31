@@ -43,6 +43,7 @@ Dockers: [![Status][docker_svg]][docker_link]
 ## Introduction
 <nav for="cmake"> |
 <a href="#deps">Dependencies</a> |
+<a href="#options">Options</a> |
 <a href="doc/cpp.md">C++</a> |
 <a href="doc/swig.md">Swig</a> |
 <a href="doc/python.md">Python 3</a> |
@@ -62,7 +63,8 @@ the compiler environment of your choice.<br>You can either build OR-Tools with
 CMake as a standalone project or it can be incorporated into an existing CMake
  project.
 
-## [Dependencies](#deps)
+<a name="deps"></a>
+## Dependencies
 
 OR-Tools depends on severals mandatory libraries. You can compile them all at
 configure time using the option `-DBUILD_DEPS=ON` (`OFF` by default) or you can
@@ -93,7 +95,59 @@ default):
 **warning: Since these solvers require license and are proprietary, we can't
 test it on public CI and support can be broken.**
 
-## [Integrating OR-Tools in your CMake Project](#integration)
+<a name="options"></a>
+## CMake Options
+There are several options that can be passed to CMake to modify how the code is built.<br>
+For all of these options and parameters you have to use `-D<Parameter_name>=<value>`.<br>
+Following a list of available options, for the full list run:
+```sh
+cmake -S. -Bbuild -LH
+```
+
+| CMake Option | Default Value | Note |
+|-|-|-|
+| `BUILD_DEPS`  | OFF* | Default to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON` |
+| `BUILD_ZLIB`  | OFF* | Static build the zlib library<br>**Forced** to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON` |
+| `BUILD_absl`  | OFF* | Static build the abseil-cpp libraries<br>**Forced** to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON` |
+| `BUILD_Protobuf`  | OFF* | Static build the protobuf libraries<br>**Forced** to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON` |
+| `USE_SCIP`  | ON\* | Enable SCIP support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
+| `BUILD_SCIP`  | OFF\* | Static build the SCIP libraries<br>**Forced** to ON if `USE_SCIP=ON` **and** `BUILD_DEPS=ON` |
+| `USE_COINOR`  | ON\* | Enable Coin-OR support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
+| `BUILD_CoinUtils`  | OFF\* | Static build the CoinUtils library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
+| `BUILD_Osi`  | OFF\* | Static build the Osi library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
+| `BUILD_Clp`  | OFF\* | Static build the Clp library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
+| `BUILD_Cgl`  | OFF\* | Static build the Cgl library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
+| `BUILD_Cbc`  | OFF\* | Static build the Cbc library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
+| `USE_CPLEX`  | OFF | Enable CPLEX support |
+| `USE_XPRESS`  | OFF | Enable XPRESS support |
+| | | |
+| `CMAKE_BUILD_TYPE` | Release | see CMake documentation [here](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) |
+| `BUILD_CXX` | ON | Build C++ |
+| `BUILD_PYTHON` | OFF | Build Python wrapper and package |
+| `BUILD_JAVA` | OFF | Build Java wrapper and packages |
+| `BUILD_DOTNET` | OFF | Build .Net wrapper and packages |
+| `BUILD_FLATZINC` | ON\* | Build the flatzinc library<br>**Forced** to OFF if `BUILD_CXX=OFF` |
+| `BUILD_GLOP` | OFF\* | Build the standalone Glop library<br>**Forced** to OFF if `BUILD_CXX=ON`, otherwise default to ON |
+| | | |
+| `BUILD_SAMPLES`  | OFF\* | Build all samples<br>Default to ON if `BUILD_DEPS=ON` |
+| `BUILD_CXX_SAMPLES`  | ON\* | Build all C++ samples<br>**Forced** to OFF if `BUILD_CXX=OFF` or `BUILD_SAMPLE=OFF` |
+| `BUILD_PYTHON_SAMPLES`  | ON\* | Build all Python samples<br>**Forced** to OFF if `BUILD_PYTHON=OFF` or `BUILD_SAMPLE=OFF` |
+| `BUILD_JAVA_SAMPLES`  | ON\* | Build all Java samples<br>**Forced** to OFF if `BUILD_JAVA=OFF` or `BUILD_SAMPLE=OFF` |
+| `BUILD_DOTNET_SAMPLES`  | ON\* | Build all .Net samples<br>**Forced** to OFF if `BUILD_DOTNET=OFF` or `BUILD_SAMPLE=OFF` |
+| | | |
+| `BUILD_EXAMPLES`  | OFF\* | Build all examples<br>Default to ON if `BUILD_DEPS=ON` |
+| `BUILD_CXX_EXAMPLES`  | ON\* | Build all C++ examples<br>**Forced** to OFF if `BUILD_CXX=OFF` or `BUILD_SAMPLE=OFF` |
+| `BUILD_PYTHON_EXAMPLES`  | ON\* | Build all Python examples<br>**Forced** to OFF if `BUILD_PYTHON=OFF` or `BUILD_SAMPLE=OFF` |
+| `BUILD_JAVA_EXAMPLES`  | ON\* | Build all Java examples<br>**Forced** to OFF if `BUILD_JAVA=OFF` or `BUILD_SAMPLE=OFF` |
+| `BUILD_DOTNET_EXAMPLES`  | ON\* | Build all .Net examples<br>**Forced** to OFF if `BUILD_DOTNET=OFF` or `BUILD_SAMPLE=OFF` |
+| | | |
+| `SKIP_GPG`  | OFF | Disable GPG sign<br>Only available if `BUILD_JAVA=ON` |
+| `UNIVERSAL_JAVA_PACKAGE`  | OFF | Build a multi platform package (i.e. `ortools-java` will depends on all native packages)<br>Only available if `BUILD_JAVA=ON` |
+| | | |
+
+
+<a name="integration"></a>
+## Integrating OR-Tools in your CMake Project
 
 You should be able to integrate OR-Tools in your C++ CMake project following one
 of these methods.
