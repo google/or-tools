@@ -230,7 +230,6 @@ cc_library(
         "@com_google_absl//absl/strings",
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/base:gzipstring",
         "//ortools/base:hash",
         "//ortools/base:recordio",
         "//ortools/base:status_macros",
