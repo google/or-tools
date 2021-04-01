@@ -62,7 +62,8 @@ class DualEdgeNorms {
   // If this is true, then the caller must re-factorize the basis before the
   // next call to GetEdgeSquaredNorms(). This is because the latter will
   // recompute the norms from scratch and therefore needs a hightened precision
-  // and speed.
+  // and speed. This also indicates if GetEdgeSquaredNorms() will trigger a
+  // recomputation.
   bool NeedsBasisRefactorization();
 
   // Returns the dual edge squared norms. This is only valid if the caller

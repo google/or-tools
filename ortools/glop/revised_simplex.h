@@ -101,6 +101,7 @@
 #include "ortools/glop/dual_edge_norms.h"
 #include "ortools/glop/entering_variable.h"
 #include "ortools/glop/parameters.pb.h"
+#include "ortools/glop/pricing.h"
 #include "ortools/glop/primal_edge_norms.h"
 #include "ortools/glop/reduced_costs.h"
 #include "ortools/glop/status.h"
@@ -449,6 +450,12 @@ class RevisedSimplex {
   // changes will be dealt with by DualPhaseIUpdatePriceOnReducedCostsChange().
   void DualPhaseIUpdatePrice(RowIndex leaving_row, ColIndex entering_col);
 
+  // This must be called each time the dual_pricing_vector_ is changed at
+  // position row.
+  template <bool use_dense_update = false>
+  void OnDualPriceChange(const DenseColumn& squared_norms, RowIndex row,
+                         VariableType type, Fractional threshold);
+
   // Updates the prices used by DualChooseLeavingVariableRow() when the reduced
   // costs of the given columns have changed.
   template <typename Cols>
@@ -594,11 +601,6 @@ class RevisedSimplex {
   DenseRow dual_infeasibility_improvement_direction_;
   int num_dual_infeasible_positions_;
 
-  // Used in dual phase I to hold the price of each possible leaving choices
-  // and the bitset of the possible leaving candidates.
-  DenseColumn dual_pricing_vector_;
-  DenseBitColumn is_dual_entering_candidate_;
-
   // A temporary scattered column that is always reset to all zero after use.
   ScatteredColumn initially_all_zero_scratchpad_;
 
@@ -639,15 +641,16 @@ class RevisedSimplex {
 
   // Classes responsible for maintaining the data of the corresponding names.
   VariablesInfo variables_info_;
-  VariableValues variable_values_;
   DualEdgeNorms dual_edge_norms_;
+  DynamicMaximum<RowIndex> dual_prices_;
+  VariableValues variable_values_;
   PrimalEdgeNorms primal_edge_norms_;
   UpdateRow update_row_;
   ReducedCosts reduced_costs_;
-
-  // Class holding the algorithms to choose the entering column during a simplex
-  // pivot.
   EnteringVariable entering_variable_;
+
+  // Used in dual phase I to hold the price of each possible leaving choices.
+  DenseColumn dual_pricing_vector_;
 
   // Temporary memory used by DualMinimize().
   std::vector<ColIndex> bound_flip_candidates_;
@@ -684,12 +687,16 @@ class RevisedSimplex {
           total("total", this),
           normal("normal", this),
           bound_flip("bound_flip", this),
+          refactorize("refactorize", this),
           degenerate("degenerate", this),
+          num_dual_flips("num_dual_flips", this),
           degenerate_run_size("degenerate_run_size", this) {}
     TimeDistribution total;
     TimeDistribution normal;
     TimeDistribution bound_flip;
+    TimeDistribution refactorize;
     TimeDistribution degenerate;
+    IntegerDistribution num_dual_flips;
     IntegerDistribution degenerate_run_size;
   };
   IterationStats iteration_stats_;
