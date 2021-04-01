@@ -219,11 +219,7 @@ inline int SwigPyIntOrLong_Check(PyObject* o) {
 }
 
 inline int SwigString_Check(PyObject* o) {
-#if PY_VERSION_HEX >= 0x03030000
   return PyUnicode_Check(o);
-#else
-  return true;
-#endif
 }
 
 inline PyObject* SwigString_FromString(const std::string& s) {
