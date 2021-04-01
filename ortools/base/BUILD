@@ -373,6 +373,16 @@ cc_library(
 )
 
 cc_library(
+    name = "linked_hash_map",
+    hdrs = ["linked_hash_map.h"],
+    deps = [
+        ":base",
+        "@com_google_absl//absl/container:common",
+        "@com_google_absl//absl/container:flat_hash_map",
+    ],
+)
+
+cc_library(
     name = "threadpool",
     srcs = [
         "threadpool.cc",
