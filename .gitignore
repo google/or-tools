@@ -16,6 +16,7 @@ or-tools*.zip
 *.lib
 *.exp
 *.pdb
+*.pbtxt
 *.ass
 *.swp
 
