@@ -13,8 +13,18 @@
 
 #include "ortools/gscip/gscip.h"
 
-#include <cstdint>
+#include <stdio.h>
 
+#include <algorithm>
+#include <cstdint>
+#include <functional>
+#include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -150,6 +160,7 @@ SCIP_PARAMSETTING ConvertMetaParamValue(
                  << ProtoEnumToString(gscip_meta_param_value);
   }
 }
+
 }  // namespace
 
 const GScipVariableOptions& DefaultGScipVariableOptions() {
@@ -170,6 +181,7 @@ absl::Status GScip::SetParams(const GScipParameters& params,
   if (!params.search_logs_filename().empty()) {
     SCIPsetMessagehdlrLogfile(scip_, params.search_logs_filename().c_str());
   }
+
   const SCIP_Bool set_param_quiet =
       static_cast<SCIP_Bool>(!params.silence_output());
 

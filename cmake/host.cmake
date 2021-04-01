@@ -6,7 +6,7 @@ endif()
 message(STATUS "Subproject: HostTools...")
 
 #configure_file(
-#	${CMAKE_CURRENT_SOURCE_DIR}/host.CMakeLists.txt
+# ${CMAKE_CURRENT_SOURCE_DIR}/host.CMakeLists.txt
 #  ${CMAKE_CURRENT_BINARY_DIR}/host_tools/CMakeLists.txt)
 #
 #execute_process(
@@ -25,11 +25,11 @@ message(STATUS "Subproject: HostTools...")
 #endif()
 
 #file(COPY
-#	${CMAKE_CURRENT_SOURCE_DIR}/cmake/host.CMakeLists.txt
+# ${CMAKE_CURRENT_SOURCE_DIR}/cmake/host.CMakeLists.txt
 #  DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/host_tools)
 
 configure_file(
-	${CMAKE_CURRENT_SOURCE_DIR}/cmake/host.CMakeLists.txt
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/host.CMakeLists.txt
   ${CMAKE_CURRENT_BINARY_DIR}/host_tools/CMakeLists.txt
   COPYONLY)
 

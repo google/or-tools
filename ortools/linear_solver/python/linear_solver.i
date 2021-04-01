@@ -210,9 +210,9 @@ __pdoc__['Variable.thisown'] = False
 
 
   static double Infinity() { return operations_research::MPSolver::infinity(); }
-  void SetTimeLimit(int64 x) { $self->set_time_limit(x); }
-  int64 WallTime() const { return $self->wall_time(); }
-  int64 Iterations() const { return $self->iterations(); }
+  void SetTimeLimit(int64_t x) { $self->set_time_limit(x); }
+  int64_t WallTime() const { return $self->wall_time(); }
+  int64_t Iterations() const { return $self->iterations(); }
 }  // extend operations_research::MPSolver
 
 %extend operations_research::MPVariable {
