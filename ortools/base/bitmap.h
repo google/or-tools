@@ -20,17 +20,17 @@
 
 namespace operations_research {
 namespace internal {
-inline uint64 OneBit64(int pos) { return uint64_t{1} << pos; }
-inline uint64 BitPos64(uint64 pos) { return (pos & 63); }
-inline uint64 BitOffset64(uint64 pos) { return (pos >> 6); }
-inline uint64 BitLength64(uint64 size) { return ((size + 63) >> 6); }
-inline bool IsBitSet64(const uint64* const bitset, uint64 pos) {
+inline uint64_t OneBit64(int pos) { return uint64_t{1} << pos; }
+inline uint64_t BitPos64(uint64_t pos) { return (pos & 63); }
+inline uint64_t BitOffset64(uint64_t pos) { return (pos >> 6); }
+inline uint64_t BitLength64(uint64_t size) { return ((size + 63) >> 6); }
+inline bool IsBitSet64(const uint64_t* const bitset, uint64_t pos) {
   return (bitset[BitOffset64(pos)] & OneBit64(BitPos64(pos)));
 }
-inline void SetBit64(uint64* const bitset, uint64 pos) {
+inline void SetBit64(uint64_t* const bitset, uint64_t pos) {
   bitset[BitOffset64(pos)] |= OneBit64(BitPos64(pos));
 }
-inline void ClearBit64(uint64* const bitset, uint64 pos) {
+inline void ClearBit64(uint64_t* const bitset, uint64_t pos) {
   bitset[BitOffset64(pos)] &= ~OneBit64(BitPos64(pos));
 }
 }  // namespace internal
@@ -42,7 +42,7 @@ class Bitmap {
   explicit Bitmap(uint32 size, bool fill = false)
       : max_size_(size),
         array_size_(internal::BitLength64(size)),
-        map_(new uint64[array_size_]) {
+        map_(new uint64_t[array_size_]) {
     // initialize all of the bits
     SetAll(fill);
   }
@@ -79,7 +79,7 @@ class Bitmap {
  private:
   uint32 max_size_;  // the upper bound of the bitmap
   uint32 array_size_;
-  uint64* map_;  // the bitmap
+  uint64_t* map_;  // the bitmap
 };
 
 }  // namespace operations_research

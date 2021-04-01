@@ -152,7 +152,7 @@ void VrpBreaks() {
   // [END time_constraint]
 
   // Add Breaks
-  std::vector<int64> service_times(routing.Size());
+  std::vector<int64_t> service_times(routing.Size());
   for (int index = 0; index < routing.Size(); index++) {
     const RoutingIndexManager::NodeIndex node = manager.IndexToNode(index);
     service_times[index] = data.service_time[node.value()];

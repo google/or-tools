@@ -188,7 +188,7 @@ class DistributionStat : public Stat {
   double Sum() const override { return sum_; }
   double Max() const { return max_; }
   double Min() const { return min_; }
-  int64 Num() const { return num_; }
+  int64_t Num() const { return num_; }
 
   // Get the average of the distribution or 0.0 if empty.
   double Average() const;
@@ -208,14 +208,14 @@ class DistributionStat : public Stat {
   double sum_squares_from_average_;
   double min_;
   double max_;
-  int64 num_;
+  int64_t num_;
 };
 
 // Statistic on the distribution of a sequence of running times.
 // Also provides some facility to measure such time with the CPU cycle counter.
 //
 // TODO(user): Since we inherit from DistributionStat, we currently store the
-// sum of CPU cycles as a double internally. A better option is to use int64
+// sum of CPU cycles as a double internally. A better option is to use int64_t
 // because with the 53 bits of precision of a double, we will run into an issue
 // if the sum of times reaches 52 days for a 2GHz processor.
 class TimeDistribution : public DistributionStat {
@@ -292,7 +292,7 @@ class IntegerDistribution : public DistributionStat {
   IntegerDistribution(const std::string& name, StatsGroup* group)
       : DistributionStat(name, group) {}
   std::string ValueAsString() const override;
-  void Add(int64 value);
+  void Add(int64_t value);
 };
 
 // Helper classes to time a block of code and add the result to a

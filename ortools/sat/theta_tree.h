@@ -25,7 +25,7 @@ namespace sat {
 
 // The Theta-Lambda tree can be used to implement several scheduling algorithms.
 //
-// This template class is instantiated only for IntegerValue and int64.
+// This template class is instantiated only for IntegerValue and int64_t.
 //
 // The tree structure itself is a binary tree coded in a vector, where node 0 is
 // unused, node 1 is the root, node 2 is the left child of the root, node 3 its

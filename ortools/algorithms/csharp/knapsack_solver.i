@@ -23,9 +23,9 @@
 #include "ortools/algorithms/knapsack_solver.h"
 %}
 
-// by default vector<vector<int64>> is mapped to a jagged array i.e. .Net type long[][]
+// by default vector<vector<int64_t>> is mapped to a jagged array i.e. .Net type long[][]
 // but here we want a regular matrix i.e. .Net type long[,]
-REGULAR_MATRIX_AS_CSHARP_ARRAY(int64, int64, long, Int64VectorVector);
+REGULAR_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
 
 %rename (UseReduction) operations_research::KnapsackSolver::use_reduction;
 %rename (SetUseReduction) operations_research::KnapsackSolver::set_use_reduction;

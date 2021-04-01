@@ -199,8 +199,8 @@ class ForwardStaticGraph;
 // type shortcuts here will often come in handy.
 typedef int32 NodeIndex;
 typedef int32 ArcIndex;
-typedef int64 FlowQuantity;
-typedef int64 CostValue;
+typedef int64_t FlowQuantity;
+typedef int64_t CostValue;
 typedef EbertGraph<NodeIndex, ArcIndex> StarGraph;
 typedef ForwardEbertGraph<NodeIndex, ArcIndex> ForwardStarGraph;
 typedef ForwardStaticGraph<NodeIndex, ArcIndex> ForwardStarStaticGraph;
@@ -303,7 +303,7 @@ class StarGraphBase {
     if (node == kNilNode) {
       return "NilNode";
     } else {
-      return absl::StrCat(static_cast<int64>(node));
+      return absl::StrCat(static_cast<int64_t>(node));
     }
   }
 
@@ -311,7 +311,7 @@ class StarGraphBase {
     if (arc == kNilArc) {
       return "NilArc";
     } else {
-      return absl::StrCat(static_cast<int64>(arc));
+      return absl::StrCat(static_cast<int64_t>(arc));
     }
   }
 
@@ -1112,8 +1112,8 @@ class EbertGraphBase
   void Initialize(NodeIndexType max_num_nodes, ArcIndexType max_num_arcs) {
     if (!Reserve(max_num_nodes, max_num_arcs)) {
       LOG(DFATAL) << "Could not reserve memory for "
-                  << static_cast<int64>(max_num_nodes) << " nodes and "
-                  << static_cast<int64>(max_num_arcs) << " arcs.";
+                  << static_cast<int64_t>(max_num_nodes) << " nodes and "
+                  << static_cast<int64_t>(max_num_arcs) << " arcs.";
     }
     first_incident_arc_.SetAll(kNilArc);
     ThisAsDerived()->InitializeInternal(max_num_nodes, max_num_arcs);

@@ -257,8 +257,8 @@ VECTOR_AS_CSHARP_ARRAY(int, int, int, IntVector);
 JAGGED_MATRIX_AS_CSHARP_ARRAY(int, int, int, IntVectorVector);
 //REGULAR_MATRIX_AS_CSHARP_ARRAY(int, int, int, IntVectorVector);
 
-%template(Int64Vector) std::vector<int64>;
-%template(Int64VectorVector) std::vector<std::vector<int64> >;
-VECTOR_AS_CSHARP_ARRAY(int64, int64, long, Int64Vector);
-JAGGED_MATRIX_AS_CSHARP_ARRAY(int64, int64, long, Int64VectorVector);
-//REGULAR_MATRIX_AS_CSHARP_ARRAY(int64, int64, long, Int64VectorVector);
+%template(Int64Vector) std::vector<int64_t>;
+%template(Int64VectorVector) std::vector<std::vector<int64_t> >;
+VECTOR_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64Vector);
+JAGGED_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
+//REGULAR_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);

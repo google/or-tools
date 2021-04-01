@@ -20,7 +20,7 @@ namespace util_hash {
 // In the or-tools project, MurmurHash64 is just a redirection towards
 // ThoroughHash. Ideally, it is meant to be using the murmurhash
 // algorithm described in http://murmurhash.googlepages.com.
-inline uint64 MurmurHash64(const char* buf, const size_t len) {
+inline uint64_t MurmurHash64(const char* buf, const size_t len) {
   return ::operations_research::ThoroughHash(buf, len);
 }
 }  // namespace util_hash

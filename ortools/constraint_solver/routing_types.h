@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 
@@ -38,10 +39,10 @@ DEFINE_INT_TYPE(RoutingDimensionIndex, int);
 DEFINE_INT_TYPE(RoutingDisjunctionIndex, int);
 DEFINE_INT_TYPE(RoutingVehicleClassIndex, int);
 
-typedef std::function<int64(int64)> RoutingTransitCallback1;
-typedef std::function<int64(int64, int64)> RoutingTransitCallback2;
+typedef std::function<int64_t(int64_t)> RoutingTransitCallback1;
+typedef std::function<int64_t(int64_t, int64_t)> RoutingTransitCallback2;
 // NOTE(user): keep the "> >" for SWIG.
-typedef std::pair<std::vector<int64>, std::vector<int64> > RoutingIndexPair;
+typedef std::pair<std::vector<int64_t>, std::vector<int64_t> > RoutingIndexPair;
 typedef std::vector<RoutingIndexPair> RoutingIndexPairs;
 
 }  // namespace operations_research

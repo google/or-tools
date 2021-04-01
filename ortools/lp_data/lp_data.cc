@@ -429,7 +429,7 @@ std::string LinearProgram::GetDimensionString() const {
   return absl::StrFormat(
       "%d rows, %d columns, %d entries with magnitude in [%e, %e]",
       num_constraints().value(), num_variables().value(),
-      // static_cast<int64> is needed because the Android port uses int32.
+      // static_cast<int64_t> is needed because the Android port uses int32.
       static_cast<int64_t>(num_entries().value()), min_magnitude,
       max_magnitude);
 }

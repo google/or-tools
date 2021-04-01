@@ -112,7 +112,7 @@
 // on a partial graph is an upper bound to the one on a complete graph).
 //
 // Usage:
-// std::function<int64(int,int)> cost_function =...;
+// std::function<int64_t(int,int)> cost_function =...;
 // const double lower_bound =
 //     ComputeOneTreeLowerBound(number_of_nodes, cost_function);
 // where number_of_nodes is the number of nodes in the TSP and cost_function
@@ -213,7 +213,7 @@ class HeldWolfeCrowderEvaluator {
         step_(0) {
     // TODO(user): Improve upper bound with some local search; tighter upper
     // bounds lead to faster convergence.
-    ChristofidesPathSolver<CostType, int64, int, CostFunction> solver(
+    ChristofidesPathSolver<CostType, int64_t, int, CostFunction> solver(
         number_of_nodes, cost);
     upper_bound_ = solver.TravelingSalesmanCost();
   }

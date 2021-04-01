@@ -390,7 +390,7 @@ int64_t Markowitz::FindPivot(const RowPermutation& row_perm,
     }
   }
 
-  // Note(user): we use int64 since this is a product of two ints, moreover
+  // Note(user): we use int64_t since this is a product of two ints, moreover
   // the ints should be relatively small, so that should be fine for a while.
   int64_t min_markowitz_number = std::numeric_limits<int64_t>::max();
   examined_col_.clear();

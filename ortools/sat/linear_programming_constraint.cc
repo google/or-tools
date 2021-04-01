@@ -1821,7 +1821,7 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
     return integer_multipliers;
   }
 
-  // We want max_sum * scaling to be <= 2 ^ max_pow and fit on an int64.
+  // We want max_sum * scaling to be <= 2 ^ max_pow and fit on an int64_t.
   // We use a power of 2 as this seems to work better.
   const double threshold = std::ldexp(1, max_pow) / max_sum;
   if (threshold < 1.0) {

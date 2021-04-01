@@ -56,7 +56,7 @@ static inline void mix(uint32& a, uint32& b, uint32& c) {  // NOLINT
 }
 
 // 64 bit version.
-static inline void mix(uint64& a, uint64& b, uint64& c) {  // NOLINT
+static inline void mix(uint64_t& a, uint64_t& b, uint64_t& c) {  // NOLINT
   a -= b;
   a -= c;
   a ^= (c >> 43);
@@ -100,8 +100,8 @@ inline uint32 Hash32NumWithSeed(uint32 num, uint32 c) {
   return c;
 }
 
-inline uint64 Hash64NumWithSeed(uint64 num, uint64 c) {
-  uint64 b = uint64_t{0xe08c1d668b756f82};  // More of the golden ratio.
+inline uint64_t Hash64NumWithSeed(uint64_t num, uint64_t c) {
+  uint64_t b = uint64_t{0xe08c1d668b756f82};  // More of the golden ratio.
   operations_research::mix(num, b, c);
   return c;
 }
@@ -126,10 +126,10 @@ template <class T, std::size_t N>
 struct hash<std::array<T, N>> {
  public:
   size_t operator()(const std::array<T, N>& t) const {
-    uint64 current = 71;
+    uint64_t current = 71;
     for (int index = 0; index < N; ++index) {
       const T& elem = t[index];
-      const uint64 new_hash = hash<T>()(elem);
+      const uint64_t new_hash = hash<T>()(elem);
       current = operations_research::Hash64NumWithSeed(current, new_hash);
     }
     return current;
@@ -147,13 +147,13 @@ struct hash<std::array<T, N>> {
 
 namespace util_hash {
 
-inline uint64 Hash(uint64 num, uint64 c) {
-  uint64 b = uint64_t{0xe08c1d668b756f82};  // More of the golden ratio.
+inline uint64_t Hash(uint64_t num, uint64_t c) {
+  uint64_t b = uint64_t{0xe08c1d668b756f82};  // More of the golden ratio.
   operations_research::mix(num, b, c);
   return c;
 }
 
-inline uint64 Hash(uint64 a, uint64 b, uint64 c) {
+inline uint64_t Hash(uint64_t a, uint64_t b, uint64_t c) {
   operations_research::mix(a, b, c);
   return c;
 }

@@ -103,7 +103,7 @@ std::string ValidateIntegerVariable(const CpModelProto& model, int v) {
   if (lb < 0 && lb + std::numeric_limits<int64_t>::max() < ub) {
     return absl::StrCat(
         "var #", v,
-        " has a domain that is too large, i.e. |UB - LB| overflow an int64: ",
+        " has a domain that is too large, i.e. |UB - LB| overflow an int64_t: ",
         ProtobufShortDebugString(proto));
   }
 

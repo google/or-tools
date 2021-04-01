@@ -22,7 +22,7 @@ CachedLog::CachedLog() {}
 CachedLog::~CachedLog() {}
 
 namespace {
-double FastLog2(int64 input) {
+double FastLog2(int64_t input) {
 #if defined(_MSC_VER) || defined(__ANDROID__)
   return log(static_cast<double>(input)) / log(2.0L);
 #else
@@ -40,7 +40,7 @@ void CachedLog::Init(int size) {
   }
 }
 
-double CachedLog::Log2(int64 input) const {
+double CachedLog::Log2(int64_t input) const {
   CHECK_GE(input, 1);
   if (input <= cache_.size()) {
     return cache_[input - 1];

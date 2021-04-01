@@ -144,9 +144,9 @@ class XpressInterface : public MPSolverInterface {
 
   // ------ Query statistics on the solution and the solve ------
   // Number of simplex iterations
-  virtual int64 iterations() const;
+  virtual int64_t iterations() const;
   // Number of branch-and-bound nodes. Only available for discrete problems.
-  virtual int64 nodes() const;
+  virtual int64_t nodes() const;
 
   // Returns the basis status of a row.
   virtual MPSolver::BasisStatus row_status(int constraint_index) const;
@@ -728,15 +728,15 @@ void XpressInterface::ClearObjective() {
 
 // ------ Query statistics on the solution and the solve ------
 
-int64 XpressInterface::iterations() const {
+int64_t XpressInterface::iterations() const {
   if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
-  return static_cast<int64>(XPRSgetitcnt(mLp));
+  return static_cast<int64_t>(XPRSgetitcnt(mLp));
 }
 
-int64 XpressInterface::nodes() const {
+int64_t XpressInterface::nodes() const {
   if (mMip) {
     if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
-    return static_cast<int64>(XPRSgetnodecnt(mLp));
+    return static_cast<int64_t>(XPRSgetnodecnt(mLp));
   } else {
     LOG(DFATAL) << "Number of nodes only available for discrete problems";
     return kUnknownNumberOfNodes;

@@ -23,7 +23,7 @@ namespace operations_research {
 // The type Fraction represents a number in the form of two integers: numerator
 // and denominator. This type is used to display the rational approximation
 // of a Fractional number.
-typedef std::pair<int64, int64> Fraction;
+typedef std::pair<int64_t, int64_t> Fraction;
 
 // Computes a rational approximation numerator/denominator for value x
 // using a continued fraction algorithm. The absolute difference between the

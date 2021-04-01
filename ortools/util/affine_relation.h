@@ -64,20 +64,20 @@ class AffineRelation {
   //
   // IMPORTANT: we do not check for integer overflow, but that could be added
   // if it is needed.
-  bool TryAdd(int x, int y, int64 coeff, int64 offset);
+  bool TryAdd(int x, int y, int64_t coeff, int64_t offset);
 
   // Same as TryAdd() with the option to disallow the use of a given
   // representative.
-  bool TryAdd(int x, int y, int64 coeff, int64 offset, bool allow_rep_x,
+  bool TryAdd(int x, int y, int64_t coeff, int64_t offset, bool allow_rep_x,
               bool allow_rep_y);
 
   // Returns a valid relation of the form x = coeff * representative + offset.
   // Note that this can return x = x. Non-const because of path-compression.
   struct Relation {
     int representative;
-    int64 coeff;
-    int64 offset;
-    Relation(int r, int64 c, int64 o)
+    int64_t coeff;
+    int64_t offset;
+    Relation(int r, int64_t c, int64_t o)
         : representative(r), coeff(c), offset(o) {}
     const bool operator==(const Relation& other) const {
       return representative == other.representative && coeff == other.coeff &&
@@ -146,8 +146,8 @@ class AffineRelation {
 
   // The offset and coefficient such that
   // variable[index] = coeff * variable[representative_[index]] + offset;
-  mutable std::vector<int64> coeff_;
-  mutable std::vector<int64> offset_;
+  mutable std::vector<int64_t> coeff_;
+  mutable std::vector<int64_t> offset_;
 
   // The size of each representative "tree", used to get a good complexity when
   // we have the choice of which tree to merge into the other.
@@ -161,11 +161,11 @@ class AffineRelation {
   mutable std::vector<int> tmp_path_;
 };
 
-inline bool AffineRelation::TryAdd(int x, int y, int64 coeff, int64 offset) {
+inline bool AffineRelation::TryAdd(int x, int y, int64_t coeff, int64_t offset) {
   return TryAdd(x, y, coeff, offset, true, true);
 }
 
-inline bool AffineRelation::TryAdd(int x, int y, int64 coeff, int64 offset,
+inline bool AffineRelation::TryAdd(int x, int y, int64_t coeff, int64_t offset,
                                    bool allow_rep_x, bool allow_rep_y) {
   CHECK_NE(coeff, 0);
   CHECK_NE(x, y);
@@ -183,9 +183,9 @@ inline bool AffineRelation::TryAdd(int x, int y, int64 coeff, int64 offset,
   // TODO(user): It should be possible to optimize this code block a bit, for
   // instance depending on the magnitude of new_coeff vs coeff_x, we may already
   // know that one of the two merge is not possible.
-  const int64 coeff_x = coeff_[x];
-  const int64 new_coeff = coeff * coeff_[y];
-  const int64 new_offset = coeff * offset_[y] + offset - offset_[x];
+  const int64_t coeff_x = coeff_[x];
+  const int64_t new_coeff = coeff * coeff_[y];
+  const int64_t new_offset = coeff * offset_[y] + offset - offset_[x];
   const bool condition1 =
       allow_rep_y && (new_coeff % coeff_x == 0) && (new_offset % coeff_x == 0);
   const bool condition2 = allow_rep_x && (coeff_x % new_coeff == 0) &&

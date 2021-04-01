@@ -29,7 +29,7 @@ def AssertIsInt64(x):
     if not isinstance(x, numbers.Integral):
         raise TypeError('Not an integer: %s' % x)
     if x < INT_MIN or x > INT_MAX:
-        raise OverflowError('Does not fit in an int64: %s' % x)
+        raise OverflowError('Does not fit in an int64_t: %s' % x)
 
 
 def AssertIsInt32(x):
@@ -56,7 +56,7 @@ def CapInt64(v):
 
 
 def CapSub(x, y):
-    """Saturated arithmetics. Returns x - y truncated to the int64 range."""
+    """Saturated arithmetics. Returns x - y truncated to the int64_t range."""
     AssertIsInt64(x)
     AssertIsInt64(y)
     if y == 0:

@@ -75,7 +75,7 @@ void VrpGlobalSpan() {
   // Create and register a transit callback.
   // [START transit_callback]
   const int transit_callback_index = routing.RegisterTransitCallback(
-      [](int64 from_index, int64 to_index) -> int64 { return 1; });
+      [](int64_t from_index, int64_t to_index) -> int64_t { return 1; });
   // [END transit_callback]
 
   // Define cost of each arc.

@@ -665,7 +665,7 @@ class RevisedSimplex {
   uint64_t num_optimization_iterations_;
 
   // Deterministic time for DualPhaseIUpdatePriceOnReducedCostChange().
-  int64 num_update_price_operations_ = 0;
+  int64_t num_update_price_operations_ = 0;
 
   // Total time spent in Solve().
   double total_time_;

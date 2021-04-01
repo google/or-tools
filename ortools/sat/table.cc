@@ -602,10 +602,10 @@ std::function<void(Model*)> TransitionConstraint(
 
     // Test precondition.
     {
-      std::set<std::pair<int64, int64>> unique_transition_checker;
-      for (const std::vector<int64>& transition : automaton) {
+      std::set<std::pair<int64_t, int64_t>> unique_transition_checker;
+      for (const std::vector<int64_t>& transition : automaton) {
         CHECK_EQ(transition.size(), 3);
-        const std::pair<int64, int64> p{transition[0], transition[1]};
+        const std::pair<int64_t, int64_t> p{transition[0], transition[1]};
         CHECK(!gtl::ContainsKey(unique_transition_checker, p))
             << "Duplicate outgoing transitions with value " << transition[1]
             << " from state " << transition[0] << ".";
@@ -614,10 +614,10 @@ std::function<void(Model*)> TransitionConstraint(
     }
 
     // Construct a table with the possible values of each vars.
-    std::vector<absl::flat_hash_set<int64>> possible_values(n);
+    std::vector<absl::flat_hash_set<int64_t>> possible_values(n);
     for (int time = 0; time < n; ++time) {
       const auto domain = integer_trail->InitialVariableDomain(vars[time]);
-      for (const std::vector<int64>& transition : automaton) {
+      for (const std::vector<int64_t>& transition : automaton) {
         // TODO(user): quadratic algo, improve!
         if (domain.Contains(transition[1])) {
           possible_values[time].insert(transition[1]);
@@ -626,7 +626,7 @@ std::function<void(Model*)> TransitionConstraint(
     }
 
     // Compute the set of reachable state at each time point.
-    std::vector<std::set<int64>> reachable_states(n + 1);
+    std::vector<std::set<int64_t>> reachable_states(n + 1);
     reachable_states[0].insert(initial_state);
     reachable_states[n] = {final_states.begin(), final_states.end()};
 
@@ -635,7 +635,7 @@ std::function<void(Model*)> TransitionConstraint(
     // TODO(user): filter using the domain of vars[time] that may not contain
     // all the possible transitions.
     for (int time = 0; time + 1 < n; ++time) {
-      for (const std::vector<int64>& transition : automaton) {
+      for (const std::vector<int64_t>& transition : automaton) {
         if (!gtl::ContainsKey(reachable_states[time], transition[0])) continue;
         if (!gtl::ContainsKey(possible_values[time], transition[1])) continue;
         reachable_states[time + 1].insert(transition[2]);
@@ -644,8 +644,8 @@ std::function<void(Model*)> TransitionConstraint(
 
     // Backward.
     for (int time = n - 1; time > 0; --time) {
-      std::set<int64> new_set;
-      for (const std::vector<int64>& transition : automaton) {
+      std::set<int64_t> new_set;
+      for (const std::vector<int64_t>& transition : automaton) {
         if (!gtl::ContainsKey(reachable_states[time], transition[0])) continue;
         if (!gtl::ContainsKey(possible_values[time], transition[1])) continue;
         if (!gtl::ContainsKey(reachable_states[time + 1], transition[2]))
@@ -671,7 +671,7 @@ std::function<void(Model*)> TransitionConstraint(
       std::vector<IntegerValue> in_states;
       std::vector<IntegerValue> transition_values;
       std::vector<IntegerValue> out_states;
-      for (const std::vector<int64>& transition : automaton) {
+      for (const std::vector<int64_t>& transition : automaton) {
         if (!gtl::ContainsKey(reachable_states[time], transition[0])) continue;
         if (!gtl::ContainsKey(possible_values[time], transition[1])) continue;
         if (!gtl::ContainsKey(reachable_states[time + 1], transition[2]))
@@ -702,7 +702,7 @@ std::function<void(Model*)> TransitionConstraint(
 
         encoding.clear();
         if (s.size() > 1) {
-          std::vector<int64> values;
+          std::vector<int64_t> values;
           values.reserve(s.size());
           for (IntegerValue v : s) values.push_back(v.value());
           integer_trail->UpdateInitialDomain(vars[time],
@@ -712,7 +712,7 @@ std::function<void(Model*)> TransitionConstraint(
         } else {
           // Fix vars[time] to its unique possible value.
           CHECK_EQ(s.size(), 1);
-          const int64 unique_value = s.begin()->value();
+          const int64_t unique_value = s.begin()->value();
           model->Add(LowerOrEqual(vars[time], unique_value));
           model->Add(GreaterOrEqual(vars[time], unique_value));
         }

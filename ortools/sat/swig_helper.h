@@ -43,17 +43,17 @@ class SolutionCallback {
     OnSolutionCallback();
   }
 
-  int64 NumBooleans() const { return response_.num_booleans(); }
+  int64_t NumBooleans() const { return response_.num_booleans(); }
 
-  int64 NumBranches() const { return response_.num_branches(); }
+  int64_t NumBranches() const { return response_.num_branches(); }
 
-  int64 NumConflicts() const { return response_.num_conflicts(); }
+  int64_t NumConflicts() const { return response_.num_conflicts(); }
 
-  int64 NumBinaryPropagations() const {
+  int64_t NumBinaryPropagations() const {
     return response_.num_binary_propagations();
   }
 
-  int64 NumIntegerPropagations() const {
+  int64_t NumIntegerPropagations() const {
     return response_.num_integer_propagations();
   }
 
@@ -67,7 +67,7 @@ class SolutionCallback {
 
   double BestObjectiveBound() const { return response_.best_objective_bound(); }
 
-  int64 SolutionIntegerValue(int index) {
+  int64_t SolutionIntegerValue(int index) {
     return index >= 0 ? response_.solution(index)
                       : -response_.solution(-index - 1);
   }

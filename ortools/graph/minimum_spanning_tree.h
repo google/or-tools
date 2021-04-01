@@ -106,7 +106,7 @@ std::vector<typename Graph::ArcIndex> BuildKruskalMinimumSpanningTree(
 // taken by the graph.
 // Usage:
 //  ListGraph<int, int> graph(...);
-//  const auto arc_cost = [&graph](int arc) -> int64 {
+//  const auto arc_cost = [&graph](int arc) -> int64_t {
 //                           return f(graph.Tail(arc), graph.Head(arc));
 //                        };
 //  std::vector<int> mst = BuildPrimMinimumSpanningTree(graph, arc_cost);

@@ -131,8 +131,8 @@ inline bool PyObjAs(PyObject* py, unsigned int* c) {
 }
 
 template <>
-inline bool PyObjAs(PyObject* py, int64* c) {  // NOLINT
-  int64 i;                                     // NOLINT
+inline bool PyObjAs(PyObject* py, int64_t* c) {  // NOLINT
+  int64_t i;                                     // NOLINT
 #if PY_MAJOR_VERSION < 3
   if (PyInt_Check(py)) {
     i = PyInt_AsLong(py);
@@ -149,8 +149,8 @@ inline bool PyObjAs(PyObject* py, int64* c) {  // NOLINT
 }
 
 template <>
-inline bool PyObjAs(PyObject* py, uint64* c) {  // NOLINT
-  uint64 i;                                     // NOLINT
+inline bool PyObjAs(PyObject* py, uint64_t* c) {  // NOLINT
+  uint64_t i;                                     // NOLINT
 #if PY_MAJOR_VERSION < 3
   if (PyInt_Check(py)) {
     i = PyInt_AsUnsignedLongLongMask(py);
@@ -159,7 +159,7 @@ inline bool PyObjAs(PyObject* py, uint64* c) {  // NOLINT
   {
     if (!PyLong_Check(py)) return false;  // Not a Python long.
     i = PyLong_AsUnsignedLongLong(py);
-    if (i == (uint64)-1 && PyErr_Occurred())  // NOLINT
+    if (i == (uint64_t)-1 && PyErr_Occurred())  // NOLINT
       return false;
   }
   if (c) *c = i;

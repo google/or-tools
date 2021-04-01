@@ -697,7 +697,7 @@ class TriangularMatrix : private CompactSparseMatrix {
                                 SparseColumn* lower, SparseColumn* upper);
 
   // This is used to compute the deterministic time of a matrix factorization.
-  int64 NumFpOperationsInLastPermutedLowerSparseSolve() const {
+  int64_t NumFpOperationsInLastPermutedLowerSparseSolve() const {
     return num_fp_operations_;
   }
 
@@ -779,7 +779,7 @@ class TriangularMatrix : private CompactSparseMatrix {
   mutable std::vector<RowIndex> nodes_to_explore_;
 
   // For PermutedLowerSparseSolve().
-  int64 num_fp_operations_;
+  int64_t num_fp_operations_;
   mutable std::vector<RowIndex> lower_column_rows_;
   mutable std::vector<RowIndex> upper_column_rows_;
   mutable DenseColumn initially_all_zero_scratchpad_;

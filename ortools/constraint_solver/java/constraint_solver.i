@@ -87,24 +87,24 @@ class GlobalRefGuard {
 %enddef
 
 namespace operations_research {
-PROTECT_FROM_FAILURE(IntExpr::SetValue(int64 v), arg1->solver());
-PROTECT_FROM_FAILURE(IntExpr::SetMin(int64 v), arg1->solver());
-PROTECT_FROM_FAILURE(IntExpr::SetMax(int64 v), arg1->solver());
-PROTECT_FROM_FAILURE(IntExpr::SetRange(int64 l, int64 u), arg1->solver());
-PROTECT_FROM_FAILURE(IntVar::RemoveValue(int64 v), arg1->solver());
-PROTECT_FROM_FAILURE(IntVar::RemoveValues(const std::vector<int64>& values),
+PROTECT_FROM_FAILURE(IntExpr::SetValue(int64_t v), arg1->solver());
+PROTECT_FROM_FAILURE(IntExpr::SetMin(int64_t v), arg1->solver());
+PROTECT_FROM_FAILURE(IntExpr::SetMax(int64_t v), arg1->solver());
+PROTECT_FROM_FAILURE(IntExpr::SetRange(int64_t l, int64_t u), arg1->solver());
+PROTECT_FROM_FAILURE(IntVar::RemoveValue(int64_t v), arg1->solver());
+PROTECT_FROM_FAILURE(IntVar::RemoveValues(const std::vector<int64_t>& values),
                      arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetStartMin(int64 m), arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetStartMax(int64 m), arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetStartRange(int64 mi, int64 ma),
+PROTECT_FROM_FAILURE(IntervalVar::SetStartMin(int64_t m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetStartMax(int64_t m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetStartRange(int64_t mi, int64_t ma),
                      arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetDurationMin(int64 m), arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetDurationMax(int64 m), arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetDurationRange(int64 mi, int64 ma),
+PROTECT_FROM_FAILURE(IntervalVar::SetDurationMin(int64_t m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetDurationMax(int64_t m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetDurationRange(int64_t mi, int64_t ma),
                      arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetEndMin(int64 m), arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetEndMax(int64 m), arg1->solver());
-PROTECT_FROM_FAILURE(IntervalVar::SetEndRange(int64 mi, int64 ma),
+PROTECT_FROM_FAILURE(IntervalVar::SetEndMin(int64_t m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetEndMax(int64_t m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetEndRange(int64_t mi, int64_t ma),
                      arg1->solver());
 PROTECT_FROM_FAILURE(IntervalVar::SetPerformed(bool val), arg1->solver());
 PROTECT_FROM_FAILURE(Solver::AddConstraint(Constraint* const c), arg1);
@@ -126,10 +126,10 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 %}
 
 // Use to correctly wrap Solver::MakeScheduleOrPostpone.
-%apply int64 * INOUT { int64 *const marker };
+%apply int64_t * INOUT { int64_t *const marker };
 // Use to correctly wrap arguments otherwise SWIG will wrap them as
 // SWIGTYPE_p_long_long opaque pointer.
-%apply int64 * OUTPUT { int64 *l, int64 *u, int64 *value };
+%apply int64_t * OUTPUT { int64_t *l, int64_t *u, int64_t *value };
 
 // Types in Proxy class (e.g. Solver.java) e.g.:
 // Solver::f(jstype $javainput, ...) {Solver_f_SWIG(javain, ...);}
@@ -282,54 +282,54 @@ DEFINE_VOID_TO_R_CALLBACK(
   void, CallVoidMethod)
 
 DEFINE_ARGS_TO_R_CALLBACK(
-  std::function<int(int64)>,
+  std::function<int(int64_t)>,
   LongToIntFunction, "applyAsInt", "(J)I",
   int, CallIntMethod,
   VAR_ARGS(long t),
   VAR_ARGS((jlong)t))
 
 DEFINE_ARGS_TO_R_CALLBACK(
-  std::function<int64(int64)>,
+  std::function<int64_t(int64_t)>,
   LongUnaryOperator, "applyAsLong", "(J)J",
   long, CallLongMethod, VAR_ARGS(long t), VAR_ARGS((jlong)t))
 
 DEFINE_ARGS_TO_R_CALLBACK(
-  std::function<int64(int64, int64)>,
+  std::function<int64_t(int64_t, int64_t)>,
   LongBinaryOperator, "applyAsLong", "(JJ)J",
   long, CallLongMethod,
   VAR_ARGS(long t, long u),
   VAR_ARGS((jlong)t, (jlong)u))
 
 DEFINE_ARGS_TO_R_CALLBACK(
-  std::function<int64(int64, int64, int64)>,
+  std::function<int64_t(int64_t, int64_t, int64_t)>,
   LongTernaryOperator, "applyAsLong", "(JJJ)J",
   long, CallLongMethod,
   VAR_ARGS(long t, long u, long v),
   VAR_ARGS((jlong)t, (jlong)u, (jlong)v))
 
 DEFINE_ARGS_TO_R_CALLBACK(
-  std::function<int64(int, int)>,
+  std::function<int64_t(int, int)>,
   IntIntToLongFunction, "applyAsLong", "(II)J",
   long, CallLongMethod,
   VAR_ARGS(int t, int u),
   VAR_ARGS((jint)t, (jint)u))
 
 DEFINE_ARGS_TO_R_CALLBACK(
-  std::function<bool(int64)>,
+  std::function<bool(int64_t)>,
   LongPredicate, "test", "(J)Z",
   bool, CallBooleanMethod,
   VAR_ARGS(long t),
   VAR_ARGS((jlong)t))
 
 DEFINE_ARGS_TO_R_CALLBACK(
-  std::function<bool(int64, int64, int64)>,
+  std::function<bool(int64_t, int64_t, int64_t)>,
   LongTernaryPredicate, "test", "(JJJ)Z",
   bool, CallBooleanMethod,
   VAR_ARGS(long t, long u, long v),
   VAR_ARGS((jlong)t, (jlong)u, (jlong)v))
 
 DEFINE_ARGS_TO_R_CALLBACK(
-  std::function<void(int64)>,
+  std::function<void(int64_t)>,
   LongConsumer, "accept", "(J)V",
   void, CallVoidMethod,
   VAR_ARGS(long t),
@@ -344,7 +344,7 @@ DEFINE_ARGS_TO_R_CALLBACK(
 // Renaming
 namespace operations_research {
 
-// This method causes issues with our std::vector<int64> wrapping. It's not really
+// This method causes issues with our std::vector<int64_t> wrapping. It's not really
 // part of the public API anyway.
 %ignore ToInt64Vector;
 
@@ -657,24 +657,24 @@ import java.util.function.Supplier;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/BooleanSupplier.html
 import java.util.function.BooleanSupplier;
 
-// Used to wrap IndexEvaluator1 (std::function<int64(int64)>)
+// Used to wrap IndexEvaluator1 (std::function<int64_t(int64_t)>)
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongUnaryOperator.html
 import java.util.function.LongUnaryOperator;
-// Used to wrap IndexEvaluator2 (std::function<int64(int64, int64)>)
+// Used to wrap IndexEvaluator2 (std::function<int64_t(int64_t, int64_t)>)
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
-// Used to wrap IndexEvaluator3 (std::function<int64(int64, int64, int64)>)
+// Used to wrap IndexEvaluator3 (std::function<int64_t(int64_t, int64_t, int64_t)>)
 // note: Java does not provide TernaryOperator so we provide it.
 import com.google.ortools.constraintsolver.LongTernaryOperator;
-// Used to wrap std::function<int64(int, int)>
+// Used to wrap std::function<int64_t(int, int)>
 // note: Java does not provide it, so we provide it.
 import com.google.ortools.constraintsolver.IntIntToLongFunction;
 
-// Used to wrap IndexFilter1 (std::function<bool(int64)>)
+// Used to wrap IndexFilter1 (std::function<bool(int64_t)>)
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongPredicate.html
 import java.util.function.LongPredicate;
 
-// Used to wrap std::function<bool(int64, int64, int64)>
+// Used to wrap std::function<bool(int64_t, int64_t, int64_t)>
 // note: Java does not provide TernaryPredicate so we provide it
 import com.google.ortools.constraintsolver.LongTernaryPredicate;
 
@@ -682,7 +682,7 @@ import com.google.ortools.constraintsolver.LongTernaryPredicate;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/Consumer.html
 import java.util.function.Consumer;
 
-// Used to wrap ObjectiveWatcher (std::function<void(int64)>)
+// Used to wrap ObjectiveWatcher (std::function<void(int64_t)>)
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongConsumer.html
 import java.util.function.LongConsumer;
 
@@ -1451,7 +1451,7 @@ import java.util.function.LongConsumer;
 %rename (var) IntVarLocalSearchFilter::Var;  // Inherited.
 %extend IntVarLocalSearchFilter {
   int index(IntVar* const var) {
-    int64 index = -1;
+    int64_t index = -1;
     $self->FindIndex(var, &index);
     return index;
   }
@@ -1502,31 +1502,31 @@ import java.util.function.Supplier;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/BooleanSupplier.html
 import java.util.function.BooleanSupplier;
 
-// Used to wrap std::function<int(int64)>
+// Used to wrap std::function<int(int64_t)>
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongToIntFunction.html
 import java.util.function.LongToIntFunction;
 
-// Used to wrap std::function<int64(int64)>
+// Used to wrap std::function<int64_t(int64_t)>
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongUnaryOperator.html
 import java.util.function.LongUnaryOperator;
 
-// Used to wrap std::function<int64(int64, int64)>
+// Used to wrap std::function<int64_t(int64_t, int64_t)>
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
 
-// Used to wrap std::function<int64(int64, int64, int64)>
+// Used to wrap std::function<int64_t(int64_t, int64_t, int64_t)>
 // note: Java does not provide TernaryOperator so we provide it
 import com.google.ortools.constraintsolver.LongTernaryOperator;
 
-// Used to wrap std::function<int64(int, int)>
+// Used to wrap std::function<int64_t(int, int)>
 // note: Java does not provide it, so we provide it.
 import com.google.ortools.constraintsolver.IntIntToLongFunction;
 
-// Used to wrap std::function<bool(int64)>
+// Used to wrap std::function<bool(int64_t)>
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongPredicate.html
 import java.util.function.LongPredicate;
 
-// Used to wrap std::function<bool(int64, int64, int64)>
+// Used to wrap std::function<bool(int64_t, int64_t, int64_t)>
 // note: Java does not provide TernaryPredicate so we provide it
 import com.google.ortools.constraintsolver.LongTernaryPredicate;
 
@@ -1534,7 +1534,7 @@ import com.google.ortools.constraintsolver.LongTernaryPredicate;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/Consumer.html
 import java.util.function.Consumer;
 
-// Used to wrap std::function<void(int64)>
+// Used to wrap std::function<void(int64_t)>
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongConsumer.html
 import java.util.function.LongConsumer;
 
@@ -1583,7 +1583,7 @@ namespace operations_research {
 // Define templates instantiation after wrapping.
 namespace operations_research {
 %template(RevInteger) Rev<int>;
-%template(RevLong) Rev<int64>;
+%template(RevLong) Rev<int64_t>;
 %template(RevBool) Rev<bool>;
 %template(AssignmentIntContainer) AssignmentContainer<IntVar, IntVarElement>;
 %template(AssignmentIntervalContainer) AssignmentContainer<IntervalVar, IntervalVarElement>;

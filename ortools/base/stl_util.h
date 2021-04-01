@@ -901,7 +901,7 @@ bool SortedContainersHaveIntersection(const In1& in1, const In2& in2) {
 //
 // Example:
 //   using MyAlloc = STLCountingAllocator<std::string>;
-//   int64 bytes = 0;
+//   int64_t bytes = 0;
 //   std::vector<std::string, MyAlloc> v(MyAlloc(&bytes));
 //   v.push_back("hi");
 //   LOG(INFO) << "Bytes allocated " << bytes;
@@ -914,7 +914,7 @@ class STLCountingAllocator : public Alloc {
   using size_type = typename Alloc::size_type;
 
   STLCountingAllocator() : bytes_used_(nullptr) {}
-  explicit STLCountingAllocator(int64* b) : bytes_used_(b) {}
+  explicit STLCountingAllocator(int64_t* b) : bytes_used_(b) {}
 
   // Constructor used for rebinding
   template <typename U, typename B>
@@ -943,17 +943,17 @@ class STLCountingAllocator : public Alloc {
     using other = STLCountingAllocator<U, OtherA>;
   };
 
-  int64* bytes_used() const { return bytes_used_; }
+  int64_t* bytes_used() const { return bytes_used_; }
 
  private:
-  int64* bytes_used_;
+  int64_t* bytes_used_;
 };
 
 template <typename A>
 class STLCountingAllocator<void, A> : public A {
  public:
   STLCountingAllocator() : bytes_used_(nullptr) {}
-  explicit STLCountingAllocator(int64* b) : bytes_used_(b) {}
+  explicit STLCountingAllocator(int64_t* b) : bytes_used_(b) {}
 
   // Constructor used for rebinding
   template <typename U, typename B>
@@ -967,10 +967,10 @@ class STLCountingAllocator<void, A> : public A {
    public:
     using other = STLCountingAllocator<U, OtherA>;
   };
-  int64* bytes_used() const { return bytes_used_; }
+  int64_t* bytes_used() const { return bytes_used_; }
 
  private:
-  int64* bytes_used_;
+  int64_t* bytes_used_;
 };
 
 template <typename T, typename A>

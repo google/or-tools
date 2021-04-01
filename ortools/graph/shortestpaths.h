@@ -35,8 +35,8 @@ namespace operations_research {
 // will delete it in the end.  This function returns true if
 // 'start_node' and 'end_node' are connected, false otherwise.
 bool DijkstraShortestPath(int node_count, int start_node, int end_node,
-                          std::function<int64(int, int)> graph,
-                          int64 disconnected_distance, std::vector<int>* nodes);
+                          std::function<int64_t(int, int)> graph,
+                          int64_t disconnected_distance, std::vector<int>* nodes);
 
 // Stable version of the Dijsktra Shortest path with callback based description
 // of the graph.  The callback returns the distance between two nodes, a
@@ -45,8 +45,8 @@ bool DijkstraShortestPath(int node_count, int start_node, int end_node,
 // will delete it in the end.  This function returns true if
 // 'start_node' and 'end_node' are connected, false otherwise.
 bool StableDijkstraShortestPath(int node_count, int start_node, int end_node,
-                                std::function<int64(int, int)> graph,
-                                int64 disconnected_distance,
+                                std::function<int64_t(int, int)> graph,
+                                int64_t disconnected_distance,
                                 std::vector<int>* nodes);
 
 // Bellman-Ford Shortest path with callback-based description of the
@@ -58,8 +58,8 @@ bool StableDijkstraShortestPath(int node_count, int start_node, int end_node,
 // true, it will fill the 'nodes' vector with the sequence of nodes on
 // the shortest path between 'start_node' and 'end_node'.
 bool BellmanFordShortestPath(int node_count, int start_node, int end_node,
-                             std::function<int64(int, int)> graph,
-                             int64 disconnected_distance,
+                             std::function<int64_t(int, int)> graph,
+                             int64_t disconnected_distance,
                              std::vector<int>* nodes);
 
 // A* Shortest path with function based description of the
@@ -72,9 +72,9 @@ bool BellmanFordShortestPath(int node_count, int start_node, int end_node,
 // This function returns true if 'start_node' and 'end_node' are
 // connected, false otherwise.
 bool AStarShortestPath(int node_count, int start_node, int end_node,
-                       std::function<int64(int, int)> graph,
-                       std::function<int64(int)> heuristic,
-                       int64 disconnected_distance, std::vector<int>* nodes);
+                       std::function<int64_t(int, int)> graph,
+                       std::function<int64_t(int)> heuristic,
+                       int64_t disconnected_distance, std::vector<int>* nodes);
 
 }  // namespace operations_research
 

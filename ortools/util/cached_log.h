@@ -39,7 +39,7 @@ class CachedLog {
   void Init(int cache_size);
 
   // Returns the log2 of 'input'.
-  double Log2(int64 input) const;
+  double Log2(int64_t input) const;
 
  private:
   std::vector<double> cache_;

@@ -60,7 +60,7 @@ namespace sat {
 namespace {
 
 template <typename Values>
-std::vector<int64> ValuesFromProto(const Values& values) {
+std::vector<int64_t> ValuesFromProto(const Values& values) {
   return std::vector<int64_t>(values.begin(), values.end());
 }
 

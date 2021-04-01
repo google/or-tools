@@ -444,7 +444,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
   // To be used in a DCHECK.
   bool CheckResult() const;
 
-  // Checks that the cost range fits in the range of int64's.
+  // Checks that the cost range fits in the range of int64_t's.
   // To be used in a DCHECK.
   bool CheckCostRange() const;
 
@@ -564,7 +564,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
 
   // alpha_ is the factor by which epsilon_ is divided at each iteration of
   // Refine().
-  const int64 alpha_;
+  const int64_t alpha_;
 
   // cost_scaling_factor_ is the scaling factor for cost.
   CostValue cost_scaling_factor_;

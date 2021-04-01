@@ -354,14 +354,14 @@ inline std::function<void(Model*)> WeightedSumLowerOrEqual(
       for (int b = 0; b < num_buckets; ++b) {
         local_vars.clear();
         local_coeffs.clear();
-        int64 bucket_lb = 0;
-        int64 bucket_ub = 0;
+        int64_t bucket_lb = 0;
+        int64_t bucket_ub = 0;
         const int limit = num_vars * (b + 1);
         for (; i * num_buckets < limit; ++i) {
           local_vars.push_back(vars[i]);
           local_coeffs.push_back(IntegerValue(coefficients[i]));
-          const int64 term1 = model->Get(LowerBound(vars[i])) * coefficients[i];
-          const int64 term2 = model->Get(UpperBound(vars[i])) * coefficients[i];
+          const int64_t term1 = model->Get(LowerBound(vars[i])) * coefficients[i];
+          const int64_t term2 = model->Get(UpperBound(vars[i])) * coefficients[i];
           bucket_lb += std::min(term1, term2);
           bucket_ub += std::max(term1, term2);
         }
@@ -635,7 +635,7 @@ inline std::function<void(Model*)> WeightedSumNotEqual(
 // given weighted sum of other IntegerVariables.
 //
 // Note that this is templated so that it can seamlessly accept vector<int> or
-// vector<int64>.
+// vector<int64_t>.
 //
 // TODO(user): invert the coefficients/vars arguments.
 template <typename VectorInt>
@@ -647,8 +647,8 @@ inline std::function<IntegerVariable(Model*)> NewWeightedSum(
     // compute the basic bounds on the sum.
     //
     // TODO(user): deal with overflow here too!
-    int64 sum_lb(0);
-    int64 sum_ub(0);
+    int64_t sum_lb(0);
+    int64_t sum_ub(0);
     for (int i = 0; i < new_vars.size(); ++i) {
       if (coefficients[i] > 0) {
         sum_lb += coefficients[i] * model->Get(LowerBound(new_vars[i]));
@@ -661,7 +661,7 @@ inline std::function<IntegerVariable(Model*)> NewWeightedSum(
 
     const IntegerVariable sum = model->Add(NewIntegerVariable(sum_lb, sum_ub));
     new_vars.push_back(sum);
-    std::vector<int64> new_coeffs(coefficients.begin(), coefficients.end());
+    std::vector<int64_t> new_coeffs(coefficients.begin(), coefficients.end());
     new_coeffs.push_back(-1);
     model->Add(FixedWeightedSum(new_vars, new_coeffs, 0));
     return sum;
@@ -709,7 +709,7 @@ inline std::function<void(Model*)> IsEqualToMinOf(
 
       // min_var = min_expr
       std::vector<IntegerVariable> min_sum_vars = min_expr.vars;
-      std::vector<int64> min_sum_coeffs;
+      std::vector<int64_t> min_sum_coeffs;
       for (IntegerValue coeff : min_expr.coeffs) {
         min_sum_coeffs.push_back(coeff.value());
       }
@@ -722,7 +722,7 @@ inline std::function<void(Model*)> IsEqualToMinOf(
     for (const LinearExpression& expr : exprs) {
       // min_var <= expr
       std::vector<IntegerVariable> vars = expr.vars;
-      std::vector<int64> coeffs;
+      std::vector<int64_t> coeffs;
       for (IntegerValue coeff : expr.coeffs) {
         coeffs.push_back(coeff.value());
       }

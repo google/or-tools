@@ -524,8 +524,8 @@ inline int16 GetReferenceableValue(int16 t) { return t; }
 inline uint16 GetReferenceableValue(uint16 t) { return t; }
 inline int GetReferenceableValue(int t) { return t; }
 inline unsigned int GetReferenceableValue(unsigned int t) { return t; }
-inline int64 GetReferenceableValue(int64 t) { return t; }
-inline uint64 GetReferenceableValue(uint64 t) { return t; }
+inline int64_t GetReferenceableValue(int64_t t) { return t; }
+inline uint64_t GetReferenceableValue(uint64_t t) { return t; }
 
 // This is a dummy class to define the following operator.
 struct DummyClassToDefineOperator {};
@@ -1129,7 +1129,7 @@ class GOOGLE_GLOG_DLL_DECL LogMessage {
   int preserved_errno() const;
 
   // Must be called without the log_mutex held.  (L < log_mutex)
-  static int64 num_messages(int severity);
+  static int64_t num_messages(int severity);
 
   struct LogMessageData;
 
@@ -1150,7 +1150,7 @@ class GOOGLE_GLOG_DLL_DECL LogMessage {
   void RecordCrashReason(logging_internal::CrashReason* reason);
 
   // Counts of messages sent at each priority:
-  static int64 num_messages_[NUM_SEVERITIES];  // under log_mutex
+  static int64_t num_messages_[NUM_SEVERITIES];  // under log_mutex
 
   // We keep the data in a separate struct so that each instance of
   // LogMessage uses less stack space.

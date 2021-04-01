@@ -180,7 +180,7 @@ class BronKerboschAlgorithm {
   // can be called again and it will resume the work where the previous call had
   // stopped. When it returns COMPLETED any subsequent call to the method will
   // resume the search from the beginning.
-  BronKerboschAlgorithmStatus RunIterations(int64 max_num_iterations);
+  BronKerboschAlgorithmStatus RunIterations(int64_t max_num_iterations);
 
   // Runs at most 'max_num_iterations' iterations of the Bron-Kerbosch
   // algorithm, until the time limit is exceeded or until all cliques are
@@ -189,7 +189,7 @@ class BronKerboschAlgorithm {
   // can be called again and it will resume the work where the previous call had
   // stopped. When it returns COMPLETED any subsequent call to the method will
   // resume the search from the beginning.
-  BronKerboschAlgorithmStatus RunWithTimeLimit(int64 max_num_iterations,
+  BronKerboschAlgorithmStatus RunWithTimeLimit(int64_t max_num_iterations,
                                                TimeLimit* time_limit);
 
   // Runs the Bron-Kerbosch algorithm for at most kint64max iterations, until
@@ -347,7 +347,7 @@ class BronKerboschAlgorithm {
 
   // Set to true if the algorithm is active (it was not stopped by an the clique
   // callback).
-  int64 num_remaining_iterations_;
+  int64_t num_remaining_iterations_;
 
   // The current time limit used by the solver. The time limit is assigned by
   // the Run methods and it can be different for each call to run.
@@ -507,7 +507,7 @@ void BronKerboschAlgorithm<NodeIndex>::PushState(NodeIndex selected) {
 
 template <typename NodeIndex>
 BronKerboschAlgorithmStatus BronKerboschAlgorithm<NodeIndex>::RunWithTimeLimit(
-    int64 max_num_iterations, TimeLimit* time_limit) {
+    int64_t max_num_iterations, TimeLimit* time_limit) {
   CHECK(time_limit != nullptr);
   time_limit_ = time_limit;
   if (states_.empty()) {
@@ -545,7 +545,7 @@ BronKerboschAlgorithmStatus BronKerboschAlgorithm<NodeIndex>::RunWithTimeLimit(
 
 template <typename NodeIndex>
 BronKerboschAlgorithmStatus BronKerboschAlgorithm<NodeIndex>::RunIterations(
-    int64 max_num_iterations) {
+    int64_t max_num_iterations) {
   TimeLimit time_limit(std::numeric_limits<double>::infinity());
   return RunWithTimeLimit(max_num_iterations, &time_limit);
 }

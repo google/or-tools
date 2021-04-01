@@ -233,7 +233,7 @@ import java.util.function.LongUnaryOperator;
 // Map transit callback to Java @FunctionalInterface types.
 // This replaces the RoutingTransitCallback[1-2] in the Java proxy class
 %typemap(javaimports) RoutingDimension %{
-// Used to wrap std::function<int64(int64 from_index, int64 to_index)> group_delay
+// Used to wrap std::function<int64_t(int64_t from_index, int64_t to_index)> group_delay
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
 %}

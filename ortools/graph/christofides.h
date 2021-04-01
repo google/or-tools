@@ -36,7 +36,7 @@ namespace operations_research {
 
 using ::util::CompleteGraph;
 
-template <typename CostType, typename ArcIndex = int64,
+template <typename CostType, typename ArcIndex = int64_t,
           typename NodeIndex = int32,
           typename CostFunction = std::function<CostType(NodeIndex, NodeIndex)>>
 class ChristofidesPathSolver {
@@ -79,7 +79,7 @@ class ChristofidesPathSolver {
   //  return a + b;
   //}
   //template <>
-  int64 SafeAdd(int64 a, int64 b) {
+  int64_t SafeAdd(int64_t a, int64_t b) {
     return CapAdd(a, b);
   }
 

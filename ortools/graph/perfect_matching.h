@@ -69,7 +69,7 @@ class MinCostPerfectMatching {
   // is better to only add one edge with a minimum cost between two nodes. In
   // particular, do not add both AddEdge(a, b, cost) and AddEdge(b, a, cost).
   // TODO(user): We could just presolve them away.
-  void AddEdgeWithCost(int tail, int head, int64 cost);
+  void AddEdgeWithCost(int tail, int head, int64_t cost);
 
   // Solves the min-cost perfect matching problem on the given graph.
   //
@@ -90,7 +90,7 @@ class MinCostPerfectMatching {
     INTEGER_OVERFLOW = 2,
 
     // Advanced usage: the matching is OPTIMAL and was computed without
-    // overflow, but its OptimalCost() does not fit on an int64. Note that
+    // overflow, but its OptimalCost() does not fit on an int64_t. Note that
     // Match() still work and you can re-compute the cost in double for
     // instance.
     COST_OVERFLOW = 3,
@@ -99,7 +99,7 @@ class MinCostPerfectMatching {
 
   // Returns the cost of the perfect macthing. Only valid when the last solve
   // status was OPTIMAL.
-  int64 OptimalCost() const {
+  int64_t OptimalCost() const {
     DCHECK(optimal_solution_found_);
     return optimal_cost_;
   }
@@ -123,8 +123,8 @@ class MinCostPerfectMatching {
   // reclaim the memory of graph_ early or allows to still query the last
   // solution if we later allow re-solve with incremental changes to the graph.
   bool optimal_solution_found_ = false;
-  int64 optimal_cost_ = 0;
-  int64 maximum_edge_cost_ = 0;
+  int64_t optimal_cost_ = 0;
+  int64_t maximum_edge_cost_ = 0;
   std::vector<int> matches_;
 };
 
@@ -167,7 +167,7 @@ class BlossomGraph {
   // Typed index used by this class.
   DEFINE_INT_TYPE(NodeIndex, int);
   DEFINE_INT_TYPE(EdgeIndex, int);
-  DEFINE_INT_TYPE(CostValue, int64);
+  DEFINE_INT_TYPE(CostValue, int64_t);
 
   // Basic constants.
   // NOTE(user): Those can't be constexpr because of the or-tools export,
@@ -485,11 +485,11 @@ class BlossomGraph {
   CostValue dual_objective_ = CostValue(0);
 
   // Statistics on the main operations.
-  int64 num_grows_ = 0;
-  int64 num_augments_ = 0;
-  int64 num_shrinks_ = 0;
-  int64 num_expands_ = 0;
-  int64 num_dual_updates_ = 0;
+  int64_t num_grows_ = 0;
+  int64_t num_augments_ = 0;
+  int64_t num_shrinks_ = 0;
+  int64_t num_expands_ = 0;
+  int64_t num_dual_updates_ = 0;
 };
 
 }  // namespace operations_research

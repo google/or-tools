@@ -20,7 +20,7 @@
 namespace operations_research {
 namespace sysinfo {
 
-int64 MemoryUsageProcess() {
+int64_t MemoryUsageProcess() {
 #if defined(__PORTABLE_PLATFORM__)
   return -1;
 #else   // defined(__PORTABLE_PLATFORM__)

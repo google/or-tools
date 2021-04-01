@@ -268,7 +268,7 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     for (const int ref : ref_to_display) {
       const IntegerVariable var = variable_mapping[ref];
-      const std::pair<int64, int64> new_domain(
+      const std::pair<int64_t, int64_t> new_domain(
           integer_trail->LowerBound(var).value(),
           integer_trail->UpperBound(var).value());
       if (new_domain != old_domains[ref]) {

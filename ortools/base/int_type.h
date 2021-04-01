@@ -40,8 +40,8 @@
 // DISALLOWED OPERATIONS / TYPE-SAFETY ENFORCEMENT -----------------------------
 //
 //  Consider these definitions and variable declarations:
-//    DEFINE_INT_TYPE(GlobalDocID, int64);
-//    DEFINE_INT_TYPE(LocalDocID, int64);
+//    DEFINE_INT_TYPE(GlobalDocID, int64_t);
+//    DEFINE_INT_TYPE(LocalDocID, int64_t);
 //    GlobalDocID global;
 //    LocalDocID local;
 //
@@ -63,7 +63,7 @@
 //
 //  3) Implicit conversion from an IntType to a native integer type.
 //
-//    void GetGlobalDoc(int64 global) { ...
+//    void GetGlobalDoc(int64_t global) { ...
 //    GetGlobalDoc(global);            <-- Fails to compile!
 //    GetGlobalDoc(local);             <-- Fails to compile!
 //
@@ -98,7 +98,7 @@
 //
 // EXAMPLES --------------------------------------------------------------------
 //
-//    DEFINE_INT_TYPE(GlobalDocID, int64);
+//    DEFINE_INT_TYPE(GlobalDocID, int64_t);
 //    GlobalDocID global = 3;
 //    std::cout << global;                      <-- Prints 3 to stdout.
 //
@@ -106,7 +106,7 @@
 //      std::cout << i;
 //    }                                    <-- Print(ln)s 0 1 2 to stdout
 //
-//    DEFINE_INT_TYPE(LocalDocID, int64);
+//    DEFINE_INT_TYPE(LocalDocID, int64_t);
 //    LocalDocID local;
 //    std::cout << local;                       <-- Prints 0 to stdout it
 //    default
@@ -129,8 +129,8 @@
 // class is to prevent *accidental* mingling of similar logical integer types --
 // and not type casting from one type to another.
 //
-//  DEFINE_INT_TYPE(GlobalDocID, int64);
-//  DEFINE_INT_TYPE(LocalDocID, int64);
+//  DEFINE_INT_TYPE(GlobalDocID, int64_t);
+//  DEFINE_INT_TYPE(LocalDocID, int64_t);
 //  GlobalDocID global;
 //  LocalDocID local;
 //
@@ -139,7 +139,7 @@
 //  void GetGlobalDoc(GlobalDocID global) { ...
 //  GetGlobalDoc(local.value());                  <-- Compiles fine.
 //
-//  void GetGlobalDoc(int64 global) { ...
+//  void GetGlobalDoc(int64_t global) { ...
 //  GetGlobalDoc(local.value());                  <-- Compiles fine.
 
 #ifndef OR_TOOLS_BASE_INT_TYPE_H_

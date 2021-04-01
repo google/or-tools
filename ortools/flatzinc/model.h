@@ -42,7 +42,7 @@ class Model;
 //  - all integers, in which case values is empty, and is_interval is true.
 //    Note that semi-infinite intervals aren't supported.
 //  - a Boolean domain({ 0, 1 } with Boolean display tag).
-// TODO(user): Rework domains, all int64 should be kintmin..kint64max.
+// TODO(user): Rework domains, all int64_t should be kintmin..kint64max.
 //                It is a bit tricky though as we must take care of overflows.
 // If is_a_set is true, then this domain has a set semantics. For a set
 // variable, any subset of the initial set of values is a valid assignment,

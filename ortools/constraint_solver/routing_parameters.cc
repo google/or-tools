@@ -13,6 +13,8 @@
 
 #include "ortools/constraint_solver/routing_parameters.h"
 
+#include <cstdint>
+
 #include "absl/strings/str_cat.h"
 #include "absl/time/time.h"
 #include "google/protobuf/descriptor.h"
@@ -55,6 +57,8 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "cheapest_insertion_first_solution_min_neighbors: 1 "
       "cheapest_insertion_ls_operator_neighbors_ratio: 1 "
       "cheapest_insertion_ls_operator_min_neighbors: 1 "
+      "cheapest_insertion_first_solution_use_neighbors_ratio_for_"
+      "initialization: false "
       "cheapest_insertion_add_unperformed_entries: false "
       "local_search_operators {"
       "  use_relocate: BOOL_TRUE"
@@ -202,7 +206,7 @@ std::string FindErrorInRoutingSearchParameters(
     }
   }
   {
-    const int32 min_neighbors =
+    const int32_t min_neighbors =
         search_parameters.cheapest_insertion_first_solution_min_neighbors();
     if (min_neighbors < 1) {
       return StrCat("Invalid cheapest_insertion_first_solution_min_neighbors: ",
@@ -218,7 +222,7 @@ std::string FindErrorInRoutingSearchParameters(
     }
   }
   {
-    const int32 min_neighbors =
+    const int32_t min_neighbors =
         search_parameters.cheapest_insertion_ls_operator_min_neighbors();
     if (min_neighbors < 1) {
       return StrCat("Invalid cheapest_insertion_ls_operator_min_neighbors: ",
@@ -226,7 +230,7 @@ std::string FindErrorInRoutingSearchParameters(
     }
   }
   {
-    const int32 num_arcs =
+    const int32_t num_arcs =
         search_parameters.relocate_expensive_chain_num_arcs_to_consider();
     if (num_arcs < 2 || num_arcs > 1e6) {
       return StrCat("Invalid relocate_expensive_chain_num_arcs_to_consider: ",
@@ -234,7 +238,7 @@ std::string FindErrorInRoutingSearchParameters(
     }
   }
   {
-    const int32 num_arcs =
+    const int32_t num_arcs =
         search_parameters.heuristic_expensive_chain_lns_num_arcs_to_consider();
     if (num_arcs < 2 || num_arcs > 1e6) {
       return StrCat(
@@ -243,7 +247,7 @@ std::string FindErrorInRoutingSearchParameters(
     }
   }
   {
-    const int32 num_nodes =
+    const int32_t num_nodes =
         search_parameters.heuristic_close_nodes_lns_num_nodes();
     if (num_nodes < 0 || num_nodes > 1e4) {
       return StrCat("Invalid heuristic_close_nodes_lns_num_nodes: ", num_nodes,
@@ -266,11 +270,11 @@ std::string FindErrorInRoutingSearchParameters(
     }
   }
   {
-    const int32 num = search_parameters.number_of_solutions_to_collect();
+    const int32_t num = search_parameters.number_of_solutions_to_collect();
     if (num < 1) return StrCat("Invalid number_of_solutions_to_collect:", num);
   }
   {
-    const int64 lim = search_parameters.solution_limit();
+    const int64_t lim = search_parameters.solution_limit();
     if (lim < 1) return StrCat("Invalid solution_limit:", lim);
   }
   if (!IsValidNonNegativeDuration(search_parameters.time_limit())) {
@@ -331,7 +335,7 @@ std::string FindErrorInRoutingSearchParameters(
           improvement_rate_coefficient);
     }
 
-    const int32 improvement_rate_solutions_distance =
+    const int32_t improvement_rate_solutions_distance =
         search_parameters.improvement_limit_parameters()
             .improvement_rate_solutions_distance();
     if (improvement_rate_solutions_distance <= 0) {

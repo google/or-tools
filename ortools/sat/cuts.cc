@@ -477,7 +477,7 @@ CutGenerator CreateKnapsackCoverCutGenerator(
 
     KnapsackSolverForCuts knapsack_solver(
         "Knapsack on demand cover cut generator");
-    int64 skipped_constraints = 0;
+    int64_t skipped_constraints = 0;
     LinearConstraint mutable_constraint;
 
     // Iterate through all knapsack constraints.
@@ -1341,13 +1341,13 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
       [z, x, y, integer_trail](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
-        const int64 x_lb = integer_trail->LevelZeroLowerBound(x).value();
-        const int64 x_ub = integer_trail->LevelZeroUpperBound(x).value();
-        const int64 y_lb = integer_trail->LevelZeroLowerBound(y).value();
-        const int64 y_ub = integer_trail->LevelZeroUpperBound(y).value();
+        const int64_t x_lb = integer_trail->LevelZeroLowerBound(x).value();
+        const int64_t x_ub = integer_trail->LevelZeroUpperBound(x).value();
+        const int64_t y_lb = integer_trail->LevelZeroLowerBound(y).value();
+        const int64_t y_ub = integer_trail->LevelZeroUpperBound(y).value();
 
         // TODO(user): Compute a better bound (int_max / 4 ?).
-        const int64 kMaxSafeInteger = (int64{1} << 53) - 1;
+        const int64_t kMaxSafeInteger = (int64_t{1} << 53) - 1;
 
         if (CapProd(x_ub, y_ub) >= kMaxSafeInteger) {
           VLOG(3) << "Potential overflow in PositiveMultiplicationCutGenerator";
@@ -1366,7 +1366,7 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
         // Cut -z + x_coeff * x + y_coeff* y <= rhs
         auto try_add_above_cut = [manager, z_lp_value, x_lp_value, y_lp_value,
                                   x, y, z, &lp_values](
-                                     int64 x_coeff, int64 y_coeff, int64 rhs) {
+                                     int64_t x_coeff, int64_t y_coeff, int64_t rhs) {
           if (-z_lp_value + x_lp_value * x_coeff + y_lp_value * y_coeff >=
               rhs + kMinCutViolation) {
             LinearConstraint cut;
@@ -1389,7 +1389,7 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
         // Cut -z + x_coeff * x + y_coeff* y >= rhs
         auto try_add_below_cut = [manager, z_lp_value, x_lp_value, y_lp_value,
                                   x, y, z, &lp_values](
-                                     int64 x_coeff, int64 y_coeff, int64 rhs) {
+                                     int64_t x_coeff, int64_t y_coeff, int64_t rhs) {
           if (-z_lp_value + x_lp_value * x_coeff + y_lp_value * y_coeff <=
               rhs - kMinCutViolation) {
             LinearConstraint cut;
@@ -1435,13 +1435,13 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
       [y, x, integer_trail](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
-        const int64 x_ub = integer_trail->LevelZeroUpperBound(x).value();
-        const int64 x_lb = integer_trail->LevelZeroLowerBound(x).value();
+        const int64_t x_ub = integer_trail->LevelZeroUpperBound(x).value();
+        const int64_t x_lb = integer_trail->LevelZeroLowerBound(x).value();
 
         if (x_lb == x_ub) return;
 
         // Check for potential overflows.
-        if (x_ub > (int64{1} << 31)) return;
+        if (x_ub > (int64_t{1} << 31)) return;
         DCHECK_GE(x_lb, 0);
 
         const double y_lp_value = lp_values[y];
@@ -1450,8 +1450,8 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
         // First cut: target should be below the line:
         //     (x_lb, x_lb ^ 2) to (x_ub, x_ub ^ 2).
         // The slope of that line is (ub^2 - lb^2) / (ub - lb) = ub + lb.
-        const int64 y_lb = x_lb * x_lb;
-        const int64 above_slope = x_ub + x_lb;
+        const int64_t y_lb = x_lb * x_lb;
+        const int64_t above_slope = x_ub + x_lb;
         const double max_lp_y = y_lb + above_slope * (x_lp_value - x_lb);
         if (y_lp_value >= max_lp_y + kMinCutViolation) {
           // cut: y <= (x_lb + x_ub) * x - x_lb * x_ub
@@ -1471,8 +1471,8 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
         //
         // Note that we only add one of these cuts. The one for x_lp_value in
         // [value, value + 1].
-        const int64 x_floor = static_cast<int64>(std::floor(x_lp_value));
-        const int64 below_slope = 2 * x_floor + 1;
+        const int64_t x_floor = static_cast<int64_t>(std::floor(x_lp_value));
+        const int64_t below_slope = 2 * x_floor + 1;
         const double min_lp_y =
             below_slope * x_lp_value - x_floor - x_floor * x_floor;
         if (min_lp_y >= y_lp_value + kMinCutViolation) {

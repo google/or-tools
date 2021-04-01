@@ -28,9 +28,9 @@ const char* ProgramInvocationShortName();
 
 bool IsGoogleLoggingInitialized();
 
-int64 CycleClock_Now();
+int64_t CycleClock_Now();
 
-int64 UsecToCycles(int64 usec);
+int64_t UsecToCycles(int64_t usec);
 
 int32 GetMainThreadPid();
 

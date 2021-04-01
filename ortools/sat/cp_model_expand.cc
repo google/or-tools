@@ -433,7 +433,7 @@ void ExpandInverse(ConstraintProto* ct, PresolveContext* context) {
       const Domain domain = context->DomainOf(direct[i]);
       bool removed_value = false;
       for (const ClosedInterval& interval : domain) {
-        for (int64 j = interval.start; j <= interval.end; ++j) {
+        for (int64_t j = interval.start; j <= interval.end; ++j) {
           if (context->DomainOf(inverse[j]).Contains(i)) {
             possible_values.push_back(j);
           } else {

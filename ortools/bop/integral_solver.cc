@@ -396,7 +396,7 @@ class IntegralProblemConverter {
   // t is a constraint or the objective.
   // Returns the bound error due to the scaling.
   // The weight is scaled using:
-  //   static_cast<int64>(round(weight * scaling_factor)) / gcd;
+  //   static_cast<int64_t>(round(weight * scaling_factor)) / gcd;
   template <class T>
   double ScaleAndSparsifyWeights(
       double scaling_factor, int64_t gcd,

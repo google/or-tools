@@ -172,7 +172,7 @@ class EnteringVariable {
   std::vector<ColWithRatio> breakpoints_;
 
   // Counter for the deterministic time.
-  int64 num_operations_ = 0;
+  int64_t num_operations_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(EnteringVariable);
 };

@@ -11,8 +11,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
+#include <cstdint>
+#include <functional>
+#include <limits>
+#include <map>
+#include <memory>
+#include <utility>
+#include <vector>
+
+#include "absl/time/time.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/map_util.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
-#include "ortools/sat/cp_model.h"
+#include "ortools/constraint_solver/routing_parameters.pb.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
 namespace sat {
@@ -27,7 +47,7 @@ bool RoutingModelCanBeSolvedBySat(const RoutingModel& model) {
 }
 
 // Adds an integer variable to a CpModelProto, returning its index in the proto.
-int AddVariable(CpModelProto* cp_model, int64 lb, int64 ub) {
+int AddVariable(CpModelProto* cp_model, int64_t lb, int64_t ub) {
   const int index = cp_model->variables_size();
   IntegerVariableProto* const var = cp_model->add_variables();
   var->add_domain(lb);
@@ -36,7 +56,7 @@ int AddVariable(CpModelProto* cp_model, int64 lb, int64 ub) {
 }
 
 // Returns the unique depot node used in the CP-SAT models (as of 01/2020).
-int64 GetDepotFromModel(const RoutingModel& model) { return model.Start(0); }
+int64_t GetDepotFromModel(const RoutingModel& model) { return model.Start(0); }
 
 // Structure to keep track of arcs created.
 struct Arc {
@@ -70,17 +90,17 @@ void AddDimensions(const RoutingModel& model, const ArcVarMap& arc_vars,
     const RoutingModel::TransitCallback2& transit =
         dimension->transit_evaluator(0);
     std::vector<int> cumuls(dimension->cumuls().size(), -1);
-    const int64 min_start = dimension->cumuls()[model.Start(0)]->Min();
-    const int64 max_end = std::min(dimension->cumuls()[model.End(0)]->Max(),
-                                   dimension->vehicle_capacities()[0]);
+    const int64_t min_start = dimension->cumuls()[model.Start(0)]->Min();
+    const int64_t max_end = std::min(dimension->cumuls()[model.End(0)]->Max(),
+                                     dimension->vehicle_capacities()[0]);
     for (int i = 0; i < cumuls.size(); ++i) {
       if (model.IsStart(i) || model.IsEnd(i)) continue;
       // Reducing bounds supposing the triangular inequality.
-      const int64 cumul_min =
+      const int64_t cumul_min =
           std::max(sat::kMinIntegerValue.value(),
                    std::max(dimension->cumuls()[i]->Min(),
                             CapAdd(transit(model.Start(0), i), min_start)));
-      const int64 cumul_max =
+      const int64_t cumul_max =
           std::min(sat::kMaxIntegerValue.value(),
                    std::min(dimension->cumuls()[i]->Max(),
                             CapSub(max_end, transit(i, model.End(0)))));
@@ -96,7 +116,7 @@ void AddDimensions(const RoutingModel& model, const ArcVarMap& arc_vars,
       ct->add_enforcement_literal(arc_var.second);
       LinearConstraintProto* arg = ct->mutable_linear();
       arg->add_domain(transit(tail, head));
-      arg->add_domain(kint64max);
+      arg->add_domain(std::numeric_limits<int64_t>::max());
       arg->add_vars(cumuls[tail]);
       arg->add_coeffs(-1);
       arg->add_vars(cumuls[head]);
@@ -186,14 +206,14 @@ void AddPickupDeliveryConstraints(const RoutingModel& model,
   const std::vector<int> vehicles =
       CreateVehicleVars(model, arc_vars, cp_model);
   for (const auto& pairs : model.GetPickupAndDeliveryPairs()) {
-    const int64 pickup = pairs.first[0];
-    const int64 delivery = pairs.second[0];
+    const int64_t pickup = pairs.first[0];
+    const int64_t delivery = pairs.second[0];
     {
       // ranks[pickup] + 1 <= ranks[delivery].
       ConstraintProto* ct = cp_model->add_constraints();
       LinearConstraintProto* arg = ct->mutable_linear();
       arg->add_domain(1);
-      arg->add_domain(kint64max);
+      arg->add_domain(std::numeric_limits<int64_t>::max());
       arg->add_vars(ranks[delivery]);
       arg->add_coeffs(1);
       arg->add_vars(ranks[pickup]);
@@ -238,9 +258,9 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel& model,
       if (model.IsStart(head)) continue;
       const int head_index = model.IsEnd(head) ? depot : head;
       if (head_index == tail_index) continue;
-      const int64 cost = tail != head ? model.GetHomogeneousCost(tail, head)
-                                      : model.UnperformedPenalty(tail);
-      if (cost == kint64max) continue;
+      const int64_t cost = tail != head ? model.GetHomogeneousCost(tail, head)
+                                        : model.UnperformedPenalty(tail);
+      if (cost == std::numeric_limits<int64_t>::max()) continue;
       const Arc arc = {tail_index, head_index};
       if (gtl::ContainsKey(arc_vars, arc)) continue;
       const int index = AddVariable(cp_model, 0, 1);
@@ -390,9 +410,9 @@ ArcVarMap PopulateSingleRouteModelFromRoutingModel(const RoutingModel& model,
       // those.
       if (model.IsStart(head)) continue;
       if (model.IsEnd(head)) head = model.Start(0);
-      const int64 cost = tail != head ? model.GetHomogeneousCost(tail, head)
-                                      : model.UnperformedPenalty(tail);
-      if (cost == kint64max) continue;
+      const int64_t cost = tail != head ? model.GetHomogeneousCost(tail, head)
+                                        : model.UnperformedPenalty(tail);
+      if (cost == std::numeric_limits<int64_t>::max()) continue;
       const int index = AddVariable(cp_model, 0, 1);
       circuit->add_literals(index);
       circuit->add_tails(tail);

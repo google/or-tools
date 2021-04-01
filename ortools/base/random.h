@@ -29,13 +29,13 @@ class ACMRandom {
 
   // Unbounded generators.
   uint32 Next();
-  uint64 Next64();
-  uint64 Rand64() { return Next64(); }
-  uint64 operator()() { return Next64(); }
+  uint64_t Next64();
+  uint64_t Rand64() { return Next64(); }
+  uint64_t operator()() { return Next64(); }
 
   // Bounded generators.
   uint32 Uniform(uint32 n);
-  uint64 operator()(uint64 val_max);
+  uint64_t operator()(uint64_t val_max);
 
   // Seed management.
   void Reset(int32 seed) { generator_.seed(seed); }
@@ -43,8 +43,8 @@ class ACMRandom {
   static int32 DeterministicSeed();
 
   // C++11 goodies.
-  typedef int64 difference_type;
-  typedef uint64 result_type;
+  typedef int64_t difference_type;
+  typedef uint64_t result_type;
   static constexpr result_type min() { return 0; }
   static constexpr result_type max() { return kuint32max; }
 

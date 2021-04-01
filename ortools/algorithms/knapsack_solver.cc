@@ -68,12 +68,12 @@ typedef std::priority_queue<
     CompareKnapsackSearchNodePtrInDecreasingUpperBoundOrder>
     SearchQueue;
 
-// Returns true when value_1 * value_2 may overflow int64.
+// Returns true when value_1 * value_2 may overflow int64_t.
 inline bool WillProductOverflow(int64_t value_1, int64_t value_2) {
   const int MostSignificantBitPosition1 = MostSignificantBitPosition64(value_1);
   const int MostSignificantBitPosition2 = MostSignificantBitPosition64(value_2);
   // The sum should be less than 61 to be safe as we are only considering the
-  // most significant bit and dealing with int64 instead of uint64.
+  // most significant bit and dealing with int64_t instead of uint64_t.
   const int kOverflow = 61;
   return MostSignificantBitPosition1 + MostSignificantBitPosition2 > kOverflow;
 }

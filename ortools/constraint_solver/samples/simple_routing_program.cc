@@ -45,7 +45,7 @@ void SimpleRoutingProgram() {
   // Define cost of each arc.
   // [START arc_cost]
   int distance_call_index = routing.RegisterTransitCallback(
-      [&manager](int64 from_index, int64 to_index) -> int64 {
+      [&manager](int64_t from_index, int64_t to_index) -> int64_t {
         // Convert from routing variable Index to user NodeIndex.
         auto from_node = manager.IndexToNode(from_index).value();
         auto to_node = manager.IndexToNode(to_index).value();

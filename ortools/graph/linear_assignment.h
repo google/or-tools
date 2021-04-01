@@ -214,7 +214,7 @@
 #include "ortools/util/zvector.h"
 
 #ifndef SWIG
-ABSL_DECLARE_FLAG(int64, assignment_alpha);
+ABSL_DECLARE_FLAG(int64_t, assignment_alpha);
 ABSL_DECLARE_FLAG(int, assignment_progress_logging_period);
 ABSL_DECLARE_FLAG(bool, assignment_stack_order);
 #endif
@@ -396,10 +396,10 @@ class LinearSumAssignment {
           "%d double pushes; %d pushes",
           refinements_, relabelings_, double_pushes_, pushes_);
     }
-    int64 pushes_;
-    int64 double_pushes_;
-    int64 relabelings_;
-    int64 refinements_;
+    int64_t pushes_;
+    int64_t double_pushes_;
+    int64_t relabelings_;
+    int64_t refinements_;
   };
 
 #ifndef SWIG

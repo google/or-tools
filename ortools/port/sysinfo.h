@@ -27,7 +27,7 @@ namespace sysinfo {
 // the case where memory info is not available.
 //
 // See base/sysinfo.h MemoryUsage
-int64 MemoryUsageProcess();
+int64_t MemoryUsageProcess();
 
 }  // namespace sysinfo
 }  // namespace operations_research

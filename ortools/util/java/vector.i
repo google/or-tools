@@ -98,7 +98,7 @@
 %enddef  // VECTOR_AS_JAVA_ARRAY
 
 VECTOR_AS_JAVA_ARRAY(int, int, Int);
-VECTOR_AS_JAVA_ARRAY(int64, long, Long);
+VECTOR_AS_JAVA_ARRAY(int64_t, long, Long);
 VECTOR_AS_JAVA_ARRAY(double, double, Double);
 
 
@@ -285,7 +285,7 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
 %enddef  // MATRIX_AS_JAVA_ARRAY
 
 MATRIX_AS_JAVA_ARRAY(int, int, Int);
-MATRIX_AS_JAVA_ARRAY(int64, long, Long);
+MATRIX_AS_JAVA_ARRAY(int64_t, long, Long);
 MATRIX_AS_JAVA_ARRAY(double, double, Double);
 
 %define REINTERPRET_CAST(CType, ptr)

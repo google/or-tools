@@ -165,7 +165,7 @@ class VarDomination {
   // start of the first variable in tmp_ranks_ with this rank.
   //
   // Note that the rank should be int, but to reuse the same vector when we
-  // construct it, we need int64. See FillTempRanks().
+  // construct it, we need int64_t. See FillTempRanks().
   std::vector<IntegerVariableWithRank> tmp_ranks_;
 
   // This do not change after EndFirstPhase().

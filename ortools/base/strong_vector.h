@@ -27,7 +27,7 @@
 //
 // where IntTypeName is the desired name for the "logical" integer-like type
 // and the ValueType is a supported native integer type such as int or
-// uint64 (see int_type.h for details).
+// uint64_t (see int_type.h for details).
 //
 // The wrapper exposes all public methods of STL vector and behaves mostly as
 // pass-through.  The only method modified to ensure type-safety is the operator

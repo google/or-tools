@@ -27,37 +27,37 @@ namespace swig_util {
 class LongToLong {
  public:
   virtual ~LongToLong() {}
-  virtual int64 Run(int64) = 0;
+  virtual int64_t Run(int64_t) = 0;
 };
 
 class LongLongToLong {
  public:
   virtual ~LongLongToLong() {}
-  virtual int64 Run(int64, int64) = 0;
+  virtual int64_t Run(int64_t, int64_t) = 0;
 };
 
 class IntToLong {
  public:
   virtual ~IntToLong() {}
-  virtual int64 Run(int) = 0;
+  virtual int64_t Run(int) = 0;
 };
 
 class IntIntToLong {
  public:
   virtual ~IntIntToLong() {}
-  virtual int64 Run(int, int) = 0;
+  virtual int64_t Run(int, int) = 0;
 };
 
 class LongLongLongToLong {
  public:
   virtual ~LongLongLongToLong() {}
-  virtual int64 Run(int64, int64, int64) = 0;
+  virtual int64_t Run(int64_t, int64_t, int64_t) = 0;
 };
 
 class LongToBoolean {
  public:
   virtual ~LongToBoolean() {}
-  virtual bool Run(int64) = 0;
+  virtual bool Run(int64_t) = 0;
 };
 
 class VoidToString {
@@ -75,13 +75,13 @@ class VoidToBoolean {
 class LongLongLongToBoolean {
  public:
   virtual ~LongLongLongToBoolean() {}
-  virtual bool Run(int64 i, int64 j, int64 k) = 0;
+  virtual bool Run(int64_t i, int64_t j, int64_t k) = 0;
 };
 
 class LongToVoid {
  public:
   virtual ~LongToVoid() {}
-  virtual void Run(int64 i) = 0;
+  virtual void Run(int64_t i) = 0;
 };
 
 class VoidToVoid {

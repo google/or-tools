@@ -350,7 +350,7 @@ struct LogMessage::LogMessageData {
 static absl::Mutex log_mutex;
 
 // Number of messages sent at each severity.  Under log_mutex.
-int64 LogMessage::num_messages_[NUM_SEVERITIES] = {0, 0, 0, 0};
+int64_t LogMessage::num_messages_[NUM_SEVERITIES] = {0, 0, 0, 0};
 
 // Globally disable log writing (if disk is full)
 static bool stop_writing = false;
@@ -413,7 +413,7 @@ class LogFileObject : public base::Logger {
   uint32 dropped_mem_length_;
   uint32 file_length_;
   unsigned int rollover_attempt_;
-  int64 next_flush_time_;  // cycle count at which to flush log
+  int64_t next_flush_time_;  // cycle count at which to flush log
 
   // Actually create a logfile using the value of base_filename_ and the
   // supplied argument time_pid_string
@@ -813,8 +813,8 @@ void LogFileObject::FlushUnlocked() {
     bytes_since_flush_ = 0;
   }
   // Figure out when we are due for another flush.
-  const int64 next = (absl::GetFlag(FLAGS_logbufsecs) *
-                      static_cast<int64>(1000000));  // in usec
+  const int64_t next = (absl::GetFlag(FLAGS_logbufsecs) *
+                      static_cast<int64_t>(1000000));  // in usec
   next_flush_time_ =
       logging_internal::CycleClock_Now() + logging_internal::UsecToCycles(next);
 }
@@ -1471,7 +1471,7 @@ void base::SetLogger(LogSeverity severity, base::Logger* logger) {
 }
 
 // L < log_mutex.  Acquires and releases absl::Mutex_.
-int64 LogMessage::num_messages(int severity) {
+int64_t LogMessage::num_messages(int severity) {
   absl::MutexLock l(&log_mutex);
   return num_messages_[severity];
 }

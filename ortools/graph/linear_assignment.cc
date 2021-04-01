@@ -15,7 +15,7 @@
 
 #include "ortools/base/commandlineflags.h"
 
-ABSL_FLAG(int64, assignment_alpha, 5,
+ABSL_FLAG(int64_t, assignment_alpha, 5,
           "Divisor for epsilon at each Refine "
           "step of LinearSumAssignment.");
 ABSL_FLAG(int, assignment_progress_logging_period, 5000,

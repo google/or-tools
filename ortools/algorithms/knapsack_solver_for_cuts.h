@@ -13,7 +13,7 @@
 
 // This library solves 0-1 one-dimensional knapsack problems with fractional
 // profits and weights using the branch and bound algorithm. Note that
-// algorithms/knapsack_solver uses 'int64' for the profits and the weights.
+// algorithms/knapsack_solver uses 'int64_t' for the profits and the weights.
 // TODO(user): Merge this code with algorithms/knapsack_solver.
 //
 // Given n items, each with a profit and a weight and a knapsack of

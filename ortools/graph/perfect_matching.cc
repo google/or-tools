@@ -24,7 +24,7 @@ void MinCostPerfectMatching::Reset(int num_nodes) {
   matches_.assign(num_nodes, -1);
 }
 
-void MinCostPerfectMatching::AddEdgeWithCost(int tail, int head, int64 cost) {
+void MinCostPerfectMatching::AddEdgeWithCost(int tail, int head, int64_t cost) {
   CHECK_GE(cost, 0) << "Not supported for now, just shift your costs.";
   if (tail == head) {
     VLOG(1) << "Ignoring self-arc: " << tail << " <-> " << head
@@ -50,7 +50,7 @@ MinCostPerfectMatching::Status MinCostPerfectMatching::Solve() {
   //
   // TODO(user): Improve the overflow detection if needed. The current one seems
   // ok though.
-  int64 overflow_detection = CapAdd(maximum_edge_cost_, maximum_edge_cost_);
+  int64_t overflow_detection = CapAdd(maximum_edge_cost_, maximum_edge_cost_);
   if (overflow_detection >= BlossomGraph::kMaxCostValue) {
     return Status::INTEGER_OVERFLOW;
   }

@@ -39,11 +39,11 @@ uint32 ACMRandom::Next() {
 
 uint32 ACMRandom::Uniform(uint32 n) { return n == 0 ? 0 : Next() % n; }
 
-uint64 ACMRandom::Next64() {
-  return absl::uniform_int_distribution<uint64>(0, kuint64max)(generator_);
+uint64_t ACMRandom::Next64() {
+  return absl::uniform_int_distribution<uint64_t>(0, kuint64max)(generator_);
 }
 
-uint64 ACMRandom::operator()(uint64 val_max) {
+uint64_t ACMRandom::operator()(uint64_t val_max) {
   return val_max == 0 ? 0 : Next64() % val_max;
 }
 

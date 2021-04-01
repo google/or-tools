@@ -27,7 +27,7 @@ DECLARE_bool(fz_logging);
 %}
 
 %include "std_vector.i"
-%template(Int64Vector) std::vector<int64>;
+%template(Int64Vector) std::vector<int64_t>;
 %template(AnnotationVector) std::vector<operations_research::fz::Annotation>;
 %template(ArgumentVector) std::vector<operations_research::fz::Argument>;
 %template(ConstraintVector) std::vector<operations_research::fz::Constraint*>;

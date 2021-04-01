@@ -62,7 +62,7 @@ template <bool use_bounds>
 void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
                                     const std::vector<double>& lb,
                                     const std::vector<double>& ub,
-                                    int64 max_absolute_sum,
+                                    int64_t max_absolute_sum,
                                     double* scaling_factor) {
   const double kInfinity = std::numeric_limits<double>::infinity();
 
@@ -76,11 +76,11 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
   //
   // TODO(user): Consider using a non-power of two factor if the error can't be
   // zero? Note however that using power of two has the extra advantage that
-  // subsequent int64 -> double -> scaled back to int64 will loose no extra
+  // subsequent int64_t -> double -> scaled back to int64_t will loose no extra
   // information.
   int factor_exponent = 0;
-  uint64 sum_min = 0;  // negated.
-  uint64 sum_max = 0;
+  uint64_t sum_min = 0;  // negated.
+  uint64_t sum_max = 0;
   bool recompute_sum = false;
   bool is_first_value = true;
   const int msb = MostSignificantBitPosition64(max_absolute_sum);
@@ -105,7 +105,7 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
     if (std::round(ldexp(std::abs(c), candidate)) > max_absolute_sum) {
       --candidate;
     }
-    DCHECK_LE(std::abs(static_cast<int64>(round(ldexp(c, candidate)))),
+    DCHECK_LE(std::abs(static_cast<int64_t>(round(ldexp(c, candidate)))),
               max_absolute_sum);
 
     // Update factor_exponent which is the min of all the candidates.
@@ -116,9 +116,9 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
     } else {
       // Update the sum of absolute values of the numbers seen so far.
       sum_min -=
-          static_cast<int64>(std::round(ldexp(min_term, factor_exponent)));
+          static_cast<int64_t>(std::round(ldexp(min_term, factor_exponent)));
       sum_max +=
-          static_cast<int64>(std::round(ldexp(max_term, factor_exponent)));
+          static_cast<int64_t>(std::round(ldexp(max_term, factor_exponent)));
       if (sum_min > max_absolute_sum || sum_max > max_absolute_sum) {
         factor_exponent--;
         recompute_sum = true;
@@ -140,9 +140,9 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
         double max_term = use_bounds ? x * ub[j] : x;
         ReorderAndCapTerms(&min_term, &max_term);
         sum_min -=
-            static_cast<int64>(std::round(ldexp(min_term, factor_exponent)));
+            static_cast<int64_t>(std::round(ldexp(min_term, factor_exponent)));
         sum_max +=
-            static_cast<int64>(std::round(ldexp(max_term, factor_exponent)));
+            static_cast<int64_t>(std::round(ldexp(max_term, factor_exponent)));
       }
       if (sum_min > max_absolute_sum || sum_max > max_absolute_sum) {
         factor_exponent--;
@@ -168,7 +168,7 @@ void ComputeScalingErrors(const std::vector<double>& input,
 double GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
                                       const std::vector<double>& lb,
                                       const std::vector<double>& ub,
-                                      int64 max_absolute_sum) {
+                                      int64_t max_absolute_sum) {
   double scaling_factor;
   GetBestScalingOfDoublesToInt64<true>(input, lb, ub, max_absolute_sum,
                                        &scaling_factor);
@@ -176,7 +176,7 @@ double GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
 }
 
 void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
-                                    int64 max_absolute_sum,
+                                    int64_t max_absolute_sum,
                                     double* scaling_factor,
                                     double* max_relative_coeff_error) {
   double max_scaled_sum_error;
@@ -186,11 +186,11 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
                               max_relative_coeff_error, &max_scaled_sum_error);
 }
 
-int64 ComputeGcdOfRoundedDoubles(const std::vector<double>& x,
+int64_t ComputeGcdOfRoundedDoubles(const std::vector<double>& x,
                                  double scaling_factor) {
-  int64 gcd = 0;
+  int64_t gcd = 0;
   for (int i = 0; i < x.size() && gcd != 1; ++i) {
-    int64 value = std::abs(std::round(x[i] * scaling_factor));
+    int64_t value = std::abs(std::round(x[i] * scaling_factor));
     DCHECK_GE(value, 0);
     if (value == 0) continue;
     if (gcd == 0) {
@@ -199,7 +199,7 @@ int64 ComputeGcdOfRoundedDoubles(const std::vector<double>& x,
     }
     // GCD(gcd, value) = GCD(value, gcd % value);
     while (value != 0) {
-      const int64 r = gcd % value;
+      const int64_t r = gcd % value;
       gcd = value;
       value = r;
     }

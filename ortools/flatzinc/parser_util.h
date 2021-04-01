@@ -101,7 +101,7 @@ struct LexerInfo {
   VariableRefOrValueArray* var_or_value_array;
 };
 
-// If the argument is an integer, return it as int64. Otherwise, die.
+// If the argument is an integer, return it as int64_t. Otherwise, die.
 int64_t ConvertAsIntegerOrDie(double d);
 }  // namespace fz
 }  // namespace operations_research

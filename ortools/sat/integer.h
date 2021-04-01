@@ -579,7 +579,7 @@ class IntegerTrail : public SatPropagator {
   // the decision level is zero (checked). The given bounds are INCLUSIVE and
   // must not cross.
   //
-  // Note on integer overflow: 'upper_bound - lower_bound' must fit on an int64,
+  // Note on integer overflow: 'upper_bound - lower_bound' must fit on an int64_t,
   // this is DCHECKed. More generally, depending on the constraints that are
   // added, the bounds magnitude must be small enough to satisfy each constraint
   // overflow precondition.
@@ -1409,7 +1409,7 @@ inline void GenericLiteralWatcher::WatchIntegerVariable(IntegerVariable i,
 // ============================================================================
 // Model based functions.
 //
-// Note that in the model API, we simply use int64 for the integer values, so
+// Note that in the model API, we simply use int64_t for the integer values, so
 // that it is nicer for the client. Internally these are converted to
 // IntegerValue which is typechecked.
 // ============================================================================

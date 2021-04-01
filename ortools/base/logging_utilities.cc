@@ -228,9 +228,9 @@ unsigned int GetTID() {
   return static_cast<unsigned int>(absl::base_internal::GetTID());
 }
 
-int64 CycleClock_Now() { return absl::ToUnixMicros(absl::Now()); }
+int64_t CycleClock_Now() { return absl::ToUnixMicros(absl::Now()); }
 
-int64 UsecToCycles(int64 usec) { return usec; }
+int64_t UsecToCycles(int64_t usec) { return usec; }
 
 static int32 g_main_thread_pid = getpid();
 int32 GetMainThreadPid() { return g_main_thread_pid; }

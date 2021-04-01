@@ -608,7 +608,7 @@ ConstraintProto* ConstraintScaler::AddConstraint(
       max_relative_rhs_error, scaled_sum_error / (scaling_factor * ct_norm));
 
   // Add the constraint bounds. Because we are sure the scaled constraint fit
-  // on an int64, if the scaled bounds are too large, the constraint is either
+  // on an int64_t, if the scaled bounds are too large, the constraint is either
   // always true or always false.
   if (relax_bound) {
     lb -= std::max(std::abs(lb), 1.0) * wanted_precision;
@@ -969,7 +969,7 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
     }
   }
 
-  // Variables needed to scale the double coefficients into int64.
+  // Variables needed to scale the double coefficients into int64_t.
   const int64_t kInt64Max = std::numeric_limits<int64_t>::max();
   double max_relative_error = 0.0;
   double max_bound_error = 0.0;
@@ -1010,7 +1010,7 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
 
     // Add the bounds. Note that we do not pass them to
     // GetBestScalingOfDoublesToInt64() because we know that the sum of absolute
-    // coefficients of the constraint fit on an int64. If one of the scaled
+    // coefficients of the constraint fit on an int64_t. If one of the scaled
     // bound overflows, we don't care by how much because in this case the
     // constraint is just trivial or unsatisfiable.
     const Fractional lb = mp_constraint.lower_bound();
@@ -1085,7 +1085,7 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
   // Test the precision of the conversion.
   const double kRelativeTolerance = 1e-8;
   if (max_relative_error > kRelativeTolerance) {
-    LOG(WARNING) << "The relative error during double -> int64 conversion "
+    LOG(WARNING) << "The relative error during double -> int64_t conversion "
                  << "is too high!";
     return false;
   }

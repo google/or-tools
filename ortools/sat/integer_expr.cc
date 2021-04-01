@@ -882,8 +882,8 @@ std::function<void(Model*)> IsOneOf(IntegerVariable var,
 
     CHECK(!values.empty());
     CHECK_EQ(values.size(), selectors.size());
-    std::vector<int64> unique_values;
-    absl::flat_hash_map<int64, std::vector<Literal>> value_to_selector;
+    std::vector<int64_t> unique_values;
+    absl::flat_hash_map<int64_t, std::vector<Literal>> value_to_selector;
     for (int i = 0; i < values.size(); ++i) {
       unique_values.push_back(values[i].value());
       value_to_selector[values[i].value()].push_back(selectors[i]);
@@ -898,7 +898,7 @@ std::function<void(Model*)> IsOneOf(IntegerVariable var,
 
     // Note that it is more efficient to call AssociateToIntegerEqualValue()
     // with the values ordered, like we do here.
-    for (const int64 v : unique_values) {
+    for (const int64_t v : unique_values) {
       const std::vector<Literal>& selectors = value_to_selector[v];
       if (selectors.size() == 1) {
         encoder->AssociateToIntegerEqualValue(selectors[0], var,

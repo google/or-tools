@@ -62,9 +62,9 @@ bool AllDomainsHaveOneValue(const std::vector<Domain>& domains) {
   return true;
 }
 
-int64 ConvertAsIntegerOrDie(double d) {
+int64_t ConvertAsIntegerOrDie(double d) {
   const double rounded = std::round(d);
-  const int64 i = static_cast<int64>(rounded);
+  const int64_t i = static_cast<int64_t>(rounded);
   CHECK_LE(std::abs(static_cast<double>(i) - rounded), 1e-9);
   return i;
 }

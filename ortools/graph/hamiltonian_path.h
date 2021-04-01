@@ -167,11 +167,11 @@ class Set {
   }
 
   // Returns the number of elements in the set. Uses the 32-bit version for
-  // types that have 32-bits or less. Specialized for uint64.
+  // types that have 32-bits or less. Specialized for uint64_t.
   int Cardinality() const { return BitCount32(value_); }
 
   // Returns the index of the smallest element in the set. Uses the 32-bit
-  // version for types that have 32-bits or less. Specialized for uint64.
+  // version for types that have 32-bits or less. Specialized for uint64_t.
   int SmallestElement() const { return LeastSignificantBitPosition32(value_); }
 
   // Returns a set equal to the calling object, with its smallest
@@ -207,12 +207,12 @@ class Set {
 };
 
 template <>
-inline int Set<uint64>::SmallestElement() const {
+inline int Set<uint64_t>::SmallestElement() const {
   return LeastSignificantBitPosition64(value_);
 }
 
 template <>
-inline int Set<uint64>::Cardinality() const {
+inline int Set<uint64_t>::Cardinality() const {
   return BitCount64(value_);
 }
 
@@ -296,18 +296,18 @@ class LatticeMemoryManager {
   void Init(int max_card);
 
   // Returns the offset in memory for f(s, node), with node contained in s.
-  uint64 Offset(Set s, int node) const;
+  uint64_t Offset(Set s, int node) const;
 
   // Returns the base offset in memory for f(s, node), with node contained in s.
   // This is useful in the Dynamic Programming iterations.
   // Note(user): inlining this function gains about 5%.
   // TODO(user): Investigate how to compute BaseOffset(card - 1, s \ { n })
   // from BaseOffset(card, n) to speed up the DP iteration.
-  inline uint64 BaseOffset(int card, Set s) const;
+  inline uint64_t BaseOffset(int card, Set s) const;
 
   // Returns the offset delta for a set of cardinality 'card', to which
   // node 'removed_node' is replaced by 'added_node' at 'rank'
-  uint64 OffsetDelta(int card, int added_node, int removed_node,
+  uint64_t OffsetDelta(int card, int added_node, int removed_node,
                      int rank) const {
     return card *
            (binomial_coefficients_[added_node][rank] -  // delta for added_node
@@ -320,7 +320,7 @@ class LatticeMemoryManager {
 
   // Memorizes 'value' at 'offset'. This is useful in the Dynamic Programming
   // iterations where we want to avoid compute the offset of a pair (set, node).
-  void SetValueAtOffset(uint64 offset, CostType value) {
+  void SetValueAtOffset(uint64_t offset, CostType value) {
     memory_[offset] = value;
   }
 
@@ -330,7 +330,7 @@ class LatticeMemoryManager {
 
   // Returns the memorized value at 'offset'.
   // This is useful in the Dynamic Programming iterations.
-  CostType ValueAtOffset(uint64 offset) const { return memory_[offset]; }
+  CostType ValueAtOffset(uint64_t offset) const { return memory_[offset]; }
 
  private:
   // Returns true if the values used to manage memory are set correctly.
@@ -342,11 +342,11 @@ class LatticeMemoryManager {
   int max_card_;
 
   // binomial_coefficients_[n][k] contains (n choose k).
-  std::vector<std::vector<uint64>> binomial_coefficients_;
+  std::vector<std::vector<uint64_t>> binomial_coefficients_;
 
   // base_offset_[card] contains the base offset for all f(set, node) with
   // card(set) == card.
-  std::vector<int64> base_offset_;
+  std::vector<int64_t> base_offset_;
 
   // memory_[Offset(set, node)] contains the costs of the partial path
   // f(set, node).
@@ -391,7 +391,7 @@ void LatticeMemoryManager<Set, CostType>::Init(int max_card) {
 template <typename Set, typename CostType>
 bool LatticeMemoryManager<Set, CostType>::CheckConsistency() const {
   for (int n = 0; n <= max_card_; ++n) {
-    int64 sum = 0;
+    int64_t sum = 0;
     for (int k = 0; k <= n; ++k) {
       sum += binomial_coefficients_[n][k];
     }
@@ -404,11 +404,11 @@ bool LatticeMemoryManager<Set, CostType>::CheckConsistency() const {
 }
 
 template <typename Set, typename CostType>
-uint64 LatticeMemoryManager<Set, CostType>::BaseOffset(int card,
+uint64_t LatticeMemoryManager<Set, CostType>::BaseOffset(int card,
                                                        Set set) const {
   DCHECK_LT(0, card);
   DCHECK_EQ(set.Cardinality(), card);
-  uint64 local_offset = 0;
+  uint64_t local_offset = 0;
   int node_rank = 0;
   for (int node : set) {
     // There are binomial_coefficients_[node][node_rank + 1] sets which have
@@ -428,7 +428,7 @@ uint64 LatticeMemoryManager<Set, CostType>::BaseOffset(int card,
 }
 
 template <typename Set, typename CostType>
-uint64 LatticeMemoryManager<Set, CostType>::Offset(Set set, int node) const {
+uint64_t LatticeMemoryManager<Set, CostType>::Offset(Set set, int node) const {
   DCHECK(set.Contains(node));
   return BaseOffset(set.Cardinality(), set) + set.ElementRank(node);
 }
@@ -517,32 +517,32 @@ class HamiltonianPathSolver {
   template <typename T,
             bool = true /* Dummy parameter to allow specialization */>
   // Returns the saturated addition of a and b. It is specialized below for
-  // int32 and int64.
+  // int32 and int64_t.
   struct SaturatedArithmetic {
     static T Add(T a, T b) { return a + b; }
     static T Sub(T a, T b) { return a - b; }
   };
   template <bool Dummy>
-  struct SaturatedArithmetic<int64, Dummy> {
-    static int64 Add(int64 a, int64 b) { return CapAdd(a, b); }
-    static int64 Sub(int64 a, int64 b) { return CapSub(a, b); }
+  struct SaturatedArithmetic<int64_t, Dummy> {
+    static int64_t Add(int64_t a, int64_t b) { return CapAdd(a, b); }
+    static int64_t Sub(int64_t a, int64_t b) { return CapSub(a, b); }
   };
   // TODO(user): implement this natively in saturated_arithmetic.h
   template <bool Dummy>
   struct SaturatedArithmetic<int32, Dummy> {
     static int32 Add(int32 a, int32 b) {
-      const int64 a64 = a;
-      const int64 b64 = b;
-      const int64 min_int32 = kint32min;
-      const int64 max_int32 = kint32max;
+      const int64_t a64 = a;
+      const int64_t b64 = b;
+      const int64_t min_int32 = kint32min;
+      const int64_t max_int32 = kint32max;
       return static_cast<int32>(
           std::max(min_int32, std::min(max_int32, a64 + b64)));
     }
     static int32 Sub(int32 a, int32 b) {
-      const int64 a64 = a;
-      const int64 b64 = b;
-      const int64 min_int32 = kint32min;
-      const int64 max_int32 = kint32max;
+      const int64_t a64 = a;
+      const int64_t b64 = b;
+      const int64_t min_int32 = kint32min;
+      const int64_t max_int32 = kint32max;
       return static_cast<int32>(
           std::max(min_int32, std::min(max_int32, a64 - b64)));
     }
@@ -669,11 +669,11 @@ void HamiltonianPathSolver<CostType, CostFunction>::Solve() {
     for (NodeSet set : SetRangeWithCardinality<Set<uint32>>(card, num_nodes_)) {
       // Using BaseOffset and maintaining the node ranks, to reduce the
       // computational effort for accessing the data.
-      const uint64 set_offset = mem_.BaseOffset(card, set);
+      const uint64_t set_offset = mem_.BaseOffset(card, set);
       // The first subset on which we'll iterate is set.RemoveSmallestElement().
       // Compute its offset. It will be updated incrementaly. This saves about
       // 30-35% of computation time.
-      uint64 subset_offset =
+      uint64_t subset_offset =
           mem_.BaseOffset(card - 1, set.RemoveSmallestElement());
       int prev_dest = set.SmallestElement();
       int dest_rank = 0;

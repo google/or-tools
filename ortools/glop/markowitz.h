@@ -445,7 +445,7 @@ class Markowitz {
   GlopParameters parameters_;
 
   // Number of floating point operations of the last factorization.
-  int64 num_fp_operations_;
+  int64_t num_fp_operations_;
 
   DISALLOW_COPY_AND_ASSIGN(Markowitz);
 };

@@ -3159,7 +3159,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     context_->UpdateRuleStats("cumulative: propagate min capacity.");
     if (!context_->IntersectDomainWith(
             capacity_ref, Domain(max_of_performed_demand_mins,
-                                 std::numeric_limits<int64>::max()))) {
+                                 std::numeric_limits<int64_t>::max()))) {
       return true;
     }
   }
@@ -4447,7 +4447,7 @@ void CpModelPresolver::TransformIntoMaxCliques() {
     }
   }
 
-  int64 num_literals_before = 0;
+  int64_t num_literals_before = 0;
   const int num_old_cliques = cliques.size();
 
   // We reuse the max-clique code from sat.
@@ -4482,7 +4482,7 @@ void CpModelPresolver::TransformIntoMaxCliques() {
   }
 
   int num_new_cliques = 0;
-  int64 num_literals_after = 0;
+  int64_t num_literals_after = 0;
   for (const std::vector<Literal>& clique : cliques) {
     if (clique.empty()) continue;
     num_new_cliques++;

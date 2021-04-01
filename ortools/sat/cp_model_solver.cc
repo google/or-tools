@@ -968,8 +968,8 @@ void RegisterVariableBoundsLevelZeroExport(
         CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
 
         std::vector<int> model_variables;
-        std::vector<int64> new_lower_bounds;
-        std::vector<int64> new_upper_bounds;
+        std::vector<int64_t> new_lower_bounds;
+        std::vector<int64_t> new_upper_bounds;
         absl::flat_hash_set<int> visited_variables;
 
         // Inspect the modified IntegerVariables.
@@ -986,11 +986,11 @@ void RegisterVariableBoundsLevelZeroExport(
           }
 
           visited_variables.insert(model_var);
-          const int64 new_lb =
+          const int64_t new_lb =
               integer_trail->LevelZeroLowerBound(positive_var).value();
-          const int64 new_ub =
+          const int64_t new_ub =
               integer_trail->LevelZeroUpperBound(positive_var).value();
-          // TODO(user): We could imagine an API based on atomic<int64>
+          // TODO(user): We could imagine an API based on atomic<int64_t>
           // that could preemptively check if this new bounds are improving.
           model_variables.push_back(model_var);
           new_lower_bounds.push_back(new_lb);
@@ -1067,8 +1067,8 @@ void RegisterVariableBoundsLevelZeroImport(
   const auto& import_level_zero_bounds = [&model_proto, shared_bounds_manager,
                                           model, integer_trail, id, mapping]() {
     std::vector<int> model_variables;
-    std::vector<int64> new_lower_bounds;
-    std::vector<int64> new_upper_bounds;
+    std::vector<int64_t> new_lower_bounds;
+    std::vector<int64_t> new_upper_bounds;
     shared_bounds_manager->GetChangedBounds(
         id, &model_variables, &new_lower_bounds, &new_upper_bounds);
     bool new_bounds_have_been_imported = false;
@@ -2457,13 +2457,13 @@ class LnsSolver : public SubSolver {
       // Choose a base solution for this neighborhood.
       CpSolverResponse base_response;
       {
-        const SharedSolutionRepository<int64>& repo =
+        const SharedSolutionRepository<int64_t>& repo =
             shared_->response->SolutionsRepository();
         if (repo.NumSolutions() > 0) {
           base_response.set_status(CpSolverStatus::FEASIBLE);
-          const SharedSolutionRepository<int64>::Solution solution =
+          const SharedSolutionRepository<int64_t>::Solution solution =
               repo.GetRandomBiasedSolution(random);
-          for (const int64 value : solution.variable_values) {
+          for (const int64_t value : solution.variable_values) {
             base_response.add_solution(value);
           }
           // Note: We assume that the solution rank is the solution internal
@@ -2493,7 +2493,7 @@ class LnsSolver : public SubSolver {
 
       const double fully_solved_proportion =
           static_cast<double>(generator_->num_fully_solved_calls()) /
-          std::max(int64{1}, generator_->num_calls());
+          std::max(int64_t{1}, generator_->num_calls());
       std::string source_info = name();
       if (!neighborhood.source_info.empty()) {
         absl::StrAppend(&source_info, "_", neighborhood.source_info);
@@ -2524,7 +2524,7 @@ class LnsSolver : public SubSolver {
       local_time_limit->ResetLimitFromParameters(local_params);
       shared_->time_limit->UpdateLocalLimit(local_time_limit);
 
-      const int64 num_neighborhood_model_vars =
+      const int64_t num_neighborhood_model_vars =
           neighborhood.cp_model.variables_size();
       // Presolve and solve the LNS fragment.
       CpModelProto mapping_proto;
@@ -2600,7 +2600,7 @@ class LnsSolver : public SubSolver {
         if (has_feasible_solution) {
           if (SolutionIsFeasible(
                   *shared_->model_proto,
-                  std::vector<int64>(local_response.solution().begin(),
+                  std::vector<int64_t>(local_response.solution().begin(),
                                      local_response.solution().end()))) {
             shared_->response->NewSolution(local_response,
                                            /*model=*/nullptr);
@@ -2618,7 +2618,7 @@ class LnsSolver : public SubSolver {
         if (!local_response.solution().empty()) {
           CHECK(SolutionIsFeasible(
               *shared_->model_proto,
-              std::vector<int64>(local_response.solution().begin(),
+              std::vector<int64_t>(local_response.solution().begin(),
                                  local_response.solution().end())))
               << solution_info;
         }
@@ -3127,7 +3127,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       if (!response->solution().empty()) {
         CHECK(
             SolutionIsFeasible(model_proto,
-                               std::vector<int64>(response->solution().begin(),
+                               std::vector<int64_t>(response->solution().begin(),
                                                   response->solution().end()),
                                &mapping_proto, &postsolve_mapping))
             << "final postsolved solution";
@@ -3193,7 +3193,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
             if (DEBUG_MODE ||
                 absl::GetFlag(FLAGS_cp_model_check_intermediate_solutions)) {
               CHECK(SolutionIsFeasible(
-                  model_proto, std::vector<int64>(response.solution().begin(),
+                  model_proto, std::vector<int64_t>(response.solution().begin(),
                                                   response.solution().end())));
             }
           }

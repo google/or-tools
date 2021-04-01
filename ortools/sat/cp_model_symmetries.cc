@@ -60,11 +60,11 @@ class IdGenerator {
 
 // Appends values in `repeated_field` to `vector`.
 //
-// We use a template as proto int64 != C++ int64 in open source.
+// We use a template as proto int64_t != C++ int64_t in open source.
 template <typename FieldInt64Type>
 void Append(
     const google::protobuf::RepeatedField<FieldInt64Type>& repeated_field,
-    std::vector<int64>* vector) {
+    std::vector<int64_t>* vector) {
   CHECK(vector != nullptr);
   for (const FieldInt64Type value : repeated_field) {
     vector->push_back(value);
@@ -98,7 +98,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   // can never be send one into another by a symmetry. The first element of
   // the color vector will always be the NodeType.
   //
-  // TODO(user): Using a full int64 for storing 3 values is not great. We
+  // TODO(user): Using a full int64_t for storing 3 values is not great. We
   // can optimize this at the price of a bit more code.
   enum NodeType {
     VARIABLE_NODE,
@@ -108,7 +108,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   IdGenerator color_id_generator;
   initial_equivalence_classes->clear();
   auto new_node = [&initial_equivalence_classes, &graph,
-                   &color_id_generator](const std::vector<int64>& color) {
+                   &color_id_generator](const std::vector<int64_t>& color) {
     // Since we add nodes one by one, initial_equivalence_classes->size() gives
     // the number of nodes at any point, which we use as the next node index.
     const int node = initial_equivalence_classes->size();
@@ -145,9 +145,9 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 
   // We will lazily create "coefficient nodes" that correspond to a variable
   // with a given coefficient.
-  absl::flat_hash_map<std::pair<int64, int64>, int> coefficient_nodes;
+  absl::flat_hash_map<std::pair<int64_t, int64_t>, int> coefficient_nodes;
   auto get_coefficient_node = [&new_node, &graph, &coefficient_nodes,
-                               &tmp_color](int var, int64 coeff) {
+                               &tmp_color](int var, int64_t coeff) {
     const int var_node = var;
     DCHECK(RefIsPositive(var));
 
@@ -190,7 +190,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   auto get_implication_node = [&new_node, &graph, &coefficient_nodes,
                                &tmp_color](int ref) {
     const int var = PositiveRef(ref);
-    const int64 coeff = RefIsPositive(ref) ? 1 : -1;
+    const int64_t coeff = RefIsPositive(ref) ? 1 : -1;
     const auto insert =
         coefficient_nodes.insert({std::make_pair(var, coeff), 0});
     if (!insert.second) return insert.first->second;

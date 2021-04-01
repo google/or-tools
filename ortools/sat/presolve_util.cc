@@ -104,7 +104,7 @@ namespace {
 template <typename ProtoWithVarsAndCoeffs>
 int64_t GetVarCoeffAndCopyOtherTerms(
     const int var, const ProtoWithVarsAndCoeffs& proto,
-    std::vector<std::pair<int, int64>>* terms) {
+    std::vector<std::pair<int, int64_t>>* terms) {
   bool found = false;
   int64_t var_coeff = 0;
   const int size = proto.vars().size();
@@ -132,7 +132,7 @@ int64_t GetVarCoeffAndCopyOtherTerms(
 // Helper method for variable substituion. Sorts and merges the terms in 'terms'
 // and adds them to 'proto'.
 template <typename ProtoWithVarsAndCoeffs>
-void SortAndMergeTerms(std::vector<std::pair<int, int64>>* terms,
+void SortAndMergeTerms(std::vector<std::pair<int, int64_t>>* terms,
                        ProtoWithVarsAndCoeffs* proto) {
   proto->clear_vars();
   proto->clear_coeffs();

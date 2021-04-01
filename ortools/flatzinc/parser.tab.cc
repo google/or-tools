@@ -1461,7 +1461,7 @@ yyreduce:
         // TODO(lperron): Check that the assignment is included in the domain.
         context->domain_map[identifier] = assignment;
       } else {
-        const int64 value = assignment.values.front();
+        const int64_t value = assignment.values.front();
         CHECK(domain.Contains(value));
         context->integer_map[identifier] = value;
       }
@@ -1479,9 +1479,9 @@ yyreduce:
       // Declaration of a (named) constant array. See rule right above.
       CHECK_EQ((yyvsp[-12].integer_value), 1)
           << "Only [1..n] array are supported here.";
-      const int64 num_constants = (yyvsp[-10].integer_value);
+      const int64_t num_constants = (yyvsp[-10].integer_value);
       const std::string& identifier = (yyvsp[-5].string_value);
-      const std::vector<int64>* const assignments = (yyvsp[-1].integers);
+      const std::vector<int64_t>* const assignments = (yyvsp[-1].integers);
       CHECK(assignments != nullptr);
       CHECK_EQ(num_constants, assignments->size());
       // TODO(lperron): CHECK all values within domain.
@@ -1500,10 +1500,10 @@ yyreduce:
       // Declaration of a (named) constant array. See rule right above.
       CHECK_EQ((yyvsp[-11].integer_value), 1)
           << "Only [1..n] array are supported here.";
-      const int64 num_constants = (yyvsp[-9].integer_value);
+      const int64_t num_constants = (yyvsp[-9].integer_value);
       CHECK_EQ(num_constants, 0) << "Empty arrays should have a size of 0";
       const std::string& identifier = (yyvsp[-4].string_value);
-      context->integer_array_map[identifier] = std::vector<int64>();
+      context->integer_array_map[identifier] = std::vector<int64_t>();
       delete annotations;
     }
 #line 1651 "./ortools/flatzinc/parser.tab.cc"
@@ -1518,7 +1518,7 @@ yyreduce:
       // Declaration of a (named) constant array. See rule right above.
       CHECK_EQ((yyvsp[-12].integer_value), 1)
           << "Only [1..n] array are supported here.";
-      const int64 num_constants = (yyvsp[-10].integer_value);
+      const int64_t num_constants = (yyvsp[-10].integer_value);
       const std::string& identifier = (yyvsp[-5].string_value);
       const std::vector<double>* const assignments = (yyvsp[-1].doubles);
       CHECK(assignments != nullptr);
@@ -1539,7 +1539,7 @@ yyreduce:
       // Declaration of a (named) constant array. See rule right above.
       CHECK_EQ((yyvsp[-11].integer_value), 1)
           << "Only [1..n] array are supported here.";
-      const int64 num_constants = (yyvsp[-9].integer_value);
+      const int64_t num_constants = (yyvsp[-9].integer_value);
       CHECK_EQ(num_constants, 0) << "Empty arrays should have a size of 0";
       const std::string& identifier = (yyvsp[-4].string_value);
       context->float_array_map[identifier] = std::vector<double>();
@@ -1556,7 +1556,7 @@ yyreduce:
       // Declaration of a (named) constant array: See rule above.
       CHECK_EQ((yyvsp[-12].integer_value), 1)
           << "Only [1..n] array are supported here.";
-      const int64 num_constants = (yyvsp[-10].integer_value);
+      const int64_t num_constants = (yyvsp[-10].integer_value);
       const Domain& domain = (yyvsp[-7].domain);
       const std::string& identifier = (yyvsp[-5].string_value);
       const std::vector<Domain>* const assignments = (yyvsp[-1].domains);
@@ -1569,7 +1569,7 @@ yyreduce:
         context->domain_array_map[identifier] = *assignments;
         // TODO(lperron): check that all assignments are included in the domain.
       } else {
-        std::vector<int64> values(num_constants);
+        std::vector<int64_t> values(num_constants);
         for (int i = 0; i < num_constants; ++i) {
           values[i] = (*assignments)[i].values.front();
           CHECK(domain.Contains(values[i]));
@@ -1629,7 +1629,7 @@ yyreduce:
       // variable declarations, where the identifier for declaration #i is
       // IDENTIFIER[i] (1-based index).
       CHECK_EQ((yyvsp[-10].integer_value), 1);
-      const int64 num_vars = (yyvsp[-8].integer_value);
+      const int64_t num_vars = (yyvsp[-8].integer_value);
       const Domain& domain = (yyvsp[-4].domain);
       const std::string& identifier = (yyvsp[-2].string_value);
       std::vector<Annotation>* const annotations = (yyvsp[-1].annotations);
@@ -1650,7 +1650,7 @@ yyreduce:
           vars[i] = model->AddVariable(var_name, domain, introduced);
         } else if (assignments->variables[i] == nullptr) {
           // Assigned to an integer constant.
-          const int64 value = assignments->values[i];
+          const int64_t value = assignments->values[i];
           CHECK(domain.Contains(value));
           vars[i] = model->AddVariable(var_name, Domain::IntegerValue(value),
                                        introduced);
@@ -1788,7 +1788,7 @@ yyreduce:
     {
       // A given element of an existing constant array or variable array.
       const std::string& id = (yyvsp[-3].string_value);
-      const int64 value = (yyvsp[-1].integer_value);
+      const int64_t value = (yyvsp[-1].integer_value);
       if (gtl::ContainsKey(context->integer_array_map, id)) {
         (yyval.var_or_value) = VariableRefOrValue::Value(
             Lookup(gtl::FindOrDie(context->integer_array_map, id), value));
@@ -1886,8 +1886,8 @@ yyreduce:
     case 46: /* float_domain: DVALUE DOTDOT DVALUE  */
 #line 421 "./ortools/flatzinc/parser.yy"
     {
-      const int64 lb = ConvertAsIntegerOrDie((yyvsp[-2].double_value));
-      const int64 ub = ConvertAsIntegerOrDie((yyvsp[0].double_value));
+      const int64_t lb = ConvertAsIntegerOrDie((yyvsp[-2].double_value));
+      const int64_t ub = ConvertAsIntegerOrDie((yyvsp[0].double_value));
       (yyval.domain) = Domain::Interval(lb, ub);
     }
 #line 1990 "./ortools/flatzinc/parser.tab.cc"
@@ -1929,7 +1929,7 @@ yyreduce:
     case 51: /* integers: integer  */
 #line 434 "./ortools/flatzinc/parser.yy"
     {
-      (yyval.integers) = new std::vector<int64>();
+      (yyval.integers) = new std::vector<int64_t>();
       (yyval.integers)->emplace_back((yyvsp[0].integer_value));
     }
 #line 2020 "./ortools/flatzinc/parser.tab.cc"
@@ -2047,7 +2047,7 @@ yyreduce:
     {
       CHECK_EQ(std::round((yyvsp[0].double_value)), (yyvsp[0].double_value));
       (yyval.domain) =
-          Domain::IntegerValue(static_cast<int64>((yyvsp[0].double_value)));
+          Domain::IntegerValue(static_cast<int64_t>((yyvsp[0].double_value)));
     }
 #line 2109 "./ortools/flatzinc/parser.tab.cc"
     break;
@@ -2184,9 +2184,9 @@ yyreduce:
       } else if (gtl::ContainsKey(context->float_array_map, id)) {
         const auto& double_values =
             gtl::FindOrDie(context->float_array_map, id);
-        std::vector<int64> integer_values;
+        std::vector<int64_t> integer_values;
         for (const double d : double_values) {
-          const int64 i = ConvertAsIntegerOrDie(d);
+          const int64_t i = ConvertAsIntegerOrDie(d);
           integer_values.push_back(i);
         }
         (yyval.arg) = Argument::IntegerList(std::move(integer_values));
@@ -2214,7 +2214,7 @@ yyreduce:
 #line 544 "./ortools/flatzinc/parser.yy"
     {
       const std::string& id = (yyvsp[-3].string_value);
-      const int64 index = (yyvsp[-1].integer_value);
+      const int64_t index = (yyvsp[-1].integer_value);
       if (gtl::ContainsKey(context->integer_array_map, id)) {
         (yyval.arg) = Argument::IntegerValue(
             Lookup(gtl::FindOrDie(context->integer_array_map, id), index));
