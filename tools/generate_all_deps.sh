@@ -3,6 +3,7 @@
 tools/generate_deps.sh BASE base
 tools/generate_deps.sh PORT port base
 tools/generate_deps.sh UTIL util base port
+tools/generate_deps.sh INIT init
 tools/generate_deps.sh DATA data base port util
 tools/generate_deps.sh LP_DATA lp_data util base algorithms linear_solver
 tools/generate_deps.sh GLOP glop util base lp_data linear_solver
