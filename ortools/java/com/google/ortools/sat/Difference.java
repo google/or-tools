@@ -47,7 +47,7 @@ final class Difference implements LinearExpr {
   }
 
   @Override
-  public long getOffset() { 
+  public long getOffset() {
     return left.getOffset() - right.getOffset();
   }
 }
