@@ -10,6 +10,18 @@ package(
 SAFE_FP_CODE = ["-fno-fast-math"]
 
 # Revised Simplex LP solver.
+cc_library(
+    name = "pricing",
+    hdrs = ["pricing.h"],
+    deps = [
+        "//ortools/base",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:bit_gen_ref",
+        "//ortools/lp_data:base",
+        "//ortools/util:bitset",
+        "//ortools/util:stats",
+    ],
+)
 
 cc_library(
     name = "revised_simplex",
@@ -22,6 +34,7 @@ cc_library(
         ":entering_variable",
         ":initial_basis",
         ":parameters_cc_proto",
+        ":pricing",
         ":primal_edge_norms",
         ":reduced_costs",
         ":status",
@@ -259,6 +272,8 @@ cc_library(
     copts = SAFE_FP_CODE,
     deps = [
         ":basis_representation",
+        ":dual_edge_norms",
+        ":pricing",
         ":variables_info",
         "//ortools/base",
         "//ortools/graph:iterators",
