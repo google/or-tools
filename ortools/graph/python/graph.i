@@ -47,9 +47,6 @@
 #include "ortools/graph/shortestpaths.h"
 %}
 
-typedef int64_t int64;
-typedef uint64_t uint64;
-
 // ############ max_flow.h ############
 
 %ignoreall

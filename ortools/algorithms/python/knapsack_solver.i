@@ -24,9 +24,6 @@
 #include "ortools/algorithms/knapsack_solver.h"
 %}
 
-typedef int64_t int64;
-typedef uint64_t uint64;
-
 %ignoreall
 %unignore operations_research;
 %unignore operations_research::KnapsackSolver;
