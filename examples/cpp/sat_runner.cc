@@ -285,7 +285,7 @@ int Run() {
     }
   }
   auto strtoint64 = [](const std::string& word) {
-    int64 value = 0;
+    int64_t value = 0;
     if (!word.empty()) CHECK(absl::SimpleAtoi(word, &value));
     return value;
   };

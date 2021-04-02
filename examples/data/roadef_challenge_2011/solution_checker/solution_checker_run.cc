@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
       data.new_assignments());
 
   if (solution_checker.Check()) {
-    const int64 objective_cost = solution_checker.GetObjectiveCost();
+    const int64_t objective_cost = solution_checker.GetObjectiveCost();
     LOG(INFO) << "Solution is valid. Total objective cost is " << objective_cost
               << std::endl;
   } else {

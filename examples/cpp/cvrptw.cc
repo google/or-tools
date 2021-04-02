@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
 
   // Setting the cost function.
   const int vehicle_cost =
-      routing.RegisterTransitCallback([&locations, &manager](int64 i, int64 j) {
+      routing.RegisterTransitCallback([&locations, &manager](int64_t i, int64_t j) {
         return locations.ManhattanDistance(manager.IndexToNode(i),
                                            manager.IndexToNode(j));
       });
@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
                       absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
   demand.Initialize();
   routing.AddDimension(
-      routing.RegisterTransitCallback([&demand, &manager](int64 i, int64 j) {
+      routing.RegisterTransitCallback([&demand, &manager](int64_t i, int64_t j) {
         return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
       kNullCapacitySlack, kVehicleCapacity,
@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
         return locations.ManhattanTime(i, j);
       });
   routing.AddDimension(
-      routing.RegisterTransitCallback([&time, &manager](int64 i, int64 j) {
+      routing.RegisterTransitCallback([&time, &manager](int64_t i, int64_t j) {
         return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
       kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/true, kTime);

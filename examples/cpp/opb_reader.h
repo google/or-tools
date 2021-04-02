@@ -82,7 +82,7 @@ class OpbReader {
           num_variables_ = std::max(num_variables_, literal);
           objective->add_literals(literal);
         } else {
-          int64 value;
+          int64_t value;
           CHECK(absl::SimpleAtoi(word, &value));
           objective->add_coefficients(value);
         }
@@ -99,13 +99,13 @@ class OpbReader {
       CHECK(!word.empty());
       if (word == ">=") {
         CHECK_LT(i + 1, words.size());
-        int64 value;
+        int64_t value;
         CHECK(absl::SimpleAtoi(words[i + 1], &value));
         constraint->set_lower_bound(value);
         break;
       } else if (word == "=") {
         CHECK_LT(i + 1, words.size());
-        int64 value;
+        int64_t value;
         CHECK(absl::SimpleAtoi(words[i + 1], &value));
         constraint->set_upper_bound(value);
         constraint->set_lower_bound(value);
@@ -117,7 +117,7 @@ class OpbReader {
           num_variables_ = std::max(num_variables_, literal);
           constraint->add_literals(literal);
         } else {
-          int64 value;
+          int64_t value;
           CHECK(absl::SimpleAtoi(words[i], &value));
           constraint->add_coefficients(value);
         }

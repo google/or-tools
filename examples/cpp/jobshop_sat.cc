@@ -62,10 +62,10 @@ namespace operations_research {
 namespace sat {
 
 // Compute a valid horizon from a problem.
-int64 ComputeHorizon(const JsspInputProblem& problem) {
-  int64 sum_of_durations = 0;
-  int64 max_latest_end = 0;
-  int64 max_earliest_start = 0;
+int64_t ComputeHorizon(const JsspInputProblem& problem) {
+  int64_t sum_of_durations = 0;
+  int64_t max_latest_end = 0;
+  int64_t max_earliest_start = 0;
   for (const Job& job : problem.jobs()) {
     if (job.has_latest_end()) {
       max_latest_end = std::max(max_latest_end, job.latest_end().value());
@@ -77,8 +77,8 @@ int64 ComputeHorizon(const JsspInputProblem& problem) {
           std::max(max_earliest_start, job.earliest_start().value());
     }
     for (const Task& task : job.tasks()) {
-      int64 max_duration = 0;
-      for (int64 d : task.duration()) {
+      int64_t max_duration = 0;
+      for (int64_t d : task.duration()) {
         max_duration = std::max(max_duration, d);
       }
       sum_of_durations += max_duration;
@@ -86,12 +86,12 @@ int64 ComputeHorizon(const JsspInputProblem& problem) {
   }
 
   const int num_jobs = problem.jobs_size();
-  int64 sum_of_transitions = 0;
+  int64_t sum_of_transitions = 0;
   for (const Machine& machine : problem.machines()) {
     if (!machine.has_transition_time_matrix()) continue;
     const TransitionTimeMatrix& matrix = machine.transition_time_matrix();
     for (int i = 0; i < num_jobs; ++i) {
-      int64 max_transition = 0;
+      int64_t max_transition = 0;
       for (int j = 0; j < num_jobs; ++j) {
         max_transition =
             std::max(max_transition, matrix.transition_time(i * num_jobs + j));
@@ -125,7 +125,7 @@ struct AlternativeTaskData {
 
 // Create the job structure as a chain of tasks. Fills in the job_to_tasks
 // vector.
-void CreateJobs(const JsspInputProblem& problem, int64 horizon,
+void CreateJobs(const JsspInputProblem& problem, int64_t horizon,
                 std::vector<std::vector<JobTaskData>>& job_to_tasks,
                 bool& has_variable_duration_tasks, CpModelBuilder& cp_model) {
   const int num_jobs = problem.jobs_size();
@@ -135,9 +135,9 @@ void CreateJobs(const JsspInputProblem& problem, int64 horizon,
     const int num_tasks_in_job = job.tasks_size();
     std::vector<JobTaskData>& task_data = job_to_tasks[j];
 
-    const int64 hard_start =
+    const int64_t hard_start =
         job.has_earliest_start() ? job.earliest_start().value() : 0L;
-    const int64 hard_end =
+    const int64_t hard_end =
         job.has_latest_end() ? job.latest_end().value() : horizon;
 
     for (int t = 0; t < num_tasks_in_job; ++t) {
@@ -146,9 +146,9 @@ void CreateJobs(const JsspInputProblem& problem, int64 horizon,
       CHECK_EQ(num_alternatives, task.duration_size());
 
       // Add the "main" task interval.
-      std::vector<int64> durations;
-      int64 min_duration = task.duration(0);
-      int64 max_duration = task.duration(0);
+      std::vector<int64_t> durations;
+      int64_t min_duration = task.duration(0);
+      int64_t max_duration = task.duration(0);
       durations.push_back(task.duration(0));
       for (int a = 1; a < num_alternatives; ++a) {
         min_duration = std::min(min_duration, task.duration(a));
@@ -179,7 +179,7 @@ void CreateJobs(const JsspInputProblem& problem, int64 horizon,
 // main task of the job.
 void CreateAlternativeTasks(
     const JsspInputProblem& problem,
-    const std::vector<std::vector<JobTaskData>>& job_to_tasks, int64 horizon,
+    const std::vector<std::vector<JobTaskData>>& job_to_tasks, int64_t horizon,
     std::vector<std::vector<std::vector<AlternativeTaskData>>>&
         job_task_to_alternatives,
     CpModelBuilder& cp_model) {
@@ -192,9 +192,9 @@ void CreateAlternativeTasks(
     job_task_to_alternatives[j].resize(num_tasks_in_job);
     const std::vector<JobTaskData>& tasks = job_to_tasks[j];
 
-    const int64 hard_start =
+    const int64_t hard_start =
         job.has_earliest_start() ? job.earliest_start().value() : 0L;
-    const int64 hard_end =
+    const int64_t hard_end =
         job.has_latest_end() ? job.latest_end().value() : horizon;
 
     for (int t = 0; t < num_tasks_in_job; ++t) {
@@ -204,7 +204,7 @@ void CreateAlternativeTasks(
       std::vector<AlternativeTaskData>& alt_data =
           job_task_to_alternatives[j][t];
 
-      absl::flat_hash_map<int64, std::vector<int>> duration_supports;
+      absl::flat_hash_map<int64_t, std::vector<int>> duration_supports;
       duration_supports[task.duration(0)].push_back(0);
       for (int a = 1; a < num_alternatives; ++a) {
         duration_supports[task.duration(a)].push_back(a);
@@ -253,7 +253,7 @@ void CreateAlternativeTasks(
         // Implement supporting literals for the duration of the main interval.
         if (duration_supports.size() > 1) {  // duration is not fixed.
           for (const auto& duration_alternative_indices : duration_supports) {
-            const int64 value = duration_alternative_indices.first;
+            const int64_t value = duration_alternative_indices.first;
             const BoolVar duration_eq_value = cp_model.NewBoolVar();
 
             // duration_eq_value <=> duration == value.
@@ -301,7 +301,7 @@ struct MachineTaskData {
   IntervalVar interval;
   int job;
   IntVar start;
-  int64 duration;
+  int64_t duration;
   IntVar end;
   BoolVar presence;
 };
@@ -370,7 +370,7 @@ void CreateMachines(
             circuit.AddArc(i + 1, i + 1, Not(machine_to_tasks[m][i].presence));
           } else {
             const int job_j = machine_to_tasks[m][i].job;
-            const int64 transition =
+            const int64_t transition =
                 transitions.transition_time(job_i * num_jobs + job_j);
             const BoolVar lit = cp_model.NewBoolVar();
             const IntVar start = machine_to_tasks[m][j].start;
@@ -393,10 +393,10 @@ void CreateObjective(
     const std::vector<std::vector<JobTaskData>>& job_to_tasks,
     const std::vector<std::vector<std::vector<AlternativeTaskData>>>&
         job_task_to_alternatives,
-    int64 horizon, IntVar makespan, CpModelBuilder& cp_model) {
-  int64 objective_offset = 0;
+    int64_t horizon, IntVar makespan, CpModelBuilder& cp_model) {
+  int64_t objective_offset = 0;
   std::vector<IntVar> objective_vars;
-  std::vector<int64> objective_coeffs;
+  std::vector<int64_t> objective_coeffs;
 
   const int num_jobs = problem.jobs_size();
   for (int j = 0; j < num_jobs; ++j) {
@@ -418,9 +418,9 @@ void CreateObjective(
     }
 
     // Job lateness cost.
-    const int64 lateness_penalty = job.lateness_cost_per_time_unit();
+    const int64_t lateness_penalty = job.lateness_cost_per_time_unit();
     if (lateness_penalty != 0L) {
-      const int64 due_date = job.late_due_date();
+      const int64_t due_date = job.late_due_date();
       const IntVar job_end = job_to_tasks[j].back().end;
       if (due_date == 0) {
         objective_vars.push_back(job_end);
@@ -436,9 +436,9 @@ void CreateObjective(
     }
 
     // Job earliness cost.
-    const int64 earliness_penalty = job.earliness_cost_per_time_unit();
+    const int64_t earliness_penalty = job.earliness_cost_per_time_unit();
     if (earliness_penalty != 0L) {
-      const int64 due_date = job.early_due_date();
+      const int64_t due_date = job.early_due_date();
       const IntVar job_end = job_to_tasks[j].back().end;
 
       if (due_date > 0) {
@@ -582,7 +582,7 @@ void Solve(const JsspInputProblem& problem) {
   CpModelBuilder cp_model;
 
   // Compute an over estimate of the horizon.
-  const int64 horizon = absl::GetFlag(FLAGS_horizon) != -1
+  const int64_t horizon = absl::GetFlag(FLAGS_horizon) != -1
                             ? absl::GetFlag(FLAGS_horizon)
                             : ComputeHorizon(problem);
 
@@ -712,9 +712,9 @@ void Solve(const JsspInputProblem& problem) {
     return;
 
   // Check cost, recompute it from scratch.
-  int64 final_cost = 0;
+  int64_t final_cost = 0;
   if (problem.makespan_cost_per_time_unit() != 0) {
-    int64 makespan = 0;
+    int64_t makespan = 0;
     for (const std::vector<JobTaskData>& tasks : job_to_tasks) {
       const IntVar job_end = tasks.back().end;
       makespan = std::max(makespan, SolutionIntegerValue(response, job_end));
@@ -723,11 +723,11 @@ void Solve(const JsspInputProblem& problem) {
   }
 
   for (int j = 0; j < num_jobs; ++j) {
-    const int64 early_due_date = problem.jobs(j).early_due_date();
-    const int64 late_due_date = problem.jobs(j).late_due_date();
-    const int64 early_penalty = problem.jobs(j).earliness_cost_per_time_unit();
-    const int64 late_penalty = problem.jobs(j).lateness_cost_per_time_unit();
-    const int64 end =
+    const int64_t early_due_date = problem.jobs(j).early_due_date();
+    const int64_t late_due_date = problem.jobs(j).late_due_date();
+    const int64_t early_penalty = problem.jobs(j).earliness_cost_per_time_unit();
+    const int64_t late_penalty = problem.jobs(j).lateness_cost_per_time_unit();
+    const int64_t end =
         SolutionIntegerValue(response, job_to_tasks[j].back().end);
     if (end < early_due_date && early_penalty != 0) {
       final_cost += (early_due_date - end) * early_penalty;

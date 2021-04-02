@@ -20,7 +20,7 @@ namespace operations_research {
 void RunConstraintProgrammingExample() {
   // Instantiate the solver.
   Solver solver("ConstraintProgrammingExample");
-  const int64 numVals = 3;
+  const int64_t numVals = 3;
 
   // Define decision variables.
   IntVar* const x = solver.MakeIntVar(0, numVals - 1, "x");

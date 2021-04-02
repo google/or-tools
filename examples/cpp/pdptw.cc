@@ -73,7 +73,7 @@ namespace operations_research {
 
 // Scaling factor used to scale up distances, allowing a bit more precision
 // from Euclidean distances.
-const int64 kScalingFactor = 1000;
+const int64_t kScalingFactor = 1000;
 
 // Vector of (x,y) node coordinates, *unscaled*, in some imaginary planar,
 // metric grid.
@@ -81,20 +81,20 @@ typedef std::vector<std::pair<int, int> > Coordinates;
 
 // Returns the scaled Euclidean distance between two nodes, coords holding the
 // coordinates of the nodes.
-int64 Travel(const Coordinates* const coords,
+int64_t Travel(const Coordinates* const coords,
              RoutingIndexManager::NodeIndex from,
              RoutingIndexManager::NodeIndex to) {
   DCHECK(coords != nullptr);
   const int xd = coords->at(from.value()).first - coords->at(to.value()).first;
   const int yd =
       coords->at(from.value()).second - coords->at(to.value()).second;
-  return static_cast<int64>(kScalingFactor *
+  return static_cast<int64_t>(kScalingFactor *
                             std::sqrt(1.0L * xd * xd + yd * yd));
 }
 
 // Returns the scaled service time at a given node, service_times holding the
 // service times.
-int64 ServiceTime(const std::vector<int64>* const service_times,
+int64_t ServiceTime(const std::vector<int64_t>* const service_times,
                   RoutingIndexManager::NodeIndex node) {
   return kScalingFactor * service_times->at(node.value());
 }
@@ -103,10 +103,10 @@ int64 ServiceTime(const std::vector<int64>* const service_times,
 // holding the coordinates of the nodes and service_times holding the service
 // times.
 // The service time is the time spent to execute a delivery or a pickup.
-int64 TravelPlusServiceTime(const RoutingIndexManager& manager,
+int64_t TravelPlusServiceTime(const RoutingIndexManager& manager,
                             const Coordinates* const coords,
-                            const std::vector<int64>* const service_times,
-                            int64 from_index, int64 to_index) {
+                            const std::vector<int64_t>* const service_times,
+                            int64_t from_index, int64_t to_index) {
   const RoutingIndexManager::NodeIndex from = manager.IndexToNode(from_index);
   const RoutingIndexManager::NodeIndex to = manager.IndexToNode(to_index);
   return ServiceTime(service_times, from) + Travel(coords, from, to);
@@ -144,13 +144,13 @@ std::string VerboseOutput(const RoutingModel& routing,
                           const RoutingIndexManager& manager,
                           const Assignment& assignment,
                           const Coordinates& coords,
-                          const std::vector<int64>& service_times) {
+                          const std::vector<int64_t>& service_times) {
   std::string output;
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie("time");
   const RoutingDimension& load_dimension = routing.GetDimensionOrDie("demand");
   for (int i = 0; i < routing.vehicles(); ++i) {
     absl::StrAppendFormat(&output, "Vehicle %d: ", i);
-    int64 index = routing.Start(i);
+    int64_t index = routing.Start(i);
     if (routing.IsEnd(assignment.Value(routing.NextVar(index)))) {
       output.append("empty");
     } else {
@@ -166,7 +166,7 @@ std::string VerboseOutput(const RoutingModel& routing,
         const IntVar* load = load_dimension.CumulVar(index);
         absl::StrAppendFormat(&output, "Load(%d..%d) ", assignment.Min(load),
                               assignment.Max(load));
-        const int64 next_index = assignment.Value(routing.NextVar(index));
+        const int64_t next_index = assignment.Value(routing.NextVar(index));
         absl::StrAppendFormat(
             &output, "Transit(%d) ",
             TravelPlusServiceTime(manager, &coords, &service_times, index,
@@ -192,9 +192,9 @@ namespace {
 // An inefficient but convenient method to parse a whitespace-separated list
 // of integers. Returns true iff the input string was entirely valid and parsed.
 bool SafeParseInt64Array(const std::string& str,
-                         std::vector<int64>* parsed_int) {
+                         std::vector<int64_t>* parsed_int) {
   std::istringstream input(str);
-  int64 x;
+  int64_t x;
   parsed_int->clear();
   while (input >> x) parsed_int->push_back(x);
   return input.eof();
@@ -211,7 +211,7 @@ bool LoadAndSolve(const std::string& pdp_file,
   {
     std::string contents;
     CHECK_OK(file::GetContents(pdp_file, &contents, file::Defaults()));
-    const int64 kMaxInputFileSize = 1 << 30;  // 1GB
+    const int64_t kMaxInputFileSize = 1 << 30;  // 1GB
     if (contents.size() >= kMaxInputFileSize) {
       LOG(WARNING) << "Input file '" << pdp_file << "' is too large (>"
                    << kMaxInputFileSize << " bytes).";
@@ -225,7 +225,7 @@ bool LoadAndSolve(const std::string& pdp_file,
     return false;
   }
   // Parse file header.
-  std::vector<int64> parsed_int;
+  std::vector<int64_t> parsed_int;
   if (!SafeParseInt64Array(lines[0], &parsed_int) || parsed_int.size() != 3 ||
       parsed_int[0] < 0 || parsed_int[1] < 0 || parsed_int[2] < 0) {
     LOG(WARNING) << "Malformed header: " << lines[0];
@@ -234,19 +234,19 @@ bool LoadAndSolve(const std::string& pdp_file,
   const int num_vehicles = absl::GetFlag(FLAGS_pdp_force_vehicles) > 0
                                ? absl::GetFlag(FLAGS_pdp_force_vehicles)
                                : parsed_int[0];
-  const int64 capacity = parsed_int[1];
+  const int64_t capacity = parsed_int[1];
   // We do not care about the 'speed' field, in third position.
 
   // Parse order data.
   std::vector<int> customer_ids;
   std::vector<std::pair<int, int> > coords;
-  std::vector<int64> demands;
-  std::vector<int64> open_times;
-  std::vector<int64> close_times;
-  std::vector<int64> service_times;
+  std::vector<int64_t> demands;
+  std::vector<int64_t> open_times;
+  std::vector<int64_t> close_times;
+  std::vector<int64_t> service_times;
   std::vector<RoutingIndexManager::NodeIndex> pickups;
   std::vector<RoutingIndexManager::NodeIndex> deliveries;
-  int64 horizon = 0;
+  int64_t horizon = 0;
   RoutingIndexManager::NodeIndex depot(0);
   for (int line_index = 1; line_index < lines.size(); ++line_index) {
     if (!SafeParseInt64Array(lines[line_index], &parsed_int) ||
@@ -260,10 +260,10 @@ bool LoadAndSolve(const std::string& pdp_file,
     const int customer_id = parsed_int[0];
     const int x = parsed_int[1];
     const int y = parsed_int[2];
-    const int64 demand = parsed_int[3];
-    const int64 open_time = parsed_int[4];
-    const int64 close_time = parsed_int[5];
-    const int64 service_time = parsed_int[6];
+    const int64_t demand = parsed_int[3];
+    const int64_t open_time = parsed_int[4];
+    const int64_t close_time = parsed_int[5];
+    const int64_t service_time = parsed_int[6];
     const int pickup = parsed_int[7];
     const int delivery = parsed_int[8];
     customer_ids.push_back(customer_id);
@@ -285,19 +285,19 @@ bool LoadAndSolve(const std::string& pdp_file,
   RoutingIndexManager manager(num_nodes, num_vehicles, depot);
   RoutingModel routing(manager, model_parameters);
   const int vehicle_cost =
-      routing.RegisterTransitCallback([&coords, &manager](int64 i, int64 j) {
+      routing.RegisterTransitCallback([&coords, &manager](int64_t i, int64_t j) {
         return Travel(const_cast<const Coordinates*>(&coords),
                       manager.IndexToNode(i), manager.IndexToNode(j));
       });
   routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
-  RoutingTransitCallback2 demand_evaluator = [&](int64 from_index,
-                                                 int64 to_index) {
+  RoutingTransitCallback2 demand_evaluator = [&](int64_t from_index,
+                                                 int64_t to_index) {
     return demands[manager.IndexToNode(from_index).value()];
   };
   routing.AddDimension(routing.RegisterTransitCallback(demand_evaluator), 0,
                        capacity, /*fix_start_cumul_to_zero=*/true, "demand");
-  RoutingTransitCallback2 time_evaluator = [&](int64 from_index,
-                                               int64 to_index) {
+  RoutingTransitCallback2 time_evaluator = [&](int64_t from_index,
+                                               int64_t to_index) {
     return TravelPlusServiceTime(manager, &coords, &service_times, from_index,
                                  to_index);
   };
@@ -307,10 +307,10 @@ bool LoadAndSolve(const std::string& pdp_file,
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie("time");
   Solver* const solver = routing.solver();
   for (int node = 0; node < num_nodes; ++node) {
-    const int64 index =
+    const int64_t index =
         manager.NodeToIndex(RoutingIndexManager::NodeIndex(node));
     if (pickups[node] == 0 && deliveries[node] != 0) {
-      const int64 delivery_index = manager.NodeToIndex(deliveries[node]);
+      const int64_t delivery_index = manager.NodeToIndex(deliveries[node]);
       solver->AddConstraint(solver->MakeEquality(
           routing.VehicleVar(index), routing.VehicleVar(delivery_index)));
       solver->AddConstraint(
@@ -352,10 +352,10 @@ bool LoadAndSolve(const std::string& pdp_file,
   }
 
   // Adding penalty costs to allow skipping orders.
-  const int64 kPenalty = 10000000;
+  const int64_t kPenalty = 10000000;
   for (RoutingIndexManager::NodeIndex order(1); order < routing.nodes();
        ++order) {
-    std::vector<int64> orders(1, manager.NodeToIndex(order));
+    std::vector<int64_t> orders(1, manager.NodeToIndex(order));
     routing.AddDisjunction(orders, kPenalty);
   }
 

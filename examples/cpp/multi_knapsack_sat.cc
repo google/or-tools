@@ -65,9 +65,9 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
   }
 
   // Fill up scaled values, weights, volumes;
-  std::vector<int64> values(num_items);
-  std::vector<int64> weights(num_items);
-  std::vector<int64> volumes(num_items);
+  std::vector<int64_t> values(num_items);
+  std::vector<int64_t> weights(num_items);
+  std::vector<int64_t> volumes(num_items);
   for (int i = 0; i < num_items; ++i) {
     const int index = i % kNumItems;
     weights[i] = kItemsWeights[index];

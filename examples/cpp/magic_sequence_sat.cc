@@ -50,7 +50,7 @@ void MagicSequence(int size) {
   }
 
   // The number of variables equal to j shall be the value of vars[j].
-  std::vector<int64> values(size);
+  std::vector<int64_t> values(size);
   std::iota(values.begin(), values.end(), 0);  // [0, 1, 2, .., size - 1]
   std::vector<BoolVar> vars_equal_to_j;
 

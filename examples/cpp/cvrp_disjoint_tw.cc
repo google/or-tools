@@ -64,8 +64,8 @@ ABSL_FLAG(std::string, routing_search_parameters, "",
 
 const char* kTime = "Time";
 const char* kCapacity = "Capacity";
-const int64 kMaxNodesPerGroup = 10;
-const int64 kSameVehicleCost = 1000;
+const int64_t kMaxNodesPerGroup = 10;
+const int64_t kSameVehicleCost = 1000;
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
@@ -83,9 +83,9 @@ int main(int argc, char** argv) {
   RoutingModel routing(manager);
 
   // Setting up locations.
-  const int64 kXMax = 100000;
-  const int64 kYMax = 100000;
-  const int64 kSpeed = 10;
+  const int64_t kXMax = 100000;
+  const int64_t kYMax = 100000;
+  const int64_t kSpeed = 10;
   LocationContainer locations(
       kSpeed, absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
   for (int location = 0; location <= absl::GetFlag(FLAGS_vrp_orders);
@@ -95,28 +95,28 @@ int main(int argc, char** argv) {
 
   // Setting the cost function.
   const int vehicle_cost =
-      routing.RegisterTransitCallback([&locations, &manager](int64 i, int64 j) {
+      routing.RegisterTransitCallback([&locations, &manager](int64_t i, int64_t j) {
         return locations.ManhattanDistance(manager.IndexToNode(i),
                                            manager.IndexToNode(j));
       });
   routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
 
   // Adding capacity dimension constraints.
-  const int64 kVehicleCapacity = 40;
-  const int64 kNullCapacitySlack = 0;
+  const int64_t kVehicleCapacity = 40;
+  const int64_t kNullCapacitySlack = 0;
   RandomDemand demand(manager.num_nodes(), kDepot,
                       absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
   demand.Initialize();
   routing.AddDimension(
-      routing.RegisterTransitCallback([&demand, &manager](int64 i, int64 j) {
+      routing.RegisterTransitCallback([&demand, &manager](int64_t i, int64_t j) {
         return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
       kNullCapacitySlack, kVehicleCapacity,
       /*fix_start_cumul_to_zero=*/true, kCapacity);
 
   // Adding time dimension constraints.
-  const int64 kTimePerDemandUnit = 300;
-  const int64 kHorizon = 24 * 3600;
+  const int64_t kTimePerDemandUnit = 300;
+  const int64_t kHorizon = 24 * 3600;
   ServiceTimePlusTransition time(
       kTimePerDemandUnit,
       [&demand](RoutingNodeIndex i, RoutingNodeIndex j) {
@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
         return locations.ManhattanTime(i, j);
       });
   routing.AddDimension(
-      routing.RegisterTransitCallback([&time, &manager](int64 i, int64 j) {
+      routing.RegisterTransitCallback([&time, &manager](int64_t i, int64_t j) {
         return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
       kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/false, kTime);
@@ -137,13 +137,13 @@ int main(int argc, char** argv) {
   std::mt19937 randomizer(
       GetSeed(absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed)));
   for (int order = 1; order < manager.num_nodes(); ++order) {
-    std::vector<int64> forbid_points(2 * absl::GetFlag(FLAGS_vrp_windows), 0);
+    std::vector<int64_t> forbid_points(2 * absl::GetFlag(FLAGS_vrp_windows), 0);
     for (int i = 0; i < forbid_points.size(); ++i) {
       forbid_points[i] = absl::Uniform<int32_t>(randomizer, 0, kHorizon);
     }
     std::sort(forbid_points.begin(), forbid_points.end());
-    std::vector<int64> forbid_starts(1, 0);
-    std::vector<int64> forbid_ends;
+    std::vector<int64_t> forbid_starts(1, 0);
+    std::vector<int64_t> forbid_ends;
     for (int i = 0; i < forbid_points.size(); i += 2) {
       forbid_ends.push_back(forbid_points[i]);
       forbid_starts.push_back(forbid_points[i + 1]);
@@ -154,17 +154,17 @@ int main(int argc, char** argv) {
   }
 
   // Adding penalty costs to allow skipping orders.
-  const int64 kPenalty = 10000000;
+  const int64_t kPenalty = 10000000;
   const RoutingIndexManager::NodeIndex kFirstNodeAfterDepot(1);
   for (RoutingIndexManager::NodeIndex order = kFirstNodeAfterDepot;
        order < manager.num_nodes(); ++order) {
-    std::vector<int64> orders(1, manager.NodeToIndex(order));
+    std::vector<int64_t> orders(1, manager.NodeToIndex(order));
     routing.AddDisjunction(orders, kPenalty);
   }
 
   // Adding same vehicle constraint costs for consecutive nodes.
   if (absl::GetFlag(FLAGS_vrp_use_same_vehicle_costs)) {
-    std::vector<int64> group;
+    std::vector<int64_t> group;
     for (RoutingIndexManager::NodeIndex order = kFirstNodeAfterDepot;
          order < manager.num_nodes(); ++order) {
       group.push_back(manager.NodeToIndex(order));

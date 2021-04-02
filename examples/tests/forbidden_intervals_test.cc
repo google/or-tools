@@ -105,7 +105,7 @@ class ForbiddenIntervalTestMultipleReductionsOnMax : public DecisionBuilder {
 
 class ForbiddenIntervalTest {
  public:
-  void SetUp(std::vector<int64>& starts, std::vector<int64>& ends) {
+  void SetUp(std::vector<int64_t>& starts, std::vector<int64_t>& ends) {
     solver_.reset(new Solver("ForbiddenIntervalTest"));
     var_ = solver_->MakeIntVar(0, 1000, "var");
     CHECK_EQ(starts.size(), ends.size());
@@ -119,8 +119,8 @@ class ForbiddenIntervalTest {
 
   void TestSimpleReductionOnBothSide() {
     std::cout << "TestSimpleReductionOnBothSide" << std::endl;
-    std::vector<int64> starts = {0, 900};
-    std::vector<int64> ends = {100, 1000};
+    std::vector<int64_t> starts = {0, 900};
+    std::vector<int64_t> ends = {100, 1000};
     SetUp(starts, ends);
     CHECK(solver_->Solve(solver_->RevAlloc(
         new ForbiddenIntervalTestSimpleReductionOnBothSide(var_))));
@@ -129,8 +129,8 @@ class ForbiddenIntervalTest {
 
   void TestMultipleReductionsOnMin() {
     std::cout << "TestMultipleReductionsOnMin" << std::endl;
-    std::vector<int64> starts = {10, 500, 800};
-    std::vector<int64> ends = {20, 510, 900};
+    std::vector<int64_t> starts = {10, 500, 800};
+    std::vector<int64_t> ends = {20, 510, 900};
     SetUp(starts, ends);
     CHECK(solver_->Solve(solver_->RevAlloc(
         new ForbiddenIntervalTestMultipleReductionsOnMin(var_))));
@@ -139,8 +139,8 @@ class ForbiddenIntervalTest {
 
   void TestMultipleReductionsOnMax() {
     std::cout << "TestMultipleReductionsOnMax" << std::endl;
-    std::vector<int64> starts = {10, 500, 800};
-    std::vector<int64> ends = {20, 510, 900};
+    std::vector<int64_t> starts = {10, 500, 800};
+    std::vector<int64_t> ends = {20, 510, 900};
     SetUp(starts, ends);
     CHECK(solver_->Solve(solver_->RevAlloc(
         new ForbiddenIntervalTestMultipleReductionsOnMax(var_))));

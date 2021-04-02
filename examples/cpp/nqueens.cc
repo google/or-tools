@@ -85,7 +85,7 @@ class SX : public NQueenSymmetry {
       : NQueenSymmetry(s, vars) {}
   ~SX() override {}
 
-  void VisitSetVariableValue(IntVar* const var, int64 value) override {
+  void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     const int index = Index(var);
     IntVar* const other_var = Var(symmetric(index));
     AddIntegerVariableEqualValueClause(other_var, value);
@@ -99,7 +99,7 @@ class SY : public NQueenSymmetry {
       : NQueenSymmetry(s, vars) {}
   ~SY() override {}
 
-  void VisitSetVariableValue(IntVar* const var, int64 value) override {
+  void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     AddIntegerVariableEqualValueClause(var, symmetric(value));
   }
 };
@@ -111,7 +111,7 @@ class SD1 : public NQueenSymmetry {
       : NQueenSymmetry(s, vars) {}
   ~SD1() override {}
 
-  void VisitSetVariableValue(IntVar* const var, int64 value) override {
+  void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     const int index = Index(var);
     IntVar* const other_var = Var(value);
     AddIntegerVariableEqualValueClause(other_var, index);
@@ -125,7 +125,7 @@ class SD2 : public NQueenSymmetry {
       : NQueenSymmetry(s, vars) {}
   ~SD2() override {}
 
-  void VisitSetVariableValue(IntVar* const var, int64 value) override {
+  void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     const int index = Index(var);
     IntVar* const other_var = Var(symmetric(value));
     AddIntegerVariableEqualValueClause(other_var, symmetric(index));
@@ -139,7 +139,7 @@ class R90 : public NQueenSymmetry {
       : NQueenSymmetry(s, vars) {}
   ~R90() override {}
 
-  void VisitSetVariableValue(IntVar* const var, int64 value) override {
+  void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     const int index = Index(var);
     IntVar* const other_var = Var(value);
     AddIntegerVariableEqualValueClause(other_var, symmetric(index));
@@ -153,7 +153,7 @@ class R180 : public NQueenSymmetry {
       : NQueenSymmetry(s, vars) {}
   ~R180() override {}
 
-  void VisitSetVariableValue(IntVar* const var, int64 value) override {
+  void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     const int index = Index(var);
     IntVar* const other_var = Var(symmetric(index));
     AddIntegerVariableEqualValueClause(other_var, symmetric(value));
@@ -167,7 +167,7 @@ class R270 : public NQueenSymmetry {
       : NQueenSymmetry(s, vars) {}
   ~R270() override {}
 
-  void VisitSetVariableValue(IntVar* const var, int64 value) override {
+  void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     const int index = Index(var);
     IntVar* const other_var = Var(symmetric(value));
     AddIntegerVariableEqualValueClause(other_var, index);

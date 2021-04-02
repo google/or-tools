@@ -42,9 +42,9 @@ namespace operations_research {
 namespace sat {
 
 // Solve a single machine problem with weighted tardiness cost.
-void Solve(const std::vector<int64>& durations,
-           const std::vector<int64>& due_dates,
-           const std::vector<int64>& weights) {
+void Solve(const std::vector<int64_t>& durations,
+           const std::vector<int64_t>& due_dates,
+           const std::vector<int64_t>& weights) {
   const int num_tasks = durations.size();
   CHECK_EQ(due_dates.size(), num_tasks);
   CHECK_EQ(weights.size(), num_tasks);
@@ -60,14 +60,14 @@ void Solve(const std::vector<int64>& durations,
   // An simple heuristic solution: We choose the tasks from last to first, and
   // always take the one with smallest cost.
   std::vector<bool> is_taken(num_tasks, false);
-  int64 heuristic_bound = 0;
-  int64 end = horizon;
+  int64_t heuristic_bound = 0;
+  int64_t end = horizon;
   for (int i = 0; i < num_tasks; ++i) {
     int next_task = -1;
-    int64 next_cost;
+    int64_t next_cost;
     for (int j = 0; j < num_tasks; ++j) {
       if (is_taken[j]) continue;
-      const int64 cost = weights[j] * std::max<int64>(0, end - due_dates[j]);
+      const int64_t cost = weights[j] * std::max<int64_t>(0, end - due_dates[j]);
       if (next_task == -1 || cost < next_cost) {
         next_task = j;
         next_cost = cost;
@@ -101,7 +101,7 @@ void Solve(const std::vector<int64>& durations,
       tardiness_vars[i] = task_ends[i];
     } else {
       tardiness_vars[i] = cp_model.NewIntVar(
-          Domain(0, std::max<int64>(0, horizon - due_dates[i])));
+          Domain(0, std::max<int64_t>(0, horizon - due_dates[i])));
 
       // tardiness_vars >= end - due_date
       cp_model.AddGreaterOrEqual(tardiness_vars[i],
@@ -174,11 +174,11 @@ void Solve(const std::vector<int64>& durations,
     // variable might be fixed before the end date, and we just have a >=
     // relation.
 
-    int64 objective = 0;
+    int64_t objective = 0;
     for (int i = 0; i < num_tasks; ++i) {
-      const int64 end = SolutionIntegerMin(r, task_ends[i]);
+      const int64_t end = SolutionIntegerMin(r, task_ends[i]);
       CHECK_EQ(end, SolutionIntegerMax(r, task_ends[i]));
-      objective += weights[i] * std::max<int64>(int64{0}, end - due_dates[i]);
+      objective += weights[i] * std::max<int64_t>(int64_t{0}, end - due_dates[i]);
     }
     LOG(INFO) << "Cost " << objective;
 
@@ -196,7 +196,7 @@ void Solve(const std::vector<int64>& durations,
     std::string solution = "0";
     int end = 0;
     for (const int i : sorted_tasks) {
-      const int64 cost = weights[i] * SolutionIntegerMin(r, tardiness_vars[i]);
+      const int64_t cost = weights[i] * SolutionIntegerMin(r, tardiness_vars[i]);
       absl::StrAppend(&solution, "| #", i, " ");
       if (cost > 0) {
         // Display the cost in red.
@@ -237,13 +237,13 @@ void ParseAndSolve() {
 
   // The order in a wt file is: duration, tardiness weights and then due_dates.
   int index = (absl::GetFlag(FLAGS_n) - 1) * instance_size;
-  std::vector<int64> durations;
+  std::vector<int64_t> durations;
   for (int j = 0; j < absl::GetFlag(FLAGS_size); ++j)
     durations.push_back(numbers[index++]);
-  std::vector<int64> weights;
+  std::vector<int64_t> weights;
   for (int j = 0; j < absl::GetFlag(FLAGS_size); ++j)
     weights.push_back(numbers[index++]);
-  std::vector<int64> due_dates;
+  std::vector<int64_t> due_dates;
   for (int j = 0; j < absl::GetFlag(FLAGS_size); ++j)
     due_dates.push_back(numbers[index++]);
 

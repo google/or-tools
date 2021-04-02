@@ -82,9 +82,9 @@ int main(int argc, char** argv) {
   RoutingModel routing(manager);
 
   // Setting up locations.
-  const int64 kXMax = 100000;
-  const int64 kYMax = 100000;
-  const int64 kSpeed = 10;
+  const int64_t kXMax = 100000;
+  const int64_t kYMax = 100000;
+  const int64_t kSpeed = 10;
   LocationContainer locations(
       kSpeed, absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
   for (int stop = 0; stop <= absl::GetFlag(FLAGS_vrp_stops); ++stop) {
@@ -95,35 +95,35 @@ int main(int argc, char** argv) {
 
   // Setting the cost function.
   const int vehicle_cost =
-      routing.RegisterTransitCallback([&locations, &manager](int64 i, int64 j) {
+      routing.RegisterTransitCallback([&locations, &manager](int64_t i, int64_t j) {
         return locations.ManhattanDistance(manager.IndexToNode(i),
                                            manager.IndexToNode(j));
       });
   routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
 
   // Adding capacity dimension constraints.
-  const int64 kVehicleCapacity = 40;
-  const int64 kNullCapacitySlack = 0;
+  const int64_t kVehicleCapacity = 40;
+  const int64_t kNullCapacitySlack = 0;
   RandomDemand demand(manager.num_nodes(), kDepot,
                       absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
   demand.Initialize();
   routing.AddDimension(
-      routing.RegisterTransitCallback([&demand, &manager](int64 i, int64 j) {
+      routing.RegisterTransitCallback([&demand, &manager](int64_t i, int64_t j) {
         return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
       kNullCapacitySlack, kVehicleCapacity,
       /*fix_start_cumul_to_zero=*/true, kCapacity);
 
   // Adding time dimension constraints.
-  const int64 kStopTime = 300;
-  const int64 kHorizon = 24 * 3600;
+  const int64_t kStopTime = 300;
+  const int64_t kHorizon = 24 * 3600;
   StopServiceTimePlusTransition time(
       kStopTime, locations,
       [&locations](RoutingNodeIndex i, RoutingNodeIndex j) {
         return locations.ManhattanTime(i, j);
       });
   routing.AddDimension(
-      routing.RegisterTransitCallback([&time, &manager](int64 i, int64 j) {
+      routing.RegisterTransitCallback([&time, &manager](int64_t i, int64_t j) {
         return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
       kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/false, kTime);
@@ -132,9 +132,9 @@ int main(int argc, char** argv) {
   // Adding time windows, for the sake of simplicty same for each stop.
   std::mt19937 randomizer(
       GetSeed(absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed)));
-  const int64 kTWDuration = 5 * 3600;
+  const int64_t kTWDuration = 5 * 3600;
   for (int stop = 0; stop < absl::GetFlag(FLAGS_vrp_stops); ++stop) {
-    const int64 start =
+    const int64_t start =
         absl::Uniform<int32_t>(randomizer, 0, kHorizon - kTWDuration);
     for (int stop_order = 0;
          stop_order < absl::GetFlag(FLAGS_vrp_orders_per_stop); ++stop_order) {
@@ -168,7 +168,7 @@ int main(int argc, char** argv) {
       IntVar* const is_null_duration =
           solver
               ->MakeElement(
-                  [&locations, order](int64 index) {
+                  [&locations, order](int64_t index) {
                     return locations.SameLocationFromIndex(order, index);
                   },
                   routing.NextVar(order))
@@ -181,7 +181,7 @@ int main(int argc, char** argv) {
       routing.AddVariableMaximizedByFinalizer(order_start);
     }
     // Only one order can happen at the same time at a given location.
-    std::vector<int64> location_usage(stop_intervals.size(), 1);
+    std::vector<int64_t> location_usage(stop_intervals.size(), 1);
     solver->AddConstraint(solver->MakeCumulative(
         stop_intervals, location_usage, 1, absl::StrCat("Client", stop)));
   }
@@ -192,11 +192,11 @@ int main(int argc, char** argv) {
   }
 
   // Adding penalty costs to allow skipping orders.
-  const int64 kPenalty = 100000;
+  const int64_t kPenalty = 100000;
   const RoutingIndexManager::NodeIndex kFirstNodeAfterDepot(1);
   for (RoutingIndexManager::NodeIndex order = kFirstNodeAfterDepot;
        order < routing.nodes(); ++order) {
-    std::vector<int64> orders(1, manager.NodeToIndex(order));
+    std::vector<int64_t> orders(1, manager.NodeToIndex(order));
     routing.AddDisjunction(orders, kPenalty);
   }
 

@@ -473,7 +473,7 @@ class DobbleFilter : public IntVarLocalSearchFilter {
   // which is the difference between the current delta and the last
   // delta that was given to Accept() -- but we don't use it here.
   bool Accept(const Assignment* delta, const Assignment* unused_deltadelta,
-              int64 objective_min, int64 objective_max) override {
+              int64_t objective_min, int64_t objective_max) override {
     const Assignment::IntContainer& solution_delta = delta->IntVarContainer();
     const int solution_delta_size = solution_delta.Size();
 
@@ -573,7 +573,7 @@ class DobbleFilter : public IntVarLocalSearchFilter {
     const int solution_delta_size = solution_delta.Size();
     const int kUnassigned = -1;
     for (int index = 0; index < solution_delta_size; ++index) {
-      int64 touched_var = kUnassigned;
+      int64_t touched_var = kUnassigned;
       FindIndex(solution_delta.Element(index).Var(), &touched_var);
       CHECK_NE(touched_var, kUnassigned);
       const int card = touched_var / num_symbols_;
