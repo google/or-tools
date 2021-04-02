@@ -165,10 +165,12 @@ void LogInFlatzincFormat(const std::string& multi_line_input) {
     std::cout << std::endl;
     return;
   }
-  std::vector<std::string> lines =
+  const absl::string_view flatzinc_prefix =
+      absl::GetFlag(FLAGS_use_flatzinc_format) ? "%% " : "";
+  const std::vector<absl::string_view> lines =
       absl::StrSplit(multi_line_input, '\n', absl::SkipEmpty());
-  for (const std::string& line : lines) {
-    std::cout << "%% " << line << std::endl;
+  for (const absl::string_view& line : lines) {
+    std::cout << flatzinc_prefix << line << std::endl;
   }
 }
 
