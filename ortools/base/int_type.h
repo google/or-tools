@@ -146,7 +146,6 @@
 #define OR_TOOLS_BASE_INT_TYPE_H_
 
 #include <stddef.h>
-
 #include <functional>
 #include <iosfwd>
 #include <ostream>  // NOLINT

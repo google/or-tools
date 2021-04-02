@@ -64,6 +64,7 @@ CMake as a standalone project or it can be incorporated into an existing CMake
  project.
 
 <a name="deps"></a>
+
 ## Dependencies
 
 OR-Tools depends on severals mandatory libraries. You can compile them all at
@@ -96,10 +97,13 @@ default):
 test it on public CI and support can be broken.**
 
 <a name="options"></a>
+
 ## CMake Options
+
 There are several options that can be passed to CMake to modify how the code is built.<br>
 For all of these options and parameters you have to use `-D<Parameter_name>=<value>`.<br>
 Following a list of available options, for the full list run:
+
 ```sh
 cmake -S. -Bbuild -LH
 ```
@@ -145,8 +149,8 @@ cmake -S. -Bbuild -LH
 | `UNIVERSAL_JAVA_PACKAGE`  | OFF | Build a multi platform package (i.e. `ortools-java` will depends on all native packages)<br>Only available if `BUILD_JAVA=ON` |
 | | | |
 
-
 <a name="integration"></a>
+
 ## Integrating OR-Tools in your CMake Project
 
 You should be able to integrate OR-Tools in your C++ CMake project following one

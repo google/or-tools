@@ -20,7 +20,7 @@ function unpack() {
   local -r DESTINATION="${ARCHIVE_DIR}/${RELATIVE_DIR}"
   if [[  ! -d "${DESTINATION}" ]] ; then
     local -r ARCHIVE_NAME=$(basename "${URL}")
-    test -f "${ARCHIVE_NAME}" || wget "${URL}"
+    [[ -f "${ARCHIVE_NAME}" ]] || wget "${URL}"
     extract "${ARCHIVE_NAME}"
     rm -f "${ARCHIVE_NAME}"
   fi
@@ -52,8 +52,8 @@ function install_qemu() {
 
   # Qemu (meson based build) depends on: pkgconf, libglib2.0, python3, ninja
   ./configure \
-    --prefix=${QEMU_INSTALL} \
-    --target-list=${QEMU_TARGET} \
+    --prefix="${QEMU_INSTALL}" \
+    --target-list="${QEMU_TARGET}" \
     --audio-drv-list= \
     --disable-brlapi \
     --disable-curl \
@@ -222,13 +222,13 @@ function run_test() {
   set -x
   case ${PROJECT} in
     glop)
-      ${RUN_CMD} bin/simple_glop_program ;;
+      "${RUN_CMD}" bin/simple_glop_program ;;
     or-tools)
       for test_binary in \
         "${BUILD_DIR}"/bin/simple_* \
         "${BUILD_DIR}"/bin/*tsp* \
         "${BUILD_DIR}"/bin/*vrp*; do
-        ${RUN_CMD} "${test_binary}"
+        "${RUN_CMD}" "${test_binary}"
       done
       ;;
     *)
@@ -280,7 +280,8 @@ function main() {
   assert_defined PROJECT
   assert_defined TARGET
 
-  declare -r PROJECT_DIR="$(cd -P -- "$(dirname -- "$0")/.." && pwd -P)"
+  declare -r PROJECT_DIR
+  PROJECT_DIR="$(cd -P -- "$(dirname -- "$0")/.." && pwd -P)"
   declare -r ARCHIVE_DIR="${PROJECT_DIR}/build_cross/archives"
   declare -r BUILD_DIR="${PROJECT_DIR}/build_cross/${TARGET}"
   declare -r TOOLCHAIN_FILE=${ARCHIVE_DIR}/toolchain_${TARGET}.cmake

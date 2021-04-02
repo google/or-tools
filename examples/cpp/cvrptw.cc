@@ -21,6 +21,7 @@
 // distances are computed using the Manhattan distance. Distances are assumed
 // to be in meters and times in seconds.
 
+#include <cstdint>
 #include <vector>
 
 #include "absl/flags/parse.h"
@@ -61,8 +62,8 @@ ABSL_FLAG(std::string, routing_search_parameters, "",
 
 const char* kTime = "Time";
 const char* kCapacity = "Capacity";
-const int64 kMaxNodesPerGroup = 10;
-const int64 kSameVehicleCost = 1000;
+const int64_t kMaxNodesPerGroup = 10;
+const int64_t kSameVehicleCost = 1000;
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
@@ -80,9 +81,9 @@ int main(int argc, char** argv) {
   RoutingModel routing(manager);
 
   // Setting up locations.
-  const int64 kXMax = 100000;
-  const int64 kYMax = 100000;
-  const int64 kSpeed = 10;
+  const int64_t kXMax = 100000;
+  const int64_t kYMax = 100000;
+  const int64_t kSpeed = 10;
   LocationContainer locations(
       kSpeed, absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
   for (int location = 0; location <= absl::GetFlag(FLAGS_vrp_orders);
@@ -99,8 +100,8 @@ int main(int argc, char** argv) {
   routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
 
   // Adding capacity dimension constraints.
-  const int64 kVehicleCapacity = 40;
-  const int64 kNullCapacitySlack = 0;
+  const int64_t kVehicleCapacity = 40;
+  const int64_t kNullCapacitySlack = 0;
   RandomDemand demand(manager.num_nodes(), kDepot,
                       absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
   demand.Initialize();
@@ -112,8 +113,8 @@ int main(int argc, char** argv) {
       /*fix_start_cumul_to_zero=*/true, kCapacity);
 
   // Adding time dimension constraints.
-  const int64 kTimePerDemandUnit = 300;
-  const int64 kHorizon = 24 * 3600;
+  const int64_t kTimePerDemandUnit = 300;
+  const int64_t kHorizon = 24 * 3600;
   ServiceTimePlusTransition time(
       kTimePerDemandUnit,
       [&demand](RoutingNodeIndex i, RoutingNodeIndex j) {
@@ -132,25 +133,25 @@ int main(int argc, char** argv) {
   // Adding time windows.
   std::mt19937 randomizer(
       GetSeed(absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed)));
-  const int64 kTWDuration = 5 * 3600;
+  const int64_t kTWDuration = 5 * 3600;
   for (int order = 1; order < manager.num_nodes(); ++order) {
-    const int64 start =
+    const int64_t start =
         absl::Uniform<int32_t>(randomizer, 0, kHorizon - kTWDuration);
     time_dimension.CumulVar(order)->SetRange(start, start + kTWDuration);
   }
 
   // Adding penalty costs to allow skipping orders.
-  const int64 kPenalty = 10000000;
+  const int64_t kPenalty = 10000000;
   const RoutingIndexManager::NodeIndex kFirstNodeAfterDepot(1);
   for (RoutingIndexManager::NodeIndex order = kFirstNodeAfterDepot;
        order < manager.num_nodes(); ++order) {
-    std::vector<int64> orders(1, manager.NodeToIndex(order));
+    std::vector<int64_t> orders(1, manager.NodeToIndex(order));
     routing.AddDisjunction(orders, kPenalty);
   }
 
   // Adding same vehicle constraint costs for consecutive nodes.
   if (absl::GetFlag(FLAGS_vrp_use_same_vehicle_costs)) {
-    std::vector<int64> group;
+    std::vector<int64_t> group;
     for (RoutingIndexManager::NodeIndex order = kFirstNodeAfterDepot;
          order < manager.num_nodes(); ++order) {
       group.push_back(manager.NodeToIndex(order));

@@ -15,7 +15,6 @@
 #define OR_TOOLS_BASE_MATHUTIL_H_
 
 #include <math.h>
-
 #include <algorithm>
 #include <vector>
 
