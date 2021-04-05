@@ -34,7 +34,7 @@ namespace glop {
 
 // This type is defined to avoid cast issues during index conversions,
 // e.g. converting ColIndex into RowIndex.
-// All types should use 'Index' instead of int32.
+// All types should use 'Index' instead of int32_t.
 typedef int32_t Index;
 
 // ColIndex is the type for integers representing column/variable indices.
@@ -61,7 +61,7 @@ inline Index RowToIntIndex(RowIndex row) { return row.value(); }
 // An entry in a sparse matrix is a pair (row, value) for a given known column.
 // See classes SparseColumn and SparseMatrix.
 #if defined(__ANDROID__)
-DEFINE_INT_TYPE(EntryIndex, int32);
+DEFINE_INT_TYPE(EntryIndex, int32_t);
 #else
 DEFINE_INT_TYPE(EntryIndex, int64_t);
 #endif
