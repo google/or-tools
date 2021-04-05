@@ -763,10 +763,10 @@ class BinaryImplicationGraph : public SatPropagator {
   //
   // Using InlinedVector helps quite a bit because on many problems, a literal
   // only implies a few others. Note that on a 64 bits computer we get exactly
-  // 6 inlined int32 elements without extra space, and the size of the inlined
+  // 6 inlined int32_t elements without extra space, and the size of the inlined
   // vector is 4 times 64 bits.
   //
-  // TODO(user): We could be even more efficient since a size of int32 is enough
+  // TODO(user): We could be even more efficient since a size of int32_t is enough
   // for us and we could store in common the inlined/not-inlined size.
   absl::StrongVector<LiteralIndex, absl::InlinedVector<Literal, 6>>
       implications_;

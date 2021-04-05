@@ -37,7 +37,7 @@ def AssertIsInt32(x):
     if not isinstance(x, numbers.Integral):
         raise TypeError('Not an integer: %s' % x)
     if x < INT32_MIN or x > INT32_MAX:
-        raise OverflowError('Does not fit in an int32: %s' % x)
+        raise OverflowError('Does not fit in an int32_t: %s' % x)
 
 
 def AssertIsBoolean(x):

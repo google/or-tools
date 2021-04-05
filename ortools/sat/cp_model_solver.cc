@@ -2445,8 +2445,8 @@ class LnsSolver : public SubSolver {
       // Create a random number generator whose seed depends both on the task_id
       // and on the parameters_.random_seed() so that changing the later will
       // change the LNS behavior.
-      const int32 low = static_cast<int32>(task_id);
-      const int32 high = task_id >> 32;
+      const int32_t low = static_cast<int32_t>(task_id);
+      const int32_t high = task_id >> 32;
       std::seed_seq seed{low, high, parameters_.random_seed()};
       random_engine_t random(seed);
 
