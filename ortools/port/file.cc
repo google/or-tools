@@ -55,14 +55,14 @@ bool PortableTemporaryFile(const char* directory_prefix,
   return false;
 #else  // defined(__PORTABLE_PLATFORM__)
 #if defined(__linux)
-  int32 tid = static_cast<int32>(pthread_self());
+  int32_t tid = static_cast<int32_t>(pthread_self());
 #else   // defined(__linux__)
-  int32 tid = 123;
+  int32_t tid = 123;
 #endif  // defined(__linux__)
 #if !defined(_MSC_VER)
-  int32 pid = static_cast<int32>(getpid());
+  int32_t pid = static_cast<int32_t>(getpid());
 #else   // _MSC_VER
-  int32 pid = 456;
+  int32_t pid = 456;
 #endif  // _MSC_VER
   int64_t now = absl::GetCurrentTimeNanos();
   std::string filename =
