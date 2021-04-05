@@ -37,7 +37,7 @@ namespace operations_research {
 using ::util::CompleteGraph;
 
 template <typename CostType, typename ArcIndex = int64_t,
-          typename NodeIndex = int32,
+          typename NodeIndex = int32_t,
           typename CostFunction = std::function<CostType(NodeIndex, NodeIndex)>>
 class ChristofidesPathSolver {
  public:

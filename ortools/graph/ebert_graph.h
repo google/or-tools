@@ -197,8 +197,8 @@ class ForwardStaticGraph;
 // ForwardStarGraph according to whether or not they require reverse arcs to be
 // represented explicitly. Along with either graph representation, the other
 // type shortcuts here will often come in handy.
-typedef int32 NodeIndex;
-typedef int32 ArcIndex;
+typedef int32_t NodeIndex;
+typedef int32_t ArcIndex;
 typedef int64_t FlowQuantity;
 typedef int64_t CostValue;
 typedef EbertGraph<NodeIndex, ArcIndex> StarGraph;
@@ -1180,7 +1180,7 @@ class EbertGraphBase
   }
 };
 
-// Most users should only use StarGraph, which is EbertGraph<int32, int32>, and
+// Most users should only use StarGraph, which is EbertGraph<int32_t, int32_t>, and
 // other type shortcuts; see the bottom of this file.
 template <typename NodeIndexType, typename ArcIndexType>
 class EbertGraph

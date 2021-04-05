@@ -472,7 +472,7 @@ class HamiltonianPathSolver {
   // we limit ourselves to 32 cites.
   // This is why we define the type NodeSet to be 32-bit wide.
   // TODO(user): remove this limitation by using pruning techniques.
-  typedef uint32 Integer;
+  typedef uint32_t Integer;
   typedef Set<Integer> NodeSet;
 
   explicit HamiltonianPathSolver(CostFunction cost);
@@ -517,7 +517,7 @@ class HamiltonianPathSolver {
   template <typename T,
             bool = true /* Dummy parameter to allow specialization */>
   // Returns the saturated addition of a and b. It is specialized below for
-  // int32 and int64_t.
+  // int32_t and int64_t.
   struct SaturatedArithmetic {
     static T Add(T a, T b) { return a + b; }
     static T Sub(T a, T b) { return a - b; }
@@ -529,21 +529,21 @@ class HamiltonianPathSolver {
   };
   // TODO(user): implement this natively in saturated_arithmetic.h
   template <bool Dummy>
-  struct SaturatedArithmetic<int32, Dummy> {
-    static int32 Add(int32 a, int32 b) {
+  struct SaturatedArithmetic<int32_t, Dummy> {
+    static int32_t Add(int32_t a, int32_t b) {
       const int64_t a64 = a;
       const int64_t b64 = b;
       const int64_t min_int32 = kint32min;
       const int64_t max_int32 = kint32max;
-      return static_cast<int32>(
+      return static_cast<int32_t>(
           std::max(min_int32, std::min(max_int32, a64 + b64)));
     }
-    static int32 Sub(int32 a, int32 b) {
+    static int32_t Sub(int32_t a, int32_t b) {
       const int64_t a64 = a;
       const int64_t b64 = b;
       const int64_t min_int32 = kint32min;
       const int64_t max_int32 = kint32max;
-      return static_cast<int32>(
+      return static_cast<int32_t>(
           std::max(min_int32, std::min(max_int32, a64 - b64)));
     }
   };
@@ -666,7 +666,7 @@ void HamiltonianPathSolver<CostType, CostFunction>::Solve() {
   // on cardinality.
   for (int card = 2; card <= num_nodes_; ++card) {
     // Iterate on sets of same cardinality.
-    for (NodeSet set : SetRangeWithCardinality<Set<uint32>>(card, num_nodes_)) {
+    for (NodeSet set : SetRangeWithCardinality<Set<uint32_t>>(card, num_nodes_)) {
       // Using BaseOffset and maintaining the node ranks, to reduce the
       // computational effort for accessing the data.
       const uint64_t set_offset = mem_.BaseOffset(card, set);
@@ -889,7 +889,7 @@ class PruningHamiltonianSolver {
   // TODO(user): Use SaturatedArithmetic for better precision.
 
  public:
-  typedef uint32 Integer;
+  typedef uint32_t Integer;
   typedef Set<Integer> NodeSet;
 
   explicit PruningHamiltonianSolver(CostFunction cost);

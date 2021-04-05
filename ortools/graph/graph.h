@@ -176,7 +176,7 @@ template <typename T>
 class SVector;
 
 // Base class of all Graphs implemented here. The default value for the graph
-// index types is int32 since allmost all graphs that fit into memory do not
+// index types is int32_t since allmost all graphs that fit into memory do not
 // need bigger indices.
 //
 // Note: The type can be unsigned, except for the graphs with reverse arcs
