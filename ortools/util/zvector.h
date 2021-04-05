@@ -35,7 +35,7 @@
 // The minimum and maximum indices are inclusive.
 // Think of the Pascal syntax array[min_index..max_index] of ...
 //
-// For example, ZVector<int32>(-100000,100000) will store 200001
+// For example, ZVector<int32_t>(-100000,100000) will store 200001
 // signed integers of 32 bits each, and the possible range of indices
 // will be -100000..100000.
 
@@ -158,11 +158,11 @@ class ZVector {
 // Shorthands for all the types of ZVector's.
 typedef ZVector<int8> Int8ZVector;
 typedef ZVector<int16> Int16ZVector;
-typedef ZVector<int32> Int32ZVector;
+typedef ZVector<int32_t> Int32ZVector;
 typedef ZVector<int64_t> Int64ZVector;
 typedef ZVector<uint8> UInt8ZVector;
 typedef ZVector<uint16> UInt16ZVector;
-typedef ZVector<uint32> UInt32ZVector;
+typedef ZVector<uint32_t> UInt32ZVector;
 typedef ZVector<uint64_t> UInt64ZVector;
 
 }  // namespace operations_research

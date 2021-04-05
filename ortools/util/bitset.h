@@ -32,11 +32,11 @@ namespace operations_research {
 // Useful constants: word and double word will all bits set.
 static const uint64_t kAllBits64 = uint64_t{0xFFFFFFFFFFFFFFFF};
 static const uint64_t kAllBitsButLsb64 = uint64_t{0xFFFFFFFFFFFFFFFE};
-static const uint32 kAllBits32 = 0xFFFFFFFFU;
+static const uint32_t kAllBits32 = 0xFFFFFFFFU;
 
 // Returns a word with only bit pos set.
 inline uint64_t OneBit64(int pos) { return uint64_t{1} << pos; }
-inline uint32 OneBit32(int pos) { return 1U << pos; }
+inline uint32_t OneBit32(int pos) { return 1U << pos; }
 
 // Returns the number of bits set in n.
 inline uint64_t BitCount64(uint64_t n) {
@@ -50,7 +50,7 @@ inline uint64_t BitCount64(uint64_t n) {
   n = (n * h01) >> 56;
   return n;
 }
-inline uint32 BitCount32(uint32 n) {
+inline uint32_t BitCount32(uint32_t n) {
   n -= (n >> 1) & 0x55555555UL;
   n = (n & 0x33333333) + ((n >> 2) & 0x33333333UL);
   n = (n + (n >> 4)) & 0x0F0F0F0FUL;
@@ -61,7 +61,7 @@ inline uint32 BitCount32(uint32 n) {
 
 // Returns a word with only the least significant bit of n set.
 inline uint64_t LeastSignificantBitWord64(uint64_t n) { return n & ~(n - 1); }
-inline uint32 LeastSignificantBitWord32(uint32 n) { return n & ~(n - 1); }
+inline uint32_t LeastSignificantBitWord32(uint32_t n) { return n & ~(n - 1); }
 
 // Returns the least significant bit position in n.
 // Discussion around lsb computation:
@@ -136,13 +136,13 @@ inline int LeastSignificantBitPosition64(uint64_t n) {
 }
 
 #if defined(USE_FAST_LEAST_SIGNIFICANT_BIT)
-inline int LeastSignificantBitPosition32Fast(uint32 n) {
+inline int LeastSignificantBitPosition32Fast(uint32_t n) {
   return n == 0 ? 0 : __builtin_ctzl(n);
 }
 #endif
 
-inline int LeastSignificantBitPosition32DeBruijn(uint32 n) {
-  static const uint32 kSeq = 0x077CB531U;  // de Bruijn sequence
+inline int LeastSignificantBitPosition32DeBruijn(uint32_t n) {
+  static const uint32_t kSeq = 0x077CB531U;  // de Bruijn sequence
   static const int kTab[32] = {// initialized by 'kTab[(kSeq << i) >> 27] = i
                                0,  1,  28, 2,  29, 14, 24, 3,  30, 22, 20,
                                15, 25, 17, 4,  8,  31, 27, 13, 23, 21, 19,
@@ -150,7 +150,7 @@ inline int LeastSignificantBitPosition32DeBruijn(uint32 n) {
   return kTab[((n & (~n + 1)) * kSeq) >> 27];
 }
 
-inline int LeastSignificantBitPosition32Default(uint32 n) {
+inline int LeastSignificantBitPosition32Default(uint32_t n) {
   if (n == 0) return 0;
   int pos = 31;
   if (n & 0x0000FFFFL) {
@@ -179,7 +179,7 @@ inline int LeastSignificantBitPosition32Default(uint32 n) {
   return pos;
 }
 
-inline int LeastSignificantBitPosition32(uint32 n) {
+inline int LeastSignificantBitPosition32(uint32_t n) {
   DCHECK_NE(n, 0);
 #ifdef USE_FAST_LEAST_SIGNIFICANT_BIT
   return LeastSignificantBitPosition32Fast(n);
@@ -194,7 +194,7 @@ inline int LeastSignificantBitPosition32(uint32 n) {
 #if USE_FAST_LEAST_SIGNIFICANT_BIT
 inline int MostSignificantBitPosition64Fast(uint64_t n) {
   // __builtin_clzll(1) should always return 63. There is no penalty in
-  // using offset, and the code looks more like its uint32 counterpart.
+  // using offset, and the code looks more like its uint32_t counterpart.
   const int offset = __builtin_clzll(1);
   return n == 0 ? 0 : (offset - __builtin_clzll(n));
 }
@@ -237,7 +237,7 @@ inline int MostSignificantBitPosition64(uint64_t n) {
 }
 
 #if USE_FAST_LEAST_SIGNIFICANT_BIT
-inline int MostSignificantBitPosition32Fast(uint32 n) {
+inline int MostSignificantBitPosition32Fast(uint32_t n) {
   // The constant here depends on whether we are on a 32-bit or 64-bit machine.
   // __builtin_clzl(1) returns 63 on a 64-bit machine and 31 on a 32-bit
   // machine.
@@ -246,7 +246,7 @@ inline int MostSignificantBitPosition32Fast(uint32 n) {
 }
 #endif
 
-inline int MostSignificantBitPosition32Default(uint32 n) {
+inline int MostSignificantBitPosition32Default(uint32_t n) {
   int b = 0;
   if (0 != (n & (kAllBits32 << (1 << 4)))) {
     b |= (1 << 4);
@@ -270,7 +270,7 @@ inline int MostSignificantBitPosition32Default(uint32 n) {
   return b;
 }
 
-inline int MostSignificantBitPosition32(uint32 n) {
+inline int MostSignificantBitPosition32(uint32_t n) {
 #ifdef USE_FAST_LEAST_SIGNIFICANT_BIT
   return MostSignificantBitPosition32Fast(n);
 #else
@@ -289,7 +289,7 @@ inline uint64_t OneRange64(uint64_t s, uint64_t e) {
   return (kAllBits64 << s) ^ ((kAllBits64 - 1) << e);
 }
 
-inline uint32 OneRange32(uint32 s, uint32 e) {
+inline uint32_t OneRange32(uint32_t s, uint32_t e) {
   DCHECK_LE(s, 31);
   DCHECK_LE(e, 31);
   DCHECK_LE(s, e);
@@ -302,7 +302,7 @@ inline uint64_t IntervalUp64(uint64_t s) {
   return kAllBits64 << s;
 }
 
-inline uint32 IntervalUp32(uint32 s) {
+inline uint32_t IntervalUp32(uint32_t s) {
   DCHECK_LE(s, 31);
   return kAllBits32 << s;
 }
@@ -313,13 +313,13 @@ inline uint64_t IntervalDown64(uint64_t s) {
   return kAllBits64 >> (63 - s);
 }
 
-inline uint32 IntervalDown32(uint32 s) {
+inline uint32_t IntervalDown32(uint32_t s) {
   DCHECK_LE(s, 31);
   return kAllBits32 >> (31 - s);
 }
 
 // ----- Bitset operators -----
-// Bitset: array of uint32/uint64_t words
+// Bitset: array of uint32_t/uint64_t words
 
 // Bit operators used to manipulates bitsets.
 
@@ -327,26 +327,26 @@ inline uint32 IntervalDown32(uint32 s) {
 // corresponding to the bit at position pos in the bitset.
 // Note: '& 63' is faster than '% 64'
 // TODO(user): rename BitPos and BitOffset to something more understandable.
-inline uint32 BitPos64(uint64_t pos) { return (pos & 63); }
-inline uint32 BitPos32(uint32 pos) { return (pos & 31); }
+inline uint32_t BitPos64(uint64_t pos) { return (pos & 63); }
+inline uint32_t BitPos32(uint32_t pos) { return (pos & 31); }
 
 // Returns the word number corresponding to bit number pos.
 inline uint64_t BitOffset64(uint64_t pos) { return (pos >> 6); }
-inline uint32 BitOffset32(uint32 pos) { return (pos >> 5); }
+inline uint32_t BitOffset32(uint32_t pos) { return (pos >> 5); }
 
 // Returns the number of words needed to store size bits.
 inline uint64_t BitLength64(uint64_t size) { return ((size + 63) >> 6); }
-inline uint32 BitLength32(uint32 size) { return ((size + 31) >> 5); }
+inline uint32_t BitLength32(uint32_t size) { return ((size + 31) >> 5); }
 
 // Returns the bit number in the bitset of the first bit of word number v.
 inline uint64_t BitShift64(uint64_t v) { return v << 6; }
-inline uint32 BitShift32(uint32 v) { return v << 5; }
+inline uint32_t BitShift32(uint32_t v) { return v << 5; }
 
 // Returns true if the bit pos is set in bitset.
 inline bool IsBitSet64(const uint64_t* const bitset, uint64_t pos) {
   return (bitset[BitOffset64(pos)] & OneBit64(BitPos64(pos)));
 }
-inline bool IsBitSet32(const uint32* const bitset, uint32 pos) {
+inline bool IsBitSet32(const uint32_t* const bitset, uint32_t pos) {
   return (bitset[BitOffset32(pos)] & OneBit32(BitPos32(pos)));
 }
 
@@ -354,7 +354,7 @@ inline bool IsBitSet32(const uint32* const bitset, uint32 pos) {
 inline void SetBit64(uint64_t* const bitset, uint64_t pos) {
   bitset[BitOffset64(pos)] |= OneBit64(BitPos64(pos));
 }
-inline void SetBit32(uint32* const bitset, uint32 pos) {
+inline void SetBit32(uint32_t* const bitset, uint32_t pos) {
   bitset[BitOffset32(pos)] |= OneBit32(BitPos32(pos));
 }
 
@@ -362,41 +362,41 @@ inline void SetBit32(uint32* const bitset, uint32 pos) {
 inline void ClearBit64(uint64_t* const bitset, uint64_t pos) {
   bitset[BitOffset64(pos)] &= ~OneBit64(BitPos64(pos));
 }
-inline void ClearBit32(uint32* const bitset, uint32 pos) {
+inline void ClearBit32(uint32_t* const bitset, uint32_t pos) {
   bitset[BitOffset32(pos)] &= ~OneBit32(BitPos32(pos));
 }
 
 // Returns the number of bits set in bitset between positions start and end.
 uint64_t BitCountRange64(const uint64_t* const bitset, uint64_t start, uint64_t end);
-uint32 BitCountRange32(const uint32* const bitset, uint32 start, uint32 end);
+uint32_t BitCountRange32(const uint32_t* const bitset, uint32_t start, uint32_t end);
 
 // Returns true if no bits are set in bitset between start and end.
 bool IsEmptyRange64(const uint64_t* const bitset, uint64_t start, uint64_t end);
-bool IsEmptyRange32(const uint32* const bitset, uint32 start, uint32 end);
+bool IsEmptyRange32(const uint32_t* const bitset, uint32_t start, uint32_t end);
 
 // Returns the first bit set in bitset between start and max_bit.
 int64_t LeastSignificantBitPosition64(const uint64_t* const bitset, uint64_t start,
                                     uint64_t end);
-int LeastSignificantBitPosition32(const uint32* const bitset, uint32 start,
-                                  uint32 end);
+int LeastSignificantBitPosition32(const uint32_t* const bitset, uint32_t start,
+                                  uint32_t end);
 
 // Returns the last bit set in bitset between min_bit and start.
 int64_t MostSignificantBitPosition64(const uint64_t* const bitset, uint64_t start,
                                    uint64_t end);
-int MostSignificantBitPosition32(const uint32* const bitset, uint32 start,
-                                 uint32 end);
+int MostSignificantBitPosition32(const uint32_t* const bitset, uint32_t start,
+                                 uint32_t end);
 
 // Unsafe versions of the functions above where respectively end and start
 // are supposed to be set.
 int64_t UnsafeLeastSignificantBitPosition64(const uint64_t* const bitset,
                                           uint64_t start, uint64_t end);
-int32 UnsafeLeastSignificantBitPosition32(const uint32* const bitset,
-                                          uint32 start, uint32 end);
+int32_t UnsafeLeastSignificantBitPosition32(const uint32_t* const bitset,
+                                          uint32_t start, uint32_t end);
 
 int64_t UnsafeMostSignificantBitPosition64(const uint64_t* const bitset,
                                          uint64_t start, uint64_t end);
-int32 UnsafeMostSignificantBitPosition32(const uint32* const bitset,
-                                         uint32 start, uint32 end);
+int32_t UnsafeMostSignificantBitPosition32(const uint32_t* const bitset,
+                                         uint32_t start, uint32_t end);
 
 // Returns a mask with the bits pos % 64 and (pos ^ 1) % 64 sets.
 inline uint64_t TwoBitsFromPos64(uint64_t pos) { return uint64_t{3} << (pos & 62); }
