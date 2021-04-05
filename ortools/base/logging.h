@@ -1403,7 +1403,7 @@ class GOOGLE_GLOG_DLL_DECL Logger {
   // Get the current LOG file size.
   // The returned value is approximate since some
   // logged data may not have been flushed to disk yet.
-  virtual uint32 LogSize() = 0;
+  virtual uint32_t LogSize() = 0;
 };
 
 // Get the logger for the specified severity level.  The logger

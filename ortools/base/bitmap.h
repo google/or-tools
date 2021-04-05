@@ -37,9 +37,9 @@ inline void ClearBit64(uint64_t* const bitset, uint64_t pos) {
 
 class Bitmap {
  public:
-  // Constructor : This allocates on a uint32 boundary.
+  // Constructor : This allocates on a uint32_t boundary.
   // fill: true = initialize with 1's, false = initialize with 0's.
-  explicit Bitmap(uint32 size, bool fill = false)
+  explicit Bitmap(uint32_t size, bool fill = false)
       : max_size_(size),
         array_size_(internal::BitLength64(size)),
         map_(new uint64_t[array_size_]) {
@@ -53,13 +53,13 @@ class Bitmap {
   // Resizes the bitmap.
   // If size < bits(), the extra bits will be discarded.
   // If size > bits(), the extra bits will be filled with the fill value.
-  void Resize(uint32 size, bool fill = false);
+  void Resize(uint32_t size, bool fill = false);
 
-  bool Get(uint32 index) const {
+  bool Get(uint32_t index) const {
     assert(max_size_ == 0 || index < max_size_);
     return internal::IsBitSet64(map_, index);
   }
-  void Set(uint32 index, bool value) {
+  void Set(uint32_t index, bool value) {
     assert(max_size_ == 0 || index < max_size_);
     if (value) {
       internal::SetBit64(map_, index);
@@ -77,8 +77,8 @@ class Bitmap {
   void Clear() { SetAll(false); }
 
  private:
-  uint32 max_size_;  // the upper bound of the bitmap
-  uint32 array_size_;
+  uint32_t max_size_;  // the upper bound of the bitmap
+  uint32_t array_size_;
   uint64_t* map_;  // the bitmap
 };
 

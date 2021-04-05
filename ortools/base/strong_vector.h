@@ -35,19 +35,19 @@
 //
 // EXAMPLES --------------------------------------------------------------------
 //
-//    DEFINE_INT_TYPE(PhysicalChildIndex, int32);
+//    DEFINE_INT_TYPE(PhysicalChildIndex, int32_t);
 //    absl::StrongVector<PhysicalChildIndex, ChildStats*> vec;
 //
 //    PhysicalChildIndex physical_index;
 //    vec[physical_index] = ...;        <-- index type match: compiles properly.
 //    vec.at(physical_index) = ...;     <-- index type match: compiles properly.
 //
-//    int32 physical_index;
+//    int32_t physical_index;
 //    vec[physical_index] = ...;        <-- fails to compile.
 //    vec.at(physical_index) = ...;     <-- fails to compile.
 //
-//    DEFINE_INT_TYPE(LogicalChildIndex, int32);
-//    int32 logical_index;
+//    DEFINE_INT_TYPE(LogicalChildIndex, int32_t);
+//    int32_t logical_index;
 //    vec[logical_index] = ...;        <-- fails to compile.
 //    vec.at(logical_index) = ...;     <-- fails to compile.
 //

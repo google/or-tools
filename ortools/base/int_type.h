@@ -16,7 +16,7 @@
 // as native integer types, but which prevent assignment, construction, and
 // other operations from other similar integer-like types.  Essentially, the
 // template class IntType<IntTypeName, ValueType> (where ValueType assumes
-// valid scalar types such as int, uint, int32, etc) has the additional
+// valid scalar types such as int, uint, int32_t, etc) has the additional
 // property that it cannot be assigned to or constructed from other IntTypes
 // or native integer types of equal or implicitly convertible type.
 //
@@ -67,7 +67,7 @@
 //    GetGlobalDoc(global);            <-- Fails to compile!
 //    GetGlobalDoc(local);             <-- Fails to compile!
 //
-//    void GetLocalDoc(int32 local) { ...
+//    void GetLocalDoc(int32_t local) { ...
 //    GetLocalDoc(global);             <-- Fails to compile!
 //    GetLocalDoc(local);              <-- Fails to compile!
 //

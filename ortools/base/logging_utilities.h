@@ -32,7 +32,7 @@ int64_t CycleClock_Now();
 
 int64_t UsecToCycles(int64_t usec);
 
-int32 GetMainThreadPid();
+int32_t GetMainThreadPid();
 
 unsigned int GetTID();
 

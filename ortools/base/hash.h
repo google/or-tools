@@ -25,7 +25,7 @@
 
 namespace operations_research {
 // 32 bit version.
-static inline void mix(uint32& a, uint32& b, uint32& c) {  // NOLINT
+static inline void mix(uint32_t& a, uint32_t& b, uint32_t& c) {  // NOLINT
   a -= b;
   a -= c;
   a ^= (c >> 13);
@@ -94,8 +94,8 @@ static inline void mix(uint64_t& a, uint64_t& b, uint64_t& c) {  // NOLINT
   c -= b;
   c ^= (b >> 22);
 }
-inline uint32 Hash32NumWithSeed(uint32 num, uint32 c) {
-  uint32 b = 0x9e3779b9UL;  // The golden ratio; an arbitrary value.
+inline uint32_t Hash32NumWithSeed(uint32_t num, uint32_t c) {
+  uint32_t b = 0x9e3779b9UL;  // The golden ratio; an arbitrary value.
   operations_research::mix(num, b, c);
   return c;
 }
@@ -115,7 +115,7 @@ struct hash<std::pair<First, Second>> {
     size_t h1 = hash<First>()(p.first);
     size_t h2 = hash<Second>()(p.second);
     // The decision below is at compile time
-    return (sizeof(h1) <= sizeof(uint32))
+    return (sizeof(h1) <= sizeof(uint32_t))
                ?  // NOLINT
                operations_research::Hash32NumWithSeed(h1, h2)
                : operations_research::Hash64NumWithSeed(h1, h2);

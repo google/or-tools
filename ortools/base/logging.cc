@@ -302,7 +302,7 @@ static const char* GetAnsiColorCode(GLogColor color) {
 #endif  // !_MSC_VER
 
 // Safely get max_log_size, overriding to 1 if it somehow gets defined as 0
-static int32 MaxLogSize() {
+static int32_t MaxLogSize() {
   return (absl::GetFlag(FLAGS_max_log_size) > 0
               ? absl::GetFlag(FLAGS_max_log_size)
               : 1);
@@ -389,7 +389,7 @@ class LogFileObject : public base::Logger {
 
   // It is the actual file length for the system loggers,
   // i.e., INFO, ERROR, etc.
-  virtual uint32 LogSize() {
+  virtual uint32_t LogSize() {
     absl::MutexLock l(&lock_);
     return file_length_;
   }
@@ -400,7 +400,7 @@ class LogFileObject : public base::Logger {
   void FlushUnlocked();
 
  private:
-  static const uint32 kRolloverAttemptFrequency = 0x20;
+  static const uint32_t kRolloverAttemptFrequency = 0x20;
 
   absl::Mutex lock_;
   bool base_filename_selected_;
@@ -409,9 +409,9 @@ class LogFileObject : public base::Logger {
   string filename_extension_;  // option users can specify (eg to add port#)
   FILE* file_;
   LogSeverity severity_;
-  uint32 bytes_since_flush_;
-  uint32 dropped_mem_length_;
-  uint32 file_length_;
+  uint32_t bytes_since_flush_;
+  uint32_t dropped_mem_length_;
+  uint32_t file_length_;
   unsigned int rollover_attempt_;
   int64_t next_flush_time_;  // cycle count at which to flush log
 
@@ -1023,8 +1023,8 @@ void LogFileObject::Write(bool force_flush, time_t timestamp,
     if (absl::GetFlag(FLAGS_drop_log_memory) && file_length_ >= (3 << 20)) {
       // Don't evict the most recent 1-2MiB so as not to impact a tailer
       // of the log file and to avoid page rounding issue on linux < 4.7
-      uint32 total_drop_length = (file_length_ & ~((1 << 20) - 1)) - (1 << 20);
-      uint32 this_drop_length = total_drop_length - dropped_mem_length_;
+      uint32_t total_drop_length = (file_length_ & ~((1 << 20) - 1)) - (1 << 20);
+      uint32_t this_drop_length = total_drop_length - dropped_mem_length_;
       if (this_drop_length >= (2 << 20)) {
         // Only advise when >= 2MiB to drop
         posix_fadvise(fileno(file_), dropped_mem_length_, this_drop_length,

@@ -232,8 +232,8 @@ int64_t CycleClock_Now() { return absl::ToUnixMicros(absl::Now()); }
 
 int64_t UsecToCycles(int64_t usec) { return usec; }
 
-static int32 g_main_thread_pid = getpid();
-int32 GetMainThreadPid() { return g_main_thread_pid; }
+static int32_t g_main_thread_pid = getpid();
+int32_t GetMainThreadPid() { return g_main_thread_pid; }
 
 const char* const_basename(const char* filepath) {
   const char* base = strrchr(filepath, '/');
