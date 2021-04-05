@@ -48,7 +48,7 @@ DECLARE_string(routing_first_solution);
 DECLARE_bool(routing_no_lns);
 
 // Random seed generator.
-int32 GetSeed() {
+int32_t GetSeed() {
   if (absl::GetFlag(FLAGS_tsp_use_deterministic_random_seed)) {
     return ACMRandom::DeterministicSeed();
   } else {

@@ -30,7 +30,7 @@ typedef std::function<int64_t(RoutingNodeIndex, RoutingNodeIndex)>
     RoutingNodeEvaluator2;
 
 // Random seed generator.
-int32 GetSeed(bool deterministic);
+int32_t GetSeed(bool deterministic);
 
 // Location container, contains positions of orders and can be used to obtain
 // Manhattan distances/times between locations.
@@ -130,7 +130,7 @@ void DisplayPlan(
 
 using NodeIndex = RoutingIndexManager::NodeIndex;
 
-int32 GetSeed(bool deterministic) {
+int32_t GetSeed(bool deterministic) {
   if (deterministic) {
     return ACMRandom::DeterministicSeed();
   } else {

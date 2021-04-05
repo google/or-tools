@@ -55,7 +55,7 @@ ABSL_FLAG(std::string, routing_search_parameters,
 namespace operations_research {
 
 // Random seed generator.
-int32 GetSeed() {
+int32_t GetSeed() {
   if (absl::GetFlag(FLAGS_tsp_use_deterministic_random_seed)) {
     return ACMRandom::DeterministicSeed();
   } else {
