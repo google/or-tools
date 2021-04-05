@@ -158,7 +158,7 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
           (lp->num_constraints() - initial_num_rows_).value(),
           lp->num_variables().value(),
           (lp->num_variables() - initial_num_cols_).value(),
-          // static_cast<int64_t> is needed because the Android port uses int32.
+          // static_cast<int64_t> is needed because the Android port uses int32_t.
           static_cast<int64_t>(new_num_entries.value()),
           static_cast<int64_t>(new_num_entries.value() -
                                initial_num_entries_.value()));

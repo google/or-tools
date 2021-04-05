@@ -182,11 +182,11 @@ class MatrixNonZeroPattern {
   void MergeIntoSorted(RowIndex pivot_row, RowIndex row);
 
   // Using InlinedVector helps because we usually have many rows with just a few
-  // non-zeros. Note that on a 64 bits computer we get exactly 6 inlined int32
+  // non-zeros. Note that on a 64 bits computer we get exactly 6 inlined int32_t
   // elements without extra space, and the size of the inlined vector is 4 times
   // 64 bits.
   //
-  // TODO(user): We could be even more efficient since a size of int32 is enough
+  // TODO(user): We could be even more efficient since a size of int32_t is enough
   // for us and we could store in common the inlined/not-inlined size.
   absl::StrongVector<RowIndex, absl::InlinedVector<ColIndex, 6>> row_non_zero_;
   StrictITIVector<RowIndex, int32_t> row_degree_;
