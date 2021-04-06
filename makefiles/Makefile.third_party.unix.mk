@@ -375,6 +375,8 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_flags_reflection.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_usage.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_usage_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_base.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_city.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_wyhash.a
 
 ABSL_LNK = $(STATIC_ABSL_LNK)
 
