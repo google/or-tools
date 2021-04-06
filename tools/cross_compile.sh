@@ -222,13 +222,13 @@ function run_test() {
   set -x
   case ${PROJECT} in
     glop)
-      "${RUN_CMD}" bin/simple_glop_program ;;
+      ${RUN_CMD} bin/simple_glop_program ;;
     or-tools)
       for test_binary in \
         "${BUILD_DIR}"/bin/simple_* \
         "${BUILD_DIR}"/bin/*tsp* \
         "${BUILD_DIR}"/bin/*vrp*; do
-        "${RUN_CMD}" "${test_binary}"
+        ${RUN_CMD} "${test_binary}"
       done
       ;;
     *)
