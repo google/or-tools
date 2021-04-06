@@ -15,7 +15,6 @@ target_include_directories(${NAME} PRIVATE
   ${PROJECT_BINARY_DIR})
 target_link_libraries(${NAME} PRIVATE
   absl::memory
-  absl::container
   absl::strings
   absl::str_format
   protobuf::libprotobuf

@@ -224,7 +224,6 @@ target_link_libraries(glop PUBLIC
   absl::time
   absl::strings
   absl::statusor
-  absl::container
   absl::str_format
   protobuf::libprotobuf
   )
