@@ -295,6 +295,7 @@ cc_library(
     srcs = [
         "routing.cc",
         "routing_breaks.cc",
+        "routing_filters.cc",
         "routing_flow.cc",
         "routing_lp_scheduling.cc",
         "routing_neighborhoods.cc",
@@ -303,8 +304,10 @@ cc_library(
     ],
     hdrs = [
         "routing.h",
+        "routing_filters.h",
         "routing_lp_scheduling.h",
         "routing_neighborhoods.h",
+        "routing_search.h",
     ],
     visibility = ["//visibility:public"],
     deps = [
