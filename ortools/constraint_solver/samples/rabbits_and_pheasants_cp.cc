@@ -40,18 +40,15 @@ void RunConstraintProgrammingExample() {
       solver.MakePhase(rabbits, pheasants, Solver::CHOOSE_FIRST_UNBOUND,
                        Solver::ASSIGN_MIN_VALUE);
 
-  bool has_result = solver.Solve(db);
-  // Check that the problem has a solution.
-  if (has_result != true) {
-    LOG(FATAL) << "The problem does not have a solution!";
-  }
   int count = 0;
+  solver.NewSearch(db);
   while (solver.NextSolution()) {
     count++;
     LOG(INFO) << "Solution " << count << ":";
     LOG(INFO) << "rabbits = " << rabbits->Value();
     LOG(INFO) << "pheasants = " << rabbits->Value();
   }
+  solver.EndSearch();
   LOG(INFO) << "Number of solutions: " << count;
   LOG(INFO) << "";
   LOG(INFO) << "Advanced usage:";
