@@ -280,8 +280,7 @@ function main() {
   assert_defined PROJECT
   assert_defined TARGET
 
-  declare -r PROJECT_DIR
-  PROJECT_DIR="$(cd -P -- "$(dirname -- "$0")/.." && pwd -P)"
+  declare -r PROJECT_DIR="$(cd -P -- "$(dirname -- "$0")/.." && pwd -P)"
   declare -r ARCHIVE_DIR="${PROJECT_DIR}/build_cross/archives"
   declare -r BUILD_DIR="${PROJECT_DIR}/build_cross/${TARGET}"
   declare -r TOOLCHAIN_FILE=${ARCHIVE_DIR}/toolchain_${TARGET}.cmake
