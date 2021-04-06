@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index f0af6f6..f790791 100644
+index 3a73f70..b583331 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -41,6 +41,11 @@ if (POLICY CMP0077)
@@ -11,6 +11,15 @@ index f0af6f6..f790791 100644
 +  cmake_policy(SET CMP0091 NEW)
 +endif()
 +
- project(absl CXX)
+ # Set BUILD_TESTING to OFF by default.
+ # This must come before the project() and include(CTest) lines.
+ OPTION(BUILD_TESTING "Build tests" OFF)
+@@ -144,8 +149,6 @@ endif()
+ add_subdirectory(absl)
  
- # Output directory is correct by default for most build setups. However, when
+ if(ABSL_ENABLE_INSTALL)
+-  
+-
+   # install as a subdirectory only
+   install(EXPORT ${PROJECT_NAME}Targets
+     NAMESPACE absl::
