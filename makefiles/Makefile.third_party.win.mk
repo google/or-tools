@@ -35,7 +35,7 @@ SWIG_BINARY = $(WINDOWS_SWIG_BINARY)
 # tags of dependencies to checkout.
 ZLIB_TAG = 1.2.11
 ZLIB_ARCHIVE_TAG = 1211
-PROTOBUF_TAG = v3.15.3
+PROTOBUF_TAG = v3.15.7
 ABSL_TAG = 20200923.3
 # We are using a CBC archive containing all coin-or project
 # since Clp 2.17.5+ is broken we need to stick with Cbc 2.10.4

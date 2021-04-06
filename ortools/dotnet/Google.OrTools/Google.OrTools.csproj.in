@@ -141,7 +141,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.15.3"/>
+    <PackageReference Include="Google.Protobuf" Version="3.15.7"/>
   </ItemGroup>
 
   <!-- Need to add required runtime dependencies so Meta-Project will pull runtime Nuget(s) -->

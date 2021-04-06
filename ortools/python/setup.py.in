@@ -42,7 +42,7 @@ setup(
     version='@PROJECT_VERSION@',
     packages=find_packages(),
     install_requires=[
-        'protobuf >= 3.15.3',
+        'protobuf >= 3.15.7',
         'absl-py >= 0.11',
     ],
     package_data={
