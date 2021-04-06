@@ -535,9 +535,9 @@ class DobbleFilter : public IntVarLocalSearchFilter {
  private:
   // Undo information after an evaluation.
   struct UndoChange {
-    UndoChange(int c, uint64 b) : card(c), bitset(b) {}
+    UndoChange(int c, uint64_t b) : card(c), bitset(b) {}
     int card;
-    uint64 bitset;
+    uint64_t bitset;
   };
 
   int VarIndex(int card, int symbol) { return card * num_symbols_ + symbol; }
@@ -553,7 +553,7 @@ class DobbleFilter : public IntVarLocalSearchFilter {
     for (int i = 0; i < touched_cards.size(); ++i) {
       const int touched = touched_cards[i];
       SetBit64(&temporary_bitset_, touched);
-      const uint64 card_bitset = symbol_bitmask_per_card_[touched];
+      const uint64_t card_bitset = symbol_bitmask_per_card_[touched];
       const std::vector<int>& row_cost = violation_costs_[touched];
       for (int other_card = 0; other_card < num_cards_; ++other_card) {
         if (!IsBitSet64(&temporary_bitset_, other_card)) {
@@ -620,15 +620,15 @@ class DobbleFilter : public IntVarLocalSearchFilter {
     return true;
   }
 
-  int ViolationCost(uint64 cardinality) const {
+  int ViolationCost(uint64_t cardinality) const {
     return (cardinality > 0 ? cardinality - 1 : 1);
   }
 
   const int num_cards_;
   const int num_symbols_;
   const int num_symbols_per_card_;
-  uint64 temporary_bitset_;
-  std::vector<uint64> symbol_bitmask_per_card_;
+  uint64_t temporary_bitset_;
+  std::vector<uint64_t> symbol_bitmask_per_card_;
   std::vector<std::vector<int> > violation_costs_;
   std::vector<UndoChange> restore_information_;
 };
