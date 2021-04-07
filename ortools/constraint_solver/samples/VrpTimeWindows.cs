@@ -122,7 +122,7 @@ public class VrpTimeWindows
         // Create and register a transit callback.
         // [START transit_callback]
         int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) => {
-            // Convert from routing variable Index to distance matrix NodeIndex.
+            // Convert from routing variable Index to time matrix NodeIndex.
             var fromNode = manager.IndexToNode(fromIndex);
             var toNode = manager.IndexToNode(toIndex);
             return data.TimeMatrix[fromNode, toNode];
@@ -134,7 +134,7 @@ public class VrpTimeWindows
         routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
         // [END arc_cost]
 
-        // Add Distance constraint.
+        // Add Time constraint.
         // [START time_constraint]
         routing.AddDimension(transitCallbackIndex, // transit callback
                              30,                   // allow waiting time
