@@ -71,6 +71,7 @@ def create_data_model():
 # [START solution_printer]
 def print_solution(data, manager, routing, solution):
     """Prints solution on console."""
+    print(f'Objective: {solution.ObjectiveValue()}')
     time_dimension = routing.GetDimensionOrDie('Time')
     total_time = 0
     for vehicle_id in range(data['num_vehicles']):

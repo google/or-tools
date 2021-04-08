@@ -108,7 +108,7 @@ def add_distance_dimension(routing, distance_evaluator_index):
 ###########
 def print_solution(data, routing, manager, assignment):  # pylint:disable=too-many-locals
     """Prints assignment on console"""
-    print('Objective: {}'.format(assignment.ObjectiveValue()))
+    print(f'Objective: {assignment.ObjectiveValue()}')
     total_distance = 0
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)

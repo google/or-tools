@@ -22,6 +22,7 @@ from ortools.constraint_solver import pywrapcp
 # [START solution_printer]
 def print_solution(manager, routing, solution):
     """Prints solution on console."""
+    print(f'Objective: {solution.ObjectiveValue()}')
     max_route_distance = 0
     for vehicle_id in range(manager.GetNumberOfVehicles()):
         index = routing.Start(vehicle_id)

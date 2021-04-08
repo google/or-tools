@@ -106,6 +106,7 @@ def create_data_model():
 # [START solution_printer]
 def print_solution(data, manager, routing, solution):
     """Prints solution on console."""
+    print(f'Objective: {solution.ObjectiveValue()}')
     total_distance = 0
     total_load = 0
     for vehicle_id in range(data['num_vehicles']):
