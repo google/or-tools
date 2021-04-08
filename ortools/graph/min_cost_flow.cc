@@ -161,10 +161,11 @@ template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 bool GenericMinCostFlow<Graph, ArcFlowType,
                         ArcScaledCostType>::CheckInputConsistency() const {
   FlowQuantity total_supply = 0;
-  uint64_t max_capacity = 0;  // uint64_t because it is positive and will be used
-                            // to check against FlowQuantity overflows.
+  uint64_t max_capacity = 0;  // uint64_t because it is positive and will be
+                              // used to check against FlowQuantity overflows.
   for (ArcIndex arc = 0; arc < graph_->num_arcs(); ++arc) {
-    const uint64_t capacity = static_cast<uint64_t>(residual_arc_capacity_[arc]);
+    const uint64_t capacity =
+        static_cast<uint64_t>(residual_arc_capacity_[arc]);
     max_capacity = std::max(capacity, max_capacity);
   }
   uint64_t total_flow = 0;  // uint64_t for the same reason as max_capacity.
@@ -985,12 +986,14 @@ template class GenericMinCostFlow<StarGraph>;
 template class GenericMinCostFlow<::util::ReverseArcListGraph<>>;
 template class GenericMinCostFlow<::util::ReverseArcStaticGraph<>>;
 template class GenericMinCostFlow<::util::ReverseArcMixedGraph<>>;
-template class GenericMinCostFlow<::util::ReverseArcStaticGraph<uint16, int32_t>>;
+template class GenericMinCostFlow<
+    ::util::ReverseArcStaticGraph<uint16, int32_t>>;
 
 // A more memory-efficient version for large graphs.
-template class GenericMinCostFlow<::util::ReverseArcStaticGraph<uint16, int32_t>,
-                                  /*ArcFlowType=*/int16,
-                                  /*ArcScaledCostType=*/int32_t>;
+template class GenericMinCostFlow<
+    ::util::ReverseArcStaticGraph<uint16, int32_t>,
+    /*ArcFlowType=*/int16,
+    /*ArcScaledCostType=*/int32_t>;
 
 SimpleMinCostFlow::SimpleMinCostFlow(NodeIndex reserve_num_nodes,
                                      ArcIndex reserve_num_arcs) {

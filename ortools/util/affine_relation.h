@@ -161,7 +161,8 @@ class AffineRelation {
   mutable std::vector<int> tmp_path_;
 };
 
-inline bool AffineRelation::TryAdd(int x, int y, int64_t coeff, int64_t offset) {
+inline bool AffineRelation::TryAdd(int x, int y, int64_t coeff,
+                                   int64_t offset) {
   return TryAdd(x, y, coeff, offset, true, true);
 }
 

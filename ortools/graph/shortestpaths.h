@@ -36,7 +36,8 @@ namespace operations_research {
 // 'start_node' and 'end_node' are connected, false otherwise.
 bool DijkstraShortestPath(int node_count, int start_node, int end_node,
                           std::function<int64_t(int, int)> graph,
-                          int64_t disconnected_distance, std::vector<int>* nodes);
+                          int64_t disconnected_distance,
+                          std::vector<int>* nodes);
 
 // Stable version of the Dijsktra Shortest path with callback based description
 // of the graph.  The callback returns the distance between two nodes, a

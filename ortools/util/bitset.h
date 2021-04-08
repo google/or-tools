@@ -367,39 +367,43 @@ inline void ClearBit32(uint32_t* const bitset, uint32_t pos) {
 }
 
 // Returns the number of bits set in bitset between positions start and end.
-uint64_t BitCountRange64(const uint64_t* const bitset, uint64_t start, uint64_t end);
-uint32_t BitCountRange32(const uint32_t* const bitset, uint32_t start, uint32_t end);
+uint64_t BitCountRange64(const uint64_t* const bitset, uint64_t start,
+                         uint64_t end);
+uint32_t BitCountRange32(const uint32_t* const bitset, uint32_t start,
+                         uint32_t end);
 
 // Returns true if no bits are set in bitset between start and end.
 bool IsEmptyRange64(const uint64_t* const bitset, uint64_t start, uint64_t end);
 bool IsEmptyRange32(const uint32_t* const bitset, uint32_t start, uint32_t end);
 
 // Returns the first bit set in bitset between start and max_bit.
-int64_t LeastSignificantBitPosition64(const uint64_t* const bitset, uint64_t start,
-                                    uint64_t end);
+int64_t LeastSignificantBitPosition64(const uint64_t* const bitset,
+                                      uint64_t start, uint64_t end);
 int LeastSignificantBitPosition32(const uint32_t* const bitset, uint32_t start,
                                   uint32_t end);
 
 // Returns the last bit set in bitset between min_bit and start.
-int64_t MostSignificantBitPosition64(const uint64_t* const bitset, uint64_t start,
-                                   uint64_t end);
+int64_t MostSignificantBitPosition64(const uint64_t* const bitset,
+                                     uint64_t start, uint64_t end);
 int MostSignificantBitPosition32(const uint32_t* const bitset, uint32_t start,
                                  uint32_t end);
 
 // Unsafe versions of the functions above where respectively end and start
 // are supposed to be set.
 int64_t UnsafeLeastSignificantBitPosition64(const uint64_t* const bitset,
-                                          uint64_t start, uint64_t end);
+                                            uint64_t start, uint64_t end);
 int32_t UnsafeLeastSignificantBitPosition32(const uint32_t* const bitset,
-                                          uint32_t start, uint32_t end);
+                                            uint32_t start, uint32_t end);
 
 int64_t UnsafeMostSignificantBitPosition64(const uint64_t* const bitset,
-                                         uint64_t start, uint64_t end);
+                                           uint64_t start, uint64_t end);
 int32_t UnsafeMostSignificantBitPosition32(const uint32_t* const bitset,
-                                         uint32_t start, uint32_t end);
+                                           uint32_t start, uint32_t end);
 
 // Returns a mask with the bits pos % 64 and (pos ^ 1) % 64 sets.
-inline uint64_t TwoBitsFromPos64(uint64_t pos) { return uint64_t{3} << (pos & 62); }
+inline uint64_t TwoBitsFromPos64(uint64_t pos) {
+  return uint64_t{3} << (pos & 62);
+}
 
 // This class is like an ITIVector<IndexType, bool> except that it provides a
 // more efficient way to iterate over the positions set to true. It achieves
@@ -520,7 +524,7 @@ class Bitset64 {
     memcpy(data_.data(), other.data_.data(), min_size * sizeof(uint64_t));
     if (data_.size() >= other.data_.size()) {
       const uint64_t bitmask = kAllBitsButLsb64
-                             << BitPos64(other.Value(other.size() - 1));
+                               << BitPos64(other.Value(other.size() - 1));
       data_[min_size - 1] &= ~bitmask;
       data_[min_size - 1] |= (bitmask & last_common_bucket);
     }

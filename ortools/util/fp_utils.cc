@@ -187,7 +187,7 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
 }
 
 int64_t ComputeGcdOfRoundedDoubles(const std::vector<double>& x,
-                                 double scaling_factor) {
+                                   double scaling_factor) {
   int64_t gcd = 0;
   for (int i = 0; i < x.size() && gcd != 1; ++i) {
     int64_t value = std::abs(std::round(x[i] * scaling_factor));
