@@ -3874,20 +3874,26 @@ void CpModelPresolver::Probe() {
   auto* encoder = model.GetOrCreate<IntegerEncoder>();
   encoder->DisableImplicationBetweenLiteral();
   auto* mapping = model.GetOrCreate<CpModelMapping>();
-  mapping->CreateVariables(model_proto, false, &model);
-  mapping->DetectOptionalVariables(model_proto, &model);
+
+  // Important: Because the model_proto do not contains affine relation or the
+  // objective, we cannot call DetectOptionalVariables() ! This might wrongly
+  // detect optionality and derive bad conclusion.
+  mapping->CreateVariables(model_proto, /*view_all_booleans_as_integers=*/false,
+                           &model);
   mapping->ExtractEncoding(model_proto, &model);
   auto* sat_solver = model.GetOrCreate<SatSolver>();
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (mapping->ConstraintIsAlreadyLoaded(&ct)) continue;
     CHECK(LoadConstraint(ct, &model));
     if (sat_solver->IsModelUnsat()) {
-      return (void)context_->NotifyThatModelIsUnsat();
+      return (void)context_->NotifyThatModelIsUnsat(absl::StrCat(
+          "after loading constraint during probing ", ct.ShortDebugString()));
     }
   }
   encoder->AddAllImplicationsBetweenAssociatedLiterals();
   if (!sat_solver->Propagate()) {
-    return (void)context_->NotifyThatModelIsUnsat();
+    return (void)context_->NotifyThatModelIsUnsat(
+        "during probing initial propagation");
   }
 
   // Probe.
@@ -3900,7 +3906,7 @@ void CpModelPresolver::Probe() {
   context_->time_limit()->AdvanceDeterministicTime(
       model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime());
   if (sat_solver->IsModelUnsat() || !implication_graph->DetectEquivalences()) {
-    return (void)context_->NotifyThatModelIsUnsat();
+    return (void)context_->NotifyThatModelIsUnsat("during probing");
   }
 
   // Update the presolve context with fixed Boolean variables.
@@ -5196,6 +5202,300 @@ void LogInfoFromContext(const PresolveContext* context) {
                  entry.second, " times.");
     }
   }
+}
+
+ModelCopy::ModelCopy(PresolveContext* context) : context_(context) {}
+
+// TODO(user): Merge with the phase 1 of the presolve code.
+bool ModelCopy::ImportAndSimplifyConstraints(
+    const CpModelProto& in_model,
+    const absl::flat_hash_set<int>& ignored_constraints) {
+  context_->InitializeNewDomains();
+
+  starting_constraint_index_ = context_->working_model->constraints_size();
+  for (int c = 0; c < in_model.constraints_size(); ++c) {
+    if (ignored_constraints.contains(c)) continue;
+
+    const ConstraintProto& ct = in_model.constraints(c);
+    if (OneEnforcementLiteralIsFalse(ct) &&
+        ct.constraint_case() != ConstraintProto::kInterval) {
+      continue;
+    }
+    switch (ct.constraint_case()) {
+      case ConstraintProto::CONSTRAINT_NOT_SET: {
+        break;
+      }
+      case ConstraintProto::kBoolOr: {
+        if (!CopyBoolOr(ct)) return CreateUnsatModel();
+        break;
+      }
+      case ConstraintProto::kBoolAnd: {
+        if (!CopyBoolAnd(ct)) return CreateUnsatModel();
+        break;
+      }
+      case ConstraintProto::kLinear: {
+        if (!CopyLinear(ct)) return CreateUnsatModel();
+        break;
+      }
+      case ConstraintProto::kAtMostOne: {
+        if (!CopyAtMostOne(ct)) return CreateUnsatModel();
+        break;
+      }
+      case ConstraintProto::kExactlyOne: {
+        if (!CopyExactlyOne(ct)) return CreateUnsatModel();
+        break;
+      }
+      case ConstraintProto::kInterval: {
+        if (!CopyInterval(ct, c)) return CreateUnsatModel();
+        break;
+      }
+      default: {
+        *context_->working_model->add_constraints() = ct;
+      }
+    }
+  }
+
+  // Re-map interval indices for new constraints.
+  // TODO(user): Support removing unperformed intervals.
+  for (int c = starting_constraint_index_;
+       c < context_->working_model->constraints_size(); ++c) {
+    ConstraintProto& ct_ref = *context_->working_model->mutable_constraints(c);
+    ApplyToAllIntervalIndices(
+        [this](int* ref) {
+          const auto& it = interval_mapping_.find(*ref);
+          if (it != interval_mapping_.end()) {
+            *ref = it->second;
+          }
+        },
+        &ct_ref);
+  }
+
+  return true;
+}
+
+void ModelCopy::CopyEnforcementLiterals(const ConstraintProto& orig,
+                                        ConstraintProto* dest) {
+  for (const int lit : orig.enforcement_literal()) {
+    if (context_->LiteralIsTrue(lit)) {
+      skipped_non_zero_++;
+      continue;
+    }
+    dest->add_enforcement_literal(lit);
+  }
+}
+
+bool ModelCopy::OneEnforcementLiteralIsFalse(const ConstraintProto& ct) const {
+  for (const int lit : ct.enforcement_literal()) {
+    if (context_->LiteralIsFalse(lit)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool ModelCopy::CopyBoolOr(const ConstraintProto& ct) {
+  bool at_least_one_true = false;
+  int num_non_fixed_literals = 0;
+  for (const int lit : ct.bool_or().literals()) {
+    if (context_->LiteralIsTrue(lit)) {
+      at_least_one_true = true;
+      break;
+    }
+    if (!context_->LiteralIsFalse(lit)) {
+      num_non_fixed_literals++;
+    }
+  }
+  if (at_least_one_true) return true;
+
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  CopyEnforcementLiterals(ct, new_ct);
+  BoolArgumentProto* bool_or = new_ct->mutable_bool_or();
+  bool_or->mutable_literals()->Reserve(num_non_fixed_literals);
+  for (const int lit : ct.bool_or().literals()) {
+    if (context_->LiteralIsFalse(lit)) {
+      skipped_non_zero_++;
+      continue;
+    }
+    bool_or->add_literals(lit);
+  }
+  return true;
+}
+
+bool ModelCopy::CopyBoolAnd(const ConstraintProto& ct) {
+  bool at_least_one_false = false;
+  int num_non_fixed_literals = 0;
+  for (const int lit : ct.bool_and().literals()) {
+    if (context_->LiteralIsFalse(lit)) {
+      at_least_one_false = true;
+      break;
+    }
+    if (!context_->IsFixed(lit)) {
+      num_non_fixed_literals++;
+    }
+  }
+
+  if (at_least_one_false) {
+    ConstraintProto* new_ct = context_->working_model->add_constraints();
+    BoolArgumentProto* bool_or = new_ct->mutable_bool_or();
+
+    // One enforcement literal must be false.
+    for (const int lit : ct.enforcement_literal()) {
+      if (context_->LiteralIsTrue(lit)) {
+        skipped_non_zero_++;
+        continue;
+      }
+      bool_or->add_literals(NegatedRef(lit));
+    }
+    if (bool_or->literals().empty()) return false;
+  } else if (num_non_fixed_literals > 0) {
+    ConstraintProto* new_ct = context_->working_model->add_constraints();
+    CopyEnforcementLiterals(ct, new_ct);
+    BoolArgumentProto* bool_and = new_ct->mutable_bool_and();
+    bool_and->mutable_literals()->Reserve(num_non_fixed_literals);
+    for (const int lit : ct.bool_and().literals()) {
+      if (context_->LiteralIsTrue(lit)) {
+        skipped_non_zero_++;
+        continue;
+      }
+      bool_and->add_literals(lit);
+    }
+  }
+  return true;
+}
+
+bool ModelCopy::CopyLinear(const ConstraintProto& ct) {
+  non_fixed_variables_.clear();
+  non_fixed_coefficients_.clear();
+  int64_t offset = 0;
+  for (int i = 0; i < ct.linear().vars_size(); ++i) {
+    const int ref = ct.linear().vars(i);
+    const int64_t coeff = ct.linear().coeffs(i);
+    if (context_->IsFixed(ref)) {
+      offset += coeff * context_->MinOf(ref);
+      skipped_non_zero_++;
+    } else {
+      non_fixed_variables_.push_back(ref);
+      non_fixed_coefficients_.push_back(coeff);
+    }
+  }
+
+  const Domain new_domain =
+      ReadDomainFromProto(ct.linear()).AdditionWith(Domain(-offset));
+  if (non_fixed_variables_.empty() && !new_domain.Contains(0)) {
+    return false;
+  }
+
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  CopyEnforcementLiterals(ct, new_ct);
+  LinearConstraintProto* linear = new_ct->mutable_linear();
+  const int num_terms = non_fixed_variables_.size();
+  linear->mutable_vars()->Reserve(num_terms);
+  linear->mutable_coeffs()->Reserve(num_terms);
+  for (int i = 0; i < num_terms; ++i) {
+    linear->add_vars(non_fixed_variables_[i]);
+    linear->add_coeffs(non_fixed_coefficients_[i]);
+  }
+  FillDomainInProto(new_domain, linear);
+  return true;
+}
+
+bool ModelCopy::CopyAtMostOne(const ConstraintProto& ct) {
+  int num_non_false = 0;
+  int num_true = 0;
+  for (const int lit : ct.at_most_one().literals()) {
+    if (!context_->LiteralIsFalse(lit)) num_non_false++;
+    if (context_->LiteralIsTrue(lit)) num_true++;
+  }
+
+  if (num_non_false <= 1) return true;
+  if (num_true > 1) return false;
+
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  CopyEnforcementLiterals(ct, new_ct);
+
+  BoolArgumentProto* at_most_one = new_ct->mutable_at_most_one();
+  for (const int lit : ct.at_most_one().literals()) {
+    if (context_->LiteralIsFalse(lit)) {
+      skipped_non_zero_++;
+      continue;
+    }
+    at_most_one->add_literals(lit);
+  }
+  return true;
+}
+
+bool ModelCopy::CopyExactlyOne(const ConstraintProto& ct) {
+  int num_non_false = 0;
+  int num_true = 0;
+  for (const int lit : ct.exactly_one().literals()) {
+    if (!context_->LiteralIsFalse(lit)) num_non_false++;
+    if (context_->LiteralIsTrue(lit)) num_true++;
+  }
+
+  if (num_non_false == 0 || num_true > 1) return false;
+
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  CopyEnforcementLiterals(ct, new_ct);
+
+  BoolArgumentProto* exactly_one = new_ct->mutable_exactly_one();
+  for (const int lit : ct.exactly_one().literals()) {
+    if (context_->LiteralIsFalse(lit)) {
+      skipped_non_zero_++;
+      continue;
+    }
+    exactly_one->add_literals(lit);
+  }
+
+  return true;
+}
+
+bool ModelCopy::CopyInterval(const ConstraintProto& ct, int c) {
+  // TODO(user): remove non performed intervals.
+  CHECK_EQ(starting_constraint_index_, 0)
+      << "Adding new interval constraints to partially filled model is not "
+         "supported.";
+  interval_mapping_[c] = context_->working_model->constraints_size();
+  *context_->working_model->add_constraints() = ct;
+  return true;
+}
+
+void ModelCopy::CopyEverythingExceptVariablesAndConstraintsFields(
+    const CpModelProto& in_model) {
+  if (!in_model.name().empty()) {
+    context_->working_model->set_name(in_model.name());
+  }
+  if (in_model.has_objective()) {
+    *context_->working_model->mutable_objective() = in_model.objective();
+  }
+  if (!in_model.search_strategy().empty()) {
+    *context_->working_model->mutable_search_strategy() =
+        in_model.search_strategy();
+  }
+  if (!in_model.assumptions().empty()) {
+    *context_->working_model->mutable_assumptions() = in_model.assumptions();
+  }
+  if (in_model.has_symmetry()) {
+    *context_->working_model->mutable_symmetry() = in_model.symmetry();
+  }
+  if (in_model.has_solution_hint()) {
+    *context_->working_model->mutable_solution_hint() =
+        in_model.solution_hint();
+  }
+}
+
+bool ModelCopy::CreateUnsatModel() {
+  context_->working_model->mutable_constraints()->Clear();
+  context_->working_model->add_constraints()->mutable_bool_or();
+  return false;
+}
+
+bool ModelCopy::CopyWithBasicPresolve(const CpModelProto& in_model) {
+  *context_->working_model->mutable_variables() = in_model.variables();
+  if (ImportAndSimplifyConstraints(in_model, {})) {
+    CopyEverythingExceptVariablesAndConstraintsFields(in_model);
+    return true;
+  }
+  return false;
 }
 
 // =============================================================================

@@ -195,17 +195,41 @@ bool NeighborhoodGeneratorHelper::IsConstant(int var) const {
              model_proto_with_only_variables_.variables(var).domain(1);
 }
 
+bool NeighborhoodGeneratorHelper::CopyAndFixVariables(
+    const CpModelProto& source_model,
+    const absl::flat_hash_set<int>& fixed_variables_set,
+    const CpSolverResponse& initial_solution,
+    CpModelProto* output_model) const {
+  output_model->mutable_variables()->Clear();
+  output_model->mutable_variables()->Reserve(source_model.variables_size());
+  for (int i = 0; i < source_model.variables_size(); ++i) {
+    IntegerVariableProto* var_proto = output_model->add_variables();
+    const IntegerVariableProto& source_var_proto = source_model.variables(i);
+    // We only copy the variable names in debug mode.
+    if (DEBUG_MODE && !source_var_proto.name().empty()) {
+      var_proto->set_name(source_var_proto.name());
+    }
+    if (fixed_variables_set.contains(i)) {
+      const int64_t value = initial_solution.solution(i);
+      if (!DomainInProtoContains(source_model.variables(i), value)) {
+        return false;
+      }
+      var_proto->add_domain(value);
+      var_proto->add_domain(value);
+    } else {
+      *var_proto->mutable_domain() = source_var_proto.domain();
+    }
+  }
+  return true;
+}
+
 Neighborhood NeighborhoodGeneratorHelper::FullNeighborhood() const {
-  // Copying the proto can take a lot of time.
-  // As it is read-only, we release the reader lock on the helper_mutex_
-  // during the copy.
   Neighborhood neighborhood;
   neighborhood.is_reduced = false;
   neighborhood.is_generated = true;
-  neighborhood.cp_model = model_proto_;
   {
     absl::ReaderMutexLock lock(&domain_mutex_);
-    *neighborhood.cp_model.mutable_variables() =
+    *neighborhood.delta.mutable_variables() =
         model_proto_with_only_variables_.variables();
   }
   return neighborhood;
@@ -246,30 +270,29 @@ std::vector<int> NeighborhoodGeneratorHelper::GetActiveIntervals(
 Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
     const CpSolverResponse& initial_solution,
     const std::vector<int>& variables_to_fix) const {
-  // TODO(user,user): Do not include constraint with all fixed variables to
-  // save memory and speed-up LNS presolving.
-  Neighborhood neighborhood = FullNeighborhood();
+  Neighborhood neighborhood;
 
-  // Set the current solution as a hint.
-  neighborhood.cp_model.clear_solution_hint();
-  for (int var = 0; var < neighborhood.cp_model.variables_size(); ++var) {
-    neighborhood.cp_model.mutable_solution_hint()->add_vars(var);
-    neighborhood.cp_model.mutable_solution_hint()->add_values(
-        initial_solution.solution(var));
+  const absl::flat_hash_set<int> fixed_variables_set(variables_to_fix.begin(),
+                                                     variables_to_fix.end());
+
+  bool copy_is_successful = true;
+  {
+    absl::ReaderMutexLock domain_lock(&domain_mutex_);
+    copy_is_successful = CopyAndFixVariables(
+        model_proto_with_only_variables_, fixed_variables_set, initial_solution,
+        &neighborhood.delta);
   }
 
+  if (!copy_is_successful) {
+    neighborhood.is_reduced = true;
+    neighborhood.is_generated = false;
+    return neighborhood;
+  }
+
+  AddSolutionHinting(initial_solution, &neighborhood.delta);
+
+  neighborhood.is_generated = true;
   neighborhood.is_reduced = !variables_to_fix.empty();
-  if (!neighborhood.is_reduced) return neighborhood;
-  CHECK_EQ(initial_solution.solution_size(),
-           neighborhood.cp_model.variables_size());
-  for (const int var : variables_to_fix) {
-    neighborhood.cp_model.mutable_variables(var)->clear_domain();
-    neighborhood.cp_model.mutable_variables(var)->add_domain(
-        initial_solution.solution(var));
-    neighborhood.cp_model.mutable_variables(var)->add_domain(
-        initial_solution.solution(var));
-  }
-
   // TODO(user): force better objective? Note that this is already done when the
   // hint above is successfully loaded (i.e. if it passes the presolve
   // correctly) since the solver will try to find better solution than the
@@ -277,18 +300,31 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
   return neighborhood;
 }
 
+void NeighborhoodGeneratorHelper::AddSolutionHinting(
+    const CpSolverResponse& initial_solution, CpModelProto* model_proto) const {
+  // Set the current solution as a hint.
+  model_proto->clear_solution_hint();
+  const auto is_fixed = [model_proto](int var) {
+    const IntegerVariableProto& var_proto = model_proto->variables(var);
+    return var_proto.domain_size() == 2 &&
+           var_proto.domain(0) == var_proto.domain(1);
+  };
+  for (int var = 0; var < model_proto->variables_size(); ++var) {
+    if (is_fixed(var)) continue;
+
+    model_proto->mutable_solution_hint()->add_vars(var);
+    model_proto->mutable_solution_hint()->add_values(
+        initial_solution.solution(var));
+  }
+}
+
 Neighborhood NeighborhoodGeneratorHelper::RemoveMarkedConstraints(
     const std::vector<int>& constraints_to_remove) const {
-  // TODO(user,user): Do not include constraint with all fixed variables to
-  // save memory and speed-up LNS presolving.
   Neighborhood neighborhood = FullNeighborhood();
 
   if (constraints_to_remove.empty()) return neighborhood;
   neighborhood.is_reduced = false;
-  for (const int constraint : constraints_to_remove) {
-    neighborhood.cp_model.mutable_constraints(constraint)->Clear();
-  }
-
+  neighborhood.constraints_to_ignore = constraints_to_remove;
   return neighborhood;
 }
 
@@ -608,7 +644,7 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
   for (const int i : helper.TypeToConstraints(ConstraintProto::kInterval)) {
     if (ignored_intervals.count(i)) continue;
 
-    const ConstraintProto& interval_ct = neighborhood.cp_model.constraints(i);
+    const ConstraintProto& interval_ct = helper.ModelProto().constraints(i);
     if (interval_ct.enforcement_literal().empty()) continue;
 
     CHECK_EQ(interval_ct.enforcement_literal().size(), 1);
@@ -627,9 +663,9 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
     }
 
     // Fix the value.
-    neighborhood.cp_model.mutable_variables(enforcement_var)->clear_domain();
-    neighborhood.cp_model.mutable_variables(enforcement_var)->add_domain(value);
-    neighborhood.cp_model.mutable_variables(enforcement_var)->add_domain(value);
+    neighborhood.delta.mutable_variables(enforcement_var)->clear_domain();
+    neighborhood.delta.mutable_variables(enforcement_var)->add_domain(value);
+    neighborhood.delta.mutable_variables(enforcement_var)->add_domain(value);
   }
 
   for (const int c : helper.TypeToConstraints(ConstraintProto::kNoOverlap)) {
@@ -637,9 +673,9 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
     // time.
     std::vector<std::pair<int64_t, int>> start_interval_pairs;
     for (const int i :
-         neighborhood.cp_model.constraints(c).no_overlap().intervals()) {
+         helper.ModelProto().constraints(c).no_overlap().intervals()) {
       if (ignored_intervals.count(i)) continue;
-      const ConstraintProto& interval_ct = neighborhood.cp_model.constraints(i);
+      const ConstraintProto& interval_ct = helper.ModelProto().constraints(i);
 
       // TODO(user): we ignore size zero for now.
       const int size_var = interval_ct.interval().size();
@@ -653,19 +689,19 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
 
     // Add precedence between the remaining intervals, forcing their order.
     for (int i = 0; i + 1 < start_interval_pairs.size(); ++i) {
-      const int before_var =
-          neighborhood.cp_model.constraints(start_interval_pairs[i].second)
-              .interval()
-              .end();
-      const int after_var =
-          neighborhood.cp_model.constraints(start_interval_pairs[i + 1].second)
-              .interval()
-              .start();
+      const int before_var = helper.ModelProto()
+                                 .constraints(start_interval_pairs[i].second)
+                                 .interval()
+                                 .end();
+      const int after_var = helper.ModelProto()
+                                .constraints(start_interval_pairs[i + 1].second)
+                                .interval()
+                                .start();
       CHECK_LE(initial_solution.solution(before_var),
                initial_solution.solution(after_var));
 
       LinearConstraintProto* linear =
-          neighborhood.cp_model.add_constraints()->mutable_linear();
+          neighborhood.delta.add_constraints()->mutable_linear();
       linear->add_domain(std::numeric_limits<int64_t>::min());
       linear->add_domain(0);
       linear->add_vars(before_var);
@@ -676,14 +712,7 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
   }
 
   // Set the current solution as a hint.
-  //
-  // TODO(user): Move to common function?
-  neighborhood.cp_model.clear_solution_hint();
-  for (int var = 0; var < neighborhood.cp_model.variables_size(); ++var) {
-    neighborhood.cp_model.mutable_solution_hint()->add_vars(var);
-    neighborhood.cp_model.mutable_solution_hint()->add_values(
-        initial_solution.solution(var));
-  }
+  helper.AddSolutionHinting(initial_solution, &neighborhood.delta);
   neighborhood.is_generated = true;
 
   return neighborhood;
@@ -815,19 +844,17 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
        rins_neighborhood.fixed_vars) {
     const int var = fixed_var.first;
     const int64_t value = fixed_var.second;
-    if (var >= neighborhood.cp_model.variables_size()) continue;
+    if (var >= neighborhood.delta.variables_size()) continue;
     if (!helper_.IsActive(var)) continue;
 
-    const Domain domain =
-        ReadDomainFromProto(neighborhood.cp_model.variables(var));
-    if (!domain.Contains(value)) {
+    if (!DomainInProtoContains(neighborhood.delta.variables(var), value)) {
       // TODO(user): Instead of aborting, pick the closest point in the domain?
       return neighborhood;
     }
 
-    neighborhood.cp_model.mutable_variables(var)->clear_domain();
-    neighborhood.cp_model.mutable_variables(var)->add_domain(value);
-    neighborhood.cp_model.mutable_variables(var)->add_domain(value);
+    neighborhood.delta.mutable_variables(var)->clear_domain();
+    neighborhood.delta.mutable_variables(var)->add_domain(value);
+    neighborhood.delta.mutable_variables(var)->add_domain(value);
     neighborhood.is_reduced = true;
   }
 
@@ -837,15 +864,15 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
     const int var = reduced_var.first;
     const int64_t lb = reduced_var.second.first;
     const int64_t ub = reduced_var.second.second;
-    if (var >= neighborhood.cp_model.variables_size()) continue;
+    if (var >= neighborhood.delta.variables_size()) continue;
     if (!helper_.IsActive(var)) continue;
-    Domain domain = ReadDomainFromProto(neighborhood.cp_model.variables(var));
+    Domain domain = ReadDomainFromProto(neighborhood.delta.variables(var));
     domain = domain.IntersectionWith(Domain(lb, ub));
     if (domain.IsEmpty()) {
       // TODO(user): Instead of aborting, pick the closest point in the domain?
       return neighborhood;
     }
-    FillDomainInProto(domain, neighborhood.cp_model.mutable_variables(var));
+    FillDomainInProto(domain, neighborhood.delta.mutable_variables(var));
     neighborhood.is_reduced = true;
   }
   neighborhood.is_generated = true;

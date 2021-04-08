@@ -1364,50 +1364,50 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
         // callback.
 
         // Cut -z + x_coeff * x + y_coeff* y <= rhs
-        auto try_add_above_cut = [manager, z_lp_value, x_lp_value, y_lp_value,
-                                  x, y, z, &lp_values](
-                                     int64_t x_coeff, int64_t y_coeff, int64_t rhs) {
-          if (-z_lp_value + x_lp_value * x_coeff + y_lp_value * y_coeff >=
-              rhs + kMinCutViolation) {
-            LinearConstraint cut;
-            cut.vars.push_back(z);
-            cut.coeffs.push_back(IntegerValue(-1));
-            if (x_coeff != 0) {
-              cut.vars.push_back(x);
-              cut.coeffs.push_back(IntegerValue(x_coeff));
-            }
-            if (y_coeff != 0) {
-              cut.vars.push_back(y);
-              cut.coeffs.push_back(IntegerValue(y_coeff));
-            }
-            cut.lb = kMinIntegerValue;
-            cut.ub = IntegerValue(rhs);
-            manager->AddCut(cut, "PositiveProduct", lp_values);
-          }
-        };
+        auto try_add_above_cut =
+            [manager, z_lp_value, x_lp_value, y_lp_value, x, y, z, &lp_values](
+                int64_t x_coeff, int64_t y_coeff, int64_t rhs) {
+              if (-z_lp_value + x_lp_value * x_coeff + y_lp_value * y_coeff >=
+                  rhs + kMinCutViolation) {
+                LinearConstraint cut;
+                cut.vars.push_back(z);
+                cut.coeffs.push_back(IntegerValue(-1));
+                if (x_coeff != 0) {
+                  cut.vars.push_back(x);
+                  cut.coeffs.push_back(IntegerValue(x_coeff));
+                }
+                if (y_coeff != 0) {
+                  cut.vars.push_back(y);
+                  cut.coeffs.push_back(IntegerValue(y_coeff));
+                }
+                cut.lb = kMinIntegerValue;
+                cut.ub = IntegerValue(rhs);
+                manager->AddCut(cut, "PositiveProduct", lp_values);
+              }
+            };
 
         // Cut -z + x_coeff * x + y_coeff* y >= rhs
-        auto try_add_below_cut = [manager, z_lp_value, x_lp_value, y_lp_value,
-                                  x, y, z, &lp_values](
-                                     int64_t x_coeff, int64_t y_coeff, int64_t rhs) {
-          if (-z_lp_value + x_lp_value * x_coeff + y_lp_value * y_coeff <=
-              rhs - kMinCutViolation) {
-            LinearConstraint cut;
-            cut.vars.push_back(z);
-            cut.coeffs.push_back(IntegerValue(-1));
-            if (x_coeff != 0) {
-              cut.vars.push_back(x);
-              cut.coeffs.push_back(IntegerValue(x_coeff));
-            }
-            if (y_coeff != 0) {
-              cut.vars.push_back(y);
-              cut.coeffs.push_back(IntegerValue(y_coeff));
-            }
-            cut.lb = IntegerValue(rhs);
-            cut.ub = kMaxIntegerValue;
-            manager->AddCut(cut, "PositiveProduct", lp_values);
-          }
-        };
+        auto try_add_below_cut =
+            [manager, z_lp_value, x_lp_value, y_lp_value, x, y, z, &lp_values](
+                int64_t x_coeff, int64_t y_coeff, int64_t rhs) {
+              if (-z_lp_value + x_lp_value * x_coeff + y_lp_value * y_coeff <=
+                  rhs - kMinCutViolation) {
+                LinearConstraint cut;
+                cut.vars.push_back(z);
+                cut.coeffs.push_back(IntegerValue(-1));
+                if (x_coeff != 0) {
+                  cut.vars.push_back(x);
+                  cut.coeffs.push_back(IntegerValue(x_coeff));
+                }
+                if (y_coeff != 0) {
+                  cut.vars.push_back(y);
+                  cut.coeffs.push_back(IntegerValue(y_coeff));
+                }
+                cut.lb = IntegerValue(rhs);
+                cut.ub = kMaxIntegerValue;
+                manager->AddCut(cut, "PositiveProduct", lp_values);
+              }
+            };
 
         // McCormick relaxation of bilinear constraints. These 4 cuts are the
         // exact facets of the x * y polyhedron for a bounded x and y.

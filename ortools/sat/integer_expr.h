@@ -360,8 +360,10 @@ inline std::function<void(Model*)> WeightedSumLowerOrEqual(
         for (; i * num_buckets < limit; ++i) {
           local_vars.push_back(vars[i]);
           local_coeffs.push_back(IntegerValue(coefficients[i]));
-          const int64_t term1 = model->Get(LowerBound(vars[i])) * coefficients[i];
-          const int64_t term2 = model->Get(UpperBound(vars[i])) * coefficients[i];
+          const int64_t term1 =
+              model->Get(LowerBound(vars[i])) * coefficients[i];
+          const int64_t term2 =
+              model->Get(UpperBound(vars[i])) * coefficients[i];
           bucket_lb += std::min(term1, term2);
           bucket_ub += std::max(term1, term2);
         }

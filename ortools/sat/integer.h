@@ -579,10 +579,10 @@ class IntegerTrail : public SatPropagator {
   // the decision level is zero (checked). The given bounds are INCLUSIVE and
   // must not cross.
   //
-  // Note on integer overflow: 'upper_bound - lower_bound' must fit on an int64_t,
-  // this is DCHECKed. More generally, depending on the constraints that are
-  // added, the bounds magnitude must be small enough to satisfy each constraint
-  // overflow precondition.
+  // Note on integer overflow: 'upper_bound - lower_bound' must fit on an
+  // int64_t, this is DCHECKed. More generally, depending on the constraints
+  // that are added, the bounds magnitude must be small enough to satisfy each
+  // constraint overflow precondition.
   IntegerVariable AddIntegerVariable(IntegerValue lower_bound,
                                      IntegerValue upper_bound);
 

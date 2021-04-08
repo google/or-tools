@@ -766,8 +766,8 @@ class BinaryImplicationGraph : public SatPropagator {
   // 6 inlined int32_t elements without extra space, and the size of the inlined
   // vector is 4 times 64 bits.
   //
-  // TODO(user): We could be even more efficient since a size of int32_t is enough
-  // for us and we could store in common the inlined/not-inlined size.
+  // TODO(user): We could be even more efficient since a size of int32_t is
+  // enough for us and we could store in common the inlined/not-inlined size.
   absl::StrongVector<LiteralIndex, absl::InlinedVector<Literal, 6>>
       implications_;
   int64_t num_implications_ = 0;

@@ -586,6 +586,56 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
       at_most_one_buffer_[local_end++] = RepresentativeOf(l);
     }
 
+    // Deal with duplicates.
+    // Any duplicate in an "at most one" must be false.
+    bool some_duplicates = false;
+    if (!set_all_left_to_false) {
+      int new_local_end = local_start;
+      std::sort(&at_most_one_buffer_[local_start],
+                &at_most_one_buffer_[local_end]);
+      LiteralIndex previous = kNoLiteralIndex;
+      bool remove_previous = false;
+      for (int j = local_start; j < local_end; ++j) {
+        const Literal l = at_most_one_buffer_[j];
+        if (l.Index() == previous) {
+          if (assignment.LiteralIsTrue(l)) return false;
+          if (!assignment.LiteralIsFalse(l)) {
+            if (!FixLiteral(l.Negated())) return false;
+          }
+          remove_previous = true;
+          some_duplicates = true;
+          continue;
+        }
+
+        // We need to pay attention to triplet or more of equal elements, so
+        // it is why we need this boolean and can't just remove it right away.
+        if (remove_previous) {
+          --new_local_end;
+          remove_previous = false;
+        }
+        previous = l.Index();
+        at_most_one_buffer_[new_local_end++] = l;
+      }
+      if (remove_previous) --new_local_end;
+      local_end = new_local_end;
+    }
+
+    // If there was some duplicates, we need to rescan to see if a literal
+    // didn't become true because its negation was appearing twice!
+    if (some_duplicates) {
+      int new_local_end = local_start;
+      for (int j = local_start; j < local_end; ++j) {
+        const Literal l = at_most_one_buffer_[j];
+        if (assignment.LiteralIsFalse(l)) continue;
+        if (!set_all_left_to_false && assignment.LiteralIsTrue(l)) {
+          set_all_left_to_false = true;
+          continue;
+        }
+        at_most_one_buffer_[new_local_end++] = l;
+      }
+      local_end = new_local_end;
+    }
+
     // Deal with all false.
     if (set_all_left_to_false) {
       for (int j = local_start; j < local_end; ++j) {
@@ -596,28 +646,6 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
       }
       local_end = local_start;
       continue;
-    }
-
-    // Deal with duplicates.
-    // Any duplicate in an "at most one" must be false.
-    {
-      int new_local_end = local_start;
-      std::sort(&at_most_one_buffer_[local_start],
-                &at_most_one_buffer_[local_end]);
-      for (int j = local_start; j < local_end; ++j) {
-        const Literal l = at_most_one_buffer_[j];
-        if (new_local_end > local_start &&
-            l == at_most_one_buffer_[new_local_end - 1]) {
-          if (assignment.LiteralIsTrue(l)) return false;
-          if (!assignment.LiteralIsFalse(l)) {
-            if (!FixLiteral(l.Negated())) return false;
-          }
-          --new_local_end;
-          continue;
-        }
-        at_most_one_buffer_[new_local_end++] = l;
-      }
-      local_end = new_local_end;
     }
 
     // Create a Span<> to simplify the code below.
@@ -963,9 +991,11 @@ void BinaryImplicationGraph::MinimizeConflictExperimental(
 void BinaryImplicationGraph::RemoveFixedVariables() {
   SCOPED_TIME_STAT(&stats_);
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+  if (IsEmpty()) return;
 
   // Nothing to do if nothing changed since last call.
   const int new_num_fixed = trail_->Index();
+  DCHECK_EQ(propagation_trail_index_, new_num_fixed);
   if (num_processed_fixed_variables_ == new_num_fixed) return;
 
   const VariablesAssignment& assignment = trail_->Assignment();

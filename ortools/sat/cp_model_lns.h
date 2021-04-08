@@ -36,14 +36,16 @@ struct Neighborhood {
   // True if neighborhood generator was able to generate a neighborhood.
   bool is_generated = false;
 
-  // True if the CpModelProto below is not the same as the base model.
-  // This is not expected to happen often but allows to handle this case
-  // properly.
+  // True if an optimal solution to the neighborhood is also an optimal solution
+  // to the original model.
   bool is_reduced = false;
 
-  // Relaxed model. Any feasible solution to this "local" model should be a
-  // feasible solution to the base model too.
-  CpModelProto cp_model;
+  // Specification of the delta between the initial model and the lns fragment.
+  // The delta will contains all variables from the initial model, potentially
+  // with updated domains.
+  // It can contains new variables and new constraints, and solution hinting.
+  CpModelProto delta;
+  std::vector<int> constraints_to_ignore;
 
   // Neighborhood Id. Used to identify the neighborhood by a generator.
   // Currently only used by WeightedRandomRelaxationNeighborhoodGenerator.
@@ -97,6 +99,25 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 
   // Return a neighborhood that correspond to the full problem.
   Neighborhood FullNeighborhood() const;
+
+  // Copies all variables from the in_model to the delta model of the
+  // neighborhood. For all variables in fixed_variable_set, the domain will be
+  // overwritten with the value stored in the initial solution.
+  //
+  // It returns true iff all fixed values are compatible with the domain of the
+  // corresponding variables in the in_model.
+  // TODO(user): We should probably make sure that this can never happen, or
+  // relax the bounds so that we can try to improve the initial solution rather
+  // than just aborting early.
+  bool CopyAndFixVariables(const CpModelProto& source_model,
+                           const absl::flat_hash_set<int>& fixed_variables_set,
+                           const CpSolverResponse& initial_solution,
+                           CpModelProto* output_model) const;
+
+  // Adds solution hinting to the neighborhood from the value of the initial
+  // solution.
+  void AddSolutionHinting(const CpSolverResponse& initial_solution,
+                          CpModelProto* model_proto) const;
 
   // Indicates if the variable can be frozen. It happens if the variable is non
   // constant, and if it is a decision variable, or if

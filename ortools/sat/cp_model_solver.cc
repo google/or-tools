@@ -696,6 +696,8 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
     }
   }
 
+  if (!m->GetOrCreate<SatSolver>()->FinishPropagation()) return relaxation;
+
   // Linearize the at most one constraints. Note that we transform them
   // into maximum "at most one" first and we removes redundant ones.
   m->GetOrCreate<BinaryImplicationGraph>()->TransformIntoMaxCliques(
@@ -2487,8 +2489,8 @@ class LnsSolver : public SubSolver {
       Neighborhood neighborhood =
           generator_->Generate(base_response, data.difficulty, random);
 
-      neighborhood.cp_model.set_name(absl::StrCat("lns_", task_id));
       if (!neighborhood.is_generated) return;
+
       data.neighborhood_id = neighborhood.id;
 
       const double fully_solved_proportion =
@@ -2509,15 +2511,6 @@ class LnsSolver : public SubSolver {
       local_params.set_cp_model_probing_level(0);
       local_params.set_symmetry_level(0);
 
-      if (absl::GetFlag(FLAGS_cp_model_dump_lns)) {
-        const std::string name =
-            absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
-                         neighborhood.cp_model.name(), ".pbtxt");
-        LOG(INFO) << "Dumping LNS model to '" << name << "'.";
-        CHECK_OK(
-            file::SetTextProto(name, neighborhood.cp_model, file::Defaults()));
-      }
-
       Model local_model(solution_info);
       *(local_model.GetOrCreate<SatParameters>()) = local_params;
       TimeLimit* local_time_limit = local_model.GetOrCreate<TimeLimit>();
@@ -2525,12 +2518,47 @@ class LnsSolver : public SubSolver {
       shared_->time_limit->UpdateLocalLimit(local_time_limit);
 
       const int64_t num_neighborhood_model_vars =
-          neighborhood.cp_model.variables_size();
+          neighborhood.delta.variables_size();
       // Presolve and solve the LNS fragment.
+      CpModelProto lns_fragment;
       CpModelProto mapping_proto;
       std::vector<int> postsolve_mapping;
       auto context = absl::make_unique<PresolveContext>(
-          &local_model, &neighborhood.cp_model, &mapping_proto);
+          &local_model, &lns_fragment, &mapping_proto);
+
+      ModelCopy copier(context.get());
+      *lns_fragment.mutable_variables() = neighborhood.delta.variables();
+
+      // Copy and simplify the constraints from the initial model.
+      const absl::flat_hash_set<int> constraints_to_ignore_set(
+          neighborhood.constraints_to_ignore.begin(),
+          neighborhood.constraints_to_ignore.end());
+      if (!copier.ImportAndSimplifyConstraints(helper_->ModelProto(),
+                                               constraints_to_ignore_set)) {
+        return;
+      }
+      // Copy and simplify the constraints from the delta model.
+      if (!neighborhood.delta.constraints().empty() &&
+          !copier.ImportAndSimplifyConstraints(neighborhood.delta, {})) {
+        return;
+      }
+      // Copy the rest of the model.
+      copier.CopyEverythingExceptVariablesAndConstraintsFields(
+          helper_->ModelProto());
+      // Overwrite solution hinting.
+      if (neighborhood.delta.has_solution_hint()) {
+        *lns_fragment.mutable_solution_hint() =
+            neighborhood.delta.solution_hint();
+      }
+      if (absl::GetFlag(FLAGS_cp_model_dump_lns)) {
+        // TODO(user): export the delta too if needed.
+        const std::string lns_name =
+            absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
+                         lns_fragment.name(), ".pbtxt");
+        LOG(INFO) << "Dumping LNS model to '" << lns_name << "'.";
+        CHECK_OK(file::SetTextProto(lns_name, lns_fragment, file::Defaults()));
+      }
+
       PresolveCpModel(context.get(), &postsolve_mapping);
 
       // Release the context
@@ -2540,14 +2568,11 @@ class LnsSolver : public SubSolver {
       // parameters that work bests (core, linearization_level, etc...) or
       // maybe we can just randomize them like for the base solution used.
       SharedResponseManager local_response_manager(
-          /*enumerate_all_solutions=*/false, &neighborhood.cp_model,
-          shared_->wall_timer, shared_->time_limit,
-          local_model.GetOrCreate<SolverLogger>());
-      LoadCpModel(neighborhood.cp_model, &local_response_manager, &local_model);
-      QuickSolveWithHint(neighborhood.cp_model, &local_response_manager,
-                         &local_model);
-      SolveLoadedCpModel(neighborhood.cp_model, &local_response_manager,
-                         &local_model);
+          /*enumerate_all_solutions=*/false, &lns_fragment, shared_->wall_timer,
+          shared_->time_limit, local_model.GetOrCreate<SolverLogger>());
+      LoadCpModel(lns_fragment, &local_response_manager, &local_model);
+      QuickSolveWithHint(lns_fragment, &local_response_manager, &local_model);
+      SolveLoadedCpModel(lns_fragment, &local_response_manager, &local_model);
       CpSolverResponse local_response = local_response_manager.GetResponse();
 
       // TODO(user): we actually do not need to postsolve if the solution is
@@ -2580,7 +2605,7 @@ class LnsSolver : public SubSolver {
               local_response_manager.GetInnerObjectiveLowerBound();
 
           const double scaled_local_obj_bound = ScaleObjectiveValue(
-              neighborhood.cp_model.objective(), local_obj_lb.value());
+              lns_fragment.objective(), local_obj_lb.value());
 
           // Update the bound.
           const IntegerValue new_inner_obj_lb = IntegerValue(
@@ -2601,7 +2626,7 @@ class LnsSolver : public SubSolver {
           if (SolutionIsFeasible(
                   *shared_->model_proto,
                   std::vector<int64_t>(local_response.solution().begin(),
-                                     local_response.solution().end()))) {
+                                       local_response.solution().end()))) {
             shared_->response->NewSolution(local_response,
                                            /*model=*/nullptr);
 
@@ -2619,7 +2644,7 @@ class LnsSolver : public SubSolver {
           CHECK(SolutionIsFeasible(
               *shared_->model_proto,
               std::vector<int64_t>(local_response.solution().begin(),
-                                 local_response.solution().end())))
+                                   local_response.solution().end())))
               << solution_info;
         }
 
@@ -3073,11 +3098,17 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger,
              absl::StrFormat("Starting presolve at %.2fs", wall_timer.Get()));
-  CpModelProto new_cp_model_proto = model_proto;  // Copy.
-
+  CpModelProto new_cp_model_proto;
   CpModelProto mapping_proto;
   auto context = absl::make_unique<PresolveContext>(model, &new_cp_model_proto,
                                                     &mapping_proto);
+
+  ModelCopy copier(context.get());
+  if (!copier.CopyWithBasicPresolve(model_proto)) {
+    VLOG(1) << "Model found infeasible during copy";
+    // TODO(user): At this point, the model is trivial, but we could exit
+    // early.
+  }
 
   bool degraded_assumptions_support = false;
   if (params.num_search_workers() > 1 || model_proto.has_objective()) {
@@ -3125,11 +3156,11 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                                mapping_proto, postsolve_mapping, &wall_timer,
                                response);
       if (!response->solution().empty()) {
-        CHECK(
-            SolutionIsFeasible(model_proto,
-                               std::vector<int64_t>(response->solution().begin(),
-                                                  response->solution().end()),
-                               &mapping_proto, &postsolve_mapping))
+        CHECK(SolutionIsFeasible(
+            model_proto,
+            std::vector<int64_t>(response->solution().begin(),
+                                 response->solution().end()),
+            &mapping_proto, &postsolve_mapping))
             << "final postsolved solution";
       }
       if (params.fill_tightened_domains_in_response()) {
@@ -3193,8 +3224,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
             if (DEBUG_MODE ||
                 absl::GetFlag(FLAGS_cp_model_check_intermediate_solutions)) {
               CHECK(SolutionIsFeasible(
-                  model_proto, std::vector<int64_t>(response.solution().begin(),
-                                                  response.solution().end())));
+                  model_proto,
+                  std::vector<int64_t>(response.solution().begin(),
+                                       response.solution().end())));
             }
           }
 
