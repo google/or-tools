@@ -106,6 +106,7 @@ def create_data_model():
 # [START solution_printer]
 def print_solution(data, manager, routing, assignment):
     """Prints assignment on console."""
+    print(f'Objective: {assignment.ObjectiveValue()}')
     # Display dropped nodes.
     dropped_nodes = 'Dropped nodes:'
     for node in range(routing.Size()):

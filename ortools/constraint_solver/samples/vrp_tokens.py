@@ -52,6 +52,7 @@ def create_data_model():
 
 def print_solution(manager, routing, solution):
     """Prints solution on console."""
+    print(f'Objective: {solution.ObjectiveValue()}')
     token_dimension = routing.GetDimensionOrDie('Token')
     total_distance = 0
     total_token = 0
