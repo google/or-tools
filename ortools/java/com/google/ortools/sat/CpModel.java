@@ -1067,9 +1067,8 @@ public final class CpModel {
   }
 
   int indexFromConstant(long constant) {
-    int index = modelBuilder.getVariablesCount();
-    modelBuilder.addVariablesBuilder().addDomain(constant).addDomain(constant);
-    return index;
+    IntVar constVar = newConstant(constant);
+    return constVar.getIndex();
   }
 
   // Getters.
