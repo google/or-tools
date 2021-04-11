@@ -3355,6 +3355,8 @@ $(OBJ_DIR)/bop/bop_parameters.pb.$O: \
 GSCIP_DEPS = \
  $(SRC_DIR)/ortools/gscip/gscip_ext.h \
  $(SRC_DIR)/ortools/gscip/gscip.h \
+ $(SRC_DIR)/ortools/gscip/gscip_event_handler.h \
+ $(SRC_DIR)/ortools/gscip/gscip_message_handler.h \
  $(SRC_DIR)/ortools/gscip/gscip_parameters.h \
  $(SRC_DIR)/ortools/gscip/legacy_scip_params.h \
  $(GEN_DIR)/ortools/gscip/gscip.pb.h
@@ -3362,6 +3364,8 @@ GSCIP_DEPS = \
 GSCIP_LIB_OBJS = \
  $(OBJ_DIR)/gscip/gscip.$O \
  $(OBJ_DIR)/gscip/gscip_ext.$O \
+ $(OBJ_DIR)/gscip/gscip_event_handler.$O \
+ $(OBJ_DIR)/gscip/gscip_message_handler.$O \
  $(OBJ_DIR)/gscip/gscip_parameters.$O \
  $(OBJ_DIR)/gscip/legacy_scip_params.$O \
  $(OBJ_DIR)/gscip/gscip.pb.$O
@@ -3375,6 +3379,26 @@ objs/gscip/gscip.$O: ortools/gscip/gscip.cc ortools/gscip/gscip.h \
  ortools/gscip/gscip_parameters.h ortools/gscip/legacy_scip_params.h \
  ortools/linear_solver/scip_helper_macros.h ortools/port/proto_utils.h | $(OBJ_DIR)/gscip
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sgscip$Sgscip.cc $(OBJ_OUT)$(OBJ_DIR)$Sgscip$Sgscip.$O
+
+objs/gscip/gscip_event_handler.$O: ortools/gscip/gscip_event_handler.cc ortools/gscip/gscip.h \
+ ortools/gen/ortools/gscip/gscip.pb.h ortools/base/logging.h \
+ ortools/base/commandlineflags.h ortools/base/integral_types.h \
+ ortools/base/log_severity.h ortools/base/logging_export.h \
+ ortools/base/macros.h ortools/base/vlog_is_on.h \
+ ortools/base/status_builder.h ortools/base/status_macros.h \
+ ortools/gscip/gscip_parameters.h ortools/gscip/legacy_scip_params.h \
+ ortools/linear_solver/scip_helper_macros.h ortools/port/proto_utils.h | $(OBJ_DIR)/gscip
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sgscip$Sgscip_event_handler.cc $(OBJ_OUT)$(OBJ_DIR)$Sgscip$Sgscip_event_handler.$O
+
+objs/gscip/gscip_message_handler.$O: ortools/gscip/gscip_message_handler.cc ortools/gscip/gscip.h \
+ ortools/gen/ortools/gscip/gscip.pb.h ortools/base/logging.h \
+ ortools/base/commandlineflags.h ortools/base/integral_types.h \
+ ortools/base/log_severity.h ortools/base/logging_export.h \
+ ortools/base/macros.h ortools/base/vlog_is_on.h \
+ ortools/base/status_builder.h ortools/base/status_macros.h \
+ ortools/gscip/gscip_parameters.h ortools/gscip/legacy_scip_params.h \
+ ortools/linear_solver/scip_helper_macros.h ortools/port/proto_utils.h | $(OBJ_DIR)/gscip
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sgscip$Sgscip_message_handler.cc $(OBJ_OUT)$(OBJ_DIR)$Sgscip$Sgscip_message_handler.$O
 
 objs/gscip/gscip_ext.$O: ortools/gscip/gscip_ext.cc \
  ortools/gscip/gscip_ext.h ortools/gscip/gscip.h \
@@ -4949,4 +4973,3 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: \
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssolver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
-
