@@ -162,6 +162,7 @@ PROTO_DEPS = \
 $(GEN_DIR)/ortools/util/optional_boolean.pb.h \
 $(GEN_DIR)/ortools/data/jobshop_scheduling.pb.h \
 $(GEN_DIR)/ortools/data/rcpsp.pb.h \
+$(GEN_DIR)/ortools/data/vector_bin_packing.pb.h \
 $(GEN_DIR)/ortools/glop/parameters.pb.h \
 $(GEN_DIR)/ortools/graph/flow_problem.pb.h \
 $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
