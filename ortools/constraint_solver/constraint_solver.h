@@ -738,12 +738,15 @@ class Solver {
 
   typedef std::function<IntVar*(int64_t)> Int64ToIntVar;
 
-  typedef std::function<int64_t(Solver* solver, const std::vector<IntVar*>& vars,
-                              int64_t first_unbound, int64_t last_unbound)>
+  typedef std::function<int64_t(Solver* solver,
+                                const std::vector<IntVar*>& vars,
+                                int64_t first_unbound, int64_t last_unbound)>
       VariableIndexSelector;
 
-  typedef std::function<int64_t(const IntVar* v, int64_t id)> VariableValueSelector;
-  typedef std::function<bool(int64_t, int64_t, int64_t)> VariableValueComparator;
+  typedef std::function<int64_t(const IntVar* v, int64_t id)>
+      VariableValueSelector;
+  typedef std::function<bool(int64_t, int64_t, int64_t)>
+      VariableValueComparator;
   typedef std::function<DecisionModification()> BranchSelector;
   // TODO(user): wrap in swig.
   typedef std::function<void(Solver*)> Action;
@@ -1024,7 +1027,8 @@ class Solver {
   IntVar* MakeIntVar(int64_t min, int64_t max, const std::string& name);
 
   /// MakeIntVar will create a variable with the given sparse domain.
-  IntVar* MakeIntVar(const std::vector<int64_t>& values, const std::string& name);
+  IntVar* MakeIntVar(const std::vector<int64_t>& values,
+                     const std::string& name);
 
   /// MakeIntVar will create a variable with the given sparse domain.
   IntVar* MakeIntVar(const std::vector<int>& values, const std::string& name);
@@ -1140,8 +1144,8 @@ class Solver {
 
 #if !defined(SWIG)
   /// vars(argument)
-  IntExpr* MakeElement(Int64ToIntVar vars, int64_t range_start, int64_t range_end,
-                       IntVar* argument);
+  IntExpr* MakeElement(Int64ToIntVar vars, int64_t range_start,
+                       int64_t range_end, IntVar* argument);
 #endif  // SWIG
 
   /// Returns the expression expr such that vars[expr] == value.
@@ -1686,10 +1690,9 @@ class Solver {
   /// The initial state is given, and the set of accepted states is decribed
   /// by 'final_states'. These states are hidden inside the constraint.
   /// Only the transitions (i.e. the variables) are visible.
-  Constraint* MakeTransitionConstraint(const std::vector<IntVar*>& vars,
-                                       const IntTupleSet& transition_table,
-                                       int64_t initial_state,
-                                       const std::vector<int64_t>& final_states);
+  Constraint* MakeTransitionConstraint(
+      const std::vector<IntVar*>& vars, const IntTupleSet& transition_table,
+      int64_t initial_state, const std::vector<int64_t>& final_states);
 
   /// This constraint create a finite automaton that will check the
   /// sequence of variables vars. It uses a transition table called
@@ -1715,7 +1718,8 @@ class Solver {
 
   Constraint* MakeTransitionConstraint(
       const std::vector<IntVar*>& vars,
-      const std::vector<std::vector<int64_t> /*keep for swig*/>& raw_transitions,
+      const std::vector<std::vector<int64_t> /*keep for swig*/>&
+          raw_transitions,
       int64_t initial_state, const std::vector<int>& final_states) {
     IntTupleSet transitions(3);
     transitions.InsertAll(raw_transitions);
@@ -1771,8 +1775,9 @@ class Solver {
   /// be greater than 0. If optional is true, then the interval can be
   /// performed or unperformed. If optional is false, then the interval
   /// is always performed.
-  IntervalVar* MakeFixedDurationIntervalVar(int64_t start_min, int64_t start_max,
-                                            int64_t duration, bool optional,
+  IntervalVar* MakeFixedDurationIntervalVar(int64_t start_min,
+                                            int64_t start_max, int64_t duration,
+                                            bool optional,
                                             const std::string& name);
 
   /// This method fills the vector with 'count' interval variables built with
@@ -1970,8 +1975,8 @@ class Solver {
   /// supported, and the corresponding intervals are filtered out, as they
   /// neither impact nor are impacted by this constraint.
   Constraint* MakeCumulative(const std::vector<IntervalVar*>& intervals,
-                             const std::vector<int64_t>& demands, int64_t capacity,
-                             const std::string& name);
+                             const std::vector<int64_t>& demands,
+                             int64_t capacity, const std::string& name);
 
   /// This constraint forces that, for any integer t, the sum of the demands
   /// corresponding to an interval containing t does not exceed the given
@@ -2169,7 +2174,8 @@ class Solver {
   /// Creates a Simulated Annealing monitor.
   // TODO(user): document behavior
   SearchMonitor* MakeSimulatedAnnealing(bool maximize, IntVar* const v,
-                                        int64_t step, int64_t initial_temperature);
+                                        int64_t step,
+                                        int64_t initial_temperature);
 
   /// Creates a Guided Local Search monitor.
   /// Description here: http://en.wikipedia.org/wiki/Guided_Local_Search
@@ -2220,8 +2226,9 @@ class Solver {
   /// 'solutions' limits. 'smart_time_check' reduces the calls to the wall
   // timer by estimating the number of remaining calls, and 'cumulative' means
   // that the limit applies cumulatively, instead of search-by-search.
-  RegularLimit* MakeLimit(absl::Duration time, int64_t branches, int64_t failures,
-                          int64_t solutions, bool smart_time_check = false,
+  RegularLimit* MakeLimit(absl::Duration time, int64_t branches,
+                          int64_t failures, int64_t solutions,
+                          bool smart_time_check = false,
                           bool cumulative = false);
   /// Creates a search limit from its protobuf description
   RegularLimit* MakeLimit(const RegularLimitParameters& proto);
@@ -2347,7 +2354,8 @@ class Solver {
   Decision* MakeSplitVariableDomain(IntVar* const var, int64_t val,
                                     bool start_with_lower_half);
   Decision* MakeAssignVariableValueOrFail(IntVar* const var, int64_t value);
-  Decision* MakeAssignVariableValueOrDoNothing(IntVar* const var, int64_t value);
+  Decision* MakeAssignVariableValueOrDoNothing(IntVar* const var,
+                                               int64_t value);
   Decision* MakeAssignVariablesValues(const std::vector<IntVar*>& vars,
                                       const std::vector<int64_t>& values);
   Decision* MakeFailDecision();
@@ -2542,16 +2550,19 @@ class Solver {
                                       SearchMonitor* const monitor1);
   DecisionBuilder* MakeNestedOptimize(DecisionBuilder* const db,
                                       Assignment* const solution, bool maximize,
-                                      int64_t step, SearchMonitor* const monitor1,
+                                      int64_t step,
+                                      SearchMonitor* const monitor1,
                                       SearchMonitor* const monitor2);
   DecisionBuilder* MakeNestedOptimize(DecisionBuilder* const db,
                                       Assignment* const solution, bool maximize,
-                                      int64_t step, SearchMonitor* const monitor1,
+                                      int64_t step,
+                                      SearchMonitor* const monitor1,
                                       SearchMonitor* const monitor2,
                                       SearchMonitor* const monitor3);
   DecisionBuilder* MakeNestedOptimize(DecisionBuilder* const db,
                                       Assignment* const solution, bool maximize,
-                                      int64_t step, SearchMonitor* const monitor1,
+                                      int64_t step,
+                                      SearchMonitor* const monitor1,
                                       SearchMonitor* const monitor2,
                                       SearchMonitor* const monitor3,
                                       SearchMonitor* const monitor4);
@@ -2959,7 +2970,8 @@ class Solver {
   /// constant.  In that case, it fills inner_expr and coefficient with
   /// these, and returns true. In the other case, it fills inner_expr
   /// with expr, coefficient with 1, and returns false.
-  bool IsProduct(IntExpr* const expr, IntExpr** inner_expr, int64_t* coefficient);
+  bool IsProduct(IntExpr* const expr, IntExpr** inner_expr,
+                 int64_t* coefficient);
 #endif  /// !defined(SWIG)
 
   /// Internal. If the variables is the result of expr->Var(), this
@@ -3518,7 +3530,8 @@ class ModelVisitor : public BaseObject {
                                     const std::string& operation, int64_t value,
                                     IntVar* const delegate);
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const std::string& operation, int64_t value,
+                                     const std::string& operation,
+                                     int64_t value,
                                      IntervalVar* const delegate);
   virtual void VisitSequenceVariable(const SequenceVar* const variable);
 

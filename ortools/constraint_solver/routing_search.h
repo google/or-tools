@@ -110,6 +110,13 @@ class VehicleTypeCurator {
   // clang-format on
 };
 
+/// Returns the best value for the automatic first solution strategy, based on
+/// the given model parameters.
+operations_research::FirstSolutionStrategy::Value
+AutomaticFirstSolutionStrategy(bool has_pickup_deliveries,
+                               bool has_node_precedences,
+                               bool has_single_vehicle_node);
+
 /// Decision builder building a solution using heuristics with local search
 /// filters to evaluate its feasibility. This is very fast but can eventually
 /// fail when the solution is restored if filters did not detect all
@@ -270,7 +277,8 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
  public:
   /// Takes ownership of evaluator.
   CheapestInsertionFilteredHeuristic(
-      RoutingModel* model, std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
+      RoutingModel* model,
+      std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
       std::function<int64_t(int64_t)> penalty_evaluator,
       LocalSearchFilterManager* filter_manager);
   ~CheapestInsertionFilteredHeuristic() override {}
@@ -317,8 +325,8 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
   /// starting at node 'start' and adds them to 'valued_position', a list of
   /// unsorted pairs of (cost, position to insert the node).
   void AppendEvaluatedPositionsAfter(
-      int64_t node_to_insert, int64_t start, int64_t next_after_start, int64_t vehicle,
-      std::vector<ValuedPosition>* valued_positions);
+      int64_t node_to_insert, int64_t start, int64_t next_after_start,
+      int64_t vehicle, std::vector<ValuedPosition>* valued_positions);
   /// Returns the cost of inserting 'node_to_insert' between 'insert_after' and
   /// 'insert_before' on the 'vehicle', i.e.
   /// Cost(insert_after-->node) + Cost(node-->insert_before)
@@ -326,9 +334,9 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
   // TODO(user): Replace 'insert_before' and 'insert_after' by 'predecessor'
   // and 'successor' in the code.
   int64_t GetInsertionCostForNodeAtPosition(int64_t node_to_insert,
-                                          int64_t insert_after,
-                                          int64_t insert_before,
-                                          int vehicle) const;
+                                            int64_t insert_after,
+                                            int64_t insert_before,
+                                            int vehicle) const;
   /// Returns the cost of unperforming node 'node_to_insert'. Returns kint64max
   /// if penalty callback is null or if the node cannot be unperformed.
   int64_t GetUnperformedValue(int64_t node_to_insert) const;
@@ -373,7 +381,8 @@ class GlobalCheapestInsertionFilteredHeuristic
 
   /// Takes ownership of evaluators.
   GlobalCheapestInsertionFilteredHeuristic(
-      RoutingModel* model, std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
+      RoutingModel* model,
+      std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
       std::function<int64_t(int64_t)> penalty_evaluator,
       LocalSearchFilterManager* filter_manager,
       GlobalCheapestInsertionParameters parameters);
@@ -537,8 +546,9 @@ class GlobalCheapestInsertionFilteredHeuristic
   /// 'delivery' respectively after 'pickup_insert_after' and
   /// 'delivery_insert_after', and adds it to the 'priority_queue',
   /// 'pickup_entries' and 'delivery_entries'.
-  void AddPairEntry(int64_t pickup, int64_t pickup_insert_after, int64_t delivery,
-                    int64_t delivery_insert_after, int vehicle,
+  void AddPairEntry(int64_t pickup, int64_t pickup_insert_after,
+                    int64_t delivery, int64_t delivery_insert_after,
+                    int vehicle,
                     AdjustablePriorityQueue<PairEntry>* priority_queue,
                     std::vector<PairEntries>* pickup_entries,
                     std::vector<PairEntries>* delivery_entries) const;
@@ -551,10 +561,10 @@ class GlobalCheapestInsertionFilteredHeuristic
   /// 'delivery' respectively after 'pickup_insert_after' and
   /// 'delivery_insert_after' on 'vehicle'.
   int64_t GetInsertionValueForPairAtPositions(int64_t pickup,
-                                            int64_t pickup_insert_after,
-                                            int64_t delivery,
-                                            int64_t delivery_insert_after,
-                                            int vehicle) const;
+                                              int64_t pickup_insert_after,
+                                              int64_t delivery,
+                                              int64_t delivery_insert_after,
+                                              int vehicle) const;
 
   /// Initializes the priority queue and the node entries with the current state
   /// of the solution on the given vehicle routes.
@@ -664,7 +674,8 @@ class LocalCheapestInsertionFilteredHeuristic
  public:
   /// Takes ownership of evaluator.
   LocalCheapestInsertionFilteredHeuristic(
-      RoutingModel* model, std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
+      RoutingModel* model,
+      std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
       LocalSearchFilterManager* filter_manager);
   ~LocalCheapestInsertionFilteredHeuristic() override {}
   bool BuildSolutionInternal() override;
@@ -713,8 +724,9 @@ class CheapestAdditionFilteredHeuristic : public RoutingFilteredHeuristic {
   };
   /// Returns a vector of possible next indices of node from an iterator.
   template <typename Iterator>
-  std::vector<int64_t> GetPossibleNextsFromIterator(int64_t node, Iterator start,
-                                                  Iterator end) const {
+  std::vector<int64_t> GetPossibleNextsFromIterator(int64_t node,
+                                                    Iterator start,
+                                                    Iterator end) const {
     const int size = model()->Size();
     std::vector<int64_t> nexts;
     for (Iterator it = start; it != end; ++it) {
@@ -726,9 +738,10 @@ class CheapestAdditionFilteredHeuristic : public RoutingFilteredHeuristic {
     return nexts;
   }
   /// Sorts a vector of successors of node.
-  virtual void SortSuccessors(int64_t node, std::vector<int64_t>* successors) = 0;
+  virtual void SortSuccessors(int64_t node,
+                              std::vector<int64_t>* successors) = 0;
   virtual int64_t FindTopSuccessor(int64_t node,
-                                 const std::vector<int64_t>& successors) = 0;
+                                   const std::vector<int64_t>& successors) = 0;
 };
 
 /// A CheapestAdditionFilteredHeuristic where the notion of 'cheapest arc'
@@ -749,7 +762,7 @@ class EvaluatorCheapestAdditionFilteredHeuristic
   /// Next nodes are sorted according to the current evaluator.
   void SortSuccessors(int64_t node, std::vector<int64_t>* successors) override;
   int64_t FindTopSuccessor(int64_t node,
-                         const std::vector<int64_t>& successors) override;
+                           const std::vector<int64_t>& successors) override;
 
   std::function<int64_t(int64_t, int64_t)> evaluator_;
 };
@@ -772,7 +785,7 @@ class ComparatorCheapestAdditionFilteredHeuristic
   /// Next nodes are sorted according to the current comparator.
   void SortSuccessors(int64_t node, std::vector<int64_t>* successors) override;
   int64_t FindTopSuccessor(int64_t node,
-                         const std::vector<int64_t>& successors) override;
+                           const std::vector<int64_t>& successors) override;
 
   Solver::VariableValueComparator comparator_;
 };
@@ -976,7 +989,8 @@ class ChristofidesFilteredHeuristic : public RoutingFilteredHeuristic {
 /// depot. Used in the Sweep first solution heuristic.
 class SweepArranger {
  public:
-  explicit SweepArranger(const std::vector<std::pair<int64_t, int64_t>>& points);
+  explicit SweepArranger(
+      const std::vector<std::pair<int64_t, int64_t>>& points);
   virtual ~SweepArranger() {}
   void ArrangeIndices(std::vector<int64_t>* indices);
   void SetSectors(int sectors) { sectors_ = sectors; }

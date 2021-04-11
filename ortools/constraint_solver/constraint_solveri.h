@@ -232,7 +232,9 @@ inline uint64_t Hash1(uint32_t value) {
   return a;
 }
 
-inline uint64_t Hash1(int64_t value) { return Hash1(static_cast<uint64_t>(value)); }
+inline uint64_t Hash1(int64_t value) {
+  return Hash1(static_cast<uint64_t>(value));
+}
 
 inline uint64_t Hash1(int value) { return Hash1(static_cast<uint32_t>(value)); }
 
@@ -1411,7 +1413,8 @@ class PathOperator : public IntVarLocalSearchOperator {
   /// Returns true if a base node has to be on the same path as the "previous"
   /// base node (base node of index base_index - 1).
   /// Useful to limit neighborhood exploration to nodes on the same path.
-  // TODO(user): ideally this should be OnSamePath(int64_t node1, int64_t node2);
+  // TODO(user): ideally this should be OnSamePath(int64_t node1, int64_t
+  // node2);
   /// it's currently way more complicated to implement.
   virtual bool OnSamePathAsPreviousBase(int64_t base_index) { return false; }
   /// Returns the index of the node to which the base node of index base_index
@@ -1451,7 +1454,8 @@ class PathOperator : public IntVarLocalSearchOperator {
 
   /// Reverses the chain starting after before_chain and ending before
   /// after_chain
-  bool ReverseChain(int64_t before_chain, int64_t after_chain, int64_t* chain_last);
+  bool ReverseChain(int64_t before_chain, int64_t after_chain,
+                    int64_t* chain_last);
 
   /// Insert the inactive node after destination.
   bool MakeActive(int64_t node, int64_t destination);
@@ -1865,14 +1869,17 @@ class PropagationMonitor : public SearchMonitor {
   /// IntExpr modifiers.
   virtual void SetMin(IntExpr* const expr, int64_t new_min) = 0;
   virtual void SetMax(IntExpr* const expr, int64_t new_max) = 0;
-  virtual void SetRange(IntExpr* const expr, int64_t new_min, int64_t new_max) = 0;
+  virtual void SetRange(IntExpr* const expr, int64_t new_min,
+                        int64_t new_max) = 0;
   /// IntVar modifiers.
   virtual void SetMin(IntVar* const var, int64_t new_min) = 0;
   virtual void SetMax(IntVar* const var, int64_t new_max) = 0;
-  virtual void SetRange(IntVar* const var, int64_t new_min, int64_t new_max) = 0;
+  virtual void SetRange(IntVar* const var, int64_t new_min,
+                        int64_t new_max) = 0;
   virtual void RemoveValue(IntVar* const var, int64_t value) = 0;
   virtual void SetValue(IntVar* const var, int64_t value) = 0;
-  virtual void RemoveInterval(IntVar* const var, int64_t imin, int64_t imax) = 0;
+  virtual void RemoveInterval(IntVar* const var, int64_t imin,
+                              int64_t imax) = 0;
   virtual void SetValues(IntVar* const var,
                          const std::vector<int64_t>& values) = 0;
   virtual void RemoveValues(IntVar* const var,
@@ -1992,7 +1999,8 @@ class SymmetryBreaker : public DecisionVisitor {
   void AddIntegerVariableEqualValueClause(IntVar* const var, int64_t value);
   void AddIntegerVariableGreaterOrEqualValueClause(IntVar* const var,
                                                    int64_t value);
-  void AddIntegerVariableLessOrEqualValueClause(IntVar* const var, int64_t value);
+  void AddIntegerVariableLessOrEqualValueClause(IntVar* const var,
+                                                int64_t value);
 
  private:
   friend class SymmetryManager;
@@ -2173,7 +2181,8 @@ class ModelCache {
 
   /// Var Constant Constraints.
   virtual Constraint* FindVarConstantConstraint(
-      IntVar* const var, int64_t value, VarConstantConstraintType type) const = 0;
+      IntVar* const var, int64_t value,
+      VarConstantConstraintType type) const = 0;
 
   virtual void InsertVarConstantConstraint(Constraint* const ct,
                                            IntVar* const var, int64_t value,
@@ -2247,8 +2256,8 @@ class ModelCache {
       VarConstantConstantExpressionType type) const = 0;
 
   virtual void InsertVarConstantConstantExpression(
-      IntExpr* const expression, IntVar* const var, int64_t value1, int64_t value2,
-      VarConstantConstantExpressionType type) = 0;
+      IntExpr* const expression, IntVar* const var, int64_t value1,
+      int64_t value2, VarConstantConstantExpressionType type) = 0;
 
   /// Var Constant Array Expressions.
 
@@ -2328,7 +2337,7 @@ class ArgumentHolder {
 
   /// Getters.
   int64_t FindIntegerArgumentWithDefault(const std::string& arg_name,
-                                       int64_t def) const;
+                                         int64_t def) const;
   int64_t FindIntegerArgumentOrDie(const std::string& arg_name) const;
   const std::vector<int64_t>& FindIntegerArrayArgumentOrDie(
       const std::string& arg_name) const;
@@ -2343,7 +2352,8 @@ class ArgumentHolder {
  private:
   std::string type_name_;
   absl::flat_hash_map<std::string, int64_t> integer_argument_;
-  absl::flat_hash_map<std::string, std::vector<int64_t>> integer_array_argument_;
+  absl::flat_hash_map<std::string, std::vector<int64_t>>
+      integer_array_argument_;
   absl::flat_hash_map<std::string, IntTupleSet> matrix_argument_;
   absl::flat_hash_map<std::string, IntExpr*> integer_expression_argument_;
   absl::flat_hash_map<std::string, IntervalVar*> interval_argument_;
@@ -2384,7 +2394,8 @@ class ModelParser : public ModelVisitor {
                              IntervalVar* const delegate) override;
   void VisitSequenceVariable(const SequenceVar* const variable) override;
   /// Integer arguments
-  void VisitIntegerArgument(const std::string& arg_name, int64_t value) override;
+  void VisitIntegerArgument(const std::string& arg_name,
+                            int64_t value) override;
   void VisitIntegerArrayArgument(const std::string& arg_name,
                                  const std::vector<int64_t>& values) override;
   void VisitIntegerMatrixArgument(const std::string& arg_name,

@@ -128,8 +128,8 @@
 ///     RoutingIndexManager manager(...number of nodes..., 1);
 ///     RoutingModel routing(manager);
 ///
-/// - Set the cost function by registering an std::function<int64_t(int64_t, int64_t)>
-/// in the model and passing its index as the vehicle cost.
+/// - Set the cost function by registering an std::function<int64_t(int64_t,
+/// int64_t)> in the model and passing its index as the vehicle cost.
 ///
 ///    const int cost = routing.RegisterTransitCallback(MyDistance);
 ///    routing.SetArcCostEvaluatorOfAllVehicles(cost);
@@ -241,12 +241,12 @@ class RoutingModel {
 
 #if !defined(SWIG)
   /// What follows is relevant for models with time/state dependent transits.
-  /// Such transits, say from node A to node B, are functions f: int64_t->int64_t
-  /// of the cumuls of a dimension. The user is free to implement the abstract
-  /// RangeIntToIntFunction interface, but it is expected that the
-  /// implementation of each method is quite fast. For performance-related
-  /// reasons, StateDependentTransit keeps an additional pointer to a
-  /// RangeMinMaxIndexFunction, with similar functionality to
+  /// Such transits, say from node A to node B, are functions f:
+  /// int64_t->int64_t of the cumuls of a dimension. The user is free to
+  /// implement the abstract RangeIntToIntFunction interface, but it is expected
+  /// that the implementation of each method is quite fast. For
+  /// performance-related reasons, StateDependentTransit keeps an additional
+  /// pointer to a RangeMinMaxIndexFunction, with similar functionality to
   /// RangeIntToIntFunction, for g(x) = f(x)+x, where f is the transit from A to
   /// B. In most situations the best solutions are problem-specific, but in case
   /// of doubt the user may use the MakeStateDependentTransit function from the
@@ -878,7 +878,8 @@ class RoutingModel {
   /// Same as above except that it returns default_value instead of 0 when
   /// penalty is not well defined (default value is passed as first argument to
   /// simplify the usage of the method in a callback).
-  int64_t UnperformedPenaltyOrValue(int64_t default_value, int64_t var_index) const;
+  int64_t UnperformedPenaltyOrValue(int64_t default_value,
+                                    int64_t var_index) const;
   /// Returns the variable index of the first starting or ending node of all
   /// routes. If all routes start  and end at the same node (single depot), this
   /// is the node returned.
@@ -934,7 +935,8 @@ class RoutingModel {
   const std::vector<int64_t>& GetAmortizedLinearCostFactorOfVehicles() const {
     return linear_cost_factor_of_vehicle_;
   }
-  const std::vector<int64_t>& GetAmortizedQuadraticCostFactorOfVehicles() const {
+  const std::vector<int64_t>& GetAmortizedQuadraticCostFactorOfVehicles()
+      const {
     return quadratic_cost_factor_of_vehicle_;
   }
 
@@ -1105,8 +1107,9 @@ class RoutingModel {
   /// Converts the solution in the given assignment to routes for all vehicles.
   /// Expects that assignment contains a valid solution (i.e. routes for all
   /// vehicles end with an end index for that vehicle).
-  void AssignmentToRoutes(const Assignment& assignment,
-                          std::vector<std::vector<int64_t>>* const routes) const;
+  void AssignmentToRoutes(
+      const Assignment& assignment,
+      std::vector<std::vector<int64_t>>* const routes) const;
   /// Converts the solution in the given assignment to routes for all vehicles.
   /// If the returned vector is route_indices, route_indices[i][j] is the index
   /// for jth location visited on route i. Note that contrary to
@@ -1223,7 +1226,7 @@ class RoutingModel {
   /// Returns the cost of the transit arc between two nodes for a given vehicle.
   /// Input are variable indices of node. This returns 0 if vehicle < 0.
   int64_t GetArcCostForVehicle(int64_t from_index, int64_t to_index,
-                             int64_t vehicle) const;
+                               int64_t vehicle) const;
   /// Whether costs are homogeneous across all vehicles.
   bool CostsAreHomogeneousAcrossVehicles() const {
     return costs_are_homogeneous_across_vehicles_;
@@ -1235,7 +1238,8 @@ class RoutingModel {
   }
   /// Returns the cost of the arc in the context of the first solution strategy.
   /// This is typically a simplification of the actual cost; see the .cc.
-  int64_t GetArcCostForFirstSolution(int64_t from_index, int64_t to_index) const;
+  int64_t GetArcCostForFirstSolution(int64_t from_index,
+                                     int64_t to_index) const;
   /// Returns the cost of the segment between two nodes for a given cost
   /// class. Input are variable indices of nodes and the cost class.
   /// Unlike GetArcCostForVehicle(), if cost_class is kNoCost, then the
@@ -1243,7 +1247,7 @@ class RoutingModel {
   /// of the cost that depend on the cost class will be omited. See the code
   /// for details.
   int64_t GetArcCostForClass(int64_t from_index, int64_t to_index,
-                           int64_t /*CostClassIndex*/ cost_class_index) const;
+                             int64_t /*CostClassIndex*/ cost_class_index) const;
   /// Get the cost class index of the given vehicle.
   CostClassIndex GetCostClassIndexOfVehicle(int64_t vehicle) const {
     DCHECK(closed_);
@@ -1466,10 +1470,11 @@ class RoutingModel {
   /// Storage of a cost cache element corresponding to a cost arc ending at
   /// node 'index' and on the cost class 'cost_class'.
   struct CostCacheElement {
-    /// This is usually an int64_t, but using an int here decreases the RAM usage,
-    /// and should be fine since in practice we never have more than 1<<31 vars.
-    /// Note(user): on 2013-11, microbenchmarks on the arc costs callbacks
-    /// also showed a 2% speed-up thanks to using int rather than int64_t.
+    /// This is usually an int64_t, but using an int here decreases the RAM
+    /// usage, and should be fine since in practice we never have more than
+    /// 1<<31 vars. Note(user): on 2013-11, microbenchmarks on the arc costs
+    /// callbacks also showed a 2% speed-up thanks to using int rather than
+    /// int64_t.
     int index;
     CostClassIndex cost_class_index;
     int64_t cost;
@@ -1547,7 +1552,7 @@ class RoutingModel {
   // Called by FinalizeVisitTypes() to setup topologically_sorted_visit_types_.
   void TopologicallySortVisitTypes();
   int64_t GetArcCostForClassInternal(int64_t from_index, int64_t to_index,
-                                   CostClassIndex cost_class_index) const;
+                                     CostClassIndex cost_class_index) const;
   void AppendHomogeneousArcCosts(const RoutingSearchParameters& parameters,
                                  int node_index,
                                  std::vector<IntVar*>* cost_elements);
@@ -1562,7 +1567,7 @@ class RoutingModel {
         .value();
   }
   int64_t GetDimensionTransitCostSum(int64_t i, int64_t j,
-                                   const CostClass& cost_class) const;
+                                     const CostClass& cost_class) const;
   /// Returns nullptr if no penalty cost, otherwise returns penalty variable.
   IntVar* CreateDisjunction(DisjunctionIndex disjunction);
   /// Sets up pickup and delivery sets.
@@ -2370,11 +2375,12 @@ class RoutingDimension {
   /// Returns the transition value for a given pair of nodes (as var index);
   /// this value is the one taken by the corresponding transit variable when
   /// the 'next' variable for 'from_index' is bound to 'to_index'.
-  int64_t GetTransitValue(int64_t from_index, int64_t to_index, int64_t vehicle) const;
+  int64_t GetTransitValue(int64_t from_index, int64_t to_index,
+                          int64_t vehicle) const;
   /// Same as above but taking a vehicle class of the dimension instead of a
   /// vehicle (the class of a vehicle can be obtained with vehicle_to_class()).
   int64_t GetTransitValueFromClass(int64_t from_index, int64_t to_index,
-                                 int64_t vehicle_class) const {
+                                   int64_t vehicle_class) const {
     return model_->TransitCallback(class_evaluators_[vehicle_class])(from_index,
                                                                      to_index);
   }
@@ -2382,7 +2388,9 @@ class RoutingDimension {
   /// int64_t var index).
   IntVar* CumulVar(int64_t index) const { return cumuls_[index]; }
   IntVar* TransitVar(int64_t index) const { return transits_[index]; }
-  IntVar* FixedTransitVar(int64_t index) const { return fixed_transits_[index]; }
+  IntVar* FixedTransitVar(int64_t index) const {
+    return fixed_transits_[index];
+  }
   IntVar* SlackVar(int64_t index) const { return slacks_[index]; }
 
 #if !defined(SWIGPYTHON)
@@ -2398,13 +2406,12 @@ class RoutingDimension {
     return forbidden_intervals_;
   }
   /// Returns allowed intervals for a given node in a given interval.
-  SortedDisjointIntervalList GetAllowedIntervalsInRange(int64_t index,
-                                                        int64_t min_value,
-                                                        int64_t max_value) const;
+  SortedDisjointIntervalList GetAllowedIntervalsInRange(
+      int64_t index, int64_t min_value, int64_t max_value) const;
   /// Returns the smallest value outside the forbidden intervals of node 'index'
   /// that is greater than or equal to a given 'min_value'.
   int64_t GetFirstPossibleGreaterOrEqualValueForNode(int64_t index,
-                                                   int64_t min_value) const {
+                                                     int64_t min_value) const {
     DCHECK_LT(index, forbidden_intervals_.size());
     const SortedDisjointIntervalList& forbidden_intervals =
         forbidden_intervals_[index];
@@ -2423,7 +2430,7 @@ class RoutingDimension {
   /// NOTE: If this method is called with a max_value lower than the node's
   /// cumul min, it will return -1.
   int64_t GetLastPossibleLessOrEqualValueForNode(int64_t index,
-                                               int64_t max_value) const {
+                                                 int64_t max_value) const {
     DCHECK_LT(index, forbidden_intervals_.size());
     const SortedDisjointIntervalList& forbidden_intervals =
         forbidden_intervals_[index];
@@ -2584,9 +2591,10 @@ class RoutingDimension {
 #if !defined(SWIGPYTHON)
   /// Deprecated, sets pre_travel(i, j) = node_visit_transit[i]
   /// and post_travel(i, j) = delays(i, j).
-  void SetBreakIntervalsOfVehicle(std::vector<IntervalVar*> breaks, int vehicle,
-                                  std::vector<int64_t> node_visit_transits,
-                                  std::function<int64_t(int64_t, int64_t)> delays);
+  void SetBreakIntervalsOfVehicle(
+      std::vector<IntervalVar*> breaks, int vehicle,
+      std::vector<int64_t> node_visit_transits,
+      std::function<int64_t(int64_t, int64_t)> delays);
 
   /// Returns the break intervals set by SetBreakIntervalsOfVehicle().
   const std::vector<IntervalVar*>& GetBreakIntervalsOfVehicle(
@@ -2639,7 +2647,7 @@ class RoutingDimension {
   bool HasPickupToDeliveryLimits() const;
 #ifndef SWIG
   int64_t GetPickupToDeliveryLimitForPair(int pair_index, int pickup,
-                                        int delivery) const;
+                                          int delivery) const;
 
   struct NodePrecedence {
     int64_t first_node;
@@ -2655,7 +2663,8 @@ class RoutingDimension {
   }
 #endif  // SWIG
 
-  void AddNodePrecedence(int64_t first_node, int64_t second_node, int64_t offset) {
+  void AddNodePrecedence(int64_t first_node, int64_t second_node,
+                         int64_t offset) {
     AddNodePrecedence({first_node, second_node, offset});
   }
 

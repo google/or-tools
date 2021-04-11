@@ -1159,9 +1159,9 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     }
     // TODO(user): Find a better UB for the last time cumul.
     time_cumuls_[num_nodes] = s->MakeIntVar(0, 2 * horizon, ct_name + "_ect");
-    s->AddConstraint(
-        s->MakePathCumul(nexts_, actives_, time_cumuls_, time_slacks_,
-                         [this](int64_t x, int64_t y) { return Distance(x, y); }));
+    s->AddConstraint(s->MakePathCumul(
+        nexts_, actives_, time_cumuls_, time_slacks_,
+        [this](int64_t x, int64_t y) { return Distance(x, y); }));
 
     std::vector<IntVar*> short_slacks(time_slacks_.begin() + 1,
                                       time_slacks_.end());

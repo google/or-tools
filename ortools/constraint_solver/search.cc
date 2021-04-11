@@ -3854,7 +3854,9 @@ TernaryGuidedLocalSearch::TernaryGuidedLocalSearch(
 
 IntExpr* TernaryGuidedLocalSearch::MakeElementPenalty(int index) {
   return solver()->MakeElement(
-      [this, index](int64_t i, int64_t j) { return PenalizedValue(index, i, j); },
+      [this, index](int64_t i, int64_t j) {
+        return PenalizedValue(index, i, j);
+      },
       vars_[index], secondary_vars_[index]);
 }
 

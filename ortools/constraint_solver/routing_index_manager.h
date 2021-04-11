@@ -71,7 +71,9 @@ class RoutingIndexManager {
   // Returns the number of indices mapped to nodes.
   int num_indices() const { return index_to_node_.size(); }
   // Returns start and end indices of the given vehicle.
-  int64_t GetStartIndex(int vehicle) const { return vehicle_to_start_[vehicle]; }
+  int64_t GetStartIndex(int vehicle) const {
+    return vehicle_to_start_[vehicle];
+  }
   int64_t GetEndIndex(int vehicle) const { return vehicle_to_end_[vehicle]; }
   // Returns the index of a node. A node can correspond to multiple indices if
   // it's a start or end node. As of 03/2020, kUnassigned will be returned for
@@ -83,7 +85,8 @@ class RoutingIndexManager {
     return node_to_index_[node];
   }
   // Same as NodeToIndex but for a given vector of nodes.
-  std::vector<int64_t> NodesToIndices(const std::vector<NodeIndex>& nodes) const;
+  std::vector<int64_t> NodesToIndices(
+      const std::vector<NodeIndex>& nodes) const;
   // Returns the node corresponding to an index. A node may appear more than
   // once if it is used as the start or the end node of multiple vehicles.
   NodeIndex IndexToNode(int64_t index) const {

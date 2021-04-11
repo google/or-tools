@@ -159,6 +159,24 @@ std::pair<int, int> VehicleTypeCurator::GetCompatibleVehicleOfType(
   return {-1, -1};
 }
 
+// - Models with pickup/deliveries or node precedences are best handled by
+//   PARALLEL_CHEAPEST_INSERTION.
+// - As of January 2018, models with single nodes and at least one node with
+//   only one allowed vehicle are better solved by PATH_MOST_CONSTRAINED_ARC.
+// - In all other cases, PATH_CHEAPEST_ARC is used.
+// TODO(user): Make this smarter.
+FirstSolutionStrategy::Value AutomaticFirstSolutionStrategy(
+    bool has_pickup_deliveries, bool has_node_precedences,
+    bool has_single_vehicle_node) {
+  if (has_pickup_deliveries || has_node_precedences) {
+    return FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION;
+  }
+  if (has_single_vehicle_node) {
+    return FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC;
+  }
+  return FirstSolutionStrategy::PATH_CHEAPEST_ARC;
+}
+
 // --- First solution decision builder ---
 
 // IntVarFilteredDecisionBuilder

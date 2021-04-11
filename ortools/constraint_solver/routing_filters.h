@@ -123,7 +123,8 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   virtual void InitializeAcceptPath() {}
   virtual bool AcceptPath(int64_t path_start, int64_t chain_start,
                           int64_t chain_end) = 0;
-  virtual bool FinalizeAcceptPath(const Assignment* delta, int64_t objective_min,
+  virtual bool FinalizeAcceptPath(const Assignment* delta,
+                                  int64_t objective_min,
                                   int64_t objective_max) {
     return true;
   }

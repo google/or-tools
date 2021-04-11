@@ -227,7 +227,9 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
       const auto& local_optimizer = local_optimizers_[i];
       const RoutingDimension* const dimension = local_optimizer->dimension();
       RoutingModel* const model = dimension->model();
-      const auto next = [model](int64_t i) { return model->NextVar(i)->Value(); };
+      const auto next = [model](int64_t i) {
+        return model->NextVar(i)->Value();
+      };
       const auto compute_cumul_values =
           [this, &next](LocalDimensionCumulOptimizer* optimizer, int vehicle,
                         std::vector<int64_t>* cumul_values,
@@ -353,7 +355,9 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
       const RoutingDimension* dimension = global_optimizer->dimension();
       RoutingModel* const model = dimension->model();
 
-      const auto next = [model](int64_t i) { return model->NextVar(i)->Value(); };
+      const auto next = [model](int64_t i) {
+        return model->NextVar(i)->Value();
+      };
 
       DCHECK(DimensionFixedTransitsEqualTransitEvaluators(*dimension));
 
@@ -1151,7 +1155,9 @@ bool RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity(
 RoutingModel::StateDependentTransit RoutingModel::MakeStateDependentTransit(
     const std::function<int64_t(int64_t)>& f, int64_t domain_start,
     int64_t domain_end) {
-  const std::function<int64_t(int64_t)> g = [&f](int64_t x) { return f(x) + x; };
+  const std::function<int64_t(int64_t)> g = [&f](int64_t x) {
+    return f(x) + x;
+  };
   // The next line is safe, because MakeCachedIntToIntFunction does not count
   // on keeping the closure of its first argument alive.
   return {MakeCachedIntToIntFunction(f, domain_start, domain_end),
@@ -4220,7 +4226,8 @@ RoutingModel::GetOrCreateLocalSearchFilters(
   if (filter_cost) {
     if (CostsAreHomogeneousAcrossVehicles()) {
       LocalSearchFilter* sum = solver_->MakeSumObjectiveFilter(
-          nexts_, [this](int64_t i, int64_t j) { return GetHomogeneousCost(i, j); },
+          nexts_,
+          [this](int64_t i, int64_t j) { return GetHomogeneousCost(i, j); },
           Solver::LE);
       filters.push_back({sum, kAccept});
     } else {
@@ -4534,7 +4541,9 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
   first_solution_decision_builders_
       [FirstSolutionStrategy::GLOBAL_CHEAPEST_ARC] = solver_->MakePhase(
           nexts_,
-          [this](int64_t i, int64_t j) { return GetArcCostForFirstSolution(i, j); },
+          [this](int64_t i, int64_t j) {
+            return GetArcCostForFirstSolution(i, j);
+          },
           Solver::CHOOSE_STATIC_GLOBAL_BEST);
   // Cheapest addition heuristic.
   Solver::IndexEvaluator2 eval = [this](int64_t i, int64_t j) {
@@ -4563,7 +4572,8 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
                              [FirstSolutionStrategy::PATH_CHEAPEST_ARC]);
   }
   // Path-based most constrained arc addition heuristic.
-  Solver::VariableValueComparator comp = [this](int64_t i, int64_t j, int64_t k) {
+  Solver::VariableValueComparator comp = [this](int64_t i, int64_t j,
+                                                int64_t k) {
     return ArcIsMoreConstrainedThanArc(i, j, k);
   };
 
@@ -4761,17 +4771,19 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
               this, GetOrCreateFeasibilityFilterManager(search_parameters),
               search_parameters.christofides_use_minimum_matching())));
   // Automatic
-  // TODO(user): make this smarter.
   const bool has_precedences = std::any_of(
       dimensions_.begin(), dimensions_.end(),
       [](RoutingDimension* dim) { return !dim->GetNodePrecedences().empty(); });
-  if (pickup_delivery_pairs_.empty() && !has_precedences) {
-    automatic_first_solution_strategy_ =
-        FirstSolutionStrategy::PATH_CHEAPEST_ARC;
-  } else {
-    automatic_first_solution_strategy_ =
-        FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION;
+  bool has_single_vehicle_node = false;
+  for (int node = 0; node < Size(); node++) {
+    if (!IsStart(node) && !IsEnd(node) && allowed_vehicles_[node].size() == 1) {
+      has_single_vehicle_node = true;
+      break;
+    }
   }
+  automatic_first_solution_strategy_ =
+      AutomaticFirstSolutionStrategy(!pickup_delivery_pairs_.empty(),
+                                     has_precedences, has_single_vehicle_node);
   first_solution_decision_builders_[FirstSolutionStrategy::AUTOMATIC] =
       first_solution_decision_builders_[automatic_first_solution_strategy_];
   first_solution_decision_builders_[FirstSolutionStrategy::UNSET] =

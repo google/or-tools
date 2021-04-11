@@ -287,7 +287,9 @@ bool RoutingModel::SolveMatchingModel(
               // second pass with an MP solver.
               if (optimizer.ComputeRouteCumulCostWithoutFixedTransits(
                       vehicle,
-                      [&nexts](int64_t node) { return nexts.find(node)->second; },
+                      [&nexts](int64_t node) {
+                        return nexts.find(node)->second;
+                      },
                       &cumul_cost_value) !=
                   DimensionSchedulingStatus::INFEASIBLE) {
                 cost = CapAdd(cost, cumul_cost_value);
@@ -310,7 +312,9 @@ bool RoutingModel::SolveMatchingModel(
               // second pass with an MP solver.
               if (optimizer.ComputeRouteCumulCostWithoutFixedTransits(
                       vehicle,
-                      [&nexts](int64_t node) { return nexts.find(node)->second; },
+                      [&nexts](int64_t node) {
+                        return nexts.find(node)->second;
+                      },
                       &cumul_cost_value) !=
                   DimensionSchedulingStatus::INFEASIBLE) {
                 cost = CapAdd(cost, cumul_cost_value);
