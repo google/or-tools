@@ -1,0 +1,182 @@
+// Copyright 2010-2021 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// The solution to an optimization model.
+syntax = "proto3";
+
+package operations_research.math_opt;
+
+import "ortools/math_opt/sparse_containers.proto";
+
+// A primal feasible solution for a Model (above).
+// For more details see go/mathopt-solutions#primal-solution
+message PrimalSolutionProto {
+  // Variable values with absolute value strictly above a specified
+  // non-zero-threshold.
+  //
+  // Requirements:
+  //  * variable_values.ids are elements of VariablesProto.ids.
+  //  * variable_values.values must all be finite.
+  //  * variable_values.values must all have absolute values strictly greater
+  //    than the non-zero-threshold.
+  //  * Missing values assumed to be zero up to the non-zero-threshold. Only a
+  //    non-zero-threshold equal to 0.0 guarantees missing values are exactly
+  //    equal to 0.0.
+  SparseDoubleVectorProto variable_values = 1;
+
+  // Objective value as computed by the underlying solver.
+  optional double objective_value = 2;
+
+  // TODO(user): add a way to indicate the precision of the solution.
+}
+
+// Encodes a certificate of dual infeasibility (equivalent to a primary ray when
+// the primal problem is feasible).
+//
+// For a Model (above), this gives a value x in R^n for the decision variables
+// that satisfies (assuming a minimization objective, and letting A_i be the
+// ith row of the constraint matrix):
+//
+// 1. c * x < 0
+// 2. A_i * x >= 0 if cons_lb_i > -inf
+// 3. A_i * x <= 0 if cons_ub_i <  inf
+// 4.     x_i >= 0 if  var_lb_i > -inf
+// 5.     x_i <= 0 if  var_ub_i <  inf
+//
+// Let x be a vector that satisfies these conditions. Then for any given
+// feasible primal solution, adding any sufficiently large positive integer
+// multiple of x to that solution maintains feasibility and improves the
+// objective. This is the primal ray interpretation. For more details on this
+// interpretation see:
+// go/mathopt-solutions#primal-ray
+// For more details on the dual infeasibility certificate interptetation see:
+// go/mathopt-dual#dual-inf-cert
+// TODO(user): update when we add quadratic or conic constraints
+//
+message PrimalRayProto {
+  // Variable values with absolute value strictly above a specified
+  // non-zero-threshold.
+  //
+  // Requirements:
+  //  * variable_values.ids are elements of VariablesProto.ids.
+  //  * variable_values.values must all be finite.
+  //  * variable_values.values must all have absolute values strictly greater
+  //    than the non-zero-threshold.
+  //  * Missing values assumed to be zero up to the non-zero-threshold. Only a
+  //    non-zero-threshold equal to 0.0 guarantees missing values are exactly
+  //    equal to 0.0.
+  SparseDoubleVectorProto variable_values = 1;
+
+  // TODO(user): add a way to indicate the precision of the ray.
+}
+
+// A dual feasible solution for a Model as described in:
+// go/mathopt-dual#dual-solution
+// For an primal interpretation as objective-value/optimality certificates see:
+// go/mathopt-solutions#opt-certificate
+message DualSolutionProto {
+  // Dual values for the linear constraints with absolute value strictly above a
+  // specified non-zero-threshold.
+  //
+  // Requirements:
+  //  * dual_values.ids are elements of LinearConstraints.ids.
+  //  * dual_values.values must all be finite.
+  //  * dual_values.values must all have absolute values strictly
+  //    greater than the non-zero-threshold.
+  //  * Missing values assumed to be zero up to the non-zero-threshold. Only a
+  //    non-zero-threshold equal to 0.0 guarantees missing values are exactly
+  //    equal to 0.0.
+  SparseDoubleVectorProto dual_values = 1;
+  // Constraint dual values with absolute value above a specified
+  // non-zero-threshold.
+  //
+  // Requirements:
+  //  * reduced_costs.ids are elements of VariablesProto.ids.
+  //  * reduced_costs.values must all be finite.
+  //  * reduced_costs.values must all have absolute values strictly
+  //    greater than the non-zero-threshold.
+  //  * Missing values assumed to be zero up to the non-zero-threshold. Only a
+  //    non-zero-threshold equal to 0.0 guarantees missing values are exactly
+  //    equal to 0.0.
+  SparseDoubleVectorProto reduced_costs = 2;
+
+  // Objective value as computed by the underlying solver.
+  optional double objective_value = 3;
+
+  // TODO(user): add a way to indicate the precision of the solution.
+}
+
+// A dual ray for a Model as described in:
+// go/mathopt-dual#dual-ray
+// and/or a primal infeasibility certificate as described in:
+// go/mathopt-solutions#primal-inf-cert
+message DualRayProto {
+  // Dual values for the linear constraints with absolute value strictly above a
+  // specified non-zero-threshold.
+  //
+  // Requirements:
+  //  * dual_values.ids are elements of LinearConstraints.ids.
+  //  * dual_values.values must all be finite.
+  //  * dual_values.values must all have absolute values strictly
+  //    greater than the non-zero-threshold.
+  //  * Missing values assumed to be zero up to the non-zero-threshold. Only a
+  //    non-zero-threshold equal to 0.0 guarantees missing values are exactly
+  //    equal to 0.0.
+  SparseDoubleVectorProto dual_values = 1;
+  // Constraint dual values with absolute value above a specified
+  // non-zero-threshold.
+  //
+  // Requirements:
+  //  * reduced_costs.ids are elements of VariablesProto.ids.
+  //  * reduced_costs.values must all be finite.
+  //  * reduced_costs.values must all have absolute values strictly
+  //    greater than the non-zero-threshold.
+  //  * Missing values assumed to be zero up to the non-zero-threshold. Only a
+  //    non-zero-threshold equal to 0.0 guarantees missing values are exactly
+  //    equal to 0.0.
+  SparseDoubleVectorProto reduced_costs = 2;
+
+  // TODO(user): add a way to indicate the precision of the ray.
+}
+
+enum BasisStatus {
+  INVALID = 0;
+  FREE = 1;
+  AT_LOWER_BOUND = 2;
+  AT_UPPER_BOUND = 3;
+  FIXED_VALUE = 4;
+  BASIC = 5;
+}
+
+// A sparse representation of a vector of basis statuses.
+message SparseBasisStatusVector {
+  // Must be sorted (in increasing ordering) with all elements distinct.
+  repeated int64 ids = 1;
+  // Must have equal length to ids.
+  repeated BasisStatus values = 2;
+}
+
+// A basis for a Model as described in:
+// go/mathopt-basis#basis
+message BasisProto {
+  // Constraint basis status.
+  //
+  // Requirements:
+  //  * constraint_status.ids is equal to LinearConstraints.ids.
+  SparseBasisStatusVector constraint_status = 1;
+  // Variable basis status.
+  //
+  // Requirements:
+  //  * constraint_status.ids is equal to VariablesProto.ids.
+  SparseBasisStatusVector variable_status = 2;
+}

@@ -1,0 +1,56 @@
+// Copyright 2010-2021 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Solve parameters that are specific to the model.
+
+syntax = "proto3";
+
+package operations_research.math_opt;
+
+import "ortools/math_opt/solution.proto";
+import "ortools/math_opt/sparse_containers.proto";
+
+// Parameters to control a single solve that that are specific to the input
+// model (see SolveParametersProto for model independent parameters).
+message ModelSolveParametersProto {
+  // Filter that is applied to all returned sparse containers keyed by variables
+  // in PrimalSolutionProto and PrimalRayProto
+  // (PrimalSolutionProto.variable_values, PrimalRayProto.variable_values).
+  //
+  // Requirements:
+  //  * filtered_ids are elements of VariablesProto.ids.
+  SparseVectorFilterProto primal_variables_filter = 1;
+
+  // Filter that is applied to all returned sparse containers keyed by linear
+  // constraints in DualSolutionProto and DualRay
+  // (DualSolutionProto.dual_values, DualRay.dual_values).
+  //
+  // Requirements:
+  //  * filtered_ids are elements of LinearConstraints.ids.
+  SparseVectorFilterProto dual_linear_constraints_filter = 2;
+
+  // Filter that is applied to all returned sparse containers keyed by variables
+  // in DualSolutionProto and DualRay (DualSolutionProto.reduced_costs,
+  // DualRay.reduced_costs).
+  //
+  // Requirements:
+  //  * filtered_ids are elements of VariablesProto.ids.
+  SparseVectorFilterProto dual_variables_filter = 3;
+
+  // Optional initial basis for warm starting simplex LP solvers. If set, it is
+  // expected to be valid according to `ValidateBasis` in
+  // `validators/solution_validator.h` for the current `ModelSummary`.
+  BasisProto initial_basis = 4;
+
+  // TODO(b/183616124): Support hint and branching priorities.
+}

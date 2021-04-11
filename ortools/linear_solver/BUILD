@@ -101,11 +101,11 @@ cc_library(
     copts = ["-DUSE_SCIP"],
     deps = [
         ":linear_solver_cc_proto",
+        ":scip_with_glop",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/types:optional",
-        "@scip//:libscip",
         "//ortools/base:accurate_sum",
         "//ortools/base:dynamic_library",
         "//ortools/base:hash",
@@ -137,6 +137,15 @@ copy_file(
     name = "lpi_glop",
     src = "@scip//:scip-7.0.1/src/lpi/lpi_glop.cpp",
     out = "lpi_glop.cpp",
+)
+
+cc_library(
+    name = "scip_with_glop",
+    srcs = ["lpi_glop.cpp"],
+    deps = [
+        "//ortools/glop:lp_solver",
+        "@scip//:libscip",
+    ],
 )
 
 cc_library(
