@@ -550,7 +550,8 @@ class KnapsackCapacityPropagator : public KnapsackPropagator {
   // So basically the linear relaxation is done on the item before the break
   // item, or the one after the break item.
   // This is what GetAdditionalProfit method implements.
-  int64_t GetAdditionalProfit(int64_t remaining_capacity, int break_item_id) const;
+  int64_t GetAdditionalProfit(int64_t remaining_capacity,
+                              int break_item_id) const;
 
   const int64_t capacity_;
   int64_t consumed_capacity_;
