@@ -25,7 +25,8 @@ class BellmanFord {
   static constexpr int64_t kInfinity = kint64max / 2;
 
   BellmanFord(int node_count, int start_node,
-              std::function<int64_t(int, int)> graph, int64_t disconnected_distance)
+              std::function<int64_t(int, int)> graph,
+              int64_t disconnected_distance)
       : node_count_(node_count),
         start_node_(start_node),
         graph_(std::move(graph)),

@@ -987,12 +987,12 @@ template class GenericMinCostFlow<::util::ReverseArcListGraph<>>;
 template class GenericMinCostFlow<::util::ReverseArcStaticGraph<>>;
 template class GenericMinCostFlow<::util::ReverseArcMixedGraph<>>;
 template class GenericMinCostFlow<
-    ::util::ReverseArcStaticGraph<uint16, int32_t>>;
+    ::util::ReverseArcStaticGraph<uint16_t, int32_t>>;
 
 // A more memory-efficient version for large graphs.
 template class GenericMinCostFlow<
-    ::util::ReverseArcStaticGraph<uint16, int32_t>,
-    /*ArcFlowType=*/int16,
+    ::util::ReverseArcStaticGraph<uint16_t, int32_t>,
+    /*ArcFlowType=*/int16_t,
     /*ArcScaledCostType=*/int32_t>;
 
 SimpleMinCostFlow::SimpleMinCostFlow(NodeIndex reserve_num_nodes,

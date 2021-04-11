@@ -308,7 +308,7 @@ class LatticeMemoryManager {
   // Returns the offset delta for a set of cardinality 'card', to which
   // node 'removed_node' is replaced by 'added_node' at 'rank'
   uint64_t OffsetDelta(int card, int added_node, int removed_node,
-                     int rank) const {
+                       int rank) const {
     return card *
            (binomial_coefficients_[added_node][rank] -  // delta for added_node
             binomial_coefficients_[removed_node][rank]);  // for removed_node.
@@ -405,7 +405,7 @@ bool LatticeMemoryManager<Set, CostType>::CheckConsistency() const {
 
 template <typename Set, typename CostType>
 uint64_t LatticeMemoryManager<Set, CostType>::BaseOffset(int card,
-                                                       Set set) const {
+                                                         Set set) const {
   DCHECK_LT(0, card);
   DCHECK_EQ(set.Cardinality(), card);
   uint64_t local_offset = 0;
@@ -666,7 +666,8 @@ void HamiltonianPathSolver<CostType, CostFunction>::Solve() {
   // on cardinality.
   for (int card = 2; card <= num_nodes_; ++card) {
     // Iterate on sets of same cardinality.
-    for (NodeSet set : SetRangeWithCardinality<Set<uint32_t>>(card, num_nodes_)) {
+    for (NodeSet set :
+         SetRangeWithCardinality<Set<uint32_t>>(card, num_nodes_)) {
       // Using BaseOffset and maintaining the node ranks, to reduce the
       // computational effort for accessing the data.
       const uint64_t set_offset = mem_.BaseOffset(card, set);

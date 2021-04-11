@@ -51,7 +51,8 @@ class DijkstraSP {
   static constexpr int64_t kInfinity = kint64max / 2;
 
   DijkstraSP(int node_count, int start_node,
-             std::function<int64_t(int, int)> graph, int64_t disconnected_distance)
+             std::function<int64_t(int, int)> graph,
+             int64_t disconnected_distance)
       : node_count_(node_count),
         start_node_(start_node),
         graph_(std::move(graph)),
@@ -114,7 +115,8 @@ class DijkstraSP {
           frontier_.Add(&elements_[other_node]);
           added_to_the_frontier_.insert(other_node);
         }
-        const int64_t other_distance = elements_[node].distance() + graph_node_i;
+        const int64_t other_distance =
+            elements_[node].distance() + graph_node_i;
         if (elements_[other_node].distance() > other_distance) {
           elements_[other_node].set_distance(other_distance);
           frontier_.NoteChangedPriority(&elements_[other_node]);

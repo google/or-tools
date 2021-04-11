@@ -1004,7 +1004,7 @@ class EbertGraphBase
       return kNilArc;
     }
     if (tail + 1 > num_nodes_) {
-      num_nodes_ = tail + 1;  // max does not work on int16.
+      num_nodes_ = tail + 1;  // max does not work on int16_t.
     }
     if (head + 1 > num_nodes_) {
       num_nodes_ = head + 1;
@@ -1180,8 +1180,8 @@ class EbertGraphBase
   }
 };
 
-// Most users should only use StarGraph, which is EbertGraph<int32_t, int32_t>, and
-// other type shortcuts; see the bottom of this file.
+// Most users should only use StarGraph, which is EbertGraph<int32_t, int32_t>,
+// and other type shortcuts; see the bottom of this file.
 template <typename NodeIndexType, typename ArcIndexType>
 class EbertGraph
     : public EbertGraphBase<NodeIndexType, ArcIndexType,
