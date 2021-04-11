@@ -99,7 +99,7 @@ const RowIndex kInvalidRow(-1);
 const ColIndex kInvalidCol(-1);
 
 // Different statuses for a given problem.
-enum class ProblemStatus : int8 {
+enum class ProblemStatus : int8_t {
   // The problem has been solved to optimality. Both the primal and dual have
   // a feasible solution.
   OPTIMAL,
@@ -172,7 +172,7 @@ inline std::ostream& operator<<(std::ostream& os, ProblemStatus status) {
 }
 
 // Different types of variables.
-enum class VariableType : int8 {
+enum class VariableType : int8_t {
   UNCONSTRAINED,
   LOWER_BOUNDED,
   UPPER_BOUNDED,
@@ -194,7 +194,7 @@ inline std::ostream& operator<<(std::ostream& os, VariableType type) {
 // execution of the revised simplex algorithm, except that because of
 // bound-shifting, the variable may not be at their exact bounds until the
 // shifts are removed.
-enum class VariableStatus : int8 {
+enum class VariableStatus : int8_t {
   // The basic status is special and takes precedence over all the other
   // statuses. It means that the variable is part of the basis.
   BASIC,
@@ -225,7 +225,7 @@ inline std::ostream& operator<<(std::ostream& os, VariableStatus status) {
 // VariableStatus of the slack variable associated to a constraint modulo a
 // change of sign. The difference is that because of precision error, a
 // constraint activity cannot exactly be equal to one of its bounds or to zero.
-enum class ConstraintStatus : int8 {
+enum class ConstraintStatus : int8_t {
   BASIC,
   FIXED_VALUE,
   AT_LOWER_BOUND,

@@ -302,8 +302,8 @@ class TimeLimit {
     return "inst_retired:any_p:u";
   }
 
-  mutable int64_t start_ns_;  // Not const! this is initialized after instruction
-                            // counter initialization.
+  mutable int64_t start_ns_;  // Not const! this is initialized after
+                              // instruction counter initialization.
   int64_t last_ns_;
   int64_t limit_ns_;  // Not const! See the code of LimitReached().
   const int64_t safety_buffer_ns_;

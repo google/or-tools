@@ -138,10 +138,8 @@ class PiecewiseLinearFunction {
       std::vector<int64_t> slopes);
 
   // Builds a function consisting of one segment.
-  static PiecewiseLinearFunction* CreateOneSegmentFunction(int64_t point_x,
-                                                           int64_t point_y,
-                                                           int64_t slope,
-                                                           int64_t other_point_x);
+  static PiecewiseLinearFunction* CreateOneSegmentFunction(
+      int64_t point_x, int64_t point_y, int64_t slope, int64_t other_point_x);
 
   // Builds a function consisting of one ray starting at the specified
   // x and y coordinates with the specified slope.
@@ -205,20 +203,17 @@ class PiecewiseLinearFunction {
   int64_t GetMinimum(int64_t range_start, int64_t range_end) const;
   // Returns the smallest range within a given range containing all values
   // greater than a given value.
-  std::pair<int64_t, int64_t> GetSmallestRangeGreaterThanValue(int64_t range_start,
-                                                           int64_t range_end,
-                                                           int64_t value) const;
+  std::pair<int64_t, int64_t> GetSmallestRangeGreaterThanValue(
+      int64_t range_start, int64_t range_end, int64_t value) const;
   // Returns the smallest range within a given range containing all values
   // less than a given value.
-  std::pair<int64_t, int64_t> GetSmallestRangeLessThanValue(int64_t range_start,
-                                                        int64_t range_end,
-                                                        int64_t value) const;
+  std::pair<int64_t, int64_t> GetSmallestRangeLessThanValue(
+      int64_t range_start, int64_t range_end, int64_t value) const;
   // Returns the smallest range within a given range containing all values
   // greater than value_min and less than value_max.
-  std::pair<int64_t, int64_t> GetSmallestRangeInValueRange(int64_t range_start,
-                                                       int64_t range_end,
-                                                       int64_t value_min,
-                                                       int64_t value_max) const;
+  std::pair<int64_t, int64_t> GetSmallestRangeInValueRange(
+      int64_t range_start, int64_t range_end, int64_t value_min,
+      int64_t value_max) const;
 
   // Adds 'constant' to the 'x' of all segments. If the argument is positive,
   // the translation is to the right and when it's negative, to the left. The

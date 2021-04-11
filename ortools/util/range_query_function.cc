@@ -53,8 +53,8 @@ class LinearRangeIntToIntFunction : public RangeIntToIntFunction {
   }
 
   int64_t RangeFirstInsideInterval(int64_t range_begin, int64_t range_end,
-                                 int64_t interval_begin,
-                                 int64_t interval_end) const override {
+                                   int64_t interval_begin,
+                                   int64_t interval_end) const override {
     // domain_start_ <= range_begin < range_end <= domain_start_+array().size()
     DCHECK_LT(range_begin, range_end);
     DCHECK_LT(interval_begin, interval_end);
@@ -67,8 +67,8 @@ class LinearRangeIntToIntFunction : public RangeIntToIntFunction {
   }
 
   int64_t RangeLastInsideInterval(int64_t range_begin, int64_t range_end,
-                                int64_t interval_begin,
-                                int64_t interval_end) const override {
+                                  int64_t interval_begin,
+                                  int64_t interval_end) const override {
     // domain_start_ <= range_begin < range_end <= domain_start_+array().size()
     DCHECK_NE(range_begin, kint64max);
     DCHECK_LT(range_begin, range_end);
@@ -88,7 +88,8 @@ class LinearRangeIntToIntFunction : public RangeIntToIntFunction {
 };
 
 std::vector<int64_t> FunctionToVector(const std::function<int64_t(int64_t)>& f,
-                                    int64_t domain_start, int64_t domain_end) {
+                                      int64_t domain_start,
+                                      int64_t domain_end) {
   CHECK_LT(domain_start, domain_end);
   std::vector<int64_t> output(domain_end - domain_start, 0);
   for (int64_t i = 0; i < domain_end - domain_start; ++i) {
@@ -103,8 +104,9 @@ std::vector<int64_t> FunctionToVector(const std::function<int64_t(int64_t)>& f,
 // 2. It creates a data structure for quick answer to range queries.
 class CachedRangeIntToIntFunction : public RangeIntToIntFunction {
  public:
-  CachedRangeIntToIntFunction(const std::function<int64_t(int64_t)>& base_function,
-                              int64_t domain_start, int64_t domain_end)
+  CachedRangeIntToIntFunction(
+      const std::function<int64_t(int64_t)>& base_function,
+      int64_t domain_start, int64_t domain_end)
       : domain_start_(domain_start),
         rmq_min_(FunctionToVector(base_function, domain_start, domain_end)),
         rmq_max_(rmq_min_.array()) {
@@ -131,8 +133,8 @@ class CachedRangeIntToIntFunction : public RangeIntToIntFunction {
                                         to - domain_start_);
   }
   int64_t RangeFirstInsideInterval(int64_t range_begin, int64_t range_end,
-                                 int64_t interval_begin,
-                                 int64_t interval_end) const override {
+                                   int64_t interval_begin,
+                                   int64_t interval_end) const override {
     // domain_start_ <= range_begin < range_end <= domain_start_+array().size()
     DCHECK_LE(domain_start_, range_begin);
     DCHECK_LT(range_begin, range_end);
@@ -146,8 +148,8 @@ class CachedRangeIntToIntFunction : public RangeIntToIntFunction {
     return i;
   }
   int64_t RangeLastInsideInterval(int64_t range_begin, int64_t range_end,
-                                int64_t interval_begin,
-                                int64_t interval_end) const override {
+                                  int64_t interval_begin,
+                                  int64_t interval_end) const override {
     // domain_start_ <= range_begin < range_end <= domain_start_+array().size()
     DCHECK_LE(domain_start_, range_begin);
     DCHECK_LT(range_begin, range_end);
@@ -209,7 +211,8 @@ class CachedRangeMinMaxIndexFunction : public RangeMinMaxIndexFunction {
 };
 }  // namespace
 
-RangeIntToIntFunction* MakeBareIntToIntFunction(std::function<int64_t(int64_t)> f) {
+RangeIntToIntFunction* MakeBareIntToIntFunction(
+    std::function<int64_t(int64_t)> f) {
   return new LinearRangeIntToIntFunction(std::move(f));
 }
 

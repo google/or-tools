@@ -81,7 +81,9 @@ typedef CycleTimer SimpleCycleTimer;
 // Conversion routines between CycleTimer::GetCycles and actual times.
 class CycleTimerBase {
  public:
-  static int64_t SecondsToCycles(double s) { return static_cast<int64_t>(s * 1e9); }
+  static int64_t SecondsToCycles(double s) {
+    return static_cast<int64_t>(s * 1e9);
+  }
   static double CyclesToSeconds(int64_t c) { return c * 1e-9; }
   static int64_t CyclesToMs(int64_t c) { return c / 1000000; }
   static int64_t CyclesToUsec(int64_t c) { return c / 1000; }

@@ -17,6 +17,7 @@
 #include <jni.h>
 
 #include <string>
+
 #include "ortools/base/logging.h"
 
 class JNIUtil {

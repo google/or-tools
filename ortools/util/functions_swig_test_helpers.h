@@ -34,12 +34,13 @@ class FunctionSwigTestHelpers {
     return fun();
   }
 
-  static int64_t NoOpInt64ToInt64(std::function<int64_t(int64_t)> fun, int64_t x) {
+  static int64_t NoOpInt64ToInt64(std::function<int64_t(int64_t)> fun,
+                                  int64_t x) {
     return fun(x);
   }
 
-  static int64_t NoOpInt64PairToInt64(std::function<int64_t(int64_t, int64_t)> fun,
-                                    int64_t x, int64_t y) {
+  static int64_t NoOpInt64PairToInt64(
+      std::function<int64_t(int64_t, int64_t)> fun, int64_t x, int64_t y) {
     return fun(x, y);
   }
 
@@ -48,18 +49,19 @@ class FunctionSwigTestHelpers {
   }
 
   static int64_t NoOpIntPairToInt64(std::function<int64_t(int, int)> fun, int x,
-                                  int y) {
+                                    int y) {
     return fun(x, y);
   }
 
   static int64_t NoOpInt64TripleToInt64(
-      std::function<int64_t(int64_t, int64_t, int64_t)> fun, int64_t x, int64_t y,
-      int64_t z) {
+      std::function<int64_t(int64_t, int64_t, int64_t)> fun, int64_t x,
+      int64_t y, int64_t z) {
     return fun(x, y, z);
   }
 
   static bool NoOpInt64TripleToBool(
-      std::function<bool(int64_t, int64_t, int64_t)> fun, int64_t x, int64_t y, int64_t z) {
+      std::function<bool(int64_t, int64_t, int64_t)> fun, int64_t x, int64_t y,
+      int64_t z) {
     return fun(x, y, z);
   }
 

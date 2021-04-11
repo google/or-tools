@@ -156,12 +156,12 @@ class ZVector {
 };
 
 // Shorthands for all the types of ZVector's.
-typedef ZVector<int8> Int8ZVector;
-typedef ZVector<int16> Int16ZVector;
+typedef ZVector<int8_t> Int8ZVector;
+typedef ZVector<int16_t> Int16ZVector;
 typedef ZVector<int32_t> Int32ZVector;
 typedef ZVector<int64_t> Int64ZVector;
-typedef ZVector<uint8> UInt8ZVector;
-typedef ZVector<uint16> UInt16ZVector;
+typedef ZVector<uint8_t> UInt8ZVector;
+typedef ZVector<uint16_t> UInt16ZVector;
 typedef ZVector<uint32_t> UInt32ZVector;
 typedef ZVector<uint64_t> UInt64ZVector;
 

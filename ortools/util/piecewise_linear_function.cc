@@ -50,7 +50,8 @@ inline bool IsAtBounds(int64_t value) {
   return value == kint64min || value == kint64max;
 }
 
-inline bool PointInsideRange(int64_t point, int64_t range_start, int64_t range_end) {
+inline bool PointInsideRange(int64_t point, int64_t range_start,
+                             int64_t range_end) {
   return range_start <= point && range_end >= point;
 }
 
@@ -73,8 +74,8 @@ uint64_t UnsignedCapProd(uint64_t left, uint64_t right) {
 }
 }  // namespace
 
-PiecewiseSegment::PiecewiseSegment(int64_t point_x, int64_t point_y, int64_t slope,
-                                   int64_t other_point_x)
+PiecewiseSegment::PiecewiseSegment(int64_t point_x, int64_t point_y,
+                                   int64_t slope, int64_t other_point_x)
     : slope_(slope), reference_x_(point_x), reference_y_(point_y) {
   start_x_ = std::min(point_x, other_point_x);
   end_x_ = std::max(point_x, other_point_x);
@@ -438,7 +439,7 @@ int64_t PiecewiseLinearFunction::Value(int64_t x) const {
 }
 
 int64_t PiecewiseLinearFunction::GetMaximum(int64_t range_start,
-                                          int64_t range_end) const {
+                                            int64_t range_end) const {
   if (IsNonDecreasing() && InDomain(range_end)) {
     return Value(range_end);
   } else if (IsNonIncreasing() && InDomain(range_start)) {
@@ -472,7 +473,7 @@ int64_t PiecewiseLinearFunction::GetMaximum(int64_t range_start,
 }
 
 int64_t PiecewiseLinearFunction::GetMinimum(int64_t range_start,
-                                          int64_t range_end) const {
+                                            int64_t range_end) const {
   if (IsNonDecreasing() && InDomain(range_start)) {
     return Value(range_start);
   } else if (IsNonIncreasing() && InDomain(range_end)) {
@@ -520,14 +521,16 @@ PiecewiseLinearFunction::GetSmallestRangeGreaterThanValue(int64_t range_start,
   return GetSmallestRangeInValueRange(range_start, range_end, value, kint64max);
 }
 
-std::pair<int64_t, int64_t> PiecewiseLinearFunction::GetSmallestRangeLessThanValue(
-    int64_t range_start, int64_t range_end, int64_t value) const {
+std::pair<int64_t, int64_t>
+PiecewiseLinearFunction::GetSmallestRangeLessThanValue(int64_t range_start,
+                                                       int64_t range_end,
+                                                       int64_t value) const {
   return GetSmallestRangeInValueRange(range_start, range_end, kint64min, value);
 }
 
 namespace {
-std::pair<int64_t, int64_t> ComputeXFromY(int64_t start_x, int64_t start_y, int64_t slope,
-                                      int64_t y) {
+std::pair<int64_t, int64_t> ComputeXFromY(int64_t start_x, int64_t start_y,
+                                          int64_t slope, int64_t y) {
   DCHECK_NE(slope, 0);
   const int64_t delta_y = CapSub(y, start_y);
   const int64_t delta_x = delta_y / slope;
@@ -543,9 +546,10 @@ std::pair<int64_t, int64_t> ComputeXFromY(int64_t start_x, int64_t start_y, int6
 }
 
 std::pair<int64_t, int64_t> GetRangeInValueRange(int64_t start_x, int64_t end_x,
-                                             int64_t start_y, int64_t end_y,
-                                             int64_t slope, int64_t value_min,
-                                             int64_t value_max) {
+                                                 int64_t start_y, int64_t end_y,
+                                                 int64_t slope,
+                                                 int64_t value_min,
+                                                 int64_t value_max) {
   if ((start_y > value_max && end_y > value_max) ||
       (start_y < value_min && end_y < value_min)) {
     return {kint64max, kint64min};
@@ -585,9 +589,11 @@ std::pair<int64_t, int64_t> GetRangeInValueRange(int64_t start_x, int64_t end_x,
 }
 }  // namespace
 
-std::pair<int64_t, int64_t> PiecewiseLinearFunction::GetSmallestRangeInValueRange(
-    int64_t range_start, int64_t range_end, int64_t value_min,
-    int64_t value_max) const {
+std::pair<int64_t, int64_t>
+PiecewiseLinearFunction::GetSmallestRangeInValueRange(int64_t range_start,
+                                                      int64_t range_end,
+                                                      int64_t value_min,
+                                                      int64_t value_max) const {
   int64_t reduced_range_start = kint64max;
   int64_t reduced_range_end = kint64min;
   int start_segment = -1;
@@ -717,12 +723,14 @@ void PiecewiseLinearFunction::Operation(
       const PiecewiseSegment& own_segment = own_segments[own_index];
       const PiecewiseSegment& other_segment = other_segments[other_index];
 
-      const int64_t end_x = std::min(own_segment.end_x(), other_segment.end_x());
+      const int64_t end_x =
+          std::min(own_segment.end_x(), other_segment.end_x());
       const int64_t start_y =
           operation(own_segment.Value(start_x), other_segment.Value(start_x));
       const int64_t end_y =
           operation(own_segment.Value(end_x), other_segment.Value(end_x));
-      const int64_t slope = operation(own_segment.slope(), other_segment.slope());
+      const int64_t slope =
+          operation(own_segment.slope(), other_segment.slope());
 
       int64_t point_x, point_y, other_point_x;
       if (IsAtBounds(start_y)) {

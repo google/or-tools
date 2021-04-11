@@ -38,13 +38,15 @@ namespace operations_research {
 inline int64_t TwosComplementAddition(int64_t x, int64_t y) {
   static_assert(static_cast<uint64_t>(-1LL) == ~0ULL,
                 "The target architecture does not use two's complement.");
-  return absl::bit_cast<int64_t>(static_cast<uint64_t>(x) + static_cast<uint64_t>(y));
+  return absl::bit_cast<int64_t>(static_cast<uint64_t>(x) +
+                                 static_cast<uint64_t>(y));
 }
 
 inline int64_t TwosComplementSubtraction(int64_t x, int64_t y) {
   static_assert(static_cast<uint64_t>(-1LL) == ~0ULL,
                 "The target architecture does not use two's complement.");
-  return absl::bit_cast<int64_t>(static_cast<uint64_t>(x) - static_cast<uint64_t>(y));
+  return absl::bit_cast<int64_t>(static_cast<uint64_t>(x) -
+                                 static_cast<uint64_t>(y));
 }
 
 // Helper function that returns true if an overflow has occured in computing

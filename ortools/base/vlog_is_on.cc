@@ -99,8 +99,8 @@ int32_t kLogSiteUninitialized = 1000;
 struct VModuleInfo {
   string module_pattern;
   mutable int32_t vlog_level;  // Conceptually this is an AtomicWord, but it's
-                             // too much work to use AtomicWord type here
-                             // w/o much actual benefit.
+                               // too much work to use AtomicWord type here
+                               // w/o much actual benefit.
   const VModuleInfo* next;
 };
 

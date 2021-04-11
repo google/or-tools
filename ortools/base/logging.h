@@ -520,8 +520,8 @@ inline const T& GetReferenceableValue(const T& t) {
 inline char GetReferenceableValue(char t) { return t; }
 inline unsigned char GetReferenceableValue(unsigned char t) { return t; }
 inline signed char GetReferenceableValue(signed char t) { return t; }
-inline int16 GetReferenceableValue(int16 t) { return t; }
-inline uint16 GetReferenceableValue(uint16 t) { return t; }
+inline int16_t GetReferenceableValue(int16_t t) { return t; }
+inline uint16_t GetReferenceableValue(uint16_t t) { return t; }
 inline int GetReferenceableValue(int t) { return t; }
 inline unsigned int GetReferenceableValue(unsigned int t) { return t; }
 inline int64_t GetReferenceableValue(int64_t t) { return t; }

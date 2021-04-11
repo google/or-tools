@@ -132,7 +132,8 @@ class Domain {
    * Same as FromIntervals() for a flattened representation (start, end,
    * start, end, ...).
    */
-  static Domain FromFlatSpanOfIntervals(absl::Span<const int64_t> flat_intervals);
+  static Domain FromFlatSpanOfIntervals(
+      absl::Span<const int64_t> flat_intervals);
 
   /**
    * This method is available in Python, Java and .NET. It allows
@@ -417,7 +418,8 @@ class SortedDisjointIntervalList {
   /**
    * Builds the complement of the interval list on the interval [start, end].
    */
-  SortedDisjointIntervalList BuildComplementOnInterval(int64_t start, int64_t end);
+  SortedDisjointIntervalList BuildComplementOnInterval(int64_t start,
+                                                       int64_t end);
 
   /**
    * Adds the interval [start..end] to the list, and merges overlapping or

@@ -156,7 +156,8 @@ Domain Domain::FromIntervals(absl::Span<const ClosedInterval> intervals) {
   return result;
 }
 
-Domain Domain::FromFlatSpanOfIntervals(absl::Span<const int64_t> flat_intervals) {
+Domain Domain::FromFlatSpanOfIntervals(
+    absl::Span<const int64_t> flat_intervals) {
   DCHECK(flat_intervals.size() % 2 == 0) << flat_intervals.size();
   Domain result;
   result.intervals_.reserve(flat_intervals.size() / 2);
@@ -580,7 +581,8 @@ SortedDisjointIntervalList::SortedDisjointIntervalList(
 }
 
 SortedDisjointIntervalList
-SortedDisjointIntervalList::BuildComplementOnInterval(int64_t start, int64_t end) {
+SortedDisjointIntervalList::BuildComplementOnInterval(int64_t start,
+                                                      int64_t end) {
   SortedDisjointIntervalList interval_list;
   int64_t next_start = start;
   for (auto it = FirstIntervalGreaterOrEqual(start); it != this->end(); ++it) {

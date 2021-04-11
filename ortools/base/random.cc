@@ -49,7 +49,8 @@ uint64_t ACMRandom::operator()(uint64_t val_max) {
 
 namespace {
 static inline uint32_t Word32At(const char* ptr) {
-  return ((static_cast<uint32_t>(ptr[0])) + (static_cast<uint32_t>(ptr[1]) << 8) +
+  return ((static_cast<uint32_t>(ptr[0])) +
+          (static_cast<uint32_t>(ptr[1]) << 8) +
           (static_cast<uint32_t>(ptr[2]) << 16) +
           (static_cast<uint32_t>(ptr[3]) << 24));
 }

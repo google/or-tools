@@ -218,9 +218,7 @@ inline int SwigPyIntOrLong_Check(PyObject* o) {
   );  // NOLINT
 }
 
-inline int SwigString_Check(PyObject* o) {
-  return PyUnicode_Check(o);
-}
+inline int SwigString_Check(PyObject* o) { return PyUnicode_Check(o); }
 
 inline PyObject* SwigString_FromString(const std::string& s) {
   return PyString_FromStringAndSize(s.data(), s.size());

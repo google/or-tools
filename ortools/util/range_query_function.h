@@ -23,8 +23,8 @@
 #include "ortools/base/integral_types.h"
 
 namespace operations_research {
-// RangeIntToIntFunction is an interface to int64_t->int64_t functions supporting
-// fast answer to range queries about their domain/codomain.
+// RangeIntToIntFunction is an interface to int64_t->int64_t functions
+// supporting fast answer to range queries about their domain/codomain.
 class RangeIntToIntFunction {
  public:
   virtual ~RangeIntToIntFunction() = default;
@@ -39,14 +39,16 @@ class RangeIntToIntFunction {
   virtual int64_t RangeMax(int64_t from, int64_t to) const = 0;
   // Returns the first x from [range_begin, range_end) for which f(x) is in
   // [interval_begin, interval_end), or range_end if there is no such x.
-  virtual int64_t RangeFirstInsideInterval(int64_t range_begin, int64_t range_end,
-                                         int64_t interval_begin,
-                                         int64_t interval_end) const = 0;
+  virtual int64_t RangeFirstInsideInterval(int64_t range_begin,
+                                           int64_t range_end,
+                                           int64_t interval_begin,
+                                           int64_t interval_end) const = 0;
   // Returns the last x from [range_begin, range_end) for which f(x) is in
   // [interval_begin, interval_end), or range_begin-1 if there is no such x.
-  virtual int64_t RangeLastInsideInterval(int64_t range_begin, int64_t range_end,
-                                        int64_t interval_begin,
-                                        int64_t interval_end) const = 0;
+  virtual int64_t RangeLastInsideInterval(int64_t range_begin,
+                                          int64_t range_end,
+                                          int64_t interval_begin,
+                                          int64_t interval_end) const = 0;
 };
 
 // RangeMinMaxIndexFunction is different from RangeIntToIntFunction in two ways:
@@ -69,16 +71,19 @@ class RangeMinMaxIndexFunction {
 
 // A copy of f is going to be stored in the returned object, so its closure
 // should remain intact as long as the returned object is being used.
-RangeIntToIntFunction* MakeBareIntToIntFunction(std::function<int64_t(int64_t)> f);
+RangeIntToIntFunction* MakeBareIntToIntFunction(
+    std::function<int64_t(int64_t)> f);
 // It is assumed that f is defined over the interval [domain_start, domain_end).
 // The function scans f once and it is safe to destroy f and its closure after
 // MakeCachedIntToIntFunction returns.
 RangeIntToIntFunction* MakeCachedIntToIntFunction(
-    const std::function<int64_t(int64_t)>& f, int64_t domain_start, int64_t domain_end);
+    const std::function<int64_t(int64_t)>& f, int64_t domain_start,
+    int64_t domain_end);
 // It is safe to destroy the first argument and its closure after
 // MakeCachedRangeMinMaxIndexFunction returns.
 RangeMinMaxIndexFunction* MakeCachedRangeMinMaxIndexFunction(
-    const std::function<int64_t(int64_t)>& f, int64_t domain_start, int64_t domain_end);
+    const std::function<int64_t(int64_t)>& f, int64_t domain_start,
+    int64_t domain_end);
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_UTIL_RANGE_QUERY_FUNCTION_H_

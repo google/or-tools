@@ -311,7 +311,8 @@ inline int IntTupleSet::Insert3(int64_t v0, int64_t v1, int64_t v2) {
   return Insert(tuple);
 }
 
-inline int IntTupleSet::Insert4(int64_t v0, int64_t v1, int64_t v2, int64_t v3) {
+inline int IntTupleSet::Insert4(int64_t v0, int64_t v1, int64_t v2,
+                                int64_t v3) {
   std::vector<int64_t> tuple(4);
   tuple[0] = v0;
   tuple[1] = v1;

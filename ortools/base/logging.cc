@@ -208,7 +208,7 @@ static void GetHostName(string* hostname) {
     *buf.nodename = '\0';
   }
   *hostname = buf.nodename;
-#else  // _MSC_VER
+#else   // _MSC_VER
   char buf[MAX_COMPUTERNAME_LENGTH + 1];
   DWORD len = MAX_COMPUTERNAME_LENGTH + 1;
   if (GetComputerNameA(buf, &len)) {
@@ -650,7 +650,7 @@ static void ColoredWriteToStderr(LogSeverity severity, const char* message,
   fflush(stderr);
   // Restores the text color.
   SetConsoleTextAttribute(stderr_handle, old_color_attrs);
-#else  // !_MSC_VER
+#else   // !_MSC_VER
   fprintf(stderr, "\033[0;3%sm", GetAnsiColorCode(color));
   fwrite(message, len, 1, stderr);
   fprintf(stderr, "\033[m");  // Resets the terminal to default.
@@ -814,7 +814,7 @@ void LogFileObject::FlushUnlocked() {
   }
   // Figure out when we are due for another flush.
   const int64_t next = (absl::GetFlag(FLAGS_logbufsecs) *
-                      static_cast<int64_t>(1000000));  // in usec
+                        static_cast<int64_t>(1000000));  // in usec
   next_flush_time_ =
       logging_internal::CycleClock_Now() + logging_internal::UsecToCycles(next);
 }
@@ -1023,7 +1023,8 @@ void LogFileObject::Write(bool force_flush, time_t timestamp,
     if (absl::GetFlag(FLAGS_drop_log_memory) && file_length_ >= (3 << 20)) {
       // Don't evict the most recent 1-2MiB so as not to impact a tailer
       // of the log file and to avoid page rounding issue on linux < 4.7
-      uint32_t total_drop_length = (file_length_ & ~((1 << 20) - 1)) - (1 << 20);
+      uint32_t total_drop_length =
+          (file_length_ & ~((1 << 20) - 1)) - (1 << 20);
       uint32_t this_drop_length = total_drop_length - dropped_mem_length_;
       if (this_drop_length >= (2 << 20)) {
         // Only advise when >= 2MiB to drop
@@ -1186,7 +1187,7 @@ LogMessage::~LogMessage() {
   } else {
     delete allocated_;
   }
-#else  // !defined(GLOG_THREAD_LOCAL_STORAGE)
+#else   // !defined(GLOG_THREAD_LOCAL_STORAGE)
   delete allocated_;
 #endif  // defined(GLOG_THREAD_LOCAL_STORAGE)
 }
@@ -1842,7 +1843,7 @@ void MakeCheckOpValueString(std::ostream* os, const char& v) {
   if (v >= 32 && v <= 126) {
     (*os) << "'" << v << "'";
   } else {
-    (*os) << "char value " << (int16)v;
+    (*os) << "char value " << (int16_t)v;
   }
 }
 
@@ -1851,7 +1852,7 @@ void MakeCheckOpValueString(std::ostream* os, const signed char& v) {
   if (v >= 32 && v <= 126) {
     (*os) << "'" << v << "'";
   } else {
-    (*os) << "signed char value " << (int16)v;
+    (*os) << "signed char value " << (int16_t)v;
   }
 }
 
@@ -1860,7 +1861,7 @@ void MakeCheckOpValueString(std::ostream* os, const unsigned char& v) {
   if (v >= 32 && v <= 126) {
     (*os) << "'" << v << "'";
   } else {
-    (*os) << "unsigned char value " << (uint16)v;
+    (*os) << "unsigned char value " << (uint16_t)v;
   }
 }
 
