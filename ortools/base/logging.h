@@ -19,6 +19,7 @@
 #include <time.h>
 
 #include <cassert>
+#include <cstddef>
 #include <iosfwd>
 #include <ostream>
 #include <sstream>
