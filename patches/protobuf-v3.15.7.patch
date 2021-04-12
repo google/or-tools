@@ -114,3 +114,16 @@ index 9dd6e7710..e99c89940 100644
  
  install(EXPORT protobuf-targets
    DESTINATION "${CMAKE_INSTALL_CMAKEDIR}"
+diff --git a/src/google/protobuf/stubs/port.h b/src/google/protobuf/stubs/port.h
+index b7aab404c..a387457d4 100644
+--- a/src/google/protobuf/stubs/port.h
++++ b/src/google/protobuf/stubs/port.h
+@@ -57,7 +57,7 @@
+ #pragma runtime_checks("c", off)
+ #endif
+ #else
+-#ifdef __APPLE__
++#ifdef __APPLE__ || defined(__FreeBSD__)
+ #include <machine/endian.h>  // __BYTE_ORDER
+ #else
+ #include <endian.h>  // __BYTE_ORDER
