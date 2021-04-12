@@ -565,6 +565,11 @@ template <typename T1, typename T2>
 std::string* MakeCheckOpString(const T1& v1, const T2& v2,
                                const char* exprtext) ATTRIBUTE_NOINLINE;
 
+// Provide printable value for nullptr_t
+template <>
+GOOGLE_GLOG_DLL_DECL void MakeCheckOpValueString(std::ostream* os,
+                                                 const std::nullptr_t& v);
+
 namespace base {
 namespace internal {
 
