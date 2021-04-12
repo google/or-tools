@@ -91,7 +91,7 @@
 %typemap(out) CppProtoType {
   const long size = $1.ByteSizeLong();
   std::unique_ptr<char[]> buf(new char[size]);
-  $1.SerializeWithCachedSizesToArray(reinterpret_cast<uint8*>(buf.get()));
+  $1.SerializeWithCachedSizesToArray(reinterpret_cast<uint8_t*>(buf.get()));
   $result = JNIUtil::MakeJByteArray(jenv, buf.get(), size);
 }
 %enddef // PROTO2_RETURN
