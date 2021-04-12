@@ -352,7 +352,9 @@ $(OBJ_DIR)/util/optional_boolean.pb.$O: \
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sutil$Soptional_boolean.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Soptional_boolean.pb.$O
 
 INIT_DEPS = \
- $(SRC_DIR)/ortools/init/init.h
+ $(SRC_DIR)/ortools/init/init.h \
+ $(GEN_DIR)/ortools/sat/cp_model.pb.h \
+ $(GEN_DIR)/ortools/sat/sat_parameters.pb.h
 
 INIT_LIB_OBJS = \
 
