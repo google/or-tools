@@ -1867,7 +1867,7 @@ void MakeCheckOpValueString(std::ostream* os, const unsigned char& v) {
 
 template <>
 void MakeCheckOpValueString(std::ostream* os, const std::nullptr_t& v) {
-￼ (*os) << "nullptr";
+  (*os) << "nullptr";
 }
 
 void InitGoogleLogging(const char* argv0) {
