@@ -253,6 +253,11 @@ class LinearExpr(object):
             'calling %% on a linear expression is not supported, '
             'please use CpModel.AddModuloEquality')
 
+    def __pow__(self, _):
+        raise NotImplementedError(
+            'calling ** on a linear expression is not supported, '
+            'please use CpModel.AddMultiplicationEquality')
+
     def __neg__(self):
         return _ProductCst(self, -1)
 
