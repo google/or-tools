@@ -22,6 +22,13 @@ import "ortools/math_opt/solution.proto";
 
 // best_dual_bound should always be better (e.g. smaller for minimization) than
 // best_primal_bound.
+//
+// We only report nontrivial (finite) values for best_dual_bound and
+// best_primal_bound if the underlying solver claims to have such a bound. Some
+// solvers (e.g. bisco, typically continuous solvers) do not claim a bound
+// even when returning optimal (these methods can terminate without a basis and
+// slightly infeasible primal and dual solutions). MIP solvers will typically
+// report a bound even if their LP solutions are imprecise.
 message SolveStatsProto {
   // Elapsed wall clock time as measured by math_opt, roughly the time inside
   // Solver::Solve(). Note: this does not include work done building the model.
@@ -53,10 +60,11 @@ message SolveStatsProto {
 // solution/ray is present rather than relying on the termination reason.
 message SolveResultProto {
   enum TerminationReason {
+    TERMINATION_REASON_UNSPECIFIED = 0;
+
     ////////////////////////////////////////////////////////////////////////////
     // The optimizer successfully ran to completion.
     ////////////////////////////////////////////////////////////////////////////
-    TERMINATION_REASON_UNSPECIFIED = 0;
 
     // A provably optimal solution (up to numerical tolerances) has been found.
     OPTIMAL = 1;

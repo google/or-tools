@@ -354,10 +354,19 @@ void GlopSolver::FillSolveResult(
     SolveResultProto& solve_result) {
   solve_result.mutable_solve_stats()->set_simplex_iterations(
       lp_solver_.GetNumberOfSimplexIterations());
-  // TODO(b/168374742): this needs to be properly filled in.
+  // TODO(b/168374742): this needs to be properly filled in. In particular, we
+  // can give better primal and dual bounds when the status is not OPTIMAL.
+  const bool is_maximize = linear_program_.IsMaximizationProblem();
+  constexpr double kInf = std::numeric_limits<double>::infinity();
+  solve_result.mutable_solve_stats()->set_best_primal_bound(is_maximize ? -kInf
+                                                                        : kInf);
+  solve_result.mutable_solve_stats()->set_best_dual_bound(is_maximize ? kInf
+                                                                      : -kInf);
   if (status == glop::ProblemStatus::OPTIMAL) {
     solve_result.set_termination_reason(SolveResultProto::OPTIMAL);
     solve_result.mutable_solve_stats()->set_best_primal_bound(
+        lp_solver_.GetObjectiveValue());
+    solve_result.mutable_solve_stats()->set_best_dual_bound(
         lp_solver_.GetObjectiveValue());
 
     auto sorted_variables = GetSortedIs(variables_);
