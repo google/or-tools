@@ -152,6 +152,6 @@ message SolveParametersProto {
     GurobiParametersProto gurobi_parameters = 3;
     glop.GlopParameters glop_parameters = 4;
     sat.SatParameters cp_sat_parameters = 5;
-    // reserved 6;
   }
+  reserved 6;
 }
