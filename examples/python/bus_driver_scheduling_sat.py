@@ -25,9 +25,9 @@ Constraints:
 import collections
 import math
 
-from google.protobuf import text_format
 from absl import app
 from absl import flags
+from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 FLAGS = flags.FLAGS
