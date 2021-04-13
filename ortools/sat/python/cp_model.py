@@ -574,6 +574,12 @@ class BoundedLinearExpression(object):
     def Bounds(self):
         return self.__bounds
 
+    def __bool__(self):
+        print('Warning: you are evaluating the BoundedLinearExpression \'',
+              str(self),
+              '\' as a Boolean value. This will always return True.')
+        return True
+
 
 class Constraint(object):
     """Base class for constraints.
