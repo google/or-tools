@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_GLOP_REDUCED_COSTS_H_
 #define OR_TOOLS_GLOP_REDUCED_COSTS_H_
 
+#include "absl/random/bit_gen_ref.h"
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/primal_edge_norms.h"
@@ -23,7 +24,6 @@
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/scattered_vector.h"
-#include "ortools/util/random_engine.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
@@ -52,7 +52,7 @@ class ReducedCosts {
                const RowToColMapping& basis,
                const VariablesInfo& variables_info,
                const BasisFactorization& basis_factorization,
-               random_engine_t* random);
+               absl::BitGenRef random);
 
   // If this is true, then the caller must re-factorize the basis before the
   // next call to GetReducedCosts().
@@ -255,7 +255,7 @@ class ReducedCosts {
   const RowToColMapping& basis_;
   const VariablesInfo& variables_info_;
   const BasisFactorization& basis_factorization_;
-  random_engine_t* random_;
+  absl::BitGenRef random_;
 
   // Internal data.
   GlopParameters parameters_;

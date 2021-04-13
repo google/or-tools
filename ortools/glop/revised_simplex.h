@@ -95,6 +95,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/random/bit_gen_ref.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
 #include "ortools/glop/basis_representation.h"
@@ -636,6 +637,15 @@ class RevisedSimplex {
   // Used to compute the error 'b - A.x' or 'a - B.d'.
   DenseColumn error_;
 
+  // A random number generator. In test we use absl_random_ to have a
+  // non-deterministic behavior and avoid client depending on a golden optimal
+  // solution which prevent us from easily changing the solver.
+  random_engine_t deterministic_random_;
+#ifndef NDEBUG
+  absl::BitGen absl_random_;
+#endif
+  absl::BitGenRef random_;
+
   // Representation of matrix B using eta matrices and LU decomposition.
   BasisFactorization basis_factorization_;
 
@@ -759,9 +769,6 @@ class RevisedSimplex {
   // candidate #2, #3, ...; because the first tied candidate is remembered
   // anyway.
   std::vector<RowIndex> equivalent_leaving_choices_;
-
-  // A random number generator.
-  random_engine_t random_;
 
   // This is used by Polish().
   DenseRow integrality_scale_;

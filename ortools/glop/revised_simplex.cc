@@ -86,6 +86,8 @@ RevisedSimplex::RevisedSimplex()
       variable_name_(),
       direction_(),
       error_(),
+      deterministic_random_(kDeterministicSeed),
+      random_(deterministic_random_),
       basis_factorization_(&compact_matrix_, &basis_),
       variables_info_(compact_matrix_),
       dual_edge_norms_(basis_factorization_),
@@ -97,8 +99,8 @@ RevisedSimplex::RevisedSimplex()
       update_row_(compact_matrix_, transposed_matrix_, variables_info_, basis_,
                   basis_factorization_),
       reduced_costs_(compact_matrix_, objective_, basis_, variables_info_,
-                     basis_factorization_, &random_),
-      entering_variable_(variables_info_, &random_, &reduced_costs_,
+                     basis_factorization_, random_),
+      entering_variable_(variables_info_, random_, &reduced_costs_,
                          &primal_edge_norms_),
       num_iterations_(0),
       num_feasibility_iterations_(0),
@@ -112,8 +114,7 @@ RevisedSimplex::RevisedSimplex()
       function_stats_("SimplexFunctionStats"),
       parameters_(),
       test_lu_(),
-      feasibility_phase_(true),
-      random_(kDeterministicSeed) {
+      feasibility_phase_(true) {
   SetParameters(parameters_);
 }
 
@@ -3075,7 +3076,8 @@ Fractional RevisedSimplex::ComputeInitialProblemObjectiveValue() const {
 
 void RevisedSimplex::SetParameters(const GlopParameters& parameters) {
   SCOPED_TIME_STAT(&function_stats_);
-  random_.seed(parameters.random_seed());
+  deterministic_random_.seed(parameters.random_seed());
+
   initial_parameters_ = parameters;
   parameters_ = parameters;
   PropagateParameters();

@@ -23,7 +23,7 @@ namespace operations_research {
 namespace glop {
 
 EnteringVariable::EnteringVariable(const VariablesInfo& variables_info,
-                                   random_engine_t* random,
+                                   absl::BitGenRef random,
                                    ReducedCosts* reduced_costs,
                                    PrimalEdgeNorms* primal_edge_norms)
     : variables_info_(variables_info),
@@ -256,7 +256,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
     equivalent_entering_choices_.push_back(*entering_col);
     *entering_col =
         equivalent_entering_choices_[std::uniform_int_distribution<int>(
-            0, equivalent_entering_choices_.size() - 1)(*random_)];
+            0, equivalent_entering_choices_.size() - 1)(random_)];
     IF_STATS_ENABLED(
         stats_.num_perfect_ties.Add(equivalent_entering_choices_.size()));
   }
@@ -502,7 +502,7 @@ void EnteringVariable::NormalizedChooseEnteringColumn(ColIndex* entering_col) {
     equivalent_entering_choices_.push_back(*entering_col);
     *entering_col =
         equivalent_entering_choices_[std::uniform_int_distribution<int>(
-            0, equivalent_entering_choices_.size() - 1)(*random_)];
+            0, equivalent_entering_choices_.size() - 1)(random_)];
     IF_STATS_ENABLED(
         stats_.num_perfect_ties.Add(equivalent_entering_choices_.size()));
   }

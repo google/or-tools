@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_GLOP_ENTERING_VARIABLE_H_
 #define OR_TOOLS_GLOP_ENTERING_VARIABLE_H_
 
+#include "absl/random/bit_gen_ref.h"
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/primal_edge_norms.h"
@@ -24,7 +25,6 @@
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/util/bitset.h"
-#include "ortools/util/random_engine.h"
 #include "ortools/util/stats.h"
 
 #if !SWIG
@@ -53,7 +53,7 @@ namespace glop {
 class EnteringVariable {
  public:
   // Takes references to the linear program data we need.
-  EnteringVariable(const VariablesInfo& variables_info, random_engine_t* random,
+  EnteringVariable(const VariablesInfo& variables_info, absl::BitGenRef random,
                    ReducedCosts* reduced_costs,
                    PrimalEdgeNorms* primal_edge_norms);
 
@@ -118,7 +118,7 @@ class EnteringVariable {
   // Problem data that should be updated from outside.
   const VariablesInfo& variables_info_;
 
-  random_engine_t* random_;
+  absl::BitGenRef random_;
   ReducedCosts* reduced_costs_;
   PrimalEdgeNorms* primal_edge_norms_;
 

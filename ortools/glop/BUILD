@@ -15,11 +15,11 @@ cc_library(
     hdrs = ["pricing.h"],
     deps = [
         "//ortools/base",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/random:bit_gen_ref",
         "//ortools/lp_data:base",
         "//ortools/util:bitset",
         "//ortools/util:stats",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:bit_gen_ref",
     ],
 )
 
@@ -262,6 +262,7 @@ cc_library(
         "//ortools/lp_data:scattered_vector",
         "//ortools/util:random_engine",
         "//ortools/util:stats",
+        "@com_google_absl//absl/random:bit_gen_ref",
     ],
 )
 
@@ -308,6 +309,7 @@ cc_library(
         "//ortools/util:bitset",
         "//ortools/util:random_engine",
         "//ortools/util:stats",
+        "@com_google_absl//absl/random:bit_gen_ref",
     ],
 )
 
