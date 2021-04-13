@@ -44,7 +44,6 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
-#include "google/protobuf/duration.pb.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
