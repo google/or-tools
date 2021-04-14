@@ -127,8 +127,8 @@ class MPSReaderImpl {
     UPPER_BOUND,
     FIXED_VARIABLE,
     FREE_VARIABLE,
-    NEGATIVE,
-    POSITIVE,
+    INFINITE_LOWER_BOUND,
+    INFINITE_UPPER_BOUND,
     BINARY
   };
 
@@ -859,12 +859,10 @@ absl::Status MPSReaderImpl::StoreBound(const std::string& bound_type_mnemonic,
       lower_bound = -kInfinity;
       upper_bound = +kInfinity;
       break;
-    case NEGATIVE:
+    case INFINITE_LOWER_BOUND:
       lower_bound = -kInfinity;
-      upper_bound = Fractional(0.0);
       break;
-    case POSITIVE:
-      lower_bound = Fractional(0.0);
+    case INFINITE_UPPER_BOUND:
       upper_bound = +kInfinity;
       break;
     case BINARY:
@@ -917,8 +915,8 @@ MPSReaderImpl::MPSReaderImpl()
   bound_name_to_id_map_["UP"] = UPPER_BOUND;
   bound_name_to_id_map_["FX"] = FIXED_VARIABLE;
   bound_name_to_id_map_["FR"] = FREE_VARIABLE;
-  bound_name_to_id_map_["MI"] = NEGATIVE;
-  bound_name_to_id_map_["PL"] = POSITIVE;
+  bound_name_to_id_map_["MI"] = INFINITE_LOWER_BOUND;
+  bound_name_to_id_map_["PL"] = INFINITE_UPPER_BOUND;
   bound_name_to_id_map_["BV"] = BINARY;
   bound_name_to_id_map_["LI"] = LOWER_BOUND;
   bound_name_to_id_map_["UI"] = UPPER_BOUND;
