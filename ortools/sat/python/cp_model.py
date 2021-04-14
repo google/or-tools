@@ -258,6 +258,29 @@ class LinearExpr(object):
             'calling ** on a linear expression is not supported, '
             'please use CpModel.AddMultiplicationEquality')
 
+    def __lshift__(self, _):
+        raise NotImplementedError(
+            'calling left shift on a linear expression is not supported')
+
+    def __rshift__(self, _):
+        raise NotImplementedError(
+            'calling right shift on a linear expression is not supported')
+
+    def __and__(self, _):
+        raise NotImplementedError(
+            'calling and on a linear expression is not supported, '
+            'please use CpModel.AddBoolAnd')
+
+    def __or__(self, _):
+        raise NotImplementedError(
+            'calling or on a linear expression is not supported, '
+            'please use CpModel.AddBoolOr')
+
+    def __xor__(self, _):
+        raise NotImplementedError(
+            'calling xor on a linear expression is not supported, '
+            'please use CpModel.AddBoolXor')
+
     def __neg__(self):
         return _ProductCst(self, -1)
 
