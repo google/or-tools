@@ -671,11 +671,33 @@ class CpModelTest(unittest.TestCase):
         model = cp_model.CpModel()
 
         # Creates the variables.
-        v0 = model.NewBoolVar("buggyVarIndexToVarProto")
-        v1 = model.NewBoolVar("v1")
+        v0 = model.NewBoolVar('buggyVarIndexToVarProto')
+        v1 = model.NewBoolVar('v1')
 
         self.assertEqual(model.VarIndexToVarProto(0).name, v0.Name())
 
+    def testWrongBoolEvaluation(self):
+        print('testWrongBoolEvaluation')
+
+        model = cp_model.CpModel()
+
+        # Creates the variables.
+        v0 = model.NewIntVar(0, 10, 'v0')
+        v1 = model.NewIntVar(0, 10, 'v1')
+        v2 = model.NewIntVar(0, 10, 'v2')
+
+
+        if v0 == 2:
+            print('== passed')
+
+        if v0 >= 3:
+            print('>= passed')
+
+        model.Add(v2 == min(v0, v1))
+        print('min passed')
+
+        if v0:
+            print('bool passed')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -1180,7 +1180,13 @@ KnapsackSolver::~KnapsackSolver() {}
 
 void KnapsackSolver::Init(const std::vector<int64_t>& profits,
                           const std::vector<std::vector<int64_t>>& weights,
-                          const std::vector<int64_t>& capacities) {
+                          const std::vector<int64_t>& capacities) {                           
+  for (const std::vector<int64_t>& w : weights) {
+    CHECK_EQ(profits.size(), w.size())
+        << "Profits and inner weights must have the same size (#items)";
+  }
+  CHECK_EQ(capacities.size(), weights.size())
+      << "Capacities and weights must have the same size (#bins)";
   time_limit_ = absl::make_unique<TimeLimit>(time_limit_seconds_);
   is_solution_optimal_ = false;
   additional_profit_ = 0LL;
