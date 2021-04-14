@@ -90,18 +90,19 @@ RevisedSimplex::RevisedSimplex()
       random_(deterministic_random_),
       basis_factorization_(&compact_matrix_, &basis_),
       variables_info_(compact_matrix_),
+      primal_edge_norms_(compact_matrix_, variables_info_,
+                         basis_factorization_),
+      primal_prices_(random_),
       dual_edge_norms_(basis_factorization_),
       dual_prices_(random_),
       variable_values_(parameters_, compact_matrix_, basis_, variables_info_,
                        basis_factorization_, &dual_edge_norms_, &dual_prices_),
-      primal_edge_norms_(compact_matrix_, variables_info_,
-                         basis_factorization_),
       update_row_(compact_matrix_, transposed_matrix_, variables_info_, basis_,
                   basis_factorization_),
       reduced_costs_(compact_matrix_, objective_, basis_, variables_info_,
-                     basis_factorization_, random_),
-      entering_variable_(variables_info_, random_, &reduced_costs_,
-                         &primal_edge_norms_),
+                     basis_factorization_, &primal_edge_norms_, &primal_prices_,
+                     random_),
+      entering_variable_(variables_info_, random_, &reduced_costs_),
       num_iterations_(0),
       num_feasibility_iterations_(0),
       num_optimization_iterations_(0),
@@ -190,7 +191,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   // TODO(user): Avoid doing the first phase checks when we know from the
   // incremental solve that the solution is already dual or primal feasible.
   if (log_info) LOG(INFO) << "------ First phase: feasibility.";
-  entering_variable_.SetPricingRule(parameters_.feasibility_rule());
+  primal_edge_norms_.SetPricingRule(parameters_.feasibility_rule());
   if (use_dual) {
     if (parameters_.perturb_costs_in_dual_simplex()) {
       reduced_costs_.PerturbCosts();
@@ -281,7 +282,6 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
       }
     }
   } else {
-    reduced_costs_.MaintainDualInfeasiblePositions(true);
     GLOP_RETURN_IF_ERROR(Minimize(time_limit));
     DisplayIterationInfo();
 
@@ -300,7 +300,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
 
   feasibility_phase_ = false;
   feasibility_time_ = time_limit->GetElapsedTime() - start_time;
-  entering_variable_.SetPricingRule(parameters_.optimization_rule());
+  primal_edge_norms_.SetPricingRule(parameters_.optimization_rule());
   num_feasibility_iterations_ = num_iterations_;
 
   if (log_info) LOG(INFO) << "------ Second phase: optimization.";
@@ -332,11 +332,9 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
        ++num_optims) {
     if (problem_status_ == ProblemStatus::PRIMAL_FEASIBLE) {
       // Run the primal simplex.
-      reduced_costs_.MaintainDualInfeasiblePositions(true);
       GLOP_RETURN_IF_ERROR(Minimize(time_limit));
     } else {
       // Run the dual simplex.
-      reduced_costs_.MaintainDualInfeasiblePositions(false);
       GLOP_RETURN_IF_ERROR(DualMinimize(feasibility_phase_, time_limit));
     }
 
@@ -2492,6 +2490,8 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
     reduced_costs_.ResetForNewObjective();
   }
 
+  // This is needed in the primal.
+  reduced_costs_.MaintainDualInfeasiblePositions(true);
   while (true) {
     // TODO(user): we may loop a bit more than the actual number of iteration.
     // fix.
@@ -2533,9 +2533,12 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
     }
 
     Fractional reduced_cost = 0.0;
-    ColIndex entering_col = kInvalidCol;
-    GLOP_RETURN_IF_ERROR(
-        entering_variable_.PrimalChooseEnteringColumn(&entering_col));
+
+    // TODO(user): This is not clean. If the reduced costs or primal norms
+    // changed, then we need to be sure the prices are up to date before getting
+    // the maximum.
+    reduced_costs_.RecomputeReducedCostsAndPrimalEnteringCandidatesIfNeeded();
+    const ColIndex entering_col = primal_prices_.GetMaximum();
     if (entering_col == kInvalidCol) {
       if (reduced_costs_.AreReducedCostsPrecise() &&
           basis_factorization_.IsRefactorized()) {
@@ -2666,6 +2669,7 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
 
     variable_values_.UpdateOnPivoting(direction_, entering_col, step);
     if (leaving_row != kInvalidRow) {
+      // Important: the norm must be updated before the reduced_cost.
       primal_edge_norms_.UpdateBeforeBasisPivot(
           entering_col, basis_[leaving_row], leaving_row, direction_,
           &update_row_);
@@ -2749,6 +2753,9 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
   bool refactorize = false;
 
   bound_flip_candidates_.clear();
+
+  // This is not needed in the dual.
+  reduced_costs_.MaintainDualInfeasiblePositions(false);
 
   // Leaving variable.
   RowIndex leaving_row;

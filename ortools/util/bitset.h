@@ -638,22 +638,19 @@ class Bitset64 {
   Iterator begin() const { return Iterator(*this); }
   Iterator end() const { return end_; }
 
-  // Cryptic function!
-  // This is just an optimized version of a given piece of code and has probably
-  // little general use. Sets the bit at position i to the result of
-  // (other1[i] && use1) XOR (other2[i] && use2).
-  void SetBitFromOtherBitSets(IndexType i, const Bitset64<IndexType>& other1,
-                              uint64_t use1, const Bitset64<IndexType>& other2,
-                              uint64_t use2) {
-    DCHECK_EQ(data_.size(), other1.data_.size());
-    DCHECK_EQ(data_.size(), other2.data_.size());
+  // Cryptic function! This is just an optimized version of a given piece of
+  // code and has probably little general use.
+  static uint64_t ConditionalXorOfTwoBits(IndexType i, uint64_t use1,
+                                          const Bitset64<IndexType>& set1,
+                                          uint64_t use2,
+                                          const Bitset64<IndexType>& set2) {
+    DCHECK_EQ(set1.data_.size(), set1.data_.size());
     DCHECK(use1 == 0 || use1 == 1);
     DCHECK(use2 == 0 || use2 == 1);
     const int bucket = BitOffset64(Value(i));
     const int pos = BitPos64(Value(i));
-    data_[bucket] ^= ((1ull << pos) & data_[bucket]) ^
-                     ((use1 << pos) & other1.data_[bucket]) ^
-                     ((use2 << pos) & other2.data_[bucket]);
+    return ((use1 << pos) & set1.data_[bucket]) ^
+           ((use2 << pos) & set2.data_[bucket]);
   }
 
   // Returns a 0/1 string representing the bitset.
@@ -668,7 +665,7 @@ class Bitset64 {
  private:
   // Returns the value of the index type.
   // This function is specialized below to work with IntType and int64_t.
-  int64_t Value(IndexType input) const;
+  static int64_t Value(IndexType input);
 
   IndexType size_;
   std::vector<uint64_t> data_;
@@ -753,12 +750,12 @@ class BitQueue64 {
 
 // The specialization of Value() for IntType and int64_t.
 template <typename IntType>
-inline int64_t Bitset64<IntType>::Value(IntType input) const {
+inline int64_t Bitset64<IntType>::Value(IntType input) {
   DCHECK_GE(input.value(), 0);
   return input.value();
 }
 template <>
-inline int64_t Bitset64<int64_t>::Value(int64_t input) const {
+inline int64_t Bitset64<int64_t>::Value(int64_t input) {
   DCHECK_GE(input, 0);
   return input;
 }

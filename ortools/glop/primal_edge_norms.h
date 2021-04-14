@@ -72,6 +72,10 @@ class PrimalEdgeNorms {
   // and speed.
   bool NeedsBasisRefactorization() const;
 
+  // Depending on the SetPricingRule(), this returns one of the "norms" vector
+  // below. Note that all norms are squared.
+  const DenseRow& GetSquaredNorms();
+
   // Returns the primal edge squared norms. This is only valid if the caller
   // properly called UpdateBeforeBasisPivot() before each basis pivot, or if
   // this is the first call to this function after a Clear(). Note that only the
@@ -111,6 +115,11 @@ class PrimalEdgeNorms {
   // Sets the algorithm parameters.
   void SetParameters(const GlopParameters& parameters) {
     parameters_ = parameters;
+  }
+
+  // This changes what GetSquaredNorms() returns.
+  void SetPricingRule(GlopParameters::PricingRule rule) {
+    pricing_rule_ = rule;
   }
 
   // Returns a string with statistics about this class.
@@ -170,6 +179,7 @@ class PrimalEdgeNorms {
 
   // Internal data.
   GlopParameters parameters_;
+  GlopParameters::PricingRule pricing_rule_ = GlopParameters::DANTZIG;
   Stats stats_;
 
   // Booleans to control what happens on the next ChooseEnteringColumn() call.

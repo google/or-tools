@@ -17,6 +17,7 @@
 #include "absl/random/bit_gen_ref.h"
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/parameters.pb.h"
+#include "ortools/glop/pricing.h"
 #include "ortools/glop/primal_edge_norms.h"
 #include "ortools/glop/status.h"
 #include "ortools/glop/update_row.h"
@@ -52,7 +53,8 @@ class ReducedCosts {
                const RowToColMapping& basis,
                const VariablesInfo& variables_info,
                const BasisFactorization& basis_factorization,
-               absl::BitGenRef random);
+               PrimalEdgeNorms* primal_edge_norms,
+               DynamicMaximum<ColIndex>* primal_prices, absl::BitGenRef random);
 
   // If this is true, then the caller must re-factorize the basis before the
   // next call to GetReducedCosts().
@@ -177,14 +179,6 @@ class ReducedCosts {
   // one.
   const DenseRow& GetFullReducedCosts();
 
-  // Returns the non-basic columns that are dual-infeasible. These are also
-  // the primal simplex possible entering columns.
-  const DenseBitRow& GetDualInfeasiblePositions() const {
-    // TODO(user): recompute if needed?
-    DCHECK(are_dual_infeasible_positions_maintained_);
-    return is_dual_infeasible_;
-  }
-
   // Returns the dual values associated to the current basis.
   const DenseColumn& GetDualValues();
 
@@ -205,6 +199,10 @@ class ReducedCosts {
   // The deterministic time used by this class.
   double DeterministicTime() const { return deterministic_time_; }
 
+  // Small utility function to be called before reduced_costs_ and/or
+  // primal_prices are accessed.
+  void RecomputeReducedCostsAndPrimalEnteringCandidatesIfNeeded();
+
  private:
   // Statistics about this class.
   struct Stats : public StatsGroup {
@@ -219,10 +217,6 @@ class ReducedCosts {
     DoubleDistribution cost_shift;
   };
 
-  // Small utility function to be called before reduced_costs_ and/or
-  // is_dual_infeasible_ are accessed.
-  void RecomputeReducedCostsAndPrimalEnteringCandidatesIfNeeded();
-
   // All these Compute() functions fill the corresponding DenseRow using
   // the current problem data.
   void ComputeBasicObjective();
@@ -232,18 +226,17 @@ class ReducedCosts {
   // Updates reduced_costs_ according to the given pivot. This adds a multiple
   // of the vector equal to 1.0 on the leaving column and given by
   // ComputeUpdateRow() on the non-basic columns. The multiple is such that the
-  // new leaving reduced cost is zero. If update_column_status is false, then
-  // is_dual_infeasible_ will not be updated.
+  // new leaving reduced cost is zero.
   void UpdateReducedCosts(ColIndex entering_col, ColIndex leaving_col,
                           RowIndex leaving_row, Fractional pivot,
                           UpdateRow* update_row);
 
-  // Recomputes from scratch the is_dual_infeasible_ bit row. Note that an
-  // entering candidate is by definition a dual-infeasible variable.
-  void ResetDualInfeasibilityBitSet();
+  // Recomputes from scratch the primal prices. Note that an entering candidate
+  // is by definition a dual-infeasible variable.
+  void RecomputePrimalPrices();
 
-  // Recomputes is_dual_infeasible_ but only for the given column indices.
-  template <typename ColumnsToUpdate>
+  // Recomputes the dual prices but only for the given column indices.
+  template <bool use_dense_update, typename ColumnsToUpdate>
   void UpdateEnteringCandidates(const ColumnsToUpdate& cols);
 
   // Updates basic_objective_ according to the given pivot.
@@ -300,10 +293,10 @@ class ReducedCosts {
   // the tolerance.
   Fractional dual_feasibility_tolerance_;
 
-  // True for the columns that can enter the basis.
-  // TODO(user): Investigate using a list of ColIndex instead (but we need
-  // dynamic update and may lose the ordering of the indices).
-  DenseBitRow is_dual_infeasible_;
+  // The primal prices are a normalized version of the dual infeasibility.
+  // The candidates are the dual infeasible non-basic columns.
+  PrimalEdgeNorms* primal_edge_norms_;
+  DynamicMaximum<ColIndex>* primal_prices_;
 
   // Indicates if the dual-infeasible positions are maintained or not.
   bool are_dual_infeasible_positions_maintained_;

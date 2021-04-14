@@ -24,67 +24,11 @@ namespace glop {
 
 EnteringVariable::EnteringVariable(const VariablesInfo& variables_info,
                                    absl::BitGenRef random,
-                                   ReducedCosts* reduced_costs,
-                                   PrimalEdgeNorms* primal_edge_norms)
+                                   ReducedCosts* reduced_costs)
     : variables_info_(variables_info),
       random_(random),
       reduced_costs_(reduced_costs),
-      primal_edge_norms_(primal_edge_norms),
-      parameters_(),
-      rule_(GlopParameters::DANTZIG),
-      unused_columns_() {}
-
-Status EnteringVariable::PrimalChooseEnteringColumn(ColIndex* entering_col) {
-  SCOPED_TIME_STAT(&stats_);
-  GLOP_RETURN_ERROR_IF_NULL(entering_col);
-
-  // For better redability of the templated function calls below.
-  const bool kNormalize = true;
-  const bool kNested = true;
-  const bool kSteepest = true;
-
-  switch (rule_) {
-    case GlopParameters::DANTZIG:
-      if (parameters_.use_nested_pricing()) {
-        if (unused_columns_.size() != variables_info_.GetNumberOfColumns()) {
-          ResetUnusedColumns();
-        }
-        if (parameters_.normalize_using_column_norm()) {
-          DantzigChooseEnteringColumn<kNormalize, kNested>(entering_col);
-        } else {
-          DantzigChooseEnteringColumn<!kNormalize, kNested>(entering_col);
-        }
-        if (*entering_col != kInvalidCol) {
-          unused_columns_.Clear(*entering_col);
-          return Status::OK();
-        }
-        ResetUnusedColumns();
-        if (parameters_.normalize_using_column_norm()) {
-          DantzigChooseEnteringColumn<kNormalize, kNested>(entering_col);
-        } else {
-          DantzigChooseEnteringColumn<!kNormalize, kNested>(entering_col);
-        }
-      } else {
-        if (parameters_.normalize_using_column_norm()) {
-          DantzigChooseEnteringColumn<kNormalize, !kNested>(entering_col);
-        } else {
-          DantzigChooseEnteringColumn<!kNormalize, !kNested>(entering_col);
-        }
-      }
-      return Status::OK();
-    case GlopParameters::STEEPEST_EDGE:
-      NormalizedChooseEnteringColumn<kSteepest>(entering_col);
-      return Status::OK();
-    case GlopParameters::DEVEX:
-      NormalizedChooseEnteringColumn<!kSteepest>(entering_col);
-      return Status::OK();
-  }
-  LOG(DFATAL) << "Unknown pricing rule: "
-              << ProtoEnumToString<GlopParameters::PricingRule>(rule_)
-              << ". Using steepest edge.";
-  NormalizedChooseEnteringColumn<kSteepest>(entering_col);
-  return Status::OK();
-}
+      parameters_() {}
 
 Status EnteringVariable::DualChooseEnteringColumn(
     bool nothing_to_recompute, const UpdateRow& update_row,
@@ -401,111 +345,6 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
 
 void EnteringVariable::SetParameters(const GlopParameters& parameters) {
   parameters_ = parameters;
-}
-
-void EnteringVariable::SetPricingRule(GlopParameters::PricingRule rule) {
-  rule_ = rule;
-}
-
-DenseBitRow* EnteringVariable::ResetUnusedColumns() {
-  SCOPED_TIME_STAT(&stats_);
-  const ColIndex num_cols = variables_info_.GetNumberOfColumns();
-  if (unused_columns_.size() != num_cols) {
-    unused_columns_.ClearAndResize(num_cols);
-  }
-
-  // Invert the set of unused columns, minus the basis.
-  const DenseBitRow& is_basic = variables_info_.GetIsBasicBitRow();
-  for (ColIndex col(0); col < num_cols; ++col) {
-    if (unused_columns_.IsSet(col)) {
-      unused_columns_.Clear(col);
-    } else {
-      if (!is_basic.IsSet(col)) {
-        unused_columns_.Set(col);
-      }
-    }
-  }
-  return &unused_columns_;
-}
-
-template <bool normalize, bool nested_pricing>
-void EnteringVariable::DantzigChooseEnteringColumn(ColIndex* entering_col) {
-  DenseRow dummy;
-  const DenseRow& matrix_column_norms =
-      normalize ? primal_edge_norms_->GetMatrixColumnNorms() : dummy;
-  const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
-  SCOPED_TIME_STAT(&stats_);
-
-  Fractional best_price(0.0);
-  *entering_col = kInvalidCol;
-  for (const ColIndex col : reduced_costs_->GetDualInfeasiblePositions()) {
-    if (nested_pricing && !unused_columns_.IsSet(col)) continue;
-    const Fractional unormalized_price = std::abs(reduced_costs[col]);
-    if (normalize) {
-      if (unormalized_price > best_price * matrix_column_norms[col]) {
-        best_price = unormalized_price / matrix_column_norms[col];
-        *entering_col = col;
-      }
-    } else {
-      if (unormalized_price > best_price) {
-        best_price = unormalized_price;
-        *entering_col = col;
-      }
-    }
-  }
-}
-
-// TODO(user): Here we could fill a priority queue with the normalized
-// reduced cost of the top n candidate columns. This makes it possible
-// - To respond right away after each bound flip iteration.
-// - To return the top-n choices if we want to consider multiple candidates in
-//   the other parts of the simplex algorithm.
-template <bool use_steepest_edge>
-void EnteringVariable::NormalizedChooseEnteringColumn(ColIndex* entering_col) {
-  const DenseRow& weights = use_steepest_edge
-                                ? primal_edge_norms_->GetEdgeSquaredNorms()
-                                : primal_edge_norms_->GetDevexWeights();
-  const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
-  SCOPED_TIME_STAT(&stats_);
-
-  Fractional best_price(0.0);
-  *entering_col = kInvalidCol;
-  equivalent_entering_choices_.clear();
-  for (const ColIndex col : reduced_costs_->GetDualInfeasiblePositions()) {
-    if (use_steepest_edge) {
-      // Note that here the weights are squared.
-      const Fractional squared_reduced_cost = Square(reduced_costs[col]);
-      if (squared_reduced_cost >= best_price * weights[col]) {
-        if (squared_reduced_cost == best_price * weights[col]) {
-          equivalent_entering_choices_.push_back(col);
-          continue;
-        }
-        equivalent_entering_choices_.clear();
-        best_price = squared_reduced_cost / weights[col];
-        *entering_col = col;
-      }
-    } else {
-      const Fractional positive_reduced_cost = std::abs(reduced_costs[col]);
-      if (positive_reduced_cost >= best_price * weights[col]) {
-        if (positive_reduced_cost == best_price * weights[col]) {
-          equivalent_entering_choices_.push_back(col);
-          continue;
-        }
-        equivalent_entering_choices_.clear();
-        best_price = positive_reduced_cost / weights[col];
-        *entering_col = col;
-      }
-    }
-  }
-  // Break the ties randomly.
-  if (!equivalent_entering_choices_.empty()) {
-    equivalent_entering_choices_.push_back(*entering_col);
-    *entering_col =
-        equivalent_entering_choices_[std::uniform_int_distribution<int>(
-            0, equivalent_entering_choices_.size() - 1)(random_)];
-    IF_STATS_ENABLED(
-        stats_.num_perfect_ties.Add(equivalent_entering_choices_.size()));
-  }
 }
 
 }  // namespace glop

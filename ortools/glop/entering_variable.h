@@ -32,37 +32,18 @@
 namespace operations_research {
 namespace glop {
 
-// This class contains the primal and dual algorithms that choose the entering
-// column (i.e. variable) during a simplex iteration.
-//
-// The goal of this component is, given a matrix A (matrix_), a subset of
-// columns (basis_) that form a basis B and a cost (objective_) associated to
-// each column of A, to choose a "good" non-basic column to enter the basis
-// B. Note that this choice does not depend on the current variable values
-// (except for the direction in which each variable is allowed to change given
-// by variable_status_).
+// This class contains the dual algorithms that choose the entering column (i.e.
+// variable) during a dual simplex iteration. That is the dual ratio test.
 //
 // Terminology:
 // - The entering edge is the edge we are following during a simplex step,
 //   and we call "direction" the reverse of this edge restricted to the
 //   basic variables, i.e. the right inverse of the entering column.
-//
-// Papers:
-// - Ping-Qi Pan, "Efficient nested pricing in the simplex algorithm",
-//   http://www.optimization-online.org/DB_FILE/2007/10/1810.pdf
 class EnteringVariable {
  public:
   // Takes references to the linear program data we need.
   EnteringVariable(const VariablesInfo& variables_info, absl::BitGenRef random,
-                   ReducedCosts* reduced_costs,
-                   PrimalEdgeNorms* primal_edge_norms);
-
-  // Returns the index of a valid primal entering column (see
-  // IsValidPrimalEnteringCandidate() for more details) or kInvalidCol if no
-  // such column exists. This latter case means that the primal algorithm has
-  // terminated: the optimal has been reached.
-  ABSL_MUST_USE_RESULT Status
-  PrimalChooseEnteringColumn(ColIndex* entering_col);
+                   ReducedCosts* reduced_costs);
 
   // Dual optimization phase (i.e. phase II) ratio test.
   // Returns the index of the entering column given that we want to move along
@@ -82,11 +63,8 @@ class EnteringVariable {
       bool nothing_to_recompute, const UpdateRow& update_row,
       Fractional cost_variation, ColIndex* entering_col);
 
-  // Sets the pricing parameters. This does not change the pricing rule.
+  // Sets the parameters.
   void SetParameters(const GlopParameters& parameters);
-
-  // Sets the pricing rule.
-  void SetPricingRule(GlopParameters::PricingRule rule);
 
   // Stats related functions.
   std::string StatString() const { return stats_.StatString(); }
@@ -98,33 +76,15 @@ class EnteringVariable {
     return DeterministicTimeForFpOperations(num_operations_);
   }
 
-  // Recomputes the set of unused columns used during nested pricing.
-  // Visible for testing (the returns value is also there for testing).
-  DenseBitRow* ResetUnusedColumns();
-
  private:
-  // Dantzig selection rule: choose the variable with the best reduced cost.
-  // If normalize is true, we normalize the costs by the column norms.
-  // If nested_pricing is true, we use nested pricing (see parameters.proto).
-  template <bool normalize, bool nested_pricing>
-  void DantzigChooseEnteringColumn(ColIndex* entering_col);
-
-  // Steepest edge rule: the reduced costs are normalized by the edges norm.
-  // Devex rule: the reduced costs are normalized by an approximation of the
-  // edges norm.
-  template <bool use_steepest_edge>
-  void NormalizedChooseEnteringColumn(ColIndex* entering_col);
-
   // Problem data that should be updated from outside.
   const VariablesInfo& variables_info_;
 
   absl::BitGenRef random_;
   ReducedCosts* reduced_costs_;
-  PrimalEdgeNorms* primal_edge_norms_;
 
   // Internal data.
   GlopParameters parameters_;
-  GlopParameters::PricingRule rule_;
 
   // Stats.
   struct Stats : public StatsGroup {
@@ -134,11 +94,6 @@ class EnteringVariable {
     IntegerDistribution num_perfect_ties;
   };
   Stats stats_;
-
-  // This is used for nested pricing. It is denoted J in Ping-Qi Pan's paper.
-  // At a given step, it is true for the variable that should be considered for
-  // entering the basis.
-  DenseBitRow unused_columns_;
 
   // Temporary vector used to hold the best entering column candidates that are
   // tied using the current choosing criteria. We actually only store the tied
