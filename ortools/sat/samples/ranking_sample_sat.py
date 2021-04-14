@@ -47,14 +47,14 @@ def RankTasks(model, starts, presences, ranks):
     for i in range(num_tasks - 1):
         for j in range(i + 1, num_tasks):
             tmp_array = [precedences[(i, j)], precedences[(j, i)]]
-            if not cp_model.IsTrueLiteral(presences[i]):
+            if not cp_model.ObjectIsATrueLiteral(presences[i]):
                 tmp_array.append(presences[i].Not())
                 # Makes sure that if i is not performed, all precedences are false.
                 model.AddImplication(presences[i].Not(),
                                      precedences[(i, j)].Not())
                 model.AddImplication(presences[i].Not(),
                                      precedences[(j, i)].Not())
-            if not cp_model.IsTrueLiteral(presences[j]):
+            if not cp_model.ObjectIsATrueLiteral(presences[j]):
                 tmp_array.append(presences[j].Not())
                 # Makes sure that if j is not performed, all precedences are false.
                 model.AddImplication(presences[j].Not(),

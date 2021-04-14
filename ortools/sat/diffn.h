@@ -154,7 +154,8 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x_intervals,
 // intersect another box.
 inline std::function<void(Model*)> NonOverlappingRectangles(
     const std::vector<IntervalVariable>& x,
-    const std::vector<IntervalVariable>& y, bool is_strict) {
+    const std::vector<IntervalVariable>& y, bool is_strict,
+    bool add_cumulative_relaxation = true) {
   return [=](Model* model) {
     SchedulingConstraintHelper* x_helper =
         new SchedulingConstraintHelper(x, model);
@@ -176,8 +177,10 @@ inline std::function<void(Model*)> NonOverlappingRectangles(
     constraint->Register(/*fast_priority=*/3, /*slow_priority=*/4);
     model->TakeOwnership(constraint);
 
-    AddCumulativeRelaxation(x, x_helper, y_helper, model);
-    AddCumulativeRelaxation(y, y_helper, x_helper, model);
+    if (add_cumulative_relaxation) {
+      AddCumulativeRelaxation(x, x_helper, y_helper, model);
+      AddCumulativeRelaxation(y, y_helper, x_helper, model);
+    }
   };
 }
 

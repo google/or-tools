@@ -2641,11 +2641,23 @@ class LnsSolver : public SubSolver {
         }
       } else {
         if (!local_response.solution().empty()) {
-          CHECK(SolutionIsFeasible(
+          // A solution that does not pass our validator indicates a bug. We
+          // abort and dump the problematic model to facilitate debugging.
+          //
+          // TODO(user): In a production environment, we should probably just
+          // ignore this fragment and continue.
+          const bool feasible = SolutionIsFeasible(
               *shared_->model_proto,
               std::vector<int64_t>(local_response.solution().begin(),
-                                   local_response.solution().end())))
-              << solution_info;
+                                   local_response.solution().end()));
+          if (!feasible) {
+            const std::string name =
+                absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
+                             lns_fragment.name(), ".pbtxt");
+            LOG(INFO) << "Dumping problematic LNS model to '" << name << "'.";
+            CHECK_OK(file::SetTextProto(name, lns_fragment, file::Defaults()));
+            LOG(FATAL) << "Infeasible LNS solution! " << solution_info;
+          }
         }
 
         // Finish to fill the SolveData now that the local solve is done.

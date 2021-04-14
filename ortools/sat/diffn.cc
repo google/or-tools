@@ -322,6 +322,10 @@ void NonOverlappingRectanglesDisjunctivePropagator::Register(
   global_x_.WatchAllTasks(fast_id_, watcher_);
   global_y_.WatchAllTasks(fast_id_, watcher_);
 
+  // This propagator is the one making sure our propagation is complete, so
+  // we do need to make sure it is called again if it modified some bounds.
+  watcher_->NotifyThatPropagatorMayNotReachFixedPointInOnePass(fast_id_);
+
   const int slow_id = watcher_->Register(this);
   watcher_->SetPropagatorPriority(slow_id, slow_priority);
   global_x_.WatchAllTasks(slow_id, watcher_);
@@ -489,6 +493,39 @@ bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
   // We can actually swap dimensions to propagate vertically.
   RETURN_IF_FALSE(FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
       global_y_, global_x_, inner_propagate));
+
+  // If two boxes must overlap but do not have a mandatory line/column that
+  // crosses both of them, then the code above do not see it. So we manually
+  // propagate this case.
+  //
+  // TODO(user): Since we are at it, do more propagation even if no conflict?
+  // This rarely propagate, so disabled for now. Investigate if it is worth
+  // it.
+  if (/*DISABLES CODE*/ (false) && watcher_->GetCurrentId() == fast_id_) {
+    const int num_boxes = global_x_.NumTasks();
+    for (int box1 = 0; box1 < num_boxes; ++box1) {
+      if (!global_x_.IsPresent(box1)) continue;
+      for (int box2 = box1 + 1; box2 < num_boxes; ++box2) {
+        if (!global_x_.IsPresent(box2)) continue;
+        if (global_x_.EndMin(box1) <= global_x_.StartMax(box2)) continue;
+        if (global_x_.EndMin(box2) <= global_x_.StartMax(box1)) continue;
+        if (global_y_.EndMin(box1) <= global_y_.StartMax(box2)) continue;
+        if (global_y_.EndMin(box2) <= global_y_.StartMax(box1)) continue;
+
+        // X and Y must overlap. This is a conflict.
+        global_x_.ClearReason();
+        global_x_.AddPresenceReason(box1);
+        global_x_.AddPresenceReason(box2);
+        global_x_.AddReasonForBeingBefore(box1, box2);
+        global_x_.AddReasonForBeingBefore(box2, box1);
+        global_y_.ClearReason();
+        global_y_.AddReasonForBeingBefore(box1, box2);
+        global_y_.AddReasonForBeingBefore(box2, box1);
+        global_x_.ImportOtherReasons(global_y_);
+        return global_x_.ReportConflict();
+      }
+    }
+  }
 
   return true;
 }

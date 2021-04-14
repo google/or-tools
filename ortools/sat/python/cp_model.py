@@ -629,7 +629,6 @@ class BoundedLinearExpression(object):
             for coeff in coeffs_map.values():
                 if coeff != 0:
                     return True
-
             return False
 
         raise NotImplementedError(
@@ -769,7 +768,7 @@ class IntervalVar(object):
         return self.__ct.name
 
 
-def IsTrueLiteral(literal):
+def ObjectIsATrueLiteral(literal):
     """Checks if literal is either True, or a Boolean literals fixed to True."""
     if isinstance(literal, IntVar):
         proto = literal.Proto()
@@ -784,7 +783,7 @@ def IsTrueLiteral(literal):
     return False
 
 
-def IsFalseLiteral(literal):
+def ObjectIsAFalseLiteral(literal):
     """Checks if literal is either False, or a Boolean literals fixed to False."""
     if isinstance(literal, IntVar):
         proto = literal.Proto()

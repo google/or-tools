@@ -829,9 +829,9 @@ class ConstraintChecker {
             !IntervalIsEmpty(yi) && !IntervalIsEmpty(yj)) {
           VLOG(1) << "Interval " << i << "(x=[" << IntervalStart(xi) << ", "
                   << IntervalEnd(xi) << "], y=[" << IntervalStart(yi) << ", "
-                  << IntervalEnd(yi) << "]) and " << j << "("
-                  << "(x=[" << IntervalStart(xj) << ", " << IntervalEnd(xj)
-                  << "], y=[" << IntervalStart(yj) << ", " << IntervalEnd(yj)
+                  << IntervalEnd(yi) << "]) and " << j << "(x=["
+                  << IntervalStart(xj) << ", " << IntervalEnd(xj) << "], y=["
+                  << IntervalStart(yj) << ", " << IntervalEnd(yj)
                   << "]) are not disjoint.";
           return false;
         }
