@@ -686,18 +686,22 @@ class CpModelTest(unittest.TestCase):
         v1 = model.NewIntVar(0, 10, 'v1')
         v2 = model.NewIntVar(0, 10, 'v2')
 
+        with self.assertRaises(NotImplementedError):
+            if v0 == 2:
+                print('== passed')
 
-        if v0 == 2:
-            print('== passed')
+        with self.assertRaises(NotImplementedError):
+            if v0 >= 3:
+                print('>= passed')
 
-        if v0 >= 3:
-            print('>= passed')
+        with self.assertRaises(NotImplementedError):
+            model.Add(v2 == min(v0, v1))
+            print('min passed')
 
-        model.Add(v2 == min(v0, v1))
-        print('min passed')
+        with self.assertRaises(NotImplementedError):
+            if v0:
+                print('bool passed')
 
-        if v0:
-            print('bool passed')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
