@@ -121,7 +121,7 @@ def flexible_jobshop():
             starts[(job_id, task_id)] = start
 
             # Add precedence with previous task in the same job.
-            if previous_end:
+            if previous_end is not None:
                 model.Add(start >= previous_end)
             previous_end = end
 
