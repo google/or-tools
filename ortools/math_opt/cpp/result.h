@@ -35,6 +35,20 @@ namespace math_opt {
 // TODO(b/172211596): there is already a parallel proto named solve result, the
 // naming convention should be more consistent.
 struct Result {
+  // A solution to an optimization problem.
+  //
+  // E.g. consider a simple linear program:
+  //    min c * x
+  //    s.t. A * x >= b
+  //    x >= 0
+  // where c, x in R^m, b, y in R^n, and A in R^{m*n}.
+  //
+  // A primal solution is assignment values to x. It is feasible if it satisfies
+  // A * x >= b and x >= 0 from above. In the class PrimalSolution below,
+  // variable_values is x and objective_value is c * x.
+  //
+  // For the general case of a MathOpt optimization model, see
+  // go/mathopt-solutions for details.
   struct PrimalSolution {
     PrimalSolution() = default;
     PrimalSolution(IndexedModel* model, IndexedPrimalSolution indexed_solution);
@@ -42,12 +56,52 @@ struct Result {
     VariableMap<double> variable_values;
     double objective_value = 0.0;
   };
+
+  // A direction of unbounded improvement to an optimization problem;
+  // equivalently, a certificate of infeasibility for the dual of the
+  // optimization problem.
+  //
+  // E.g. consider a simple linear program:
+  //    min c * x
+  //    s.t. A * x >= b
+  //    x >= 0
+  // where c, x in R^m, b, y in R^n, and A in R^{m*n}.
+  //
+  // A primal ray is an x that satisfies:
+  //   c * x < 0
+  //   A * x >= 0
+  //   x >= 0
+  // Observe that given a feasible solution, any positive multiple of the primal
+  // ray plus that solution is still feasible, and gives a better objective
+  // value. A primal ray also proves the dual optimization problem infeasible.
+  //
+  // In the class PrimalRay below, variable_values is this x.
+  //
+  // For the general case of a MathOpt optimization model, see
+  // go/mathopt-solutions for details.
   struct PrimalRay {
     PrimalRay() = default;
     PrimalRay(IndexedModel* model, IndexedPrimalRay indexed_ray);
 
     VariableMap<double> variable_values;
   };
+
+  // A solution to the dual of an optimization problem.
+  //
+  // E.g. consider the primal dual pair linear program pair:
+  //    (Primal)              (Dual)
+  //    min c * x             max b * y
+  //    s.t. A * x >= b       s.t. y * A + r = c
+  //    x >= 0                y, r >= 0
+  // where c, x, r are in R^m, b, y in R^n and A in R^{m*n}.
+  //
+  // The dual solution is the pair (y, r). It is feasible if it satisfies the
+  // constraints from (Dual) above.
+  //
+  // Below, y is dual_values, r is reduced_costs, and b * y is objective value.
+  //
+  // For the general case, see go/mathopt-solutions and go/mathopt-dual (and
+  // note that the dual objective depends on r in the general case).
   struct DualSolution {
     DualSolution() = default;
     DualSolution(IndexedModel* model, IndexedDualSolution indexed_solution);
@@ -56,6 +110,29 @@ struct Result {
     VariableMap<double> reduced_costs;
     double objective_value = 0.0;
   };
+
+  // A direction of unbounded improvement to the dual of an optimization,
+  // problem; equivalently, a certificate of primal infeasibility.
+  //
+  // E.g. consider the primal dual pair linear program pair:
+  //    (Primal)              (Dual)
+  //    min c * x             max b * y
+  //    s.t. A * x >= b       s.t. y * A + r = c
+  //    x >= 0                y, r >= 0
+  // where c, x, r are in R^m, b, y in R^n and A in R^{m*n}.
+  //
+  // The dual ray is the pair (y, r) satisfying:
+  //   b * y > 0
+  //   y * A + r = 0
+  //   y, r >= 0
+  // Observe that adding a positive multiple of (y, r) to dual feasible solution
+  // maintains dual feasibility and improves the objective (proving the dual is
+  // unbounded). The dual ray also proves the primal problem is infeasible.
+  //
+  // In the class DualRay below, y is dual_values and r is reduced_costs.
+  //
+  // For the general case, see go/mathopt-solutions and go/mathopt-dual (and
+  // note that the dual objective depends on r in the general case).
   struct DualRay {
     DualRay() = default;
     DualRay(IndexedModel* model, IndexedDualRay indexed_ray);
