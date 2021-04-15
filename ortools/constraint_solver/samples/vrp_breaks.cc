@@ -161,14 +161,14 @@ void VrpBreaks() {
 
   Solver* const solver = routing.solver();
   for (int vehicle = 0; vehicle < manager.num_vehicles(); ++vehicle) {
-      std::vector<IntervalVar*> break_intervals;
-      IntervalVar* const break_interval = solver->MakeFixedDurationIntervalVar(
+    std::vector<IntervalVar*> break_intervals;
+    IntervalVar* const break_interval = solver->MakeFixedDurationIntervalVar(
         50,     // start min
         60,     // start max
         10,     // duration: 10min
         false,  // optional: no
-          absl::StrCat("Break for vehicle ", vehicle));
-      break_intervals.push_back(break_interval);
+        absl::StrCat("Break for vehicle ", vehicle));
+    break_intervals.push_back(break_interval);
 
     time_dimension->SetBreakIntervalsOfVehicle(break_intervals, vehicle,
                                                service_times);
