@@ -62,6 +62,9 @@ public class VrpDropNodes
     static void PrintSolution(in DataModel data, in RoutingModel routing, in RoutingIndexManager manager,
                               in Assignment solution)
     {
+        Console.WriteLine($"Objective {solution.ObjectiveValue()}:");
+
+        // Inspect solution.
         // Display dropped nodes.
         string droppedNodes = "Dropped nodes:";
         for (int index = 0; index < routing.Size(); ++index)

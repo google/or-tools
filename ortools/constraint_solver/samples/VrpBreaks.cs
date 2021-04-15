@@ -61,6 +61,7 @@ public class VrpBreaks
     {
         Console.WriteLine($"Objective {solution.ObjectiveValue()}:");
 
+        // Inspect solution.
         Console.WriteLine("Breaks:");
         AssignmentIntervalContainer intervals = solution.IntervalVarContainer();
         for (int i = 0; i < intervals.Size(); ++i)

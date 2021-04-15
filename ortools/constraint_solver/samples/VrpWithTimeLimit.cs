@@ -30,6 +30,8 @@ public class Vrp
     /// </summary>
     static void PrintSolution(in RoutingIndexManager manager, in RoutingModel routing, in Assignment solution)
     {
+        Console.WriteLine($"Objective {solution.ObjectiveValue()}:");
+
         // Inspect solution.
         long maxRouteDistance = 0;
         for (int i = 0; i < manager.GetNumberOfVehicles(); ++i)

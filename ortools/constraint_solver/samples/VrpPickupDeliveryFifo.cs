@@ -63,6 +63,9 @@ public class VrpPickupDeliveryFifo
     static void PrintSolution(in DataModel data, in RoutingModel routing, in RoutingIndexManager manager,
                               in Assignment solution)
     {
+        Console.WriteLine($"Objective {solution.ObjectiveValue()}:");
+
+        // Inspect solution.
         long totalDistance = 0;
         for (int i = 0; i < data.VehicleNumber; ++i)
         {

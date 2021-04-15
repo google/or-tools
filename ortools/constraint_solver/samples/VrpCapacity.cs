@@ -62,6 +62,8 @@ public class VrpCapacity
     static void PrintSolution(in DataModel data, in RoutingModel routing, in RoutingIndexManager manager,
                               in Assignment solution)
     {
+        Console.WriteLine($"Objective {solution.ObjectiveValue()}:");
+
         // Inspect solution.
         long totalDistance = 0;
         long totalLoad = 0;

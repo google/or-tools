@@ -82,8 +82,10 @@ public class VrpResources
     static void PrintSolution(in DataModel data, in RoutingModel routing, in RoutingIndexManager manager,
                               in Assignment solution)
     {
-        RoutingDimension timeDimension = routing.GetMutableDimension("Time");
+        Console.WriteLine($"Objective {solution.ObjectiveValue()}:");
+
         // Inspect solution.
+        RoutingDimension timeDimension = routing.GetMutableDimension("Time");
         long totalTime = 0;
         for (int i = 0; i < data.VehicleNumber; ++i)
         {

@@ -57,6 +57,8 @@ public class VrpGlobalSpan
     static void PrintSolution(in DataModel data, in RoutingModel routing, in RoutingIndexManager manager,
                               in Assignment solution)
     {
+        Console.WriteLine($"Objective {solution.ObjectiveValue()}:");
+
         // Inspect solution.
         long maxRouteDistance = 0;
         for (int i = 0; i < data.VehicleNumber; ++i)
