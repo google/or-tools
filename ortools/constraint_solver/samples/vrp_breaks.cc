@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // Vehicle Routing Problem with Breaks.:
 // A description of the Vehicle Routing Problem can be found here:
 // http://en.wikipedia.org/wiki/Vehicle_routing_problem.
@@ -72,10 +71,12 @@ void PrintSolution(const RoutingIndexManager& manager,
   LOG(INFO) << "Objective: " << solution.ObjectiveValue();
 
   LOG(INFO) << "Breaks:";
-  const Assignment::IntervalContainer& intervals = solution.IntervalVarContainer();
+  const Assignment::IntervalContainer& intervals =
+      solution.IntervalVarContainer();
   for (const IntervalVarElement& break_interval : intervals.elements()) {
     if (break_interval.PerformedValue()) {
-      LOG(INFO) << break_interval.Var()->name() << " " << break_interval.DebugString();
+      LOG(INFO) << break_interval.Var()->name() << " "
+                << break_interval.DebugString();
     } else {
       LOG(INFO) << break_interval.Var()->name() << ": Unperformed";
     }
@@ -162,15 +163,15 @@ void VrpBreaks() {
   for (int vehicle = 0; vehicle < manager.num_vehicles(); ++vehicle) {
       std::vector<IntervalVar*> break_intervals;
       IntervalVar* const break_interval = solver->MakeFixedDurationIntervalVar(
-          50, // start min
-          60, // start max
-          10, // duration: 10min
-          false, // optional: no
+        50,     // start min
+        60,     // start max
+        10,     // duration: 10min
+        false,  // optional: no
           absl::StrCat("Break for vehicle ", vehicle));
       break_intervals.push_back(break_interval);
 
-      time_dimension->SetBreakIntervalsOfVehicle(break_intervals,
-                                                 vehicle, service_times);
+    time_dimension->SetBreakIntervalsOfVehicle(break_intervals, vehicle,
+                                               service_times);
   }
 
   // Setting first solution heuristic.

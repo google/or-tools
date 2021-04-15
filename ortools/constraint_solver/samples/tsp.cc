@@ -111,7 +111,8 @@ void Tsp() {
   // [START transit_callback]
   const auto distance_matrix = GenerateManhattanDistanceMatrix(data.locations);
   const int transit_callback_index = routing.RegisterTransitCallback(
-      [&distance_matrix, &manager](int64_t from_index, int64_t to_index) -> int64_t {
+      [&distance_matrix, &manager](int64_t from_index,
+                                   int64_t to_index) -> int64_t {
         // Convert from routing variable Index to distance matrix NodeIndex.
         auto from_node = manager.IndexToNode(from_index).value();
         auto to_node = manager.IndexToNode(to_index).value();

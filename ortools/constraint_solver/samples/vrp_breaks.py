@@ -55,7 +55,7 @@ def create_data_model():
     ]
     data['service_time'] = [15] * len(data['time_matrix']) # 15 min of service time
     data['service_time'][data['depot']] = 0
-    assert(len(data['time_matrix']) == len(data['service_time']))
+    assert len(data['time_matrix']) == len(data['service_time'])
     return data
     # [END data_model]
 
@@ -69,8 +69,9 @@ def print_solution(manager, routing, solution):
     intervals = solution.IntervalVarContainer()
     for i in range(intervals.Size()):
         brk = intervals.Element(i)
-        if brk.PerformedValue() == True:
-            print(f'{brk.Var().Name()}: Start({brk.StartValue()}) Duration({brk.DurationValue()})')
+        if brk.PerformedValue():
+            print(f'{brk.Var().Name()}: ' +
+                  f'Start({brk.StartValue()}) Duration({brk.DurationValue()})')
         else:
             print(f'{brk.Var().Name()}: Unperformed')
 
@@ -81,10 +82,12 @@ def print_solution(manager, routing, solution):
         plan_output = f'Route for vehicle {vehicle_id}:\n'
         while not routing.IsEnd(index):
             time_var = time_dimension.CumulVar(index)
-            plan_output += f'{manager.IndexToNode(index)} Time({solution.Value(time_var)}) -> '
+            plan_output += f'{manager.IndexToNode(index)} '
+            plan_output += f'Time({solution.Value(time_var)}) -> '
             index = solution.Value(routing.NextVar(index))
         time_var = time_dimension.CumulVar(index)
-        plan_output += f'{manager.IndexToNode(index)} Time({solution.Value(time_var)})\n'
+        plan_output += f'{manager.IndexToNode(index)} '
+        plan_output += f'Time({solution.Value(time_var)})\n'
         plan_output += f'Time of the route: {solution.Value(time_var)}min\n'
         print(plan_output)
         total_time += solution.Value(time_var)
@@ -101,12 +104,14 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywrapcp.RoutingIndexManager(len(data['time_matrix']), data['num_vehicles'], data['depot'])
+    manager = pywrapcp.RoutingIndexManager(len(data['time_matrix']),
+                                           data['num_vehicles'], data['depot'])
     # [END index_manager]
 
     # Create Routing Model.
     # [START routing_model]
     routing = pywrapcp.RoutingModel(manager)
+
     # [END routing_model]
 
     # Create and register a transit callback.
@@ -149,18 +154,17 @@ def main():
     for v in range(data['num_vehicles']):
         break_intervals[v] = [
             routing.solver().FixedDurationIntervalVar(
-                50, # start min
-                60, # start max
-                10, # duration: 10 min
-                False, # optional: no
+                50,  # start min
+                60,  # start max
+                10,  # duration: 10 min
+                False,  # optional: no
                 f'Break for vehicle {v}')
         ]
         time_dimension.SetBreakIntervalsOfVehicle(
-                break_intervals[v], # breaks
-                v, # vehicle index
-                node_visit_transit)
+            break_intervals[v],  # breaks
+            v,  # vehicle index
+            node_visit_transit)
     # [END break_constraint]
-
 
     # Setting first solution heuristic.
     # [START parameters]
@@ -169,7 +173,7 @@ def main():
         routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
     search_parameters.local_search_metaheuristic = (
         routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
-    #search_parameters.log_search = True
+    # search_parameters.log_search = True
     search_parameters.time_limit.FromSeconds(2)
     # [END parameters]
 

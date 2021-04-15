@@ -134,7 +134,6 @@ def main():
     # Create Routing Model.
     # [START routing_model]
     routing = pywrapcp.RoutingModel(manager)
-
     # [END routing_model]
 
     # Create and register a transit callback.

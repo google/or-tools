@@ -95,24 +95,24 @@ def create_data_model():
         ],
     ]
     data['cost'] = [
-            0, #depot
-            42, # 1
-            42, # 2
-            8, # 3
-            8, # 4
-            8, # 5
-            8, # 6
-            8, # 7
-            8, # 8
-            8, # 9
-            8, # 10
-            8, # 11
-            8, # 12
-            8, # 13
-            8, # 14
-            42, # 15
-            42, # 16
-            ]
+        0,  # depot
+        42,  # 1
+        42,  # 2
+        8,  # 3
+        8,  # 4
+        8,  # 5
+        8,  # 6
+        8,  # 7
+        8,  # 8
+        8,  # 9
+        8,  # 10
+        8,  # 11
+        8,  # 12
+        8,  # 13
+        8,  # 14
+        42,  # 15
+        42,  # 16
+    ]
     assert len(data['distance_matrix']) == len(data['cost'])
     data['num_vehicles'] = 4
     data['depot'] = 0
@@ -123,10 +123,10 @@ def create_data_model():
 # [START solution_printer]
 def print_solution(data, manager, routing, solution):
     """Prints solution on console."""
-    print(f"Objective: {solution.ObjectiveValue()}")
+    print(f'Objective: {solution.ObjectiveValue()}')
     max_route_distance = 0
-    dim_one = routing.GetDimensionOrDie("One")
-    dim_two = routing.GetDimensionOrDie("Two")
+    dim_one = routing.GetDimensionOrDie('One')
+    dim_two = routing.GetDimensionOrDie('Two')
 
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
@@ -148,8 +148,7 @@ def print_solution(data, manager, routing, solution):
         one_var = dim_one.CumulVar(index)
         two_var = dim_two.CumulVar(index)
         plan_output += 'N:{0} one:{1} two:{2}\n'.format(
-                manager.IndexToNode(index),
-                solution.Value(one_var),
+                manager.IndexToNode(index), solution.Value(one_var),
                 solution.Value(two_var))
         plan_output += 'Distance of the route: {}m\n'.format(route_distance)
         print(plan_output)
@@ -208,74 +207,68 @@ def main():
     distance_dimension.SetGlobalSpanCostCoefficient(100)
     # [END distance_constraint]
 
+    routing.AddConstantDimensionWithSlack(
+        0,  # transit 0
+        42 * 16,  # capacity: be able to store PEAK*ROUTE_LENGTH in worst case
+        42,  # slack_max: to be able to store peak in slack
+        True,  #  Fix StartCumulToZero not really matter here
+        'One')
+    dim_one = routing.GetDimensionOrDie('One')
 
     routing.AddConstantDimensionWithSlack(
-     0, # transit 0
-     42*16, # capacity: don't care jsut need to be able to store at least PEAK*ROUTE_LENGTH in worst case
-     42, # slack_max: to be able to store peak in slack
-     True, #  Fix StartCumulToZero not really matter here
-     "One"
-    )
-    dim_one = routing.GetDimensionOrDie("One")
-
-    routing.AddConstantDimensionWithSlack(
-     0, # transit 0
-     42*16, # capacity: we only want to be able to have PEAK value in CumulVar(End)
-     42, # slack_max: to be able to store peak in slack
-     True, #  Fix StartCumulToZero YES here
-     "Two"
-    )
-    dim_two = routing.GetDimensionOrDie("Two")
+        0,  # transit 0
+        42 * 16,  # capacity: be able to have PEAK value in CumulVar(End)
+        42,  # slack_max: to be able to store peak in slack
+        True,  #  Fix StartCumulToZero YES here
+        'Two')
+    dim_two = routing.GetDimensionOrDie('Two')
 
     # force depot Slack to be cost since we don't have any predecessor...
     for v in range(manager.GetNumberOfVehicles()):
-       start = routing.Start(v)
-       dim_one.SlackVar(start).SetValue(data['cost'][0])
-       routing.AddToAssignment(dim_one.SlackVar(start))
+        start = routing.Start(v)
+        dim_one.SlackVar(start).SetValue(data['cost'][0])
+        routing.AddToAssignment(dim_one.SlackVar(start))
 
-       dim_two.SlackVar(start).SetValue(data['cost'][0])
-       routing.AddToAssignment(dim_two.SlackVar(start))
-
+        dim_two.SlackVar(start).SetValue(data['cost'][0])
+        routing.AddToAssignment(dim_two.SlackVar(start))
 
     # Step by step relation
     # Slack(N) = max( Slack(N-1) , cost(N) )
     solver = routing.solver()
-    for node in range(1,17):
-       index = manager.NodeToIndex(node)
-       routing.AddToAssignment(dim_one.SlackVar(index))
-       routing.AddToAssignment(dim_two.SlackVar(index))
-       test = []
-       for v in range(manager.GetNumberOfVehicles()):
-         previous_index = routing.Start(v)
-         cond = routing.NextVar(previous_index) == index
-         value = solver.Max(dim_one.SlackVar(previous_index), data['cost'][node])
-         test.append(cond * value)
-       for previous in range(1,17):
-         previous_index = manager.NodeToIndex(previous)
-         cond = routing.NextVar(previous_index) == index
-         value = solver.Max(dim_one.SlackVar(previous_index), data['cost'][node])
-         test.append(cond * value)
-       solver.Add(solver.Sum(test) == dim_one.SlackVar(index))
-
+    for node in range(1, 17):
+        index = manager.NodeToIndex(node)
+        routing.AddToAssignment(dim_one.SlackVar(index))
+        routing.AddToAssignment(dim_two.SlackVar(index))
+        test = []
+        for v in range(manager.GetNumberOfVehicles()):
+            previous_index = routing.Start(v)
+            cond = routing.NextVar(previous_index) == index
+            value = solver.Max(dim_one.SlackVar(previous_index),
+                               data['cost'][node])
+            test.append(cond * value)
+        for previous in range(1, 17):
+            previous_index = manager.NodeToIndex(previous)
+            cond = routing.NextVar(previous_index) == index
+            value = solver.Max(dim_one.SlackVar(previous_index),
+                               data['cost'][node])
+            test.append(cond * value)
+        solver.Add(solver.Sum(test) == dim_one.SlackVar(index))
 
     # relation between dimensions, copy last node Slack from dim ONE to dim TWO
-    for node in range(1,17):
-       index = manager.NodeToIndex(node)
-       values = []
-       for v in range(manager.GetNumberOfVehicles()):
-         next_index = routing.End(v)
-         cond = routing.NextVar(index) == next_index
-         value = dim_one.SlackVar(index)
-         values.append(cond * value)
-         expr = dim_one.SlackVar(index) == dim_two.SlackVar(index)
-       solver.Add(solver.Sum(values) == dim_two.SlackVar(index))
+    for node in range(1, 17):
+        index = manager.NodeToIndex(node)
+        values = []
+        for v in range(manager.GetNumberOfVehicles()):
+            next_index = routing.End(v)
+            cond = routing.NextVar(index) == next_index
+            value = dim_one.SlackVar(index)
+            values.append(cond * value)
+        solver.Add(solver.Sum(values) == dim_two.SlackVar(index))
 
     # Should force all others dim_two slack var to zero...
     for v in range(manager.GetNumberOfVehicles()):
-       end = routing.End(v)
-       #routing.AddVariableMinimizedByFinalizer(dim_two.CumulVar(routing.End(v))); # not sure is needed
-       dim_two.SetCumulVarSoftUpperBound(routing.End(v), 0, 1000)
-
+        end = routing.End(v)
+        dim_two.SetCumulVarSoftUpperBound(end, 0, 1000)
 
     # Setting first solution heuristic.
     # [START parameters]
@@ -284,7 +277,7 @@ def main():
         routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
     search_parameters.local_search_metaheuristic = (
         routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
-    #search_parameters.log_search = True
+    # search_parameters.log_search = True
     search_parameters.time_limit.FromSeconds(5)
     # [END parameters]
 
