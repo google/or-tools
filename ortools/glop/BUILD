@@ -250,6 +250,7 @@ cc_library(
     deps = [
         ":basis_representation",
         ":parameters_cc_proto",
+        ":pricing",
         ":primal_edge_norms",
         ":status",
         ":update_row",
