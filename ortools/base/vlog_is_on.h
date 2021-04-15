@@ -28,8 +28,8 @@ namespace google {
 // parsing of --vmodule flag and/or SetVLOGLevel calls.
 #define VLOG_IS_ON(verboselevel)                                            \
   __extension__({                                                           \
-    static int32_t* vlocal__ = &google::kLogSiteUninitialized;                \
-    int32_t verbose_level__ = (verboselevel);                                 \
+    static int32_t* vlocal__ = &google::kLogSiteUninitialized;              \
+    int32_t verbose_level__ = (verboselevel);                               \
     (*vlocal__ >= verbose_level__) &&                                       \
         ((vlocal__ != &google::kLogSiteUninitialized) ||                    \
          (google::InitVLOG3__(&vlocal__, &absl::GetFlag(FLAGS_v), __FILE__, \
