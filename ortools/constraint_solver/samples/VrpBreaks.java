@@ -30,8 +30,8 @@ import com.google.ortools.constraintsolver.main;
 import java.util.logging.Logger;
 // [END import]
 
-/// Minimal VRP with breaks.
-public class VrpBreaks {
+/** Minimal VRP with breaks. */
+public final class VrpBreaks {
   private static final Logger logger = Logger.getLogger(VrpBreaks.class.getName());
 
   // [START data_model]
@@ -90,7 +90,7 @@ public class VrpBreaks {
     for (int i = 0; i < intervals.size(); ++i) {
       IntervalVarElement breakInterval = intervals.element(i);
       if (breakInterval.performedValue() == 1) {
-        logger.info(breakInterval.var().name() + " " + breakInterval.toString());
+        logger.info(breakInterval.var().name() + " " + breakInterval);
       } else {
         logger.info(breakInterval.var().name() + ": Unperformed");
       }
@@ -117,7 +117,7 @@ public class VrpBreaks {
   }
   // [END solution_printer]
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // Instantiate the data problem.
     // [START data]
@@ -170,12 +170,12 @@ public class VrpBreaks {
     Solver solver = routing.solver();
     for (int vehicle = 0; vehicle < manager.getNumberOfVehicles(); ++vehicle) {
       IntervalVar[] breakIntervals = new IntervalVar[1];
-      IntervalVar break_interval = solver.makeFixedDurationIntervalVar(50, // start min
+      IntervalVar breakInterval = solver.makeFixedDurationIntervalVar(50, // start min
           60, // start max
           10, // duration: 10min
           false, // optional: no
           "Break for vehicle " + vehicle);
-      breakIntervals[0] = break_interval;
+      breakIntervals[0] = breakInterval;
 
       timeDimension.setBreakIntervalsOfVehicle(breakIntervals, vehicle, serviceTimes);
     }
@@ -203,5 +203,7 @@ public class VrpBreaks {
     }
     // [END print_solution]
   }
+
+  private VrpBreaks() {}
 }
 // [END program]
