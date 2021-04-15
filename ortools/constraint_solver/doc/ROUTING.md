@@ -116,6 +116,7 @@ def main():
     from_node = int(manager.IndexToNode(from_index))
     to_node = int(manager.IndexToNode(to_index))
     return abs(to_node - from_node)
+
   transit_callback_index = routing.RegisterTransitCallback(distance_callback)
 
   # Define cost of each arc.

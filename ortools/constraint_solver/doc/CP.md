@@ -104,6 +104,7 @@ def main():
   print('Problem solved in ', solver.WallTime(), 'ms')
   print('Memory usage: ', pywrapcp.Solver.MemoryUsage(), 'bytes')
 
+
 if __name__ == '__main__':
   main()
 ```
