@@ -62,6 +62,8 @@ public class VrpStartsEnds {
   /// @brief Print the solution.
   static void printSolution(
       DataModel data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
+    // Solution cost.
+    logger.info("Objective : " + solution.objectiveValue());
     // Inspect solution.
     long maxRouteDistance = 0;
     for (int i = 0; i < data.vehicleNumber; ++i) {

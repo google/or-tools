@@ -64,6 +64,9 @@ public class VrpDropNodes {
   /// @brief Print the solution.
   static void printSolution(
       DataModel data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
+    // Solution cost.
+    logger.info("Objective: " + solution.objectiveValue());
+    // Inspect solution.
     // Display dropped nodes.
     String droppedNodes = "Dropped nodes:";
     for (int node = 0; node < routing.size(); ++node) {
