@@ -82,14 +82,18 @@ class DenseConnectedComponentsFinder {
  public:
   DenseConnectedComponentsFinder() {}
 
+  // We support copy and move construction.
   DenseConnectedComponentsFinder(const DenseConnectedComponentsFinder&) =
-      delete;
+      default;
   DenseConnectedComponentsFinder& operator=(
-      const DenseConnectedComponentsFinder&) = delete;
+      const DenseConnectedComponentsFinder&) = default;
+  DenseConnectedComponentsFinder(DenseConnectedComponentsFinder&&) = default;
+  DenseConnectedComponentsFinder& operator=(DenseConnectedComponentsFinder&&) =
+      default;
 
   // The main API is the same as ConnectedComponentsFinder (below): see the
   // homonymous functions there.
-  void AddEdge(int node1, int node2);
+  bool AddEdge(int node1, int node2);
   bool Connected(int node1, int node2);
   int GetSize(int node);
   int GetNumberOfComponents() const { return num_components_; }
@@ -210,8 +214,10 @@ class ConnectedComponentsFinder {
 
   // Adds an edge in the graph.  Also adds both endpoint nodes as necessary.
   // It is not an error to add the same edge twice.  Self-edges are OK too.
-  void AddEdge(T node1, T node2) {
-    delegate_.AddEdge(LookupOrInsertNode<false>(node1),
+  // Returns true if the two nodes are newly connected, and false if they were
+  // already connected.
+  bool AddEdge(T node1, T node2) {
+    return delegate_.AddEdge(LookupOrInsertNode<false>(node1),
                       LookupOrInsertNode<false>(node2));
   }
 
