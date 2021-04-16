@@ -2517,34 +2517,33 @@ class LnsSolver : public SubSolver {
       local_time_limit->ResetLimitFromParameters(local_params);
       shared_->time_limit->UpdateLocalLimit(local_time_limit);
 
-      const int64_t num_neighborhood_model_vars =
-          neighborhood.delta.variables_size();
       // Presolve and solve the LNS fragment.
       CpModelProto lns_fragment;
       CpModelProto mapping_proto;
-      std::vector<int> postsolve_mapping;
       auto context = absl::make_unique<PresolveContext>(
           &local_model, &lns_fragment, &mapping_proto);
 
-      ModelCopy copier(context.get());
       *lns_fragment.mutable_variables() = neighborhood.delta.variables();
+      {
+        ModelCopy copier(context.get());
 
-      // Copy and simplify the constraints from the initial model.
-      const absl::flat_hash_set<int> constraints_to_ignore_set(
-          neighborhood.constraints_to_ignore.begin(),
-          neighborhood.constraints_to_ignore.end());
-      if (!copier.ImportAndSimplifyConstraints(helper_->ModelProto(),
-                                               constraints_to_ignore_set)) {
-        return;
+        // Copy and simplify the constraints from the initial model.
+        if (!copier.ImportAndSimplifyConstraints(
+                helper_->ModelProto(), neighborhood.constraints_to_ignore)) {
+          return;
+        }
+
+        // Copy and simplify the constraints from the delta model.
+        if (!neighborhood.delta.constraints().empty() &&
+            !copier.ImportAndSimplifyConstraints(neighborhood.delta, {})) {
+          return;
+        }
       }
-      // Copy and simplify the constraints from the delta model.
-      if (!neighborhood.delta.constraints().empty() &&
-          !copier.ImportAndSimplifyConstraints(neighborhood.delta, {})) {
-        return;
-      }
+
       // Copy the rest of the model.
-      copier.CopyEverythingExceptVariablesAndConstraintsFields(
-          helper_->ModelProto());
+      CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
+          helper_->ModelProto(), context.get());
+
       // Overwrite solution hinting.
       if (neighborhood.delta.has_solution_hint()) {
         *lns_fragment.mutable_solution_hint() =
@@ -2559,10 +2558,12 @@ class LnsSolver : public SubSolver {
         CHECK_OK(file::SetTextProto(lns_name, lns_fragment, file::Defaults()));
       }
 
+      std::vector<int> postsolve_mapping;
       PresolveCpModel(context.get(), &postsolve_mapping);
 
       // Release the context
       context.reset(nullptr);
+      neighborhood.delta.Clear();
 
       // TODO(user): Depending on the problem, we should probably use the
       // parameters that work bests (core, linearization_level, etc...) or
@@ -2577,9 +2578,9 @@ class LnsSolver : public SubSolver {
 
       // TODO(user): we actually do not need to postsolve if the solution is
       // not going to be used...
-      PostsolveResponseWrapper(local_params, num_neighborhood_model_vars,
-                               mapping_proto, postsolve_mapping,
-                               shared_->wall_timer, &local_response);
+      PostsolveResponseWrapper(
+          local_params, helper_->ModelProto().variables_size(), mapping_proto,
+          postsolve_mapping, shared_->wall_timer, &local_response);
       data.status = local_response.status();
       data.deterministic_time = local_time_limit->GetElapsedDeterministicTime();
 
@@ -3115,12 +3116,18 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   auto context = absl::make_unique<PresolveContext>(model, &new_cp_model_proto,
                                                     &mapping_proto);
 
-  ModelCopy copier(context.get());
-  if (!copier.CopyWithBasicPresolve(model_proto)) {
+  *context->working_model->mutable_variables() = model_proto.variables();
+  LOG(INFO) << context->working_model->DebugString();
+  LOG(INFO) << model_proto.DebugString();
+
+  if (!ImportConstraintsWithBasicPresolveIntoContext(model_proto,
+                                                     context.get())) {
     VLOG(1) << "Model found infeasible during copy";
     // TODO(user): At this point, the model is trivial, but we could exit
     // early.
   }
+  CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(model_proto,
+                                                               context.get());
 
   bool degraded_assumptions_support = false;
   if (params.num_search_workers() > 1 || model_proto.has_objective()) {

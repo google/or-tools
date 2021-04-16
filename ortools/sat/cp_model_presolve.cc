@@ -5208,17 +5208,23 @@ ModelCopy::ModelCopy(PresolveContext* context) : context_(context) {}
 
 // TODO(user): Merge with the phase 1 of the presolve code.
 bool ModelCopy::ImportAndSimplifyConstraints(
-    const CpModelProto& in_model,
-    const absl::flat_hash_set<int>& ignored_constraints) {
+    const CpModelProto& in_model, const std::vector<int>& ignored_constraints) {
+  const absl::flat_hash_set<int> ignored_constraints_set(
+      ignored_constraints.begin(), ignored_constraints.end());
   context_->InitializeNewDomains();
 
   starting_constraint_index_ = context_->working_model->constraints_size();
   for (int c = 0; c < in_model.constraints_size(); ++c) {
-    if (ignored_constraints.contains(c)) continue;
+    if (ignored_constraints_set.contains(c)) {
+      LOG(INFO) << "Ignore " << c;
+      continue;
+    }
 
     const ConstraintProto& ct = in_model.constraints(c);
+    LOG(INFO) << "Process " << ct.DebugString();
     if (OneEnforcementLiteralIsFalse(ct) &&
         ct.constraint_case() != ConstraintProto::kInterval) {
+      LOG(INFO) << " not enforced";
       continue;
     }
     switch (ct.constraint_case()) {
@@ -5275,13 +5281,16 @@ bool ModelCopy::ImportAndSimplifyConstraints(
 
 void ModelCopy::CopyEnforcementLiterals(const ConstraintProto& orig,
                                         ConstraintProto* dest) {
+  temp_enforcement_literals_.clear();
   for (const int lit : orig.enforcement_literal()) {
     if (context_->LiteralIsTrue(lit)) {
       skipped_non_zero_++;
       continue;
     }
-    dest->add_enforcement_literal(lit);
+    temp_enforcement_literals_.push_back(lit);
   }
+  dest->mutable_enforcement_literal()->Add(temp_enforcement_literals_.begin(),
+                                           temp_enforcement_literals_.end());
 }
 
 bool ModelCopy::OneEnforcementLiteralIsFalse(const ConstraintProto& ct) const {
@@ -5294,31 +5303,27 @@ bool ModelCopy::OneEnforcementLiteralIsFalse(const ConstraintProto& ct) const {
 }
 
 bool ModelCopy::CopyBoolOr(const ConstraintProto& ct) {
-  bool at_least_one_true = false;
-  int num_non_fixed_literals = 0;
+  temp_literals_.clear();
+  for (const int lit : ct.enforcement_literal()) {
+    if (context_->LiteralIsTrue(lit)) continue;
+    temp_literals_.push_back(NegatedRef(lit));
+  }
   for (const int lit : ct.bool_or().literals()) {
     if (context_->LiteralIsTrue(lit)) {
-      at_least_one_true = true;
-      break;
+      return true;
     }
-    if (!context_->LiteralIsFalse(lit)) {
-      num_non_fixed_literals++;
-    }
-  }
-  if (at_least_one_true) return true;
-
-  ConstraintProto* new_ct = context_->working_model->add_constraints();
-  CopyEnforcementLiterals(ct, new_ct);
-  BoolArgumentProto* bool_or = new_ct->mutable_bool_or();
-  bool_or->mutable_literals()->Reserve(num_non_fixed_literals);
-  for (const int lit : ct.bool_or().literals()) {
     if (context_->LiteralIsFalse(lit)) {
       skipped_non_zero_++;
-      continue;
+    } else {
+      temp_literals_.push_back(lit);
     }
-    bool_or->add_literals(lit);
   }
-  return true;
+
+  context_->working_model->add_constraints()
+      ->mutable_bool_or()
+      ->mutable_literals()
+      ->Add(temp_literals_.begin(), temp_literals_.end());
+  return !temp_literals_.empty();
 }
 
 bool ModelCopy::CopyBoolAnd(const ConstraintProto& ct) {
@@ -5329,7 +5334,7 @@ bool ModelCopy::CopyBoolAnd(const ConstraintProto& ct) {
       at_least_one_false = true;
       break;
     }
-    if (!context_->IsFixed(lit)) {
+    if (!context_->LiteralIsTrue(lit)) {
       num_non_fixed_literals++;
     }
   }
@@ -5346,7 +5351,7 @@ bool ModelCopy::CopyBoolAnd(const ConstraintProto& ct) {
       }
       bool_or->add_literals(NegatedRef(lit));
     }
-    if (bool_or->literals().empty()) return false;
+    return !bool_or->literals().empty();
   } else if (num_non_fixed_literals > 0) {
     ConstraintProto* new_ct = context_->working_model->add_constraints();
     CopyEnforcementLiterals(ct, new_ct);
@@ -5382,70 +5387,77 @@ bool ModelCopy::CopyLinear(const ConstraintProto& ct) {
   const Domain new_domain =
       ReadDomainFromProto(ct.linear()).AdditionWith(Domain(-offset));
   if (non_fixed_variables_.empty() && !new_domain.Contains(0)) {
-    return false;
+    if (ct.enforcement_literal().empty()) {
+      return false;
+    }
+    temp_literals_.clear();
+    for (const int literal : ct.enforcement_literal()) {
+      if (context_->LiteralIsTrue(literal)) {
+        skipped_non_zero_++;
+      } else {
+        temp_literals_.push_back(NegatedRef(literal));
+      }
+    }
+    context_->working_model->add_constraints()
+        ->mutable_bool_or()
+        ->mutable_literals()
+        ->Add(temp_literals_.begin(), temp_literals_.end());
+    return !temp_literals_.empty();
   }
 
   ConstraintProto* new_ct = context_->working_model->add_constraints();
   CopyEnforcementLiterals(ct, new_ct);
   LinearConstraintProto* linear = new_ct->mutable_linear();
-  const int num_terms = non_fixed_variables_.size();
-  linear->mutable_vars()->Reserve(num_terms);
-  linear->mutable_coeffs()->Reserve(num_terms);
-  for (int i = 0; i < num_terms; ++i) {
-    linear->add_vars(non_fixed_variables_[i]);
-    linear->add_coeffs(non_fixed_coefficients_[i]);
-  }
+  linear->mutable_vars()->Add(non_fixed_variables_.begin(),
+                              non_fixed_variables_.end());
+  linear->mutable_coeffs()->Add(non_fixed_coefficients_.begin(),
+                                non_fixed_coefficients_.end());
   FillDomainInProto(new_domain, linear);
   return true;
 }
 
 bool ModelCopy::CopyAtMostOne(const ConstraintProto& ct) {
-  int num_non_false = 0;
   int num_true = 0;
-  for (const int lit : ct.at_most_one().literals()) {
-    if (!context_->LiteralIsFalse(lit)) num_non_false++;
-    if (context_->LiteralIsTrue(lit)) num_true++;
-  }
-
-  if (num_non_false <= 1) return true;
-  if (num_true > 1) return false;
-
-  ConstraintProto* new_ct = context_->working_model->add_constraints();
-  CopyEnforcementLiterals(ct, new_ct);
-
-  BoolArgumentProto* at_most_one = new_ct->mutable_at_most_one();
+  temp_literals_.clear();
   for (const int lit : ct.at_most_one().literals()) {
     if (context_->LiteralIsFalse(lit)) {
       skipped_non_zero_++;
       continue;
     }
-    at_most_one->add_literals(lit);
+    temp_literals_.push_back(lit);
+    if (context_->LiteralIsTrue(lit)) num_true++;
   }
+
+  if (temp_literals_.size() <= 1) return true;
+  if (num_true > 1) return false;
+  // TODO(user): presolve if num_true == 1.
+
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  CopyEnforcementLiterals(ct, new_ct);
+  new_ct->mutable_at_most_one()->mutable_literals()->Add(temp_literals_.begin(),
+                                                         temp_literals_.end());
   return true;
 }
 
 bool ModelCopy::CopyExactlyOne(const ConstraintProto& ct) {
-  int num_non_false = 0;
   int num_true = 0;
-  for (const int lit : ct.exactly_one().literals()) {
-    if (!context_->LiteralIsFalse(lit)) num_non_false++;
-    if (context_->LiteralIsTrue(lit)) num_true++;
-  }
-
-  if (num_non_false == 0 || num_true > 1) return false;
-
-  ConstraintProto* new_ct = context_->working_model->add_constraints();
-  CopyEnforcementLiterals(ct, new_ct);
-
-  BoolArgumentProto* exactly_one = new_ct->mutable_exactly_one();
+  temp_literals_.clear();
   for (const int lit : ct.exactly_one().literals()) {
     if (context_->LiteralIsFalse(lit)) {
       skipped_non_zero_++;
       continue;
     }
-    exactly_one->add_literals(lit);
+    temp_literals_.push_back(lit);
+    if (context_->LiteralIsTrue(lit)) num_true++;
   }
 
+  if (temp_literals_.empty() || num_true > 1) return false;
+
+  // TODO(user): presolve if num_true == 1.
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  CopyEnforcementLiterals(ct, new_ct);
+  new_ct->mutable_exactly_one()->mutable_literals()->Add(temp_literals_.begin(),
+                                                         temp_literals_.end());
   return true;
 }
 
@@ -5459,43 +5471,44 @@ bool ModelCopy::CopyInterval(const ConstraintProto& ct, int c) {
   return true;
 }
 
-void ModelCopy::CopyEverythingExceptVariablesAndConstraintsFields(
-    const CpModelProto& in_model) {
-  if (!in_model.name().empty()) {
-    context_->working_model->set_name(in_model.name());
-  }
-  if (in_model.has_objective()) {
-    *context_->working_model->mutable_objective() = in_model.objective();
-  }
-  if (!in_model.search_strategy().empty()) {
-    *context_->working_model->mutable_search_strategy() =
-        in_model.search_strategy();
-  }
-  if (!in_model.assumptions().empty()) {
-    *context_->working_model->mutable_assumptions() = in_model.assumptions();
-  }
-  if (in_model.has_symmetry()) {
-    *context_->working_model->mutable_symmetry() = in_model.symmetry();
-  }
-  if (in_model.has_solution_hint()) {
-    *context_->working_model->mutable_solution_hint() =
-        in_model.solution_hint();
-  }
-}
-
 bool ModelCopy::CreateUnsatModel() {
   context_->working_model->mutable_constraints()->Clear();
   context_->working_model->add_constraints()->mutable_bool_or();
   return false;
 }
 
-bool ModelCopy::CopyWithBasicPresolve(const CpModelProto& in_model) {
-  *context_->working_model->mutable_variables() = in_model.variables();
-  if (ImportAndSimplifyConstraints(in_model, {})) {
-    CopyEverythingExceptVariablesAndConstraintsFields(in_model);
+bool ImportConstraintsWithBasicPresolveIntoContext(const CpModelProto& in_model,
+                                                   PresolveContext* context) {
+  ModelCopy copier(context);
+  if (copier.ImportAndSimplifyConstraints(in_model, {})) {
+    CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(in_model,
+                                                                 context);
     return true;
   }
-  return false;
+  return context->NotifyThatModelIsUnsat();
+}
+
+void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
+    const CpModelProto& in_model, PresolveContext* context) {
+  if (!in_model.name().empty()) {
+    context->working_model->set_name(in_model.name());
+  }
+  if (in_model.has_objective()) {
+    *context->working_model->mutable_objective() = in_model.objective();
+  }
+  if (!in_model.search_strategy().empty()) {
+    *context->working_model->mutable_search_strategy() =
+        in_model.search_strategy();
+  }
+  if (!in_model.assumptions().empty()) {
+    *context->working_model->mutable_assumptions() = in_model.assumptions();
+  }
+  if (in_model.has_symmetry()) {
+    *context->working_model->mutable_symmetry() = in_model.symmetry();
+  }
+  if (in_model.has_solution_hint()) {
+    *context->working_model->mutable_solution_hint() = in_model.solution_hint();
+  }
 }
 
 // =============================================================================

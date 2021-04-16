@@ -205,29 +205,21 @@ class CpModelPresolver {
 // that generates partial assignments.
 class ModelCopy {
  public:
-  // The model is not cleared.
   explicit ModelCopy(PresolveContext* context);
 
   // Copies all constraints from in_model to working model of the context.
   //
   // During the process, it will read variable domains from the context, and
   // simplify constraints to minimize the size of the copied model.
+  // Thus it is important that the context->working_model already have the
+  // variables part copied.
   //
   // It returns false iff the model is proven infeasible.
   //
   // It does not clear the constraints part of the working model of the context.
   bool ImportAndSimplifyConstraints(
       const CpModelProto& in_model,
-      const absl::flat_hash_set<int>& ignored_constraints);
-
-  // Copies the non constraint, non variables part of the model.
-  // It needs to be called after the variables have been copied, otherwise the
-  // objective, the hints could have dandling references to variables.
-  void CopyEverythingExceptVariablesAndConstraintsFields(
-      const CpModelProto& in_model);
-
-  // Complete copy of a model. Returns false if the model was proved invalid.
-  bool CopyWithBasicPresolve(const CpModelProto& in_model);
+      const std::vector<int>& ignored_constraints);
 
  private:
   // Overwrites the out_model to be unsat. Returns false.
@@ -248,12 +240,24 @@ class ModelCopy {
   PresolveContext* context_;
   int64_t skipped_non_zero_ = 0;
 
-  // temp vectors.
+  // Temp vectors.
   std::vector<int> non_fixed_variables_;
   std::vector<int64_t> non_fixed_coefficients_;
   absl::flat_hash_map<int, int> interval_mapping_;
   int starting_constraint_index_ = 0;
+  std::vector<int> temp_enforcement_literals_;
+  std::vector<int> temp_literals_;
 };
+
+// Import the constraints from the in_model to the presolve context.
+// It performs on the fly simplification, and returns false if the
+// model is proved infeasible.
+bool ImportConstraintsWithBasicPresolveIntoContext(const CpModelProto& in_model,
+                                                   PresolveContext* context);
+
+// Copies the non constraint, non variables part of the model.
+void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
+    const CpModelProto& in_model, PresolveContext* context);
 
 // Convenient wrapper to call the full presolve.
 bool PresolveCpModel(PresolveContext* context,
