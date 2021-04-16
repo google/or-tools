@@ -128,6 +128,7 @@ def print_solution(data, manager, routing, solution):
         print(plan_output)
         max_route_distance = max(route_distance, max_route_distance)
     print('Maximum of the route distances: {}m'.format(max_route_distance))
+
 # [END solution_printer]
 
 
@@ -147,6 +148,7 @@ def main():
     # Create Routing Model.
     # [START routing_model]
     routing = pywrapcp.RoutingModel(manager)
+
     # [END routing_model]
 
     # Create and register a transit callback.

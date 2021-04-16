@@ -128,6 +128,7 @@ def print_solution(data, manager, routing, solution):
         print(plan_output)
         total_distance += route_distance
     print('Total Distance of all routes: {}m'.format(total_distance))
+
 # [END solution_printer]
 
 
@@ -147,6 +148,7 @@ def main():
     # Create Routing Model.
     # [START routing_model]
     routing = pywrapcp.RoutingModel(manager)
+
     # [END routing_model]
 
     # Create and register a transit callback.

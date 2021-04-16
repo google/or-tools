@@ -63,7 +63,8 @@ def create_data_model():
     data['num_vehicles'] = 4
     data['depot'] = 0
     return data
-    # [END data_model]
+
+# [END data_model]
 
 
 # [START solution_printer]
@@ -86,6 +87,7 @@ def print_solution(data, manager, routing, assignment):
         print(plan_output)
         total_distance += route_distance
     print('Total Distance of all routes: {}m'.format(total_distance))
+
 # [END solution_printer]
 
 
@@ -193,4 +195,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-# [END program]
+    # [END program]

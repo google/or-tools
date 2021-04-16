@@ -53,7 +53,8 @@ def create_data_model():
         [38, 43, 77, 28, 33, 52, 63, 37, 54, 40, 57, 13, 19, 21, 38, 0, 39],
         [33, 60, 37, 67, 62, 35, 24, 42, 25, 23, 17, 42, 36, 26, 9, 39, 0],
     ]
-    data['service_time'] = [15] * len(data['time_matrix']) # 15 min of service time
+    data['service_time'] = [15] * len(
+        data['time_matrix'])  # 15 min of service time
     data['service_time'][data['depot']] = 0
     assert len(data['time_matrix']) == len(data['service_time'])
     return data
@@ -121,7 +122,8 @@ def main():
         # Convert from routing variable Index to time matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
-        return data['time_matrix'][from_node][to_node] + data['service_time'][from_node]
+        return data['time_matrix'][from_node][to_node] + data['service_time'][
+            from_node]
 
     transit_callback_index = routing.RegisterTransitCallback(time_callback)
     # [END transit_callback]

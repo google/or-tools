@@ -117,7 +117,8 @@ def create_data_model():
     data['num_vehicles'] = 4
     data['depot'] = 0
     return data
-    # [END data_model]
+
+# [END data_model]
 
 
 # [START solution_printer]
@@ -138,9 +139,9 @@ def print_solution(data, manager, routing, solution):
             two_var = dim_two.CumulVar(index)
             two_slack_var = dim_two.SlackVar(index)
             plan_output += ' N:{0} one:({1},{2}) two:({3},{4}) -> '.format(
-                    manager.IndexToNode(index),
-                    solution.Value(one_var), solution.Value(one_slack_var),
-                    solution.Value(two_var), solution.Value(two_slack_var))
+                manager.IndexToNode(index), solution.Value(one_var),
+                solution.Value(one_slack_var), solution.Value(two_var),
+                solution.Value(two_slack_var))
             previous_index = index
             index = solution.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
@@ -148,8 +149,8 @@ def print_solution(data, manager, routing, solution):
         one_var = dim_one.CumulVar(index)
         two_var = dim_two.CumulVar(index)
         plan_output += 'N:{0} one:{1} two:{2}\n'.format(
-                manager.IndexToNode(index), solution.Value(one_var),
-                solution.Value(two_var))
+            manager.IndexToNode(index), solution.Value(one_var),
+            solution.Value(two_var))
         plan_output += 'Distance of the route: {}m\n'.format(route_distance)
         print(plan_output)
         max_route_distance = max(route_distance, max_route_distance)
@@ -297,4 +298,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-# [END program]
+    # [END program]
