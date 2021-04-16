@@ -141,8 +141,8 @@ class KnapsackSolver {
     /** Dynamic Programming approach for single dimension problems
      *
      * Limited to one dimension, this solver is based on a dynamic programming
-     * algorithm. The time and space complexity is O(capacity *
-     * number_of_items).
+     * algorithm. The time complexity is O(capacity * number_of_items^2) and 
+     * the space complexity is O(capacity + number_of_items).
      */
     KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER = 2,
 
@@ -188,6 +188,14 @@ class KnapsackSolver {
      */
     KNAPSACK_MULTIDIMENSION_CPLEX_MIP_SOLVER = 8,
 #endif
+    /** Divide and Conquer approach for single dimension problems
+     *
+     * Limited to one dimension, this solver is based on a divide and conquer
+     * technique and is suitable for larger problems than Dynamic Programming
+     * Solver. The time complexity is O(capacity * number_of_items) and the
+     * space complexity is O(capacity + number_of_items).
+     */
+    KNAPSACK_DIVIDE_AND_CONQUER_SOLVER = 9,
   };
 
   explicit KnapsackSolver(const std::string& solver_name);

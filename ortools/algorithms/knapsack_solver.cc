@@ -925,9 +925,8 @@ void Knapsack64ItemsSolver::BuildBestSolution() {
 
 // ----- KnapsackDynamicProgrammingSolver -----
 // KnapsackDynamicProgrammingSolver solves the 0-1 knapsack problem
-// using dynamic programming. This algorithm is pseudo-polynomial because it
-// depends on capacity, ie. the time and space complexity is
-// O(capacity * number_of_items).
+// using dynamic programming. The time complexity is O(capacity *
+// number_of_items^2) and the space complexity is O(capacity + number_of_items).
 // The implemented algorithm is 'DP-3' in "Knapsack problems", Hans Kellerer,
 // Ulrich Pferschy and David Pisinger, Springer book (ISBN 978-3540402862).
 class KnapsackDynamicProgrammingSolver : public BaseKnapsackSolver {
@@ -1027,7 +1026,143 @@ int64_t KnapsackDynamicProgrammingSolver::Solve(TimeLimit* time_limit,
 
   return computed_profits_[capacity_];
 }
+// ----- KnapsackDivideAndConquerSolver -----
+// KnapsackDivideAndConquerSolver solves the 0-1 knapsack problem (KP)
+// using divide and conquer and dynamic programming.
+// By using one-dimensional vectors it keeps a complexity of O(capacity *
+// number_of_items) in time, but reduces the space complexity to O(capacity +
+// number_of_items) and is therefore suitable for large hard to solve
+// (KP)/(SSP). The implemented algorithm is based on 'DP-2' and Divide and
+// Conquer for storage reduction from [Hans Kellerer et al., "Knapsack problems"
+// (DOI 10.1007/978-3-540-24777-7)].
+class KnapsackDivideAndConquerSolver : public BaseKnapsackSolver {
+ public:
+  explicit KnapsackDivideAndConquerSolver(const std::string& solver_name);
 
+  // Initializes the solver and enters the problem to be solved.
+  void Init(const std::vector<int64_t>& profits,
+            const std::vector<std::vector<int64_t>>& weights,
+            const std::vector<int64_t>& capacities) override;
+
+  // Solves the problem and returns the profit of the optimal solution.
+  int64_t Solve(TimeLimit* time_limit, bool* is_solution_optimal) override;
+
+  // Returns true if the item 'item_id' is packed in the optimal knapsack.
+  bool best_solution(int item_id) const override {
+    return best_solution_.at(item_id);
+  }
+
+ private:
+  // 'DP 2' computes solution 'z' for 0 up to capacitiy
+  void SolveSubProblem(bool first_storage, int64_t capacity, int start_item,
+                       int end_item);
+
+  // Calculates best_solution_ and return 'z' from first instance
+  int64_t DivideAndConquer(int64_t capacity, int start_item, int end_item);
+
+  std::vector<int64_t> profits_;
+  std::vector<int64_t> weights_;
+  int64_t capacity_;
+  std::vector<int64_t> computed_profits_storage1_;
+  std::vector<int64_t> computed_profits_storage2_;
+  std::vector<bool> best_solution_;
+};
+
+// ----- KnapsackDivideAndConquerSolver -----
+KnapsackDivideAndConquerSolver::KnapsackDivideAndConquerSolver(
+    const std::string& solver_name)
+    : BaseKnapsackSolver(solver_name),
+      profits_(),
+      weights_(),
+      capacity_(0),
+      computed_profits_storage1_(),
+      computed_profits_storage2_(),
+      best_solution_() {}
+
+void KnapsackDivideAndConquerSolver::Init(
+    const std::vector<int64_t>& profits,
+    const std::vector<std::vector<int64_t>>& weights,
+    const std::vector<int64_t>& capacities) {
+  CHECK_EQ(weights.size(), 1)
+      << "Current implementation of the divide and conquer solver only deals"
+      << " with one dimension.";
+  CHECK_EQ(capacities.size(), weights.size());
+
+  profits_ = profits;
+  weights_ = weights[0];
+  capacity_ = capacities[0];
+}
+
+void KnapsackDivideAndConquerSolver::SolveSubProblem(bool first_storage,
+                                                     int64_t capacity,
+                                                     int start_item,
+                                                     int end_item) {
+  std::vector<int64_t>& computed_profits_storage_ =
+      (first_storage) ? computed_profits_storage1_ : computed_profits_storage2_;
+  const int64_t capacity_plus_1 = capacity + 1;
+  std::fill_n(computed_profits_storage_.begin(), capacity_plus_1, 0LL);
+  for (int item_id = start_item; item_id < end_item; ++item_id) {
+    const int64_t item_weight = weights_[item_id];
+    const int64_t item_profit = profits_[item_id];
+    for (int64_t used_capacity = capacity; used_capacity >= item_weight;
+         --used_capacity) {
+      if (computed_profits_storage_[used_capacity - item_weight] + item_profit >
+          computed_profits_storage_[used_capacity]) {
+        computed_profits_storage_[used_capacity] =
+            computed_profits_storage_[used_capacity - item_weight] +
+            item_profit;
+      }
+    }
+  }
+}
+
+int64_t KnapsackDivideAndConquerSolver::DivideAndConquer(int64_t capacity,
+                                                         int start_item,
+                                                         int end_item) {
+  const int64_t capacity_plus_1 = capacity_ + 1;
+  int item_boundary_ = start_item + ((end_item - start_item) / 2);
+
+  SolveSubProblem(true, capacity, start_item, item_boundary_);
+  SolveSubProblem(false, capacity, item_boundary_, end_item);
+
+  int64_t max_solution_ = 0, capacity1_ = 0, capacity2_ = 0;
+
+  for (int64_t capacity_id = 0; capacity_id <= capacity; capacity_id++) {
+    if ((computed_profits_storage1_[capacity_id] +
+         computed_profits_storage2_[(capacity - capacity_id)]) >
+        max_solution_) {
+      capacity1_ = capacity_id;
+      capacity2_ = capacity - capacity_id;
+      max_solution_ = (computed_profits_storage1_[capacity_id] +
+                       computed_profits_storage2_[(capacity - capacity_id)]);
+    }
+  }
+
+  if ((item_boundary_ - start_item) == 1) {
+    if (weights_[start_item] <= capacity1_) best_solution_[start_item] = true;
+  } else if ((item_boundary_ - start_item) > 1)
+    DivideAndConquer(capacity1_, start_item, item_boundary_);
+
+  if ((end_item - item_boundary_) == 1) {
+    if (weights_[item_boundary_] <= capacity2_)
+      best_solution_[item_boundary_] = true;
+  } else if ((end_item - item_boundary_) > 1)
+    DivideAndConquer(capacity2_, item_boundary_, end_item);
+
+  return max_solution_;
+}
+
+int64_t KnapsackDivideAndConquerSolver::Solve(TimeLimit* time_limit,
+                                              bool* is_solution_optimal) {
+  DCHECK(is_solution_optimal != nullptr);
+  *is_solution_optimal = true;
+  const int64_t capacity_plus_1 = capacity_ + 1;
+  computed_profits_storage1_.assign(capacity_plus_1, 0LL);
+  computed_profits_storage2_.assign(capacity_plus_1, 0LL);
+  best_solution_.assign(profits_.size(), false);
+
+  return DivideAndConquer(capacity_, 0, profits_.size());
+}
 // ----- KnapsackMIPSolver -----
 class KnapsackMIPSolver : public BaseKnapsackSolver {
  public:
@@ -1147,6 +1282,9 @@ KnapsackSolver::KnapsackSolver(SolverType solver_type,
     case KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER:
       solver_ = absl::make_unique<KnapsackGenericSolver>(solver_name);
       break;
+    case KNAPSACK_DIVIDE_AND_CONQUER_SOLVER:
+      solver_ = absl::make_unique<KnapsackDivideAndConquerSolver>(solver_name);
+      break;
 #if defined(USE_CBC)
     case KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER:
       solver_ = absl::make_unique<KnapsackMIPSolver>(
@@ -1180,7 +1318,7 @@ KnapsackSolver::~KnapsackSolver() {}
 
 void KnapsackSolver::Init(const std::vector<int64_t>& profits,
                           const std::vector<std::vector<int64_t>>& weights,
-                          const std::vector<int64_t>& capacities) {                           
+                          const std::vector<int64_t>& capacities) {
   for (const std::vector<int64_t>& w : weights) {
     CHECK_EQ(profits.size(), w.size())
         << "Profits and inner weights must have the same size (#items)";
