@@ -3117,9 +3117,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                                                     &mapping_proto);
 
   *context->working_model->mutable_variables() = model_proto.variables();
-  LOG(INFO) << context->working_model->DebugString();
-  LOG(INFO) << model_proto.DebugString();
-
   if (!ImportConstraintsWithBasicPresolveIntoContext(model_proto,
                                                      context.get())) {
     VLOG(1) << "Model found infeasible during copy";

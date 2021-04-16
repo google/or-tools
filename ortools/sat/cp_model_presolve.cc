@@ -5215,16 +5215,11 @@ bool ModelCopy::ImportAndSimplifyConstraints(
 
   starting_constraint_index_ = context_->working_model->constraints_size();
   for (int c = 0; c < in_model.constraints_size(); ++c) {
-    if (ignored_constraints_set.contains(c)) {
-      LOG(INFO) << "Ignore " << c;
-      continue;
-    }
+    if (ignored_constraints_set.contains(c)) continue;
 
     const ConstraintProto& ct = in_model.constraints(c);
-    LOG(INFO) << "Process " << ct.DebugString();
     if (OneEnforcementLiteralIsFalse(ct) &&
         ct.constraint_case() != ConstraintProto::kInterval) {
-      LOG(INFO) << " not enforced";
       continue;
     }
     switch (ct.constraint_case()) {
