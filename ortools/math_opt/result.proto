@@ -80,7 +80,7 @@ message SolveResultProto {
     // either infeasible or unbounded, but we do not know which.
     DUAL_INFEASIBLE = 4;
 
-    // The problem was solved to one of the critera above (optimal, infeasible,
+    // The problem was solved to one of the criteria above (optimal, infeasible,
     // unbounded, or dual infeasible), but one or more tolerances was not met.
     // Some primal/dual solutions/rays be present, but either they will be
     // slightly infeasible, or (if the problem was nearly optimal) their may be
