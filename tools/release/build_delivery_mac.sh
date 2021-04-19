@@ -13,7 +13,7 @@ ${BOLD}SYNOPSIS${RESET}
 ${BOLD}DESCRIPTION${RESET}
 \tBuild Google OR-Tools deliveries.
 \tYou ${BOLD}MUST${RESET} define the following variables before running this script:
-\t* ORTOOLS_TOKEN: secret use to decrypt key to sign dotent and java package.
+\t* ORTOOLS_TOKEN: secret use to decrypt key to sign .Net and Java package.
 
 ${BOLD}OPTIONS${RESET}
 \t-h --help: display this help text
@@ -75,7 +75,7 @@ function build_cxx() {
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/cxx_build"
 }
 
-# Net build
+# .Net build
 function build_dotnet() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/dotnet_build" -; then
     echo "build .Net up to date!"

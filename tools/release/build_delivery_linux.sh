@@ -13,7 +13,7 @@ ${BOLD}SYNOPSIS${RESET}
 ${BOLD}DESCRIPTION${RESET}
 \tBuild Google OR-Tools deliveries.
 \tYou ${BOLD}MUST${RESET} define the following variables before running this script:
-\t* ORTOOLS_TOKEN: secret use to decrypt key to sign dotent and java package.
+\t* ORTOOLS_TOKEN: secret use to decrypt key to sign .Net and Java package.
 
 ${BOLD}OPTIONS${RESET}
 \t-h --help: show this help text
