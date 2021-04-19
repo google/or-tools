@@ -20,11 +20,13 @@ PYTHON_EXECUTABLE := $(WINDOWS_PATH_TO_PYTHON)\$(PYTHON_COMPILER)
 else
 PYTHON_EXECUTABLE := $(shell $(WHICH) $(PYTHON_COMPILER) 2>nul)
 endif
+TWINE_EXECUTABLE := $(shell $(WHICH) twine.exe 2>nul)
 SET_PYTHONPATH = set PYTHONPATH=$(OR_TOOLS_PYTHONPATH) &&
 GEN_MYPY := $(shell $(WHICH) protoc-gen-mypy 2> NUL)
 else # UNIX
 PYTHON_COMPILER ?= python$(UNIX_PYTHON_VER)
 PYTHON_EXECUTABLE := $(shell which $(PYTHON_COMPILER))
+TWINE_EXECUTABLE := $(shell command -v twine 2> /dev/null)
 SET_PYTHONPATH = PYTHONPATH=$(OR_TOOLS_PYTHONPATH)
 GEN_MYPY := $(shell command -v protoc-gen-mypy 2> /dev/null)
 endif
@@ -63,10 +65,12 @@ PYTHON_OR_TOOLS_LIBS = \
 .PHONY: check_python # Quick check only running Python OR-Tools samples.
 .PHONY: test_python # Run all Python OR-Tools test targets.
 .PHONY: package_python # Create Python ortools wheel package.
+.PHONY: publish_python # Publish Python OR-Tools wheel package to Pypi.org.
 ifneq ($(PYTHON_EXECUTABLE),)
 python: $(PYTHON_OR_TOOLS_LIBS)
 check_python: check_python_pimpl
 test_python: test_python_pimpl
+publish_python: publish_python_pimpl
 BUILT_LANGUAGES +=, Python$(PYTHON_VERSION)
 else
 python:
@@ -75,6 +79,7 @@ python:
 check_python: python
 test_python: python
 package_python: python
+publish_python: python
 endif
 
 PROTOBUF_PYTHON_DESC = dependencies/sources/protobuf-$(PROTOBUF_TAG)/python/google/protobuf/descriptor_pb2.py
@@ -1052,6 +1057,10 @@ else
 	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\cvrptw_break.py
 endif
 endif # ifneq ($(PYTHON_EXECUTABLE),)
+
+.PHONY: publish_python_pimpl
+publish_python_pimpl: package_python
+	cd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools && "$(TWINE_EXECUTABLE)" upload "*.whl"
 
 .PHONY: install_python # Install Python OR-Tools on the host system
 install_python: pypi_archive
