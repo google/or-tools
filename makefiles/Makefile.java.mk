@@ -32,11 +32,14 @@ JAVA_ORTOOLS_NATIVE_LIBS := $(LIB_DIR)/$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT)
 JAVAFLAGS := -Djava.library.path=$(LIB_DIR)
 
 # Main target
+.PHONY: java_runtime # Build Java OR-Tools runtime.
 .PHONY: java # Build Java OR-Tools.
 .PHONY: test_java # Test Java OR-Tools using various examples.
 .PHONY: package_java # Create Java OR-Tools maven package.
-.PHONY: publish_java # Publish Java OR-Tools maven package to Sonatype.
+.PHONY: publish_java_runtime # Publish Java OR-Tools runtime maven package to oss.sonatype.org.
+.PHONY: publish_java # Publish Java OR-Tools maven package to oss.sonatype.org.
 ifndef HAS_JAVA
+java_runtime: java
 java:
 	@echo JAVA_HOME = $(JAVA_HOME)
 	@echo JAVAC_BIN = $(JAVAC_BIN)
@@ -48,16 +51,18 @@ java:
  Check Makefile.local for more information.)
 check_java: java
 test_java: java
-package_java: java
+publish_java_runtime: java
 publish_java: java
 else
-java: java_package
+java_runtime: java_runtime_pimpl
+java: java_pimpl
 check_java: check_java_pimpl
 test_java: test_java_pimpl
-package_java: java
+publish_java_runtime: publish_java_runtime_pimpl
 publish_java: publish_java_pimpl
 BUILT_LANGUAGES +=, Java
 endif
+package_java: java
 
 # Detect RuntimeIDentifier
 ifeq ($(OS),Windows)
@@ -421,8 +426,8 @@ $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/pom.xml: \
 	$(SED) -i -e 's/@JAVA_NATIVE_PROJECT@/$(JAVA_ORTOOLS_NATIVE_PROJECT)/' \
  $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)$Spom.xml
 
-.PHONY: java_runtime
-java_runtime: $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/timestamp
+.PHONY: java_runtime_pimpl
+java_runtime_pimpl: $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/timestamp
 
 $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/timestamp: \
  $(JAVA_ORTOOLS_NATIVE_LIBS) \
@@ -460,8 +465,8 @@ $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/pom.xml: \
 	$(SED) -i -e 's/@JAVA_PROJECT@/$(JAVA_ORTOOLS_PROJECT)/' \
  $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Spom.xml
 
-.PHONY: java_package
-java_package: $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/timestamp
+.PHONY: java_pimpl
+java_pimpl: $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/timestamp
 
 $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/timestamp: \
  $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/timestamp \
@@ -550,7 +555,7 @@ $$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java: \
  $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$S$$(JAVA_SRC_PATH)
 
 rjava_%: \
- java_package \
+ java \
  $$(SRC_DIR)/ortools/$1/samples/%.java \
  $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
  $$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java \
@@ -599,7 +604,7 @@ $$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java: \
  $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$S$$(JAVA_SRC_PATH)
 
 rjava_%: \
- java_package \
+ java \
  $$(SRC_DIR)/examples/$1/%.java \
  $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
  $$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java \
@@ -645,7 +650,7 @@ $(TEMP_JAVA_DIR)/tests/%/$(JAVA_TEST_DIR)/%.java: \
  $(TEMP_JAVA_DIR)$Stests$S$*$S$(JAVA_TEST_PATH)
 
 rjava_%: \
- java_package \
+ java \
  $(SRC_DIR)/examples/tests/%.java \
  $(TEMP_JAVA_DIR)/tests/%/pom.xml \
  $(TEMP_JAVA_DIR)/tests/%/$(JAVA_TEST_DIR)/%.java \
@@ -800,9 +805,12 @@ test_java_pimpl: \
  test_java_contrib \
  test_java_java
 
+.PHONY: publish_java_runtime_pimpl
+publish_java_runtime_pimpl: java_runtime
+	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" deploy
+
 .PHONY: publish_java_pimpl
 publish_java_pimpl: java
-	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" deploy
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" deploy
 
 #######################
