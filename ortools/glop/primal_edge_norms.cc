@@ -38,6 +38,7 @@ void PrimalEdgeNorms::Clear() {
   SCOPED_TIME_STAT(&stats_);
   recompute_edge_squared_norms_ = true;
   reset_devex_weights_ = true;
+  for (bool* watcher : watchers_) *watcher = true;
 }
 
 bool PrimalEdgeNorms::NeedsBasisRefactorization() const {
@@ -91,6 +92,7 @@ void PrimalEdgeNorms::TestEnteringEdgeNormPrecision(
       VLOG(1) << "Recomputing edge norms: " << sqrt(precise_squared_norm)
               << " vs " << sqrt(old_squared_norm);
       recompute_edge_squared_norms_ = true;
+      for (bool* watcher : watchers_) *watcher = true;
     }
   }
 }

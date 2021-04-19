@@ -652,13 +652,13 @@ class RevisedSimplex {
   // Classes responsible for maintaining the data of the corresponding names.
   VariablesInfo variables_info_;
   PrimalEdgeNorms primal_edge_norms_;
-  DynamicMaximum<ColIndex> primal_prices_;
   DualEdgeNorms dual_edge_norms_;
   DynamicMaximum<RowIndex> dual_prices_;
   VariableValues variable_values_;
   UpdateRow update_row_;
   ReducedCosts reduced_costs_;
   EnteringVariable entering_variable_;
+  PrimalPrices primal_prices_;
 
   // Used in dual phase I to hold the price of each possible leaving choices.
   DenseColumn dual_pricing_vector_;

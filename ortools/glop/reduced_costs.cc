@@ -29,8 +29,6 @@ ReducedCosts::ReducedCosts(const CompactSparseMatrix& matrix,
                            const RowToColMapping& basis,
                            const VariablesInfo& variables_info,
                            const BasisFactorization& basis_factorization,
-                           PrimalEdgeNorms* primal_edge_norms,
-                           DynamicMaximum<ColIndex>* primal_prices,
                            absl::BitGenRef random)
     : matrix_(matrix),
       objective_(objective),
@@ -49,10 +47,7 @@ ReducedCosts::ReducedCosts(const CompactSparseMatrix& matrix,
       basic_objective_(),
       reduced_costs_(),
       basic_objective_left_inverse_(),
-      dual_feasibility_tolerance_(),
-      primal_edge_norms_(primal_edge_norms),
-      primal_prices_(primal_prices),
-      are_dual_infeasible_positions_maintained_(false) {}
+      dual_feasibility_tolerance_() {}
 
 bool ReducedCosts::NeedsBasisRefactorization() const {
   return must_refactorize_basis_;
@@ -76,9 +71,6 @@ bool ReducedCosts::TestEnteringReducedCostPrecision(
 
   if (!IsValidPrimalEnteringCandidate(entering_col)) {
     VLOG(1) << "Entering candidate is not valid under precise reduced costs.";
-    if (are_dual_infeasible_positions_maintained_) {
-      primal_prices_->Remove(entering_col);
-    }
 
     // If we don't have the reduced cost with maximum precision, we
     // return false and the next ChooseEnteringColumn() will recompute them.
@@ -88,14 +80,6 @@ bool ReducedCosts::TestEnteringReducedCostPrecision(
       MakeReducedCostsPrecise();
     }
     return false;
-  } else if (are_dual_infeasible_positions_maintained_) {
-    if (!primal_edge_norms_->NeedsBasisRefactorization()) {
-      const DenseRow& squared_norms = primal_edge_norms_->GetSquaredNorms();
-      DCHECK_NE(0.0, squared_norms[entering_col]);
-      primal_prices_->AddOrUpdate(
-          entering_col,
-          Square(precise_reduced_cost) / squared_norms[entering_col]);
-    }
   }
 
   // At this point, we have an entering variable that will move the objective in
@@ -214,35 +198,13 @@ void ReducedCosts::UpdateBeforeBasisPivot(ColIndex entering_col,
 
   // If we are recomputing everything when requested, no need to update.
   if (!recompute_reduced_costs_) {
-    if (are_dual_infeasible_positions_maintained_) {
-      primal_prices_->Remove(entering_col);
-    }
     UpdateReducedCosts(entering_col, leaving_col, leaving_row,
                        direction[leaving_row], update_row);
-    if (are_dual_infeasible_positions_maintained_) {
-      DCHECK_EQ(reduced_costs_[entering_col], 0.0);
-      if (!primal_edge_norms_->NeedsBasisRefactorization()) {
-        // Note that the set of positions works because both the reduced costs
-        // and the primal edge norms are updated on the same positions which are
-        // given by the update_row.
-        UpdateEnteringCandidates</*use_dense_update=*/false>(
-            update_row->GetNonZeroPositions());
-      }
-      SetAndDebugCheckThatColumnIsDualFeasible(leaving_col);
-    }
   }
 
   // Note that it is important to update basic_objective_ AFTER calling
   // UpdateReducedCosts().
   UpdateBasicObjective(entering_col, leaving_row);
-}
-
-void ReducedCosts::SetAndDebugCheckThatColumnIsDualFeasible(ColIndex col) {
-  SCOPED_TIME_STAT(&stats_);
-  DCHECK(!IsValidPrimalEnteringCandidate(col));
-  if (are_dual_infeasible_positions_maintained_) {
-    primal_prices_->Remove(col);
-  }
 }
 
 void ReducedCosts::SetNonBasicVariableCostToZero(ColIndex col,
@@ -261,8 +223,8 @@ void ReducedCosts::ResetForNewObjective() {
   SCOPED_TIME_STAT(&stats_);
   recompute_basic_objective_ = true;
   recompute_basic_objective_left_inverse_ = true;
-  recompute_reduced_costs_ = true;
   are_reduced_costs_precise_ = false;
+  SetRecomputeReducedCostsAndNotifyWatchers();
 }
 
 void ReducedCosts::UpdateDataOnBasisPermutation() {
@@ -276,7 +238,7 @@ void ReducedCosts::MakeReducedCostsPrecise() {
   if (are_reduced_costs_precise_) return;
   must_refactorize_basis_ = true;
   recompute_basic_objective_left_inverse_ = true;
-  recompute_reduced_costs_ = true;
+  SetRecomputeReducedCostsAndNotifyWatchers();
 }
 
 void ReducedCosts::PerturbCosts() {
@@ -362,26 +324,26 @@ void ReducedCosts::ClearAndRemoveCostShifts() {
   cost_perturbations_.AssignToZero(matrix_.num_cols());
   recompute_basic_objective_ = true;
   recompute_basic_objective_left_inverse_ = true;
-  recompute_reduced_costs_ = true;
   are_reduced_costs_precise_ = false;
-}
-
-void ReducedCosts::MaintainDualInfeasiblePositions(bool maintain) {
-  are_dual_infeasible_positions_maintained_ = maintain;
-  if (are_dual_infeasible_positions_maintained_ && !recompute_reduced_costs_) {
-    RecomputePrimalPrices();
-  }
+  SetRecomputeReducedCostsAndNotifyWatchers();
 }
 
 const DenseRow& ReducedCosts::GetFullReducedCosts() {
   SCOPED_TIME_STAT(&stats_);
-  if (!are_reduced_costs_recomputed_) recompute_reduced_costs_ = true;
+  if (!are_reduced_costs_recomputed_) {
+    SetRecomputeReducedCostsAndNotifyWatchers();
+  }
   return GetReducedCosts();
 }
 
 const DenseRow& ReducedCosts::GetReducedCosts() {
   SCOPED_TIME_STAT(&stats_);
-  RecomputeReducedCostsAndPrimalEnteringCandidatesIfNeeded();
+  if (basis_factorization_.IsRefactorized()) {
+    must_refactorize_basis_ = false;
+  }
+  if (recompute_reduced_costs_) {
+    ComputeReducedCosts();
+  }
   return reduced_costs_;
 }
 
@@ -389,21 +351,6 @@ const DenseColumn& ReducedCosts::GetDualValues() {
   SCOPED_TIME_STAT(&stats_);
   ComputeBasicObjectiveLeftInverse();
   return Transpose(basic_objective_left_inverse_.values);
-}
-
-void ReducedCosts::RecomputeReducedCostsAndPrimalEnteringCandidatesIfNeeded() {
-  if (basis_factorization_.IsRefactorized()) {
-    must_refactorize_basis_ = false;
-  }
-  if (recompute_reduced_costs_) {
-    ComputeReducedCosts();
-    if (are_dual_infeasible_positions_maintained_) {
-      RecomputePrimalPrices();
-    }
-  } else if (are_dual_infeasible_positions_maintained_ &&
-             primal_edge_norms_->NeedsBasisRefactorization()) {
-    RecomputePrimalPrices();
-  }
 }
 
 void ReducedCosts::ComputeBasicObjective() {
@@ -591,12 +538,73 @@ bool ReducedCosts::IsValidPrimalEnteringCandidate(ColIndex col) const {
          (can_decrease.IsSet(col) && (reduced_cost > tolerance));
 }
 
-void ReducedCosts::RecomputePrimalPrices() {
+void ReducedCosts::UpdateBasicObjective(ColIndex entering_col,
+                                        RowIndex leaving_row) {
   SCOPED_TIME_STAT(&stats_);
-  const ColIndex num_cols = matrix_.num_cols();
-  primal_prices_->ClearAndResize(num_cols);
-  UpdateEnteringCandidates</*use_dense_update=*/true>(
-      variables_info_.GetIsRelevantBitRow());
+  basic_objective_[RowToColIndex(leaving_row)] =
+      objective_[entering_col] + cost_perturbations_[entering_col];
+  recompute_basic_objective_left_inverse_ = true;
+}
+
+void ReducedCosts::SetRecomputeReducedCostsAndNotifyWatchers() {
+  recompute_reduced_costs_ = true;
+  for (bool* watcher : watchers_) *watcher = true;
+}
+
+PrimalPrices::PrimalPrices(absl::BitGenRef random,
+                           const VariablesInfo& variables_info,
+                           PrimalEdgeNorms* primal_edge_norms,
+                           ReducedCosts* reduced_costs)
+    : prices_(random),
+      variables_info_(variables_info),
+      primal_edge_norms_(primal_edge_norms),
+      reduced_costs_(reduced_costs) {
+  reduced_costs_->AddRecomputationWatcher(&recompute_);
+  primal_edge_norms->AddRecomputationWatcher(&recompute_);
+}
+
+void PrimalPrices::UpdateBeforeBasisPivot(ColIndex entering_col,
+                                          UpdateRow* update_row) {
+  // If we are recomputing everything when requested, no need to update.
+  if (recompute_) return;
+
+  // Note that the set of positions works because both the reduced costs
+  // and the primal edge norms are updated on the same positions which are
+  // given by the update_row.
+  UpdateEnteringCandidates</*from_clean_state=*/false>(
+      update_row->GetNonZeroPositions());
+}
+
+void PrimalPrices::RecomputePriceAt(ColIndex col) {
+  if (recompute_) return;
+  if (reduced_costs_->IsValidPrimalEnteringCandidate(col)) {
+    const DenseRow& squared_norms = primal_edge_norms_->GetSquaredNorms();
+    const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
+    DCHECK_NE(0.0, squared_norms[col]);
+    prices_.AddOrUpdate(col, Square(reduced_costs[col]) / squared_norms[col]);
+  } else {
+    prices_.Remove(col);
+  }
+}
+
+void PrimalPrices::SetAndDebugCheckThatColumnIsDualFeasible(ColIndex col) {
+  // If we need a recomputation, we cannot assumes that the reduced costs are
+  // valid until we are about to recompute the prices.
+  if (recompute_) return;
+
+  DCHECK(!reduced_costs_->IsValidPrimalEnteringCandidate(col));
+  prices_.Remove(col);
+}
+
+ColIndex PrimalPrices::GetBestEnteringColumn() {
+  if (recompute_) {
+    const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
+    prices_.ClearAndResize(reduced_costs.size());
+    UpdateEnteringCandidates</*from_clean_state=*/true>(
+        variables_info_.GetIsRelevantBitRow());
+    recompute_ = false;
+  }
+  return prices_.GetMaximum();
 }
 
 // A variable is an entering candidate if it can move in a direction that
@@ -604,16 +612,15 @@ void ReducedCosts::RecomputePrimalPrices() {
 // reduced cost is negative or it needs to decrease if its reduced cost is
 // positive (see the IsValidPrimalEnteringCandidate() function). Note that
 // this is the same as a dual-infeasible variable.
-template <bool use_dense_update, typename ColumnsToUpdate>
-void ReducedCosts::UpdateEnteringCandidates(const ColumnsToUpdate& cols) {
-  SCOPED_TIME_STAT(&stats_);
-  const Fractional tolerance = dual_feasibility_tolerance_;
+template <bool from_clean_state, typename ColumnsToUpdate>
+void PrimalPrices::UpdateEnteringCandidates(const ColumnsToUpdate& cols) {
+  const Fractional tolerance = reduced_costs_->GetDualFeasibilityTolerance();
   const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
   const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
   const DenseRow& squared_norms = primal_edge_norms_->GetSquaredNorms();
-  if (use_dense_update) primal_prices_->StartDenseUpdates();
+  const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
   for (const ColIndex col : cols) {
-    const Fractional reduced_cost = reduced_costs_[col];
+    const Fractional reduced_cost = reduced_costs[col];
 
     // Optimization for speed (The function is about 30% faster than the code in
     // IsValidPrimalEnteringCandidate() or a switch() on variable_status[col]).
@@ -624,26 +631,14 @@ void ReducedCosts::UpdateEnteringCandidates(const ColumnsToUpdate& cols) {
         col, reduced_cost > tolerance, can_decrease, reduced_cost < -tolerance,
         can_increase);
     if (is_dual_infeasible) {
-      DCHECK(IsValidPrimalEnteringCandidate(col));
+      DCHECK(reduced_costs_->IsValidPrimalEnteringCandidate(col));
       const Fractional price = Square(reduced_cost) / squared_norms[col];
-      if (use_dense_update) {
-        primal_prices_->DenseAddOrUpdate(col, price);
-      } else {
-        primal_prices_->AddOrUpdate(col, price);
-      }
+      prices_.AddOrUpdate(col, price);
     } else {
-      DCHECK(!IsValidPrimalEnteringCandidate(col));
-      primal_prices_->Remove(col);
+      DCHECK(!reduced_costs_->IsValidPrimalEnteringCandidate(col));
+      if (!from_clean_state) prices_.Remove(col);
     }
   }
-}
-
-void ReducedCosts::UpdateBasicObjective(ColIndex entering_col,
-                                        RowIndex leaving_row) {
-  SCOPED_TIME_STAT(&stats_);
-  basic_objective_[RowToColIndex(leaving_row)] =
-      objective_[entering_col] + cost_perturbations_[entering_col];
-  recompute_basic_objective_left_inverse_ = true;
 }
 
 }  // namespace glop

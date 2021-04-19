@@ -122,6 +122,12 @@ class PrimalEdgeNorms {
     pricing_rule_ = rule;
   }
 
+  // Registers a boolean that will be set to true each time the norms are or
+  // will be recomputed. This allows anyone that depends on this to know that it
+  // cannot just assume an incremental changes and needs to updates its data.
+  // Important: UpdateBeforeBasisPivot() will not trigger this.
+  void AddRecomputationWatcher(bool* watcher) { watchers_.push_back(watcher); }
+
   // Returns a string with statistics about this class.
   std::string StatString() const { return stats_.StatString(); }
 
@@ -210,6 +216,10 @@ class PrimalEdgeNorms {
 
   // Used by DeterministicTime().
   int64_t num_operations_;
+
+  // Boolean(s) to set to false when the norms are changed outside of the
+  // UpdateBeforeBasisPivot() function.
+  std::vector<bool*> watchers_;
 
   DISALLOW_COPY_AND_ASSIGN(PrimalEdgeNorms);
 };

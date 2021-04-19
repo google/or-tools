@@ -92,7 +92,6 @@ RevisedSimplex::RevisedSimplex()
       variables_info_(compact_matrix_),
       primal_edge_norms_(compact_matrix_, variables_info_,
                          basis_factorization_),
-      primal_prices_(random_),
       dual_edge_norms_(basis_factorization_),
       dual_prices_(random_),
       variable_values_(parameters_, compact_matrix_, basis_, variables_info_,
@@ -100,9 +99,10 @@ RevisedSimplex::RevisedSimplex()
       update_row_(compact_matrix_, transposed_matrix_, variables_info_, basis_,
                   basis_factorization_),
       reduced_costs_(compact_matrix_, objective_, basis_, variables_info_,
-                     basis_factorization_, &primal_edge_norms_, &primal_prices_,
-                     random_),
+                     basis_factorization_, random_),
       entering_variable_(variables_info_, random_, &reduced_costs_),
+      primal_prices_(random_, variables_info_, &primal_edge_norms_,
+                     &reduced_costs_),
       num_iterations_(0),
       num_feasibility_iterations_(0),
       num_optimization_iterations_(0),
@@ -226,7 +226,6 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
       // Test initial dual infeasibility, ignoring boxed variables. We currently
       // refactorize/recompute the reduced costs if not already done.
       // TODO(user): Not ideal in an incremental setting.
-      reduced_costs_.MaintainDualInfeasiblePositions(false);
       reduced_costs_.MakeReducedCostsPrecise();
       bool unused;
       RefactorizeBasisIfNeeded(&unused);
@@ -348,7 +347,6 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     // If SetIntegralityScale() was called, we preform a polish operation.
     if (!integrality_scale_.empty() &&
         problem_status_ == ProblemStatus::OPTIMAL) {
-      reduced_costs_.MaintainDualInfeasiblePositions(true);
       GLOP_RETURN_IF_ERROR(Polish(time_limit));
     }
 
@@ -2430,7 +2428,6 @@ Status RevisedSimplex::Polish(TimeLimit* time_limit) {
         SetNonBasicVariableStatusAndDeriveValue(entering_col,
                                                 VariableStatus::AT_LOWER_BOUND);
       }
-      reduced_costs_.SetAndDebugCheckThatColumnIsDualFeasible(entering_col);
       continue;
     }
 
@@ -2481,6 +2478,10 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
   DisplayIterationInfo();
   bool refactorize = false;
 
+  // At this point, we are not sure the prices are always up to date, so
+  // lets always reset them for the first iteration below.
+  primal_prices_.ForceRecomputation();
+
   if (feasibility_phase_) {
     // Initialize the primal phase-I objective.
     // Note that this temporarily erases the problem objective.
@@ -2490,8 +2491,6 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
     reduced_costs_.ResetForNewObjective();
   }
 
-  // This is needed in the primal.
-  reduced_costs_.MaintainDualInfeasiblePositions(true);
   while (true) {
     // TODO(user): we may loop a bit more than the actual number of iteration.
     // fix.
@@ -2533,12 +2532,7 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
     }
 
     Fractional reduced_cost = 0.0;
-
-    // TODO(user): This is not clean. If the reduced costs or primal norms
-    // changed, then we need to be sure the prices are up to date before getting
-    // the maximum.
-    reduced_costs_.RecomputeReducedCostsAndPrimalEnteringCandidatesIfNeeded();
-    const ColIndex entering_col = primal_prices_.GetMaximum();
+    const ColIndex entering_col = primal_prices_.GetBestEnteringColumn();
     if (entering_col == kInvalidCol) {
       if (reduced_costs_.AreReducedCostsPrecise() &&
           basis_factorization_.IsRefactorized()) {
@@ -2573,10 +2567,12 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
                                                        direction_);
       if (!reduced_costs_.TestEnteringReducedCostPrecision(
               entering_col, direction_, &reduced_cost)) {
+        primal_prices_.RecomputePriceAt(entering_col);
         VLOG(1) << "Skipping col #" << entering_col << " whose reduced cost is "
                 << reduced_cost;
         continue;
       }
+      primal_prices_.RecomputePriceAt(entering_col);
     }
 
     // This test takes place after the check for optimality/feasibility because
@@ -2675,6 +2671,7 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
           &update_row_);
       reduced_costs_.UpdateBeforeBasisPivot(entering_col, leaving_row,
                                             direction_, &update_row_);
+      primal_prices_.UpdateBeforeBasisPivot(entering_col, &update_row_);
       if (!is_degenerate) {
         // On a non-degenerate iteration, the leaving variable should be at its
         // exact bound. This corrects an eventual small numerical error since
@@ -2704,15 +2701,18 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
         SetNonBasicVariableStatusAndDeriveValue(entering_col,
                                                 VariableStatus::AT_LOWER_BOUND);
       }
-      reduced_costs_.SetAndDebugCheckThatColumnIsDualFeasible(entering_col);
+      primal_prices_.SetAndDebugCheckThatColumnIsDualFeasible(entering_col);
       IF_STATS_ENABLED(timer.AlsoUpdate(&iteration_stats_.bound_flip));
     }
 
     if (feasibility_phase_ && leaving_row != kInvalidRow) {
       // Set the leaving variable to its exact bound.
       variable_values_.SetNonBasicVariableValueFromStatus(leaving_col);
+
+      // Change the objective value of the leaving variable to zero.
       reduced_costs_.SetNonBasicVariableCostToZero(leaving_col,
                                                    &objective_[leaving_col]);
+      primal_prices_.RecomputePriceAt(leaving_col);
     }
 
     // Stats about consecutive degenerate iterations.
@@ -2753,9 +2753,6 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
   bool refactorize = false;
 
   bound_flip_candidates_.clear();
-
-  // This is not needed in the dual.
-  reduced_costs_.MaintainDualInfeasiblePositions(false);
 
   // Leaving variable.
   RowIndex leaving_row;

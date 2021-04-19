@@ -53,8 +53,7 @@ class ReducedCosts {
                const RowToColMapping& basis,
                const VariablesInfo& variables_info,
                const BasisFactorization& basis_factorization,
-               PrimalEdgeNorms* primal_edge_norms,
-               DynamicMaximum<ColIndex>* primal_prices, absl::BitGenRef random);
+               absl::BitGenRef random);
 
   // If this is true, then the caller must re-factorize the basis before the
   // next call to GetReducedCosts().
@@ -91,15 +90,6 @@ class ReducedCosts {
   void UpdateBeforeBasisPivot(ColIndex entering_col, RowIndex leaving_row,
                               const ScatteredColumn& direction,
                               UpdateRow* update_row);
-
-  // Once a pivot has been done, this need to be called on the column that just
-  // left the basis before the next ChooseEnteringColumn(). On a bound flip,
-  // this must also be called with the variable that flipped.
-  //
-  // In both cases, the variable should be dual-feasible by construction. This
-  // sets is_dual_infeasible_[col] to false and checks in debug mode that the
-  // variable is indeed not an entering candidate.
-  void SetAndDebugCheckThatColumnIsDualFeasible(ColIndex col);
 
   // Sets the cost of the given non-basic variable to zero and updates its
   // reduced cost. Note that changing the cost of a non-basic variable only
@@ -161,9 +151,6 @@ class ReducedCosts {
   // Invalidates all internal structure that depends on the objective function.
   void ResetForNewObjective();
 
-  // Sets whether or not the bitset of the dual infeasible positions is updated.
-  void MaintainDualInfeasiblePositions(bool maintain);
-
   // Invalidates the data that depends on the order of the column in basis_.
   void UpdateDataOnBasisPermutation();
 
@@ -190,7 +177,7 @@ class ReducedCosts {
     return dual_feasibility_tolerance_;
   }
 
-  // Does basic checking of an entering candidate. To be used in DCHECK().
+  // Does basic checking of an entering candidate.
   bool IsValidPrimalEnteringCandidate(ColIndex col) const;
 
   // Visible for testing.
@@ -199,9 +186,11 @@ class ReducedCosts {
   // The deterministic time used by this class.
   double DeterministicTime() const { return deterministic_time_; }
 
-  // Small utility function to be called before reduced_costs_ and/or
-  // primal_prices are accessed.
-  void RecomputeReducedCostsAndPrimalEnteringCandidatesIfNeeded();
+  // Registers a boolean that will be set to true each time the reduced costs
+  // are or will be recomputed. This allows anyone that depends on this to know
+  // that it cannot just assume an incremental changes and needs to updates its
+  // data. Important: UpdateBeforeBasisPivot() will not trigger this.
+  void AddRecomputationWatcher(bool* watcher) { watchers_.push_back(watcher); }
 
  private:
   // Statistics about this class.
@@ -231,16 +220,11 @@ class ReducedCosts {
                           RowIndex leaving_row, Fractional pivot,
                           UpdateRow* update_row);
 
-  // Recomputes from scratch the primal prices. Note that an entering candidate
-  // is by definition a dual-infeasible variable.
-  void RecomputePrimalPrices();
-
-  // Recomputes the dual prices but only for the given column indices.
-  template <bool use_dense_update, typename ColumnsToUpdate>
-  void UpdateEnteringCandidates(const ColumnsToUpdate& cols);
-
   // Updates basic_objective_ according to the given pivot.
   void UpdateBasicObjective(ColIndex entering_col, RowIndex leaving_row);
+
+  // All places that do 'recompute_reduced_costs_ = true' must go through here.
+  void SetRecomputeReducedCostsAndNotifyWatchers();
 
   // Problem data that should be updated from outside.
   const CompactSparseMatrix& matrix_;
@@ -293,17 +277,60 @@ class ReducedCosts {
   // the tolerance.
   Fractional dual_feasibility_tolerance_;
 
-  // The primal prices are a normalized version of the dual infeasibility.
-  // The candidates are the dual infeasible non-basic columns.
-  PrimalEdgeNorms* primal_edge_norms_;
-  DynamicMaximum<ColIndex>* primal_prices_;
-
-  // Indicates if the dual-infeasible positions are maintained or not.
-  bool are_dual_infeasible_positions_maintained_;
+  // Boolean(s) to set to false when the reduced cost are changed outside of the
+  // UpdateBeforeBasisPivot() function.
+  std::vector<bool*> watchers_;
 
   double deterministic_time_ = 0.0;
 
   DISALLOW_COPY_AND_ASSIGN(ReducedCosts);
+};
+
+// Maintains the list of dual infeasible positions and their associated prices.
+//
+// TODO(user): Not high priority but should probably be moved to its own file.
+class PrimalPrices {
+ public:
+  // Takes references to what we need.
+  // TODO(user): Switch to a model based API like in CP-SAT.
+  PrimalPrices(absl::BitGenRef random, const VariablesInfo& variables_info,
+               PrimalEdgeNorms* primal_edge_norms, ReducedCosts* reduced_costs);
+
+  // Returns the best candidate out of the dual infeasible positions to enter
+  // the basis during a primal simplex iterations.
+  ColIndex GetBestEnteringColumn();
+
+  // Similar to the other UpdateBeforeBasisPivot() functions.
+  //
+  // Important: Both the primal norms and reduced costs must have been updated
+  // before this is called.
+  void UpdateBeforeBasisPivot(ColIndex entering_col, UpdateRow* update_row);
+
+  // Triggers a recomputation of the price at the given column only.
+  void RecomputePriceAt(ColIndex col);
+
+  // Same than RecomputePriceAt() for the case where we know the position is
+  // dual feasible.
+  void SetAndDebugCheckThatColumnIsDualFeasible(ColIndex col);
+
+  // If the incremental updates are not properly called for a while, then it is
+  // important to make sure that the prices will be recomputed the next time
+  // GetBestEnteringColumn() is called.
+  void ForceRecomputation() { recompute_ = true; }
+
+ private:
+  // Recomputes the primal prices but only for the given column indices. If
+  // from_clean_state is true, then we assume that there is currently no
+  // candidates in prices_.
+  template <bool from_clean_state, typename ColumnsToUpdate>
+  void UpdateEnteringCandidates(const ColumnsToUpdate& cols);
+
+  bool recompute_ = true;
+  DynamicMaximum<ColIndex> prices_;
+
+  const VariablesInfo& variables_info_;
+  PrimalEdgeNorms* primal_edge_norms_;
+  ReducedCosts* reduced_costs_;
 };
 
 }  // namespace glop
