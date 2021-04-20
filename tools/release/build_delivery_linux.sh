@@ -270,12 +270,10 @@ function main() {
   echo "ORTOOLS_TOKEN: FOUND" | tee build.log
   make print-OR_TOOLS_VERSION | tee -a build.log
 
-  declare -r ROOT_DIR
-  ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
+  local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
   echo "ROOT_DIR: '${ROOT_DIR}'"
 
-  declare -r RELEASE_DIR
-  RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
+  local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
   echo "RELEASE_DIR: '${RELEASE_DIR}'"
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
