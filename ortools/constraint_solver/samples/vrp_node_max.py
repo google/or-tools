@@ -246,13 +246,13 @@ def main():
             cond = routing.NextVar(previous_index) == index
             value = solver.Max(dim_one.SlackVar(previous_index),
                                data['cost'][node])
-            test.append(cond * value)
+            test.append((cond * value).Var())
         for previous in range(1, 17):
             previous_index = manager.NodeToIndex(previous)
             cond = routing.NextVar(previous_index) == index
             value = solver.Max(dim_one.SlackVar(previous_index),
                                data['cost'][node])
-            test.append(cond * value)
+            test.append((cond * value).Var())
         solver.Add(solver.Sum(test) == dim_one.SlackVar(index))
 
     # relation between dimensions, copy last node Slack from dim ONE to dim TWO
@@ -263,7 +263,7 @@ def main():
             next_index = routing.End(v)
             cond = routing.NextVar(index) == next_index
             value = dim_one.SlackVar(index)
-            values.append(cond * value)
+            values.append((cond * value).Var())
         solver.Add(solver.Sum(values) == dim_two.SlackVar(index))
 
     # Should force all others dim_two slack var to zero...
