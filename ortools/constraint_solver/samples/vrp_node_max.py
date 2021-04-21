@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # [START program]
-"""Vehicles Routing Problem (VRP)."""
+"""Vehicles Routing Problem (VRP).
+
+Each route as an associated objective cost equal to the max node value along the
+road multiply by a constant factor (4200)
+"""
 
 # [START import]
 from ortools.constraint_solver import routing_enums_pb2
@@ -30,28 +34,28 @@ def create_data_model():
             468, 776, 662
         ],
         [
-            548, 0, 684, 308, 194, 502, 730, 354, 696, 742, 1084, 594, 480, 674,
-            1016, 868, 1210
+            548, 0, 684, 308, 194, 502, 730, 354, 696, 742, 1084, 594, 480,
+            674, 1016, 868, 1210
         ],
         [
             776, 684, 0, 992, 878, 502, 274, 810, 468, 742, 400, 1278, 1164,
             1130, 788, 1552, 754
         ],
         [
-            696, 308, 992, 0, 114, 650, 878, 502, 844, 890, 1232, 514, 628, 822,
-            1164, 560, 1358
+            696, 308, 992, 0, 114, 650, 878, 502, 844, 890, 1232, 514, 628,
+            822, 1164, 560, 1358
         ],
         [
-            582, 194, 878, 114, 0, 536, 764, 388, 730, 776, 1118, 400, 514, 708,
-            1050, 674, 1244
+            582, 194, 878, 114, 0, 536, 764, 388, 730, 776, 1118, 400, 514,
+            708, 1050, 674, 1244
         ],
         [
             274, 502, 502, 650, 536, 0, 228, 308, 194, 240, 582, 776, 662, 628,
             514, 1050, 708
         ],
         [
-            502, 730, 274, 878, 764, 228, 0, 536, 194, 468, 354, 1004, 890, 856,
-            514, 1278, 480
+            502, 730, 274, 878, 764, 228, 0, 536, 194, 468, 354, 1004, 890,
+            856, 514, 1278, 480
         ],
         [
             194, 354, 810, 502, 388, 308, 536, 0, 342, 388, 730, 468, 354, 320,
@@ -74,12 +78,12 @@ def create_data_model():
             308, 650, 274, 844
         ],
         [
-            388, 480, 1164, 628, 514, 662, 890, 354, 696, 422, 764, 114, 0, 194,
-            536, 388, 730
+            388, 480, 1164, 628, 514, 662, 890, 354, 696, 422, 764, 114, 0,
+            194, 536, 388, 730
         ],
         [
-            354, 674, 1130, 822, 708, 628, 856, 320, 662, 388, 730, 308, 194, 0,
-            342, 422, 536
+            354, 674, 1130, 822, 708, 628, 856, 320, 662, 388, 730, 308, 194,
+            0, 342, 422, 536
         ],
         [
             468, 1016, 788, 1164, 1050, 514, 514, 662, 320, 274, 388, 650, 536,
@@ -94,7 +98,7 @@ def create_data_model():
             536, 194, 798, 0
         ],
     ]
-    data['cost'] = [
+    data['value'] = [
         0,  # depot
         42,  # 1
         42,  # 2
@@ -113,11 +117,10 @@ def create_data_model():
         42,  # 15
         42,  # 16
     ]
-    assert len(data['distance_matrix']) == len(data['cost'])
+    assert len(data['distance_matrix']) == len(data['value'])
     data['num_vehicles'] = 4
     data['depot'] = 0
     return data
-
 # [END data_model]
 
 
@@ -155,7 +158,6 @@ def print_solution(data, manager, routing, solution):
         print(plan_output)
         max_route_distance = max(route_distance, max_route_distance)
     print('Maximum of the route distances: {}m'.format(max_route_distance))
-
 # [END solution_printer]
 
 
@@ -168,14 +170,15 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
-                                           data['num_vehicles'], data['depot'])
+    manager = pywrapcp.RoutingIndexManager(
+            len(data['distance_matrix']),
+            data['num_vehicles'],
+            data['depot'])
     # [END index_manager]
 
     # Create Routing Model.
     # [START routing_model]
     routing = pywrapcp.RoutingModel(manager)
-
     # [END routing_model]
 
     # Create and register a transit callback.
@@ -205,9 +208,12 @@ def main():
         True,  # start cumul to zero
         dimension_name)
     distance_dimension = routing.GetDimensionOrDie(dimension_name)
-    distance_dimension.SetGlobalSpanCostCoefficient(100)
+    distance_dimension.SetGlobalSpanCostCoefficient(10)
     # [END distance_constraint]
 
+    # Max Node value Constraint.
+    # Dimension One will be used to compute the max node value up to the node in
+    # the route and store the result in the SlackVar of the node.
     routing.AddConstantDimensionWithSlack(
         0,  # transit 0
         42 * 16,  # capacity: be able to store PEAK*ROUTE_LENGTH in worst case
@@ -216,6 +222,8 @@ def main():
         'One')
     dim_one = routing.GetDimensionOrDie('One')
 
+    # Dimension Two will be used to store the max node value in the route end node
+    # CumulVar so we can use it as an objective cost.
     routing.AddConstantDimensionWithSlack(
         0,  # transit 0
         42 * 16,  # capacity: be able to have PEAK value in CumulVar(End)
@@ -224,17 +232,18 @@ def main():
         'Two')
     dim_two = routing.GetDimensionOrDie('Two')
 
-    # force depot Slack to be cost since we don't have any predecessor...
+    # force depot Slack to be value since we don't have any predecessor...
+    # Slack(Depot) = value(Depot)
     for v in range(manager.GetNumberOfVehicles()):
         start = routing.Start(v)
-        dim_one.SlackVar(start).SetValue(data['cost'][0])
+        dim_one.SlackVar(start).SetValue(data['value'][0])
         routing.AddToAssignment(dim_one.SlackVar(start))
 
-        dim_two.SlackVar(start).SetValue(data['cost'][0])
+        dim_two.SlackVar(start).SetValue(data['value'][0])
         routing.AddToAssignment(dim_two.SlackVar(start))
 
     # Step by step relation
-    # Slack(N) = max( Slack(N-1) , cost(N) )
+    # Slack(N) = max( Slack(N-1) , value(N) )
     solver = routing.solver()
     for node in range(1, 17):
         index = manager.NodeToIndex(node)
@@ -245,13 +254,13 @@ def main():
             previous_index = routing.Start(v)
             cond = routing.NextVar(previous_index) == index
             value = solver.Max(dim_one.SlackVar(previous_index),
-                               data['cost'][node])
+                               data['value'][node])
             test.append((cond * value).Var())
         for previous in range(1, 17):
             previous_index = manager.NodeToIndex(previous)
             cond = routing.NextVar(previous_index) == index
             value = solver.Max(dim_one.SlackVar(previous_index),
-                               data['cost'][node])
+                               data['value'][node])
             test.append((cond * value).Var())
         solver.Add(solver.Sum(test) == dim_one.SlackVar(index))
 
@@ -269,7 +278,7 @@ def main():
     # Should force all others dim_two slack var to zero...
     for v in range(manager.GetNumberOfVehicles()):
         end = routing.End(v)
-        dim_two.SetCumulVarSoftUpperBound(end, 0, 1000)
+        dim_two.SetCumulVarSoftUpperBound(end, 0, 4200)
 
     # Setting first solution heuristic.
     # [START parameters]
