@@ -4024,7 +4024,7 @@ class FindOneNeighbor : public DecisionBuilder {
  private:
   bool FilterAccept(Solver* solver, Assignment* delta, Assignment* deltadelta,
                     int64_t objective_min, int64_t objective_max);
-  void SynchronizeAll(Solver* solver, bool synchronize_filters = true);
+  void SynchronizeAll(Solver* solver);
 
   Assignment* const assignment_;
   IntVar* const objective_;
@@ -4113,7 +4113,7 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
     // use the old code with a zero test on pool_.
     // reference_assignment_->CopyIntersection(assignment_);
     pool_->Initialize(assignment_);
-    SynchronizeAll(solver, /*synchronize_filters*/ false);
+    SynchronizeAll(solver);
   }
 
   {
@@ -4289,13 +4289,13 @@ bool FindOneNeighbor::FilterAccept(Solver* solver, Assignment* delta,
                                  objective_max);
 }
 
-void FindOneNeighbor::SynchronizeAll(Solver* solver, bool synchronize_filters) {
+void FindOneNeighbor::SynchronizeAll(Solver* solver) {
   pool_->GetNextSolution(reference_assignment_.get());
   neighbor_found_ = false;
   limit_->Init();
   solver->GetLocalSearchMonitor()->BeginOperatorStart();
   ls_operator_->Start(reference_assignment_.get());
-  if (synchronize_filters && filter_manager_ != nullptr) {
+  if (filter_manager_ != nullptr) {
     filter_manager_->Synchronize(reference_assignment_.get(), nullptr);
   }
   solver->GetLocalSearchMonitor()->EndOperatorStart();
@@ -4711,34 +4711,12 @@ Decision* LocalSearch::Next(Solver* const solver) {
   return nullptr;
 }
 
-namespace {
-class SynchronizeFiltersDecisionBuilder : public DecisionBuilder {
- public:
-  SynchronizeFiltersDecisionBuilder(Assignment* assignment,
-                                    LocalSearchFilterManager* filter_manager)
-      : assignment_(assignment), filter_manager_(filter_manager) {}
-
-  Decision* Next(Solver* const solver) override {
-    if (filter_manager_ != nullptr) {
-      filter_manager_->Synchronize(assignment_, nullptr);
-    }
-    return nullptr;
-  }
-
- private:
-  Assignment* const assignment_;
-  LocalSearchFilterManager* const filter_manager_;
-};
-}  // namespace
-
 void LocalSearch::PushFirstSolutionDecision(DecisionBuilder* first_solution) {
   CHECK(first_solution);
   Solver* const solver = assignment_->solver();
   DecisionBuilder* store = solver->MakeStoreAssignment(assignment_);
-  DecisionBuilder* synchronize = solver->RevAlloc(
-      new SynchronizeFiltersDecisionBuilder(assignment_, filter_manager_));
   DecisionBuilder* first_solution_and_store = solver->Compose(
-      first_solution, first_solution_sub_decision_builder_, store, synchronize);
+      first_solution, first_solution_sub_decision_builder_, store);
   std::vector<SearchMonitor*> monitor;
   monitor.push_back(limit_);
   nested_decisions_.push_back(solver->RevAlloc(
