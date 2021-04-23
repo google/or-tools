@@ -26,6 +26,7 @@ RUN dnf -y update \
 && dnf -y install java-1.8.0-openjdk  java-1.8.0-openjdk-devel maven \
 && dnf clean all \
 && rm -rf /var/cache/dnf
+ENV JAVA_HOME=/usr/lib/jvm/java
 
 # Install dotnet
 # see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-centos8

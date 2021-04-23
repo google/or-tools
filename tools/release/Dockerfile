@@ -42,6 +42,7 @@ RUN yum -y update \
 && yum -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel maven \
 && yum clean all \
 && rm -rf /var/cache/yum
+ENV JAVA_HOME=/usr/lib/jvm/java
 
 # Install dotnet
 # see https://docs.microsoft.com/en-us/dotnet/core/install/linux-centos#centos-7-

@@ -21,6 +21,7 @@ RUN yum -y update \
 && yum -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel maven \
 && yum clean all \
 && rm -rf /var/cache/yum
+ENV JAVA_HOME=/usr/lib/jvm/java
 
 #ENV TZ=America/Los_Angeles
 #RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
