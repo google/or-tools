@@ -13,6 +13,7 @@
 
 #include <math.h>
 
+#include <cstdint>
 #include <numeric>
 #include <vector>
 
@@ -67,7 +68,8 @@ void Solve(const std::vector<int64_t>& durations,
     int64_t next_cost;
     for (int j = 0; j < num_tasks; ++j) {
       if (is_taken[j]) continue;
-      const int64_t cost = weights[j] * std::max<int64_t>(0, end - due_dates[j]);
+      const int64_t cost =
+          weights[j] * std::max<int64_t>(0, end - due_dates[j]);
       if (next_task == -1 || cost < next_cost) {
         next_task = j;
         next_cost = cost;
@@ -105,7 +107,7 @@ void Solve(const std::vector<int64_t>& durations,
 
       // tardiness_vars >= end - due_date
       cp_model.AddGreaterOrEqual(tardiness_vars[i],
-                                 LinearExpr(end).AddConstant(-due_dates[i]));
+                                 LinearExpr(task_ends[i]).AddConstant(-due_dates[i]));
     }
   }
 
@@ -178,7 +180,8 @@ void Solve(const std::vector<int64_t>& durations,
     for (int i = 0; i < num_tasks; ++i) {
       const int64_t end = SolutionIntegerMin(r, task_ends[i]);
       CHECK_EQ(end, SolutionIntegerMax(r, task_ends[i]));
-      objective += weights[i] * std::max<int64_t>(int64_t{0}, end - due_dates[i]);
+      objective +=
+          weights[i] * std::max<int64_t>(int64_t{0}, end - due_dates[i]);
     }
     LOG(INFO) << "Cost " << objective;
 
@@ -196,7 +199,8 @@ void Solve(const std::vector<int64_t>& durations,
     std::string solution = "0";
     int end = 0;
     for (const int i : sorted_tasks) {
-      const int64_t cost = weights[i] * SolutionIntegerMin(r, tardiness_vars[i]);
+      const int64_t cost =
+          weights[i] * SolutionIntegerMin(r, tardiness_vars[i]);
       absl::StrAppend(&solution, "| #", i, " ");
       if (cost > 0) {
         // Display the cost in red.
