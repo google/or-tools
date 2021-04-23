@@ -70,7 +70,7 @@
   <dependency>
     <groupId>@JAVA_PACKAGE@</groupId>
     <artifactId>@JAVA_PROJECT@</artifactId>
-    <version>[@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@,)</version>
+    <version>[@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@,)</version>
     <type>jar</type>
     <scope>compile</scope>
   </dependency>
