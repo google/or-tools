@@ -84,7 +84,12 @@ function build_dotnet() {
 
   # Install .Net SNK
   echo -n "Install .Net SNK..." | tee -a build.log
-  openssl aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
+  local OPENSSL_PRG=openssl
+  if [ -x "$(command -v openssl11)" ]; then
+    OPENSSL_PRG=openssl11
+  fi
+
+  $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
     -in "${RELEASE_DIR}"/or-tools.snk.enc \
     -out "${ROOT_DIR}"/export/or-tools.snk -d
   DOTNET_SNK=export/or-tools.snk
@@ -125,21 +130,24 @@ function build_java() {
     command -v mvn | xargs echo "mvn: " | tee -a build.log
   fi
   # Maven central need gpg sign and we store the release key encoded using openssl
-  command -v openssl
-  command -v openssl | xargs echo "openssl: " | tee -a build.log
+  local OPENSSL_PRG=openssl
+  if [ -x "$(command -v openssl11)" ]; then
+    OPENSSL_PRG=openssl11
+  fi
+  command -v $OPENSSL_PRG | xargs echo "openssl: " | tee -a build.log
   command -v gpg
   command -v gpg | xargs echo "gpg: " | tee -a build.log
 
   # Install Java GPG
   echo -n "Install Java GPG..." | tee -a build.log
-  openssl aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" -in tools/release/private-key.gpg.enc -out private-key.gpg -d
+  $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" -in tools/release/private-key.gpg.enc -out private-key.gpg -d
   gpg --batch --import private-key.gpg
   # Don't need to trust the key
   #expect -c "spawn gpg --edit-key "corentinl@google.com" trust quit; send \"5\ry\r\"; expect eof"
 
   # Install the maven settings.xml having the GPG passphrase
   mkdir -p ~/.m2
-  openssl aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" -in tools/release/settings.xml.enc -out ~/.m2/settings.xml -d
+  $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" -in tools/release/settings.xml.enc -out ~/.m2/settings.xml -d
   echo "DONE" | tee -a build.log
 
   # Clean java

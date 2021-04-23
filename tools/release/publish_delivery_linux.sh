@@ -59,10 +59,13 @@ function publish_java() {
     java -version 2>&1 | head -n 1 | grep -q "1.8"
   fi
   # Maven central need gpg sign and we store the release key encoded using openssl
-  command -v openssl
-  command -v openssl | xargs echo "openssl: " | tee -a publish.log
+  local OPENSSL_PRG=openssl
+  if [ -x "$(command -v openssl11)" ]; then
+    OPENSSL_PRG=openssl11
+  fi
+  command -v $OPENSSL_PRG | xargs echo "openssl: " | tee -a build.log
   command -v gpg
-  command -v gpg | xargs echo "gpg: " | tee -a publish.log
+  command -v gpg | xargs echo "gpg: " | tee -a build.log
 
   echo -n "Publish Java..." | tee -a publish.log
   make publish_java_runtime -l 4 UNIX_PYTHON_VER=3.9

@@ -54,6 +54,12 @@ RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-p
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
+# Openssl 1.1
+RUN yum -y update \
+&& yum -y install epel-release \
+&& yum repolist \
+&& yum -y install openssl11
+
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
