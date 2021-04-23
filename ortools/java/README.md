@@ -3,7 +3,7 @@
 This is the documentation page for the Java wrapper of OR-Tools.
 
 This project aim to explain how you build a Java 1.8 native (for win32-x86-64,
-linux-x86-64 and darwin) maven multiple package using [`mvn`](http://maven.apache.org/)
+linux-x86-64 and darwin-x86-64) maven multiple package using [`mvn`](http://maven.apache.org/)
 and few [POM.xml](http://maven.apache.org/pom.html).
 
 ## Table of Content
@@ -51,7 +51,7 @@ runtime on which platform the code is currently running.
 ### Local Package
 
 The pipeline for `linux-x86-64` should be as follow:  
-note: The pipeline will be similar for `darwin` and `win32-x86-64` architecture,
+note: The pipeline will be similar for `darwin-x86-64` and `win32-x86-64` architecture,
 don't hesitate to look at the CI log! ![Local Pipeline](doc/local_pipeline.svg)
 ![Legend](doc/legend.svg)
 
@@ -82,7 +82,7 @@ If everything good the package (located in
    \-libjniortools.so
 ...
 ```
-note: `<platform>` could be `linux-x86-64`, `darwin` or `win32-x86-64`.
+note: `<platform>` could be `linux-x86-64`, `darwin-x86-64` or `win32-x86-64`.
 
 tips: since maven package are just zip archive you can use `unzip -l <package>.jar`
 to study their layout.

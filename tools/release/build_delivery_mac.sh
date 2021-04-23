@@ -168,7 +168,7 @@ function build_java() {
   #make test_java -l 4 UNIX_PYTHON_VER=3.9
   #echo "make test_java: DONE" | tee -a build.log
 
-  cp temp_java/ortools-darwin/target/*.jar* export/
+  cp temp_java/ortools-darwin-x86-64/target/*.jar* export/
   cp temp_java/ortools-java/target/*.jar* export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/java_build"
 }

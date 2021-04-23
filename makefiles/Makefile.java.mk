@@ -72,7 +72,7 @@ else
   JAVA_NATIVE_IDENTIFIER=linux-x86-64
   else
     ifeq ($(OS),Darwin)
-    JAVA_NATIVE_IDENTIFIER=darwin
+    JAVA_NATIVE_IDENTIFIER=darwin-x86-64
     else
     $(error OS unknown !)
     endif
