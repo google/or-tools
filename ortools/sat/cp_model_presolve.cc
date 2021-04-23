@@ -5752,6 +5752,7 @@ bool CpModelPresolver::Presolve() {
        *context_->working_model->mutable_search_strategy()) {
     DecisionStrategyProto copy = strategy;
     strategy.clear_variables();
+    strategy.clear_transformations();
     for (const int ref : copy.variables()) {
       const int var = PositiveRef(ref);
 
