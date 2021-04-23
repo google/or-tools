@@ -2361,88 +2361,118 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
 
   Trail* trail = model->GetOrCreate<Trail>();
 
-  result.generate_cuts =
-      [trail, helper, model](
-          const absl::StrongVector<IntegerVariable, double>& lp_values,
-          LinearConstraintManager* manager) {
-        if (trail->CurrentDecisionLevel() > 0) return;
+  result.generate_cuts = [trail, helper, model](
+                             const absl::StrongVector<IntegerVariable, double>&
+                                 lp_values,
+                             LinearConstraintManager* manager) {
+    if (trail->CurrentDecisionLevel() > 0) return;
 
-        // TODO(user): We can do much better in term of complexity:
-        // Sort all tasks by min start time, loop other them 1 by 1,
-        // start scanning their successors and stop when the start time of the
-        // successor is >= duration min of the task.
+    // TODO(user): We can do much better in term of complexity:
+    // Sort all tasks by min start time, loop other them 1 by 1,
+    // start scanning their successors and stop when the start time of the
+    // successor is >= duration min of the task.
 
-        // TODO(user): each time we go back to level zero, we will generate
-        // the same cuts over and over again. It is okay because AddCut() will
-        // not add duplicate cuts, but it might not be the most efficient way.
-        struct EndDuration {
-          AffineExpression end;
-          IntegerValue size_min;
-        };
-        std::vector<EndDuration> events;
+    // TODO(user): each time we go back to level zero, we will generate
+    // the same cuts over and over again. It is okay because AddCut() will
+    // not add duplicate cuts, but it might not be the most efficient way.
+    struct Event {
+      AffineExpression end;
+      IntegerValue start_min;
+      IntegerValue size_min;
+      double lp_end;
+      int index;
+    };
+    std::vector<Event> events;
 
-        for (int index1 = 0; index1 < helper->NumTasks(); ++index1) {
-          if (!helper->IsPresent(index1)) continue;
-          const IntegerValue d1_min = helper->SizeMin(index1);
+    for (int index1 = 0; index1 < helper->NumTasks(); ++index1) {
+      if (!helper->IsPresent(index1)) continue;
+      const IntegerValue size_min = helper->SizeMin(index1);
+      if (size_min > 0) {
+        const AffineExpression end_expr = helper->Ends()[index1];
+        events.push_back({end_expr, helper->StartMin(index1), size_min,
+                          end_expr.LpValue(lp_values), index1});
+      }
 
-          events.push_back({helper->Ends()[index1], d1_min});
-          for (int index2 = index1 + 1; index2 < helper->NumTasks(); ++index2) {
-            if (!helper->IsPresent(index2)) continue;
+      for (int index2 = index1 + 1; index2 < helper->NumTasks(); ++index2) {
+        if (!helper->IsPresent(index2)) continue;
 
-            // Encode only the interesting pairs.
-            if (helper->EndMax(index1) <= helper->StartMin(index2) ||
-                helper->EndMax(index2) <= helper->StartMin(index1)) {
-              continue;
-            }
-
-            const bool interval_1_can_precede_2 =
-                helper->EndMin(index1) <= helper->StartMax(index2);
-            const bool interval_2_can_precede_1 =
-                helper->EndMin(index2) <= helper->StartMax(index1);
-
-            if (interval_1_can_precede_2 && !interval_2_can_precede_1) {
-              // interval1.end <= interval2.start
-              LinearConstraintBuilder cut(model, kMinIntegerValue,
-                                          IntegerValue(0));
-              cut.AddTerm(helper->Ends()[index1], IntegerValue(1));
-              cut.AddTerm(helper->Starts()[index2], IntegerValue(-1));
-              manager->AddCut(cut.Build(), "NoOverlapPrecedence", lp_values);
-            } else if (interval_2_can_precede_1 && !interval_1_can_precede_2) {
-              // interval2.end <= interval1.start
-              LinearConstraintBuilder cut(model, kMinIntegerValue,
-                                          IntegerValue(0));
-              cut.AddTerm(helper->Ends()[index2], IntegerValue(1));
-              cut.AddTerm(helper->Starts()[index1], IntegerValue(-1));
-              manager->AddCut(cut.Build(), "NoOverlapPrecedence", lp_values);
-            }
-          }
+        // Encode only the interesting pairs.
+        if (helper->EndMax(index1) <= helper->StartMin(index2) ||
+            helper->EndMax(index2) <= helper->StartMin(index1)) {
+          continue;
         }
 
-        // Sort by descending duration.
-        std::sort(events.begin(), events.end(),
-                  [](const EndDuration& e1, const EndDuration& e2) {
-                    return e1.size_min > e2.size_min;
-                  });
-        // TODO(user): The optimal cut generation rank events by increasing
-        // weights/size_min.
-        const int num_events = events.size();
-        for (int end = 1; end < num_events; ++end) {
-          IntegerValue sum_duration(0);
-          IntegerValue sum_square_duration(0);
-          for (int i = 0; i <= end; ++i) {
-            const IntegerValue duration = events[i].size_min;
-            sum_duration += duration;
-            sum_square_duration += duration * duration;
-          }
-          LinearConstraintBuilder cut(
-              model, (sum_duration * sum_duration + sum_square_duration) / 2,
-              kMaxIntegerValue);
-          for (int i = 0; i <= end; ++i) {
-            cut.AddTerm(events[i].end, events[i].size_min);
-          }
-          manager->AddCut(cut.Build(), "NoOverlapTriangle", lp_values);
+        const bool interval_1_can_precede_2 =
+            helper->EndMin(index1) <= helper->StartMax(index2);
+        const bool interval_2_can_precede_1 =
+            helper->EndMin(index2) <= helper->StartMax(index1);
+
+        if (interval_1_can_precede_2 && !interval_2_can_precede_1) {
+          // interval1.end <= interval2.start
+          LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
+          cut.AddTerm(helper->Ends()[index1], IntegerValue(1));
+          cut.AddTerm(helper->Starts()[index2], IntegerValue(-1));
+          manager->AddCut(cut.Build(), "NoOverlapPrecedence", lp_values);
+        } else if (interval_2_can_precede_1 && !interval_1_can_precede_2) {
+          // interval2.end <= interval1.start
+          LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
+          cut.AddTerm(helper->Ends()[index2], IntegerValue(1));
+          cut.AddTerm(helper->Starts()[index1], IntegerValue(-1));
+          manager->AddCut(cut.Build(), "NoOverlapPrecedence", lp_values);
         }
-      };
+      }
+    }
+
+    // Sort by start min to bucketize by start_min.
+    std::sort(events.begin(), events.end(),
+              [](const Event& e1, const Event& e2) {
+                return e1.start_min < e2.start_min;
+              });
+    for (int start = 0; start + 1 < events.size(); ++start) {
+      // Bucketize events by start_min.
+      if (start > 0 && events[start].start_min == events[start - 1].start_min) {
+        continue;
+      }
+      const IntegerValue sequence_start_min = events[start].start_min;
+      std::vector<Event> residual_tasks(events.begin() + start, events.end());
+      std::sort(residual_tasks.begin(), residual_tasks.end(),
+                [](const Event& e1, const Event& e2) {
+                  return (e1.lp_end / e1.size_min) < (e2.lp_end / e2.size_min);
+                });
+      int best_end = -1;
+      double best_violation = 0.0;
+      IntegerValue best_min_contrib(0);
+
+      IntegerValue sum_duration(0);
+      IntegerValue sum_square_duration(0);
+      double lp_contrib = 0;
+      for (int i = 0; i < residual_tasks.size(); ++i) {
+        DCHECK_GE(residual_tasks[i].start_min, sequence_start_min);
+        const IntegerValue duration = residual_tasks[i].size_min;
+        sum_duration += duration;
+        sum_square_duration += duration * duration;
+        lp_contrib +=
+            residual_tasks[i].lp_end * residual_tasks[i].size_min.value();
+
+        const IntegerValue min_contrib =
+            (sum_duration * sum_duration + sum_square_duration) / 2 +
+            sequence_start_min * sum_duration;
+        const double violation = min_contrib.value() / lp_contrib;
+        if (min_contrib > lp_contrib && violation > best_violation) {
+          best_violation = violation;
+          best_end = i;
+          best_min_contrib = min_contrib;
+        }
+      }
+      if (best_end != -1) {
+        LinearConstraintBuilder cut(model, best_min_contrib, kMaxIntegerValue);
+        for (int i = 0; i <= best_end; ++i) {
+          cut.AddTerm(residual_tasks[i].end, residual_tasks[i].size_min);
+        }
+        manager->AddCut(cut.Build(), "NoOverlapTriangle", lp_values);
+      }
+    }
+  };
   return result;
 }
 
