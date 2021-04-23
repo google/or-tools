@@ -19,6 +19,7 @@
 // must visit certain nodes (refueling nodes) before the quantity of fuel
 // reaches zero. Fuel consumption is proportional to the distance traveled.
 
+#include <cstdint>
 #include <vector>
 
 #include "absl/flags/parse.h"
@@ -92,8 +93,8 @@ int main(int argc, char** argv) {
   }
 
   // Setting the cost function.
-  const int vehicle_cost =
-      routing.RegisterTransitCallback([&locations, &manager](int64_t i, int64_t j) {
+  const int vehicle_cost = routing.RegisterTransitCallback(
+      [&locations, &manager](int64_t i, int64_t j) {
         return locations.ManhattanDistance(manager.IndexToNode(i),
                                            manager.IndexToNode(j));
       });
@@ -105,12 +106,13 @@ int main(int argc, char** argv) {
   RandomDemand demand(manager.num_nodes(), kDepot,
                       absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
   demand.Initialize();
-  routing.AddDimension(
-      routing.RegisterTransitCallback([&demand, &manager](int64_t i, int64_t j) {
-        return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
-      }),
-      kNullCapacitySlack, kVehicleCapacity,
-      /*fix_start_cumul_to_zero=*/true, kCapacity);
+  routing.AddDimension(routing.RegisterTransitCallback(
+                           [&demand, &manager](int64_t i, int64_t j) {
+                             return demand.Demand(manager.IndexToNode(i),
+                                                  manager.IndexToNode(j));
+                           }),
+                       kNullCapacitySlack, kVehicleCapacity,
+                       /*fix_start_cumul_to_zero=*/true, kCapacity);
 
   // Adding time dimension constraints.
   const int64_t kTimePerDemandUnit = 300;
@@ -150,10 +152,11 @@ int main(int argc, char** argv) {
   // increase by letting slack variable replenish the fuel.
   const int64_t kFuelCapacity = kXMax + kYMax;
   routing.AddDimension(
-      routing.RegisterTransitCallback([&locations, &manager](int64_t i, int64_t j) {
-        return locations.NegManhattanDistance(manager.IndexToNode(i),
-                                              manager.IndexToNode(j));
-      }),
+      routing.RegisterTransitCallback(
+          [&locations, &manager](int64_t i, int64_t j) {
+            return locations.NegManhattanDistance(manager.IndexToNode(i),
+                                                  manager.IndexToNode(j));
+          }),
       kFuelCapacity, kFuelCapacity, /*fix_start_cumul_to_zero=*/false, kFuel);
   const RoutingDimension& fuel_dimension = routing.GetDimensionOrDie(kFuel);
   for (int order = 0; order < routing.Size(); ++order) {

@@ -24,6 +24,7 @@
 //   0, 1, 4, 10, 12, 17
 //   0, 1, 4, 10, 18, 23, 25
 
+#include <cstdint>
 #include <cstdio>
 
 #include "absl/flags/flag.h"

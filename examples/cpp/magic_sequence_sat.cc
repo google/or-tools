@@ -16,7 +16,8 @@
 // Compute a sequence of numbers such that the number of occurrences of i
 // in the sequence is equal to the value of the ith number.
 
-#include <cstdio>
+#include <cstdint>
+#include <cstdlib>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"

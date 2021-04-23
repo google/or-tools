@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_OPB_READER_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>

@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_SAT_CNF_READER_H_
 #define OR_TOOLS_SAT_SAT_CNF_READER_H_
 
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
@@ -236,7 +237,8 @@ class SatCnfReader {
     auto splitter = absl::StrSplit(line, kWordDelimiters, absl::SkipEmpty());
 
     tmp_clause_.clear();
-    int64_t weight = (!is_wcnf_ && interpret_cnf_as_max_sat_) ? 1 : hard_weight_;
+    int64_t weight =
+        (!is_wcnf_ && interpret_cnf_as_max_sat_) ? 1 : hard_weight_;
     bool first = true;
     bool end_marker_seen = false;
     for (const absl::string_view word : splitter) {

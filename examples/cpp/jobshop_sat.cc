@@ -13,6 +13,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <limits>
 #include <vector>
 
 #include "absl/flags/flag.h"
@@ -33,14 +35,8 @@
 
 ABSL_FLAG(std::string, input, "", "Jobshop data file name.");
 ABSL_FLAG(std::string, params, "", "Sat parameters in text proto format.");
-ABSL_FLAG(bool, use_optional_variables, true,
-          "Whether we use optional variables for bounds of an optional "
-          "interval or not.");
 ABSL_FLAG(bool, use_interval_makespan, true,
           "Whether we encode the makespan using an interval or not.");
-ABSL_FLAG(bool, use_expanded_precedences, false,
-          "Whether we add precedences between alternative tasks within the "
-          "same job.");
 ABSL_FLAG(
     bool, use_cumulative_relaxation, true,
     "Whether we regroup multiple machines to create a cumulative relaxation.");
@@ -70,7 +66,7 @@ int64_t ComputeHorizon(const JsspInputProblem& problem) {
     if (job.has_latest_end()) {
       max_latest_end = std::max(max_latest_end, job.latest_end().value());
     } else {
-      max_latest_end = kint64max;
+      max_latest_end = std::numeric_limits<int64_t>::max();
     }
     if (job.has_earliest_start()) {
       max_earliest_start =
@@ -192,11 +188,6 @@ void CreateAlternativeTasks(
     job_task_to_alternatives[j].resize(num_tasks_in_job);
     const std::vector<JobTaskData>& tasks = job_to_tasks[j];
 
-    const int64_t hard_start =
-        job.has_earliest_start() ? job.earliest_start().value() : 0L;
-    const int64_t hard_end =
-        job.has_latest_end() ? job.latest_end().value() : horizon;
-
     for (int t = 0; t < num_tasks_in_job; ++t) {
       const Task& task = job.tasks(t);
       const int num_alternatives = task.machine_size();
@@ -216,32 +207,14 @@ void CreateAlternativeTasks(
       } else {
         for (int a = 0; a < num_alternatives; ++a) {
           const BoolVar local_presence = cp_model.NewBoolVar();
-          const IntVar local_start =
-              absl::GetFlag(FLAGS_use_optional_variables)
-                  ? cp_model.NewIntVar(Domain(hard_start, hard_end))
-                  : tasks[t].start;
           const IntVar local_duration = cp_model.NewConstant(task.duration(a));
-          const IntVar local_end =
-              absl::GetFlag(FLAGS_use_optional_variables)
-                  ? cp_model.NewIntVar(Domain(hard_start, hard_end))
-                  : tasks[t].end;
           const IntervalVar local_interval = cp_model.NewOptionalIntervalVar(
-              local_start, local_duration, local_end, local_presence);
-
-          // Link local and global variables.
-          if (absl::GetFlag(FLAGS_use_optional_variables)) {
-            cp_model.AddEquality(tasks[t].start, local_start)
-                .OnlyEnforceIf(local_presence);
-            cp_model.AddEquality(tasks[t].end, local_end)
-                .OnlyEnforceIf(local_presence);
-
-            // TODO(user): Experiment with the following implication.
-            cp_model.AddEquality(tasks[t].duration, task.duration(a))
-                .OnlyEnforceIf(local_presence);
-          }
-
+              tasks[t].start, local_duration, tasks[t].end, local_presence);
+          // TODO(user): Experiment with the following implication.
+          cp_model.AddEquality(tasks[t].duration, task.duration(a))
+              .OnlyEnforceIf(local_presence);
           alt_data.push_back(
-              {local_interval, local_start, local_end, local_presence});
+              {local_interval, tasks[t].start, tasks[t].end, local_presence});
         }
         // Exactly one alternative interval is present.
         std::vector<BoolVar> interval_presences;
@@ -249,47 +222,50 @@ void CreateAlternativeTasks(
           interval_presences.push_back(alternative.presence);
         }
         cp_model.AddEquality(LinearExpr::BooleanSum(interval_presences), 1);
+      }
+    }
+  }
+}
 
-        // Implement supporting literals for the duration of the main interval.
-        if (duration_supports.size() > 1) {  // duration is not fixed.
-          for (const auto& duration_alternative_indices : duration_supports) {
-            const int64_t value = duration_alternative_indices.first;
-            const BoolVar duration_eq_value = cp_model.NewBoolVar();
+void AddAlternativeTaskDurationRelaxation(
+    const JsspInputProblem& problem,
+    const std::vector<std::vector<JobTaskData>>& job_to_tasks,
+    std::vector<std::vector<std::vector<AlternativeTaskData>>>&
+        job_task_to_alternatives,
+    CpModelBuilder& cp_model) {
+  const int num_jobs = problem.jobs_size();
 
-            // duration_eq_value <=> duration == value.
-            cp_model.AddEquality(tasks[t].duration, value)
-                .OnlyEnforceIf(duration_eq_value);
-            cp_model.AddNotEqual(tasks[t].duration, value)
-                .OnlyEnforceIf(duration_eq_value.Not());
-            // Implement the support part. If all literals pointing to the same
-            // duration are false, then the duration cannot take this value.
-            std::vector<BoolVar> support_clause;
-            for (const int a : duration_alternative_indices.second) {
-              support_clause.push_back(alt_data[a].presence);
-            }
-            support_clause.push_back(duration_eq_value.Not());
-            cp_model.AddBoolOr(support_clause);
-          }
-        }
+  for (int j = 0; j < num_jobs; ++j) {
+    const Job& job = problem.jobs(j);
+    const int num_tasks_in_job = job.tasks_size();
+    const std::vector<JobTaskData>& tasks = job_to_tasks[j];
+    for (int t = 0; t < num_tasks_in_job; ++t) {
+      const Task& task = job.tasks(t);
+      const int num_alternatives = task.machine_size();
+
+      int64_t min_duration = kint64max;
+      int64_t max_duration = kint64min;
+      for (const int64_t duration : task.duration()) {
+        min_duration = std::min(min_duration, duration);
+        max_duration = std::max(max_duration, duration);
       }
 
-      // Chain the alternative tasks belonging to the same job.
-      if (t > 0 && absl::GetFlag(FLAGS_use_expanded_precedences)) {
-        const std::vector<AlternativeTaskData>& prev_data =
-            job_task_to_alternatives[j][t - 1];
-        const std::vector<AlternativeTaskData>& curr_data =
-            job_task_to_alternatives[j][t];
-        for (int p = 0; p < prev_data.size(); ++p) {
-          const IntVar previous_end = prev_data[p].end;
-          const BoolVar previous_presence = prev_data[p].presence;
-          for (int c = 0; c < curr_data.size(); ++c) {
-            const IntVar current_start = curr_data[c].start;
-            const BoolVar current_presence = curr_data[c].presence;
-            cp_model.AddLessOrEqual(previous_end, current_start)
-                .OnlyEnforceIf({previous_presence, current_presence});
-          }
+      std::vector<BoolVar> presence_literals;
+      std::vector<int64_t> shifted_durations;
+      for (int a = 0; a < num_alternatives; ++a) {
+        const int64_t duration = task.duration(a);
+        if (duration != min_duration) {
+          shifted_durations.push_back(duration - min_duration);
+          presence_literals.push_back(
+              job_task_to_alternatives[j][t][a].presence);
         }
       }
+      // end == start + min_duration +
+      //        sum(shifted_duration[i] * presence_literals[i])
+      cp_model.AddEquality(
+          LinearExpr::ScalProd({tasks[t].end, tasks[t].start}, {1, -1}),
+          LinearExpr::BooleanScalProd(presence_literals, shifted_durations)
+              .AddConstant(min_duration));
     }
   }
 }
@@ -305,6 +281,7 @@ struct MachineTaskData {
   IntVar end;
   BoolVar presence;
 };
+
 void CreateMachines(
     const JsspInputProblem& problem,
     const std::vector<std::vector<std::vector<AlternativeTaskData>>>&
@@ -478,10 +455,12 @@ void AddCumulativeRelaxation(
 
   // Build a graph where two machines are connected if they appear in the same
   // set of alternate machines for a given task.
+  int num_tasks = 0;
   std::vector<absl::flat_hash_set<int>> neighbors(num_machines);
   for (int j = 0; j < num_jobs; ++j) {
     const Job& job = problem.jobs(j);
     const int num_tasks_in_job = job.tasks_size();
+    num_tasks += num_tasks_in_job;
     for (int t = 0; t < num_tasks_in_job; ++t) {
       const Task& task = job.tasks(t);
       for (int a = 1; a < task.machine_size(); ++a) {
@@ -497,18 +476,14 @@ void AddCumulativeRelaxation(
   for (int c = 0; c < components.size(); ++c) {
     machines_per_component[components[c]].push_back(c);
   }
+  LOG(INFO) << "Found " << machines_per_component.size()
+            << " connected machine components.";
 
-  const IntVar one = cp_model.NewConstant(1);
   for (const auto& it : machines_per_component) {
     // Ignore the trivial cases.
     if (it.second.size() < 2 || it.second.size() == num_machines) continue;
-
-    LOG(INFO) << "Found machine connected component: ["
-              << absl::StrJoin(it.second, ", ") << "]";
     absl::flat_hash_set<int> component(it.second.begin(), it.second.end());
-    const IntVar capacity = cp_model.NewConstant(component.size());
-    int num_intervals_in_cumulative = 0;
-    CumulativeConstraint cumul = cp_model.AddCumulative(capacity);
+    std::vector<IntervalVar> intervals;
     for (int j = 0; j < num_jobs; ++j) {
       const Job& job = problem.jobs(j);
       const int num_tasks_in_job = job.tasks_size();
@@ -516,18 +491,28 @@ void AddCumulativeRelaxation(
         const Task& task = job.tasks(t);
         for (const int m : task.machine()) {
           if (component.contains(m)) {
-            cumul.AddDemand(job_to_tasks[j][t].interval, one);
-            num_intervals_in_cumulative++;
+            intervals.push_back(job_to_tasks[j][t].interval);
             break;
           }
         }
       }
     }
+
+    LOG(INFO) << "Found machine connected component: ["
+              << absl::StrJoin(it.second, ", ") << "] with " << intervals.size()
+              << " intervals";
+    // Ignore trivial case with all intervals.
+    if (intervals.size() == 1 || intervals.size() == num_tasks) continue;
+
+    const IntVar capacity = cp_model.NewConstant(component.size());
+    const IntVar one = cp_model.NewConstant(1);
+    CumulativeConstraint cumul = cp_model.AddCumulative(capacity);
+    for (int i = 0; i < intervals.size(); ++i) {
+      cumul.AddDemand(intervals[i], one);
+    }
     if (absl::GetFlag(FLAGS_use_interval_makespan)) {
       cumul.AddDemand(makespan_interval, capacity);
     }
-    LOG(INFO) << "   - created cumulative with " << num_intervals_in_cumulative
-              << " intervals";
   }
 }
 
@@ -543,7 +528,6 @@ void AddMakespanRedundantConstraints(
     const JsspInputProblem& problem,
     const std::vector<std::vector<JobTaskData>>& job_to_tasks, IntVar makespan,
     bool has_variable_duration_tasks, CpModelBuilder& cp_model) {
-  const int num_jobs = problem.jobs_size();
   const int num_machines = problem.machines_size();
 
   // Global energetic reasoning.
@@ -555,22 +539,6 @@ void AddMakespanRedundantConstraints(
   }
   cp_model.AddLessOrEqual(LinearExpr::Sum(all_task_durations),
                           LinearExpr::Term(makespan, num_machines));
-
-  // Suffix linear equations.
-  if (has_variable_duration_tasks) {
-    for (int j = 0; j < num_jobs; ++j) {
-      const int job_length = job_to_tasks[j].size();
-      const int start_suffix = std::max(
-          0, job_length - absl::GetFlag(FLAGS_job_suffix_relaxation_length));
-      for (int first_t = start_suffix; first_t + 1 < job_length; ++first_t) {
-        std::vector<IntVar> terms = {job_to_tasks[j][first_t].start};
-        for (int t = first_t; t < job_length; ++t) {
-          terms.push_back(job_to_tasks[j][t].duration);
-        }
-        cp_model.AddLessOrEqual(LinearExpr::Sum(terms), makespan);
-      }
-    }
-  }
 }
 
 // Solve a JobShop scheduling problem using CP-SAT.
@@ -583,8 +551,8 @@ void Solve(const JsspInputProblem& problem) {
 
   // Compute an over estimate of the horizon.
   const int64_t horizon = absl::GetFlag(FLAGS_horizon) != -1
-                            ? absl::GetFlag(FLAGS_horizon)
-                            : ComputeHorizon(problem);
+                              ? absl::GetFlag(FLAGS_horizon)
+                              : ComputeHorizon(problem);
 
   // Create the main job structure.
   const int num_jobs = problem.jobs_size();
@@ -599,6 +567,10 @@ void Solve(const JsspInputProblem& problem) {
       job_task_to_alternatives(num_jobs);
   CreateAlternativeTasks(problem, job_to_tasks, horizon,
                          job_task_to_alternatives, cp_model);
+
+  // Adds a linear relaxation of the interval variables.
+  AddAlternativeTaskDurationRelaxation(problem, job_to_tasks,
+                                       job_task_to_alternatives, cp_model);
 
   // Create the makespan variable and interval.
   // If this flag is true, we will add to each no overlap constraint a special
@@ -725,7 +697,8 @@ void Solve(const JsspInputProblem& problem) {
   for (int j = 0; j < num_jobs; ++j) {
     const int64_t early_due_date = problem.jobs(j).early_due_date();
     const int64_t late_due_date = problem.jobs(j).late_due_date();
-    const int64_t early_penalty = problem.jobs(j).earliness_cost_per_time_unit();
+    const int64_t early_penalty =
+        problem.jobs(j).earliness_cost_per_time_unit();
     const int64_t late_penalty = problem.jobs(j).lateness_cost_per_time_unit();
     const int64_t end =
         SolutionIntegerValue(response, job_to_tasks[j].back().end);

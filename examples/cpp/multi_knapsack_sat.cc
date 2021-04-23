@@ -19,6 +19,7 @@
 // Data is for 1 bin and 10 items. Scaling is done my having m bins and m copies
 // of each items.
 
+#include <cstdint>
 #include <vector>
 
 #include "absl/flags/flag.h"

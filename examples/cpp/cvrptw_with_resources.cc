@@ -21,6 +21,7 @@
 // empty routes; fix this when we have an API on the cumulative constraints
 // with variable demands.
 
+#include <cstdint>
 #include <vector>
 
 #include "absl/flags/parse.h"
@@ -90,8 +91,8 @@ int main(int argc, char** argv) {
   }
 
   // Setting the cost function.
-  const int vehicle_cost =
-      routing.RegisterTransitCallback([&locations, &manager](int64_t i, int64_t j) {
+  const int vehicle_cost = routing.RegisterTransitCallback(
+      [&locations, &manager](int64_t i, int64_t j) {
         return locations.ManhattanDistance(manager.IndexToNode(i),
                                            manager.IndexToNode(j));
       });
@@ -103,12 +104,13 @@ int main(int argc, char** argv) {
   RandomDemand demand(manager.num_nodes(), kDepot,
                       absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
   demand.Initialize();
-  routing.AddDimension(
-      routing.RegisterTransitCallback([&demand, &manager](int64_t i, int64_t j) {
-        return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
-      }),
-      kNullCapacitySlack, kVehicleCapacity,
-      /*fix_start_cumul_to_zero=*/true, kCapacity);
+  routing.AddDimension(routing.RegisterTransitCallback(
+                           [&demand, &manager](int64_t i, int64_t j) {
+                             return demand.Demand(manager.IndexToNode(i),
+                                                  manager.IndexToNode(j));
+                           }),
+                       kNullCapacitySlack, kVehicleCapacity,
+                       /*fix_start_cumul_to_zero=*/true, kCapacity);
 
   // Adding time dimension constraints.
   const int64_t kTimePerDemandUnit = 300;

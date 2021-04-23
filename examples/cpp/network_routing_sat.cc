@@ -26,6 +26,7 @@
 // A random problem generator is also included.
 
 #include <atomic>
+#include <cstdint>
 #include <random>
 #include <string>
 #include <utility>

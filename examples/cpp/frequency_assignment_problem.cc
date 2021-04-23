@@ -47,6 +47,7 @@
 //
 
 #include <algorithm>
+#include <cstdint>
 #include <map>
 #include <utility>
 #include <vector>
@@ -333,7 +334,8 @@ bool ConstraintImpactComparator(FapConstraint constraint1,
 }
 
 int64_t ValueEvaluator(
-    absl::flat_hash_map<int64_t, std::pair<int64_t, int64_t>>* value_evaluator_map,
+    absl::flat_hash_map<int64_t, std::pair<int64_t, int64_t>>*
+        value_evaluator_map,
     int64_t variable_index, int64_t value) {
   CHECK(value_evaluator_map != nullptr);
   // Evaluate the choice. Smaller ranking denotes a better choice.
@@ -371,8 +373,8 @@ int64_t ValueEvaluator(
 // The variables which participate in more constraints and have the
 // smaller domain should be in higher priority for assignment.
 int64_t VariableEvaluator(const std::vector<int>& key_from_index,
-                        const std::map<int, FapVariable>& data_variables,
-                        int64_t variable_index) {
+                          const std::map<int, FapVariable>& data_variables,
+                          int64_t variable_index) {
   FapVariable variable =
       gtl::FindOrDie(data_variables, key_from_index[variable_index]);
   int64_t result = -(variable.degree * 100 / variable.domain_size);

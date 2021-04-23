@@ -37,6 +37,7 @@
 // (https://www.sintef.no/projectweb/top/pdptw/li-lim-benchmark/documentation/).
 
 #include <cmath>
+#include <cstdint>
 #include <utility>
 #include <vector>
 
@@ -82,20 +83,20 @@ typedef std::vector<std::pair<int, int> > Coordinates;
 // Returns the scaled Euclidean distance between two nodes, coords holding the
 // coordinates of the nodes.
 int64_t Travel(const Coordinates* const coords,
-             RoutingIndexManager::NodeIndex from,
-             RoutingIndexManager::NodeIndex to) {
+               RoutingIndexManager::NodeIndex from,
+               RoutingIndexManager::NodeIndex to) {
   DCHECK(coords != nullptr);
   const int xd = coords->at(from.value()).first - coords->at(to.value()).first;
   const int yd =
       coords->at(from.value()).second - coords->at(to.value()).second;
   return static_cast<int64_t>(kScalingFactor *
-                            std::sqrt(1.0L * xd * xd + yd * yd));
+                              std::sqrt(1.0L * xd * xd + yd * yd));
 }
 
 // Returns the scaled service time at a given node, service_times holding the
 // service times.
 int64_t ServiceTime(const std::vector<int64_t>* const service_times,
-                  RoutingIndexManager::NodeIndex node) {
+                    RoutingIndexManager::NodeIndex node) {
   return kScalingFactor * service_times->at(node.value());
 }
 
@@ -104,9 +105,9 @@ int64_t ServiceTime(const std::vector<int64_t>* const service_times,
 // times.
 // The service time is the time spent to execute a delivery or a pickup.
 int64_t TravelPlusServiceTime(const RoutingIndexManager& manager,
-                            const Coordinates* const coords,
-                            const std::vector<int64_t>* const service_times,
-                            int64_t from_index, int64_t to_index) {
+                              const Coordinates* const coords,
+                              const std::vector<int64_t>* const service_times,
+                              int64_t from_index, int64_t to_index) {
   const RoutingIndexManager::NodeIndex from = manager.IndexToNode(from_index);
   const RoutingIndexManager::NodeIndex to = manager.IndexToNode(to_index);
   return ServiceTime(service_times, from) + Travel(coords, from, to);
@@ -284,8 +285,8 @@ bool LoadAndSolve(const std::string& pdp_file,
   const int num_nodes = customer_ids.size();
   RoutingIndexManager manager(num_nodes, num_vehicles, depot);
   RoutingModel routing(manager, model_parameters);
-  const int vehicle_cost =
-      routing.RegisterTransitCallback([&coords, &manager](int64_t i, int64_t j) {
+  const int vehicle_cost = routing.RegisterTransitCallback(
+      [&coords, &manager](int64_t i, int64_t j) {
         return Travel(const_cast<const Coordinates*>(&coords),
                       manager.IndexToNode(i), manager.IndexToNode(j));
       });

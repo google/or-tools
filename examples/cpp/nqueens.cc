@@ -17,9 +17,13 @@
 //  unique solutions: http://www.research.att.com/~njas/sequences/A000170
 //  distinct solutions: http://www.research.att.com/~njas/sequences/A002562
 
+#include <cstdint>
 #include <cstdio>
 #include <map>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
@@ -74,7 +78,7 @@ class NQueenSymmetry : public SymmetryBreaker {
  private:
   Solver* const solver_;
   const std::vector<IntVar*> vars_;
-  std::map<const IntVar*, int> indices_;
+  absl::flat_hash_map<const IntVar*, int> indices_;
   const int size_;
 };
 
@@ -252,22 +256,23 @@ void NQueens(int size) {
                     : absl::GetFlag(FLAGS_print)   ? 1
                                                    : 0;
     for (int n = 0; n < print_max; ++n) {
-      printf("--- solution #%d\n", n);
+      absl::PrintF("--- solution #%d\n", n);
       for (int i = 0; i < size; ++i) {
         const int pos = static_cast<int>(collector->Value(n, queens[i]));
-        for (int k = 0; k < pos; ++k) printf(" . ");
-        printf("%2d ", i);
-        for (int k = pos + 1; k < size; ++k) printf(" . ");
-        printf("\n");
+        for (int k = 0; k < pos; ++k) absl::PrintF(" . ");
+        absl::PrintF("%2d ", i);
+        for (int k = pos + 1; k < size; ++k) absl::PrintF(" . ");
+        absl::PrintF("\n");
       }
     }
   }
-  printf("========= number of solutions:%d\n", num_solutions);
+  absl::PrintF("========= number of solutions:%d\n", num_solutions);
   absl::PrintF("          number of failures: %d\n", s.failures());
 }
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
   if (absl::GetFlag(FLAGS_size) != 0) {
     operations_research::NQueens(absl::GetFlag(FLAGS_size));

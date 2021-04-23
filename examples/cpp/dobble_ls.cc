@@ -30,6 +30,7 @@
 // search operators and local search filters.
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <vector>
 
