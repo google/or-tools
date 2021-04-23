@@ -42,6 +42,7 @@ help:
 	@echo
 	@echo -e "\t${BOLD}<distro>${RESET}:"
 	@echo -e "\t\t${BOLD}alpine-edge${RESET} (latest)"
+	@echo -e "\t\t${BOLD}centos-7${RESET} (Centos 7 LTS)"
 	@echo -e "\t\t${BOLD}centos-8${RESET} (latest)"
 	@echo -e "\t\t${BOLD}debian-10${RESET} (latest)"
 	@echo -e "\t\t${BOLD}fedora-33${RESET} (latest)"
@@ -185,7 +186,7 @@ $(targets): bash_python_%: ortools_python_%
 # $@ target name
 
 # Currently supported distro
-DISTROS = alpine-edge centos-8 debian-10 fedora-33 ubuntu-18.04 ubuntu-20.04 ubuntu-20.10
+DISTROS = alpine-edge centos-7 centos-8 debian-10 fedora-33 ubuntu-18.04 ubuntu-20.04 ubuntu-20.10
 STAGES = env devel third_party build
 
 export/%/or-tools.snk: or-tools.snk | export
