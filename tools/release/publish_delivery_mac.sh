@@ -55,6 +55,7 @@ function publish_java() {
     echo "JAVA_HOME: ${JAVA_HOME}" | tee -a publish.log
     command -v mvn
     command -v mvn | xargs echo "mvn: " | tee -a publish.log
+    java -version | tee -a publish.log
     java -version 2>&1 | head -n 1 | grep 1.8
   fi
   # Maven central need gpg sign and we store the release key encoded using openssl
