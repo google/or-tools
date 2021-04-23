@@ -1690,7 +1690,17 @@ class CpModel(object):
         return pywrapsat.CpSatHelper.ValidateModel(self.__model)
 
     def ExportToFile(self, file):
-        """Write the model as a ascii protocol buffer to 'file'."""
+        """Write the model as a protocol buffer to 'file'.
+
+    Args:
+      file: file to write the model to. If the filename ends with 'txt', the
+            model will be written as a text file, otherwise, the binary format
+            will be used.
+
+
+    Returns:
+      True if the model was correctly written.
+    """
         return pywrapsat.CpSatHelper.WriteModelToFile(self.__model, file)
 
     def AssertIsBooleanVariable(self, x):

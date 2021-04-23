@@ -177,17 +177,11 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
       }
     }
 
-    // Add the objectives and search heuristics variables that needs to be
-    // referenceable as integer even if they are only used as Booleans.
+    // Add the objectives variables that needs to be referenceable as integer
+    // even if they are only used as Booleans.
     if (model_proto.has_objective()) {
       for (const int obj_var : model_proto.objective().vars()) {
         used_variables.insert(PositiveRef(obj_var));
-      }
-    }
-    for (const DecisionStrategyProto& strategy :
-         model_proto.search_strategy()) {
-      for (const int var : strategy.variables()) {
-        used_variables.insert(PositiveRef(var));
       }
     }
 

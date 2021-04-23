@@ -24,66 +24,135 @@
 namespace operations_research {
 namespace sat {
 
-// The function responsible for implementing the chosen search strategy.
-//
-// TODO(user): expose and unit-test, it seems easy to get the order wrong, and
-// that would not change the correctness.
-struct Strategy {
-  std::vector<IntegerVariable> variables;
-  DecisionStrategyProto::VariableSelectionStrategy var_strategy;
-  DecisionStrategyProto::DomainReductionStrategy domain_strategy;
-};
+CpModelView::CpModelView(Model* model)
+    : mapping_(*model->GetOrCreate<CpModelMapping>()),
+      boolean_assignment_(model->GetOrCreate<Trail>()->Assignment()),
+      integer_trail_(*model->GetOrCreate<IntegerTrail>()) {}
+
+int CpModelView::NumVariables() const { return mapping_.NumProtoVariables(); }
+
+bool CpModelView::IsFixed(int var) const {
+  if (mapping_.IsBoolean(var)) {
+    return boolean_assignment_.VariableIsAssigned(
+        mapping_.Literal(var).Variable());
+  } else if (mapping_.IsInteger(var)) {
+    return integer_trail_.IsFixed(mapping_.Integer(var));
+  }
+  return true;  // Default.
+}
+
+bool CpModelView::IsCurrentlyFree(int var) const {
+  return mapping_.IsInteger(var) &&
+         integer_trail_.IsCurrentlyIgnored(mapping_.Integer(var));
+}
+
+int64_t CpModelView::Min(int var) const {
+  if (mapping_.IsBoolean(var)) {
+    const Literal l = mapping_.Literal(var);
+    return boolean_assignment_.LiteralIsTrue(l) ? 1 : 0;
+  } else if (mapping_.IsInteger(var)) {
+    return integer_trail_.LowerBound(mapping_.Integer(var)).value();
+  }
+  return 0;  // Default.
+}
+
+int64_t CpModelView::Max(int var) const {
+  if (mapping_.IsBoolean(var)) {
+    const Literal l = mapping_.Literal(var);
+    return boolean_assignment_.LiteralIsFalse(l) ? 0 : 1;
+  } else if (mapping_.IsInteger(var)) {
+    return integer_trail_.UpperBound(mapping_.Integer(var)).value();
+  }
+  return 0;  // Default.
+}
+
+BooleanOrIntegerLiteral CpModelView::GreaterOrEqual(int var,
+                                                    int64_t value) const {
+  DCHECK(!IsFixed(var));
+  BooleanOrIntegerLiteral result;
+  if (mapping_.IsBoolean(var)) {
+    DCHECK(value == 0 || value == 1);
+    if (value == 1) {
+      result.boolean_literal_index = mapping_.Literal(var).Index();
+    }
+  } else if (mapping_.IsInteger(var)) {
+    result.integer_literal = IntegerLiteral::GreaterOrEqual(
+        mapping_.Integer(var), IntegerValue(value));
+  }
+  return result;
+}
+
+BooleanOrIntegerLiteral CpModelView::LowerOrEqual(int var,
+                                                  int64_t value) const {
+  DCHECK(!IsFixed(var));
+  BooleanOrIntegerLiteral result;
+  if (mapping_.IsBoolean(var)) {
+    DCHECK(value == 0 || value == 1);
+    if (value == 0) {
+      result.boolean_literal_index = mapping_.Literal(var).NegatedIndex();
+    }
+  } else if (mapping_.IsInteger(var)) {
+    result.integer_literal = IntegerLiteral::LowerOrEqual(mapping_.Integer(var),
+                                                          IntegerValue(value));
+  }
+  return result;
+}
 
 // Stores one variable and its strategy value.
 struct VarValue {
-  IntegerVariable var;
-  IntegerValue value;
+  int ref;
+  int64_t value;
 };
 
 const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
-    const absl::flat_hash_map<int, std::pair<int64_t, int64_t>>&
-        var_to_coeff_offset_pair,
-    const std::vector<Strategy>& strategies, Model* model) {
-  IntegerEncoder* const integer_encoder = model->GetOrCreate<IntegerEncoder>();
-  IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
+    const std::vector<DecisionStrategyProto>& strategies, Model* model) {
+  const auto& view = *model->GetOrCreate<CpModelView>();
+  const auto& parameters = *model->GetOrCreate<SatParameters>();
+  auto* random = model->GetOrCreate<ModelRandomGenerator>();
 
   // Note that we copy strategies to keep the return function validity
   // independently of the life of the passed vector.
-  return [integer_encoder, integer_trail, strategies, var_to_coeff_offset_pair,
-          model]() {
-    const SatParameters* const parameters = model->GetOrCreate<SatParameters>();
-
-    for (const Strategy& strategy : strategies) {
-      IntegerVariable candidate = kNoIntegerVariable;
-      IntegerValue candidate_value = kMaxIntegerValue;
-      IntegerValue candidate_lb;
-      IntegerValue candidate_ub;
+  return [&view, &parameters, random, strategies]() {
+    for (const DecisionStrategyProto& strategy : strategies) {
+      int candidate;
+      int64_t candidate_value = kint64max;
 
       // TODO(user): Improve the complexity if this becomes an issue which
       // may be the case if we do a fixed_search.
 
       // To store equivalent variables in randomized search.
-      std::vector<VarValue> active_vars;
+      std::vector<VarValue> active_refs;
 
-      for (const IntegerVariable var : strategy.variables) {
-        if (integer_trail->IsCurrentlyIgnored(var)) continue;
-        const IntegerValue lb = integer_trail->LowerBound(var);
-        const IntegerValue ub = integer_trail->UpperBound(var);
-        if (lb == ub) continue;
-        IntegerValue value(0);
-        IntegerValue coeff(1);
-        IntegerValue offset(0);
-        if (gtl::ContainsKey(var_to_coeff_offset_pair, var.value())) {
-          const auto coeff_offset =
-              gtl::FindOrDie(var_to_coeff_offset_pair, var.value());
-          coeff = coeff_offset.first;
-          offset = coeff_offset.second;
+      int t_index = 0;  // Index in strategy.transformations().
+      for (int i = 0; i < strategy.variables().size(); ++i) {
+        const int ref = strategy.variables(i);
+        const int var = PositiveRef(ref);
+        if (view.IsFixed(var) || view.IsCurrentlyFree(var)) continue;
+
+        int64_t coeff(1);
+        int64_t offset(0);
+        while (t_index < strategy.transformations().size() &&
+               strategy.transformations(t_index).index() < i) {
+          ++t_index;
         }
-        DCHECK_GT(coeff, 0);
+        if (t_index < strategy.transformations_size() &&
+            strategy.transformations(t_index).index() == i) {
+          coeff = strategy.transformations(t_index).positive_coeff();
+          offset = strategy.transformations(t_index).offset();
+        }
 
         // TODO(user): deal with integer overflow in case of wrongly specified
-        // coeff.
-        switch (strategy.var_strategy) {
+        // coeff? Note that if this is filled by the presolve it shouldn't
+        // happen since any feasible value in the new variable domain should be
+        // a feasible value of the original variable domain.
+        int64_t value(0);
+        int64_t lb = view.Min(var);
+        int64_t ub = view.Max(var);
+        if (!RefIsPositive(ref)) {
+          lb = -view.Max(var);
+          ub = -view.Min(var);
+        }
+        switch (strategy.variable_selection_strategy()) {
           case DecisionStrategyProto::CHOOSE_FIRST:
             break;
           case DecisionStrategyProto::CHOOSE_LOWEST_MIN:
@@ -93,79 +162,87 @@ const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
             value = -(coeff * ub + offset);
             break;
           case DecisionStrategyProto::CHOOSE_MIN_DOMAIN_SIZE:
-            // TODO(user): Evaluate an exact domain computation.
             value = coeff * (ub - lb + 1);
             break;
           case DecisionStrategyProto::CHOOSE_MAX_DOMAIN_SIZE:
-            // TODO(user): Evaluate an exact domain computation.
             value = -coeff * (ub - lb + 1);
             break;
           default:
             LOG(FATAL) << "Unknown VariableSelectionStrategy "
-                       << strategy.var_strategy;
+                       << strategy.variable_selection_strategy();
         }
         if (value < candidate_value) {
-          candidate = var;
-          candidate_lb = lb;
-          candidate_ub = ub;
+          candidate = ref;
           candidate_value = value;
         }
-        if (strategy.var_strategy == DecisionStrategyProto::CHOOSE_FIRST &&
-            !parameters->randomize_search()) {
+        if (strategy.variable_selection_strategy() ==
+                DecisionStrategyProto::CHOOSE_FIRST &&
+            !parameters.randomize_search()) {
           break;
-        } else if (parameters->randomize_search()) {
-          if (active_vars.empty() ||
-              value <= candidate_value +
-                           parameters->search_randomization_tolerance()) {
-            active_vars.push_back({var, value});
+        } else if (parameters.randomize_search()) {
+          if (value <=
+              candidate_value + parameters.search_randomization_tolerance()) {
+            active_refs.push_back({ref, value});
           }
         }
       }
-      if (candidate == kNoIntegerVariable) continue;
-      if (parameters->randomize_search()) {
-        CHECK(!active_vars.empty());
+
+      if (candidate_value == kint64max) continue;
+      if (parameters.randomize_search()) {
+        CHECK(!active_refs.empty());
         const IntegerValue threshold(
-            candidate_value + parameters->search_randomization_tolerance());
+            candidate_value + parameters.search_randomization_tolerance());
         auto is_above_tolerance = [threshold](const VarValue& entry) {
           return entry.value > threshold;
         };
         // Remove all values above tolerance.
-        active_vars.erase(std::remove_if(active_vars.begin(), active_vars.end(),
+        active_refs.erase(std::remove_if(active_refs.begin(), active_refs.end(),
                                          is_above_tolerance),
-                          active_vars.end());
-        const int winner =
-            std::uniform_int_distribution<int>(0, active_vars.size() - 1)(
-                *model->GetOrCreate<ModelRandomGenerator>());
-        candidate = active_vars[winner].var;
-        candidate_lb = integer_trail->LowerBound(candidate);
-        candidate_ub = integer_trail->UpperBound(candidate);
+                          active_refs.end());
+        const int winner = absl::Uniform<int>(*random, 0, active_refs.size());
+        candidate = active_refs[winner].ref;
       }
 
-      IntegerLiteral literal;
-      switch (strategy.domain_strategy) {
+      DecisionStrategyProto::DomainReductionStrategy selection =
+          strategy.domain_reduction_strategy();
+      if (!RefIsPositive(candidate)) {
+        switch (selection) {
+          case DecisionStrategyProto::SELECT_MIN_VALUE:
+            selection = DecisionStrategyProto::SELECT_MAX_VALUE;
+            break;
+          case DecisionStrategyProto::SELECT_MAX_VALUE:
+            selection = DecisionStrategyProto::SELECT_MIN_VALUE;
+            break;
+          case DecisionStrategyProto::SELECT_LOWER_HALF:
+            selection = DecisionStrategyProto::SELECT_UPPER_HALF;
+            break;
+          case DecisionStrategyProto::SELECT_UPPER_HALF:
+            selection = DecisionStrategyProto::SELECT_LOWER_HALF;
+            break;
+          default:
+            break;
+        }
+      }
+
+      const int var = PositiveRef(candidate);
+      const int64_t lb = view.Min(var);
+      const int64_t ub = view.Max(var);
+      switch (selection) {
         case DecisionStrategyProto::SELECT_MIN_VALUE:
-          literal = IntegerLiteral::LowerOrEqual(candidate, candidate_lb);
-          break;
+          return view.LowerOrEqual(var, lb);
         case DecisionStrategyProto::SELECT_MAX_VALUE:
-          literal = IntegerLiteral::GreaterOrEqual(candidate, candidate_ub);
-          break;
+          return view.GreaterOrEqual(var, ub);
         case DecisionStrategyProto::SELECT_LOWER_HALF:
-          literal = IntegerLiteral::LowerOrEqual(
-              candidate, candidate_lb + (candidate_ub - candidate_lb) / 2);
-          break;
+          return view.LowerOrEqual(var, lb + (ub - lb) / 2);
         case DecisionStrategyProto::SELECT_UPPER_HALF:
-          literal = IntegerLiteral::GreaterOrEqual(
-              candidate, candidate_ub - (candidate_ub - candidate_lb) / 2);
-          break;
+          return view.GreaterOrEqual(var, ub - (ub - lb) / 2);
         case DecisionStrategyProto::SELECT_MEDIAN_VALUE:
           // TODO(user): Implement the correct method.
-          literal = IntegerLiteral::LowerOrEqual(candidate, candidate_lb);
-          break;
+          return view.LowerOrEqual(var, lb);
         default:
           LOG(FATAL) << "Unknown DomainReductionStrategy "
-                     << strategy.domain_strategy;
+                     << strategy.domain_reduction_strategy();
       }
-      return BooleanOrIntegerLiteral(literal);
     }
     return BooleanOrIntegerLiteral();
   };
@@ -196,37 +273,15 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
         FirstUnassignedVarAtItsMinHeuristic(decisions, model);
   }
 
-  std::vector<Strategy> strategies;
-  absl::flat_hash_map<int, std::pair<int64_t, int64_t>>
-      var_to_coeff_offset_pair;
+  std::vector<DecisionStrategyProto> strategies;
   for (const DecisionStrategyProto& proto : cp_model_proto.search_strategy()) {
-    strategies.push_back(Strategy());
-    Strategy& strategy = strategies.back();
-    for (const int ref : proto.variables()) {
-      strategy.variables.push_back(
-          RefIsPositive(ref) ? variable_mapping[ref]
-                             : NegationOf(variable_mapping[PositiveRef(ref)]));
-    }
-    strategy.var_strategy = proto.variable_selection_strategy();
-    strategy.domain_strategy = proto.domain_reduction_strategy();
-    for (const auto& transform : proto.transformations()) {
-      const int ref = transform.var();
-      const IntegerVariable var =
-          RefIsPositive(ref) ? variable_mapping[ref]
-                             : NegationOf(variable_mapping[PositiveRef(ref)]);
-      if (!gtl::ContainsKey(var_to_coeff_offset_pair, var.value())) {
-        var_to_coeff_offset_pair[var.value()] = {transform.positive_coeff(),
-                                                 transform.offset()};
-      }
-    }
+    strategies.push_back(proto);
   }
   if (instantiate_all_variables) {
-    return SequentialSearch({ConstructSearchStrategyInternal(
-                                 var_to_coeff_offset_pair, strategies, model),
+    return SequentialSearch({ConstructSearchStrategyInternal(strategies, model),
                              default_search_strategy});
   } else {
-    return ConstructSearchStrategyInternal(var_to_coeff_offset_pair, strategies,
-                                           model);
+    return ConstructSearchStrategyInternal(strategies, model);
   }
 }
 

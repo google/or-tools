@@ -2375,8 +2375,17 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
         // TODO(user): each time we go back to level zero, we will generate
         // the same cuts over and over again. It is okay because AddCut() will
         // not add duplicate cuts, but it might not be the most efficient way.
+        struct EndDuration {
+          AffineExpression end;
+          IntegerValue size_min;
+        };
+        std::vector<EndDuration> events;
+
         for (int index1 = 0; index1 < helper->NumTasks(); ++index1) {
           if (!helper->IsPresent(index1)) continue;
+          const IntegerValue d1_min = helper->SizeMin(index1);
+
+          events.push_back({helper->Ends()[index1], d1_min});
           for (int index2 = index1 + 1; index2 < helper->NumTasks(); ++index2) {
             if (!helper->IsPresent(index2)) continue;
 
@@ -2407,6 +2416,31 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
               manager->AddCut(cut.Build(), "NoOverlapPrecedence", lp_values);
             }
           }
+        }
+
+        // Sort by descending duration.
+        std::sort(events.begin(), events.end(),
+                  [](const EndDuration& e1, const EndDuration& e2) {
+                    return e1.size_min > e2.size_min;
+                  });
+        // TODO(user): The optimal cut generation rank events by increasing
+        // weights/size_min.
+        const int num_events = events.size();
+        for (int end = 1; end < num_events; ++end) {
+          IntegerValue sum_duration(0);
+          IntegerValue sum_square_duration(0);
+          for (int i = 0; i <= end; ++i) {
+            const IntegerValue duration = events[i].size_min;
+            sum_duration += duration;
+            sum_square_duration += duration * duration;
+          }
+          LinearConstraintBuilder cut(
+              model, (sum_duration * sum_duration + sum_square_duration) / 2,
+              kMaxIntegerValue);
+          for (int i = 0; i <= end; ++i) {
+            cut.AddTerm(events[i].end, events[i].size_min);
+          }
+          manager->AddCut(cut.Build(), "NoOverlapTriangle", lp_values);
         }
       };
   return result;

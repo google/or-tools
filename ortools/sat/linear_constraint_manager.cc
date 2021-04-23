@@ -19,6 +19,7 @@
 #include <utility>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/strings/match.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
@@ -44,17 +45,33 @@ size_t ComputeHashOfTerms(const LinearConstraint& ct) {
 }  // namespace
 
 LinearConstraintManager::~LinearConstraintManager() {
-  if (num_merged_constraints_ > 0) {
-    VLOG(2) << "num_merged_constraints: " << num_merged_constraints_;
-  }
-  if (num_shortened_constraints_ > 0) {
-    VLOG(2) << "num_shortened_constraints: " << num_shortened_constraints_;
-  }
-  if (num_splitted_constraints_ > 0) {
-    VLOG(2) << "num_splitted_constraints: " << num_splitted_constraints_;
-  }
-  if (num_coeff_strenghtening_ > 0) {
-    VLOG(2) << "num_coeff_strenghtening: " << num_coeff_strenghtening_;
+  if (VLOG_IS_ON(2) && !absl::StrContains(model_->Name(), "_lns")) {
+    if (num_merged_constraints_ > 0) {
+      VLOG(2) << "num_merged_constraints: " << num_merged_constraints_;
+    }
+    if (num_shortened_constraints_ > 0) {
+      VLOG(2) << "num_shortened_constraints: " << num_shortened_constraints_;
+    }
+    if (num_splitted_constraints_ > 0) {
+      VLOG(2) << "num_splitted_constraints: " << num_splitted_constraints_;
+    }
+    if (num_coeff_strenghtening_ > 0) {
+      VLOG(2) << "num_coeff_strenghtening: " << num_coeff_strenghtening_;
+    }
+    if (num_cuts_ > 0) {
+      VLOG(2) << "Total cuts added: " << num_cuts_ << " (out of "
+              << num_add_cut_calls_ << " calls) worker: '" << model_->Name()
+              << "'";
+      VLOG(2) << "  - num simplifications: " << num_simplifications_;
+      for (const auto& entry : type_to_num_cuts_) {
+        if (entry.second == 1) {
+          VLOG(2) << "  - added 1 cut of type '" << entry.first << "'.";
+        } else {
+          VLOG(2) << "  - added " << entry.second << " cuts of type '"
+                  << entry.first << "'.";
+        }
+      }
+    }
   }
   if (logger_->LoggingIsEnabled() && num_cuts_ > 0) {
     SOLVER_LOG(logger_, "Total cuts added: ", num_cuts_, " (out of ",
@@ -76,7 +93,7 @@ void LinearConstraintManager::RescaleActiveCounts(const double scaling_factor) {
     constraint_infos_[i].active_count *= scaling_factor;
   }
   constraint_active_count_increase_ *= scaling_factor;
-  VLOG(2) << "Rescaled active counts by " << scaling_factor;
+  VLOG(3) << "Rescaled active counts by " << scaling_factor;
 }
 
 bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
@@ -117,7 +134,7 @@ bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
   lp_constraints_.resize(new_size);
   solution_state->statuses.resize(num_cols + glop::ColIndex(new_size));
   if (num_removed_constraints > 0) {
-    VLOG(2) << "Removed " << num_removed_constraints << " constraints";
+    VLOG(3) << "Removed " << num_removed_constraints << " constraints";
   }
   return num_removed_constraints > 0;
 }
@@ -227,7 +244,7 @@ bool LinearConstraintManager::AddCut(
   // them undeletable.
   constraint_infos_[ct_index].is_deletable = true;
 
-  VLOG(1) << "Cut '" << type_name << "'"
+  VLOG(3) << "Cut '" << type_name << "'"
           << " size=" << constraint_infos_[ct_index].constraint.vars.size()
           << " max_magnitude="
           << ComputeInfinityNorm(constraint_infos_[ct_index].constraint)
@@ -656,7 +673,7 @@ bool LinearConstraintManager::ChangeLp(
 
   if (num_added > 0) {
     // We update the solution sate to match the new LP size.
-    VLOG(2) << "Added " << num_added << " constraints.";
+    VLOG(3) << "Added " << num_added << " constraints.";
     solution_state->statuses.resize(solution_state->statuses.size() + num_added,
                                     glop::VariableStatus::BASIC);
   }

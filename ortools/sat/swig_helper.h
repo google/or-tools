@@ -199,11 +199,17 @@ struct CpSatHelper {
     return ReadDomainFromProto(variable_proto);
   }
 
-  // Write the model proto to file.
+  // Write the model proto to file. If the filename ends with 'txt', the model
+  // will be written as a text file, otherwise, the binary format will be used.
+  // The functions returns true if the model was correctly written.
   static bool WriteModelToFile(
       const operations_research::sat::CpModelProto& model_proto,
       const std::string& filename) {
-    return file::SetTextProto(filename, model_proto, file::Defaults()).ok();
+    if (absl::EndsWith(filename, "txt")) {
+      return file::SetTextProto(filename, model_proto, file::Defaults()).ok();
+    } else {
+      return file::SetBinaryProto(filename, model_proto, file::Defaults()).ok();
+    }
   }
 };
 

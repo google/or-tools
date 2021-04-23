@@ -425,16 +425,19 @@ std::string ValidateSearchStrategies(const CpModelProto& model) {
                             ProtobufShortDebugString(strategy));
       }
     }
+    int previous_index = -1;
     for (const auto& transformation : strategy.transformations()) {
       if (transformation.positive_coeff() <= 0) {
         return absl::StrCat("Affine transformation coeff should be positive: ",
                             ProtobufShortDebugString(transformation));
       }
-      if (!VariableReferenceIsValid(model, transformation.var())) {
+      if (transformation.index() <= previous_index ||
+          transformation.index() >= strategy.variables_size()) {
         return absl::StrCat(
-            "Invalid variable reference in affine transformation: ",
+            "Invalid indices (must be sorted and valid) in transformation: ",
             ProtobufShortDebugString(transformation));
       }
+      previous_index = transformation.index();
     }
   }
   return "";

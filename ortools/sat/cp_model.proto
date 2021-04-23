@@ -503,10 +503,10 @@ message DecisionStrategyProto {
 
   // Advanced usage. Some of the variable listed above may have been transformed
   // by the presolve so this is needed to properly follow the given selection
-  // strategy. Instead of using a value X from one of the variable listed here,
-  // we will use positive_coeff * X + offset instead.
+  // strategy. Instead of using a value X for variables[index], we will use
+  // positive_coeff * X + offset instead.
   message AffineTransformation {
-    int32 var = 1;
+    int32 index = 1;
     int64 offset = 2;
     int64 positive_coeff = 3;
   }

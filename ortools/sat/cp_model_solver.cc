@@ -1199,9 +1199,8 @@ void RegisterObjectiveBoundsImport(
       import_objective_bounds);
 }
 
-void LoadBaseModel(const CpModelProto& model_proto,
-                   SharedResponseManager* shared_response_manager,
-                   Model* model) {
+void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
+  auto* shared_response_manager = model->Mutable<SharedResponseManager>();
   CHECK(shared_response_manager != nullptr);
   auto* sat_solver = model->GetOrCreate<SatSolver>();
 
@@ -1293,12 +1292,8 @@ void LoadBaseModel(const CpModelProto& model_proto,
   if (!sat_solver->FinishPropagation()) return unsat();
 }
 
-void LoadFeasibilityPump(const CpModelProto& model_proto,
-                         SharedResponseManager* shared_response_manager,
-                         Model* model) {
-  CHECK(shared_response_manager != nullptr);
-
-  LoadBaseModel(model_proto, shared_response_manager, model);
+void LoadFeasibilityPump(const CpModelProto& model_proto, Model* model) {
+  LoadBaseModel(model_proto, model);
 
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
@@ -1328,14 +1323,14 @@ void LoadFeasibilityPump(const CpModelProto& model_proto,
 // This should only be called once on a given 'Model' class.
 //
 // TODO(user): move to cp_model_loader.h/.cc
-void LoadCpModel(const CpModelProto& model_proto,
-                 SharedResponseManager* shared_response_manager, Model* model) {
+void LoadCpModel(const CpModelProto& model_proto, Model* model) {
+  auto* shared_response_manager = model->Mutable<SharedResponseManager>();
   CHECK(shared_response_manager != nullptr);
-  auto* sat_solver = model->GetOrCreate<SatSolver>();
 
-  LoadBaseModel(model_proto, shared_response_manager, model);
+  LoadBaseModel(model_proto, model);
 
   // Simple function for the few places where we do "return unsat()".
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
   const auto unsat = [shared_response_manager, sat_solver, model] {
     sat_solver->NotifyThatModelIsUnsat();
     shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
@@ -1571,9 +1566,8 @@ void LoadCpModel(const CpModelProto& model_proto,
 // TODO(user): This should be transformed so that it can be called many times
 // and resume from the last search state as if it wasn't interuped. That would
 // allow use to easily interleave different heuristics in the same thread.
-void SolveLoadedCpModel(const CpModelProto& model_proto,
-                        SharedResponseManager* shared_response_manager,
-                        Model* model) {
+void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
+  auto* shared_response_manager = model->Mutable<SharedResponseManager>();
   if (shared_response_manager->ProblemIsSolved()) return;
 
   const std::string& solution_info = model->Name();
@@ -1648,6 +1642,7 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
     const IntegerVariable objective_var = objective.objective_var;
     CHECK_NE(objective_var, kNoIntegerVariable);
 
+    // Code a simple random heuristic + search.
     if (parameters.optimize_with_core()) {
       // TODO(user): This doesn't work with splitting in chunk for now. It
       // shouldn't be too hard to fix.
@@ -1685,10 +1680,10 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
 
 // Try to find a solution by following the hint and using a low conflict limit.
 // The CpModelProto must already be loaded in the Model.
-void QuickSolveWithHint(const CpModelProto& model_proto,
-                        SharedResponseManager* shared_response_manager,
-                        Model* model) {
+void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
   if (!model_proto.has_solution_hint()) return;
+
+  auto* shared_response_manager = model->Mutable<SharedResponseManager>();
   if (shared_response_manager->ProblemIsSolved()) return;
 
   // Temporarily change the parameters.
@@ -1741,12 +1736,14 @@ void QuickSolveWithHint(const CpModelProto& model_proto,
 // distance with the provided hint. Note that this method creates an in-memory
 // copy of the model and loads a local Model object from the copied model.
 void MinimizeL1DistanceWithHint(const CpModelProto& model_proto,
-                                SharedResponseManager* shared_response_manager,
                                 WallTimer* wall_timer,
                                 SharedTimeLimit* shared_time_limit,
                                 Model* model) {
   Model local_model;
+
   if (!model_proto.has_solution_hint()) return;
+
+  auto* shared_response_manager = model->Mutable<SharedResponseManager>();
   if (shared_response_manager->ProblemIsSolved()) return;
 
   auto* parameters = local_model.GetOrCreate<SatParameters>();
@@ -1818,7 +1815,7 @@ void MinimizeL1DistanceWithHint(const CpModelProto& model_proto,
   local_model.Register<SharedResponseManager>(&local_response_manager);
 
   // Solve optimization problem.
-  LoadCpModel(updated_model_proto, &local_response_manager, &local_model);
+  LoadCpModel(updated_model_proto, &local_model);
 
   ConfigureSearchHeuristics(&local_model);
   const auto& mapping = *local_model.GetOrCreate<CpModelMapping>();
@@ -1891,8 +1888,9 @@ void PostsolveResponseWithFullSolver(
   SharedResponseManager local_response_manager(
       /*enumerate_all_solutions=*/false, &mapping_proto, wall_timer,
       &shared_time_limit, postsolve_model.GetOrCreate<SolverLogger>());
-  LoadCpModel(mapping_proto, &local_response_manager, &postsolve_model);
-  SolveLoadedCpModel(mapping_proto, &local_response_manager, &postsolve_model);
+  postsolve_model.Register(&local_response_manager);
+  LoadCpModel(mapping_proto, &postsolve_model);
+  SolveLoadedCpModel(mapping_proto, &postsolve_model);
   const CpSolverResponse postsolve_response =
       local_response_manager.GetResponse();
   CHECK(postsolve_response.status() == CpSolverStatus::FEASIBLE ||
@@ -2211,8 +2209,7 @@ class FullProblemSolver : public SubSolver {
     }
     return [this]() {
       if (solving_first_chunk_) {
-        LoadCpModel(*shared_->model_proto, shared_->response,
-                    local_model_.get());
+        LoadCpModel(*shared_->model_proto, local_model_.get());
 
         // Level zero variable bounds sharing. It is important to register
         // that after the probing that takes place in LoadCpModel() otherwise
@@ -2226,12 +2223,10 @@ class FullProblemSolver : public SubSolver {
         }
 
         if (local_model_->GetOrCreate<SatParameters>()->repair_hint()) {
-          MinimizeL1DistanceWithHint(*shared_->model_proto, shared_->response,
-                                     shared_->wall_timer, shared_->time_limit,
-                                     local_model_.get());
+          MinimizeL1DistanceWithHint(*shared_->model_proto, shared_->wall_timer,
+                                     shared_->time_limit, local_model_.get());
         } else {
-          QuickSolveWithHint(*shared_->model_proto, shared_->response,
-                             local_model_.get());
+          QuickSolveWithHint(*shared_->model_proto, local_model_.get());
         }
 
         // No need for mutex since we only run one task at the time.
@@ -2256,8 +2251,7 @@ class FullProblemSolver : public SubSolver {
       }
 
       const double saved_dtime = time_limit->GetElapsedDeterministicTime();
-      SolveLoadedCpModel(*shared_->model_proto, shared_->response,
-                         local_model_.get());
+      SolveLoadedCpModel(*shared_->model_proto, local_model_.get());
       {
         absl::MutexLock mutex_lock(&mutex_);
         deterministic_time_since_last_synchronize_ +=
@@ -2364,8 +2358,7 @@ class FeasibilityPumpSolver : public SubSolver {
       {
         absl::MutexLock mutex_lock(&mutex_);
         if (solving_first_chunk_) {
-          LoadFeasibilityPump(*shared_->model_proto, shared_->response,
-                              local_model_.get());
+          LoadFeasibilityPump(*shared_->model_proto, local_model_.get());
           // No new task will be scheduled for this worker if there is no
           // linear relaxation.
           if (local_model_->Get<FeasibilityPump>() == nullptr) return;
@@ -2571,9 +2564,10 @@ class LnsSolver : public SubSolver {
       SharedResponseManager local_response_manager(
           /*enumerate_all_solutions=*/false, &lns_fragment, shared_->wall_timer,
           shared_->time_limit, local_model.GetOrCreate<SolverLogger>());
-      LoadCpModel(lns_fragment, &local_response_manager, &local_model);
-      QuickSolveWithHint(lns_fragment, &local_response_manager, &local_model);
-      SolveLoadedCpModel(lns_fragment, &local_response_manager, &local_model);
+      local_model.Register(&local_response_manager);
+      LoadCpModel(lns_fragment, &local_model);
+      QuickSolveWithHint(lns_fragment, &local_model);
+      SolveLoadedCpModel(lns_fragment, &local_model);
       CpSolverResponse local_response = local_response_manager.GetResponse();
 
       // TODO(user): we actually do not need to postsolve if the solution is
@@ -3229,6 +3223,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       absl::GetFlag(FLAGS_cp_model_dump_prefix));
   shared_response_manager.SetGapLimitsFromParameters(params);
   model->Register<SharedResponseManager>(&shared_response_manager);
+
   const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
   if (!observers.empty()) {
     shared_response_manager.AddSolutionCallback(
@@ -3325,19 +3320,19 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     SOLVER_LOG(logger, absl::StrFormat("Starting to load the model at %.2fs",
                                        wall_timer.Get()));
     shared_response_manager.SetUpdatePrimalIntegralOnEachChange(true);
-    LoadCpModel(new_cp_model_proto, &shared_response_manager, model);
+    LoadCpModel(new_cp_model_proto, model);
     shared_response_manager.LoadDebugSolution(model);
 
     SOLVER_LOG(logger, "");
     SOLVER_LOG(logger, absl::StrFormat("Starting sequential search at %.2fs",
                                        wall_timer.Get()));
     if (params.repair_hint()) {
-      MinimizeL1DistanceWithHint(new_cp_model_proto, &shared_response_manager,
-                                 &wall_timer, &shared_time_limit, model);
+      MinimizeL1DistanceWithHint(new_cp_model_proto, &wall_timer,
+                                 &shared_time_limit, model);
     } else {
-      QuickSolveWithHint(new_cp_model_proto, &shared_response_manager, model);
+      QuickSolveWithHint(new_cp_model_proto, model);
     }
-    SolveLoadedCpModel(new_cp_model_proto, &shared_response_manager, model);
+    SolveLoadedCpModel(new_cp_model_proto, model);
   }
 
   final_response = shared_response_manager.GetResponse();

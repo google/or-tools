@@ -225,6 +225,9 @@ class CpModelMapping {
     return empty_set_;
   }
 
+  // Returns the number of variables in the loaded proto.
+  int NumProtoVariables() const { return integers_.size(); }
+
  private:
   // Note that only the variables used by at least one constraint will be
   // created, the other will have a kNo[Integer,Interval,Boolean]VariableValue.

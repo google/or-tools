@@ -5769,15 +5769,15 @@ bool CpModelPresolver::Presolve() {
           const int rep = (r.coeff > 0) == RefIsPositive(ref)
                               ? r.representative
                               : NegatedRef(r.representative);
-          strategy.add_variables(rep);
           if (strategy.variable_selection_strategy() !=
               DecisionStrategyProto::CHOOSE_FIRST) {
             DecisionStrategyProto::AffineTransformation* t =
                 strategy.add_transformations();
-            t->set_var(rep);
+            t->set_index(strategy.variables_size());
             t->set_offset(r.offset);
             t->set_positive_coeff(std::abs(r.coeff));
           }
+          strategy.add_variables(rep);
         } else {
           // TODO(user): this variable was removed entirely by the presolve (no
           // equivalent variable present). We simply ignore it entirely which
@@ -5888,23 +5888,26 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
   // Remap the search decision heuristic.
   // Note that we delete any heuristic related to a removed variable.
   for (DecisionStrategyProto& strategy : *proto->mutable_search_strategy()) {
-    DecisionStrategyProto copy = strategy;
+    const DecisionStrategyProto copy = strategy;
     strategy.clear_variables();
-    for (const int ref : copy.variables()) {
+    std::vector<int> new_indices(copy.variables().size(), -1);
+    for (int i = 0; i < copy.variables().size(); ++i) {
+      const int ref = copy.variables(i);
       const int image = mapping[PositiveRef(ref)];
       if (image >= 0) {
+        new_indices[i] = strategy.variables_size();
         strategy.add_variables(RefIsPositive(ref) ? image : NegatedRef(image));
       }
     }
     strategy.clear_transformations();
     for (const auto& transform : copy.transformations()) {
-      const int ref = transform.var();
-      const int image = mapping[PositiveRef(ref)];
-      if (image >= 0) {
-        auto* new_transform = strategy.add_transformations();
-        *new_transform = transform;
-        new_transform->set_var(RefIsPositive(ref) ? image : NegatedRef(image));
-      }
+      CHECK_LT(transform.index(), new_indices.size());
+      const int new_index = new_indices[transform.index()];
+      if (new_index == -1) continue;
+      auto* new_transform = strategy.add_transformations();
+      *new_transform = transform;
+      CHECK_LT(new_index, strategy.variables().size());
+      new_transform->set_index(new_index);
     }
   }
 

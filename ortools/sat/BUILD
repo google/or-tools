@@ -1353,5 +1353,6 @@ cc_library(
         ":model",
         ":sat_parameters_cc_proto",
         "//ortools/base",
+        "@com_google_absl//absl/strings",
     ],
 )
