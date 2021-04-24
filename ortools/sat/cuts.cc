@@ -2423,6 +2423,17 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
       }
     }
 
+    // We generate the cut from:
+    // E. Balas, On the facial structure of scheduling polyhedra,
+    // Mathematical Programming Essays in Honor of George B. Dantzig
+    // Part I, Mathematical Programming Studies, vol. 24,
+    // Springer, 1985, pp. 179–218.
+    //
+    // The difference is we look at a set of intervals starting after a
+    // given start_min, sorted by relative (end - start_min)/duration.
+
+    TopNCuts top_n_cuts(15);
+
     // Sort by start min to bucketize by start_min.
     std::sort(events.begin(), events.end(),
               [](const Event& e1, const Event& e2) {
@@ -2430,22 +2441,26 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
               });
     for (int start = 0; start + 1 < events.size(); ++start) {
       // Bucketize events by start_min.
-      if (start > 0 && events[start].start_min == events[start - 1].start_min) {
+      if (start > 0 &&
+          events[start].start_min == events[start - 1].start_min) {
         continue;
       }
       const IntegerValue sequence_start_min = events[start].start_min;
-      std::vector<Event> residual_tasks(events.begin() + start, events.end());
+      std::vector<Event> residual_tasks(events.begin() + start,
+                                        events.end());
       std::sort(residual_tasks.begin(), residual_tasks.end(),
-                [](const Event& e1, const Event& e2) {
-                  return (e1.lp_end / e1.size_min) < (e2.lp_end / e2.size_min);
+                [sequence_start_min](const Event& e1, const Event& e2) {
+                  return ((e1.lp_end - sequence_start_min) / e1.size_min) <
+                          ((e2.lp_end - sequence_start_min) / e2.size_min);
                 });
       int best_end = -1;
-      double best_violation = 0.0;
+      double best_violation = 1.01;
       IntegerValue best_min_contrib(0);
 
       IntegerValue sum_duration(0);
       IntegerValue sum_square_duration(0);
       double lp_contrib = 0;
+      IntegerValue current_start_min(kMaxIntegerValue);
       for (int i = 0; i < residual_tasks.size(); ++i) {
         DCHECK_GE(residual_tasks[i].start_min, sequence_start_min);
         const IntegerValue duration = residual_tasks[i].size_min;
@@ -2453,25 +2468,29 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
         sum_square_duration += duration * duration;
         lp_contrib +=
             residual_tasks[i].lp_end * residual_tasks[i].size_min.value();
+        current_start_min =
+            std::min(current_start_min, residual_tasks[i].start_min);
 
         const IntegerValue min_contrib =
             (sum_duration * sum_duration + sum_square_duration) / 2 +
-            sequence_start_min * sum_duration;
+            current_start_min * sum_duration;
         const double violation = min_contrib.value() / lp_contrib;
-        if (min_contrib > lp_contrib && violation > best_violation) {
+        if (violation > best_violation) {
           best_violation = violation;
           best_end = i;
           best_min_contrib = min_contrib;
         }
       }
       if (best_end != -1) {
-        LinearConstraintBuilder cut(model, best_min_contrib, kMaxIntegerValue);
+        LinearConstraintBuilder cut(model, best_min_contrib,
+                                    kMaxIntegerValue);
         for (int i = 0; i <= best_end; ++i) {
           cut.AddTerm(residual_tasks[i].end, residual_tasks[i].size_min);
         }
-        manager->AddCut(cut.Build(), "NoOverlapTriangle", lp_values);
+        top_n_cuts.AddCut(cut.Build(), "NoOverlapTriangle", lp_values);
       }
     }
+    top_n_cuts.TransferToManager(lp_values, manager);
   };
   return result;
 }
