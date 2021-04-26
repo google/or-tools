@@ -2332,7 +2332,7 @@ CutGenerator CreateOverlappingCumulativeCutGenerator(
   return result;
 }
 
-CutGenerator CreateNoOverlapCutGenerator(
+CutGenerator CreateNoOverlapEnergyCutGenerator(
     const std::vector<IntervalVariable>& intervals, Model* model) {
   CutGenerator result;
 
@@ -2361,20 +2361,76 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
 
   Trail* trail = model->GetOrCreate<Trail>();
 
+  result.generate_cuts =
+      [trail, helper, model](
+          const absl::StrongVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
+        if (trail->CurrentDecisionLevel() > 0) return;
+
+        // TODO(user): We can do much better in term of complexity:
+        // Sort all tasks by min start time, loop other them 1 by 1,
+        // start scanning their successors and stop when the start time of the
+        // successor is >= duration min of the task.
+
+        // TODO(user): each time we go back to level zero, we will generate
+        // the same cuts over and over again. It is okay because AddCut() will
+        // not add duplicate cuts, but it might not be the most efficient way.
+        for (int index1 = 0; index1 < helper->NumTasks(); ++index1) {
+          if (!helper->IsPresent(index1)) continue;
+          for (int index2 = index1 + 1; index2 < helper->NumTasks(); ++index2) {
+            if (!helper->IsPresent(index2)) continue;
+
+            // Encode only the interesting pairs.
+            if (helper->EndMax(index1) <= helper->StartMin(index2) ||
+                helper->EndMax(index2) <= helper->StartMin(index1)) {
+              continue;
+            }
+
+            const bool interval_1_can_precede_2 =
+                helper->EndMin(index1) <= helper->StartMax(index2);
+            const bool interval_2_can_precede_1 =
+                helper->EndMin(index2) <= helper->StartMax(index1);
+
+            if (interval_1_can_precede_2 && !interval_2_can_precede_1) {
+              // interval1.end <= interval2.start
+              LinearConstraintBuilder cut(model, kMinIntegerValue,
+                                          IntegerValue(0));
+              cut.AddTerm(helper->Ends()[index1], IntegerValue(1));
+              cut.AddTerm(helper->Starts()[index2], IntegerValue(-1));
+              manager->AddCut(cut.Build(), "NoOverlapPrecedence", lp_values);
+            } else if (interval_2_can_precede_1 && !interval_1_can_precede_2) {
+              // interval2.end <= interval1.start
+              LinearConstraintBuilder cut(model, kMinIntegerValue,
+                                          IntegerValue(0));
+              cut.AddTerm(helper->Ends()[index2], IntegerValue(1));
+              cut.AddTerm(helper->Starts()[index1], IntegerValue(-1));
+              manager->AddCut(cut.Build(), "NoOverlapPrecedence", lp_values);
+            }
+          }
+        }
+      };
+
+  return result;
+}
+
+CutGenerator CreateNoOverlapBalasCutGenerator(
+    const std::vector<IntervalVariable>& intervals, Model* model) {
+  CutGenerator result;
+
+  SchedulingConstraintHelper* helper =
+      new SchedulingConstraintHelper(intervals, model);
+  model->TakeOwnership(helper);
+
+  AddIntegerVariableFromIntervals(helper, model, &result.vars);
+
+  Trail* trail = model->GetOrCreate<Trail>();
+
   result.generate_cuts = [trail, helper, model](
                              const absl::StrongVector<IntegerVariable, double>&
                                  lp_values,
                              LinearConstraintManager* manager) {
     if (trail->CurrentDecisionLevel() > 0) return;
 
-    // TODO(user): We can do much better in term of complexity:
-    // Sort all tasks by min start time, loop other them 1 by 1,
-    // start scanning their successors and stop when the start time of the
-    // successor is >= duration min of the task.
-
-    // TODO(user): each time we go back to level zero, we will generate
-    // the same cuts over and over again. It is okay because AddCut() will
-    // not add duplicate cuts, but it might not be the most efficient way.
     struct Event {
       AffineExpression end;
       IntegerValue start_min;
@@ -2392,36 +2448,24 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
         events.push_back({end_expr, helper->StartMin(index1), size_min,
                           end_expr.LpValue(lp_values), index1});
       }
-
-      for (int index2 = index1 + 1; index2 < helper->NumTasks(); ++index2) {
-        if (!helper->IsPresent(index2)) continue;
-
-        // Encode only the interesting pairs.
-        if (helper->EndMax(index1) <= helper->StartMin(index2) ||
-            helper->EndMax(index2) <= helper->StartMin(index1)) {
-          continue;
-        }
-
-        const bool interval_1_can_precede_2 =
-            helper->EndMin(index1) <= helper->StartMax(index2);
-        const bool interval_2_can_precede_1 =
-            helper->EndMin(index2) <= helper->StartMax(index1);
-
-        if (interval_1_can_precede_2 && !interval_2_can_precede_1) {
-          // interval1.end <= interval2.start
-          LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
-          cut.AddTerm(helper->Ends()[index1], IntegerValue(1));
-          cut.AddTerm(helper->Starts()[index2], IntegerValue(-1));
-          manager->AddCut(cut.Build(), "NoOverlapPrecedence", lp_values);
-        } else if (interval_2_can_precede_1 && !interval_1_can_precede_2) {
-          // interval2.end <= interval1.start
-          LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
-          cut.AddTerm(helper->Ends()[index2], IntegerValue(1));
-          cut.AddTerm(helper->Starts()[index1], IntegerValue(-1));
-          manager->AddCut(cut.Build(), "NoOverlapPrecedence", lp_values);
-        }
-      }
     }
+
+    // We generate the cut from:
+    // E. Balas, On the facial structure of scheduling polyhedra,
+    // Mathematical Programming Essays in Honor of George B. Dantzig
+    // Part I, Mathematical Programming Studies, vol. 24,
+    // Springer, 1985, pp. 179–218.
+    //
+    // The original cut is:
+    //    sum(end_min_i * duration_min_i) >=
+    //        (sum(duration_min_i^2) + sum(duration_min_i)^2) / 2
+    // We streghten this cuts by noticing that if all tasks starts after S,
+    // then replacing end_min_i by (end_min_i - S) is still valid.
+    //
+    // A second difference is that we look at a set of intervals starting
+    // after a given start_min, sorted by relative
+    //    (end_lp - S) / duration_min.
+    TopNCuts top_n_cuts(15);
 
     // Sort by start min to bucketize by start_min.
     std::sort(events.begin(), events.end(),
@@ -2429,23 +2473,25 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
                 return e1.start_min < e2.start_min;
               });
     for (int start = 0; start + 1 < events.size(); ++start) {
-      // Bucketize events by start_min.
+      // Skip to the next  start_min value.
       if (start > 0 && events[start].start_min == events[start - 1].start_min) {
         continue;
       }
       const IntegerValue sequence_start_min = events[start].start_min;
       std::vector<Event> residual_tasks(events.begin() + start, events.end());
       std::sort(residual_tasks.begin(), residual_tasks.end(),
-                [](const Event& e1, const Event& e2) {
-                  return (e1.lp_end / e1.size_min) < (e2.lp_end / e2.size_min);
+                [sequence_start_min](const Event& e1, const Event& e2) {
+                  return ((e1.lp_end - sequence_start_min) / e1.size_min) <
+                         ((e2.lp_end - sequence_start_min) / e2.size_min);
                 });
       int best_end = -1;
-      double best_violation = 0.0;
+      double best_efficacy = 0.01;
       IntegerValue best_min_contrib(0);
 
       IntegerValue sum_duration(0);
       IntegerValue sum_square_duration(0);
       double lp_contrib = 0;
+      IntegerValue current_start_min(kMaxIntegerValue);
       for (int i = 0; i < residual_tasks.size(); ++i) {
         DCHECK_GE(residual_tasks[i].start_min, sequence_start_min);
         const IntegerValue duration = residual_tasks[i].size_min;
@@ -2453,13 +2499,16 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
         sum_square_duration += duration * duration;
         lp_contrib +=
             residual_tasks[i].lp_end * residual_tasks[i].size_min.value();
+        current_start_min =
+            std::min(current_start_min, residual_tasks[i].start_min);
 
         const IntegerValue min_contrib =
             (sum_duration * sum_duration + sum_square_duration) / 2 +
-            sequence_start_min * sum_duration;
-        const double violation = min_contrib.value() / lp_contrib;
-        if (min_contrib > lp_contrib && violation > best_violation) {
-          best_violation = violation;
+            current_start_min * sum_duration;
+        const double efficacy = (min_contrib.value() - lp_contrib) /
+                                std::sqrt(sum_square_duration.value());
+        if (efficacy > best_efficacy) {
+          best_efficacy = efficacy;
           best_end = i;
           best_min_contrib = min_contrib;
         }
@@ -2469,9 +2518,10 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
         for (int i = 0; i <= best_end; ++i) {
           cut.AddTerm(residual_tasks[i].end, residual_tasks[i].size_min);
         }
-        manager->AddCut(cut.Build(), "NoOverlapTriangle", lp_values);
+        top_n_cuts.AddCut(cut.Build(), "NoOverlapBalasArea", lp_values);
       }
     }
+    top_n_cuts.TransferToManager(lp_values, manager);
   };
   return result;
 }

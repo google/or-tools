@@ -514,12 +514,18 @@ CutGenerator CreateOverlappingCumulativeCutGenerator(
 // as follows:
 //   sum(sizes of always present intervals)
 //   + sum(presence_literal * min_of_size) <= span of all intervals.
-CutGenerator CreateNoOverlapCutGenerator(
+CutGenerator CreateNoOverlapEnergyCutGenerator(
     const std::vector<IntervalVariable>& intervals, Model* model);
 
 // For a given set of intervals in a no_overlap constraint, we detect violated
 // mandatory precedences and create a cut for these.
 CutGenerator CreateNoOverlapPrecedenceCutGenerator(
+    const std::vector<IntervalVariable>& intervals, Model* model);
+
+// For a given set of intervals in a no_overlap constraint, we detect violated
+// area based cuts from Balas 85 [see note in the code] and create a cut for
+// these.
+CutGenerator CreateNoOverlapBalasCutGenerator(
     const std::vector<IntervalVariable>& intervals, Model* model);
 
 // Extracts the variables that have a Literal view from base variables and

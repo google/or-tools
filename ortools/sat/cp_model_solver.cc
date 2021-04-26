@@ -576,9 +576,11 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
     std::vector<IntervalVariable> intervals =
         mapping->Intervals(ct.no_overlap().intervals());
     relaxation->cut_generators.push_back(
-        CreateNoOverlapCutGenerator(intervals, m));
+        CreateNoOverlapEnergyCutGenerator(intervals, m));
     relaxation->cut_generators.push_back(
         CreateNoOverlapPrecedenceCutGenerator(intervals, m));
+    relaxation->cut_generators.push_back(
+        CreateNoOverlapBalasCutGenerator(intervals, m));
   }
 
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinMax) {
