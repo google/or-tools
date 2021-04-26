@@ -405,6 +405,8 @@ else
 GPG_SIGN= -Dgpg.skip=true
 endif
 
+GPG_ARGS ?= <arg>--pinentry-mode</arg><arg>loopback</arg>
+
 ###################
 ## Maven package ##
 ###################
@@ -424,6 +426,8 @@ $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/pom.xml: \
 	$(SED) -i -e 's/@JAVA_PACKAGE@/$(JAVA_ORTOOLS_PACKAGE)/' \
  $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)$Spom.xml
 	$(SED) -i -e 's/@JAVA_NATIVE_PROJECT@/$(JAVA_ORTOOLS_NATIVE_PROJECT)/' \
+ $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)$Spom.xml
+	$(SED) -i -e 's;@GPG_ARGS@;$(GPG_ARGS);' \
  $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)$Spom.xml
 
 .PHONY: java_runtime_pimpl
@@ -463,6 +467,8 @@ $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/pom.xml: \
 	$(SED) -i -e 's/@JAVA_NATIVE_PROJECT@/$(JAVA_ORTOOLS_NATIVE_PROJECT)/' \
  $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Spom.xml
 	$(SED) -i -e 's/@JAVA_PROJECT@/$(JAVA_ORTOOLS_PROJECT)/' \
+ $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Spom.xml
+	$(SED) -i -e 's;@GPG_ARGS@;$(GPG_ARGS);' \
  $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Spom.xml
 
 .PHONY: java_pimpl

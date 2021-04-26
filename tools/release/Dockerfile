@@ -84,6 +84,8 @@ RUN git clone -b "${ORTOOLS_GIT_BRANCH}" --single-branch https://github.com/goog
 FROM devel AS delivery
 WORKDIR /root/or-tools
 
+ENV GPG_ARGS ""
+
 ARG ORTOOLS_TOKEN
 ENV ORTOOLS_TOKEN ${ORTOOLS_TOKEN}
 ARG ORTOOLS_DELIVERY

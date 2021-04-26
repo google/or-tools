@@ -144,6 +144,9 @@ if(BUILD_JAVA)
 
   option(UNIVERSAL_JAVA_PACKAGE "Build a Java multi OS Package" OFF)
   message(STATUS "Java multiple os package: ${UNIVERSAL_JAVA_PACKAGE}")
+
+  set(GPG_ARGS "<arg>--pinentry-mode</arg><arg>loopback</arg>" CACHE STRING "Extra options for GPG")
+  message(STATUS "GPG options: ${GPG_ARGS}")
 endif()
 
 # By default all dependencies are NOT built (i.e. BUILD_DEPS=OFF),

@@ -146,8 +146,7 @@
           </goals>
           <configuration>
             <gpgArguments>
-              <arg>--pinentry-mode</arg>
-              <arg>loopback</arg>
+              @GPG_ARGS@
             </gpgArguments>
           </configuration>
         </execution>
