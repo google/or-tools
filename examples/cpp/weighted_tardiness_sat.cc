@@ -30,6 +30,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 
 ABSL_FLAG(std::string, input, "examples/data/weighted_tardiness/wt40.txt",
@@ -107,7 +108,7 @@ void Solve(const std::vector<int64_t>& durations,
 
       // tardiness_vars >= end - due_date
       cp_model.AddGreaterOrEqual(tardiness_vars[i],
-                                 LinearExpr(task_ends[i]).AddConstant(-due_dates[i]));
+                                 task_ends[i].AddConstant(-due_dates[i]));
     }
   }
 
@@ -169,7 +170,14 @@ void Solve(const std::vector<int64_t>& durations,
   // Note that we only fully instantiate the start/end and only look at the
   // lower bound for the objective and the tardiness variables.
   Model model;
-  model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
+  SatParameters parameters;
+  // Parse the --params flag.
+  if (!absl::GetFlag(FLAGS_params).empty()) {
+    CHECK(google::protobuf::TextFormat::MergeFromString(
+        absl::GetFlag(FLAGS_params), &parameters))
+        << absl::GetFlag(FLAGS_params);
+    model.Add(NewSatParameters(parameters));
+  }
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
     // Note that we compute the "real" cost here and do not use the tardiness
     // variables. This is because in the core based approach, the tardiness
@@ -216,7 +224,9 @@ void Solve(const std::vector<int64_t>& durations,
 
   // Solve.
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
-  LOG(INFO) << CpSolverResponseStats(response);
+  if (!parameters.log_search_progress()) {
+    LOG(INFO) << CpSolverResponseStats(response);
+  }
 }
 
 void ParseAndSolve() {

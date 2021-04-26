@@ -35,6 +35,9 @@
 
 ABSL_FLAG(std::string, input, "", "Jobshop data file name.");
 ABSL_FLAG(std::string, params, "", "Sat parameters in text proto format.");
+ABSL_FLAG(bool, use_optional_variables, false,
+          "Whether we use optional variables for bounds of an optional "
+          "interval or not.");
 ABSL_FLAG(bool, use_interval_makespan, true,
           "Whether we encode the makespan using an interval or not.");
 ABSL_FLAG(
@@ -188,6 +191,11 @@ void CreateAlternativeTasks(
     job_task_to_alternatives[j].resize(num_tasks_in_job);
     const std::vector<JobTaskData>& tasks = job_to_tasks[j];
 
+    const int64_t hard_start =
+        job.has_earliest_start() ? job.earliest_start().value() : 0L;
+    const int64_t hard_end =
+        job.has_latest_end() ? job.latest_end().value() : horizon;
+
     for (int t = 0; t < num_tasks_in_job; ++t) {
       const Task& task = job.tasks(t);
       const int num_alternatives = task.machine_size();
@@ -207,14 +215,32 @@ void CreateAlternativeTasks(
       } else {
         for (int a = 0; a < num_alternatives; ++a) {
           const BoolVar local_presence = cp_model.NewBoolVar();
+          const IntVar local_start =
+              absl::GetFlag(FLAGS_use_optional_variables)
+                  ? cp_model.NewIntVar(Domain(hard_start, hard_end))
+                  : tasks[t].start;
           const IntVar local_duration = cp_model.NewConstant(task.duration(a));
+          const IntVar local_end =
+              absl::GetFlag(FLAGS_use_optional_variables)
+                  ? cp_model.NewIntVar(Domain(hard_start, hard_end))
+                  : tasks[t].end;
           const IntervalVar local_interval = cp_model.NewOptionalIntervalVar(
-              tasks[t].start, local_duration, tasks[t].end, local_presence);
-          // TODO(user): Experiment with the following implication.
-          cp_model.AddEquality(tasks[t].duration, task.duration(a))
-              .OnlyEnforceIf(local_presence);
+              local_start, local_duration, local_end, local_presence);
+
+          // Link local and global variables.
+          if (absl::GetFlag(FLAGS_use_optional_variables)) {
+            cp_model.AddEquality(tasks[t].start, local_start)
+                .OnlyEnforceIf(local_presence);
+            cp_model.AddEquality(tasks[t].end, local_end)
+                .OnlyEnforceIf(local_presence);
+
+            // TODO(user): Experiment with the following implication.
+            cp_model.AddEquality(tasks[t].duration, task.duration(a))
+                .OnlyEnforceIf(local_presence);
+          }
+
           alt_data.push_back(
-              {local_interval, tasks[t].start, tasks[t].end, local_presence});
+              {local_interval, local_start, local_end, local_presence});
         }
         // Exactly one alternative interval is present.
         std::vector<BoolVar> interval_presences;
