@@ -2478,7 +2478,8 @@ CutGenerator CreateNoOverlapBalasCutGenerator(
         continue;
       }
       const IntegerValue sequence_start_min = events[start].start_min;
-      std::vector<Event> residual_tasks(events.begin() + start, events.end());
+      std::vector<Event> residual_tasks(events.begin() + start,
+                                        events.end());
       std::sort(residual_tasks.begin(), residual_tasks.end(),
                 [sequence_start_min](const Event& e1, const Event& e2) {
                   return ((e1.lp_end - sequence_start_min) / e1.size_min) <
@@ -2514,7 +2515,8 @@ CutGenerator CreateNoOverlapBalasCutGenerator(
         }
       }
       if (best_end != -1) {
-        LinearConstraintBuilder cut(model, best_min_contrib, kMaxIntegerValue);
+        LinearConstraintBuilder cut(model, best_min_contrib,
+                                    kMaxIntegerValue);
         for (int i = 0; i <= best_end; ++i) {
           cut.AddTerm(residual_tasks[i].end, residual_tasks[i].size_min);
         }
