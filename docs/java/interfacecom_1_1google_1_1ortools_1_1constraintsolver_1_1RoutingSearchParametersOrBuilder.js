@@ -4,6 +4,7 @@ var interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParame
     [ "getCheapestInsertionFarthestSeedsRatio", "interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a9e0fdc113677bb1a9f51f11fc53efb05", null ],
     [ "getCheapestInsertionFirstSolutionMinNeighbors", "interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#ab3f4cf33f713ab2891b900b4b4222774", null ],
     [ "getCheapestInsertionFirstSolutionNeighborsRatio", "interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a1d9b40d216c08f804ff13f0a735ecbd3", null ],
+    [ "getCheapestInsertionFirstSolutionUseNeighborsRatioForInitialization", "interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#ad72881dbef6cf76f905ceaf81ae8af5b", null ],
     [ "getCheapestInsertionLsOperatorMinNeighbors", "interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a49d75fbad7641c00b78708e0e6d04d98", null ],
     [ "getCheapestInsertionLsOperatorNeighborsRatio", "interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#ac54f93850f572358c8d5634484715a57", null ],
     [ "getChristofidesUseMinimumMatching", "interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a4c418c23083d28be367e1d6a90735039", null ],

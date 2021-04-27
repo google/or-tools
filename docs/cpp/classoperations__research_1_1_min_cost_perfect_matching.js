@@ -8,10 +8,10 @@ var classoperations__research_1_1_min_cost_perfect_matching =
     ] ],
     [ "MinCostPerfectMatching", "classoperations__research_1_1_min_cost_perfect_matching.html#a9a737ec352e2ec27de0ddafdec837be6", null ],
     [ "MinCostPerfectMatching", "classoperations__research_1_1_min_cost_perfect_matching.html#ac18e06d91adf077dc719d138605475eb", null ],
-    [ "AddEdgeWithCost", "classoperations__research_1_1_min_cost_perfect_matching.html#a8bb9437d95e0d96bf090e0d935545733", null ],
+    [ "AddEdgeWithCost", "classoperations__research_1_1_min_cost_perfect_matching.html#a132e58de7ebb46a1ba677b77f6e60907", null ],
     [ "Match", "classoperations__research_1_1_min_cost_perfect_matching.html#a14613ae615a2f7b740548dee2f3924fe", null ],
     [ "Matches", "classoperations__research_1_1_min_cost_perfect_matching.html#ac5c7a77b0439c78c751d5e7415dbe4b5", null ],
-    [ "OptimalCost", "classoperations__research_1_1_min_cost_perfect_matching.html#a79df7d0374793e9bae585aa9602c89a7", null ],
+    [ "OptimalCost", "classoperations__research_1_1_min_cost_perfect_matching.html#ae840999972ebda3637f5299a2ead7f08", null ],
     [ "Reset", "classoperations__research_1_1_min_cost_perfect_matching.html#a50eca19efa71a0b70de25f9ad4a2a6f8", null ],
     [ "Solve", "classoperations__research_1_1_min_cost_perfect_matching.html#a00a07ecd49cf20c2806ebbcd1f5dcbb1", null ]
 ];

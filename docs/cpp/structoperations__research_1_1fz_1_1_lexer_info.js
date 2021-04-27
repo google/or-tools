@@ -8,8 +8,8 @@ var structoperations__research_1_1fz_1_1_lexer_info =
     [ "domains", "structoperations__research_1_1fz_1_1_lexer_info.html#a520e3f97792a94f443eb4d87caebea82", null ],
     [ "double_value", "structoperations__research_1_1fz_1_1_lexer_info.html#a7daf8650d5382eebb368a8ec7b3780e8", null ],
     [ "doubles", "structoperations__research_1_1fz_1_1_lexer_info.html#aa4fd9a53aff6b317a55f982568e1fc7c", null ],
-    [ "integer_value", "structoperations__research_1_1fz_1_1_lexer_info.html#a4d5561fb185843828db8cf7f98c4be8e", null ],
-    [ "integers", "structoperations__research_1_1fz_1_1_lexer_info.html#a1fb319ef42d50a6ddd3ee6288cf12bed", null ],
+    [ "integer_value", "structoperations__research_1_1fz_1_1_lexer_info.html#a6b10619ba9723a0547e95b029ee55067", null ],
+    [ "integers", "structoperations__research_1_1fz_1_1_lexer_info.html#af649158cedabf9359dcb0118423749dd", null ],
     [ "string_value", "structoperations__research_1_1fz_1_1_lexer_info.html#aabc5f6077f4788f74af9317dc62b840e", null ],
     [ "var_or_value", "structoperations__research_1_1fz_1_1_lexer_info.html#a7bcbcafdbde0334ad62c562f1227fe46", null ],
     [ "var_or_value_array", "structoperations__research_1_1fz_1_1_lexer_info.html#a9613bbbb6fd33c092a8dcb3e1776193f", null ]

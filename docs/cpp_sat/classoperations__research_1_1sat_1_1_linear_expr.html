@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.2</span>
+                <span id="sfml">Google OR-Tools 9.0</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -97,26 +97,26 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_l
 <div class="line">BoolVar b = model.NewBoolVar().WithName(<span class="stringliteral">&quot;b&quot;</span>);</div>
 <div class="line">BoolVar c = model.NewBoolVar().WithName(<span class="stringliteral">&quot;c&quot;</span>);</div>
 <div class="line"><a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a708e7b52aae1fa3c440ef7ced3f06cd9">LinearExpr</a> e1(x);  <span class="comment">// e1 = x.</span></div>
-<div class="line"><a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a708e7b52aae1fa3c440ef7ced3f06cd9">LinearExpr</a> e2 = <a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a899dd96359ab1e4f8a0589439db9c619">LinearExpr::Sum</a>({x, y}).<a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a31c7f110218898a51c24fbd17b42f621">AddConstant</a>(5);  <span class="comment">// e2 = x + y + 5;</span></div>
-<div class="line"><a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a708e7b52aae1fa3c440ef7ced3f06cd9">LinearExpr</a> e3 = <a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a16e8537a019c3aa686e290a82d68356e">LinearExpr::ScalProd</a>({x, y}, {2, -1});  <span class="comment">// e3 = 2 * x - y.</span></div>
+<div class="line"><a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a708e7b52aae1fa3c440ef7ced3f06cd9">LinearExpr</a> e2 = <a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a899dd96359ab1e4f8a0589439db9c619">LinearExpr::Sum</a>({x, y}).<a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a77f7beb850e217d0d6492a25d259b1d3">AddConstant</a>(5);  <span class="comment">// e2 = x + y + 5;</span></div>
+<div class="line"><a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a708e7b52aae1fa3c440ef7ced3f06cd9">LinearExpr</a> e3 = <a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a7db84b5f004d2a56928744ee421930bd">LinearExpr::ScalProd</a>({x, y}, {2, -1});  <span class="comment">// e3 = 2 * x - y.</span></div>
 <div class="line"><a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a708e7b52aae1fa3c440ef7ced3f06cd9">LinearExpr</a> e4(b);  <span class="comment">// e4 = b.</span></div>
 <div class="line"><a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a708e7b52aae1fa3c440ef7ced3f06cd9">LinearExpr</a> e5(b.Not());  <span class="comment">// e5 = 1 - b.</span></div>
 <div class="line"><span class="comment">// If passing a std::vector&lt;BoolVar&gt;, a specialized method must be called.</span></div>
 <div class="line">std::vector&lt;BoolVar&gt; bools = {b, <a class="code" href="namespaceoperations__research_1_1sat.html#a5e3de118c1f8dd5a7ec21704e05684b9">Not</a>(c)};</div>
 <div class="line"><a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a708e7b52aae1fa3c440ef7ced3f06cd9">LinearExpr</a> e6 = <a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#aa87921d8ff0a1fe8f40b50900433997a">LinearExpr::BooleanSum</a>(bools);  <span class="comment">// e6 = b + 1 - c;</span></div>
 <div class="line"><span class="comment">// e7 = -3 * b + 1 - c;</span></div>
-<div class="line"><a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a708e7b52aae1fa3c440ef7ced3f06cd9">LinearExpr</a> e7 = <a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a811ab20e65e9e2a3062c4f367ecccbfb">LinearExpr::BooleanScalProd</a>(bools, {-3, 1});</div>
-<div class="ttc" id="aclassoperations__research_1_1sat_1_1_linear_expr_html_a16e8537a019c3aa686e290a82d68356e"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_linear_expr.html#a16e8537a019c3aa686e290a82d68356e">operations_research::sat::LinearExpr::ScalProd</a></div><div class="ttdeci">static LinearExpr ScalProd(absl::Span&lt; const IntVar &gt; vars, absl::Span&lt; const int64 &gt; coeffs)</div><div class="ttdoc">Constructs the scalar product of variables and coefficients.</div></div>
-<div class="ttc" id="aclassoperations__research_1_1sat_1_1_linear_expr_html_a31c7f110218898a51c24fbd17b42f621"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_linear_expr.html#a31c7f110218898a51c24fbd17b42f621">operations_research::sat::LinearExpr::AddConstant</a></div><div class="ttdeci">LinearExpr &amp; AddConstant(int64 value)</div><div class="ttdoc">Adds a constant value to the linear expression.</div></div>
+<div class="line"><a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a708e7b52aae1fa3c440ef7ced3f06cd9">LinearExpr</a> e7 = <a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#aec2b7508a593694a58a90dd69120c0e1">LinearExpr::BooleanScalProd</a>(bools, {-3, 1});</div>
 <div class="ttc" id="aclassoperations__research_1_1sat_1_1_linear_expr_html_a708e7b52aae1fa3c440ef7ced3f06cd9"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_linear_expr.html#a708e7b52aae1fa3c440ef7ced3f06cd9">operations_research::sat::LinearExpr::LinearExpr</a></div><div class="ttdeci">LinearExpr()</div></div>
-<div class="ttc" id="aclassoperations__research_1_1sat_1_1_linear_expr_html_a811ab20e65e9e2a3062c4f367ecccbfb"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_linear_expr.html#a811ab20e65e9e2a3062c4f367ecccbfb">operations_research::sat::LinearExpr::BooleanScalProd</a></div><div class="ttdeci">static LinearExpr BooleanScalProd(absl::Span&lt; const BoolVar &gt; vars, absl::Span&lt; const int64 &gt; coeffs)</div><div class="ttdoc">Constructs the scalar product of Booleans and coefficients.</div></div>
+<div class="ttc" id="aclassoperations__research_1_1sat_1_1_linear_expr_html_a77f7beb850e217d0d6492a25d259b1d3"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_linear_expr.html#a77f7beb850e217d0d6492a25d259b1d3">operations_research::sat::LinearExpr::AddConstant</a></div><div class="ttdeci">LinearExpr &amp; AddConstant(int64_t value)</div><div class="ttdoc">Adds a constant value to the linear expression.</div></div>
+<div class="ttc" id="aclassoperations__research_1_1sat_1_1_linear_expr_html_a7db84b5f004d2a56928744ee421930bd"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_linear_expr.html#a7db84b5f004d2a56928744ee421930bd">operations_research::sat::LinearExpr::ScalProd</a></div><div class="ttdeci">static LinearExpr ScalProd(absl::Span&lt; const IntVar &gt; vars, absl::Span&lt; const int64_t &gt; coeffs)</div><div class="ttdoc">Constructs the scalar product of variables and coefficients.</div></div>
 <div class="ttc" id="aclassoperations__research_1_1sat_1_1_linear_expr_html_a899dd96359ab1e4f8a0589439db9c619"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_linear_expr.html#a899dd96359ab1e4f8a0589439db9c619">operations_research::sat::LinearExpr::Sum</a></div><div class="ttdeci">static LinearExpr Sum(absl::Span&lt; const IntVar &gt; vars)</div><div class="ttdoc">Constructs the sum of a list of variables.</div></div>
 <div class="ttc" id="aclassoperations__research_1_1sat_1_1_linear_expr_html_aa87921d8ff0a1fe8f40b50900433997a"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_linear_expr.html#aa87921d8ff0a1fe8f40b50900433997a">operations_research::sat::LinearExpr::BooleanSum</a></div><div class="ttdeci">static LinearExpr BooleanSum(absl::Span&lt; const BoolVar &gt; vars)</div><div class="ttdoc">Constructs the sum of a list of Booleans.</div></div>
+<div class="ttc" id="aclassoperations__research_1_1sat_1_1_linear_expr_html_aec2b7508a593694a58a90dd69120c0e1"><div class="ttname"><a href="classoperations__research_1_1sat_1_1_linear_expr.html#aec2b7508a593694a58a90dd69120c0e1">operations_research::sat::LinearExpr::BooleanScalProd</a></div><div class="ttdeci">static LinearExpr BooleanScalProd(absl::Span&lt; const BoolVar &gt; vars, absl::Span&lt; const int64_t &gt; coeffs)</div><div class="ttdoc">Constructs the scalar product of Booleans and coefficients.</div></div>
 <div class="ttc" id="anamespaceoperations__research_1_1sat_html_a5e3de118c1f8dd5a7ec21704e05684b9"><div class="ttname"><a href="namespaceoperations__research_1_1sat.html#a5e3de118c1f8dd5a7ec21704e05684b9">operations_research::sat::Not</a></div><div class="ttdeci">BoolVar Not(BoolVar x)</div><div class="ttdoc">A convenient wrapper so we can write Not(x) instead of x.Not() which is sometimes clearer.</div></div>
 </div><!-- fragment --><p> This can be used implicitly in some of the <a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html" title="Wrapper class around the cp_model proto.">CpModelBuilder</a> methods. </p><div class="fragment"><div class="line">cp_model.AddGreaterThan(x, 5);  <span class="comment">// x &gt; 5</span></div>
-<div class="line">cp_model.AddEquality(x, <a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a708e7b52aae1fa3c440ef7ced3f06cd9">LinearExpr</a>(y).<a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a31c7f110218898a51c24fbd17b42f621">AddConstant</a>(5));  <span class="comment">// x == y + 5</span></div>
+<div class="line">cp_model.AddEquality(x, <a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a708e7b52aae1fa3c440ef7ced3f06cd9">LinearExpr</a>(y).<a class="code" href="classoperations__research_1_1sat_1_1_linear_expr.html#a77f7beb850e217d0d6492a25d259b1d3">AddConstant</a>(5));  <span class="comment">// x == y + 5</span></div>
 </div><!-- fragment --> 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00248">248</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00250">250</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -128,45 +128,45 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a6acce576bf92bd4158eed2a55840e4a3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a6acce576bf92bd4158eed2a55840e4a3">LinearExpr</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> var)</td></tr>
 <tr class="memdesc:a6acce576bf92bd4158eed2a55840e4a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs a linear expression from an integer variable.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a6acce576bf92bd4158eed2a55840e4a3">More...</a><br /></td></tr>
 <tr class="separator:a6acce576bf92bd4158eed2a55840e4a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9c095e393028e08704f04f269ae2e0cc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a9c095e393028e08704f04f269ae2e0cc">LinearExpr</a> (int64 <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#ae5d09f03aa97474f2893f9fc46a496ec">constant</a>)</td></tr>
-<tr class="memdesc:a9c095e393028e08704f04f269ae2e0cc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs a constant linear expression.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a9c095e393028e08704f04f269ae2e0cc">More...</a><br /></td></tr>
-<tr class="separator:a9c095e393028e08704f04f269ae2e0cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a31c7f110218898a51c24fbd17b42f621"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a31c7f110218898a51c24fbd17b42f621">AddConstant</a> (int64 value)</td></tr>
-<tr class="memdesc:a31c7f110218898a51c24fbd17b42f621"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a constant value to the linear expression.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a31c7f110218898a51c24fbd17b42f621">More...</a><br /></td></tr>
-<tr class="separator:a31c7f110218898a51c24fbd17b42f621"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aff45b33a80873e8f6a1d59f34e64c09b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#aff45b33a80873e8f6a1d59f34e64c09b">LinearExpr</a> (int64_t <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a9bd86ece9cd5f04a8d39b6ebd32f6725">constant</a>)</td></tr>
+<tr class="memdesc:aff45b33a80873e8f6a1d59f34e64c09b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs a constant linear expression.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#aff45b33a80873e8f6a1d59f34e64c09b">More...</a><br /></td></tr>
+<tr class="separator:aff45b33a80873e8f6a1d59f34e64c09b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a77f7beb850e217d0d6492a25d259b1d3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a77f7beb850e217d0d6492a25d259b1d3">AddConstant</a> (int64_t value)</td></tr>
+<tr class="memdesc:a77f7beb850e217d0d6492a25d259b1d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a constant value to the linear expression.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a77f7beb850e217d0d6492a25d259b1d3">More...</a><br /></td></tr>
+<tr class="separator:a77f7beb850e217d0d6492a25d259b1d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acb6bbd3a68fe3281780b6bc74dcb3716"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#acb6bbd3a68fe3281780b6bc74dcb3716">AddVar</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> var)</td></tr>
 <tr class="memdesc:acb6bbd3a68fe3281780b6bc74dcb3716"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a single integer variable to the linear expression.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#acb6bbd3a68fe3281780b6bc74dcb3716">More...</a><br /></td></tr>
 <tr class="separator:acb6bbd3a68fe3281780b6bc74dcb3716"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab00374af3fbd853d2d5f04a5ca608ec2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#ab00374af3fbd853d2d5f04a5ca608ec2">AddTerm</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> var, int64 coeff)</td></tr>
-<tr class="memdesc:ab00374af3fbd853d2d5f04a5ca608ec2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a term (var * coeff) to the linear expression.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#ab00374af3fbd853d2d5f04a5ca608ec2">More...</a><br /></td></tr>
-<tr class="separator:ab00374af3fbd853d2d5f04a5ca608ec2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9614d38375df87931013e5283c936b66"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a9614d38375df87931013e5283c936b66">AddTerm</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> var, int64_t coeff)</td></tr>
+<tr class="memdesc:a9614d38375df87931013e5283c936b66"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a term (var * coeff) to the linear expression.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a9614d38375df87931013e5283c936b66">More...</a><br /></td></tr>
+<tr class="separator:a9614d38375df87931013e5283c936b66"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa96427ca5156644ef61e4ffec3ea4083"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#aa96427ca5156644ef61e4ffec3ea4083">variables</a> () const</td></tr>
 <tr class="memdesc:aa96427ca5156644ef61e4ffec3ea4083"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the vector of variables.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#aa96427ca5156644ef61e4ffec3ea4083">More...</a><br /></td></tr>
 <tr class="separator:aa96427ca5156644ef61e4ffec3ea4083"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad93e8152b59e0db58d7e5ba4a525dd81"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; int64 &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#ad93e8152b59e0db58d7e5ba4a525dd81">coefficients</a> () const</td></tr>
-<tr class="memdesc:ad93e8152b59e0db58d7e5ba4a525dd81"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the vector of coefficients.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#ad93e8152b59e0db58d7e5ba4a525dd81">More...</a><br /></td></tr>
-<tr class="separator:ad93e8152b59e0db58d7e5ba4a525dd81"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae5d09f03aa97474f2893f9fc46a496ec"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#ae5d09f03aa97474f2893f9fc46a496ec">constant</a> () const</td></tr>
-<tr class="memdesc:ae5d09f03aa97474f2893f9fc46a496ec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the constant term.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#ae5d09f03aa97474f2893f9fc46a496ec">More...</a><br /></td></tr>
-<tr class="separator:ae5d09f03aa97474f2893f9fc46a496ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:add0778cb83bd085b5c224fc51dc5dfb0"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; int64_t &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#add0778cb83bd085b5c224fc51dc5dfb0">coefficients</a> () const</td></tr>
+<tr class="memdesc:add0778cb83bd085b5c224fc51dc5dfb0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the vector of coefficients.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#add0778cb83bd085b5c224fc51dc5dfb0">More...</a><br /></td></tr>
+<tr class="separator:add0778cb83bd085b5c224fc51dc5dfb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9bd86ece9cd5f04a8d39b6ebd32f6725"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a9bd86ece9cd5f04a8d39b6ebd32f6725">constant</a> () const</td></tr>
+<tr class="memdesc:a9bd86ece9cd5f04a8d39b6ebd32f6725"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the constant term.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a9bd86ece9cd5f04a8d39b6ebd32f6725">More...</a><br /></td></tr>
+<tr class="separator:a9bd86ece9cd5f04a8d39b6ebd32f6725"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a899dd96359ab1e4f8a0589439db9c619"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a899dd96359ab1e4f8a0589439db9c619">Sum</a> (absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt; vars)</td></tr>
 <tr class="memdesc:a899dd96359ab1e4f8a0589439db9c619"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs the sum of a list of variables.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a899dd96359ab1e4f8a0589439db9c619">More...</a><br /></td></tr>
 <tr class="separator:a899dd96359ab1e4f8a0589439db9c619"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a16e8537a019c3aa686e290a82d68356e"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a16e8537a019c3aa686e290a82d68356e">ScalProd</a> (absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt; vars, absl::Span&lt; const int64 &gt; coeffs)</td></tr>
-<tr class="memdesc:a16e8537a019c3aa686e290a82d68356e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs the scalar product of variables and coefficients.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a16e8537a019c3aa686e290a82d68356e">More...</a><br /></td></tr>
-<tr class="separator:a16e8537a019c3aa686e290a82d68356e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7db84b5f004d2a56928744ee421930bd"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a7db84b5f004d2a56928744ee421930bd">ScalProd</a> (absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> &gt; vars, absl::Span&lt; const int64_t &gt; coeffs)</td></tr>
+<tr class="memdesc:a7db84b5f004d2a56928744ee421930bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs the scalar product of variables and coefficients.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a7db84b5f004d2a56928744ee421930bd">More...</a><br /></td></tr>
+<tr class="separator:a7db84b5f004d2a56928744ee421930bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa87921d8ff0a1fe8f40b50900433997a"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#aa87921d8ff0a1fe8f40b50900433997a">BooleanSum</a> (absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> &gt; vars)</td></tr>
 <tr class="memdesc:aa87921d8ff0a1fe8f40b50900433997a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs the sum of a list of Booleans.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#aa87921d8ff0a1fe8f40b50900433997a">More...</a><br /></td></tr>
 <tr class="separator:aa87921d8ff0a1fe8f40b50900433997a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a811ab20e65e9e2a3062c4f367ecccbfb"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a811ab20e65e9e2a3062c4f367ecccbfb">BooleanScalProd</a> (absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> &gt; vars, absl::Span&lt; const int64 &gt; coeffs)</td></tr>
-<tr class="memdesc:a811ab20e65e9e2a3062c4f367ecccbfb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs the scalar product of Booleans and coefficients.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a811ab20e65e9e2a3062c4f367ecccbfb">More...</a><br /></td></tr>
-<tr class="separator:a811ab20e65e9e2a3062c4f367ecccbfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4575c5afc539cb5f35bf5fe753158569"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a4575c5afc539cb5f35bf5fe753158569">Term</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> var, int64 coefficient)</td></tr>
-<tr class="memdesc:a4575c5afc539cb5f35bf5fe753158569"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construncts var * coefficient.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a4575c5afc539cb5f35bf5fe753158569">More...</a><br /></td></tr>
-<tr class="separator:a4575c5afc539cb5f35bf5fe753158569"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec2b7508a593694a58a90dd69120c0e1"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#aec2b7508a593694a58a90dd69120c0e1">BooleanScalProd</a> (absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a> &gt; vars, absl::Span&lt; const int64_t &gt; coeffs)</td></tr>
+<tr class="memdesc:aec2b7508a593694a58a90dd69120c0e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs the scalar product of Booleans and coefficients.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#aec2b7508a593694a58a90dd69120c0e1">More...</a><br /></td></tr>
+<tr class="separator:aec2b7508a593694a58a90dd69120c0e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4908edf0e4017cfe87b15e3738e38f9f"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html#a4908edf0e4017cfe87b15e3738e38f9f">Term</a> (<a class="el" href="classoperations__research_1_1sat_1_1_int_var.html">IntVar</a> var, int64_t coefficient)</td></tr>
+<tr class="memdesc:a4908edf0e4017cfe87b15e3738e38f9f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construncts var * coefficient.  <a href="classoperations__research_1_1sat_1_1_linear_expr.html#a4908edf0e4017cfe87b15e3738e38f9f">More...</a><br /></td></tr>
+<tr class="separator:a4908edf0e4017cfe87b15e3738e38f9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a708e7b52aae1fa3c440ef7ced3f06cd9"></a>
@@ -227,8 +227,8 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a9c095e393028e08704f04f269ae2e0cc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9c095e393028e08704f04f269ae2e0cc">&#9670;&nbsp;</a></span>LinearExpr() <span class="overload">[4/4]</span></h2>
+<a id="aff45b33a80873e8f6a1d59f34e64c09b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aff45b33a80873e8f6a1d59f34e64c09b">&#9670;&nbsp;</a></span>LinearExpr() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -236,7 +236,7 @@ Static Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a> </td>
           <td>(</td>
-          <td class="paramtype">int64&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>constant</em></td><td>)</td>
           <td></td>
         </tr>
@@ -248,8 +248,8 @@ Static Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a31c7f110218898a51c24fbd17b42f621"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a31c7f110218898a51c24fbd17b42f621">&#9670;&nbsp;</a></span>AddConstant()</h2>
+<a id="a77f7beb850e217d0d6492a25d259b1d3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a77f7beb850e217d0d6492a25d259b1d3">&#9670;&nbsp;</a></span>AddConstant()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -257,7 +257,7 @@ Static Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1_linear_expr.html">LinearExpr</a>&amp; AddConstant </td>
           <td>(</td>
-          <td class="paramtype">int64&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>value</em></td><td>)</td>
           <td></td>
         </tr>
@@ -268,8 +268,8 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ab00374af3fbd853d2d5f04a5ca608ec2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab00374af3fbd853d2d5f04a5ca608ec2">&#9670;&nbsp;</a></span>AddTerm()</h2>
+<a id="a9614d38375df87931013e5283c936b66"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9614d38375df87931013e5283c936b66">&#9670;&nbsp;</a></span>AddTerm()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -283,7 +283,7 @@ Static Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>coeff</em>&#160;</td>
         </tr>
         <tr>
@@ -318,8 +318,8 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a811ab20e65e9e2a3062c4f367ecccbfb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a811ab20e65e9e2a3062c4f367ecccbfb">&#9670;&nbsp;</a></span>BooleanScalProd()</h2>
+<a id="aec2b7508a593694a58a90dd69120c0e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aec2b7508a593694a58a90dd69120c0e1">&#9670;&nbsp;</a></span>BooleanScalProd()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -336,7 +336,7 @@ Static Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">absl::Span&lt; const int64 &gt;&#160;</td>
+          <td class="paramtype">absl::Span&lt; const int64_t &gt;&#160;</td>
           <td class="paramname"><em>coeffs</em>&#160;</td>
         </tr>
         <tr>
@@ -384,8 +384,8 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ad93e8152b59e0db58d7e5ba4a525dd81"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad93e8152b59e0db58d7e5ba4a525dd81">&#9670;&nbsp;</a></span>coefficients()</h2>
+<a id="add0778cb83bd085b5c224fc51dc5dfb0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#add0778cb83bd085b5c224fc51dc5dfb0">&#9670;&nbsp;</a></span>coefficients()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -394,7 +394,7 @@ Static Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const std::vector&lt;int64&gt;&amp; coefficients </td>
+          <td class="memname">const std::vector&lt;int64_t&gt;&amp; coefficients </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -409,12 +409,12 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the vector of coefficients. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00294">294</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00296">296</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
-<a id="ae5d09f03aa97474f2893f9fc46a496ec"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae5d09f03aa97474f2893f9fc46a496ec">&#9670;&nbsp;</a></span>constant()</h2>
+<a id="a9bd86ece9cd5f04a8d39b6ebd32f6725"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9bd86ece9cd5f04a8d39b6ebd32f6725">&#9670;&nbsp;</a></span>constant()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -423,7 +423,7 @@ Static Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int64 constant </td>
+          <td class="memname">int64_t constant </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -438,12 +438,12 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the constant term. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00297">297</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00299">299</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
-<a id="a16e8537a019c3aa686e290a82d68356e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a16e8537a019c3aa686e290a82d68356e">&#9670;&nbsp;</a></span>ScalProd()</h2>
+<a id="a7db84b5f004d2a56928744ee421930bd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7db84b5f004d2a56928744ee421930bd">&#9670;&nbsp;</a></span>ScalProd()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -460,7 +460,7 @@ Static Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">absl::Span&lt; const int64 &gt;&#160;</td>
+          <td class="paramtype">absl::Span&lt; const int64_t &gt;&#160;</td>
           <td class="paramname"><em>coeffs</em>&#160;</td>
         </tr>
         <tr>
@@ -508,8 +508,8 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a4575c5afc539cb5f35bf5fe753158569"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4575c5afc539cb5f35bf5fe753158569">&#9670;&nbsp;</a></span>Term()</h2>
+<a id="a4908edf0e4017cfe87b15e3738e38f9f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4908edf0e4017cfe87b15e3738e38f9f">&#9670;&nbsp;</a></span>Term()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -526,7 +526,7 @@ Static Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>coefficient</em>&#160;</td>
         </tr>
         <tr>
@@ -571,7 +571,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the vector of variables. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00291">291</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00293">293</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>

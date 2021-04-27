@@ -54,6 +54,8 @@ var classoperations__research_1_1glop_1_1_linear_program =
     [ "IsValid", "classoperations__research_1_1glop_1_1_linear_program.html#ac532c4b500b1a85ea22217f2c65a70ed", null ],
     [ "IsVariableBinary", "classoperations__research_1_1glop_1_1_linear_program.html#ab8efe00bb016665606d522a42543cd96", null ],
     [ "IsVariableInteger", "classoperations__research_1_1glop_1_1_linear_program.html#ab4f3103f39bdbb86151baed2347f7b0a", null ],
+    [ "mutable_constraint_lower_bounds", "classoperations__research_1_1glop_1_1_linear_program.html#af9322b672a72b4e912843edefd353ac3", null ],
+    [ "mutable_constraint_upper_bounds", "classoperations__research_1_1glop_1_1_linear_program.html#a04f79a00e1444489a856dbf810bd38c6", null ],
     [ "name", "classoperations__research_1_1glop_1_1_linear_program.html#ad8227ba86a01f26e4f173cd5e219d5d1", null ],
     [ "NonBinaryVariablesList", "classoperations__research_1_1glop_1_1_linear_program.html#a814307860c1248b645ea68a8a11a0082", null ],
     [ "NotifyThatColumnsAreClean", "classoperations__research_1_1glop_1_1_linear_program.html#aab451f1144133e621abdcd566c048a8d", null ],

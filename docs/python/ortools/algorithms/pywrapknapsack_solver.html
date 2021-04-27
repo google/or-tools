@@ -154,17 +154,17 @@ class KnapsackSolver(object):
 
       .. code-block:: c++
 
-             const std::vector&lt;int64&gt; profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-             const std::vector&lt;std::vector&lt;int64&gt;&gt; weights =
+             const std::vector&lt;int64_t&gt; profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+             const std::vector&lt;std::vector&lt;int64_t&gt;&gt; weights =
                  { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
                    { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
-             const std::vector&lt;int64&gt; capacities = { 34, 4 };
+             const std::vector&lt;int64_t&gt; capacities = { 34, 4 };
 
              KnapsackSolver solver(
                  KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
                  &#34;Multi-dimensional solver&#34;);
              solver.Init(profits, weights, capacities);
-             const int64 profit = solver.Solve();
+             const int64_t profit = solver.Solve();
 
       **Java**:
 
@@ -206,8 +206,8 @@ class KnapsackSolver(object):
      Dynamic Programming approach for single dimension problems
 
     Limited to one dimension, this solver is based on a dynamic programming
-    algorithm. The time and space complexity is O(capacity *
-    number_of_items).
+    algorithm. The time complexity is O(capacity * number_of_items^2) and
+    the space complexity is O(capacity + number_of_items).
     &#34;&#34;&#34;
     KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER = _pywrapknapsack_solver.KnapsackSolver_KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER
     r&#34;&#34;&#34;
@@ -235,11 +235,11 @@ class KnapsackSolver(object):
         _pywrapknapsack_solver.KnapsackSolver_swiginit(self, _pywrapknapsack_solver.new_KnapsackSolver(*args))
     __swig_destroy__ = _pywrapknapsack_solver.delete_KnapsackSolver
 
-    def Init(self, profits: &#34;std::vector&lt; int64 &gt; const &amp;&#34;, weights: &#34;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#34;, capacities: &#34;std::vector&lt; int64 &gt; const &amp;&#34;) -&gt; &#34;void&#34;:
+    def Init(self, profits: &#34;std::vector&lt; int64_t &gt; const &amp;&#34;, weights: &#34;std::vector&lt; std::vector&lt; int64_t &gt; &gt; const &amp;&#34;, capacities: &#34;std::vector&lt; int64_t &gt; const &amp;&#34;) -&gt; &#34;void&#34;:
         r&#34;&#34;&#34;Initializes the solver and enters the problem to be solved.&#34;&#34;&#34;
         return _pywrapknapsack_solver.KnapsackSolver_Init(self, profits, weights, capacities)
 
-    def Solve(self) -&gt; &#34;int64&#34;:
+    def Solve(self) -&gt; &#34;int64_t&#34;:
         r&#34;&#34;&#34;Solves the problem and returns the profit of the optimal solution.&#34;&#34;&#34;
         return _pywrapknapsack_solver.KnapsackSolver_Solve(self)
 
@@ -324,17 +324,17 @@ E.g.:</p>
 </code></pre>
 <p><strong>C++</strong>:</p>
 <p>.. code-block:: c++</p>
-<pre><code>     const std::vector&lt;int64&gt; profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-     const std::vector&lt;std::vector&lt;int64&gt;&gt; weights =
+<pre><code>     const std::vector&lt;int64_t&gt; profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+     const std::vector&lt;std::vector&lt;int64_t&gt;&gt; weights =
          { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
            { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
-     const std::vector&lt;int64&gt; capacities = { 34, 4 };
+     const std::vector&lt;int64_t&gt; capacities = { 34, 4 };
 
      KnapsackSolver solver(
          KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
          "Multi-dimensional solver");
      solver.Init(profits, weights, capacities);
-     const int64 profit = solver.Solve();
+     const int64_t profit = solver.Solve();
 </code></pre>
 <p><strong>Java</strong>:</p>
 <p>.. code-block:: java</p>
@@ -413,17 +413,17 @@ E.g.:</p>
 
       .. code-block:: c++
 
-             const std::vector&lt;int64&gt; profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-             const std::vector&lt;std::vector&lt;int64&gt;&gt; weights =
+             const std::vector&lt;int64_t&gt; profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+             const std::vector&lt;std::vector&lt;int64_t&gt;&gt; weights =
                  { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
                    { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
-             const std::vector&lt;int64&gt; capacities = { 34, 4 };
+             const std::vector&lt;int64_t&gt; capacities = { 34, 4 };
 
              KnapsackSolver solver(
                  KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
                  &#34;Multi-dimensional solver&#34;);
              solver.Init(profits, weights, capacities);
-             const int64 profit = solver.Solve();
+             const int64_t profit = solver.Solve();
 
       **Java**:
 
@@ -465,8 +465,8 @@ E.g.:</p>
      Dynamic Programming approach for single dimension problems
 
     Limited to one dimension, this solver is based on a dynamic programming
-    algorithm. The time and space complexity is O(capacity *
-    number_of_items).
+    algorithm. The time complexity is O(capacity * number_of_items^2) and
+    the space complexity is O(capacity + number_of_items).
     &#34;&#34;&#34;
     KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER = _pywrapknapsack_solver.KnapsackSolver_KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER
     r&#34;&#34;&#34;
@@ -494,11 +494,11 @@ E.g.:</p>
         _pywrapknapsack_solver.KnapsackSolver_swiginit(self, _pywrapknapsack_solver.new_KnapsackSolver(*args))
     __swig_destroy__ = _pywrapknapsack_solver.delete_KnapsackSolver
 
-    def Init(self, profits: &#34;std::vector&lt; int64 &gt; const &amp;&#34;, weights: &#34;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#34;, capacities: &#34;std::vector&lt; int64 &gt; const &amp;&#34;) -&gt; &#34;void&#34;:
+    def Init(self, profits: &#34;std::vector&lt; int64_t &gt; const &amp;&#34;, weights: &#34;std::vector&lt; std::vector&lt; int64_t &gt; &gt; const &amp;&#34;, capacities: &#34;std::vector&lt; int64_t &gt; const &amp;&#34;) -&gt; &#34;void&#34;:
         r&#34;&#34;&#34;Initializes the solver and enters the problem to be solved.&#34;&#34;&#34;
         return _pywrapknapsack_solver.KnapsackSolver_Init(self, profits, weights, capacities)
 
-    def Solve(self) -&gt; &#34;int64&#34;:
+    def Solve(self) -&gt; &#34;int64_t&#34;:
         r&#34;&#34;&#34;Solves the problem and returns the profit of the optimal solution.&#34;&#34;&#34;
         return _pywrapknapsack_solver.KnapsackSolver_Solve(self)
 
@@ -539,8 +539,8 @@ Experiments show competitive performance for instances with less than
 <dd>
 <div class="desc"><p>Dynamic Programming approach for single dimension problems</p>
 <p>Limited to one dimension, this solver is based on a dynamic programming
-algorithm. The time and space complexity is O(capacity *
-number_of_items).</p></div>
+algorithm. The time complexity is O(capacity * number_of_items^2) and
+the space complexity is O(capacity + number_of_items).</p></div>
 </dd>
 <dt id="pywrapknapsack_solver.KnapsackSolver.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER"><code class="name">var <span class="ident">KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER</span></code></dt>
 <dd>
@@ -591,7 +591,7 @@ dimensions. This solver is based on Integer Programming solver SCIP.</p></div>
 </details>
 </dd>
 <dt id="pywrapknapsack_solver.KnapsackSolver.Init"><code class="name flex">
-<span>def <span class="ident">Init</span></span>(<span>self, profits: std::vector< int64 > const &, weights: std::vector< std::vector< int64 > > const &, capacities: std::vector< int64 > const &) ‑> void</span>
+<span>def <span class="ident">Init</span></span>(<span>self, profits: std::vector< int64_t > const &, weights: std::vector< std::vector< int64_t > > const &, capacities: std::vector< int64_t > const &) ‑> void</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Initializes the solver and enters the problem to be solved.</p></div>
@@ -599,13 +599,13 @@ dimensions. This solver is based on Integer Programming solver SCIP.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def Init(self, profits: &#34;std::vector&lt; int64 &gt; const &amp;&#34;, weights: &#34;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#34;, capacities: &#34;std::vector&lt; int64 &gt; const &amp;&#34;) -&gt; &#34;void&#34;:
+<pre><code class="python">def Init(self, profits: &#34;std::vector&lt; int64_t &gt; const &amp;&#34;, weights: &#34;std::vector&lt; std::vector&lt; int64_t &gt; &gt; const &amp;&#34;, capacities: &#34;std::vector&lt; int64_t &gt; const &amp;&#34;) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34;Initializes the solver and enters the problem to be solved.&#34;&#34;&#34;
     return _pywrapknapsack_solver.KnapsackSolver_Init(self, profits, weights, capacities)</code></pre>
 </details>
 </dd>
 <dt id="pywrapknapsack_solver.KnapsackSolver.Solve"><code class="name flex">
-<span>def <span class="ident">Solve</span></span>(<span>self) ‑> int64</span>
+<span>def <span class="ident">Solve</span></span>(<span>self) ‑> int64_t</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Solves the problem and returns the profit of the optimal solution.</p></div>
@@ -613,7 +613,7 @@ dimensions. This solver is based on Integer Programming solver SCIP.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def Solve(self) -&gt; &#34;int64&#34;:
+<pre><code class="python">def Solve(self) -&gt; &#34;int64_t&#34;:
     r&#34;&#34;&#34;Solves the problem and returns the profit of the optimal solution.&#34;&#34;&#34;
     return _pywrapknapsack_solver.KnapsackSolver_Solve(self)</code></pre>
 </details>

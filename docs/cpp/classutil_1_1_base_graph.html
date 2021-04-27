@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -97,11 +97,11 @@ $(document).ready(function(){initNavTree('classutil_1_1_base_graph.html',''); in
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><h3>template&lt;typename NodeIndexType = int32, typename ArcIndexType = int32, bool HasReverseArcs = false&gt;<br />
+<div class="textblock"><h3>template&lt;typename NodeIndexType = int32_t, typename ArcIndexType = int32_t, bool HasReverseArcs = false&gt;<br />
 class util::BaseGraph&lt; NodeIndexType, ArcIndexType, HasReverseArcs &gt;</h3>
 
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00185">185</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00186">186</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
@@ -132,16 +132,16 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:acf65739a0eb01d1011a8001b6daff9eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a836b3d486d4b0cc4595afcdcbbf4e183"><td class="memItemLeft" align="right" valign="top">ArcIndexType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1_base_graph.html#a836b3d486d4b0cc4595afcdcbbf4e183">arc_capacity</a> () const</td></tr>
 <tr class="separator:a836b3d486d4b0cc4595afcdcbbf4e183"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afdfec6e1d53e915a6059fdb681d92f02"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1_base_graph.html#afdfec6e1d53e915a6059fdb681d92f02">ReserveNodes</a> (NodeIndexType <a class="el" href="routing__search_8cc.html#a204f9b990226e8288e1aaecbb496cbf8">bound</a>)</td></tr>
+<tr class="memitem:afdfec6e1d53e915a6059fdb681d92f02"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1_base_graph.html#afdfec6e1d53e915a6059fdb681d92f02">ReserveNodes</a> (NodeIndexType <a class="el" href="routing__filters_8cc.html#a4f1e8002734902ae1c65ccc3fc30c98e">bound</a>)</td></tr>
 <tr class="separator:afdfec6e1d53e915a6059fdb681d92f02"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3aa184e2b22fc7320a39cfcba36010c4"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1_base_graph.html#a3aa184e2b22fc7320a39cfcba36010c4">ReserveArcs</a> (ArcIndexType <a class="el" href="routing__search_8cc.html#a204f9b990226e8288e1aaecbb496cbf8">bound</a>)</td></tr>
+<tr class="memitem:a3aa184e2b22fc7320a39cfcba36010c4"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1_base_graph.html#a3aa184e2b22fc7320a39cfcba36010c4">ReserveArcs</a> (ArcIndexType <a class="el" href="routing__filters_8cc.html#a4f1e8002734902ae1c65ccc3fc30c98e">bound</a>)</td></tr>
 <tr class="separator:a3aa184e2b22fc7320a39cfcba36010c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3bc3205be90a3a0142eee47fc3e9ea9d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1_base_graph.html#a3bc3205be90a3a0142eee47fc3e9ea9d">Reserve</a> (NodeIndexType <a class="el" href="classutil_1_1_base_graph.html#acf65739a0eb01d1011a8001b6daff9eb">node_capacity</a>, ArcIndexType <a class="el" href="classutil_1_1_base_graph.html#a836b3d486d4b0cc4595afcdcbbf4e183">arc_capacity</a>)</td></tr>
 <tr class="separator:a3bc3205be90a3a0142eee47fc3e9ea9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a238684ec126b5771f956cf67c964d4e5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1_base_graph.html#a238684ec126b5771f956cf67c964d4e5">FreezeCapacities</a> ()</td></tr>
 <tr class="separator:a238684ec126b5771f956cf67c964d4e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a159212327bf51452d4c559fe640f59c8"><td class="memTemplParams" colspan="2">template&lt;typename A , typename B &gt; </td></tr>
-<tr class="memitem:a159212327bf51452d4c559fe640f59c8"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classutil_1_1_base_graph.html#a159212327bf51452d4c559fe640f59c8">GroupForwardArcsByFunctor</a> (const A &amp;<a class="el" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a>, B *<a class="el" href="constraint__solver_2table_8cc.html#a344010e26426d6a13411648d988bc9b6">b</a>)</td></tr>
+<tr class="memitem:a159212327bf51452d4c559fe640f59c8"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classutil_1_1_base_graph.html#a159212327bf51452d4c559fe640f59c8">GroupForwardArcsByFunctor</a> (const A &amp;<a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, B *<a class="el" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a>)</td></tr>
 <tr class="separator:a159212327bf51452d4c559fe640f59c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aad16076f9d10c90b9b9e0ccfddf878ed"><td class="memItemLeft" align="right" valign="top">ArcIndexType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1_base_graph.html#aad16076f9d10c90b9b9e0ccfddf878ed">max_end_arc_index</a> () const</td></tr>
 <tr class="separator:aad16076f9d10c90b9b9e0ccfddf878ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -157,7 +157,7 @@ Static Public Attributes</h2></td></tr>
 Protected Member Functions</h2></td></tr>
 <tr class="memitem:aacbf67d9ee658147495316e1ac2c83f2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1_base_graph.html#aacbf67d9ee658147495316e1ac2c83f2">ComputeCumulativeSum</a> (std::vector&lt; ArcIndexType &gt; *v)</td></tr>
 <tr class="separator:aacbf67d9ee658147495316e1ac2c83f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a50b198c9abc5d0035643c3988a3e7148"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1_base_graph.html#a50b198c9abc5d0035643c3988a3e7148">BuildStartAndForwardHead</a> (<a class="el" href="classutil_1_1_s_vector.html">SVector</a>&lt; NodeIndexType &gt; *<a class="el" href="routing__sat_8cc.html#a20358970b1abaf992eb85e071e454653">head</a>, std::vector&lt; ArcIndexType &gt; *start, std::vector&lt; ArcIndexType &gt; *permutation)</td></tr>
+<tr class="memitem:a50b198c9abc5d0035643c3988a3e7148"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1_base_graph.html#a50b198c9abc5d0035643c3988a3e7148">BuildStartAndForwardHead</a> (<a class="el" href="classutil_1_1_s_vector.html">SVector</a>&lt; NodeIndexType &gt; *<a class="el" href="routing__search_8cc.html#a20358970b1abaf992eb85e071e454653">head</a>, std::vector&lt; ArcIndexType &gt; *start, std::vector&lt; ArcIndexType &gt; *permutation)</td></tr>
 <tr class="separator:a50b198c9abc5d0035643c3988a3e7148"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
@@ -186,7 +186,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00191">191</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00192">192</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -202,7 +202,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00190">190</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00191">191</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -230,7 +230,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00193">193</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00194">194</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -257,7 +257,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00199">199</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00200">200</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -274,7 +274,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00941">941</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00942">942</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -290,7 +290,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00935">935</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00936">936</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -306,7 +306,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00965">965</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00966">966</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -350,7 +350,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l01000">1000</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l01001">1001</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -378,7 +378,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00983">983</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00984">984</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -394,7 +394,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00972">972</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00973">973</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -432,7 +432,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00265">265</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00266">266</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -460,7 +460,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00220">220</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00221">221</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -488,7 +488,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00214">214</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00215">215</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -515,7 +515,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00268">268</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00269">269</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -531,7 +531,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00957">957</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00958">958</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -558,7 +558,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00205">205</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00206">206</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -585,7 +585,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00202">202</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00203">203</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -623,7 +623,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00248">248</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00249">249</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -651,7 +651,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00242">242</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00243">243</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -679,7 +679,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00236">236</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00237">237</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -704,7 +704,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00280">280</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00281">281</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -728,7 +728,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00281">281</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00282">282</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -752,10 +752,10 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
-<div class="line">        <a class="code" href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">std::numeric_limits&lt;ArcIndexType&gt;::max</a>()</div>
-<div class="ttc" id="aalldiff__cst_8cc_html_a9d0c202d5fdd62f4fa2c613339ff168a"><div class="ttname"><a href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">max</a></div><div class="ttdeci">int64 max</div><div class="ttdef"><b>Definition:</b> <a href="alldiff__cst_8cc_source.html#l00139">alldiff_cst.cc:139</a></div></div>
+<div class="line">        <a class="code" href="alldiff__cst_8cc.html#a26e6db9bcc64b584051ecc28171ed11f">std::numeric_limits&lt;ArcIndexType&gt;::max</a>()</div>
+<div class="ttc" id="aalldiff__cst_8cc_html_a26e6db9bcc64b584051ecc28171ed11f"><div class="ttname"><a href="alldiff__cst_8cc.html#a26e6db9bcc64b584051ecc28171ed11f">max</a></div><div class="ttdeci">int64_t max</div><div class="ttdef"><b>Definition:</b> <a href="alldiff__cst_8cc_source.html#l00140">alldiff_cst.cc:140</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00260">260</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00261">261</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -779,9 +779,9 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
-<div class="line">        <a class="code" href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">std::numeric_limits&lt;NodeIndexType&gt;::max</a>()</div>
+<div class="line">        <a class="code" href="alldiff__cst_8cc.html#a26e6db9bcc64b584051ecc28171ed11f">std::numeric_limits&lt;NodeIndexType&gt;::max</a>()</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00259">259</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00260">260</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -805,7 +805,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00278">278</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00279">279</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -829,7 +829,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00279">279</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00280">280</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>
@@ -853,7 +853,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00277">277</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00278">278</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
 </div>
 </div>

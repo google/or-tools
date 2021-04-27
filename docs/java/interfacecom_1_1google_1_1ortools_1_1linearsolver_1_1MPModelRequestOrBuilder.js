@@ -6,6 +6,7 @@ var interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder
     [ "getModelDelta", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder.html#abda56fd2ac60f511ddbfeeb8752b8074", null ],
     [ "getModelDeltaOrBuilder", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder.html#aec2661ef5f0b760a9c6e49a5f9616f23", null ],
     [ "getModelOrBuilder", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder.html#ae5c10b54d192ce6651acf07c38e11ce6", null ],
+    [ "getPopulateAdditionalSolutionsUpTo", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder.html#ab65b62eec1424ec40100d3cbdc34b438", null ],
     [ "getSolverSpecificParameters", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder.html#ab35a9e718c13b2f81411306d6121714d", null ],
     [ "getSolverSpecificParametersBytes", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder.html#a786eba7c7494872d7c15330a91ce76e6", null ],
     [ "getSolverTimeLimitSeconds", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder.html#adcf4d029fa0f09f2bee1b53160760f48", null ],
@@ -14,6 +15,7 @@ var interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder
     [ "hasIgnoreSolverSpecificParametersFailure", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder.html#aa19474d3dbddbede481d5136cd0bb70e", null ],
     [ "hasModel", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder.html#ad839cdaaa9431daa93e685cd5a367a19", null ],
     [ "hasModelDelta", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder.html#a8de43308def653aba2d6fe48778a0125", null ],
+    [ "hasPopulateAdditionalSolutionsUpTo", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder.html#ae3a6c5f7ff5f4964ad044acae52288f4", null ],
     [ "hasSolverSpecificParameters", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder.html#a3177c9136166faed969ad2aa7d0fa2a9", null ],
     [ "hasSolverTimeLimitSeconds", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder.html#a834a66b77c4fb66f893b00e8b311cd2b", null ],
     [ "hasSolverType", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder.html#a6f7a3d257057942a8e2c900eb7a861ad", null ]

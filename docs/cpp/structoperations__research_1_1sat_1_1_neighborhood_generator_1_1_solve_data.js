@@ -7,7 +7,7 @@ var structoperations__research_1_1sat_1_1_neighborhood_generator_1_1_solve_data 
     [ "difficulty", "structoperations__research_1_1sat_1_1_neighborhood_generator_1_1_solve_data.html#a71013162baa979e0b8780100905cf700", null ],
     [ "initial_best_objective", "structoperations__research_1_1sat_1_1_neighborhood_generator_1_1_solve_data.html#a2b7499dfe1d827cdca46593256705cd4", null ],
     [ "initial_best_objective_bound", "structoperations__research_1_1sat_1_1_neighborhood_generator_1_1_solve_data.html#a2579a2fccfe41ac8b5d8dac1c7f93607", null ],
-    [ "neighborhood_id", "structoperations__research_1_1sat_1_1_neighborhood_generator_1_1_solve_data.html#ac9a13145434b16b5645828ffa1ebad02", null ],
+    [ "neighborhood_id", "structoperations__research_1_1sat_1_1_neighborhood_generator_1_1_solve_data.html#ad578a0760fe4217d9cb5552835cf0572", null ],
     [ "new_objective", "structoperations__research_1_1sat_1_1_neighborhood_generator_1_1_solve_data.html#a6bdd919d4fe97909496a23f7d85b5d8e", null ],
     [ "new_objective_bound", "structoperations__research_1_1sat_1_1_neighborhood_generator_1_1_solve_data.html#abfd9e74380811ea081037db464d22f2f", null ],
     [ "status", "structoperations__research_1_1sat_1_1_neighborhood_generator_1_1_solve_data.html#a91dacddd9f775730c8d424d2ab4d76ac", null ]

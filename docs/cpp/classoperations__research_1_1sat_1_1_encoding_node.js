@@ -2,7 +2,7 @@ var classoperations__research_1_1sat_1_1_encoding_node =
 [
     [ "EncodingNode", "classoperations__research_1_1sat_1_1_encoding_node.html#afcc0ba7af448641ff70c751416efb4ae", null ],
     [ "EncodingNode", "classoperations__research_1_1sat_1_1_encoding_node.html#a24ab1a268b54af8be091271be8d86236", null ],
-    [ "ApplyUpperBound", "classoperations__research_1_1sat_1_1_encoding_node.html#aa8ff3ff545b564b3bdde393df6c37faa", null ],
+    [ "ApplyUpperBound", "classoperations__research_1_1sat_1_1_encoding_node.html#a59474db663a04e9b041c7683afd9bea1", null ],
     [ "child_a", "classoperations__research_1_1sat_1_1_encoding_node.html#a27d90c80eb645f49ebc49be959505d54", null ],
     [ "child_b", "classoperations__research_1_1sat_1_1_encoding_node.html#ab068d566c00fb2de9fdb252752ca839b", null ],
     [ "current_ub", "classoperations__research_1_1sat_1_1_encoding_node.html#a4101c336fb4c5135ceef3ab532d755cd", null ],

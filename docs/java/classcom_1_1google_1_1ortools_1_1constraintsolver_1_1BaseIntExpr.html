@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.2</span>
+                <span id="sfml">Google OR-Tools 9.0</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -89,34 +89,8 @@ $(document).ready(function(){initNavTree('classcom_1_1google_1_1ortools_1_1const
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>This is the base class for all expressions that are not variables. </p>
-<p><br  />
- It provides a basic 'CastToVar()' implementation.<br  />
- <br  />
- The class of expressions represent two types of objects: variables<br  />
- and subclasses of <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseIntExpr.html" title="This is the base class for all expressions that are not variables.">BaseIntExpr</a>. Variables are stateful objects that<br  />
- provide a rich API (remove values, WhenBound...). On the other hand,<br  />
- subclasses of <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseIntExpr.html" title="This is the base class for all expressions that are not variables.">BaseIntExpr</a> represent range-only stateless objects.<br  />
- That is, min(A + B) is recomputed each time as min(A) + min(B).<br  />
- <br  />
- Furthermore, sometimes, the propagation on an expression is not complete,<br  />
- and Min(), Max() are not monotonic with respect to SetMin() and SetMax().<br  />
- For instance, if A is a var with domain [0 .. 5], and B another variable<br  />
- with domain [0 .. 5], then Plus(A, B) has domain [0, 10].<br  />
- <br  />
- If we apply SetMax(Plus(A, B), 4)), we will deduce that both A<br  />
- and B have domain [0 .. 4]. In that case, Max(Plus(A, B)) is 8<br  />
- and not 4. To get back monotonicity, we 'cast' the expression<br  />
- into a variable using the Var() method (that will call CastToVar()<br  />
- internally). The resulting variable will be stateful and monotonic.<br  />
- <br  />
- Finally, one should never store a pointer to a <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in  constraint programming.">IntExpr</a>, or<br  />
- <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseIntExpr.html" title="This is the base class for all expressions that are not variables.">BaseIntExpr</a> in the code. The safe code should always call Var() on an<br  />
- expression built by the solver, and store the object as an IntVar*.<br  />
- This is a consequence of the stateless nature of the expressions that<br  />
- makes the code error-prone. </p>
-
-<p class="definition">Definition at line <a class="el" href="BaseIntExpr_8java_source.html#l00038">38</a> of file <a class="el" href="BaseIntExpr_8java_source.html">BaseIntExpr.java</a>.</p>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="BaseIntExpr_8java_source.html#l00011">11</a> of file <a class="el" href="BaseIntExpr_8java_source.html">BaseIntExpr.java</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -237,7 +211,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseIntExpr_8java_source.html#l00041">41</a> of file <a class="el" href="BaseIntExpr_8java_source.html">BaseIntExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseIntExpr_8java_source.html#l00014">14</a> of file <a class="el" href="BaseIntExpr_8java_source.html">BaseIntExpr.java</a>.</p>
 
 </div>
 </div>
@@ -351,7 +325,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseIntExpr_8java_source.html#l00071">71</a> of file <a class="el" href="BaseIntExpr_8java_source.html">BaseIntExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseIntExpr_8java_source.html#l00044">44</a> of file <a class="el" href="BaseIntExpr_8java_source.html">BaseIntExpr.java</a>.</p>
 
 </div>
 </div>
@@ -372,7 +346,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html#a155da317e33b817886120f10038c12cf">IntExpr</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="BaseIntExpr_8java_source.html#l00055">55</a> of file <a class="el" href="BaseIntExpr_8java_source.html">BaseIntExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseIntExpr_8java_source.html#l00028">28</a> of file <a class="el" href="BaseIntExpr_8java_source.html">BaseIntExpr.java</a>.</p>
 
 </div>
 </div>
@@ -983,7 +957,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html#a99c3f9af748fd79bd7195df0ff143ccb">IntExpr</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="BaseIntExpr_8java_source.html#l00066">66</a> of file <a class="el" href="BaseIntExpr_8java_source.html">BaseIntExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseIntExpr_8java_source.html#l00039">39</a> of file <a class="el" href="BaseIntExpr_8java_source.html">BaseIntExpr.java</a>.</p>
 
 </div>
 </div>

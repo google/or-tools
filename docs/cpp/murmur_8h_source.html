@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -89,7 +89,7 @@ $(document).ready(function(){initNavTree('murmur_8h_source.html',''); initResiza
 <div class="title">murmur.h</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="murmur_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2018 Google LLC</span></div>
+<a href="murmur_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2021 Google LLC</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">// you may not use this file except in compliance with the License.</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">// You may obtain a copy of the License at</span></div>
@@ -111,16 +111,15 @@ $(document).ready(function(){initNavTree('murmur_8h_source.html',''); initResiza
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="comment">// In the or-tools project, MurmurHash64 is just a redirection towards</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="comment">// ThoroughHash. Ideally, it is meant to be using the murmurhash</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="comment">// algorithm described in http://murmurhash.googlepages.com.</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno"><a class="line" href="namespaceutil__hash.html#aa8b1127cf2ccc6c437830e0f1e44fec0">   23</a></span>&#160;<span class="keyword">inline</span> <a class="code" href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a> <a class="code" href="namespaceutil__hash.html#aa8b1127cf2ccc6c437830e0f1e44fec0">MurmurHash64</a>(<span class="keyword">const</span> <span class="keywordtype">char</span>* buf, <span class="keyword">const</span> <span class="keywordtype">size_t</span> len) {</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;  <a class="code" href="namespaceoperations__research.html#a8627f242a0332f34d29d85b6c57f1224">return ::operations_research::ThoroughHash</a>(buf, len);</div>
+<div class="line"><a name="l00023"></a><span class="lineno"><a class="line" href="namespaceutil__hash.html#aefdb33a41f3439b534ff91f3140c5594">   23</a></span>&#160;<span class="keyword">inline</span> uint64_t <a class="code" href="namespaceutil__hash.html#aefdb33a41f3439b534ff91f3140c5594">MurmurHash64</a>(<span class="keyword">const</span> <span class="keywordtype">char</span>* buf, <span class="keyword">const</span> <span class="keywordtype">size_t</span> len) {</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;  <a class="code" href="namespaceoperations__research.html#a8c36f70ade4fbfc1c3c4055ee6e4a857">return ::operations_research::ThoroughHash</a>(buf, len);</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;}</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;}  <span class="comment">// namespace util_hash</span></div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#endif  </span><span class="comment">// OR_TOOLS_BASE_MURMUR_H_</span></div>
-<div class="ttc" id="aintegral__types_8h_html_abc0f5bc07737e498f287334775dff2b6"><div class="ttname"><a href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a></div><div class="ttdeci">uint64_t uint64</div><div class="ttdef"><b>Definition:</b> <a href="integral__types_8h_source.html#l00039">integral_types.h:39</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_html_a8627f242a0332f34d29d85b6c57f1224"><div class="ttname"><a href="namespaceoperations__research.html#a8627f242a0332f34d29d85b6c57f1224">operations_research::ThoroughHash</a></div><div class="ttdeci">uint64 ThoroughHash(const char *bytes, size_t len)</div><div class="ttdef"><b>Definition:</b> <a href="thorough__hash_8h_source.html#l00033">thorough_hash.h:33</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_html_a8c36f70ade4fbfc1c3c4055ee6e4a857"><div class="ttname"><a href="namespaceoperations__research.html#a8c36f70ade4fbfc1c3c4055ee6e4a857">operations_research::ThoroughHash</a></div><div class="ttdeci">uint64_t ThoroughHash(const char *bytes, size_t len)</div><div class="ttdef"><b>Definition:</b> <a href="thorough__hash_8h_source.html#l00033">thorough_hash.h:33</a></div></div>
 <div class="ttc" id="anamespaceutil__hash_html"><div class="ttname"><a href="namespaceutil__hash.html">util_hash</a></div><div class="ttdef"><b>Definition:</b> <a href="hash_8h_source.html#l00148">hash.h:148</a></div></div>
-<div class="ttc" id="anamespaceutil__hash_html_aa8b1127cf2ccc6c437830e0f1e44fec0"><div class="ttname"><a href="namespaceutil__hash.html#aa8b1127cf2ccc6c437830e0f1e44fec0">util_hash::MurmurHash64</a></div><div class="ttdeci">uint64 MurmurHash64(const char *buf, const size_t len)</div><div class="ttdef"><b>Definition:</b> <a href="murmur_8h_source.html#l00023">murmur.h:23</a></div></div>
+<div class="ttc" id="anamespaceutil__hash_html_aefdb33a41f3439b534ff91f3140c5594"><div class="ttname"><a href="namespaceutil__hash.html#aefdb33a41f3439b534ff91f3140c5594">util_hash::MurmurHash64</a></div><div class="ttdeci">uint64_t MurmurHash64(const char *buf, const size_t len)</div><div class="ttdef"><b>Definition:</b> <a href="murmur_8h_source.html#l00023">murmur.h:23</a></div></div>
 <div class="ttc" id="athorough__hash_8h_html"><div class="ttname"><a href="thorough__hash_8h.html">thorough_hash.h</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

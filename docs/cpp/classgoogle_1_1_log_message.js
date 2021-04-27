@@ -13,7 +13,7 @@ var classgoogle_1_1_log_message =
     [ "~LogMessage", "classgoogle_1_1_log_message.html#aeeabea83ed8b4e356d4d36ece0fcb1bf", null ],
     [ "Fail", "classgoogle_1_1_log_message.html#aeb92d4addb41255c9732cacfcb54f795", null ],
     [ "Flush", "classgoogle_1_1_log_message.html#a0e2644b2df3c228e8d71a55b60723f31", null ],
-    [ "num_messages", "classgoogle_1_1_log_message.html#a0dc0f0d20001b9aabf261698ec16341f", null ],
+    [ "num_messages", "classgoogle_1_1_log_message.html#a8505d7c85d1ca04684141bb1b8113770", null ],
     [ "preserved_errno", "classgoogle_1_1_log_message.html#a0a01fdbc8c975aae6c3dba8d00692e77", null ],
     [ "SendToLog", "classgoogle_1_1_log_message.html#a09be921a693a28c291c76b71c5e030c6", null ],
     [ "SendToSyslogAndLog", "classgoogle_1_1_log_message.html#a3ea77f17c72e61d4ca8b21433e629d43", null ],

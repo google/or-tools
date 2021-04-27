@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -89,7 +89,7 @@ $(document).ready(function(){initNavTree('recordio_8h_source.html',''); initResi
 <div class="title">recordio.h</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="recordio_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2018 Google LLC</span></div>
+<a href="recordio_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2021 Google LLC</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">// you may not use this file except in compliance with the License.</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">// You may obtain a copy of the License at</span></div>
@@ -132,10 +132,10 @@ $(document).ready(function(){initNavTree('recordio_8h_source.html',''); initResi
 <div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="classrecordio_1_1_record_writer.html#af6c3f5b6e7950cfdda469c66f4d825e8">   41</a></span>&#160;  <span class="keywordtype">bool</span> <a class="code" href="classrecordio_1_1_record_writer.html#af6c3f5b6e7950cfdda469c66f4d825e8">WriteProtocolMessage</a>(<span class="keyword">const</span> P&amp; <a class="code" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a>) {</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    std::string uncompressed_buffer;</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <a class="code" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a>.SerializeToString(&amp;uncompressed_buffer);</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keyword">const</span> <a class="code" href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a> uncompressed_size = uncompressed_buffer.size();</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keyword">const</span> uint64_t uncompressed_size = uncompressed_buffer.size();</div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keyword">const</span> std::string compressed_buffer =</div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        use_compression_ ? Compress(uncompressed_buffer) : <span class="stringliteral">&quot;&quot;</span>;</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keyword">const</span> <a class="code" href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a> compressed_size = compressed_buffer.size();</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keyword">const</span> uint64_t compressed_size = compressed_buffer.size();</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="keywordflow">if</span> (file_-&gt;<a class="code" href="class_file.html#a5b5afc5f01596f16da698ef36e52254b">Write</a>(&amp;<a class="code" href="classrecordio_1_1_record_writer.html#a02e12506b860e66bf8706eb414fa165e">kMagicNumber</a>, <span class="keyword">sizeof</span>(<a class="code" href="classrecordio_1_1_record_writer.html#a02e12506b860e66bf8706eb414fa165e">kMagicNumber</a>)) !=</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <span class="keyword">sizeof</span>(<a class="code" href="classrecordio_1_1_record_writer.html#a02e12506b860e66bf8706eb414fa165e">kMagicNumber</a>)) {</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;      <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
@@ -180,8 +180,8 @@ $(document).ready(function(){initNavTree('recordio_8h_source.html',''); initResi
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;  <span class="keyword">template</span> &lt;<span class="keyword">class</span> P&gt;</div>
 <div class="line"><a name="l00091"></a><span class="lineno"><a class="line" href="classrecordio_1_1_record_reader.html#aefd9688ad8e40608a91e2189aed986b5">   91</a></span>&#160;  <span class="keywordtype">bool</span> <a class="code" href="classrecordio_1_1_record_reader.html#aefd9688ad8e40608a91e2189aed986b5">ReadProtocolMessage</a>(P* <span class="keyword">const</span> <a class="code" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a>) {</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <a class="code" href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a> usize = 0;</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <a class="code" href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a> csize = 0;</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    uint64_t usize = 0;</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    uint64_t csize = 0;</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="keywordtype">int</span> magic_number = 0;</div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keywordflow">if</span> (file_-&gt;<a class="code" href="class_file.html#a7c528f4c5a9323874493ac186236ac14">Read</a>(&amp;magic_number, <span class="keyword">sizeof</span>(magic_number)) !=</div>
 <div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        <span class="keyword">sizeof</span>(magic_number)) {</div>
@@ -217,8 +217,8 @@ $(document).ready(function(){initNavTree('recordio_8h_source.html',''); initResi
 <div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;  <span class="keywordtype">bool</span> <a class="code" href="classrecordio_1_1_record_reader.html#aef7e3d18ef267f23f64ad397fa359cc1">Close</a>();</div>
 <div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
 <div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160; <span class="keyword">private</span>:</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;  <span class="keywordtype">void</span> Uncompress(<span class="keyword">const</span> <span class="keywordtype">char</span>* <span class="keyword">const</span> source, <a class="code" href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a> source_size,</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;                  <span class="keywordtype">char</span>* <span class="keyword">const</span> output_buffer, <a class="code" href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a> output_size) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;  <span class="keywordtype">void</span> Uncompress(<span class="keyword">const</span> <span class="keywordtype">char</span>* <span class="keyword">const</span> source, uint64_t source_size,</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;                  <span class="keywordtype">char</span>* <span class="keyword">const</span> output_buffer, uint64_t output_size) <span class="keyword">const</span>;</div>
 <div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
 <div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;  <a class="code" href="class_file.html">File</a>* <span class="keyword">const</span> file_;</div>
 <div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;};</div>
@@ -227,8 +227,8 @@ $(document).ready(function(){initNavTree('recordio_8h_source.html',''); initResi
 <div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;<span class="preprocessor">#endif  </span><span class="comment">// OR_TOOLS_BASE_RECORDIO_H_</span></div>
 <div class="ttc" id="abase_2file_8h_html"><div class="ttname"><a href="base_2file_8h.html">file.h</a></div></div>
 <div class="ttc" id="aclass_file_html"><div class="ttname"><a href="class_file.html">File</a></div><div class="ttdef"><b>Definition:</b> <a href="base_2file_8h_source.html#l00032">base/file.h:32</a></div></div>
-<div class="ttc" id="aclass_file_html_a5b5afc5f01596f16da698ef36e52254b"><div class="ttname"><a href="class_file.html#a5b5afc5f01596f16da698ef36e52254b">File::Write</a></div><div class="ttdeci">size_t Write(const void *const buff, size_t size)</div><div class="ttdef"><b>Definition:</b> <a href="file_8cc_source.html#l00077">file.cc:77</a></div></div>
-<div class="ttc" id="aclass_file_html_a7c528f4c5a9323874493ac186236ac14"><div class="ttname"><a href="class_file.html#a7c528f4c5a9323874493ac186236ac14">File::Read</a></div><div class="ttdeci">size_t Read(void *const buff, size_t size)</div><div class="ttdef"><b>Definition:</b> <a href="file_8cc_source.html#l00070">file.cc:70</a></div></div>
+<div class="ttc" id="aclass_file_html_a5b5afc5f01596f16da698ef36e52254b"><div class="ttname"><a href="class_file.html#a5b5afc5f01596f16da698ef36e52254b">File::Write</a></div><div class="ttdeci">size_t Write(const void *const buff, size_t size)</div><div class="ttdef"><b>Definition:</b> <a href="base_2file_8cc_source.html#l00077">base/file.cc:77</a></div></div>
+<div class="ttc" id="aclass_file_html_a7c528f4c5a9323874493ac186236ac14"><div class="ttname"><a href="class_file.html#a7c528f4c5a9323874493ac186236ac14">File::Read</a></div><div class="ttdeci">size_t Read(void *const buff, size_t size)</div><div class="ttdef"><b>Definition:</b> <a href="base_2file_8cc_source.html#l00070">base/file.cc:70</a></div></div>
 <div class="ttc" id="aclassrecordio_1_1_record_reader_html"><div class="ttname"><a href="classrecordio_1_1_record_reader.html">recordio::RecordReader</a></div><div class="ttdef"><b>Definition:</b> <a href="recordio_8h_source.html#l00086">recordio.h:86</a></div></div>
 <div class="ttc" id="aclassrecordio_1_1_record_reader_html_a2e00cf22bc775cb3941575287e3d28d6"><div class="ttname"><a href="classrecordio_1_1_record_reader.html#a2e00cf22bc775cb3941575287e3d28d6">recordio::RecordReader::RecordReader</a></div><div class="ttdeci">RecordReader(File *const file)</div><div class="ttdef"><b>Definition:</b> <a href="recordio_8cc_source.html#l00052">recordio.cc:52</a></div></div>
 <div class="ttc" id="aclassrecordio_1_1_record_reader_html_aef7e3d18ef267f23f64ad397fa359cc1"><div class="ttname"><a href="classrecordio_1_1_record_reader.html#aef7e3d18ef267f23f64ad397fa359cc1">recordio::RecordReader::Close</a></div><div class="ttdeci">bool Close()</div><div class="ttdef"><b>Definition:</b> <a href="recordio_8cc_source.html#l00054">recordio.cc:54</a></div></div>
@@ -240,8 +240,7 @@ $(document).ready(function(){initNavTree('recordio_8h_source.html',''); initResi
 <div class="ttc" id="aclassrecordio_1_1_record_writer_html_aef7e3d18ef267f23f64ad397fa359cc1"><div class="ttname"><a href="classrecordio_1_1_record_writer.html#aef7e3d18ef267f23f64ad397fa359cc1">recordio::RecordWriter::Close</a></div><div class="ttdeci">bool Close()</div><div class="ttdef"><b>Definition:</b> <a href="recordio_8cc_source.html#l00029">recordio.cc:29</a></div></div>
 <div class="ttc" id="aclassrecordio_1_1_record_writer_html_af6c3f5b6e7950cfdda469c66f4d825e8"><div class="ttname"><a href="classrecordio_1_1_record_writer.html#af6c3f5b6e7950cfdda469c66f4d825e8">recordio::RecordWriter::WriteProtocolMessage</a></div><div class="ttdeci">bool WriteProtocolMessage(const P &amp;proto)</div><div class="ttdef"><b>Definition:</b> <a href="recordio_8h_source.html#l00041">recordio.h:41</a></div></div>
 <div class="ttc" id="acp__model__fz__solver_8cc_html_aed003f5eb5197bc586b7ef2c36a63da2"><div class="ttname"><a href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a></div><div class="ttdeci">CpModelProto proto</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__fz__solver_8cc_source.html#l00107">cp_model_fz_solver.cc:107</a></div></div>
-<div class="ttc" id="aintegral__types_8h_html_abc0f5bc07737e498f287334775dff2b6"><div class="ttname"><a href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a></div><div class="ttdeci">uint64_t uint64</div><div class="ttdef"><b>Definition:</b> <a href="integral__types_8h_source.html#l00039">integral_types.h:39</a></div></div>
-<div class="ttc" id="anamespacefile_html"><div class="ttname"><a href="namespacefile.html">file</a></div><div class="ttdef"><b>Definition:</b> <a href="file_8cc_source.html#l00141">file.cc:141</a></div></div>
+<div class="ttc" id="anamespacefile_html"><div class="ttname"><a href="namespacefile.html">file</a></div><div class="ttdef"><b>Definition:</b> <a href="base_2file_8cc_source.html#l00141">base/file.cc:141</a></div></div>
 <div class="ttc" id="anamespacerecordio_html"><div class="ttname"><a href="namespacerecordio.html">recordio</a></div><div class="ttdef"><b>Definition:</b> <a href="recordio_8cc_source.html#l00023">recordio.cc:23</a></div></div>
 <div class="ttc" id="aparser_8yy_8cc_html_a5a634cf4429798b1c921a81de8250051"><div class="ttname"><a href="parser_8yy_8cc.html#a5a634cf4429798b1c921a81de8250051">input</a></div><div class="ttdeci">static int input(yyscan_t yyscanner)</div></div>
 </div><!-- fragment --></div><!-- contents -->

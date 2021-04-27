@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.2</span>
+                <span id="sfml">Google OR-Tools 9.0</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -91,7 +91,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_m_p_solv
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This mathematical programming (MP) solver class is the main class though which users build and solve problems. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00180">180</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00181">181</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
@@ -167,6 +167,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a34caaebb9e2b365ef0ec449e870f5b5d"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="classoperations__research_1_1_m_p_variable.html">MPVariable</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#a34caaebb9e2b365ef0ec449e870f5b5d">variables</a> () const</td></tr>
 <tr class="memdesc:a34caaebb9e2b365ef0ec449e870f5b5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the array of variables handled by the <a class="el" href="classoperations__research_1_1_m_p_solver.html" title="This mathematical programming (MP) solver class is the main class though which users build and solve ...">MPSolver</a>.  <a href="classoperations__research_1_1_m_p_solver.html#a34caaebb9e2b365ef0ec449e870f5b5d">More...</a><br /></td></tr>
 <tr class="separator:a34caaebb9e2b365ef0ec449e870f5b5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd4056eff31d3008809b2e0b8a823373"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_m_p_variable.html">MPVariable</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#acd4056eff31d3008809b2e0b8a823373">variable</a> (int index) const</td></tr>
+<tr class="memdesc:acd4056eff31d3008809b2e0b8a823373"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the variable at position index.  <a href="classoperations__research_1_1_m_p_solver.html#acd4056eff31d3008809b2e0b8a823373">More...</a><br /></td></tr>
+<tr class="separator:acd4056eff31d3008809b2e0b8a823373"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a981cdf256aa33e518b8747c96bf1a9c7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_m_p_variable.html">MPVariable</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#a981cdf256aa33e518b8747c96bf1a9c7">LookupVariableOrNull</a> (const std::string &amp;var_name) const</td></tr>
 <tr class="memdesc:a981cdf256aa33e518b8747c96bf1a9c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Looks up a variable by name, and returns nullptr if it does not exist.  <a href="classoperations__research_1_1_m_p_solver.html#a981cdf256aa33e518b8747c96bf1a9c7">More...</a><br /></td></tr>
 <tr class="separator:a981cdf256aa33e518b8747c96bf1a9c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -200,6 +203,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a5ff11cd513c803ba3f75f2f672f1cf6f"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="classoperations__research_1_1_m_p_constraint.html">MPConstraint</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#a5ff11cd513c803ba3f75f2f672f1cf6f">constraints</a> () const</td></tr>
 <tr class="memdesc:a5ff11cd513c803ba3f75f2f672f1cf6f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the array of constraints handled by the <a class="el" href="classoperations__research_1_1_m_p_solver.html" title="This mathematical programming (MP) solver class is the main class though which users build and solve ...">MPSolver</a>.  <a href="classoperations__research_1_1_m_p_solver.html#a5ff11cd513c803ba3f75f2f672f1cf6f">More...</a><br /></td></tr>
 <tr class="separator:a5ff11cd513c803ba3f75f2f672f1cf6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19476a1c421b9ee05231ee9af2387057"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_m_p_constraint.html">MPConstraint</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#a19476a1c421b9ee05231ee9af2387057">constraint</a> (int index) const</td></tr>
+<tr class="memdesc:a19476a1c421b9ee05231ee9af2387057"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the constraint at the given index.  <a href="classoperations__research_1_1_m_p_solver.html#a19476a1c421b9ee05231ee9af2387057">More...</a><br /></td></tr>
+<tr class="separator:a19476a1c421b9ee05231ee9af2387057"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abbf4c26107aac610a00471f41740b01e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_m_p_constraint.html">MPConstraint</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#abbf4c26107aac610a00471f41740b01e">LookupConstraintOrNull</a> (const std::string &amp;constraint_name) const</td></tr>
 <tr class="memdesc:abbf4c26107aac610a00471f41740b01e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Looks up a constraint by name, and returns nullptr if it does not exist.  <a href="classoperations__research_1_1_m_p_solver.html#abbf4c26107aac610a00471f41740b01e">More...</a><br /></td></tr>
 <tr class="separator:abbf4c26107aac610a00471f41740b01e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -299,16 +305,16 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae1df08a9aabad59b5d620930126e6d91"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3f5aac5b77ce69f53a130b8a779e0b7"><td class="memItemLeft" align="right" valign="top">absl::Duration&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#af3f5aac5b77ce69f53a130b8a779e0b7">TimeLimit</a> () const</td></tr>
 <tr class="separator:af3f5aac5b77ce69f53a130b8a779e0b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aff1d83614c47aa9934d4f9312e6056d4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#aff1d83614c47aa9934d4f9312e6056d4">SetTimeLimit</a> (absl::Duration <a class="el" href="classoperations__research_1_1_m_p_solver.html#aa42a63e7d72e799085af5a421b58b3ba">time_limit</a>)</td></tr>
+<tr class="memitem:aff1d83614c47aa9934d4f9312e6056d4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#aff1d83614c47aa9934d4f9312e6056d4">SetTimeLimit</a> (absl::Duration <a class="el" href="classoperations__research_1_1_m_p_solver.html#ac4f18824e639ecdf7304714a4450806b">time_limit</a>)</td></tr>
 <tr class="separator:aff1d83614c47aa9934d4f9312e6056d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a35603553a6e2fa78a217ca1a4e7e6c18"><td class="memItemLeft" align="right" valign="top">absl::Duration&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#a35603553a6e2fa78a217ca1a4e7e6c18">DurationSinceConstruction</a> () const</td></tr>
 <tr class="separator:a35603553a6e2fa78a217ca1a4e7e6c18"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8f94769e8f7f3e051ba504be9ed1fa6f"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#a8f94769e8f7f3e051ba504be9ed1fa6f">iterations</a> () const</td></tr>
-<tr class="memdesc:a8f94769e8f7f3e051ba504be9ed1fa6f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of simplex iterations.  <a href="classoperations__research_1_1_m_p_solver.html#a8f94769e8f7f3e051ba504be9ed1fa6f">More...</a><br /></td></tr>
-<tr class="separator:a8f94769e8f7f3e051ba504be9ed1fa6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a51ae17fc48ac80f494d7ed2202d61f29"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#a51ae17fc48ac80f494d7ed2202d61f29">nodes</a> () const</td></tr>
-<tr class="memdesc:a51ae17fc48ac80f494d7ed2202d61f29"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of branch-and-bound nodes evaluated during the solve.  <a href="classoperations__research_1_1_m_p_solver.html#a51ae17fc48ac80f494d7ed2202d61f29">More...</a><br /></td></tr>
-<tr class="separator:a51ae17fc48ac80f494d7ed2202d61f29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4198b9880783bbbea8b517cc8ce868b3"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#a4198b9880783bbbea8b517cc8ce868b3">iterations</a> () const</td></tr>
+<tr class="memdesc:a4198b9880783bbbea8b517cc8ce868b3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of simplex iterations.  <a href="classoperations__research_1_1_m_p_solver.html#a4198b9880783bbbea8b517cc8ce868b3">More...</a><br /></td></tr>
+<tr class="separator:a4198b9880783bbbea8b517cc8ce868b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa38b5851203ddc9f64f01b87ad346ea1"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#aa38b5851203ddc9f64f01b87ad346ea1">nodes</a> () const</td></tr>
+<tr class="memdesc:aa38b5851203ddc9f64f01b87ad346ea1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of branch-and-bound nodes evaluated during the solve.  <a href="classoperations__research_1_1_m_p_solver.html#aa38b5851203ddc9f64f01b87ad346ea1">More...</a><br /></td></tr>
+<tr class="separator:aa38b5851203ddc9f64f01b87ad346ea1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a858f72e8c0c03339c8d797d41a6fd4b8"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#a858f72e8c0c03339c8d797d41a6fd4b8">SolverVersion</a> () const</td></tr>
 <tr class="memdesc:a858f72e8c0c03339c8d797d41a6fd4b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a string describing the underlying solver and its version.  <a href="classoperations__research_1_1_m_p_solver.html#a858f72e8c0c03339c8d797d41a6fd4b8">More...</a><br /></td></tr>
 <tr class="separator:a858f72e8c0c03339c8d797d41a6fd4b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -325,14 +331,14 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aaee44c64a12654b08dff20b74702ac6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8618b250f62af1c96b2f9f7ebbdaa8b6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#a8618b250f62af1c96b2f9f7ebbdaa8b6">SupportsCallbacks</a> () const</td></tr>
 <tr class="separator:a8618b250f62af1c96b2f9f7ebbdaa8b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa42a63e7d72e799085af5a421b58b3ba"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#aa42a63e7d72e799085af5a421b58b3ba">time_limit</a> () const</td></tr>
-<tr class="separator:aa42a63e7d72e799085af5a421b58b3ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac76284cc2e7493610853f6e8ff1746d2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#ac76284cc2e7493610853f6e8ff1746d2">set_time_limit</a> (int64 time_limit_milliseconds)</td></tr>
-<tr class="separator:ac76284cc2e7493610853f6e8ff1746d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac4f18824e639ecdf7304714a4450806b"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#ac4f18824e639ecdf7304714a4450806b">time_limit</a> () const</td></tr>
+<tr class="separator:ac4f18824e639ecdf7304714a4450806b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a737bd8130c79449720685c2baba1e28c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#a737bd8130c79449720685c2baba1e28c">set_time_limit</a> (int64_t time_limit_milliseconds)</td></tr>
+<tr class="separator:a737bd8130c79449720685c2baba1e28c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad58dd106d6ce5869923cc448621066d6"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#ad58dd106d6ce5869923cc448621066d6">time_limit_in_secs</a> () const</td></tr>
 <tr class="separator:ad58dd106d6ce5869923cc448621066d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a80533bb150275c3c1c46e7ee3f31a822"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#a80533bb150275c3c1c46e7ee3f31a822">wall_time</a> () const</td></tr>
-<tr class="separator:a80533bb150275c3c1c46e7ee3f31a822"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6129ea627a9a40fc21ddc24914cc6958"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#a6129ea627a9a40fc21ddc24914cc6958">wall_time</a> () const</td></tr>
+<tr class="separator:a6129ea627a9a40fc21ddc24914cc6958"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa2cb7bd4cf46dda371f91184d6232a44"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#aa2cb7bd4cf46dda371f91184d6232a44">OwnsVariable</a> (const <a class="el" href="classoperations__research_1_1_m_p_variable.html">MPVariable</a> *var) const</td></tr>
 <tr class="separator:aa2cb7bd4cf46dda371f91184d6232a44"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -356,10 +362,6 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a9655632a7a05d89fc1562459b26d7955"><td class="memItemLeft" align="right" valign="top">static double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#a9655632a7a05d89fc1562459b26d7955">infinity</a> ()</td></tr>
 <tr class="memdesc:a9655632a7a05d89fc1562459b26d7955"><td class="mdescLeft">&#160;</td><td class="mdescRight">Infinity.  <a href="classoperations__research_1_1_m_p_solver.html#a9655632a7a05d89fc1562459b26d7955">More...</a><br /></td></tr>
 <tr class="separator:a9655632a7a05d89fc1562459b26d7955"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adf9463ab7dc318f93a2d509036d9a8ee"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#adf9463ab7dc318f93a2d509036d9a8ee">LoadGurobiSharedLibrary</a> ()</td></tr>
-<tr class="separator:adf9463ab7dc318f93a2d509036d9a8ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a13ceaa35a35454f5a7ba6cfbe6202a"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_m_p_solver.html#a0a13ceaa35a35454f5a7ba6cfbe6202a">SetGurobiLibraryPath</a> (const std::string &amp;full_library_path)</td></tr>
-<tr class="separator:a0a13ceaa35a35454f5a7ba6cfbe6202a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Enumeration Documentation</h2>
 <a id="afd922eb2bef96597c426557a8056f76d"></a>
@@ -383,7 +385,7 @@ Static Public Member Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="afd922eb2bef96597c426557a8056f76da13c45196813cb44e6e81e9c48a5ec1b4"></a>BASIC&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00643">643</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00654">654</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -419,7 +421,7 @@ Static Public Member Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8a2b293906a9413ca8a70fa72c47a4bdbc"></a>KNAPSACK_MIXED_INTEGER_PROGRAMMING&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00188">188</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00189">189</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -454,7 +456,7 @@ Static Public Member Functions</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00428">428</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00437">437</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -602,6 +604,36 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a19476a1c421b9ee05231ee9af2387057"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19476a1c421b9ee05231ee9af2387057">&#9670;&nbsp;</a></span>constraint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_m_p_constraint.html">MPConstraint</a>* constraint </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the constraint at the given index. </p>
+
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00378">378</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+
+</div>
+</div>
 <a id="a5ff11cd513c803ba3f75f2f672f1cf6f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5ff11cd513c803ba3f75f2f672f1cf6f">&#9670;&nbsp;</a></span>constraints()</h2>
 
@@ -628,7 +660,7 @@ Static Public Member Functions</h2></td></tr>
 <p>Returns the array of constraints handled by the <a class="el" href="classoperations__research_1_1_m_p_solver.html" title="This mathematical programming (MP) solver class is the main class though which users build and solve ...">MPSolver</a>. </p>
 <p>They are listed in the order in which they were created. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00369">369</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00375">375</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -701,7 +733,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00695">695</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00706">706</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -854,7 +886,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the number of threads to be used during solve. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00611">611</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00622">622</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -881,7 +913,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00620">620</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00631">631</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -911,7 +943,7 @@ Static Public Member Functions</h2></td></tr>
 <p>Infinity. </p>
 <p>You can use -<a class="el" href="classoperations__research_1_1_m_p_solver.html#a9655632a7a05d89fc1562459b26d7955" title="Infinity.">MPSolver::infinity()</a> for negative infinity. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00671">671</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00682">682</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -952,14 +984,14 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a8f94769e8f7f3e051ba504be9ed1fa6f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8f94769e8f7f3e051ba504be9ed1fa6f">&#9670;&nbsp;</a></span>iterations()</h2>
+<a id="a4198b9880783bbbea8b517cc8ce868b3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4198b9880783bbbea8b517cc8ce868b3">&#9670;&nbsp;</a></span>iterations()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int64 iterations </td>
+          <td class="memname">int64_t iterations </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -968,31 +1000,6 @@ Static Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Returns the number of simplex iterations. </p>
-
-</div>
-</div>
-<a id="adf9463ab7dc318f93a2d509036d9a8ee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adf9463ab7dc318f93a2d509036d9a8ee">&#9670;&nbsp;</a></span>LoadGurobiSharedLibrary()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static bool LoadGurobiSharedLibrary </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
 
 </div>
 </div>
@@ -1096,13 +1103,14 @@ Static Public Member Functions</h2></td></tr>
 <div class="line">  CHECK_OK(my_solver.LoadSolutionFromProto(solver_response));</div>
 <div class="line">  ... inspect the solution <span class="keyword">using</span> the usual API: solution_value(), etc...</div>
 <div class="line">}</div>
-<div class="ttc" id="aclassoperations__research_1_1_m_p_solver_html_a34caaebb9e2b365ef0ec449e870f5b5d"><div class="ttname"><a href="classoperations__research_1_1_m_p_solver.html#a34caaebb9e2b365ef0ec449e870f5b5d">operations_research::MPSolver::variables</a></div><div class="ttdeci">const std::vector&lt; MPVariable * &gt; &amp; variables() const</div><div class="ttdoc">Returns the array of variables handled by the MPSolver.</div><div class="ttdef"><b>Definition:</b> <a href="linear__solver_8h_source.html#l00303">linear_solver.h:303</a></div></div>
-<div class="ttc" id="aclassoperations__research_1_1_m_p_solver_html_a5ff11cd513c803ba3f75f2f672f1cf6f"><div class="ttname"><a href="classoperations__research_1_1_m_p_solver.html#a5ff11cd513c803ba3f75f2f672f1cf6f">operations_research::MPSolver::constraints</a></div><div class="ttdeci">const std::vector&lt; MPConstraint * &gt; &amp; constraints() const</div><div class="ttdoc">Returns the array of constraints handled by the MPSolver.</div><div class="ttdef"><b>Definition:</b> <a href="linear__solver_8h_source.html#l00369">linear_solver.h:369</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_m_p_solver_html_a34caaebb9e2b365ef0ec449e870f5b5d"><div class="ttname"><a href="classoperations__research_1_1_m_p_solver.html#a34caaebb9e2b365ef0ec449e870f5b5d">operations_research::MPSolver::variables</a></div><div class="ttdeci">const std::vector&lt; MPVariable * &gt; &amp; variables() const</div><div class="ttdoc">Returns the array of variables handled by the MPSolver.</div><div class="ttdef"><b>Definition:</b> <a href="linear__solver_8h_source.html#l00304">linear_solver.h:304</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1_m_p_solver_html_a5ff11cd513c803ba3f75f2f672f1cf6f"><div class="ttname"><a href="classoperations__research_1_1_m_p_solver.html#a5ff11cd513c803ba3f75f2f672f1cf6f">operations_research::MPSolver::constraints</a></div><div class="ttdeci">const std::vector&lt; MPConstraint * &gt; &amp; constraints() const</div><div class="ttdoc">Returns the array of constraints handled by the MPSolver.</div><div class="ttdef"><b>Definition:</b> <a href="linear__solver_8h_source.html#l00375">linear_solver.h:375</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_m_p_solver_html_a99ad12b13903108544b594819a65b793"><div class="ttname"><a href="classoperations__research_1_1_m_p_solver.html#a99ad12b13903108544b594819a65b793">operations_research::MPSolver::SolveWithProto</a></div><div class="ttdeci">static void SolveWithProto(const MPModelRequest &amp;model_request, MPSolutionResponse *response)</div><div class="ttdoc">Solves the model encoded by a MPModelRequest protocol buffer and fills the solution encoded as a MPSo...</div></div>
 <div class="ttc" id="aclassoperations__research_1_1_m_p_solver_html_acdb0e5753d20e4d3ece49a0451d24c4f"><div class="ttname"><a href="classoperations__research_1_1_m_p_solver.html#acdb0e5753d20e4d3ece49a0451d24c4f">operations_research::MPSolver::MPSolver</a></div><div class="ttdeci">MPSolver(const std::string &amp;name, OptimizationProblemType problem_type)</div><div class="ttdoc">Create a solver with the given name and underlying solver backend.</div></div>
 </div><!-- fragment --><p>The response must be in OPTIMAL or FEASIBLE status.</p>
 <p>Returns a non-OK status if a problem arised (typically, if it wasn't used like it should be):</p><ul>
 <li>loading a solution whose variables don't correspond to the solver's current variables</li>
+<li>loading a dual solution whose constraints don't correspond to the solver's current constraints</li>
 <li>loading a solution with a status other than OPTIMAL / FEASIBLE.</li>
 </ul>
 <p>Note: the objective value isn't checked. You can use <a class="el" href="classoperations__research_1_1_m_p_solver.html#a2c50b77c283c82d632f0dc605ceca3c3" title="Advanced usage: Verifies the correctness of the solution.">VerifySolution()</a> for that. </p>
@@ -1666,7 +1674,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the mutable objective object. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00420">420</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00429">429</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1695,7 +1703,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the name of the model set at construction. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00280">280</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00281">281</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1721,14 +1729,14 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a51ae17fc48ac80f494d7ed2202d61f29"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a51ae17fc48ac80f494d7ed2202d61f29">&#9670;&nbsp;</a></span>nodes()</h2>
+<a id="aa38b5851203ddc9f64f01b87ad346ea1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa38b5851203ddc9f64f01b87ad346ea1">&#9670;&nbsp;</a></span>nodes()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int64 nodes </td>
+          <td class="memname">int64_t nodes </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -1766,7 +1774,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the number of constraints. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00362">362</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00368">368</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1795,7 +1803,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the number of variables. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00297">297</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00298">298</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1825,7 +1833,7 @@ Static Public Member Functions</h2></td></tr>
 <p>Returns the objective object. </p>
 <p>Note that the objective is owned by the solver, and is initialized to its default value (see the <a class="el" href="classoperations__research_1_1_m_p_objective.html" title="A class to express a linear objective.">MPObjective</a> class below) at construction. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00417">417</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00426">426</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1961,7 +1969,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the optimization problem type set at construction. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00285">285</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00286">286</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1981,12 +1989,12 @@ Static Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Advanced usage: resets extracted model to solve from scratch. </p>
-<p>This won't reset the parameters that were set with <a class="el" href="classoperations__research_1_1_m_p_solver.html#a77083241e8bdb93b619c7b9feaf82dec" title="Advanced usage: pass solver specific parameters in text format.">SetSolverSpecificParametersAsString()</a> or <a class="el" href="classoperations__research_1_1_m_p_solver.html#ac76284cc2e7493610853f6e8ff1746d2">set_time_limit()</a> or even clear the linear program. It will just make sure that next <a class="el" href="classoperations__research_1_1_m_p_solver.html#a9f55f5e7a62b45961982063ebc1e9945" title="Solves the problem using the default parameter values.">Solve()</a> will be as if everything was reconstructed from scratch. </p>
+<p>This won't reset the parameters that were set with <a class="el" href="classoperations__research_1_1_m_p_solver.html#a77083241e8bdb93b619c7b9feaf82dec" title="Advanced usage: pass solver specific parameters in text format.">SetSolverSpecificParametersAsString()</a> or <a class="el" href="classoperations__research_1_1_m_p_solver.html#a737bd8130c79449720685c2baba1e28c">set_time_limit()</a> or even clear the linear program. It will just make sure that next <a class="el" href="classoperations__research_1_1_m_p_solver.html#a9f55f5e7a62b45961982063ebc1e9945" title="Solves the problem using the default parameter values.">Solve()</a> will be as if everything was reconstructed from scratch. </p>
 
 </div>
 </div>
-<a id="ac76284cc2e7493610853f6e8ff1746d2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac76284cc2e7493610853f6e8ff1746d2">&#9670;&nbsp;</a></span>set_time_limit()</h2>
+<a id="a737bd8130c79449720685c2baba1e28c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a737bd8130c79449720685c2baba1e28c">&#9670;&nbsp;</a></span>set_time_limit()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1997,7 +2005,7 @@ Static Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void set_time_limit </td>
           <td>(</td>
-          <td class="paramtype">int64&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>time_limit_milliseconds</em></td><td>)</td>
           <td></td>
         </tr>
@@ -2009,7 +2017,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00785">785</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00796">796</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2027,32 +2035,6 @@ Static Public Member Functions</h2></td></tr>
           <td></td>
         </tr>
       </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a0a13ceaa35a35454f5a7ba6cfbe6202a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0a13ceaa35a35454f5a7ba6cfbe6202a">&#9670;&nbsp;</a></span>SetGurobiLibraryPath()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void SetGurobiLibraryPath </td>
-          <td>(</td>
-          <td class="paramtype">const std::string &amp;&#160;</td>
-          <td class="paramname"><em>full_library_path</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 </div>
@@ -2177,7 +2159,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00690">690</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00701">701</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2343,8 +2325,8 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="aa42a63e7d72e799085af5a421b58b3ba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa42a63e7d72e799085af5a421b58b3ba">&#9670;&nbsp;</a></span>time_limit()</h2>
+<a id="ac4f18824e639ecdf7304714a4450806b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac4f18824e639ecdf7304714a4450806b">&#9670;&nbsp;</a></span>time_limit()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2353,7 +2335,7 @@ Static Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int64 time_limit </td>
+          <td class="memname">int64_t time_limit </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -2366,7 +2348,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00780">780</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00791">791</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2393,7 +2375,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00790">790</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00801">801</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2420,7 +2402,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00689">689</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00700">700</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2441,6 +2423,36 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Advanced usage: returns the underlying solver. </p>
 <p>Returns the underlying solver so that the user can use solver-specific features or features that are not exposed in the simple API of <a class="el" href="classoperations__research_1_1_m_p_solver.html" title="This mathematical programming (MP) solver class is the main class though which users build and solve ...">MPSolver</a>. This method is for advanced users, use at your own risk! In particular, if you modify the model or the solution by accessing the underlying solver directly, then the underlying solver will be out of sync with the information kept in the wrapper (<a class="el" href="classoperations__research_1_1_m_p_solver.html" title="This mathematical programming (MP) solver class is the main class though which users build and solve ...">MPSolver</a>, <a class="el" href="classoperations__research_1_1_m_p_variable.html" title="The class for variables of a Mathematical Programming (MP) model.">MPVariable</a>, <a class="el" href="classoperations__research_1_1_m_p_constraint.html" title="The class for constraints of a Mathematical Programming (MP) model.">MPConstraint</a>, <a class="el" href="classoperations__research_1_1_m_p_objective.html" title="A class to express a linear objective.">MPObjective</a>). You need to cast the void* returned back to its original type that depends on the interface (CBC: OsiClpSolverInterface*, CLP: ClpSimplex*, GLPK: glp_prob*, SCIP: SCIP*). </p>
+
+</div>
+</div>
+<a id="acd4056eff31d3008809b2e0b8a823373"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd4056eff31d3008809b2e0b8a823373">&#9670;&nbsp;</a></span>variable()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_m_p_variable.html">MPVariable</a>* variable </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the variable at position index. </p>
+
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00309">309</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2470,7 +2482,7 @@ Static Public Member Functions</h2></td></tr>
 <p>Returns the array of variables handled by the <a class="el" href="classoperations__research_1_1_m_p_solver.html" title="This mathematical programming (MP) solver class is the main class though which users build and solve ...">MPSolver</a>. </p>
 <p>(They are listed in the order in which they were created.) </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00303">303</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00304">304</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2513,8 +2525,8 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a80533bb150275c3c1c46e7ee3f31a822"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a80533bb150275c3c1c46e7ee3f31a822">&#9670;&nbsp;</a></span>wall_time()</h2>
+<a id="a6129ea627a9a40fc21ddc24914cc6958"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6129ea627a9a40fc21ddc24914cc6958">&#9670;&nbsp;</a></span>wall_time()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2523,7 +2535,7 @@ Static Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int64 wall_time </td>
+          <td class="memname">int64_t wall_time </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -2536,7 +2548,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00795">795</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00806">806</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>

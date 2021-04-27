@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -104,7 +104,7 @@ Classes</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespaceoperations__research"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html">operations_research</a></td></tr>
-<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">The vehicle routing library lets one model and solve generic vehicle routing problems ranging from the Traveling Salesman Problem to more complex problems such as the Capacitated Vehicle Routing Problem with Time Windows. <br /></td></tr>
+<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">Collection of objects used to extend the <a class="el" href="classoperations__research_1_1_constraint.html" title="A constraint is the main modeling object.">Constraint</a> <a class="el" href="classoperations__research_1_1_solver.html" title="Solver Class.">Solver</a> library. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
@@ -117,10 +117,10 @@ Functions</h2></td></tr>
 <tr class="separator:ae9bda1126d10f6d82174b04a78470cbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9844237a85ad9809bc8b4647b79bc5be"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a9844237a85ad9809bc8b4647b79bc5be">RegisterDemon</a> (Solver *const solver, Demon *const demon, DemonProfiler *const monitor)</td></tr>
 <tr class="separator:a9844237a85ad9809bc8b4647b79bc5be"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a92d8e510fd574f410950f792e74daa93"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a92d8e510fd574f410950f792e74daa93">DemonProfilerAddFakeRun</a> (DemonProfiler *const monitor, Demon *const demon, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> start_time, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> end_time, bool is_fail)</td></tr>
-<tr class="separator:a92d8e510fd574f410950f792e74daa93"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad66cd73bb2b4b98cc8f7b1f1cdb8b5dd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ad66cd73bb2b4b98cc8f7b1f1cdb8b5dd">DemonProfilerExportInformation</a> (DemonProfiler *const monitor, const Constraint *const constraint, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> *const fails, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> *const initial_propagation_runtime, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> *const demon_invocations, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> *const total_demon_runtime, int *const demon_count)</td></tr>
-<tr class="separator:ad66cd73bb2b4b98cc8f7b1f1cdb8b5dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb69b841f574c12de42dfdf5ba922a1b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aeb69b841f574c12de42dfdf5ba922a1b">DemonProfilerAddFakeRun</a> (DemonProfiler *const monitor, Demon *const demon, int64_t start_time, int64_t end_time, bool is_fail)</td></tr>
+<tr class="separator:aeb69b841f574c12de42dfdf5ba922a1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9662ae85fa7c93693ca1de23561abcba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a9662ae85fa7c93693ca1de23561abcba">DemonProfilerExportInformation</a> (DemonProfiler *const monitor, const Constraint *const constraint, int64_t *const fails, int64_t *const initial_propagation_runtime, int64_t *const demon_invocations, int64_t *const total_demon_runtime, int *const demon_count)</td></tr>
+<tr class="separator:a9662ae85fa7c93693ca1de23561abcba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9dbab54955331ee5ce2726174a03fba5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a9dbab54955331ee5ce2726174a03fba5">DemonProfilerBeginInitialPropagation</a> (DemonProfiler *const monitor, Constraint *const constraint)</td></tr>
 <tr class="separator:a9dbab54955331ee5ce2726174a03fba5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a219e17ce079a92adfc4e138a0980554a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a219e17ce079a92adfc4e138a0980554a">DemonProfilerEndInitialPropagation</a> (DemonProfiler *const monitor, Constraint *const constraint)</td></tr>
@@ -139,25 +139,25 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="demon__profiler_8cc_source.html#l00042">42</a> of file <a class="el" href="demon__profiler_8cc_source.html">demon_profiler.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="demon__profiler_8cc_source.html#l00043">43</a> of file <a class="el" href="demon__profiler_8cc_source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div>
-<a id="a21edc7ca4cc5802c8779d68556bc09cf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a21edc7ca4cc5802c8779d68556bc09cf">&#9670;&nbsp;</a></span>value</h2>
+<a id="ac072af30c4ffbc834bb4c681f6ecb514"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac072af30c4ffbc834bb4c681f6ecb514">&#9670;&nbsp;</a></span>value</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> value</td>
+          <td class="memname">int64_t value</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="tsp_8cc-example.html#a4">tsp.cc</a>, and <a class="el" href="vrp_8cc-example.html#a4">vrp.cc</a>.</dd>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="tsp_8cc-example.html#a5">tsp.cc</a>, and <a class="el" href="vrp_8cc-example.html#a5">vrp.cc</a>.</dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="demon__profiler_8cc_source.html#l00043">43</a> of file <a class="el" href="demon__profiler_8cc_source.html">demon_profiler.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="demon__profiler_8cc_source.html#l00044">44</a> of file <a class="el" href="demon__profiler_8cc_source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div>

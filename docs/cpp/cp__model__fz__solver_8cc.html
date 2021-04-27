@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -98,23 +98,21 @@ $(document).ready(function(){initNavTree('cp__model__fz__solver_8cc.html',''); i
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespaceoperations__research"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html">operations_research</a></td></tr>
-<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">The vehicle routing library lets one model and solve generic vehicle routing problems ranging from the Traveling Salesman Problem to more complex problems such as the Capacitated Vehicle Routing Problem with Time Windows. <br /></td></tr>
+<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">Collection of objects used to extend the <a class="el" href="classoperations__research_1_1_constraint.html" title="A constraint is the main modeling object.">Constraint</a> <a class="el" href="classoperations__research_1_1_solver.html" title="Solver Class.">Solver</a> library. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespaceoperations__research_1_1sat"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html">operations_research::sat</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ab460ab792f7cf11e24191f801189ace5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__fz__solver_8cc.html#ab460ab792f7cf11e24191f801189ace5">ABSL_FLAG</a> (bool, use_flatzinc_format, true, &quot;Output uses the flatzinc format&quot;)</td></tr>
-<tr class="separator:ab460ab792f7cf11e24191f801189ace5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad17a3425dec8a1412f018d36d1b5929f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__fz__solver_8cc.html#ad17a3425dec8a1412f018d36d1b5929f">ABSL_FLAG</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>, fz_int_max, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>{1}&lt;&lt; 50, &quot;Default <a class="el" href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">max</a> <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a> for unbounded integer variables.&quot;)</td></tr>
-<tr class="separator:ad17a3425dec8a1412f018d36d1b5929f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aacff7ad03783c59b06f7a206a882b829"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aacff7ad03783c59b06f7a206a882b829">SolveFzWithCpModelProto</a> (const fz::Model &amp;fz_model, const fz::FlatzincSatParameters &amp;p, const std::string &amp;sat_params)</td></tr>
-<tr class="separator:aacff7ad03783c59b06f7a206a882b829"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96885ec228968a3abcc850e58e5c4f70"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__fz__solver_8cc.html#a96885ec228968a3abcc850e58e5c4f70">ABSL_FLAG</a> (int64_t, fz_int_max, int64_t{1}&lt;&lt; 50, &quot;Default <a class="el" href="alldiff__cst_8cc.html#a26e6db9bcc64b584051ecc28171ed11f">max</a> <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a> for unbounded integer variables.&quot;)</td></tr>
+<tr class="separator:a96885ec228968a3abcc850e58e5c4f70"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86867084d9212717b30c1c3f1b76cd15"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a86867084d9212717b30c1c3f1b76cd15">SolveFzWithCpModelProto</a> (const fz::Model &amp;fz_model, const fz::FlatzincSatParameters &amp;p, const std::string &amp;sat_params, SolverLogger *logger, SolverLogger *solution_logger)</td></tr>
+<tr class="separator:a86867084d9212717b30c1c3f1b76cd15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ab460ab792f7cf11e24191f801189ace5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab460ab792f7cf11e24191f801189ace5">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[1/2]</span></h2>
+<a id="a96885ec228968a3abcc850e58e5c4f70"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96885ec228968a3abcc850e58e5c4f70">&#9670;&nbsp;</a></span>ABSL_FLAG()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -122,47 +120,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">ABSL_FLAG </td>
           <td>(</td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">use_flatzinc_format&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">true&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&quot;Output uses the flatzinc format&quot;&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ad17a3425dec8a1412f018d36d1b5929f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad17a3425dec8a1412f018d36d1b5929f">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">ABSL_FLAG </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
@@ -174,13 +132,13 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>{1}&lt;&lt;&#160;</td>
+          <td class="paramtype">int64_t{1}&lt;&lt;&#160;</td>
           <td class="paramname"><em>50</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">&quot;Default <a class="el" href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">max</a> <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a> for unbounded integer variables.&quot;&#160;</td>
+          <td class="paramtype">&quot;Default <a class="el" href="alldiff__cst_8cc.html#a26e6db9bcc64b584051ecc28171ed11f">max</a> <a class="el" href="matrix__utils_8cc.html#aee90379adb0307effb138f4871edbc5c">value</a> for unbounded integer variables.&quot;&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -194,14 +152,14 @@ Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
-<a id="ad4863cd7d27ff7a04d5cbc781916ec63"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad4863cd7d27ff7a04d5cbc781916ec63">&#9670;&nbsp;</a></span>constant_value_to_index</h2>
+<a id="a6d1b58fcbb28336482aab1236249d3ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6d1b58fcbb28336482aab1236249d3ee">&#9670;&nbsp;</a></span>constant_value_to_index</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">absl::flat_hash_map&lt;<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>, int&gt; constant_value_to_index</td>
+          <td class="memname">absl::flat_hash_map&lt;int64_t, int&gt; constant_value_to_index</td>
         </tr>
       </table>
 </div><div class="memdoc">

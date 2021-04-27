@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.2</span>
+                <span id="sfml">Google OR-Tools 9.0</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -347,7 +347,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:ad3864adf749011c7abcd03127679af5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a non empty string explaining the issue if the model is invalid.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#ad3864adf749011c7abcd03127679af5d">More...</a><br /></td></tr>
 <tr class="separator:ad3864adf749011c7abcd03127679af5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a380637b707322864d915ee2c3dd4a900"><td class="memItemLeft" align="right" valign="top">Boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a380637b707322864d915ee2c3dd4a900">exportToFile</a> (String file)</td></tr>
-<tr class="memdesc:a380637b707322864d915ee2c3dd4a900"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write the model as a ascii protocol buffer to 'file'.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a380637b707322864d915ee2c3dd4a900">More...</a><br /></td></tr>
+<tr class="memdesc:a380637b707322864d915ee2c3dd4a900"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write the model as a protocol buffer to 'file'.  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a380637b707322864d915ee2c3dd4a900">More...</a><br /></td></tr>
 <tr class="separator:a380637b707322864d915ee2c3dd4a900"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0553dcb0013a4abf06580f642177d776"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html">CpModelProto</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a0553dcb0013a4abf06580f642177d776">model</a> ()</td></tr>
 <tr class="separator:a0553dcb0013a4abf06580f642177d776"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2670,9 +2670,16 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Write the model as a ascii protocol buffer to 'file'. </p>
+<p>Write the model as a protocol buffer to 'file'. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">file</td><td>file to write the model to. If the filename ends with 'txt', the model will be written as a text file, otherwise, the binary format will be used.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if the model was correctly written. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01055">1055</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01063">1063</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2714,7 +2721,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the model builder. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01086">1086</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01093">1093</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2777,7 +2784,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01077">1077</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01084">1084</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>
@@ -2818,7 +2825,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01081">1081</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8java_source.html#l01088">1088</a> of file <a class="el" href="CpModel_8java_source.html">CpModel.java</a>.</p>
 
 </div>
 </div>

@@ -261,13 +261,13 @@ class LinearSumAssignment(object):
 _pywrapgraph.LinearSumAssignment_swigregister(LinearSumAssignment)
 
 
-def DijkstraShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_node: &#34;int&#34;, graph: &#34;std::function&lt; int64 (int,int) &gt;&#34;, disconnected_distance: &#34;int64&#34;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
+def DijkstraShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_node: &#34;int&#34;, graph: &#34;std::function&lt; int64_t (int,int) &gt;&#34;, disconnected_distance: &#34;int64_t&#34;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
     return _pywrapgraph.DijkstraShortestPath(node_count, start_node, end_node, graph, disconnected_distance)
 
-def BellmanFordShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_node: &#34;int&#34;, graph: &#34;std::function&lt; int64 (int,int) &gt;&#34;, disconnected_distance: &#34;int64&#34;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
+def BellmanFordShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_node: &#34;int&#34;, graph: &#34;std::function&lt; int64_t (int,int) &gt;&#34;, disconnected_distance: &#34;int64_t&#34;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
     return _pywrapgraph.BellmanFordShortestPath(node_count, start_node, end_node, graph, disconnected_distance)
 
-def AStarShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_node: &#34;int&#34;, graph: &#34;std::function&lt; int64 (int,int) &gt;&#34;, heuristic: &#34;std::function&lt; int64 (int) &gt;&#34;, disconnected_distance: &#34;int64&#34;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
+def AStarShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_node: &#34;int&#34;, graph: &#34;std::function&lt; int64_t (int,int) &gt;&#34;, heuristic: &#34;std::function&lt; int64_t (int) &gt;&#34;, disconnected_distance: &#34;int64_t&#34;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
     return _pywrapgraph.AStarShortestPath(node_count, start_node, end_node, graph, heuristic, disconnected_distance)</code></pre>
 </details>
 </section>
@@ -279,7 +279,7 @@ def AStarShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="pywrapgraph.AStarShortestPath"><code class="name flex">
-<span>def <span class="ident">AStarShortestPath</span></span>(<span>node_count: int, start_node: int, end_node: int, graph: std::function< int64 (int,int) >, heuristic: std::function< int64 (int) >, disconnected_distance: int64) ‑> std::vector< int > *</span>
+<span>def <span class="ident">AStarShortestPath</span></span>(<span>node_count: int, start_node: int, end_node: int, graph: std::function< int64_t (int,int) >, heuristic: std::function< int64_t (int) >, disconnected_distance: int64_t) ‑> std::vector< int > *</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -287,12 +287,12 @@ def AStarShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def AStarShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_node: &#34;int&#34;, graph: &#34;std::function&lt; int64 (int,int) &gt;&#34;, heuristic: &#34;std::function&lt; int64 (int) &gt;&#34;, disconnected_distance: &#34;int64&#34;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
+<pre><code class="python">def AStarShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_node: &#34;int&#34;, graph: &#34;std::function&lt; int64_t (int,int) &gt;&#34;, heuristic: &#34;std::function&lt; int64_t (int) &gt;&#34;, disconnected_distance: &#34;int64_t&#34;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
     return _pywrapgraph.AStarShortestPath(node_count, start_node, end_node, graph, heuristic, disconnected_distance)</code></pre>
 </details>
 </dd>
 <dt id="pywrapgraph.BellmanFordShortestPath"><code class="name flex">
-<span>def <span class="ident">BellmanFordShortestPath</span></span>(<span>node_count: int, start_node: int, end_node: int, graph: std::function< int64 (int,int) >, disconnected_distance: int64) ‑> std::vector< int > *</span>
+<span>def <span class="ident">BellmanFordShortestPath</span></span>(<span>node_count: int, start_node: int, end_node: int, graph: std::function< int64_t (int,int) >, disconnected_distance: int64_t) ‑> std::vector< int > *</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -300,12 +300,12 @@ def AStarShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def BellmanFordShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_node: &#34;int&#34;, graph: &#34;std::function&lt; int64 (int,int) &gt;&#34;, disconnected_distance: &#34;int64&#34;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
+<pre><code class="python">def BellmanFordShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_node: &#34;int&#34;, graph: &#34;std::function&lt; int64_t (int,int) &gt;&#34;, disconnected_distance: &#34;int64_t&#34;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
     return _pywrapgraph.BellmanFordShortestPath(node_count, start_node, end_node, graph, disconnected_distance)</code></pre>
 </details>
 </dd>
 <dt id="pywrapgraph.DijkstraShortestPath"><code class="name flex">
-<span>def <span class="ident">DijkstraShortestPath</span></span>(<span>node_count: int, start_node: int, end_node: int, graph: std::function< int64 (int,int) >, disconnected_distance: int64) ‑> std::vector< int > *</span>
+<span>def <span class="ident">DijkstraShortestPath</span></span>(<span>node_count: int, start_node: int, end_node: int, graph: std::function< int64_t (int,int) >, disconnected_distance: int64_t) ‑> std::vector< int > *</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -313,7 +313,7 @@ def AStarShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def DijkstraShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_node: &#34;int&#34;, graph: &#34;std::function&lt; int64 (int,int) &gt;&#34;, disconnected_distance: &#34;int64&#34;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
+<pre><code class="python">def DijkstraShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_node: &#34;int&#34;, graph: &#34;std::function&lt; int64_t (int,int) &gt;&#34;, disconnected_distance: &#34;int64_t&#34;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
     return _pywrapgraph.DijkstraShortestPath(node_count, start_node, end_node, graph, disconnected_distance)</code></pre>
 </details>
 </dd>

@@ -16,7 +16,7 @@ var classoperations__research_1_1_queue =
     [ "reset_action_on_fail", "classoperations__research_1_1_queue.html#a26d87b428f06d54a1a44d6e950a0e196", null ],
     [ "set_action_on_fail", "classoperations__research_1_1_queue.html#a3ae4667b0e7a9e6c63c91202480c8876", null ],
     [ "set_variable_to_clean_on_fail", "classoperations__research_1_1_queue.html#a62643a4fccfb8c4ffeaf518e8d89079a", null ],
-    [ "stamp", "classoperations__research_1_1_queue.html#ad1600fac3a55a9ab4d7b5750b19fb6a1", null ],
+    [ "stamp", "classoperations__research_1_1_queue.html#abbfe61fbd02ff9015e48695d525a889f", null ],
     [ "Unfreeze", "classoperations__research_1_1_queue.html#a4c1821b0f8a19558441f75d53a43f46c", null ],
-    [ "kTestPeriod", "classoperations__research_1_1_queue.html#a62b479661fb7007cc22642137371ab6f", null ]
+    [ "kTestPeriod", "classoperations__research_1_1_queue.html#a2bc0e35530e61e76884370d745d02313", null ]
 ];

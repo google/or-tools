@@ -20,6 +20,7 @@ var classoperations__research_1_1sat_1_1_cp_model_mapping =
     [ "LoadBooleanSymmetries", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#a4af0100d434de55ff841156fdac6d180", null ],
     [ "NumBooleanVariables", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#a432f9671a5c6197d10b284ad2443322c", null ],
     [ "NumIntegerVariables", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#a6362803926342ed9d75c777f2d94c4d3", null ],
-    [ "PotentialEncodedValues", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#ad67b08fb6b8be443da8c4427d3e83a77", null ],
+    [ "NumProtoVariables", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#ae05bc267fe7166e53214c1b3fa157023", null ],
+    [ "PotentialEncodedValues", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#a5974fccf8f46db50a67c3dce1d27e9d0", null ],
     [ "PropagateEncodingFromEquivalenceRelations", "classoperations__research_1_1sat_1_1_cp_model_mapping.html#adfbeb7391a9578a4cdba60c46b05e19e", null ]
 ];

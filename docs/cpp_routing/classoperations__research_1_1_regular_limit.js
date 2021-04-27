@@ -1,6 +1,6 @@
 var classoperations__research_1_1_regular_limit =
 [
-    [ "RegularLimit", "classoperations__research_1_1_regular_limit.html#a551f7fd189fedf3c4b6078e72ba8313d", null ],
+    [ "RegularLimit", "classoperations__research_1_1_regular_limit.html#ad0f093cb34e6c424b7b7cc973d1bc0a3", null ],
     [ "~RegularLimit", "classoperations__research_1_1_regular_limit.html#a4b4eab279939d2f78038cc89554a3d61", null ],
     [ "AbsoluteSolverDeadline", "classoperations__research_1_1_regular_limit.html#a8cc63d9778229883ca7594b3a47d8f5b", null ],
     [ "Accept", "classoperations__research_1_1_regular_limit.html#aa30c84aec5e60d6b74e1e1eb15011d4a", null ],
@@ -14,7 +14,7 @@ var classoperations__research_1_1_regular_limit =
     [ "BeginFail", "classoperations__research_1_1_regular_limit.html#a232379b0cabc402db868a849f4f71273", null ],
     [ "BeginInitialPropagation", "classoperations__research_1_1_regular_limit.html#adfeaf3bb78e09fb211bdb8a4fa605c05", null ],
     [ "BeginNextDecision", "classoperations__research_1_1_regular_limit.html#a6022c765bf8a03b9322ca6c6591b3c21", null ],
-    [ "branches", "classoperations__research_1_1_regular_limit.html#ad01c3a2fbfb388d917899ad983415d02", null ],
+    [ "branches", "classoperations__research_1_1_regular_limit.html#a14f1aa725d9c4497296b233dbcb28402", null ],
     [ "Check", "classoperations__research_1_1_regular_limit.html#a01dd9b59b9a183cb3ba148b08d09b320", null ],
     [ "Copy", "classoperations__research_1_1_regular_limit.html#aac0948fa90cbc174304a0f6c78d72e15", null ],
     [ "crossed", "classoperations__research_1_1_regular_limit.html#ae874856cae71ff1b4391027b70f0c915", null ],
@@ -25,7 +25,7 @@ var classoperations__research_1_1_regular_limit =
     [ "EndNextDecision", "classoperations__research_1_1_regular_limit.html#ab472eccafac416112828cde24cefb907", null ],
     [ "EnterSearch", "classoperations__research_1_1_regular_limit.html#a0c955ff1b2eae2daece0f25f1e57fb16", null ],
     [ "ExitSearch", "classoperations__research_1_1_regular_limit.html#a4d07aaa3fe401d52e938c2f8f7f2e26f", null ],
-    [ "failures", "classoperations__research_1_1_regular_limit.html#a2b05840b09f4ab5632470987f01e11e1", null ],
+    [ "failures", "classoperations__research_1_1_regular_limit.html#a7dcb440a607b4b39979280ee21621473", null ],
     [ "Init", "classoperations__research_1_1_regular_limit.html#a47de93e849d14c3eda08d78613506608", null ],
     [ "Install", "classoperations__research_1_1_regular_limit.html#a16adaa01a30033dfc04405c25b7ede7b", null ],
     [ "IsUncheckedSolutionLimitReached", "classoperations__research_1_1_regular_limit.html#a1d6a0a8f90a9b39efbd6b00994d212c8", null ],
@@ -37,9 +37,9 @@ var classoperations__research_1_1_regular_limit =
     [ "ProgressPercent", "classoperations__research_1_1_regular_limit.html#a7dae7731e3aee0f21059730b01aaaf51", null ],
     [ "RefuteDecision", "classoperations__research_1_1_regular_limit.html#acdef27972648252e66630c3b078aa962", null ],
     [ "RestartSearch", "classoperations__research_1_1_regular_limit.html#a262b3b6ef45475daffd66c5ada5dfdd2", null ],
-    [ "solutions", "classoperations__research_1_1_regular_limit.html#a23ac09a78dbd8b39b2f63e9981947788", null ],
+    [ "solutions", "classoperations__research_1_1_regular_limit.html#af1315bc614fc71a3c90729398d208289", null ],
     [ "solver", "classoperations__research_1_1_regular_limit.html#a5f32c22c620c811754ba7b6f977db864", null ],
-    [ "UpdateLimits", "classoperations__research_1_1_regular_limit.html#ac27d43b8547c5bee9c7e0fdbdb98a80e", null ],
-    [ "wall_time", "classoperations__research_1_1_regular_limit.html#a80533bb150275c3c1c46e7ee3f31a822", null ],
+    [ "UpdateLimits", "classoperations__research_1_1_regular_limit.html#a31c8a0b81a7b1d7ebccff84666901671", null ],
+    [ "wall_time", "classoperations__research_1_1_regular_limit.html#a6129ea627a9a40fc21ddc24914cc6958", null ],
     [ "kNoProgress", "classoperations__research_1_1_regular_limit.html#a97c59af2c64e5f0c004243f4266173cc", null ]
 ];

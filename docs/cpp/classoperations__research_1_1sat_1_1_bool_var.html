@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -97,13 +97,13 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_b
 <p>This class wraps an IntegerVariableProto with domain [0, 1]. It supports the logical negation (Not).</p>
 <p>This can only be constructed via <code><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_builder.html#a580af67c82c83176a2938fb24b3b0c98" title="Creates a Boolean variable.">CpModelBuilder.NewBoolVar()</a></code>. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00067">67</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00069">69</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a8d34e06a33d1de52331eef3732b509cf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html#a8d34e06a33d1de52331eef3732b509cf">BoolVar</a> ()</td></tr>
 <tr class="separator:a8d34e06a33d1de52331eef3732b509cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5faa887b5cfc205902474ccd69223870"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html#a5faa887b5cfc205902474ccd69223870">WithName</a> (const std::string &amp;<a class="el" href="linear__solver_8cc.html#a82e2a7e0f28d620da677073b6b24574b">name</a>)</td></tr>
+<tr class="memitem:a5faa887b5cfc205902474ccd69223870"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html">BoolVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html#a5faa887b5cfc205902474ccd69223870">WithName</a> (const std::string &amp;<a class="el" href="gscip__solver_8cc.html#a82e2a7e0f28d620da677073b6b24574b">name</a>)</td></tr>
 <tr class="memdesc:a5faa887b5cfc205902474ccd69223870"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the name of the variable.  <a href="classoperations__research_1_1sat_1_1_bool_var.html#a5faa887b5cfc205902474ccd69223870">More...</a><br /></td></tr>
 <tr class="separator:a5faa887b5cfc205902474ccd69223870"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a191cd9b1ba3e3c01a558a1f6c02a4429"><td class="memItemLeft" align="right" valign="top">const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_bool_var.html#a191cd9b1ba3e3c01a558a1f6c02a4429">Name</a> () const</td></tr>
@@ -147,7 +147,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00026">26</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00029">29</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -169,7 +169,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Debug string. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00036">36</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00039">39</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>
@@ -199,7 +199,7 @@ Public Member Functions</h2></td></tr>
 <p>Returns the index of the variable in the model. </p>
 <p>If the variable is the negation of another variable v, its index is -v.index() - 1. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00109">109</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00111">111</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -228,7 +228,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the mutable underlying protobuf object (useful for model edition). </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00099">99</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00101">101</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -257,7 +257,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the name of the variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00075">75</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00077">77</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -286,7 +286,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the logical negation of the current Boolean variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00078">78</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00080">80</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -316,7 +316,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Dis-Equality test. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00086">86</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00088">88</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -346,7 +346,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Equality test with another boolvar. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00081">81</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00083">83</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -375,7 +375,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the underlying protobuf object (useful for testing). </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00094">94</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00096">96</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -397,7 +397,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Sets the name of the variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00031">31</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8cc_source.html#l00034">34</a> of file <a class="el" href="cp__model_8cc_source.html">cp_model.cc</a>.</p>
 
 </div>
 </div>

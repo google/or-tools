@@ -6,6 +6,6 @@ var classoperations__research_1_1_affine_relation =
     [ "Get", "classoperations__research_1_1_affine_relation.html#ac776696766f8c91ca8abc02f41d5854b", null ],
     [ "IgnoreFromClassSize", "classoperations__research_1_1_affine_relation.html#a2dfbb2acebf03bbb98cc1c54256fdead", null ],
     [ "NumRelations", "classoperations__research_1_1_affine_relation.html#acee7699cd3aad1b8ce9721e4952b36e7", null ],
-    [ "TryAdd", "classoperations__research_1_1_affine_relation.html#ab00901a89f35f3d9c663aac94cbcc77d", null ],
-    [ "TryAdd", "classoperations__research_1_1_affine_relation.html#aba26716b3a9435aa1a8d9af046abb970", null ]
+    [ "TryAdd", "classoperations__research_1_1_affine_relation.html#a3fd7611957e9eaebe9d43c23705e720b", null ],
+    [ "TryAdd", "classoperations__research_1_1_affine_relation.html#aab37f78ced0c4e5a04ecc60152ab0e27", null ]
 ];

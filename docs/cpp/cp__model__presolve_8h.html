@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -100,11 +100,13 @@ $(document).ready(function(){initNavTree('cp__model__presolve_8h.html',''); init
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_cp_model_presolver.html">CpModelPresolver</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_model_copy.html">ModelCopy</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespaceoperations__research"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html">operations_research</a></td></tr>
-<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">The vehicle routing library lets one model and solve generic vehicle routing problems ranging from the Traveling Salesman Problem to more complex problems such as the Capacitated Vehicle Routing Problem with Time Windows. <br /></td></tr>
+<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">Collection of objects used to extend the <a class="el" href="classoperations__research_1_1_constraint.html" title="A constraint is the main modeling object.">Constraint</a> <a class="el" href="classoperations__research_1_1_solver.html" title="Solver Class.">Solver</a> library. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespaceoperations__research_1_1sat"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html">operations_research::sat</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -113,6 +115,10 @@ Namespaces</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:ae82ca1b371f76400eefb8e94246c5fe2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ae82ca1b371f76400eefb8e94246c5fe2">ApplyVariableMapping</a> (const std::vector&lt; int &gt; &amp;mapping, const PresolveContext &amp;<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>)</td></tr>
 <tr class="separator:ae82ca1b371f76400eefb8e94246c5fe2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a980f3e04f0fac2f0f8a7ff4c73572922"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a980f3e04f0fac2f0f8a7ff4c73572922">ImportConstraintsWithBasicPresolveIntoContext</a> (const CpModelProto &amp;in_model, PresolveContext *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>)</td></tr>
+<tr class="separator:a980f3e04f0fac2f0f8a7ff4c73572922"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e28f522e1d211cabbdcff4fd3028593"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a8e28f522e1d211cabbdcff4fd3028593">CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext</a> (const CpModelProto &amp;in_model, PresolveContext *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>)</td></tr>
+<tr class="separator:a8e28f522e1d211cabbdcff4fd3028593"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5921e7fd881f9a30b1ccb2c90ed672c8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a5921e7fd881f9a30b1ccb2c90ed672c8">PresolveCpModel</a> (PresolveContext *<a class="el" href="gurobi__interface_8cc.html#a5f287b83a753915ae862fed64f8640a6">context</a>, std::vector&lt; int &gt; *postsolve_mapping)</td></tr>
 <tr class="separator:a5921e7fd881f9a30b1ccb2c90ed672c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a90650dff7fc501dfe17041e0cb5388fd"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a90650dff7fc501dfe17041e0cb5388fd">FindDuplicateConstraints</a> (const CpModelProto &amp;<a class="el" href="cp__model__solver_8cc.html#a6ac76d8a372013f67c4973012948ec84">model_proto</a>)</td></tr>

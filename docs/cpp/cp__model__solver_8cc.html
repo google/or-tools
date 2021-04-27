@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -104,7 +104,7 @@ Classes</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespaceoperations__research"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html">operations_research</a></td></tr>
-<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">The vehicle routing library lets one model and solve generic vehicle routing problems ranging from the Traveling Salesman Problem to more complex problems such as the Capacitated Vehicle Routing Problem with Time Windows. <br /></td></tr>
+<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">Collection of objects used to extend the <a class="el" href="classoperations__research_1_1_constraint.html" title="A constraint is the main modeling object.">Constraint</a> <a class="el" href="classoperations__research_1_1_solver.html" title="Solver Class.">Solver</a> library. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespaceoperations__research_1_1sat"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html">operations_research::sat</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -119,16 +119,18 @@ Functions</h2></td></tr>
 <tr class="separator:ade24f3a5e6e72d4ce785a0e4bc1ac9c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1edec8c4b93640864fb848e4c7501e52"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__solver_8cc.html#a1edec8c4b93640864fb848e4c7501e52">ABSL_FLAG</a> (bool, cp_model_dump_response, false, &quot;DEBUG ONLY. If true, the final <a class="el" href="cp__model__solver_8cc.html#abcd33b18ce6d5a90a4ba5c37cfa58829">response</a> of each solve will be &quot; &quot;dumped to 'FLAGS_cp_model_dump_prefix'response.pbtxt&quot;)</td></tr>
 <tr class="separator:a1edec8c4b93640864fb848e4c7501e52"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a335160e182a5699147bb9514356c7eb8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__solver_8cc.html#a335160e182a5699147bb9514356c7eb8">ABSL_FLAG</a> (std::string, cp_model_params, &quot;&quot;, &quot;This is interpreted as <a class="el" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a> text SatParameters proto. The &quot; &quot;specified fields will override the normal ones for all solves.&quot;)</td></tr>
+<tr class="memitem:a335160e182a5699147bb9514356c7eb8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__solver_8cc.html#a335160e182a5699147bb9514356c7eb8">ABSL_FLAG</a> (std::string, cp_model_params, &quot;&quot;, &quot;This is interpreted as <a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a> text SatParameters proto. The &quot; &quot;specified fields will override the normal ones for all solves.&quot;)</td></tr>
 <tr class="separator:a335160e182a5699147bb9514356c7eb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a73c8968cf0877bf8947b93c2889c280a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__solver_8cc.html#a73c8968cf0877bf8947b93c2889c280a">ABSL_FLAG</a> (std::string, drat_output, &quot;&quot;, &quot;If non-empty, <a class="el" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a> proof in DRAT format will be written to this file. &quot; &quot;This will only be used for pure-SAT problems.&quot;)</td></tr>
+<tr class="memitem:a73c8968cf0877bf8947b93c2889c280a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__solver_8cc.html#a73c8968cf0877bf8947b93c2889c280a">ABSL_FLAG</a> (std::string, drat_output, &quot;&quot;, &quot;If non-empty, <a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a> proof in DRAT format will be written to this file. &quot; &quot;This will only be used for pure-SAT problems.&quot;)</td></tr>
 <tr class="separator:a73c8968cf0877bf8947b93c2889c280a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a858fff11042fe8116cbe8d4247de69c3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__solver_8cc.html#a858fff11042fe8116cbe8d4247de69c3">ABSL_FLAG</a> (bool, drat_check, false, &quot;If true, <a class="el" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a> proof in DRAT format will be stored in memory and &quot; &quot;checked <a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> the problem is UNSAT. This will only be used for &quot; &quot;pure-SAT problems.&quot;)</td></tr>
+<tr class="memitem:a858fff11042fe8116cbe8d4247de69c3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__solver_8cc.html#a858fff11042fe8116cbe8d4247de69c3">ABSL_FLAG</a> (bool, drat_check, false, &quot;If true, <a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a> proof in DRAT format will be stored in memory and &quot; &quot;checked <a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> the problem is UNSAT. This will only be used for &quot; &quot;pure-SAT problems.&quot;)</td></tr>
 <tr class="separator:a858fff11042fe8116cbe8d4247de69c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9aab1846f5aa2cda3749adb20a0e7c7b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__solver_8cc.html#a9aab1846f5aa2cda3749adb20a0e7c7b">ABSL_FLAG</a> (double, max_drat_time_in_seconds, std::numeric_limits&lt; double &gt;::infinity(), &quot;Maximum <a class="el" href="resource_8cc.html#a13421db7d7e84fff732599bcf954c5cc">time</a> in seconds to check the DRAT proof. This will only &quot; &quot;be used is the drat_check flag is enabled.&quot;)</td></tr>
+<tr class="memitem:a9aab1846f5aa2cda3749adb20a0e7c7b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__solver_8cc.html#a9aab1846f5aa2cda3749adb20a0e7c7b">ABSL_FLAG</a> (double, max_drat_time_in_seconds, std::numeric_limits&lt; double &gt;::infinity(), &quot;Maximum <a class="el" href="resource_8cc.html#aee52de7b225665566aa47246b9d6b8fa">time</a> in seconds to check the DRAT proof. This will only &quot; &quot;be used is the drat_check flag is enabled.&quot;)</td></tr>
 <tr class="separator:a9aab1846f5aa2cda3749adb20a0e7c7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad7d4011427b402d43eb77b73566ea4ac"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__solver_8cc.html#ad7d4011427b402d43eb77b73566ea4ac">ABSL_FLAG</a> (bool, cp_model_check_intermediate_solutions, false, &quot;When true, all intermediate solutions found by the solver will be &quot; &quot;checked. This can be expensive, therefore it is off by default.&quot;)</td></tr>
 <tr class="separator:ad7d4011427b402d43eb77b73566ea4ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a97368eabb3adf82bc07f8c4e7b4e0b4c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cp__model__solver_8cc.html#a97368eabb3adf82bc07f8c4e7b4e0b4c">ABSL_FLAG</a> (std::string, contention_profile, &quot;&quot;, &quot;If non-empty, dump <a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a> contention pprof <a class="el" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a> to the specified &quot; &quot;destination at the end of the solve.&quot;)</td></tr>
+<tr class="separator:a97368eabb3adf82bc07f8c4e7b4e0b4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9d2f0d4258ace84d7ddf7e886c72b913"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a9d2f0d4258ace84d7ddf7e886c72b913">CpModelStats</a> (const CpModelProto &amp;<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
 <tr class="memdesc:a9d2f0d4258ace84d7ddf7e886c72b913"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a string with some statistics on the given CpModelProto.  <a href="namespaceoperations__research_1_1sat.html#a9d2f0d4258ace84d7ddf7e886c72b913">More...</a><br /></td></tr>
 <tr class="separator:a9d2f0d4258ace84d7ddf7e886c72b913"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -158,7 +160,7 @@ Functions</h2></td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="ad7d4011427b402d43eb77b73566ea4ac"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad7d4011427b402d43eb77b73566ea4ac">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[1/9]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad7d4011427b402d43eb77b73566ea4ac">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[1/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -210,7 +212,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="ade24f3a5e6e72d4ce785a0e4bc1ac9c1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ade24f3a5e6e72d4ce785a0e4bc1ac9c1">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[2/9]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ade24f3a5e6e72d4ce785a0e4bc1ac9c1">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[2/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -256,7 +258,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a1a876b63c00524a5578afbf691be5ad9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1a876b63c00524a5578afbf691be5ad9">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[3/9]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1a876b63c00524a5578afbf691be5ad9">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[3/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -302,7 +304,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a1edec8c4b93640864fb848e4c7501e52"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1edec8c4b93640864fb848e4c7501e52">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[4/9]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1edec8c4b93640864fb848e4c7501e52">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[4/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -348,7 +350,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a858fff11042fe8116cbe8d4247de69c3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a858fff11042fe8116cbe8d4247de69c3">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[5/9]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a858fff11042fe8116cbe8d4247de69c3">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[5/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -380,7 +382,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a> proof in DRAT format will be stored in memory and &quot; &quot;checked <a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> the problem is UNSAT. This will only be used for &quot; &quot;pure-SAT problems.&quot;&#160;</td>
+          <td class="paramtype"><a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a> proof in DRAT format will be stored in memory and &quot; &quot;checked <a class="el" href="parser_8yy_8cc.html#a33e91cd0cef6786e9e3a27ac67707207">if</a> the problem is UNSAT. This will only be used for &quot; &quot;pure-SAT problems.&quot;&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -394,7 +396,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a9aab1846f5aa2cda3749adb20a0e7c7b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9aab1846f5aa2cda3749adb20a0e7c7b">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[6/9]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a9aab1846f5aa2cda3749adb20a0e7c7b">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[6/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -420,7 +422,53 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">&quot;Maximum <a class="el" href="resource_8cc.html#a13421db7d7e84fff732599bcf954c5cc">time</a> in seconds to check the DRAT proof. This will only &quot; &quot;be used is the drat_check flag is enabled.&quot;&#160;</td>
+          <td class="paramtype">&quot;Maximum <a class="el" href="resource_8cc.html#aee52de7b225665566aa47246b9d6b8fa">time</a> in seconds to check the DRAT proof. This will only &quot; &quot;be used is the drat_check flag is enabled.&quot;&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a97368eabb3adf82bc07f8c4e7b4e0b4c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a97368eabb3adf82bc07f8c4e7b4e0b4c">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[7/10]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ABSL_FLAG </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">contention_profile&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&quot;&quot;&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&quot;If non-&#160;</td>
+          <td class="paramname"><em>empty</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">dump <a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a> contention pprof <a class="el" href="cp__model__fz__solver_8cc.html#aed003f5eb5197bc586b7ef2c36a63da2">proto</a> to the specified &quot; &quot;destination at the end of the solve.&quot;&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -434,7 +482,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="aa6b6aa5316ec3a7e0c3ca010c084a747"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa6b6aa5316ec3a7e0c3ca010c084a747">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[7/9]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa6b6aa5316ec3a7e0c3ca010c084a747">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[8/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -474,7 +522,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a335160e182a5699147bb9514356c7eb8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a335160e182a5699147bb9514356c7eb8">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[8/9]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a335160e182a5699147bb9514356c7eb8">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[9/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -500,7 +548,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">&quot;This is interpreted as <a class="el" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a> text SatParameters proto. The &quot; &quot;specified fields will override the normal ones for all solves.&quot;&#160;</td>
+          <td class="paramtype">&quot;This is interpreted as <a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a> text SatParameters proto. The &quot; &quot;specified fields will override the normal ones for all solves.&quot;&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -514,7 +562,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a73c8968cf0877bf8947b93c2889c280a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a73c8968cf0877bf8947b93c2889c280a">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[9/9]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a73c8968cf0877bf8947b93c2889c280a">&#9670;&nbsp;</a></span>ABSL_FLAG() <span class="overload">[10/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -546,7 +594,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a> proof in DRAT format will be written to this file. &quot; &quot;This will only be used for pure-SAT problems.&quot;&#160;</td>
+          <td class="paramtype"><a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a> proof in DRAT format will be written to this file. &quot; &quot;This will only be used for pure-SAT problems.&quot;&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -572,7 +620,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l02117">2117</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l02153">2153</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -588,7 +636,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l02121">2121</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l02157">2157</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -604,7 +652,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l02120">2120</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l02156">2156</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -620,7 +668,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l02114">2114</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l02150">2150</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -636,7 +684,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l02119">2119</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l02155">2155</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -652,7 +700,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l02118">2118</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l02154">2154</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -668,7 +716,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l02116">2116</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l02152">2152</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -684,7 +732,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l02115">2115</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__solver_8cc_source.html#l02151">2151</a> of file <a class="el" href="cp__model__solver_8cc_source.html">cp_model_solver.cc</a>.</p>
 
 </div>
 </div>

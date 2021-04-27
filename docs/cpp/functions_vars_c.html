@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -190,12 +190,13 @@ $(document).ready(function(){initNavTree('functions_vars_c.html',''); initResiza
 , <a class="el" href="struct_s_w_i_g___java_exceptions__t.html#ad6e60115faec006ed03087580603f5ce">SWIG_JavaExceptions_t</a>
 </li>
 <li>coeff
-: <a class="el" href="structoperations__research_1_1_affine_relation_1_1_relation.html#a03e44d5423c90c458e450c3230d71045">AffineRelation::Relation</a>
+: <a class="el" href="structoperations__research_1_1_affine_relation_1_1_relation.html#a537e59662a0751edfbbd2a0079a794b4">AffineRelation::Relation</a>
 , <a class="el" href="structoperations__research_1_1glop_1_1_matrix_entry.html#a1473614b2ace570d3ebaccb2b04149e4">MatrixEntry</a>
 , <a class="el" href="structoperations__research_1_1sat_1_1_affine_expression.html#ad7d5fda7881b6c8fdc9d1e7a74ee4a2e">AffineExpression</a>
 </li>
 <li>coefficient
-: <a class="el" href="structoperations__research_1_1sat_1_1_literal_with_coeff.html#ada84a5c84452210dd2919b83deb58ca3">LiteralWithCoeff</a>
+: <a class="el" href="structoperations__research_1_1math__opt_1_1_linear_term.html#a93f49aa27773e3ee2fc2e5368aa31ab2">LinearTerm</a>
+, <a class="el" href="structoperations__research_1_1sat_1_1_literal_with_coeff.html#ada84a5c84452210dd2919b83deb58ca3">LiteralWithCoeff</a>
 </li>
 <li>coefficient_
 : <a class="el" href="classoperations__research_1_1glop_1_1_scattered_vector_entry.html#aa5073f3fbade604ea7ce5b99612b2778">ScatteredVectorEntry&lt; IndexType &gt;</a>
@@ -253,8 +254,15 @@ $(document).ready(function(){initNavTree('functions_vars_c.html',''); initResiza
 <li>constraint
 : <a class="el" href="structoperations__research_1_1sat_1_1_linear_constraint_manager_1_1_constraint_info.html#a032d3e55dc38f64c8914c8a6f9d3ba66">LinearConstraintManager::ConstraintInfo</a>
 </li>
+<li>constraint_status
+: <a class="el" href="structoperations__research_1_1math__opt_1_1_indexed_basis.html#a71ef6bd1ff70ba245d1d64648a207886">IndexedBasis</a>
+, <a class="el" href="structoperations__research_1_1math__opt_1_1_result_1_1_basis.html#a861aab8e91d4e8a0201d4de3154cf01f">Result::Basis</a>
+</li>
 <li>constraint_statuses
 : <a class="el" href="structoperations__research_1_1glop_1_1_problem_solution.html#ae7a0a13dedf8ae7920036bfff1ad9c3b">ProblemSolution</a>
+</li>
+<li>constraints_to_ignore
+: <a class="el" href="structoperations__research_1_1sat_1_1_neighborhood.html#a44b6866eda48febe9f81e0a941caf8ce">Neighborhood</a>
 </li>
 <li>CONTAIN_ONE_COST_SCALING
 : <a class="el" href="classoperations__research_1_1glop_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a625ea85caf1e1e82ac07bfe30704a961">PROTOBUF_FINAL</a>
@@ -266,13 +274,13 @@ $(document).ready(function(){initNavTree('functions_vars_c.html',''); initResiza
 : <a class="el" href="structswig__cast__info.html#ab0c02ae209c86c1a920b1a6cbec7ec52">swig_cast_info</a>
 </li>
 <li>cost
-: <a class="el" href="structoperations__research_1_1_simple_bound_costs_1_1_bound_cost.html#a26a8cbbc7bcf4117c2bf65104b4a54b4">SimpleBoundCosts::BoundCost</a>
+: <a class="el" href="structoperations__research_1_1_simple_bound_costs_1_1_bound_cost.html#a75d7b5e4cab1e156cc7a2c5eba1e16f1">SimpleBoundCosts::BoundCost</a>
 </li>
 <li>cost_class_index
 : <a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#af626487fbe89510613df5f35bdf9a002">RoutingModel::VehicleClass</a>
 </li>
 <li>cost_coefficient
-: <a class="el" href="structoperations__research_1_1_routing_model_1_1_cost_class_1_1_dimension_cost.html#a348e00acd2dcfd664d889041f317ad31">RoutingModel::CostClass::DimensionCost</a>
+: <a class="el" href="structoperations__research_1_1_routing_model_1_1_cost_class_1_1_dimension_cost.html#a3c7b2506dec5c4684a24117f3f3c1658">RoutingModel::CostClass::DimensionCost</a>
 </li>
 <li>CostScalingAlgorithm_ARRAYSIZE
 : <a class="el" href="classoperations__research_1_1glop_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#afe92454e525ae811b73d6f1d94bd9cf4">PROTOBUF_FINAL</a>
@@ -286,8 +294,17 @@ $(document).ready(function(){initNavTree('functions_vars_c.html',''); initResiza
 <li>COUNTER
 : <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a39ce4063a923e8e1ef6a81c22a3871e8">PROTOBUF_FINAL</a>
 </li>
-<li>cp_model
-: <a class="el" href="structoperations__research_1_1sat_1_1_neighborhood.html#ae580758c31ce30f5e52d9a732efd1267">Neighborhood</a>
+<li>cp_model_dump_lns
+: <a class="el" href="structoperations__research_1_1_cpp_flags.html#a19f919897f6647dc63432e12783b7e43">CppFlags</a>
+</li>
+<li>cp_model_dump_models
+: <a class="el" href="structoperations__research_1_1_cpp_flags.html#a9ee72cc82add75d37769790bebc52dc6">CppFlags</a>
+</li>
+<li>cp_model_dump_prefix
+: <a class="el" href="structoperations__research_1_1_cpp_flags.html#ad36c9975d4d7f377a3a3daaebf90e6e4">CppFlags</a>
+</li>
+<li>cp_model_dump_response
+: <a class="el" href="structoperations__research_1_1_cpp_flags.html#a9607bf496238b18fe0e1df87f25e93f5">CppFlags</a>
 </li>
 <li>CP_SAT
 : <a class="el" href="classoperations__research_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a09327b108d8917da0d33c3d166d1c486">PROTOBUF_FINAL</a>

@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -98,23 +98,21 @@ $(document).ready(function(){initNavTree('cp__model__search_8cc.html',''); initR
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_strategy.html">Strategy</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1sat_1_1_var_value.html">VarValue</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespaceoperations__research"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html">operations_research</a></td></tr>
-<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">The vehicle routing library lets one model and solve generic vehicle routing problems ranging from the Traveling Salesman Problem to more complex problems such as the Capacitated Vehicle Routing Problem with Time Windows. <br /></td></tr>
+<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">Collection of objects used to extend the <a class="el" href="classoperations__research_1_1_constraint.html" title="A constraint is the main modeling object.">Constraint</a> <a class="el" href="classoperations__research_1_1_solver.html" title="Solver Class.">Solver</a> library. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespaceoperations__research_1_1sat"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html">operations_research::sat</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a8eaaab6887866402ed7380fb2e6344cb"><td class="memItemLeft" align="right" valign="top">const std::function&lt; BooleanOrIntegerLiteral()&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a8eaaab6887866402ed7380fb2e6344cb">ConstructSearchStrategyInternal</a> (const absl::flat_hash_map&lt; int, std::pair&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt;&gt; &amp;var_to_coeff_offset_pair, const std::vector&lt; Strategy &gt; &amp;strategies, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
-<tr class="separator:a8eaaab6887866402ed7380fb2e6344cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a099c87ea3e687ad941596116e157ff5e"><td class="memItemLeft" align="right" valign="top">const std::function&lt; BooleanOrIntegerLiteral()&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a099c87ea3e687ad941596116e157ff5e">ConstructSearchStrategyInternal</a> (const std::vector&lt; DecisionStrategyProto &gt; &amp;strategies, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
+<tr class="separator:a099c87ea3e687ad941596116e157ff5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aef9a9e314dd32a66b7540b0ae367eb4f"><td class="memItemLeft" align="right" valign="top">std::function&lt; BooleanOrIntegerLiteral()&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aef9a9e314dd32a66b7540b0ae367eb4f">ConstructSearchStrategy</a> (const CpModelProto &amp;cp_model_proto, const std::vector&lt; IntegerVariable &gt; &amp;variable_mapping, IntegerVariable objective_var, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
 <tr class="separator:aef9a9e314dd32a66b7540b0ae367eb4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb3c98e67e212632d35259e550235d0a"><td class="memItemLeft" align="right" valign="top">std::function&lt; BooleanOrIntegerLiteral()&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#afb3c98e67e212632d35259e550235d0a">InstrumentSearchStrategy</a> (const CpModelProto &amp;cp_model_proto, const std::vector&lt; IntegerVariable &gt; &amp;variable_mapping, const std::function&lt; BooleanOrIntegerLiteral()&gt; &amp;instrumented_strategy, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>

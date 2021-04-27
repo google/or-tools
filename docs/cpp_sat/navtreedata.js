@@ -199,11 +199,10 @@ var NAVTREE =
       [ "SatParameters_VariableOrder_IsValid", "namespaceoperations__research_1_1sat.html#a711b59624fbd706f0754647084c665d8", null ],
       [ "SatParameters_VariableOrder_Name", "namespaceoperations__research_1_1sat.html#a9e40adad4a6a75afceefe43c8c509457", null ],
       [ "SatParameters_VariableOrder_Parse", "namespaceoperations__research_1_1sat.html#adff74d54012d9ac2684d6cea57d6afb7", null ],
-      [ "SetSynchronizationFunction", "namespaceoperations__research_1_1sat.html#ad04337634227eac006d3e33a7028f82f", null ],
       [ "SolutionBooleanValue", "namespaceoperations__research_1_1sat.html#afa415e372a9d64eede869ed98666c29c", null ],
-      [ "SolutionIntegerMax", "namespaceoperations__research_1_1sat.html#a8ec893fa736de5b95135ecb9314ee6d8", null ],
-      [ "SolutionIntegerMin", "namespaceoperations__research_1_1sat.html#a671200a31003492dbef21f2b4ee3dcbd", null ],
-      [ "SolutionIntegerValue", "namespaceoperations__research_1_1sat.html#aeaed9bdf2a27bb778ba397666cb874d7", null ],
+      [ "SolutionIntegerMax", "namespaceoperations__research_1_1sat.html#a0205c1cb83c849b1f47dab55ad6ada5c", null ],
+      [ "SolutionIntegerMin", "namespaceoperations__research_1_1sat.html#af7857084f34282d9c30370db7d63faa7", null ],
+      [ "SolutionIntegerValue", "namespaceoperations__research_1_1sat.html#ab6fe86bc876c281163a053a9581346c3", null ],
       [ "Solve", "namespaceoperations__research_1_1sat.html#a09d851f944ab4f305c3d9f8df99b7bf8", null ],
       [ "SolveCpModel", "namespaceoperations__research_1_1sat.html#a9d67b9c66f1cb9c1dcc3415cd5af11bf", null ],
       [ "SolveWithParameters", "namespaceoperations__research_1_1sat.html#aa3062797aa0396abf37dbcc99a746f12", null ],
@@ -293,8 +292,8 @@ var NAVTREE =
       [ "operator<<", "namespaceoperations__research.html#a5c341d9214d5d46014089435ba0e26d3", null ],
       [ "operator<<", "namespaceoperations__research.html#abebf3070a940da6bf678953a66584e76", null ],
       [ "operator<<", "namespaceoperations__research.html#aaa301d39d2a9271daf8c65e779635335", null ],
-      [ "SumOfKMaxValueInDomain", "namespaceoperations__research.html#aa2302f6e1343327d0d686023150b4dcf", null ],
-      [ "SumOfKMinValueInDomain", "namespaceoperations__research.html#ae861bbddc2a8766ec1631f18b6edf961", null ]
+      [ "SumOfKMaxValueInDomain", "namespaceoperations__research.html#aeab50e8a6cadc29a421918a966df360f", null ],
+      [ "SumOfKMinValueInDomain", "namespaceoperations__research.html#a6fb2cc3382534da86167bf6644e057e7", null ]
     ] ],
     [ "Classes", "annotated.html", [
       [ "BoolVar", "classoperations__research_1_1sat_1_1_bool_var.html", "classoperations__research_1_1sat_1_1_bool_var" ],

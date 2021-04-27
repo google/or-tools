@@ -7,10 +7,10 @@ var classoperations__research_1_1_local_search_filter_manager =
     ] ],
     [ "LocalSearchFilterManager", "classoperations__research_1_1_local_search_filter_manager.html#a2f382f2b04d9d07c1ca24689bb31f082", null ],
     [ "LocalSearchFilterManager", "classoperations__research_1_1_local_search_filter_manager.html#a4bc6d7a7fb2d16cbc67f5bd65c9f3d05", null ],
-    [ "Accept", "classoperations__research_1_1_local_search_filter_manager.html#ac01556936ee8bcfe89ee8a7088ee260d", null ],
+    [ "Accept", "classoperations__research_1_1_local_search_filter_manager.html#a712060303eea0e26ca9a072b57bbf227", null ],
     [ "DebugString", "classoperations__research_1_1_local_search_filter_manager.html#aed804747c45a7e1caf81461f9e45dd91", null ],
-    [ "GetAcceptedObjectiveValue", "classoperations__research_1_1_local_search_filter_manager.html#aa54bcd4c0278255d51698aeb9155762b", null ],
-    [ "GetSynchronizedObjectiveValue", "classoperations__research_1_1_local_search_filter_manager.html#a5e12ecb41f49732af540d54a3e71b6e7", null ],
+    [ "GetAcceptedObjectiveValue", "classoperations__research_1_1_local_search_filter_manager.html#a16e0093badb54c2c26a272d6f245155e", null ],
+    [ "GetSynchronizedObjectiveValue", "classoperations__research_1_1_local_search_filter_manager.html#a1d06d57955f55158e291e83a99d4361b", null ],
     [ "Revert", "classoperations__research_1_1_local_search_filter_manager.html#ad415204991d6155dd37e84f3a306ccca", null ],
     [ "Synchronize", "classoperations__research_1_1_local_search_filter_manager.html#ae90693395653f673140e7bee51daf656", null ]
 ];

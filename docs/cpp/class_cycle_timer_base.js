@@ -1,7 +1,7 @@
 var class_cycle_timer_base =
 [
-    [ "CyclesToMs", "class_cycle_timer_base.html#af72c99345ff5f404d5da74f1a85652b7", null ],
-    [ "CyclesToSeconds", "class_cycle_timer_base.html#a7e448ecafed04da49adbf772e78dafda", null ],
-    [ "CyclesToUsec", "class_cycle_timer_base.html#a84305e84f1312296efc7377ff6552ec1", null ],
-    [ "SecondsToCycles", "class_cycle_timer_base.html#ae82c433a407292e84ea6cbecbb6fd26d", null ]
+    [ "CyclesToMs", "class_cycle_timer_base.html#ab50e956e5fdfc5c64d97f758d9f53265", null ],
+    [ "CyclesToSeconds", "class_cycle_timer_base.html#a6a828813794eef80d8b66ed85414226f", null ],
+    [ "CyclesToUsec", "class_cycle_timer_base.html#a17f7ef354ef4cdd3cbe52667eda0fab2", null ],
+    [ "SecondsToCycles", "class_cycle_timer_base.html#afd22e45efdda1b8f730f44b3693aada5", null ]
 ];

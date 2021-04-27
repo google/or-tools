@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -132,7 +132,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aad16076f9d10c90b9b9e0ccfddf878ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2b88b717e42d7137a884c36e35052191"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_star_graph_base.html#a2b88b717e42d7137a884c36e35052191">IsNodeValid</a> (NodeIndexType node) const</td></tr>
 <tr class="separator:a2b88b717e42d7137a884c36e35052191"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afd99777b09af9bfb951f88dbb93e11e7"><td class="memItemLeft" align="right" valign="top">ArcIndexType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_star_graph_base.html#afd99777b09af9bfb951f88dbb93e11e7">LookUpArc</a> (const NodeIndexType <a class="el" href="routing__sat_8cc.html#aff39d864a6594bc5f4a5e365282e00fe">tail</a>, const NodeIndexType <a class="el" href="routing__sat_8cc.html#a20358970b1abaf992eb85e071e454653">head</a>) const</td></tr>
+<tr class="memitem:afd99777b09af9bfb951f88dbb93e11e7"><td class="memItemLeft" align="right" valign="top">ArcIndexType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_star_graph_base.html#afd99777b09af9bfb951f88dbb93e11e7">LookUpArc</a> (const NodeIndexType <a class="el" href="routing__search_8cc.html#aff39d864a6594bc5f4a5e365282e00fe">tail</a>, const NodeIndexType <a class="el" href="routing__search_8cc.html#a20358970b1abaf992eb85e071e454653">head</a>) const</td></tr>
 <tr class="separator:afd99777b09af9bfb951f88dbb93e11e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5237cfbb86ec8f305e498e873e5c4e95"><td class="memItemLeft" align="right" valign="top">NodeIndexType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_star_graph_base.html#a5237cfbb86ec8f305e498e873e5c4e95">Head</a> (const ArcIndexType arc) const</td></tr>
 <tr class="separator:a5237cfbb86ec8f305e498e873e5c4e95"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -867,8 +867,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
-<div class="line">        <a class="code" href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">std::numeric_limits&lt;ArcIndexType&gt;::max</a>()</div>
-<div class="ttc" id="aalldiff__cst_8cc_html_a9d0c202d5fdd62f4fa2c613339ff168a"><div class="ttname"><a href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">max</a></div><div class="ttdeci">int64 max</div><div class="ttdef"><b>Definition:</b> <a href="alldiff__cst_8cc_source.html#l00139">alldiff_cst.cc:139</a></div></div>
+<div class="line">        <a class="code" href="alldiff__cst_8cc.html#a26e6db9bcc64b584051ecc28171ed11f">std::numeric_limits&lt;ArcIndexType&gt;::max</a>()</div>
+<div class="ttc" id="aalldiff__cst_8cc_html_a26e6db9bcc64b584051ecc28171ed11f"><div class="ttname"><a href="alldiff__cst_8cc.html#a26e6db9bcc64b584051ecc28171ed11f">max</a></div><div class="ttdeci">int64_t max</div><div class="ttdef"><b>Definition:</b> <a href="alldiff__cst_8cc_source.html#l00140">alldiff_cst.cc:140</a></div></div>
 </div><!-- fragment -->
 <p class="definition">Definition at line <a class="el" href="ebert__graph_8h_source.html#l00235">235</a> of file <a class="el" href="ebert__graph_8h_source.html">ebert_graph.h</a>.</p>
 
@@ -894,7 +894,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
-<div class="line">        <a class="code" href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">std::numeric_limits&lt;NodeIndexType&gt;::max</a>()</div>
+<div class="line">        <a class="code" href="alldiff__cst_8cc.html#a26e6db9bcc64b584051ecc28171ed11f">std::numeric_limits&lt;NodeIndexType&gt;::max</a>()</div>
 </div><!-- fragment -->
 <p class="definition">Definition at line <a class="el" href="ebert__graph_8h_source.html#l00230">230</a> of file <a class="el" href="ebert__graph_8h_source.html">ebert_graph.h</a>.</p>
 
@@ -920,8 +920,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
-<div class="line">        <a class="code" href="alldiff__cst_8cc.html#a021e695f54a13bd809c34b2f4ca87c37">std::numeric_limits&lt;ArcIndexType&gt;::min</a>()</div>
-<div class="ttc" id="aalldiff__cst_8cc_html_a021e695f54a13bd809c34b2f4ca87c37"><div class="ttname"><a href="alldiff__cst_8cc.html#a021e695f54a13bd809c34b2f4ca87c37">min</a></div><div class="ttdeci">int64 min</div><div class="ttdef"><b>Definition:</b> <a href="alldiff__cst_8cc_source.html#l00138">alldiff_cst.cc:138</a></div></div>
+<div class="line">        <a class="code" href="alldiff__cst_8cc.html#ad10edae0a852d72fb76afb1c77735045">std::numeric_limits&lt;ArcIndexType&gt;::min</a>()</div>
+<div class="ttc" id="aalldiff__cst_8cc_html_ad10edae0a852d72fb76afb1c77735045"><div class="ttname"><a href="alldiff__cst_8cc.html#ad10edae0a852d72fb76afb1c77735045">min</a></div><div class="ttdeci">int64_t min</div><div class="ttdef"><b>Definition:</b> <a href="alldiff__cst_8cc_source.html#l00139">alldiff_cst.cc:139</a></div></div>
 </div><!-- fragment -->
 <p class="definition">Definition at line <a class="el" href="ebert__graph_8h_source.html#l00219">219</a> of file <a class="el" href="ebert__graph_8h_source.html">ebert_graph.h</a>.</p>
 

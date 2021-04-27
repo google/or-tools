@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.2</span>
+                <span id="sfml">Google OR-Tools 9.0</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -91,7 +91,7 @@ $(document).ready(function(){initNavTree('classGoogle_1_1OrTools_1_1Sat_1_1Decis
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Advanced usage. </p>
-<p>Some of the variable listed above may have been transformed by the presolve so this is needed to properly follow the given selection strategy. Instead of using a value X from one of the variable listed here, we will use positive_coeff * X + offset instead.</p>
+<p>Some of the variable listed above may have been transformed by the presolve so this is needed to properly follow the given selection strategy. Instead of using a value X for variables[index], we will use positive_coeff * X + offset instead.</p>
 
 <p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06848">6848</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 </div><table class="memberdecls">
@@ -122,9 +122,9 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:ab982438c3bc36350f73b87fc3fecc14f"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#ab982438c3bc36350f73b87fc3fecc14f">VarFieldNumber</a> = 1</td></tr>
-<tr class="memdesc:ab982438c3bc36350f73b87fc3fecc14f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "var" field.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#ab982438c3bc36350f73b87fc3fecc14f">More...</a><br /></td></tr>
-<tr class="separator:ab982438c3bc36350f73b87fc3fecc14f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1cf9ee00ed574678bb2dca73a4b7d0bf"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#a1cf9ee00ed574678bb2dca73a4b7d0bf">IndexFieldNumber</a> = 1</td></tr>
+<tr class="memdesc:a1cf9ee00ed574678bb2dca73a4b7d0bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "index" field.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#a1cf9ee00ed574678bb2dca73a4b7d0bf">More...</a><br /></td></tr>
+<tr class="separator:a1cf9ee00ed574678bb2dca73a4b7d0bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a12f0687287af579e61b58dff9a12bb94"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#a12f0687287af579e61b58dff9a12bb94">OffsetFieldNumber</a> = 2</td></tr>
 <tr class="memdesc:a12f0687287af579e61b58dff9a12bb94"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "offset" field.  <a href="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#a12f0687287af579e61b58dff9a12bb94">More...</a><br /></td></tr>
 <tr class="separator:a12f0687287af579e61b58dff9a12bb94"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -138,8 +138,8 @@ Properties</h2></td></tr>
 <tr class="separator:a50883842cd1dd39894904e67cc2b63cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acbefcf491fe57d4ebe699914922577fb"><td class="memItemLeft" align="right" valign="top">static pbr::MessageDescriptor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#acbefcf491fe57d4ebe699914922577fb">Descriptor</a><code> [get]</code></td></tr>
 <tr class="separator:acbefcf491fe57d4ebe699914922577fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad2586af1a975f4d44febda95291fdc63"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#ad2586af1a975f4d44febda95291fdc63">Var</a><code> [get, set]</code></td></tr>
-<tr class="separator:ad2586af1a975f4d44febda95291fdc63"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a075e1e3c9dd399cef584d7338cc37938"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#a075e1e3c9dd399cef584d7338cc37938">Index</a><code> [get, set]</code></td></tr>
+<tr class="separator:a075e1e3c9dd399cef584d7338cc37938"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aad7df986191652e206d6f1bce4ef209b"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#aad7df986191652e206d6f1bce4ef209b">Offset</a><code> [get, set]</code></td></tr>
 <tr class="separator:aad7df986191652e206d6f1bce4ef209b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aafc44d363af17acf49ae8dc425202d30"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#aafc44d363af17acf49ae8dc425202d30">PositiveCoeff</a><code> [get, set]</code></td></tr>
@@ -451,6 +451,32 @@ Properties</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a1cf9ee00ed574678bb2dca73a4b7d0bf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1cf9ee00ed574678bb2dca73a4b7d0bf">&#9670;&nbsp;</a></span>IndexFieldNumber</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const int IndexFieldNumber = 1</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Field number for the "index" field. </p>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06889">6889</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+
+</div>
+</div>
 <a id="a12f0687287af579e61b58dff9a12bb94"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a12f0687287af579e61b58dff9a12bb94">&#9670;&nbsp;</a></span>OffsetFieldNumber</h2>
 
@@ -503,32 +529,6 @@ Properties</h2></td></tr>
 
 </div>
 </div>
-<a id="ab982438c3bc36350f73b87fc3fecc14f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab982438c3bc36350f73b87fc3fecc14f">&#9670;&nbsp;</a></span>VarFieldNumber</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const int VarFieldNumber = 1</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Field number for the "var" field. </p>
-
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06889">6889</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
-
-</div>
-</div>
 <h2 class="groupheader">Property Documentation</h2>
 <a id="acbefcf491fe57d4ebe699914922577fb"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#acbefcf491fe57d4ebe699914922577fb">&#9670;&nbsp;</a></span>Descriptor</h2>
@@ -551,6 +551,30 @@ Properties</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06859">6859</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+
+</div>
+</div>
+<a id="a075e1e3c9dd399cef584d7338cc37938"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a075e1e3c9dd399cef584d7338cc37938">&#9670;&nbsp;</a></span>Index</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int Index</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">get</span><span class="mlabel">set</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06892">6892</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -623,30 +647,6 @@ Properties</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06914">6914</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
-
-</div>
-</div>
-<a id="ad2586af1a975f4d44febda95291fdc63"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad2586af1a975f4d44febda95291fdc63">&#9670;&nbsp;</a></span>Var</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int Var</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">get</span><span class="mlabel">set</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06892">6892</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>

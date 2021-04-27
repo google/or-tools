@@ -1,17 +1,17 @@
 var classoperations__research_1_1_piecewise_segment =
 [
-    [ "PiecewiseSegment", "classoperations__research_1_1_piecewise_segment.html#ac85ecb445e9c9d28ffda317427e6be86", null ],
-    [ "AddConstantToX", "classoperations__research_1_1_piecewise_segment.html#a4000c13822565973c85d36d793e2e571", null ],
-    [ "AddConstantToY", "classoperations__research_1_1_piecewise_segment.html#a2ce323c7f8c7bb47e066b3ac8af48e23", null ],
+    [ "PiecewiseSegment", "classoperations__research_1_1_piecewise_segment.html#a535295123475f146509112e5423154cc", null ],
+    [ "AddConstantToX", "classoperations__research_1_1_piecewise_segment.html#a251fcf13677473e1e7dc22481cedae13", null ],
+    [ "AddConstantToY", "classoperations__research_1_1_piecewise_segment.html#a8a76bb73d807580286eda7f04188553b", null ],
     [ "DebugString", "classoperations__research_1_1_piecewise_segment.html#a764be64f3029f8b8e23511061d8de355", null ],
-    [ "end_x", "classoperations__research_1_1_piecewise_segment.html#a8f22b6a7f6f6640b7459142bf0bceac5", null ],
-    [ "end_y", "classoperations__research_1_1_piecewise_segment.html#ace89e47a008e7a217d61f056ebcd1e08", null ],
-    [ "ExpandEnd", "classoperations__research_1_1_piecewise_segment.html#ab63aa3203e2f0b705674e93ff0d4006d", null ],
-    [ "FindComparator", "classoperations__research_1_1_piecewise_segment.html#a1328295e83e8ba2c6d30c0dfe1cdc4a5", null ],
-    [ "intersection_y", "classoperations__research_1_1_piecewise_segment.html#a852176d5372f2ebea5b8a6c06425a70b", null ],
-    [ "slope", "classoperations__research_1_1_piecewise_segment.html#a133b19c06459acdb586c0c9333efce3f", null ],
+    [ "end_x", "classoperations__research_1_1_piecewise_segment.html#a812c497c8e21c8b38593fc358c2ae6fd", null ],
+    [ "end_y", "classoperations__research_1_1_piecewise_segment.html#aa5f57f858a4566fdb393f06840c52fc8", null ],
+    [ "ExpandEnd", "classoperations__research_1_1_piecewise_segment.html#a8829bfff4b5ca5e126ff3aa7e29e233c", null ],
+    [ "FindComparator", "classoperations__research_1_1_piecewise_segment.html#a77ce53a27b88c53f5fa438a08d00af34", null ],
+    [ "intersection_y", "classoperations__research_1_1_piecewise_segment.html#aaae2d9393b903d8dea5e9afd1e49fae6", null ],
+    [ "slope", "classoperations__research_1_1_piecewise_segment.html#a3e0673c584a9281683e7d137fe7476cb", null ],
     [ "SortComparator", "classoperations__research_1_1_piecewise_segment.html#afd287f1ff1de1124a2cd8a6fe79cb3fb", null ],
-    [ "start_x", "classoperations__research_1_1_piecewise_segment.html#a08d0dde02012b732a27126c122683601", null ],
-    [ "start_y", "classoperations__research_1_1_piecewise_segment.html#ae805a12aef89c1ee445b7ef919c5b4bc", null ],
-    [ "Value", "classoperations__research_1_1_piecewise_segment.html#a1db582f491185f3bf58e8d17db1ffffb", null ]
+    [ "start_x", "classoperations__research_1_1_piecewise_segment.html#afcfbd07e95226dfc2556b43e41fe4fae", null ],
+    [ "start_y", "classoperations__research_1_1_piecewise_segment.html#a47a1fa2007b506d4ec34e2794ef5b1e1", null ],
+    [ "Value", "classoperations__research_1_1_piecewise_segment.html#a717f65b06206ba8cc7bbe1aa0c4a6c3b", null ]
 ];

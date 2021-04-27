@@ -136,6 +136,7 @@ var NAVTREE =
       [ "_MPModelRequest_default_instance_", "namespaceoperations__research.html#a21ff6531f9433bcf5ac4f7654223d648", null ],
       [ "_MPQuadraticConstraint_default_instance_", "namespaceoperations__research.html#a7b4f130e3877c2149b14fbd6c296b63d", null ],
       [ "_MPQuadraticObjective_default_instance_", "namespaceoperations__research.html#aa5a6d69a58750a88c914eabc85cd4508", null ],
+      [ "_MPSolution_default_instance_", "namespaceoperations__research.html#aba986f292963cc67918090468b1518d1", null ],
       [ "_MPSolutionResponse_default_instance_", "namespaceoperations__research.html#a6bb17e14243dc58537d7b29994ed5ccc", null ],
       [ "_MPSolverCommonParameters_default_instance_", "namespaceoperations__research.html#ae2e01270d59862503d3ea97b9cc3e427", null ],
       [ "_MPSosConstraint_default_instance_", "namespaceoperations__research.html#ada7e9956ab85bd985af2f5e00246a197", null ],

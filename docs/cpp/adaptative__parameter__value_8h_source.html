@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -89,7 +89,7 @@ $(document).ready(function(){initNavTree('adaptative__parameter__value_8h_source
 <div class="title">adaptative_parameter_value.h</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="adaptative__parameter__value_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2018 Google LLC</span></div>
+<a href="adaptative__parameter__value_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2021 Google LLC</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">// you may not use this file except in compliance with the License.</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">// You may obtain a copy of the License at</span></div>
@@ -135,12 +135,12 @@ $(document).ready(function(){initNavTree('adaptative__parameter__value_8h_source
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
 <div class="line"><a name="l00045"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_adaptive_parameter_value.html#ab7ff2156358799e542088856d0629b4d">   45</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1_adaptive_parameter_value.html#ab7ff2156358799e542088856d0629b4d">Increase</a>() {</div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> factor = IncreaseNumChangesAndGetFactor();</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    value_ = <a class="code" href="alldiff__cst_8cc.html#a021e695f54a13bd809c34b2f4ca87c37">std::min</a>(1.0 - (1.0 - value_) / factor, value_ * factor);</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    value_ = <a class="code" href="alldiff__cst_8cc.html#ad10edae0a852d72fb76afb1c77735045">std::min</a>(1.0 - (1.0 - value_) / factor, value_ * factor);</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;  }</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
 <div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_adaptive_parameter_value.html#a1279941cc24e4b9a3f35ff075b7943ac">   50</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1_adaptive_parameter_value.html#a1279941cc24e4b9a3f35ff075b7943ac">Decrease</a>() {</div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> factor = IncreaseNumChangesAndGetFactor();</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    value_ = <a class="code" href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">std::max</a>(value_ / factor, 1.0 - (1.0 - value_) * factor);</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    value_ = <a class="code" href="alldiff__cst_8cc.html#a26e6db9bcc64b584051ecc28171ed11f">std::max</a>(value_ / factor, 1.0 - (1.0 - value_) * factor);</div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;  }</div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;  <span class="comment">// If we get more than 1 datapoints from the same value(), we use a formula</span></div>
@@ -174,8 +174,8 @@ $(document).ready(function(){initNavTree('adaptative__parameter__value_8h_source
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;}  <span class="comment">// namespace operations_research</span></div>
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<span class="preprocessor">#endif  </span><span class="comment">// OR_TOOLS_UTIL_ADAPTATIVE_PARAMETER_VALUE_H_</span></div>
-<div class="ttc" id="aalldiff__cst_8cc_html_a021e695f54a13bd809c34b2f4ca87c37"><div class="ttname"><a href="alldiff__cst_8cc.html#a021e695f54a13bd809c34b2f4ca87c37">min</a></div><div class="ttdeci">int64 min</div><div class="ttdef"><b>Definition:</b> <a href="alldiff__cst_8cc_source.html#l00138">alldiff_cst.cc:138</a></div></div>
-<div class="ttc" id="aalldiff__cst_8cc_html_a9d0c202d5fdd62f4fa2c613339ff168a"><div class="ttname"><a href="alldiff__cst_8cc.html#a9d0c202d5fdd62f4fa2c613339ff168a">max</a></div><div class="ttdeci">int64 max</div><div class="ttdef"><b>Definition:</b> <a href="alldiff__cst_8cc_source.html#l00139">alldiff_cst.cc:139</a></div></div>
+<div class="ttc" id="aalldiff__cst_8cc_html_a26e6db9bcc64b584051ecc28171ed11f"><div class="ttname"><a href="alldiff__cst_8cc.html#a26e6db9bcc64b584051ecc28171ed11f">max</a></div><div class="ttdeci">int64_t max</div><div class="ttdef"><b>Definition:</b> <a href="alldiff__cst_8cc_source.html#l00140">alldiff_cst.cc:140</a></div></div>
+<div class="ttc" id="aalldiff__cst_8cc_html_ad10edae0a852d72fb76afb1c77735045"><div class="ttname"><a href="alldiff__cst_8cc.html#ad10edae0a852d72fb76afb1c77735045">min</a></div><div class="ttdeci">int64_t min</div><div class="ttdef"><b>Definition:</b> <a href="alldiff__cst_8cc_source.html#l00139">alldiff_cst.cc:139</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_adaptive_parameter_value_html"><div class="ttname"><a href="classoperations__research_1_1_adaptive_parameter_value.html">operations_research::AdaptiveParameterValue</a></div><div class="ttdef"><b>Definition:</b> <a href="adaptative__parameter__value_8h_source.html#l00037">adaptative_parameter_value.h:37</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_adaptive_parameter_value_html_a1279941cc24e4b9a3f35ff075b7943ac"><div class="ttname"><a href="classoperations__research_1_1_adaptive_parameter_value.html#a1279941cc24e4b9a3f35ff075b7943ac">operations_research::AdaptiveParameterValue::Decrease</a></div><div class="ttdeci">void Decrease()</div><div class="ttdef"><b>Definition:</b> <a href="adaptative__parameter__value_8h_source.html#l00050">adaptative_parameter_value.h:50</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_adaptive_parameter_value_html_a372de693ad40b3f42839c8ec6ac845f4"><div class="ttname"><a href="classoperations__research_1_1_adaptive_parameter_value.html#a372de693ad40b3f42839c8ec6ac845f4">operations_research::AdaptiveParameterValue::Reset</a></div><div class="ttdeci">void Reset()</div><div class="ttdef"><b>Definition:</b> <a href="adaptative__parameter__value_8h_source.html#l00043">adaptative_parameter_value.h:43</a></div></div>
@@ -184,7 +184,7 @@ $(document).ready(function(){initNavTree('adaptative__parameter__value_8h_source
 <div class="ttc" id="aclassoperations__research_1_1_adaptive_parameter_value_html_ab7ff2156358799e542088856d0629b4d"><div class="ttname"><a href="classoperations__research_1_1_adaptive_parameter_value.html#ab7ff2156358799e542088856d0629b4d">operations_research::AdaptiveParameterValue::Increase</a></div><div class="ttdeci">void Increase()</div><div class="ttdef"><b>Definition:</b> <a href="adaptative__parameter__value_8h_source.html#l00045">adaptative_parameter_value.h:45</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_adaptive_parameter_value_html_af9bf551154d37f48132472bd0f6dd848"><div class="ttname"><a href="classoperations__research_1_1_adaptive_parameter_value.html#af9bf551154d37f48132472bd0f6dd848">operations_research::AdaptiveParameterValue::Update</a></div><div class="ttdeci">void Update(int num_decreases, int num_increases)</div><div class="ttdef"><b>Definition:</b> <a href="adaptative__parameter__value_8h_source.html#l00058">adaptative_parameter_value.h:58</a></div></div>
 <div class="ttc" id="aintegral__types_8h_html"><div class="ttname"><a href="integral__types_8h.html">integral_types.h</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdoc">The vehicle routing library lets one model and solve generic vehicle routing problems ranging from th...</div><div class="ttdef"><b>Definition:</b> <a href="dense__doubly__linked__list_8h_source.html#l00021">dense_doubly_linked_list.h:21</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdoc">Collection of objects used to extend the Constraint Solver library.</div><div class="ttdef"><b>Definition:</b> <a href="dense__doubly__linked__list_8h_source.html#l00021">dense_doubly_linked_list.h:21</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.8.18-->

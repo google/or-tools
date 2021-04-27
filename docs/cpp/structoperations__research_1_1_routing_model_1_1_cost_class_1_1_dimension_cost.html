@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -100,19 +100,19 @@ $(document).ready(function(){initNavTree('structoperations__research_1_1_routing
 <li>The fixed costs are only needed when evaluating the cost of the first arc of the route, in which case we know the vehicle, since we have the route's start node. Only dimensions that have non-zero cost evaluator and a non-zero cost coefficient (in this cost class) are listed here. Since we only need their transit evaluator (the raw version that takes var index, not Node Index) and their span cost coefficient, we just store those. This is sorted by the natural operator &lt; (and <em>not</em> by DimensionIndex). </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00297">297</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00292">292</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a84a0cd1c601b30f409f0b7d7d25e453b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1_routing_model_1_1_cost_class_1_1_dimension_cost.html#a84a0cd1c601b30f409f0b7d7d25e453b">operator&lt;</a> (const <a class="el" href="structoperations__research_1_1_routing_model_1_1_cost_class_1_1_dimension_cost.html">DimensionCost</a> &amp;<a class="el" href="routing__flow_8cc.html#a26a8cbbc7bcf4117c2bf65104b4a54b4">cost</a>) const</td></tr>
+<tr class="memitem:a84a0cd1c601b30f409f0b7d7d25e453b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1_routing_model_1_1_cost_class_1_1_dimension_cost.html#a84a0cd1c601b30f409f0b7d7d25e453b">operator&lt;</a> (const <a class="el" href="structoperations__research_1_1_routing_model_1_1_cost_class_1_1_dimension_cost.html">DimensionCost</a> &amp;<a class="el" href="routing__flow_8cc.html#a75d7b5e4cab1e156cc7a2c5eba1e16f1">cost</a>) const</td></tr>
 <tr class="separator:a84a0cd1c601b30f409f0b7d7d25e453b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a251a1028d938f5eb8605f759e6dc966f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1_routing_model_1_1_cost_class_1_1_dimension_cost.html#a251a1028d938f5eb8605f759e6dc966f">transit_evaluator_class</a></td></tr>
-<tr class="separator:a251a1028d938f5eb8605f759e6dc966f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a348e00acd2dcfd664d889041f317ad31"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1_routing_model_1_1_cost_class_1_1_dimension_cost.html#a348e00acd2dcfd664d889041f317ad31">cost_coefficient</a></td></tr>
-<tr class="separator:a348e00acd2dcfd664d889041f317ad31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a87a285e6f72a6317dbd5d00120082cd7"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1_routing_model_1_1_cost_class_1_1_dimension_cost.html#a87a285e6f72a6317dbd5d00120082cd7">transit_evaluator_class</a></td></tr>
+<tr class="separator:a87a285e6f72a6317dbd5d00120082cd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c7b2506dec5c4684a24117f3f3c1658"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1_routing_model_1_1_cost_class_1_1_dimension_cost.html#a3c7b2506dec5c4684a24117f3f3c1658">cost_coefficient</a></td></tr>
+<tr class="separator:a3c7b2506dec5c4684a24117f3f3c1658"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0c310f28070bbb116acea285b7b891ee"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1_routing_model_1_1_cost_class_1_1_dimension_cost.html#a0c310f28070bbb116acea285b7b891ee">dimension</a></td></tr>
 <tr class="separator:a0c310f28070bbb116acea285b7b891ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -141,24 +141,24 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00301">301</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00296">296</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a348e00acd2dcfd664d889041f317ad31"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a348e00acd2dcfd664d889041f317ad31">&#9670;&nbsp;</a></span>cost_coefficient</h2>
+<a id="a3c7b2506dec5c4684a24117f3f3c1658"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3c7b2506dec5c4684a24117f3f3c1658">&#9670;&nbsp;</a></span>cost_coefficient</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> cost_coefficient</td>
+          <td class="memname">int64_t cost_coefficient</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00299">299</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00294">294</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -174,23 +174,23 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00300">300</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00295">295</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
-<a id="a251a1028d938f5eb8605f759e6dc966f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a251a1028d938f5eb8605f759e6dc966f">&#9670;&nbsp;</a></span>transit_evaluator_class</h2>
+<a id="a87a285e6f72a6317dbd5d00120082cd7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a87a285e6f72a6317dbd5d00120082cd7">&#9670;&nbsp;</a></span>transit_evaluator_class</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> transit_evaluator_class</td>
+          <td class="memname">int64_t transit_evaluator_class</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00298">298</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00293">293</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

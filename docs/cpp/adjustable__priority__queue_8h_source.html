@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -89,7 +89,7 @@ $(document).ready(function(){initNavTree('adjustable__priority__queue_8h_source.
 <div class="title">adjustable_priority_queue.h</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="adjustable__priority__queue_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2018 Google LLC</span></div>
+<a href="adjustable__priority__queue_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2021 Google LLC</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">// you may not use this file except in compliance with the License.</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">// You may obtain a copy of the License at</span></div>
@@ -119,7 +119,7 @@ $(document).ready(function(){initNavTree('adjustable__priority__queue_8h_source.
 <div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="class_lower_priority_than.html">   28</a></span>&#160;<span class="keyword">class </span><a class="code" href="class_lower_priority_than.html">LowerPriorityThan</a> {</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; <span class="keyword">public</span>:</div>
 <div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="class_lower_priority_than.html#aaf52c30ff76c4de1dd9e347c1fdb023e">   30</a></span>&#160;  <span class="keyword">explicit</span> <a class="code" href="class_lower_priority_than.html#aaf52c30ff76c4de1dd9e347c1fdb023e">LowerPriorityThan</a>(Comparator* compare) : compare_(compare) {}</div>
-<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="class_lower_priority_than.html#a5c850fe8c2e849c38b2316d0b04ac64e">   31</a></span>&#160;  <span class="keywordtype">bool</span> <a class="code" href="class_lower_priority_than.html#a5c850fe8c2e849c38b2316d0b04ac64e">operator()</a>(T* <a class="code" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a>, T* <a class="code" href="constraint__solver_2table_8cc.html#a344010e26426d6a13411648d988bc9b6">b</a>)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> (*compare_)(*<a class="code" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a>, *<a class="code" href="constraint__solver_2table_8cc.html#a344010e26426d6a13411648d988bc9b6">b</a>); }</div>
+<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="class_lower_priority_than.html#a5c850fe8c2e849c38b2316d0b04ac64e">   31</a></span>&#160;  <span class="keywordtype">bool</span> <a class="code" href="class_lower_priority_than.html#a5c850fe8c2e849c38b2316d0b04ac64e">operator()</a>(T* <a class="code" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, T* <a class="code" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a>)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> (*compare_)(*<a class="code" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, *<a class="code" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a>); }</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; <span class="keyword">private</span>:</div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;  Comparator* compare_;</div>
@@ -286,7 +286,7 @@ $(document).ready(function(){initNavTree('adjustable__priority__queue_8h_source.
 <div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160; </div>
 <div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;<span class="preprocessor">#endif  </span><span class="comment">// OR_TOOLS_BASE_ADJUSTABLE_PRIORITY_QUEUE_H_</span></div>
 <div class="ttc" id="abase_2logging_8h_html"><div class="ttname"><a href="base_2logging_8h.html">logging.h</a></div></div>
-<div class="ttc" id="abase_2logging_8h_html_a3e1cfef60e774a81f30eaddf26a3a274"><div class="ttname"><a href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a></div><div class="ttdeci">#define CHECK(condition)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00495">base/logging.h:495</a></div></div>
+<div class="ttc" id="abase_2logging_8h_html_a3e1cfef60e774a81f30eaddf26a3a274"><div class="ttname"><a href="base_2logging_8h.html#a3e1cfef60e774a81f30eaddf26a3a274">CHECK</a></div><div class="ttdeci">#define CHECK(condition)</div><div class="ttdef"><b>Definition:</b> <a href="base_2logging_8h_source.html#l00498">base/logging.h:498</a></div></div>
 <div class="ttc" id="abasictypes_8h_html"><div class="ttname"><a href="basictypes_8h.html">basictypes.h</a></div></div>
 <div class="ttc" id="aclass_adjustable_priority_queue_html"><div class="ttname"><a href="class_adjustable_priority_queue.html">AdjustablePriorityQueue</a></div><div class="ttdef"><b>Definition:</b> <a href="adjustable__priority__queue_8h_source.html#l00038">adjustable_priority_queue.h:38</a></div></div>
 <div class="ttc" id="aclass_adjustable_priority_queue_html_a0e2767a8e16637ccbcf3a04fa6761fe9"><div class="ttname"><a href="class_adjustable_priority_queue.html#a0e2767a8e16637ccbcf3a04fa6761fe9">AdjustablePriorityQueue::CheckValid</a></div><div class="ttdeci">void CheckValid()</div><div class="ttdef"><b>Definition:</b> <a href="adjustable__priority__queue_8h_source.html#l00133">adjustable_priority_queue.h:133</a></div></div>
@@ -313,8 +313,8 @@ $(document).ready(function(){initNavTree('adjustable__priority__queue_8h_source.
 <div class="ttc" id="aclass_lower_priority_than_html"><div class="ttname"><a href="class_lower_priority_than.html">LowerPriorityThan</a></div><div class="ttdef"><b>Definition:</b> <a href="adjustable__priority__queue_8h_source.html#l00028">adjustable_priority_queue.h:28</a></div></div>
 <div class="ttc" id="aclass_lower_priority_than_html_a5c850fe8c2e849c38b2316d0b04ac64e"><div class="ttname"><a href="class_lower_priority_than.html#a5c850fe8c2e849c38b2316d0b04ac64e">LowerPriorityThan::operator()</a></div><div class="ttdeci">bool operator()(T *a, T *b) const</div><div class="ttdef"><b>Definition:</b> <a href="adjustable__priority__queue_8h_source.html#l00031">adjustable_priority_queue.h:31</a></div></div>
 <div class="ttc" id="aclass_lower_priority_than_html_aaf52c30ff76c4de1dd9e347c1fdb023e"><div class="ttname"><a href="class_lower_priority_than.html#aaf52c30ff76c4de1dd9e347c1fdb023e">LowerPriorityThan::LowerPriorityThan</a></div><div class="ttdeci">LowerPriorityThan(Comparator *compare)</div><div class="ttdef"><b>Definition:</b> <a href="adjustable__priority__queue_8h_source.html#l00030">adjustable_priority_queue.h:30</a></div></div>
-<div class="ttc" id="aconstraint__solver_2table_8cc_html_a344010e26426d6a13411648d988bc9b6"><div class="ttname"><a href="constraint__solver_2table_8cc.html#a344010e26426d6a13411648d988bc9b6">b</a></div><div class="ttdeci">int64 b</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_2table_8cc_source.html#l00043">constraint_solver/table.cc:43</a></div></div>
-<div class="ttc" id="aconstraint__solver_2table_8cc_html_af730895c6c6ef6e03caaf6251192dfd2"><div class="ttname"><a href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a></div><div class="ttdeci">int64 a</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_2table_8cc_source.html#l00042">constraint_solver/table.cc:42</a></div></div>
+<div class="ttc" id="aconstraint__solver_2table_8cc_html_a9293e4d29cac928301645070dd307683"><div class="ttname"><a href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a></div><div class="ttdeci">int64_t b</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_2table_8cc_source.html#l00047">constraint_solver/table.cc:47</a></div></div>
+<div class="ttc" id="aconstraint__solver_2table_8cc_html_acb18315d548212835cd8ed4287e6c0b6"><div class="ttname"><a href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a></div><div class="ttdeci">int64_t a</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_2table_8cc_source.html#l00046">constraint_solver/table.cc:46</a></div></div>
 <div class="ttc" id="amacros_8h_html"><div class="ttname"><a href="macros_8h.html">macros.h</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

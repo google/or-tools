@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -158,11 +158,23 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 <li>ConvertSCIPVariableStatus()
 : <a class="el" href="lpi__glop_8cc.html#af5c4997d97f177fc6bc1ba4ddee86621">lpi_glop.cc</a>
 </li>
-<li>CPFeasibilityFilter_swiginit()
-: <a class="el" href="constraint__solver__python__wrap_8cc.html#ac4b2d443c636851bda975c4b4aa8b437">constraint_solver_python_wrap.cc</a>
+<li>CppBridge_swiginit()
+: <a class="el" href="init__python__wrap_8cc.html#a945f0a98a82d9c1f958b905b5149a08a">init_python_wrap.cc</a>
 </li>
-<li>CPFeasibilityFilter_swigregister()
-: <a class="el" href="constraint__solver__python__wrap_8cc.html#a67bfb79d00bdc2ed6f1c5a2c2ed4cbd8">constraint_solver_python_wrap.cc</a>
+<li>CppBridge_swigregister()
+: <a class="el" href="init__python__wrap_8cc.html#a6a9a2396c9601029cb5237ac9cc11abd">init_python_wrap.cc</a>
+</li>
+<li>CppFlags_swiginit()
+: <a class="el" href="init__python__wrap_8cc.html#a31ba8219415cbd089ed8563df1200b23">init_python_wrap.cc</a>
+</li>
+<li>CppFlags_swigregister()
+: <a class="el" href="init__python__wrap_8cc.html#ab863ab79d8f87cea3e5f50bc1a5ab145">init_python_wrap.cc</a>
+</li>
+<li>CpSatHelper_swiginit()
+: <a class="el" href="sat__python__wrap_8cc.html#af98a0974c7e7aa9ed1db639fae1b91e2">sat_python_wrap.cc</a>
+</li>
+<li>CpSatHelper_swigregister()
+: <a class="el" href="sat__python__wrap_8cc.html#abc9c006e592a989adc6e2972783925f0">sat_python_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfAlgorithms_delete_Int64Vector___()
 : <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#a81ff1ec569067558a8db21e88ae42ddf">knapsack_solver_csharp_wrap.cc</a>
@@ -426,7 +438,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#a688135efa972101ddd57687e34a0452e">knapsack_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfAlgorithms_KnapsackSolver_Init___()
-: <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#aacf1059457106e70e9462b3fcb591ee2">knapsack_solver_csharp_wrap.cc</a>
+: <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#a47a8d16e367111517a3ef6ec57caa106">knapsack_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfAlgorithms_KnapsackSolver_IsSolutionOptimal___()
 : <a class="el" href="knapsack__solver__csharp__wrap_8cc.html#aed036f2e3a12c0c0f43a3a6199e065a7">knapsack_solver_csharp_wrap.cc</a>
@@ -971,15 +983,6 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 <li>CSharp_GooglefOrToolsfConstraintSolver_BaseObject_ToString___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ab2268e579252918ecc64cab658080d8f">constraint_solver_csharp_wrap.cc</a>
 </li>
-<li>CSharp_GooglefOrToolsfConstraintSolver_BasePathFilter_Accept___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aeeba259cfce6da238aa4dc8ae118e14c">constraint_solver_csharp_wrap.cc</a>
-</li>
-<li>CSharp_GooglefOrToolsfConstraintSolver_BasePathFilter_OnSynchronize___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a7c2811d082b3f0f8f7344871d615b2d5">constraint_solver_csharp_wrap.cc</a>
-</li>
-<li>CSharp_GooglefOrToolsfConstraintSolver_BasePathFilter_SWIGUpcast___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ab9a743868276ff6694f08c5eafed770c">constraint_solver_csharp_wrap.cc</a>
-</li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_BOOLEAN_VAR_get___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a49e59851514a8636255ebc32ac847d92">constraint_solver_csharp_wrap.cc</a>
 </li>
@@ -1108,18 +1111,6 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Constraint_Var___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a164de49974f828d8b103b6990f59d627">constraint_solver_csharp_wrap.cc</a>
-</li>
-<li>CSharp_GooglefOrToolsfConstraintSolver_CPFeasibilityFilter_Accept___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a774b046bfdaa8d4876158e8d71a0434e">constraint_solver_csharp_wrap.cc</a>
-</li>
-<li>CSharp_GooglefOrToolsfConstraintSolver_CPFeasibilityFilter_OnSynchronize___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ae2cc9e9a93f42b7b4c9e5095f4874729">constraint_solver_csharp_wrap.cc</a>
-</li>
-<li>CSharp_GooglefOrToolsfConstraintSolver_CPFeasibilityFilter_SWIGUpcast___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a7e41ae4da5f46ade86c3cdb082e25dc1">constraint_solver_csharp_wrap.cc</a>
-</li>
-<li>CSharp_GooglefOrToolsfConstraintSolver_CPFeasibilityFilter_ToString___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#afff91fb6c6c14e92a5beb41ba3252060">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_CpRandomSeed___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ac2291226a301406c0f04d7edf957cc8e">constraint_solver_csharp_wrap.cc</a>
@@ -1347,10 +1338,10 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a6cef314a7af33509c305c4b8f04764ce">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_DefaultRoutingModelParameters___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a31e05e809b2bc4f49d40269d61a782c4">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#abe665deedf7c6681382b91086b222759">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_DefaultRoutingSearchParameters___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a7aa198e16d59356b8551750597082d13">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a7547f4b6929636c7557e7f1f79d97e75">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_delete_Assignment___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a072c7d961432f71791ec07424b46fc0b">constraint_solver_csharp_wrap.cc</a>
@@ -1376,9 +1367,6 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 <li>CSharp_GooglefOrToolsfConstraintSolver_delete_BaseObject___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ad43ab5a69097f24d67692f7ec71f6102">constraint_solver_csharp_wrap.cc</a>
 </li>
-<li>CSharp_GooglefOrToolsfConstraintSolver_delete_BasePathFilter___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ac0a5ac919859fb28a5338ef0da482f96">constraint_solver_csharp_wrap.cc</a>
-</li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_delete_BooleanVar___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a9532e778571d9e277f143bbe1fcc51c7">constraint_solver_csharp_wrap.cc</a>
 </li>
@@ -1390,9 +1378,6 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_delete_Constraint___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#acba24ea799b41d8313501366cb99d40f">constraint_solver_csharp_wrap.cc</a>
-</li>
-<li>CSharp_GooglefOrToolsfConstraintSolver_delete_CPFeasibilityFilter___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a523916d9a0ab02abb415c9081cd0a578">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_delete_Decision___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aa1c332ba4cb8ce49c1bde4f71f3b9624">constraint_solver_csharp_wrap.cc</a>
@@ -1647,7 +1632,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ab7a34d3f4fed07ff1351f7c7d61f5d01">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_FindErrorInRoutingSearchParameters___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#abf3e3f02e559873bc9376e0619e10fbd">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a90880701a04b0a14028e67e1590c7518">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_GlobalVehicleBreaksConstraint_InitialPropagateWrapper___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a50045bcbd47ef7282b6d63026a837599">constraint_solver_csharp_wrap.cc</a>
@@ -2235,7 +2220,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a9852c6694c95d194c622b8dda8f23af0">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_IntExpr_IndexOf__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ab135fa5231f6fcad332f6a417de687d3">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a1aa54e0defdf1059a4ce224274ec524f">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_IntExpr_IndexOf__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a1435fb7075a3865c0402b06dfa94dae6">constraint_solver_csharp_wrap.cc</a>
@@ -2277,7 +2262,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a69dddb9931e880b29fac804ab48b2e47">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_IntExpr_IsMember__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a77e7e91b8855d5418f60cf92d5d1bd16">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aa804b91f51b94d0a91c328467b8f8a4b">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_IntExpr_IsMember__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ae5009c5f0879177c6c5f06c977f01cd5">constraint_solver_csharp_wrap.cc</a>
@@ -2295,7 +2280,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a25de144b519cef1a31fad09317072cbd">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_IntExpr_Member__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a14ac0dba135e02d18cf4d022f40e9c7d">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a7ea2c744275d1457b80c07037c78566e">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_IntExpr_Member__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af7f785671b50dfefb1ae318b953dfe95">constraint_solver_csharp_wrap.cc</a>
@@ -2346,7 +2331,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a69ae424fed2ac457cd01810ba77ae3d7">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_IntTupleSet_Contains__SWIG_1___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af4d52357a1c4b0367f50dc9824ee8579">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ab395280dc3c622297f2a073f02cfc90e">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_IntTupleSet_Insert2___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ad9df1428286203c1a762a059409fe3ac">constraint_solver_csharp_wrap.cc</a>
@@ -2361,10 +2346,10 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a9f2986a6565cf0de87fb4331d504518d">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_IntTupleSet_Insert__SWIG_1___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a3a2ee560b06b02f65d9199e20b7b2242">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a3c4cdb891ad13cc2868c666539752269">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_IntTupleSet_InsertAll__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ac5417a3f606b748151eb280954c27164">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ab6329c2664ad9e4045b54e59bd4067d9">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_IntTupleSet_InsertAll__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af54c843f41e87117ce5c339074336f16">constraint_solver_csharp_wrap.cc</a>
@@ -2427,10 +2412,10 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a2676bacb9e003c927ec20a0b3d47800f">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_IntVar_RemoveValues___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#adb30902995776f35e924ae369aa5d1fa">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a38ba07ccae1001ead82561a26a50f4e2">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_IntVar_SetValues___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a61d2faae511f172ef124a88afa9850c7">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aadf3851baaf15b3f2b82e853132a0ffb">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_IntVar_Size___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a2dbbf38fb83a4d601b15625edee33a91">constraint_solver_csharp_wrap.cc</a>
@@ -2565,7 +2550,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ae6f5a928a5982e69bcc618a7558b683c">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_IntVarLocalSearchOperator_SWIGUpcast___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a957a001c6528c091f062d810bdd2b5d7">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ab9d2e5f061adbeb54b229d4c613b6e09">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_IntVarLocalSearchOperatorTemplate_Activate___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a4812885b87753e4485ecc15bde629983">constraint_solver_csharp_wrap.cc</a>
@@ -2598,7 +2583,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a482ac3221aa9c4e9c07197386db250b2">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_IntVarLocalSearchOperatorTemplate_SWIGUpcast___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ad4e98561e97645cde9b58f425d13be07">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aac6042f278f4ed708b75a82bd184b50b">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_IntVarLocalSearchOperatorTemplate_Value___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a7527b2b7afe0c76fa3d2d53185d3a61e">constraint_solver_csharp_wrap.cc</a>
@@ -3093,7 +3078,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a199d078f7875693ff9ba39f834ad1afe">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_MakeSetValuesFromTargets___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a86cc715ca8f898027d6f244be8200da7">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a62c1b8f20e445f34e5e084bec394cc56">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_MaxVarArray___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a1548d2f2204587777f1bac5e7755b2f6">constraint_solver_csharp_wrap.cc</a>
@@ -3225,7 +3210,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a7dbc6422cec4aa05c535a2f59824f440">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_ModelCache_FindVarArrayConstantArrayExpression___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af85a74cacd527427261e83cafe95215c">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aee36d8644201d3b257095bd70d82e761">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_ModelCache_FindVarArrayConstantExpression___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aded2351cae9b264cafb779ceb3c5d4dd">constraint_solver_csharp_wrap.cc</a>
@@ -3234,7 +3219,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a27f10fd0e5a8ca48a16ba270db97c34d">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_ModelCache_FindVarConstantArrayExpression___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a40cbb2998b30f8906e3c3c342603c53c">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a89f28c87726d9f0b40b0c5f1a5517e21">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_ModelCache_FindVarConstantConstantConstraint___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a59565e80bdaa608d61186037a04477c2">constraint_solver_csharp_wrap.cc</a>
@@ -3264,7 +3249,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a1c128183f299db8fc7c48127ea00e57b">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_ModelCache_InsertVarArrayConstantArrayExpression___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a06e350c7c755aac344bf99b8f7feb5ab">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ad4153a6f3dcd3d0aa835c933d4786c46">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_ModelCache_InsertVarArrayConstantExpression___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ad518bcdc0c92ee94b86e113dff5c5158">constraint_solver_csharp_wrap.cc</a>
@@ -3273,7 +3258,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ae08103b0fb8db78e939be49513869985">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_ModelCache_InsertVarConstantArrayExpression___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a1887bac38c0d4ababa9eb55d3c68c417">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ab88bfb52076f6390fe538f74d7e4138f">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_ModelCache_InsertVarConstantConstantConstraint___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a1fed2a25d6cade1cb090487e25e1d99d">constraint_solver_csharp_wrap.cc</a>
@@ -3876,7 +3861,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a963aedf23a98b62ee11aaa58f3816117">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_ModelVisitor_VisitIntegerArrayArgument___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ad7d48e14e54bc39535f4486182a9284b">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a4104eecc56793ee6299ee0829e1865e7">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_ModelVisitor_VisitIntegerExpressionArgument___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a02731118fcaf43f58e466d330f15a7c3">constraint_solver_csharp_wrap.cc</a>
@@ -3940,9 +3925,6 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_new_Constraint___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a5dd984906dea90d66c41cfd341a78902">constraint_solver_csharp_wrap.cc</a>
-</li>
-<li>CSharp_GooglefOrToolsfConstraintSolver_new_CPFeasibilityFilter___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aa875e7f6de7ebbae172c9db496d35d99">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_new_Decision___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#abee9ae9f3a087c501892ae854f55f2ae">constraint_solver_csharp_wrap.cc</a>
@@ -4140,7 +4122,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a694d5c2ed6bdf9c29426b7709c9df5b6">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_new_RoutingModel__SWIG_1___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a47305b4e0bbb137a2461a270c601c8b6">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a219fab97679cf7b4012754c5233b1c20">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_new_RoutingModel_VehicleTypeContainer___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a4c365092f005ac7795454f46dee03bfe">constraint_solver_csharp_wrap.cc</a>
@@ -4200,7 +4182,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ac4c850e06bd6b26301cb678e666fa265">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_new_Solver__SWIG_1___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#abc39326bffba3b1d4691ed1446fc17f3">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aa27350cb62e746f7b1f30d8d4c7f56f6">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_new_Solver_IntegerCastInfo__SWIG_0___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a1c3e07166d23dac2ec7f97886cc8eb5c">constraint_solver_csharp_wrap.cc</a>
@@ -4314,25 +4296,25 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a4051fdbfeb0e5e35219bacd9eeccac56">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Pack_AddSumVariableWeightsLessOrEqualConstantDimension___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a962d8eb6a3becb92e1fe3bd47eeecf39">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ad49018aa6d1de8119d2da5dc2219deb6">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Pack_AddWeightedSumEqualVarDimension__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ad83026ccd711539f9a017be34bf6288b">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a2551d1de97e287285391f1eab0b5e1ed">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Pack_AddWeightedSumEqualVarDimension__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a1d8b1aa2ec985b393fe9e8f3ab177b2f">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Pack_AddWeightedSumLessOrEqualConstantDimension__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a8ead483db3f6019cc97371b95860f160">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a3936aba5361119aec7fb4d89ade5cc9c">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Pack_AddWeightedSumLessOrEqualConstantDimension__SWIG_1___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a399367c08296fccb5e14395d85989bb4">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af682999f07b15053c8dc253723819c60">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Pack_AddWeightedSumLessOrEqualConstantDimension__SWIG_2___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aa112dbb0690a124b93e1ec4d09a5558b">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a61ca1937d799852c370360d4566bb285">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Pack_AddWeightedSumOfAssignedDimension___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ab690caa0c3c1ffacf18feaee876ae30f">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a087d484d964d6b0b1543f4b5a37e794b">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Pack_Assign___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ae03dc172f5c234e89f0361dfe421720b">constraint_solver_csharp_wrap.cc</a>
@@ -4563,7 +4545,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a5deb2a0ee47b9f9b8d9c5f80a5809e1f">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_PropagationMonitor_RemoveValues___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a51a65ab52e03491275ea51fd9ef5501b">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a824d15e5d2464e739666bb2e0d643148">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_PropagationMonitor_SetDurationMax___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a04e85b431b43b2f9499b38c621e06104">constraint_solver_csharp_wrap.cc</a>
@@ -4617,7 +4599,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a1996060c4202cad3305a2b8c66e9d9fa">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_PropagationMonitor_SetValues___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a3f1da8ea607a1f92821e2676ee42aab6">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a8b654b079de517f5b0acef4543fe9a7b">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_PropagationMonitor_StartProcessingIntegerVariable___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a45ed44f9649facd5665668c1a149f5cb">constraint_solver_csharp_wrap.cc</a>
@@ -4827,10 +4809,10 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aa107ef586d82a3ed58b227d4e3811418">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingDimension_SetBreakIntervalsOfVehicle__SWIG_1___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a10cb6f2e7ae93834d8a655b6dc6e4d34">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a692fafeff6085740c8718673bc6614b6">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingDimension_SetBreakIntervalsOfVehicle__SWIG_2___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a4a1c21af2b87e7854240f3dd1790d27b">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ae2a1b6bb4c353d4f09ccbd3e143ebd90">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingDimension_SetCumulVarSoftLowerBound___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a49599492a9de8fde8848adf270178c87">constraint_solver_csharp_wrap.cc</a>
@@ -4911,22 +4893,22 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a278403135b031df4e2de2852a2547f1f">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_AddDimensionWithVehicleCapacity___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a2efe11d0be53510500cbb78ae4aa7bca">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#abd1026ca0543f3816a6e64aa3ae45629">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_AddDimensionWithVehicleTransitAndCapacity___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ae94c7ed8729f11bdea52bf34addf85c2">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#acc36219d41d3f1b79e6ed74a6464e193">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_AddDimensionWithVehicleTransits___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a47d5427263b1282737f43e99914937aa">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_AddDisjunction__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a4d7b473dbe7a1292ce5240d5c117d87c">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ac460058d4b96a302ed71a14d64f33229">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_AddDisjunction__SWIG_1___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a6d1deb0d24db912b1ba59db1c5c35819">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a2abc632d9d6f708ea41b7084deeefe35">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_AddDisjunction__SWIG_2___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a3062df6190bc7dd1da1cb20a9d8125a1">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a7abed3664f4074479cb04b89b79c7ede">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_ADDED_TYPE_REMOVED_FROM_VEHICLE_get___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a13b8ad9b2226c203f1613ee85b6c1cac">constraint_solver_csharp_wrap.cc</a>
@@ -4944,7 +4926,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a420405c2fe6f8b4bbe1e937357c04ed0">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_AddMatrixDimension___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a287d2ae170077b960e0c7c8916a18eda">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aaf5b96054a84cbf43ba63acfc988e5ec">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_AddPickupAndDelivery___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a1aa914ec5e96ca2cf5a3225208e14693">constraint_solver_csharp_wrap.cc</a>
@@ -4962,7 +4944,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ae1d37dfb7e02956a69997641c17cd034">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_AddSoftSameVehicleConstraint___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aa2290ec3c2f1ec5df66d9d11b000a264">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a52a8482274f459e6bf23cf7bd507e03c">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_AddTemporalTypeIncompatibility___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af8fe5eddb39cdb9921b1780192eb4d48">constraint_solver_csharp_wrap.cc</a>
@@ -4980,16 +4962,16 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aeac79810ad320474fbca1809d1ec4884">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_AddVectorDimension___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a2fac34a10d48baaf7d37e343e01da5ed">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ab890079f6dfcdb9c62b648d77f4daaad">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_AddWeightedVariableMinimizedByFinalizer___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a1a38fdbb4e0efa99bfc525d6407c1249">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_ApplyLocks___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ab8e6aac66c74d714f802f7af78f51a97">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#afd359efa12ab47e2c36d44bfc0dfd1c1">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_ApplyLocksToAllVehicles___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#adcb5a5c9eb1b55d0a53cf676fe2c1262">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a1ac65f4f6933493e950a3055d485381a">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_ArcIsMoreConstrainedThanArc___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af0df42053a0c63f37ba803d4ce140cf1">constraint_solver_csharp_wrap.cc</a>
@@ -4998,7 +4980,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a2255744fba08064c6479d06827c6cfa4">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_AssignmentToRoutes___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#adca7baadbe46c12b4bfc8d05129d3386">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#abdea1fc6ef887d4293e072c8fbbdfe74">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_CheckLimit___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a6b6460ea2bbddf5e3fb9065c3a3b0673">constraint_solver_csharp_wrap.cc</a>
@@ -5007,7 +4989,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#acad985936980fc64c690bf69d6374fa0">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_CloseModelWithParameters___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af32c208c180bbf844d63bf39eb148e4e">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a7783761cf57f01907f01d18dff089dd7">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_CloseVisitTypes___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a5fad60533273ddf6762eedfad7d4c5b1">constraint_solver_csharp_wrap.cc</a>
@@ -5091,13 +5073,13 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a06670c2b7649f01c2f849059716416a1">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_GetNumberOfDecisionsInFirstSolution___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a6ace40868bcf94b04a0c1ad4dc876b28">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a696a1e7ddc22c3c06035f4ddfd4d04b4">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_GetNumberOfDisjunctions___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a485617d1706e44d500dcadbabf23e5ac">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_GetNumberOfRejectsInFirstSolution___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a8a96bd3ef3960e35af4b8d6b0c446f95">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ab63705fd17da634dd8c86c4669a9c994">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_GetNumberOfVisitTypes___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a3e4f76027748ce6f817a15676a1c56b6">constraint_solver_csharp_wrap.cc</a>
@@ -5235,7 +5217,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a32dbb91bf50b100317d651e2a1b8e7b8">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_ReadAssignmentFromRoutes___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a4a5b21ab4accf31afdad2e69a93ae426">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a955e1c202a9889c6aa9740d52805ac93">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_RegisterPositiveTransitCallback___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a1be52fa30b94eb32d2541dad2257930e">constraint_solver_csharp_wrap.cc</a>
@@ -5247,19 +5229,19 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a2b2324219203ad03fe102afc106c5780">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_RegisterTransitMatrix___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a3c6a05f78081ac718b9e7c10a78658b0">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a675bc5851cee892c9379cb5a7d05596a">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_RegisterUnaryTransitCallback___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#abdb572fb61c989855eee40c5a1dfbb4f">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_RegisterUnaryTransitVector___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aebe0985cc7bb451503b7bf2bd41c9cf7">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aadaa6552c46b0f830adf71b9a16f5058">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_RestoreAssignment___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af498db463496cb9d80a1debf080553a0">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_RoutesToAssignment___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af2b79756839f4866fabe16bb4eb750fc">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a600ed6d45df444a1cc8c141e5b084155">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_ROUTING_FAIL_get___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a6b807feaffbdf18b9c12040e57246097">constraint_solver_csharp_wrap.cc</a>
@@ -5327,14 +5309,20 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_Solve__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a60c70adb0c34d342b219bc240f5afad7">constraint_solver_csharp_wrap.cc</a>
 </li>
+<li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_SolveFromAssignmentsWithParameters__SWIG_0___()
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a2a20095c297ba05414b8f661a19b292e">constraint_solver_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_SolveFromAssignmentsWithParameters__SWIG_1___()
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aa49e36c74d3bfaf07ad5d9d080447b1b">constraint_solver_csharp_wrap.cc</a>
+</li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_SolveFromAssignmentWithParameters___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af7919d8bbb7fe69da3b79d74be3b7301">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aaac9899803a98fbccf1268bb023b6c3a">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_solver___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a632f002160cc8a9670cdeb3d035c6391">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_SolveWithParameters___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a4f97ae29cf7ee78a40ddce93ff73b5fc">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a39c6b89ef730fe3c0b184495c7fd16e5">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_RoutingModel_Start___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a00e80b403cdf078645b531ec3cca78cd">constraint_solver_csharp_wrap.cc</a>
@@ -6033,7 +6021,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a9aa680d8468848e3e7b4e5f8e22ba812">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_SolveModelWithSat___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ad00cc3753d4604202d9fcff3e8cfb478">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a5be986323ae3b5a4a45155d1cda9c5a1">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_Accept___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a5612eac09bbc6186e4280a2fd936599c">constraint_solver_csharp_wrap.cc</a>
@@ -6186,7 +6174,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a313b6d6031605f726c9dc5e67ca2a49b">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_DefaultSolverParameters___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a83cc02efd9022782c969d7453523b94a">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a03601f19b223c4eb2ebdf649c23c1fd8">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_DELAYED_PRIORITY_get___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a8cc4e9ff10a0b8572eec03c45a9c5cff">constraint_solver_csharp_wrap.cc</a>
@@ -6384,7 +6372,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ac24e17ab8a15184adbdc3bd48deaeef8">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeAssignVariablesValues___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a1e767fffa6b5c305722a659a79140879">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a348a3ace4a22149155e206f24f9a05fc">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeAssignVariableValue___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a880edbae90e0af759aa8cf38f116e93d">constraint_solver_csharp_wrap.cc</a>
@@ -6450,13 +6438,13 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a9476f04fe0161b6fa794a78c4b212c23">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeCumulative__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a74c4810ecb7774dcd3e906e9d59ce998">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ac3f7f6eb29f8827679000ce1062e4ca2">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeCumulative__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a8adf7bd5aa779862781125690c88c601">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeCumulative__SWIG_2___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a7ca6bb593257dea8818b9d693a1aa032">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a8e9d0cb72235919faeea4bde038a15c5">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeCumulative__SWIG_3___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#accc5f6303df4bd6338acf8148d326100">constraint_solver_csharp_wrap.cc</a>
@@ -6483,7 +6471,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a762cde51260f7459e23b5f5b12a0e588">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeDefaultRegularLimitParameters___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a85f8d7754244b2aa2067bfd80bd3499f">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a8133ed6e66a09f78eca243fc7e709b63">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeDefaultSolutionPool___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a70df1585d2a471b9ee60bd4e431cf6cb">constraint_solver_csharp_wrap.cc</a>
@@ -6507,7 +6495,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a5422df6f76e5edfa32a0994508acc2b1">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeDistribute__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a2c1f5a2996c16c62204a68352d819042">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a7a99b5db0acf537d5ebe7b79f4b242d2">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeDistribute__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a84c3024c4e537cc5af8baab8df6f7ab9">constraint_solver_csharp_wrap.cc</a>
@@ -6519,13 +6507,13 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a917b304111a5c2b6b737902b0bdc45f7">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeDistribute__SWIG_4___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a4b44bb76200fc2c909b78333019b043f">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a52a9e3b9e972fb5e673990afce78aa0c">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeDistribute__SWIG_5___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a8e8264c85802f3e74c7ceacfa955f238">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeDistribute__SWIG_6___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a6cce8c84c132f1352f7e40a038b0e0c9">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ae88374797246ff01b846eb9713dff98f">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeDistribute__SWIG_7___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a2fc5d542b1309fcfc38b009dd122cb8a">constraint_solver_csharp_wrap.cc</a>
@@ -6537,7 +6525,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a4bc64afb9e55346e081ff5e687463448">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeElement__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af33bd22c5eaaff1cc29a60abe389b355">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aeaf09a69a2ec73a880033c8952bfd853">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeElement__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a8d031eea0c69faaa4d101b53876efece">constraint_solver_csharp_wrap.cc</a>
@@ -6552,7 +6540,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#acb6515d7fe76949b4ab5e64e2c2bbd58">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeElementEquality__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ab13cbff1bcfcfd464f12e0768244cc6a">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a88535549fb85fe712f9dd5aaee385fd3">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeElementEquality__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a5c2abd3543b7f3c52ab9fc8a7ef9f467">constraint_solver_csharp_wrap.cc</a>
@@ -6702,7 +6690,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aedf867ff2f565a40a63b914b5e92219e">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeIntVar__SWIG_1___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ab8d55a207d463e0453f98b0b0946cfa2">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a8a59fca97ae6c5a67e9776dd425043c7">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeIntVar__SWIG_2___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a7da88b68d9dc1ce44ee0e41316623de8">constraint_solver_csharp_wrap.cc</a>
@@ -6711,7 +6699,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a81b30e68f8f67e2d318c8de663a4aea3">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeIntVar__SWIG_4___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ac6688445dfdc1a8cff3503f6090f791d">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a440114af7f4abb13401f3ff3bf906130">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeIntVar__SWIG_5___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aa313a20651027f0a49605f2b1965fec5">constraint_solver_csharp_wrap.cc</a>
@@ -6798,13 +6786,13 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a2af2c70800f15ffbcc5d7504ed5fa8b9">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeIsMemberCt__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aa8605e879778761b66cfe2a9d1333820">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ae5be21908add71e12eb54fe84cf552b1">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeIsMemberCt__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a4af0e6bcd739b6398796c58885b27ab4">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeIsMemberVar__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a52d2b242941333b94e4fe793476a0032">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a0e8bd202bb4f58b67870b2142ea115d6">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeIsMemberVar__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a18eb4b33a4939f44dfcdb8b7f672803b">constraint_solver_csharp_wrap.cc</a>
@@ -6849,7 +6837,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a34b38ce74a24ce44f7ae35a8671c2abb">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeLimit__SWIG_3___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af819666d3d8a9955b4a715fb8d3e6caf">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a53e94e6fa700a9ec3f7451953be119dc">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeLimit__SWIG_4___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a513cd80022f2985304ae7093fda15215">constraint_solver_csharp_wrap.cc</a>
@@ -6918,7 +6906,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a7994c7f8ec617b69ba28fb9e680f9bcf">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeMemberCt__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a82ee8ace2a6ad5bed6fa92d6a2eae531">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aea24b0b67203dfd0aa91aef132a9149e">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeMemberCt__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ad91f7b3e2d7c757b8a7ec3f968e6e128">constraint_solver_csharp_wrap.cc</a>
@@ -6957,7 +6945,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#abf2b8d0d5f3edc57ce97e0dbfefa661e">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeMoveTowardTargetOperator__SWIG_1___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a59608c11de39eb3b957c4bfc086e5b07">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a7ae979fddb7d1334ba087824a3ae362b">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeNBestValueSolutionCollector__SWIG_0___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a1549271771155265e272b5e479b00505">constraint_solver_csharp_wrap.cc</a>
@@ -7008,7 +6996,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a762f7988c495bee8f02d53b9f49b374f">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeNonOverlappingBoxesConstraint__SWIG_1___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aebe6f4bf789e41b572b387ddf8dcd392">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#afe409105e9465880cfcde45dba45d359">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeNonOverlappingBoxesConstraint__SWIG_2___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a5e0d1dbfc4531dc3da1fa254adee01a5">constraint_solver_csharp_wrap.cc</a>
@@ -7017,7 +7005,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a716450d9dde9ebdbdfc2b4e42c4f004c">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeNonOverlappingNonStrictBoxesConstraint__SWIG_1___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a64e64047e16a1d57aa8a6d3333509f53">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#adc8eaf9636c12c1851856a1734c7dfa8">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeNonOverlappingNonStrictBoxesConstraint__SWIG_2___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a855aa2ec01771ea6ae9f57b34c2dfc66">constraint_solver_csharp_wrap.cc</a>
@@ -7026,13 +7014,13 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ac9c3c374cf25bc6c9060437bd37803a6">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeNotMemberCt__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ae1d862bdc9d377a6593f73afefb18f80">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#afc5624e8066e32475fc13d233c47c8f9">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeNotMemberCt__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#acc3137a39d79bd561e93e45be7a87cbb">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeNotMemberCt__SWIG_2___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a64fc0e8b02f61cb987c5ddbc929b51a7">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a25695c220c460faa8bddf25e7bddc700">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeNotMemberCt__SWIG_3___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a0b55dd83f89306998336b73d940a73d9">constraint_solver_csharp_wrap.cc</a>
@@ -7065,7 +7053,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a8b950030526ace0ad134d2fbdb9440c4">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakePathConnected___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ae6b08ab692ceb08d6fba6cd8c876ca03">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a458156d9f4fa3af02940d4d51d05a3ac">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakePathCumul__SWIG_0___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af952e61c23121501cab432951cadba1a">constraint_solver_csharp_wrap.cc</a>
@@ -7152,31 +7140,31 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af4b0a22befafe4a5d6115f666759ab91">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeScalProd__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a4ee857941ed655eecb2b8178b76258b3">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ad5236ac7c7711075acd22e731839d3d7">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeScalProd__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aae37d7cc406db8c702cc431c0f3f8d62">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeScalProdEquality__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af8e6469baaa1d38da4ccd69cdab36f87">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a47bbdaf4b30afbfa6a80222429577b05">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeScalProdEquality__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a7a055ee9ddc8bd6547bdd7b6db56b7f8">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeScalProdEquality__SWIG_2___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af31e09d06cb724725724f63a4d9278b3">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af279930393d8c0c37ed1cf96a49dd40b">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeScalProdEquality__SWIG_3___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a0e3f1fed605018e4c57e5f022b04f931">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeScalProdGreaterOrEqual__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#abcbe0422d03df1cd14f70a0b148fc277">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a1bc7b1fc49c3e704270fc5ee634a9712">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeScalProdGreaterOrEqual__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ab7e8f9e3b784ba626d3d40dd018e42df">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeScalProdLessOrEqual__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a379168e50e0986f082d881f34a6c3c7d">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a13208fefc3272f25c88471ce96bc2487">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeScalProdLessOrEqual__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a6c1d5e737bda4401ad4696d8b47e7690">constraint_solver_csharp_wrap.cc</a>
@@ -7314,7 +7302,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ad83e66c5d122efe210d1ca3385aa219c">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeTransitionConstraint__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a4fe42f098fc6a10acb5cd0031e99f82d">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af0eed4fbb5bcece0ced974f4c7da8263">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeTransitionConstraint__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ae262db50fe1dc39305d6715dd6b67e8e">constraint_solver_csharp_wrap.cc</a>
@@ -7332,19 +7320,19 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a8f69661ada6766b137040308dfe05dd7">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeWeightedMaximize__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a499bad3a574785e64f89b9ba1c943b51">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#ae5d0183df9ae2dd8fd7bf30ea8d826ec">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeWeightedMaximize__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a47fbbd606c3e598e366fe4ccc454b79e">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeWeightedMinimize__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a62b2d9510ebd1ba9a0bbba300db26cf2">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#adfae6691180ed9e82cec4e5517ebf262">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeWeightedMinimize__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#aa1164b9b9e3cc0fb8d58a958d5611041">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeWeightedOptimize__SWIG_0___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a385f3dcd57e781dd980eacbf157d87ef">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#abc2035463996c58c456da01f5103d215">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_MakeWeightedOptimize__SWIG_1___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#af67ddbc4bdf015bb3d7d73d6b562e47a">constraint_solver_csharp_wrap.cc</a>
@@ -7410,7 +7398,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a84c9a295b70991d56f82440b0eb02fd0">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_Parameters___()
-: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a3de75c9cec6696a37a556a44d12137c0">constraint_solver_csharp_wrap.cc</a>
+: <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a6b4af2a354a0a52cbbeddfeea8914d9d">constraint_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfConstraintSolver_Solver_PATHLNS_get___()
 : <a class="el" href="constraint__solver__csharp__wrap_8cc.html#a66ba83461c7a0d492eb4047e94393840">constraint_solver_csharp_wrap.cc</a>
@@ -7864,6 +7852,66 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 </li>
 <li>CSharp_GooglefOrToolsfGraph_new_MinCostFlowBase___()
 : <a class="el" href="graph__csharp__wrap_8cc.html#ad999c5681c477000d1edc14ddd7246c9">graph_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_CppBridge_InitLogging___()
+: <a class="el" href="init__csharp__wrap_8cc.html#aa84e94c5e03173130803396603733127">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_CppBridge_LoadGurobiSharedLibrary___()
+: <a class="el" href="init__csharp__wrap_8cc.html#a9599d5a9e85a3cfd8a006d9fe5ca825f">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_CppBridge_SetFlags___()
+: <a class="el" href="init__csharp__wrap_8cc.html#a8687dd63354440eb192c4ceac2657da1">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_CppBridge_ShutdownLogging___()
+: <a class="el" href="init__csharp__wrap_8cc.html#a709a19e7f7c4e3e07d8051471e2cf47d">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_CppFlags_cp_model_dump_lns_get___()
+: <a class="el" href="init__csharp__wrap_8cc.html#a8a6886f66149ea167e3dd25f9828936c">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_CppFlags_cp_model_dump_lns_set___()
+: <a class="el" href="init__csharp__wrap_8cc.html#ae18a6441a8b45c09bc548dd96a9c4260">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_CppFlags_cp_model_dump_models_get___()
+: <a class="el" href="init__csharp__wrap_8cc.html#a2a6714b273f6bb09e5090e3f8503f015">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_CppFlags_cp_model_dump_models_set___()
+: <a class="el" href="init__csharp__wrap_8cc.html#ae35c5327ea4065c7ec9bdee3af0d990e">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_CppFlags_cp_model_dump_prefix_get___()
+: <a class="el" href="init__csharp__wrap_8cc.html#a274a5b4e43a10bd0e3b185834540d6ac">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_CppFlags_cp_model_dump_prefix_set___()
+: <a class="el" href="init__csharp__wrap_8cc.html#aedefa344e64d4cd87ce68df4ba0a0716">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_CppFlags_cp_model_dump_response_get___()
+: <a class="el" href="init__csharp__wrap_8cc.html#a1ba14d78ed3fa33977100b1f6a80887f">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_CppFlags_cp_model_dump_response_set___()
+: <a class="el" href="init__csharp__wrap_8cc.html#a1e2ef740ab93a91e23df18a8116d4da1">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_CppFlags_log_prefix_get___()
+: <a class="el" href="init__csharp__wrap_8cc.html#ad69d215c3d71ef6690a4ce6a17667137">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_CppFlags_log_prefix_set___()
+: <a class="el" href="init__csharp__wrap_8cc.html#ad0cd97027a4617c0f1a3b1a88f95af3f">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_CppFlags_logtostderr_get___()
+: <a class="el" href="init__csharp__wrap_8cc.html#a244b8706aec37f31cdfa7ca6dec08632">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_CppFlags_logtostderr_set___()
+: <a class="el" href="init__csharp__wrap_8cc.html#a2e0b332e2610427f0448dc123f446aa5">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_delete_CppBridge___()
+: <a class="el" href="init__csharp__wrap_8cc.html#aaeb393af8c4a6133ccb6b842773b16d2">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_delete_CppFlags___()
+: <a class="el" href="init__csharp__wrap_8cc.html#ae6d86555c5f8e203d83a8ff8d68435d3">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_new_CppBridge___()
+: <a class="el" href="init__csharp__wrap_8cc.html#a03132681fc8767292119acaec527aadf">init_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfInit_new_CppFlags___()
+: <a class="el" href="init__csharp__wrap_8cc.html#a6b240bb5224ef268f1a56c068c38ec47">init_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfLinearSolver_Constraint_BasisStatus___()
 : <a class="el" href="linear__solver__csharp__wrap_8cc.html#a40f5385da0f90f4fe729945aaff8d7c5">linear_solver_csharp_wrap.cc</a>
@@ -8519,6 +8567,9 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 <li>CSharp_GooglefOrToolsfLinearSolver_Solver_ComputeExactConditionNumber___()
 : <a class="el" href="linear__solver__csharp__wrap_8cc.html#a646cf9bc09b08e8fce4c4757d4722a44">linear_solver_csharp_wrap.cc</a>
 </li>
+<li>CSharp_GooglefOrToolsfLinearSolver_Solver_Constraint___()
+: <a class="el" href="linear__solver__csharp__wrap_8cc.html#aa531cce1b602054b076dc4111726e59c">linear_solver_csharp_wrap.cc</a>
+</li>
 <li>CSharp_GooglefOrToolsfLinearSolver_Solver_constraints___()
 : <a class="el" href="linear__solver__csharp__wrap_8cc.html#a708382dc19b31d20b892929e6e0e2e3e">linear_solver_csharp_wrap.cc</a>
 </li>
@@ -8585,9 +8636,6 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 <li>CSharp_GooglefOrToolsfLinearSolver_Solver_Reset___()
 : <a class="el" href="linear__solver__csharp__wrap_8cc.html#a2392542656378341fe14af15c17c5f7c">linear_solver_csharp_wrap.cc</a>
 </li>
-<li>CSharp_GooglefOrToolsfLinearSolver_Solver_SetGurobiLibraryPath___()
-: <a class="el" href="linear__solver__csharp__wrap_8cc.html#a9ccf70cdd401c4b19c8a728240bfc719">linear_solver_csharp_wrap.cc</a>
-</li>
 <li>CSharp_GooglefOrToolsfLinearSolver_Solver_SetHint___()
 : <a class="el" href="linear__solver__csharp__wrap_8cc.html#ac6a71eadd4f68a6439decfb6bb069037">linear_solver_csharp_wrap.cc</a>
 </li>
@@ -8611,6 +8659,9 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 </li>
 <li>CSharp_GooglefOrToolsfLinearSolver_Solver_SuppressOutput___()
 : <a class="el" href="linear__solver__csharp__wrap_8cc.html#a1c60f68dcfbc8769e4e27ced835bc5e5">linear_solver_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfLinearSolver_Solver_Variable___()
+: <a class="el" href="linear__solver__csharp__wrap_8cc.html#a858d28053bc37d744ddcff583032a08b">linear_solver_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfLinearSolver_Solver_variables___()
 : <a class="el" href="linear__solver__csharp__wrap_8cc.html#ad8808b444e4a61cd39c978339937780d">linear_solver_csharp_wrap.cc</a>
@@ -8651,41 +8702,50 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 <li>CSharp_GooglefOrToolsfLinearSolver_Variable_Ub___()
 : <a class="el" href="linear__solver__csharp__wrap_8cc.html#adbed54abe79a14c8245a79069963deb0">linear_solver_csharp_wrap.cc</a>
 </li>
-<li>CSharp_GooglefOrToolsfSat_delete_SatHelper___()
-: <a class="el" href="sat__csharp__wrap_8cc.html#a07e5a2f6e4ee7aa43c12520c874e48e2">sat_csharp_wrap.cc</a>
+<li>CSharp_GooglefOrToolsfSat_CpSatHelper_ModelStats___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#ab1e94856c375b4985ec3a0d6d4803f5f">sat_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfSat_CpSatHelper_SolverResponseStats___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#abcb6418e2066121489279d5bdc750531">sat_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfSat_CpSatHelper_ValidateModel___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#ac3352bd391accb2002334c5df6376238">sat_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfSat_CpSatHelper_VariableDomain___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#a463ebe880854518dbaa911255506bbab">sat_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfSat_CpSatHelper_WriteModelToFile___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#ac2f91e7c720a0f5bcd6c2c33bc5ccd91">sat_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfSat_delete_CpSatHelper___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#af61581e892dff5b175cd383ec14d8433">sat_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfSat_delete_LogCallback___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#a155777ec91cc2a028690baab78af6f00">sat_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfSat_delete_SolutionCallback___()
 : <a class="el" href="sat__csharp__wrap_8cc.html#aac0ef4d13d524a519d1b18fd8f3bb9e8">sat_csharp_wrap.cc</a>
 </li>
-<li>CSharp_GooglefOrToolsfSat_new_SatHelper___()
-: <a class="el" href="sat__csharp__wrap_8cc.html#a2f4439f340f1923b0dfdf102f8865b2d">sat_csharp_wrap.cc</a>
+<li>CSharp_GooglefOrToolsfSat_delete_SolveWrapper___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#a79fc396639f12ab3e1eda308da58d9ed">sat_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfSat_LogCallback_director_connect___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#a01709b8114de653cc28b7b9477aeb5cb">sat_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfSat_LogCallback_NewMessage___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#a877ec1cc84130b6197135208a922f84d">sat_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfSat_new_CpSatHelper___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#a5e168aa32d69403b96438ba87ff3404d">sat_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfSat_new_LogCallback___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#a7b181a9e07a8269493d94aaa91e753cb">sat_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfSat_new_SolutionCallback___()
 : <a class="el" href="sat__csharp__wrap_8cc.html#a4cb82cf0f1e13fb5794ed91d736f67bc">sat_csharp_wrap.cc</a>
 </li>
-<li>CSharp_GooglefOrToolsfSat_SatHelper_ModelStats___()
-: <a class="el" href="sat__csharp__wrap_8cc.html#acd23cd658dd2ccbf231de7f3c4e88011">sat_csharp_wrap.cc</a>
-</li>
-<li>CSharp_GooglefOrToolsfSat_SatHelper_Solve___()
-: <a class="el" href="sat__csharp__wrap_8cc.html#ae32652b98b1c291d432cb055ff07034c">sat_csharp_wrap.cc</a>
-</li>
-<li>CSharp_GooglefOrToolsfSat_SatHelper_SolverResponseStats___()
-: <a class="el" href="sat__csharp__wrap_8cc.html#a8e0af718f3726ec996445121d6d57f81">sat_csharp_wrap.cc</a>
-</li>
-<li>CSharp_GooglefOrToolsfSat_SatHelper_SolveWithStringParameters___()
-: <a class="el" href="sat__csharp__wrap_8cc.html#ab383bb829f17b810ba150787d5abf869">sat_csharp_wrap.cc</a>
-</li>
-<li>CSharp_GooglefOrToolsfSat_SatHelper_SolveWithStringParametersAndSolutionCallback___()
-: <a class="el" href="sat__csharp__wrap_8cc.html#aa111cca76766f5cf3b6c3b7c94d6469a">sat_csharp_wrap.cc</a>
-</li>
-<li>CSharp_GooglefOrToolsfSat_SatHelper_ValidateModel___()
-: <a class="el" href="sat__csharp__wrap_8cc.html#afd75b83a614db524f6fcda146be8a371">sat_csharp_wrap.cc</a>
-</li>
-<li>CSharp_GooglefOrToolsfSat_SatHelper_VariableDomain___()
-: <a class="el" href="sat__csharp__wrap_8cc.html#aaa8d614b89d473bcbd49f0a433698335">sat_csharp_wrap.cc</a>
-</li>
-<li>CSharp_GooglefOrToolsfSat_SatHelper_WriteModelToFile___()
-: <a class="el" href="sat__csharp__wrap_8cc.html#ace073633a45f1f781617c04ebddd1ede">sat_csharp_wrap.cc</a>
+<li>CSharp_GooglefOrToolsfSat_new_SolveWrapper___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#a6e8cbdd3340f725627e1b97f35c7cf73">sat_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfSat_SolutionCallback_BestObjectiveBound___()
 : <a class="el" href="sat__csharp__wrap_8cc.html#ade99221cd21df95bcf83232ba1f66ff4">sat_csharp_wrap.cc</a>
@@ -8715,7 +8775,7 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="sat__csharp__wrap_8cc.html#a106ed810ee415c009a978bba469a4b6f">sat_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfSat_SolutionCallback_Response___()
-: <a class="el" href="sat__csharp__wrap_8cc.html#aa199e44bb130e42ae4997d48d810ce23">sat_csharp_wrap.cc</a>
+: <a class="el" href="sat__csharp__wrap_8cc.html#a5d4f07919d7e6a94184c4a58310cee86">sat_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfSat_SolutionCallback_SolutionBooleanValue___()
 : <a class="el" href="sat__csharp__wrap_8cc.html#abbb7c96fb6750cdf3e0afac166bc85ce">sat_csharp_wrap.cc</a>
@@ -8731,6 +8791,24 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 </li>
 <li>CSharp_GooglefOrToolsfSat_SolutionCallback_WallTime___()
 : <a class="el" href="sat__csharp__wrap_8cc.html#a33082fd28862b792b022f96d901c42e7">sat_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfSat_SolveWrapper_AddLogCallbackFromClass___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#a3a3783860d0178013ec2082bce3b60fb">sat_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfSat_SolveWrapper_AddSolutionCallback___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#a7cb964e92f80925e4d3355b4445167a3">sat_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfSat_SolveWrapper_ClearSolutionCallback___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#ac0c97bc895e771ffe2dc5ffdccfe0b9e">sat_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfSat_SolveWrapper_SetStringParameters___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#a050f60d247174e263c987ee14da493d7">sat_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfSat_SolveWrapper_Solve___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#a302ec2b7eef13bfcf1d126d5ee57810d">sat_csharp_wrap.cc</a>
+</li>
+<li>CSharp_GooglefOrToolsfSat_SolveWrapper_StopSearch___()
+: <a class="el" href="sat__csharp__wrap_8cc.html#a6f3dd7ca40d3465446c8f2272c5fc6a6">sat_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfUtil_delete_Domain___()
 : <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#af775c37b915af781e88203a2e63789e3">sorted_interval_list_csharp_wrap.cc</a>
@@ -8763,13 +8841,13 @@ $(document).ready(function(){initNavTree('globals_func_c.html',''); initResizabl
 : <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#a07fba17ef5f5c2aa19c4c0b464620691">sorted_interval_list_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfUtil_Domain_FromFlatIntervals___()
-: <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#ad334327712d5a3a122e05df85d3caa98">sorted_interval_list_csharp_wrap.cc</a>
+: <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#accedecbe0d6c9d395d8b9e16ef6e4b2f">sorted_interval_list_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfUtil_Domain_FromIntervals___()
-: <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#a10a546e5fb0c4599e68d7ad2c9c6f2e1">sorted_interval_list_csharp_wrap.cc</a>
+: <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#acaf14e2b02a3552b14b1626a33490cc1">sorted_interval_list_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfUtil_Domain_FromValues___()
-: <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#a2d306fa461fe3c3301d236a19f6d02a0">sorted_interval_list_csharp_wrap.cc</a>
+: <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#a5e6314c0381c75406c9da4097ad52805">sorted_interval_list_csharp_wrap.cc</a>
 </li>
 <li>CSharp_GooglefOrToolsfUtil_Domain_IntersectionWith___()
 : <a class="el" href="sorted__interval__list__csharp__wrap_8cc.html#a0b59f1717e074f12a57eb366993668ef">sorted_interval_list_csharp_wrap.cc</a>

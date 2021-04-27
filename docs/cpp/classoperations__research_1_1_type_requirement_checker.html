@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -98,7 +98,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_type_req
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Checker for type requirements. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02236">2236</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02242">2242</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -106,8 +106,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aa61667d3933f65282eaabd3fb06d4416"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74c15d3bf7b8a04ef26d5da0237cb3b2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_type_requirement_checker.html#a74c15d3bf7b8a04ef26d5da0237cb3b2">~TypeRequirementChecker</a> () override</td></tr>
 <tr class="separator:a74c15d3bf7b8a04ef26d5da0237cb3b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a68fa0aaa5c8d8dbead32a6b04463722e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_type_regulations_checker.html#a68fa0aaa5c8d8dbead32a6b04463722e">CheckVehicle</a> (int vehicle, const std::function&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>(<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>)&gt; &amp;next_accessor)</td></tr>
-<tr class="separator:a68fa0aaa5c8d8dbead32a6b04463722e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a74fa9fd5626d4013ab5e2bc408c27f0e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_type_regulations_checker.html#a74fa9fd5626d4013ab5e2bc408c27f0e">CheckVehicle</a> (int vehicle, const std::function&lt; int64_t(int64_t)&gt; &amp;next_accessor)</td></tr>
+<tr class="separator:a74fa9fd5626d4013ab5e2bc408c27f0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-types"></a>
 Protected Types</h2></td></tr>
@@ -122,8 +122,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:ae8ea938d5980cf2079ded7ea1dcd38e7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_type_regulations_checker.html#ae8ea938d5980cf2079ded7ea1dcd38e7">TypeCurrentlyOnRoute</a> (int type, int pos) const</td></tr>
 <tr class="memdesc:ae8ea938d5980cf2079ded7ea1dcd38e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true iff there's at least one instance of the given type on the route when scanning the route at the given position 'pos'.  <a href="classoperations__research_1_1_type_regulations_checker.html#ae8ea938d5980cf2079ded7ea1dcd38e7">More...</a><br /></td></tr>
 <tr class="separator:ae8ea938d5980cf2079ded7ea1dcd38e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af0019df09332cbcb2c4f37bc30d9a055"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_type_regulations_checker.html#af0019df09332cbcb2c4f37bc30d9a055">InitializeCheck</a> (int vehicle, const std::function&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>(<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>)&gt; &amp;next_accessor)</td></tr>
-<tr class="separator:af0019df09332cbcb2c4f37bc30d9a055"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab77529dea185cbc2341ac96b6be72ee"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_type_regulations_checker.html#aab77529dea185cbc2341ac96b6be72ee">InitializeCheck</a> (int vehicle, const std::function&lt; int64_t(int64_t)&gt; &amp;next_accessor)</td></tr>
+<tr class="separator:aab77529dea185cbc2341ac96b6be72ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -151,7 +151,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02170">2170</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02176">2176</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -180,7 +180,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02238">2238</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02244">2244</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -207,13 +207,13 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02240">2240</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02246">2246</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a68fa0aaa5c8d8dbead32a6b04463722e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a68fa0aaa5c8d8dbead32a6b04463722e">&#9670;&nbsp;</a></span>CheckVehicle()</h2>
+<a id="a74fa9fd5626d4013ab5e2bc408c27f0e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a74fa9fd5626d4013ab5e2bc408c27f0e">&#9670;&nbsp;</a></span>CheckVehicle()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -230,7 +230,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::function&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>(<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>)&gt; &amp;&#160;</td>
+          <td class="paramtype">const std::function&lt; int64_t(int64_t)&gt; &amp;&#160;</td>
           <td class="paramname"><em>next_accessor</em>&#160;</td>
         </tr>
         <tr>
@@ -246,12 +246,12 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l06228">6228</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05703">5703</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
-<a id="af0019df09332cbcb2c4f37bc30d9a055"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af0019df09332cbcb2c4f37bc30d9a055">&#9670;&nbsp;</a></span>InitializeCheck()</h2>
+<a id="aab77529dea185cbc2341ac96b6be72ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aab77529dea185cbc2341ac96b6be72ee">&#9670;&nbsp;</a></span>InitializeCheck()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -268,7 +268,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::function&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>(<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>)&gt; &amp;&#160;</td>
+          <td class="paramtype">const std::function&lt; int64_t(int64_t)&gt; &amp;&#160;</td>
           <td class="paramname"><em>next_accessor</em>&#160;</td>
         </tr>
         <tr>
@@ -284,7 +284,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l06272">6272</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05747">5747</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -325,7 +325,7 @@ Protected Attributes</h2></td></tr>
 <p>Returns true iff there's at least one instance of the given type on the route when scanning the route at the given position 'pos'. </p>
 <p>This is the case iff we have at least one added but non-removed instance of the type, or if occurrences_of_type_[type].last_type_on_vehicle_up_to_visit is greater than 'pos'. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l06303">6303</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05778">5778</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -356,7 +356,7 @@ Protected Attributes</h2></td></tr>
 <p>Returns true iff any occurrence of the given type was seen on the route, i.e. </p>
 <p>iff the added count for this type is positive, or if a node of this type and policy TYPE_ON_VEHICLE_UP_TO_VISIT is visited on the route (see TypePolicyOccurrence.last_type_on_vehicle_up_to_visit). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l06297">6297</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8cc_source.html#l05772">5772</a> of file <a class="el" href="routing_8cc_source.html">routing.cc</a>.</p>
 
 </div>
 </div>
@@ -381,7 +381,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02212">2212</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02218">2218</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

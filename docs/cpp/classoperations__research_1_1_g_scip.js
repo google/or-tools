@@ -47,7 +47,7 @@ var classoperations__research_1_1_g_scip =
     [ "SetObjectiveOffset", "classoperations__research_1_1_g_scip.html#a0f5f466045c197474f0284ac58971049", null ],
     [ "SetUb", "classoperations__research_1_1_g_scip.html#adfbdf4198cee0cbb963c1fadfb12cbb2", null ],
     [ "SetVarType", "classoperations__research_1_1_g_scip.html#ad1e7d37397a21166a53ac59367fb0307", null ],
-    [ "Solve", "classoperations__research_1_1_g_scip.html#a6e58a42715666a7f51d172282826c234", null ],
+    [ "Solve", "classoperations__research_1_1_g_scip.html#ac1263357bfc90432ab8260ec236d756c", null ],
     [ "SuggestHint", "classoperations__research_1_1_g_scip.html#ab4799dcd789ae8e0de213d6bef76abb9", null ],
     [ "Ub", "classoperations__research_1_1_g_scip.html#a72757cd571318a6798c97d29704461c6", null ],
     [ "variables", "classoperations__research_1_1_g_scip.html#a9b13ae69ab8a143d3bdfddb9f82315f2", null ],

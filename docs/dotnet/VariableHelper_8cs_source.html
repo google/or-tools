@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.2</span>
+                <span id="sfml">Google OR-Tools 9.0</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -84,7 +84,7 @@ $(document).ready(function(){initNavTree('VariableHelper_8cs_source.html',''); i
 <div class="title">VariableHelper.cs</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="VariableHelper_8cs.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2018 Google LLC</span></div>
+<a href="VariableHelper_8cs.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2021 Google LLC</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">// you may not use this file except in compliance with the License.</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">// You may obtain a copy of the License at</span></div>
@@ -99,8 +99,8 @@ $(document).ready(function(){initNavTree('VariableHelper_8cs_source.html',''); i
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160; </div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceGoogle_1_1OrTools_1_1LinearSolver.html">Google.OrTools.LinearSolver</a></div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;{</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <span class="keyword">using</span> <a class="code" href="Program_8cs.html#a81a223a02c34d82b47199f08308847f2">System</a>;</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keyword">using</span> <a class="code" href="Program_8cs.html#a81a223a02c34d82b47199f08308847f2">System</a>.Collections.Generic;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <span class="keyword">using</span> System;</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keyword">using</span> System.Collections.<a class="code" href="namespaceSystem_1_1Collections_1_1Generic.html">Generic</a>;</div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="comment">// Patch the MPVariable class to support the natural language API.</span></div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="keyword">public</span> <span class="keyword">partial class </span>Variable</div>
@@ -278,10 +278,10 @@ $(document).ready(function(){initNavTree('VariableHelper_8cs_source.html',''); i
 <div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160; </div>
 <div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    <span class="comment">// TODO(user): Try to move this code back to the .swig with @define macros.</span></div>
 <div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    <span class="keyword">public</span> <span class="keyword">partial class </span>MPVariableVector : IDisposable,</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;                                            <a class="code" href="Program_8cs.html#a81a223a02c34d82b47199f08308847f2">System</a>.Collections.IEnumerable</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;                                            System.Collections.IEnumerable</div>
 <div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;<span class="preprocessor">#if !SWIG_DOTNET_1</span></div>
 <div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;        ,</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;                                            <a class="code" href="Program_8cs.html#a81a223a02c34d82b47199f08308847f2">System</a>.Collections.Generic.IList&lt;Variable&gt;</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;                                            System.Collections.Generic.IList&lt;Variable&gt;</div>
 <div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;<span class="preprocessor">#endif</span></div>
 <div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;    {</div>
 <div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        <span class="comment">// cast from C# MPVariable array</span></div>
@@ -305,7 +305,6 @@ $(document).ready(function(){initNavTree('VariableHelper_8cs_source.html',''); i
 <div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;    }</div>
 <div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160; </div>
 <div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;} <span class="comment">// namespace Google.OrTools.LinearSolver</span></div>
-<div class="ttc" id="aProgram_8cs_html_a81a223a02c34d82b47199f08308847f2"><div class="ttname"><a href="Program_8cs.html#a81a223a02c34d82b47199f08308847f2">System</a></div><div class="ttdeci">﻿using System</div><div class="ttdef"><b>Definition:</b> <a href="Program_8cs_source.html#l00014">Program.cs:14</a></div></div>
 <div class="ttc" id="aclassGoogle_1_1OrTools_1_1LinearSolver_1_1Equality_html"><div class="ttname"><a href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Equality.html">Google.OrTools.LinearSolver.Equality</a></div><div class="ttdef"><b>Definition:</b> <a href="LinearConstraint_8cs_source.html#l00068">LinearConstraint.cs:69</a></div></div>
 <div class="ttc" id="aclassGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr_html"><div class="ttname"><a href="classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html">Google.OrTools.LinearSolver.LinearExpr</a></div><div class="ttdef"><b>Definition:</b> <a href="LinearExpr_8cs_source.html#l00019">LinearExpr.cs:20</a></div></div>
 <div class="ttc" id="aclassGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector_html"><div class="ttname"><a href="classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html">Google.OrTools.LinearSolver.MPVariableVector</a></div><div class="ttdef"><b>Definition:</b> <a href="MPVariableVector_8cs_source.html#l00013">MPVariableVector.cs:14</a></div></div>
@@ -323,6 +322,7 @@ $(document).ready(function(){initNavTree('VariableHelper_8cs_source.html',''); i
 <div class="ttc" id="aclassGoogle_1_1OrTools_1_1LinearSolver_1_1Variable_html_ac140913c4940f0297981f6a80e645af2"><div class="ttname"><a href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html#ac140913c4940f0297981f6a80e645af2">Google.OrTools.LinearSolver.Variable.operator-</a></div><div class="ttdeci">static LinearExpr operator-(Variable a, double v)</div><div class="ttdef"><b>Definition:</b> <a href="VariableHelper_8cs_source.html#l00047">VariableHelper.cs:47</a></div></div>
 <div class="ttc" id="aclassGoogle_1_1OrTools_1_1LinearSolver_1_1Variable_html_afe6cd88ff139e373b5dd7a70baa81af0"><div class="ttname"><a href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html#afe6cd88ff139e373b5dd7a70baa81af0">Google.OrTools.LinearSolver.Variable.operator/</a></div><div class="ttdeci">static LinearExpr operator/(Variable a, double v)</div><div class="ttdef"><b>Definition:</b> <a href="VariableHelper_8cs_source.html#l00082">VariableHelper.cs:82</a></div></div>
 <div class="ttc" id="anamespaceGoogle_1_1OrTools_1_1LinearSolver_html"><div class="ttname"><a href="namespaceGoogle_1_1OrTools_1_1LinearSolver.html">Google.OrTools.LinearSolver</a></div><div class="ttdef"><b>Definition:</b> <a href="linear__solver_2Constraint_8cs_source.html#l00011">linear_solver/Constraint.cs:11</a></div></div>
+<div class="ttc" id="anamespaceSystem_1_1Collections_1_1Generic_html"><div class="ttname"><a href="namespaceSystem_1_1Collections_1_1Generic.html">System.Collections.Generic</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
         </div>

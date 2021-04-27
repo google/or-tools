@@ -1,5 +1,5 @@
 var structoperations__research_1_1sat_1_1_var_value =
 [
-    [ "value", "structoperations__research_1_1sat_1_1_var_value.html#a6b21ba2a964fe375e9ddbff5d8cabca8", null ],
-    [ "var", "structoperations__research_1_1sat_1_1_var_value.html#ab6516f556b715738034b30d290c40214", null ]
+    [ "ref", "structoperations__research_1_1sat_1_1_var_value.html#adb528a1cb1ca190150183394d082590d", null ],
+    [ "value", "structoperations__research_1_1sat_1_1_var_value.html#ac072af30c4ffbc834bb4c681f6ecb514", null ]
 ];

@@ -27,7 +27,7 @@ var classoperations__research_1_1_disjunctive_constraint =
     [ "solver", "classoperations__research_1_1_disjunctive_constraint.html#a5f32c22c620c811754ba7b6f977db864", null ],
     [ "time_cumuls", "classoperations__research_1_1_disjunctive_constraint.html#a0801da3f8ae5f253399fd1319dea7e57", null ],
     [ "time_slacks", "classoperations__research_1_1_disjunctive_constraint.html#af106a0b38e8b3d069248a579efe2e1bc", null ],
-    [ "TransitionTime", "classoperations__research_1_1_disjunctive_constraint.html#aaafd3363e871db52ce00c08905f57afa", null ],
+    [ "TransitionTime", "classoperations__research_1_1_disjunctive_constraint.html#a668c953026d7cf1faa1d57dc15716f30", null ],
     [ "UnfreezeQueue", "classoperations__research_1_1_disjunctive_constraint.html#ae038f4a9249362629fc47e8dfc441ec7", null ],
     [ "Var", "classoperations__research_1_1_disjunctive_constraint.html#acde5e7966f7772bf931dd0dd2bc398a1", null ],
     [ "intervals_", "classoperations__research_1_1_disjunctive_constraint.html#a02e65ccb441e14918c023bde60b05099", null ],

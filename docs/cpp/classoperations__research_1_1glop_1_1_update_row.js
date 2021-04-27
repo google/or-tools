@@ -9,7 +9,6 @@ var classoperations__research_1_1glop_1_1_update_row =
     [ "GetCoefficients", "classoperations__research_1_1glop_1_1_update_row.html#a30fddb9e35865ba28420bd52538a183f", null ],
     [ "GetNonZeroPositions", "classoperations__research_1_1glop_1_1_update_row.html#af8e957f1c8389089554ded7bd2b7b45f", null ],
     [ "GetUnitRowLeftInverse", "classoperations__research_1_1glop_1_1_update_row.html#a0c3551dfd558be8edc0bd8d565cfca30", null ],
-    [ "IgnoreUpdatePosition", "classoperations__research_1_1glop_1_1_update_row.html#a985c788192edce2013ad59d4f0c934cf", null ],
     [ "Invalidate", "classoperations__research_1_1glop_1_1_update_row.html#ab9adfea0e765ab447b8ce7730a6cd812", null ],
     [ "RecomputeFullUpdateRow", "classoperations__research_1_1glop_1_1_update_row.html#a7b39f45e976b642dac5b652e0a455e8f", null ],
     [ "SetParameters", "classoperations__research_1_1glop_1_1_update_row.html#ae7202d055b6b172a8a1da4f5b136f9ea", null ],

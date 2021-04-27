@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -89,7 +89,7 @@ $(document).ready(function(){initNavTree('strong__vector_8h_source.html',''); in
 <div class="title">strong_vector.h</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="strong__vector_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2018 Google LLC</span></div>
+<a href="strong__vector_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2021 Google LLC</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">// you may not use this file except in compliance with the License.</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">// You may obtain a copy of the License at</span></div>
@@ -118,7 +118,7 @@ $(document).ready(function(){initNavTree('strong__vector_8h_source.html',''); in
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="comment">//</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="comment">// where IntTypeName is the desired name for the &quot;logical&quot; integer-like type</span></div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="comment">// and the ValueType is a supported native integer type such as int or</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="comment">// uint64 (see int_type.h for details).</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="comment">// uint64_t (see int_type.h for details).</span></div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="comment">//</span></div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="comment">// The wrapper exposes all public methods of STL vector and behaves mostly as</span></div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="comment">// pass-through.  The only method modified to ensure type-safety is the operator</span></div>
@@ -126,19 +126,19 @@ $(document).ready(function(){initNavTree('strong__vector_8h_source.html',''); in
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="comment">//</span></div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="comment">// EXAMPLES --------------------------------------------------------------------</span></div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="comment">//    DEFINE_INT_TYPE(PhysicalChildIndex, int32);</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="comment">//    DEFINE_INT_TYPE(PhysicalChildIndex, int32_t);</span></div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="comment">//    absl::StrongVector&lt;PhysicalChildIndex, ChildStats*&gt; vec;</span></div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="comment">//</span></div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="comment">//    PhysicalChildIndex physical_index;</span></div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="comment">//    vec[physical_index] = ...;        &lt;-- index type match: compiles properly.</span></div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="comment">//    vec.at(physical_index) = ...;     &lt;-- index type match: compiles properly.</span></div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="comment">//    int32 physical_index;</span></div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="comment">//    int32_t physical_index;</span></div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="comment">//    vec[physical_index] = ...;        &lt;-- fails to compile.</span></div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="comment">//    vec.at(physical_index) = ...;     &lt;-- fails to compile.</span></div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="comment">//    DEFINE_INT_TYPE(LogicalChildIndex, int32);</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="comment">//    int32 logical_index;</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="comment">//    DEFINE_INT_TYPE(LogicalChildIndex, int32_t);</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="comment">//    int32_t logical_index;</span></div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="comment">//    vec[logical_index] = ...;        &lt;-- fails to compile.</span></div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="comment">//    vec.at(logical_index) = ...;     &lt;-- fails to compile.</span></div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="comment">//</span></div>
@@ -185,12 +185,12 @@ $(document).ready(function(){initNavTree('strong__vector_8h_source.html',''); in
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; <span class="keyword">public</span>:</div>
 <div class="line"><a name="l00095"></a><span class="lineno"><a class="line" href="classabsl_1_1_strong_vector.html#aa59b5fe33af14234e67f7a61b7cc860c">   95</a></span>&#160;  <a class="code" href="classabsl_1_1_strong_vector.html#aa59b5fe33af14234e67f7a61b7cc860c">StrongVector</a>() {}</div>
 <div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160; </div>
-<div class="line"><a name="l00097"></a><span class="lineno"><a class="line" href="classabsl_1_1_strong_vector.html#aa8dd605406ba172400b079281ea10970">   97</a></span>&#160;  <span class="keyword">explicit</span> <a class="code" href="classabsl_1_1_strong_vector.html#aa8dd605406ba172400b079281ea10970">StrongVector</a>(<span class="keyword">const</span> <a class="code" href="classabsl_1_1_strong_vector.html#a12de9b10bb1f9b0c9b4f12c9d04b56bd">allocator_type</a>&amp; <a class="code" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a>) : v_(<a class="code" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a>) {}</div>
+<div class="line"><a name="l00097"></a><span class="lineno"><a class="line" href="classabsl_1_1_strong_vector.html#aa8dd605406ba172400b079281ea10970">   97</a></span>&#160;  <span class="keyword">explicit</span> <a class="code" href="classabsl_1_1_strong_vector.html#aa8dd605406ba172400b079281ea10970">StrongVector</a>(<span class="keyword">const</span> <a class="code" href="classabsl_1_1_strong_vector.html#a12de9b10bb1f9b0c9b4f12c9d04b56bd">allocator_type</a>&amp; <a class="code" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>) : v_(<a class="code" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>) {}</div>
 <div class="line"><a name="l00098"></a><span class="lineno"><a class="line" href="classabsl_1_1_strong_vector.html#af223ecddc1be9748dd7aa5dd5620a91c">   98</a></span>&#160;  <span class="keyword">explicit</span> <a class="code" href="classabsl_1_1_strong_vector.html#af223ecddc1be9748dd7aa5dd5620a91c">StrongVector</a>(<a class="code" href="classabsl_1_1_strong_vector.html#a06292e8ab8b52be16e203e7a6c54adbc">size_type</a> n) : v_(n) {}</div>
 <div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
 <div class="line"><a name="l00100"></a><span class="lineno"><a class="line" href="classabsl_1_1_strong_vector.html#a150cfdfcb659275d6f8151f5bee25dd9">  100</a></span>&#160;  <a class="code" href="classabsl_1_1_strong_vector.html#a150cfdfcb659275d6f8151f5bee25dd9">StrongVector</a>(<a class="code" href="classabsl_1_1_strong_vector.html#a06292e8ab8b52be16e203e7a6c54adbc">size_type</a> n, <span class="keyword">const</span> <a class="code" href="classabsl_1_1_strong_vector.html#a7c1842ce2b57f7cf42dde6df3b108f2d">value_type</a>&amp; v,</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;               <span class="keyword">const</span> <a class="code" href="classabsl_1_1_strong_vector.html#a12de9b10bb1f9b0c9b4f12c9d04b56bd">allocator_type</a>&amp; <a class="code" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a> = <a class="code" href="classabsl_1_1_strong_vector.html#a12de9b10bb1f9b0c9b4f12c9d04b56bd">allocator_type</a>())</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;      : v_(n, v, <a class="code" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a>) {}</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;               <span class="keyword">const</span> <a class="code" href="classabsl_1_1_strong_vector.html#a12de9b10bb1f9b0c9b4f12c9d04b56bd">allocator_type</a>&amp; <a class="code" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a> = <a class="code" href="classabsl_1_1_strong_vector.html#a12de9b10bb1f9b0c9b4f12c9d04b56bd">allocator_type</a>())</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;      : v_(n, v, <a class="code" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>) {}</div>
 <div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
 <div class="line"><a name="l00104"></a><span class="lineno"><a class="line" href="classabsl_1_1_strong_vector.html#a1dfc9607206fee172a7242bf86f765b3">  104</a></span>&#160;  <a class="code" href="classabsl_1_1_strong_vector.html#a1dfc9607206fee172a7242bf86f765b3">StrongVector</a>(</div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;      std::initializer_list&lt;value_type&gt; il)  <span class="comment">// NOLINT(runtime/explicit)</span></div>
@@ -198,8 +198,8 @@ $(document).ready(function(){initNavTree('strong__vector_8h_source.html',''); in
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
 <div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;  <span class="keyword">template</span> &lt;<span class="keyword">typename</span> InputIteratorType&gt;</div>
 <div class="line"><a name="l00109"></a><span class="lineno"><a class="line" href="classabsl_1_1_strong_vector.html#a6bf90204743d8671067187701b86406f">  109</a></span>&#160;  <a class="code" href="classabsl_1_1_strong_vector.html#a6bf90204743d8671067187701b86406f">StrongVector</a>(InputIteratorType first, InputIteratorType last,</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;               <span class="keyword">const</span> <a class="code" href="classabsl_1_1_strong_vector.html#a12de9b10bb1f9b0c9b4f12c9d04b56bd">allocator_type</a>&amp; <a class="code" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a> = <a class="code" href="classabsl_1_1_strong_vector.html#a12de9b10bb1f9b0c9b4f12c9d04b56bd">allocator_type</a>())</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;      : v_(first, last, <a class="code" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a>) {}</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;               <span class="keyword">const</span> <a class="code" href="classabsl_1_1_strong_vector.html#a12de9b10bb1f9b0c9b4f12c9d04b56bd">allocator_type</a>&amp; <a class="code" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a> = <a class="code" href="classabsl_1_1_strong_vector.html#a12de9b10bb1f9b0c9b4f12c9d04b56bd">allocator_type</a>())</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;      : v_(first, last, <a class="code" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>) {}</div>
 <div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160; </div>
 <div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;  <span class="comment">// -- Accessors --------------------------------------------------------------</span></div>
 <div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;  <span class="comment">// This const accessor is useful in defining the comparison operators below.</span></div>
@@ -318,7 +318,7 @@ $(document).ready(function(){initNavTree('strong__vector_8h_source.html',''); in
 <div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160; </div>
 <div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;  <a class="code" href="classabsl_1_1_strong_vector.html#afd7ebd111d31cb1113dec223a6287886">ParentType</a> v_;</div>
 <div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160; </div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;  COMPILE_ASSERT(<a class="code" href="demon__profiler_8cc.html#a21edc7ca4cc5802c8779d68556bc09cf">std::is_integral&lt;typename IndexType::ValueType&gt;::value</a>,</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;  COMPILE_ASSERT(<a class="code" href="demon__profiler_8cc.html#ac072af30c4ffbc834bb4c681f6ecb514">std::is_integral&lt;typename IndexType::ValueType&gt;::value</a>,</div>
 <div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                 int_type_indexed_vector_must_have_integral_index);</div>
 <div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;};</div>
 <div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160; </div>
@@ -398,8 +398,8 @@ $(document).ready(function(){initNavTree('strong__vector_8h_source.html',''); in
 <div class="ttc" id="aclassabsl_1_1_strong_vector_html_afb6e8df954ff6771a3c055819aa4f83c"><div class="ttname"><a href="classabsl_1_1_strong_vector.html#afb6e8df954ff6771a3c055819aa4f83c">absl::StrongVector::reference</a></div><div class="ttdeci">ParentType::reference reference</div><div class="ttdef"><b>Definition:</b> <a href="strong__vector_8h_source.html#l00085">strong_vector.h:85</a></div></div>
 <div class="ttc" id="aclassabsl_1_1_strong_vector_html_afd7ebd111d31cb1113dec223a6287886"><div class="ttname"><a href="classabsl_1_1_strong_vector.html#afd7ebd111d31cb1113dec223a6287886">absl::StrongVector::ParentType</a></div><div class="ttdeci">std::vector&lt; T, Alloc &gt; ParentType</div><div class="ttdef"><b>Definition:</b> <a href="strong__vector_8h_source.html#l00079">strong_vector.h:79</a></div></div>
 <div class="ttc" id="aclassabsl_1_1_strong_vector_html_afd9d0c4c51498f58f2f18b36e1566b0d"><div class="ttname"><a href="classabsl_1_1_strong_vector.html#afd9d0c4c51498f58f2f18b36e1566b0d">absl::StrongVector::pointer</a></div><div class="ttdeci">ParentType::pointer pointer</div><div class="ttdef"><b>Definition:</b> <a href="strong__vector_8h_source.html#l00087">strong_vector.h:87</a></div></div>
-<div class="ttc" id="aconstraint__solver_2table_8cc_html_af730895c6c6ef6e03caaf6251192dfd2"><div class="ttname"><a href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a></div><div class="ttdeci">int64 a</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_2table_8cc_source.html#l00042">constraint_solver/table.cc:42</a></div></div>
-<div class="ttc" id="ademon__profiler_8cc_html_a21edc7ca4cc5802c8779d68556bc09cf"><div class="ttname"><a href="demon__profiler_8cc.html#a21edc7ca4cc5802c8779d68556bc09cf">value</a></div><div class="ttdeci">int64 value</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8cc_source.html#l00043">demon_profiler.cc:43</a></div></div>
+<div class="ttc" id="aconstraint__solver_2table_8cc_html_acb18315d548212835cd8ed4287e6c0b6"><div class="ttname"><a href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a></div><div class="ttdeci">int64_t a</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_2table_8cc_source.html#l00046">constraint_solver/table.cc:46</a></div></div>
+<div class="ttc" id="ademon__profiler_8cc_html_ac072af30c4ffbc834bb4c681f6ecb514"><div class="ttname"><a href="demon__profiler_8cc.html#ac072af30c4ffbc834bb4c681f6ecb514">value</a></div><div class="ttdeci">int64_t value</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8cc_source.html#l00044">demon_profiler.cc:44</a></div></div>
 <div class="ttc" id="aint__type_8h_html"><div class="ttname"><a href="int__type_8h.html">int_type.h</a></div></div>
 <div class="ttc" id="amacros_8h_html"><div class="ttname"><a href="macros_8h.html">macros.h</a></div></div>
 <div class="ttc" id="anamespaceabsl_html"><div class="ttname"><a href="namespaceabsl.html">absl</a></div><div class="ttdef"><b>Definition:</b> <a href="cleanup_8h_source.html#l00022">cleanup.h:22</a></div></div>

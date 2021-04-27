@@ -20,7 +20,7 @@ var classoperations__research_1_1sat_1_1_trail =
     [ "Index", "classoperations__research_1_1sat_1_1_trail.html#a8ef12397d1682615bc3108c397734179", null ],
     [ "Info", "classoperations__research_1_1sat_1_1_trail.html#a29be1a6b9ba823a6fffb927609d18599", null ],
     [ "MutableConflict", "classoperations__research_1_1sat_1_1_trail.html#a84f6b2c778ed597c90f98f0329a25713", null ],
-    [ "NumberOfEnqueues", "classoperations__research_1_1sat_1_1_trail.html#aac9a59f50e707a0e0dcff1a2a16f3bf5", null ],
+    [ "NumberOfEnqueues", "classoperations__research_1_1sat_1_1_trail.html#a38e7aa21c6a38b5019bb0413d4be489b", null ],
     [ "NumVariables", "classoperations__research_1_1sat_1_1_trail.html#a9d3beb2afe4ae647674b054bf29290e2", null ],
     [ "operator[]", "classoperations__research_1_1sat_1_1_trail.html#a1b359ca95bfbf76a0e25283b31232a78", null ],
     [ "Reason", "classoperations__research_1_1sat_1_1_trail.html#a885bcf9213525765f68daf84eed76c2e", null ],

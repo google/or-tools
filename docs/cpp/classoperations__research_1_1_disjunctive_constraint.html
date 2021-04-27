@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -95,7 +95,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_disjunct
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l05339">5339</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l05343">5343</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -106,11 +106,11 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aa99bb1bc9882729f5c08a39c46b8705c"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classoperations__research_1_1_sequence_var.html">SequenceVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_disjunctive_constraint.html#aa99bb1bc9882729f5c08a39c46b8705c">MakeSequenceVar</a> ()=0</td></tr>
 <tr class="memdesc:aa99bb1bc9882729f5c08a39c46b8705c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a sequence variable from the constraint.  <a href="classoperations__research_1_1_disjunctive_constraint.html#aa99bb1bc9882729f5c08a39c46b8705c">More...</a><br /></td></tr>
 <tr class="separator:aa99bb1bc9882729f5c08a39c46b8705c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae01c325872694c6f9a780832c3ac65f4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_disjunctive_constraint.html#ae01c325872694c6f9a780832c3ac65f4">SetTransitionTime</a> (<a class="el" href="classoperations__research_1_1_solver.html#abb24034fec2804ac3c0172f043087321">Solver::IndexEvaluator2</a> transition_time)</td></tr>
+<tr class="memitem:ae01c325872694c6f9a780832c3ac65f4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_disjunctive_constraint.html#ae01c325872694c6f9a780832c3ac65f4">SetTransitionTime</a> (<a class="el" href="classoperations__research_1_1_solver.html#a55d833360c375d45a3c503437de9841c">Solver::IndexEvaluator2</a> transition_time)</td></tr>
 <tr class="memdesc:ae01c325872694c6f9a780832c3ac65f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a transition time between intervals.  <a href="classoperations__research_1_1_disjunctive_constraint.html#ae01c325872694c6f9a780832c3ac65f4">More...</a><br /></td></tr>
 <tr class="separator:ae01c325872694c6f9a780832c3ac65f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaafd3363e871db52ce00c08905f57afa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_disjunctive_constraint.html#aaafd3363e871db52ce00c08905f57afa">TransitionTime</a> (int before_index, int after_index)</td></tr>
-<tr class="separator:aaafd3363e871db52ce00c08905f57afa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a668c953026d7cf1faa1d57dc15716f30"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_disjunctive_constraint.html#a668c953026d7cf1faa1d57dc15716f30">TransitionTime</a> (int before_index, int after_index)</td></tr>
+<tr class="separator:a668c953026d7cf1faa1d57dc15716f30"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac2f8f693dccb6e7ff7721b78b824c36a"><td class="memItemLeft" align="right" valign="top">virtual const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_disjunctive_constraint.html#ac2f8f693dccb6e7ff7721b78b824c36a">nexts</a> () const =0</td></tr>
 <tr class="separator:ac2f8f693dccb6e7ff7721b78b824c36a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7c019b394b4c8624bc4de977cdfc627c"><td class="memItemLeft" align="right" valign="top">virtual const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_disjunctive_constraint.html#a7c019b394b4c8624bc4de977cdfc627c">actives</a> () const =0</td></tr>
@@ -156,7 +156,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3d3bd9d99cf43cf184a1246d2c278c31"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a5ad1a2482043e4a9d2c19bbab1e250"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_propagation_base_object.html#a5a5ad1a2482043e4a9d2c19bbab1e250">EnqueueAll</a> (const <a class="el" href="classoperations__research_1_1_simple_rev_f_i_f_o.html">SimpleRevFIFO</a>&lt; <a class="el" href="classoperations__research_1_1_demon.html">Demon</a> * &gt; &amp;demons)</td></tr>
 <tr class="separator:a5a5ad1a2482043e4a9d2c19bbab1e250"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3ae4667b0e7a9e6c63c91202480c8876"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_propagation_base_object.html#a3ae4667b0e7a9e6c63c91202480c8876">set_action_on_fail</a> (<a class="el" href="classoperations__research_1_1_solver.html#ad7946514ee3dd6cb3ab993dc9e98b33b">Solver::Action</a> <a class="el" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a>)</td></tr>
+<tr class="memitem:a3ae4667b0e7a9e6c63c91202480c8876"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_propagation_base_object.html#a3ae4667b0e7a9e6c63c91202480c8876">set_action_on_fail</a> (<a class="el" href="classoperations__research_1_1_solver.html#ad7946514ee3dd6cb3ab993dc9e98b33b">Solver::Action</a> <a class="el" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>)</td></tr>
 <tr class="separator:a3ae4667b0e7a9e6c63c91202480c8876"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a26d87b428f06d54a1a44d6e950a0e196"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_propagation_base_object.html#a26d87b428f06d54a1a44d6e950a0e196">reset_action_on_fail</a> ()</td></tr>
 <tr class="memdesc:a26d87b428f06d54a1a44d6e950a0e196"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method clears the failure callback.  <a href="classoperations__research_1_1_propagation_base_object.html#a26d87b428f06d54a1a44d6e950a0e196">More...</a><br /></td></tr>
@@ -180,7 +180,7 @@ Public Member Functions</h2></td></tr>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:a02e65ccb441e14918c023bde60b05099"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="classoperations__research_1_1_interval_var.html">IntervalVar</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_disjunctive_constraint.html#a02e65ccb441e14918c023bde60b05099">intervals_</a></td></tr>
 <tr class="separator:a02e65ccb441e14918c023bde60b05099"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afc37bcfd26805cab838cef7ae4c87444"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_solver.html#abb24034fec2804ac3c0172f043087321">Solver::IndexEvaluator2</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_disjunctive_constraint.html#afc37bcfd26805cab838cef7ae4c87444">transition_time_</a></td></tr>
+<tr class="memitem:afc37bcfd26805cab838cef7ae4c87444"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_solver.html#a55d833360c375d45a3c503437de9841c">Solver::IndexEvaluator2</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_disjunctive_constraint.html#afc37bcfd26805cab838cef7ae4c87444">transition_time_</a></td></tr>
 <tr class="separator:afc37bcfd26805cab838cef7ae4c87444"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
@@ -216,7 +216,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="resource_8cc_source.html#l02551">2551</a> of file <a class="el" href="resource_8cc_source.html">resource.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_8cc_source.html#l02560">2560</a> of file <a class="el" href="resource_8cc_source.html">resource.cc</a>.</p>
 
 </div>
 </div>
@@ -243,7 +243,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="resource_8cc_source.html#l02561">2561</a> of file <a class="el" href="resource_8cc_source.html">resource.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_8cc_source.html#l02570">2570</a> of file <a class="el" href="resource_8cc_source.html">resource.cc</a>.</p>
 
 </div>
 </div>
@@ -276,7 +276,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="class_swig_director___constraint.html#a8043b2f97c119b7f9281a7a5a88089f0">SwigDirector_Constraint</a>, <a class="el" href="classoperations__research_1_1_if_then_else_ct.html#aa30c84aec5e60d6b74e1e1eb15011d4a">IfThenElseCt</a>, and <a class="el" href="classoperations__research_1_1_pack.html#aa30c84aec5e60d6b74e1e1eb15011d4a">Pack</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03247">3247</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03254">3254</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -332,7 +332,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_boolean_var.html#adbfe3c73b9cad61f112ccb082b553c51">BooleanVar</a>, and <a class="el" href="class_swig_director___constraint.html#a8d3de765a37ab507b801467955dc183e">SwigDirector_Constraint</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02515">2515</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02520">2520</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -363,7 +363,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_global_vehicle_breaks_constraint.html#aed804747c45a7e1caf81461f9e45dd91">GlobalVehicleBreaksConstraint</a>, <a class="el" href="classoperations__research_1_1_if_then_else_ct.html#aed804747c45a7e1caf81461f9e45dd91">IfThenElseCt</a>, <a class="el" href="classoperations__research_1_1_pack.html#aed804747c45a7e1caf81461f9e45dd91">Pack</a>, <a class="el" href="class_swig_director___constraint.html#a8eba5d533fa9df4617c1868d3ec2afc4">SwigDirector_Constraint</a>, and <a class="el" href="class_swig_director___constraint.html#a764be64f3029f8b8e23511061d8de355">SwigDirector_Constraint</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03237">3237</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03244">3244</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -391,7 +391,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02521">2521</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02526">2526</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -422,7 +422,7 @@ Protected Attributes</h2></td></tr>
 <p>This method pushes the demon onto the propagation queue. </p>
 <p>It will be processed directly if the queue is empty. It will be enqueued according to its priority otherwise. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03192">3192</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03194">3194</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -450,7 +450,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03193">3193</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03195">3195</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -478,7 +478,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02517">2517</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02522">2522</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -508,7 +508,7 @@ Protected Attributes</h2></td></tr>
 <p>This method freezes the propagation queue. </p>
 <p>It is useful when you need to apply multiple modifications at once. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03183">3183</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03185">3185</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -537,7 +537,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns whether the object has been named or not. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02513">2513</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02518">2518</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -596,7 +596,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Is the constraint created by a cast from expression to integer variable? </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03253">3253</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03260">3260</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -654,7 +654,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1_piecewise_linear_expr.html#aa4f4ba750a08765e64da2d0bd473944a">PiecewiseLinearExpr</a>, <a class="el" href="class_swig_director___constraint.html#a6a119daa8b83c3aaffdb6e11fac1f97e">SwigDirector_Constraint</a>, <a class="el" href="class_swig_director___propagation_base_object.html#a1d89c28bd42ba9a52da008bb69367171">SwigDirector_PropagationBaseObject</a>, and <a class="el" href="class_swig_director___constraint.html#a1d89c28bd42ba9a52da008bb69367171">SwigDirector_Constraint</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02505">2505</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02510">2510</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -739,7 +739,7 @@ Protected Attributes</h2></td></tr>
 <p>Calls Post and then Propagate to initialize the constraints. </p>
 <p>This is usually done in the root node. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03239">3239</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03246">3246</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -768,7 +768,7 @@ Protected Attributes</h2></td></tr>
 
 <p>This method clears the failure callback. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03206">3206</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03208">3208</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -796,7 +796,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03200">3200</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03202">3202</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -824,7 +824,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02509">2509</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02514">2514</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -854,7 +854,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Shortcut for variable cleaner. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03209">3209</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03211">3211</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -867,7 +867,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">void SetTransitionTime </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1_solver.html#abb24034fec2804ac3c0172f043087321">Solver::IndexEvaluator2</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1_solver.html#a55d833360c375d45a3c503437de9841c">Solver::IndexEvaluator2</a>&#160;</td>
           <td class="paramname"><em>transition_time</em></td><td>)</td>
           <td></td>
         </tr>
@@ -877,7 +877,7 @@ Protected Attributes</h2></td></tr>
 <p>Add a transition time between intervals. </p>
 <p>It forces the distance between the end of interval a and start of interval b that follows it to be at least transition_time(a, b). This function must always return a positive or null value. </p>
 
-<p class="definition">Definition at line <a class="el" href="resource_8cc_source.html#l02563">2563</a> of file <a class="el" href="resource_8cc_source.html">resource.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_8cc_source.html#l02572">2572</a> of file <a class="el" href="resource_8cc_source.html">resource.cc</a>.</p>
 
 </div>
 </div>
@@ -904,7 +904,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03179">3179</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03181">3181</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -958,8 +958,8 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="aaafd3363e871db52ce00c08905f57afa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaafd3363e871db52ce00c08905f57afa">&#9670;&nbsp;</a></span>TransitionTime()</h2>
+<a id="a668c953026d7cf1faa1d57dc15716f30"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a668c953026d7cf1faa1d57dc15716f30">&#9670;&nbsp;</a></span>TransitionTime()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -968,7 +968,7 @@ Protected Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> TransitionTime </td>
+          <td class="memname">int64_t TransitionTime </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>before_index</em>, </td>
@@ -992,7 +992,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l05355">5355</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l05359">5359</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1022,7 +1022,7 @@ Protected Attributes</h2></td></tr>
 <p>This method unfreezes the propagation queue. </p>
 <p>All modifications that happened when the queue was frozen will be processed. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03187">3187</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03189">3189</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1054,7 +1054,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="class_swig_director___constraint.html#a0c5b651f8fe6e47bba5b073817a665c0">SwigDirector_Constraint</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03257">3257</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l03264">3264</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -1079,7 +1079,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l05368">5368</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l05372">5372</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1093,7 +1093,7 @@ Protected Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_solver.html#abb24034fec2804ac3c0172f043087321">Solver::IndexEvaluator2</a> transition_time_</td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1_solver.html#a55d833360c375d45a3c503437de9841c">Solver::IndexEvaluator2</a> transition_time_</td>
         </tr>
       </table>
   </td>
@@ -1103,7 +1103,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l05369">5369</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l05373">5373</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>

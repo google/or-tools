@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -96,7 +96,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_int_var_
 <div class="textblock"><p><a class="el" href="classoperations__research_1_1_decision.html" title="A Decision represents a choice point in the search tree.">Decision</a> builder building a solution using heuristics with local search filters to evaluate its feasibility. </p>
 <p>This is very fast but can eventually fail when the solution is restored if filters did not detect all infeasiblities. More details: Using local search filters to build a solution. The approach is pretty straight-forward: have a general assignment storing the current solution, build delta assigment representing possible extensions to the current solution and validate them with filters. The tricky bit comes from using the assignment and filter APIs in a way which avoids the lazy creation of internal hash_maps between variables and indices. Generic filter-based decision builder using an <a class="el" href="classoperations__research_1_1_int_var_filtered_heuristic.html" title="Generic filter-based heuristic applied to IntVars.">IntVarFilteredHeuristic</a>. when the code is mature enough. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02977">2977</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00136">136</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -109,11 +109,11 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a8c71ca62b0ac538bf37374602e4259bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed804747c45a7e1caf81461f9e45dd91"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_decision_builder.html#aed804747c45a7e1caf81461f9e45dd91">DebugString</a> () const override</td></tr>
 <tr class="separator:aed804747c45a7e1caf81461f9e45dd91"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab9cbb9e796806062460be9c7a4033e80"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_decision_builder.html#ab9cbb9e796806062460be9c7a4033e80">number_of_decisions</a> () const</td></tr>
-<tr class="memdesc:ab9cbb9e796806062460be9c7a4033e80"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns statistics from its underlying heuristic.  <a href="classoperations__research_1_1_int_var_filtered_decision_builder.html#ab9cbb9e796806062460be9c7a4033e80">More...</a><br /></td></tr>
-<tr class="separator:ab9cbb9e796806062460be9c7a4033e80"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab35b677ad56dbdc2521d9bb28a68f566"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_decision_builder.html#ab35b677ad56dbdc2521d9bb28a68f566">number_of_rejects</a> () const</td></tr>
-<tr class="separator:ab35b677ad56dbdc2521d9bb28a68f566"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac2118d22c4275990bdd1fec28a2a8d3"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_decision_builder.html#aac2118d22c4275990bdd1fec28a2a8d3">number_of_decisions</a> () const</td></tr>
+<tr class="memdesc:aac2118d22c4275990bdd1fec28a2a8d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns statistics from its underlying heuristic.  <a href="classoperations__research_1_1_int_var_filtered_decision_builder.html#aac2118d22c4275990bdd1fec28a2a8d3">More...</a><br /></td></tr>
+<tr class="separator:aac2118d22c4275990bdd1fec28a2a8d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afd4b70bcd23086d4968db3a1d822ee2c"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_decision_builder.html#afd4b70bcd23086d4968db3a1d822ee2c">number_of_rejects</a> () const</td></tr>
+<tr class="separator:afd4b70bcd23086d4968db3a1d822ee2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aba5193a76f57d66707f9256ac1d6cc78"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_decision_builder.html#aba5193a76f57d66707f9256ac1d6cc78">AppendMonitors</a> (<a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *const solver, std::vector&lt; <a class="el" href="classoperations__research_1_1_search_monitor.html">SearchMonitor</a> * &gt; *const extras)</td></tr>
 <tr class="memdesc:aba5193a76f57d66707f9256ac1d6cc78"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method will be called at the start of the search.  <a href="classoperations__research_1_1_decision_builder.html#aba5193a76f57d66707f9256ac1d6cc78">More...</a><br /></td></tr>
 <tr class="separator:aba5193a76f57d66707f9256ac1d6cc78"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -145,7 +145,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02847">2847</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00184">184</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -172,7 +172,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02982">2982</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00141">141</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -201,7 +201,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02532">2532</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02537">2537</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -242,7 +242,7 @@ Public Member Functions</h2></td></tr>
 <p>This method will be called at the start of the search. </p>
 <p>It asks the decision builder if it wants to append search monitors to the list of active monitors for this search. Please note there are no checks at this point for duplication. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02529">2529</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8cc_source.html#l02534">2534</a> of file <a class="el" href="constraint__solver_8cc_source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div>
@@ -271,7 +271,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1_decision_builder.html#aed804747c45a7e1caf81461f9e45dd91">DecisionBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02872">2872</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00209">209</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
@@ -304,18 +304,18 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1_decision_builder.html#a68bbb37d42da9d7b82145b3bf435dbc3">DecisionBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02851">2851</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00188">188</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
-<a id="ab9cbb9e796806062460be9c7a4033e80"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab9cbb9e796806062460be9c7a4033e80">&#9670;&nbsp;</a></span>number_of_decisions()</h2>
+<a id="aac2118d22c4275990bdd1fec28a2a8d3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aac2118d22c4275990bdd1fec28a2a8d3">&#9670;&nbsp;</a></span>number_of_decisions()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> number_of_decisions </td>
+          <td class="memname">int64_t number_of_decisions </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -325,18 +325,18 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns statistics from its underlying heuristic. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02864">2864</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00201">201</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
-<a id="ab35b677ad56dbdc2521d9bb28a68f566"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab35b677ad56dbdc2521d9bb28a68f566">&#9670;&nbsp;</a></span>number_of_rejects()</h2>
+<a id="afd4b70bcd23086d4968db3a1d822ee2c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afd4b70bcd23086d4968db3a1d822ee2c">&#9670;&nbsp;</a></span>number_of_rejects()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> number_of_rejects </td>
+          <td class="memname">int64_t number_of_rejects </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -344,12 +344,12 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l02868">2868</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8cc_source.html#l00205">205</a> of file <a class="el" href="routing__search_8cc_source.html">routing_search.cc</a>.</p>
 
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li><a class="el" href="routing_8h_source.html">routing.h</a></li>
+<li><a class="el" href="routing__search_8h_source.html">routing_search.h</a></li>
 <li><a class="el" href="routing__search_8cc_source.html">routing_search.cc</a></li>
 </ul>
 </div><!-- contents -->

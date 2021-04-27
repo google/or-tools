@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -94,7 +94,7 @@ $(document).ready(function(){initNavTree('structoperations__research_1_1_global_
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03198">3198</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00358">358</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -107,8 +107,8 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a0aa77787d0df1b489476bfc6714ef819"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#a0aa77787d0df1b489476bfc6714ef819">neighbors_ratio</a></td></tr>
 <tr class="memdesc:a0aa77787d0df1b489476bfc6714ef819"><td class="mdescLeft">&#160;</td><td class="mdescRight">If neighbors_ratio &lt; 1 then for each node only this ratio of its neighbors leading to the smallest arc costs are considered for insertions, with a minimum of 'min_neighbors': num_closest_neighbors = max(min_neighbors, neighbors_ratio*N), where N is the number of non-start/end nodes in the model.  <a href="structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#a0aa77787d0df1b489476bfc6714ef819">More...</a><br /></td></tr>
 <tr class="separator:a0aa77787d0df1b489476bfc6714ef819"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4de56a813d02ca0b525b77293179fca6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#a4de56a813d02ca0b525b77293179fca6">min_neighbors</a></td></tr>
-<tr class="separator:a4de56a813d02ca0b525b77293179fca6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a264a3f98da0f7c3a55447f0e77e7ec8c"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#a264a3f98da0f7c3a55447f0e77e7ec8c">min_neighbors</a></td></tr>
+<tr class="separator:a264a3f98da0f7c3a55447f0e77e7ec8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d91387b5081be8f22d053d93eb9edf4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#a7d91387b5081be8f22d053d93eb9edf4">use_neighbors_ratio_for_initialization</a></td></tr>
 <tr class="memdesc:a7d91387b5081be8f22d053d93eb9edf4"><td class="mdescLeft">&#160;</td><td class="mdescRight">If true, only closest neighbors (see neighbors_ratio and min_neighbors) are considered as insertion positions during initialization.  <a href="structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#a7d91387b5081be8f22d053d93eb9edf4">More...</a><br /></td></tr>
 <tr class="separator:a7d91387b5081be8f22d053d93eb9edf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -132,7 +132,7 @@ Public Attributes</h2></td></tr>
 <p>If true, entries are created for making the nodes/pairs unperformed, and when the cost of making a node unperformed is lower than all insertions, the node/pair will be made unperformed. </p>
 <p>If false, only entries making a node/pair performed are considered. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03219">3219</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00379">379</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -150,7 +150,7 @@ Public Attributes</h2></td></tr>
 
 <p>The ratio of routes on which to insert farthest nodes as seeds before starting the cheapest insertion. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03203">3203</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00363">363</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -168,23 +168,23 @@ Public Attributes</h2></td></tr>
 
 <p>Whether the routes are constructed sequentially or in parallel. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03200">3200</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00360">360</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
-<a id="a4de56a813d02ca0b525b77293179fca6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4de56a813d02ca0b525b77293179fca6">&#9670;&nbsp;</a></span>min_neighbors</h2>
+<a id="a264a3f98da0f7c3a55447f0e77e7ec8c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a264a3f98da0f7c3a55447f0e77e7ec8c">&#9670;&nbsp;</a></span>min_neighbors</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> min_neighbors</td>
+          <td class="memname">int64_t min_neighbors</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03210">3210</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00370">370</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -202,7 +202,7 @@ Public Attributes</h2></td></tr>
 
 <p>If neighbors_ratio &lt; 1 then for each node only this ratio of its neighbors leading to the smallest arc costs are considered for insertions, with a minimum of 'min_neighbors': num_closest_neighbors = max(min_neighbors, neighbors_ratio*N), where N is the number of non-start/end nodes in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03209">3209</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00369">369</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
@@ -221,12 +221,12 @@ Public Attributes</h2></td></tr>
 <p>If true, only closest neighbors (see neighbors_ratio and min_neighbors) are considered as insertion positions during initialization. </p>
 <p>Otherwise, all possible insertion positions are considered. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03214">3214</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__search_8h_source.html#l00374">374</a> of file <a class="el" href="routing__search_8h_source.html">routing_search.h</a>.</p>
 
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
-<li><a class="el" href="routing_8h_source.html">routing.h</a></li>
+<li><a class="el" href="routing__search_8h_source.html">routing_search.h</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

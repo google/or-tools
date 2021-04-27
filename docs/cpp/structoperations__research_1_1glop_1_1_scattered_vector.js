@@ -6,6 +6,7 @@ var structoperations__research_1_1glop_1_1_scattered_vector =
     [ "ClearNonZerosIfTooDense", "structoperations__research_1_1glop_1_1_scattered_vector.html#aa01dd1032c527cbadf34ea39a02f799e", null ],
     [ "ClearSparseMask", "structoperations__research_1_1glop_1_1_scattered_vector.html#a824e6b41b839a9f0ce98b10d3b84046d", null ],
     [ "end", "structoperations__research_1_1glop_1_1_scattered_vector.html#a62469461ed7c932afba3808f4da0fe3d", null ],
+    [ "NumNonZerosEstimate", "structoperations__research_1_1glop_1_1_scattered_vector.html#a975b414f769cd320ff33ee9bd0c959bf", null ],
     [ "operator[]", "structoperations__research_1_1glop_1_1_scattered_vector.html#abc5e3ed39a7944cd8e89f430851f7ad0", null ],
     [ "operator[]", "structoperations__research_1_1glop_1_1_scattered_vector.html#ae2e345240a7ff49b7c5c03806fa398c5", null ],
     [ "RepopulateSparseMask", "structoperations__research_1_1glop_1_1_scattered_vector.html#a582acb7e40cf171c7f0ab27aacd67823", null ],

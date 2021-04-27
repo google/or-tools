@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -94,12 +94,12 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1glop_1_1_
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="variable__values_8h_source.html#l00040">40</a> of file <a class="el" href="variable__values_8h_source.html">variable_values.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="variable__values_8h_source.html#l00042">42</a> of file <a class="el" href="variable__values_8h_source.html">variable_values.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a01c49813001aa10cc60ec7189793b093"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_variable_values.html#a01c49813001aa10cc60ec7189793b093">VariableValues</a> (const GlopParameters &amp;<a class="el" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>, const <a class="el" href="classoperations__research_1_1glop_1_1_compact_sparse_matrix.html">CompactSparseMatrix</a> &amp;matrix, const <a class="el" href="namespaceoperations__research_1_1glop.html#ad73165f71f932e8ccc240d4db5097803">RowToColMapping</a> &amp;basis, const <a class="el" href="classoperations__research_1_1glop_1_1_variables_info.html">VariablesInfo</a> &amp;variables_info, const <a class="el" href="classoperations__research_1_1glop_1_1_basis_factorization.html">BasisFactorization</a> &amp;basis_factorization)</td></tr>
-<tr class="separator:a01c49813001aa10cc60ec7189793b093"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a99f06c2dfc34a574dc20ac1cd8b92abc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_variable_values.html#a99f06c2dfc34a574dc20ac1cd8b92abc">VariableValues</a> (const GlopParameters &amp;<a class="el" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>, const <a class="el" href="classoperations__research_1_1glop_1_1_compact_sparse_matrix.html">CompactSparseMatrix</a> &amp;matrix, const <a class="el" href="namespaceoperations__research_1_1glop.html#ad73165f71f932e8ccc240d4db5097803">RowToColMapping</a> &amp;basis, const <a class="el" href="classoperations__research_1_1glop_1_1_variables_info.html">VariablesInfo</a> &amp;variables_info, const <a class="el" href="classoperations__research_1_1glop_1_1_basis_factorization.html">BasisFactorization</a> &amp;basis_factorization, <a class="el" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html">DualEdgeNorms</a> *dual_edge_norms, <a class="el" href="classoperations__research_1_1glop_1_1_dynamic_maximum.html">DynamicMaximum</a>&lt; RowIndex &gt; *dual_prices)</td></tr>
+<tr class="separator:a99f06c2dfc34a574dc20ac1cd8b92abc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abb890abf1492b21ed7c136143541dd5a"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceoperations__research_1_1glop.html#a733947145e3e1631165b618b05c9ccb7">Fractional</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_variable_values.html#abb890abf1492b21ed7c136143541dd5a">Get</a> (ColIndex <a class="el" href="matrix__utils_8cc.html#aa9d6c98fdf8d89b0e2321fda02adc82c">col</a>) const</td></tr>
 <tr class="separator:abb890abf1492b21ed7c136143541dd5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5619b7a7ea4662832b07ccb00439df47"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceoperations__research_1_1glop.html#a4dc8ae0f97c4110f3cc770715b2bbd12">DenseRow</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_variable_values.html#a5619b7a7ea4662832b07ccb00439df47">GetDenseRow</a> () const</td></tr>
@@ -120,14 +120,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a9808cfe964d67616b5775b0ab113b7aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a37d6b382d73531413bce6b5d63e624e9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_variable_values.html#a37d6b382d73531413bce6b5d63e624e9">UpdateGivenNonBasicVariables</a> (const std::vector&lt; ColIndex &gt; &amp;cols_to_update, bool update_basic_variables)</td></tr>
 <tr class="separator:a37d6b382d73531413bce6b5d63e624e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3e89d74b50bcd17a7c1a2c6143028d27"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceoperations__research_1_1glop.html#a0e289525f7e45776226887bf5429dbd8">DenseBitColumn</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_variable_values.html#a3e89d74b50bcd17a7c1a2c6143028d27">GetPrimalInfeasiblePositions</a> () const</td></tr>
-<tr class="separator:a3e89d74b50bcd17a7c1a2c6143028d27"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1472d776e41913b79d4152d87884abde"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceoperations__research_1_1glop.html#ae5fa9e57c2d31b294195ed8a9e17bfac">DenseColumn</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_variable_values.html#a1472d776e41913b79d4152d87884abde">GetPrimalSquaredInfeasibilities</a> () const</td></tr>
-<tr class="separator:a1472d776e41913b79d4152d87884abde"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9323beaddf591680b191fa618c40519f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_variable_values.html#a9323beaddf591680b191fa618c40519f">ResetPrimalInfeasibilityInformation</a> ()</td></tr>
-<tr class="separator:a9323beaddf591680b191fa618c40519f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac78d744661f731cec1a48bdfa2513d35"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_variable_values.html#ac78d744661f731cec1a48bdfa2513d35">UpdatePrimalInfeasibilityInformation</a> (const std::vector&lt; RowIndex &gt; &amp;rows)</td></tr>
-<tr class="separator:ac78d744661f731cec1a48bdfa2513d35"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd27b30d01d0b9022796bf91abf40de0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_variable_values.html#acd27b30d01d0b9022796bf91abf40de0">RecomputeDualPrices</a> ()</td></tr>
+<tr class="separator:acd27b30d01d0b9022796bf91abf40de0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a624179d887d379119802066cad4c29e8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_variable_values.html#a624179d887d379119802066cad4c29e8">UpdateDualPrices</a> (const std::vector&lt; RowIndex &gt; &amp;<a class="el" href="revised__simplex_8cc.html#aea35f36ba98d5bbd8d033382f50c9e52">row</a>)</td></tr>
+<tr class="separator:a624179d887d379119802066cad4c29e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adb3b3b75495ee150a1fcc33e58656d22"><td class="memTemplParams" colspan="2">template&lt;typename Rows &gt; </td></tr>
 <tr class="memitem:adb3b3b75495ee150a1fcc33e58656d22"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_variable_values.html#adb3b3b75495ee150a1fcc33e58656d22">UpdatePrimalPhaseICosts</a> (const Rows &amp;rows, <a class="el" href="namespaceoperations__research_1_1glop.html#a4dc8ae0f97c4110f3cc770715b2bbd12">DenseRow</a> *objective)</td></tr>
 <tr class="separator:adb3b3b75495ee150a1fcc33e58656d22"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -137,8 +133,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:af9bc435481ae9e6e60d66a65d5394a7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a01c49813001aa10cc60ec7189793b093"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a01c49813001aa10cc60ec7189793b093">&#9670;&nbsp;</a></span>VariableValues()</h2>
+<a id="a99f06c2dfc34a574dc20ac1cd8b92abc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a99f06c2dfc34a574dc20ac1cd8b92abc">&#9670;&nbsp;</a></span>VariableValues()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -171,7 +167,19 @@ Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const <a class="el" href="classoperations__research_1_1glop_1_1_basis_factorization.html">BasisFactorization</a> &amp;&#160;</td>
-          <td class="paramname"><em>basis_factorization</em>&#160;</td>
+          <td class="paramname"><em>basis_factorization</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html">DualEdgeNorms</a> *&#160;</td>
+          <td class="paramname"><em>dual_edge_norms</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1glop_1_1_dynamic_maximum.html">DynamicMaximum</a>&lt; RowIndex &gt; *&#160;</td>
+          <td class="paramname"><em>dual_prices</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -201,7 +209,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00120">120</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00127">127</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
 
 </div>
 </div>
@@ -220,7 +228,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00108">108</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00115">115</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
 
 </div>
 </div>
@@ -239,7 +247,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00132">132</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00139">139</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
 
 </div>
 </div>
@@ -267,7 +275,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="variable__values_8h_source.html#l00049">49</a> of file <a class="el" href="variable__values_8h_source.html">variable_values.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="variable__values_8h_source.html#l00053">53</a> of file <a class="el" href="variable__values_8h_source.html">variable_values.h</a>.</p>
 
 </div>
 </div>
@@ -294,45 +302,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="variable__values_8h_source.html#l00050">50</a> of file <a class="el" href="variable__values_8h_source.html">variable_values.h</a>.</p>
-
-</div>
-</div>
-<a id="a3e89d74b50bcd17a7c1a2c6143028d27"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3e89d74b50bcd17a7c1a2c6143028d27">&#9670;&nbsp;</a></span>GetPrimalInfeasiblePositions()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="namespaceoperations__research_1_1glop.html#a0e289525f7e45776226887bf5429dbd8">DenseBitColumn</a> &amp; GetPrimalInfeasiblePositions </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00222">222</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
-
-</div>
-</div>
-<a id="a1472d776e41913b79d4152d87884abde"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1472d776e41913b79d4152d87884abde">&#9670;&nbsp;</a></span>GetPrimalSquaredInfeasibilities()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="namespaceoperations__research_1_1glop.html#ae5fa9e57c2d31b294195ed8a9e17bfac">DenseColumn</a> &amp; GetPrimalSquaredInfeasibilities </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00218">218</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="variable__values_8h_source.html#l00054">54</a> of file <a class="el" href="variable__values_8h_source.html">variable_values.h</a>.</p>
 
 </div>
 </div>
@@ -351,7 +321,26 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00092">92</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00096">96</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
+
+</div>
+</div>
+<a id="acd27b30d01d0b9022796bf91abf40de0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd27b30d01d0b9022796bf91abf40de0">&#9670;&nbsp;</a></span>RecomputeDualPrices()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void RecomputeDualPrices </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00224">224</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
 
 </div>
 </div>
@@ -370,26 +359,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00067">67</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
-
-</div>
-</div>
-<a id="a9323beaddf591680b191fa618c40519f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9323beaddf591680b191fa618c40519f">&#9670;&nbsp;</a></span>ResetPrimalInfeasibilityInformation()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ResetPrimalInfeasibilityInformation </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00226">226</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00071">71</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
 
 </div>
 </div>
@@ -427,7 +397,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="variable__values_8h_source.html#l00115">115</a> of file <a class="el" href="variable__values_8h_source.html">variable_values.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="variable__values_8h_source.html#l00118">118</a> of file <a class="el" href="variable__values_8h_source.html">variable_values.h</a>.</p>
 
 </div>
 </div>
@@ -447,7 +417,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00034">34</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00038">38</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
 
 </div>
 </div>
@@ -474,7 +444,27 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="variable__values_8h_source.html#l00118">118</a> of file <a class="el" href="variable__values_8h_source.html">variable_values.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="variable__values_8h_source.html#l00121">121</a> of file <a class="el" href="variable__values_8h_source.html">variable_values.h</a>.</p>
+
+</div>
+</div>
+<a id="a624179d887d379119802066cad4c29e8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a624179d887d379119802066cad4c29e8">&#9670;&nbsp;</a></span>UpdateDualPrices()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void UpdateDualPrices </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; RowIndex &gt; &amp;&#160;</td>
+          <td class="paramname"><em>row</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00243">243</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
 
 </div>
 </div>
@@ -504,7 +494,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00167">167</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00174">174</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
 
 </div>
 </div>
@@ -540,27 +530,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00144">144</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
-
-</div>
-</div>
-<a id="ac78d744661f731cec1a48bdfa2513d35"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac78d744661f731cec1a48bdfa2513d35">&#9670;&nbsp;</a></span>UpdatePrimalInfeasibilityInformation()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void UpdatePrimalInfeasibilityInformation </td>
-          <td>(</td>
-          <td class="paramtype">const std::vector&lt; RowIndex &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rows</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00244">244</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="variable__values_8cc_source.html#l00151">151</a> of file <a class="el" href="variable__values_8cc_source.html">variable_values.cc</a>.</p>
 
 </div>
 </div>
@@ -590,7 +560,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="variable__values_8h_source.html#l00157">157</a> of file <a class="el" href="variable__values_8h_source.html">variable_values.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="variable__values_8h_source.html#l00160">160</a> of file <a class="el" href="variable__values_8h_source.html">variable_values.h</a>.</p>
 
 </div>
 </div>

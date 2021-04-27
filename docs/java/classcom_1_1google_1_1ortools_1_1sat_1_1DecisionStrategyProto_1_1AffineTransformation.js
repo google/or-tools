@@ -5,12 +5,12 @@ var classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTrans
     [ "getDefaultInstance", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#adf950e7c151367c9fe0ac4207bfb291c", null ],
     [ "getDefaultInstanceForType", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#abe3f5843be192fb554c42d25942cbaa2", null ],
     [ "getDescriptor", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#ada120643f7710d9df7cad50d6ab2ac51", null ],
+    [ "getIndex", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#aa2b83fbfc0451bb4ed9b1df6a5251ab8", null ],
     [ "getOffset", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a50bf3364c41bb1e417c3db44deaacfd4", null ],
     [ "getParserForType", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a3827c4e8ef64c90d1560038cc53c8252", null ],
     [ "getPositiveCoeff", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a7f2ac02d2ef7cb604d223b9696b4ba80", null ],
     [ "getSerializedSize", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a8342b02c43d81069adc3e820423d92ac", null ],
     [ "getUnknownFields", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a9595e84f1a265789b99af6f10e024e33", null ],
-    [ "getVar", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a7c5e68f88e98e915c7b7202555820e92", null ],
     [ "hashCode", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#ab55eefa0b7ba9d1dec56bf8bb2b996b3", null ],
     [ "internalGetFieldAccessorTable", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a933d518fc16e760775083e723eb80b9a", null ],
     [ "isInitialized", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a968cb605190759c690e5a97cdc0bb4a1", null ],
@@ -34,7 +34,7 @@ var classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTrans
     [ "parser", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#acffcc8db9c62f798b9beda0f088ed34c", null ],
     [ "toBuilder", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a77db07dbc1f747f14c5df841ccf5a14c", null ],
     [ "writeTo", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a813eab1fc00c769aad910c480868972b", null ],
+    [ "INDEX_FIELD_NUMBER", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a20118c87bab0948553cef0acaa250b5d", null ],
     [ "OFFSET_FIELD_NUMBER", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a3135ea0a27953dfdd8cf7341943a6a80", null ],
-    [ "POSITIVE_COEFF_FIELD_NUMBER", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#ac707c51c2c9fb94bc9267fdd2ec4ebad", null ],
-    [ "VAR_FIELD_NUMBER", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a0e300b76ab48c1f513df46d1ff1ba8f8", null ]
+    [ "POSITIVE_COEFF_FIELD_NUMBER", "classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#ac707c51c2c9fb94bc9267fdd2ec4ebad", null ]
 ];

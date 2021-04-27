@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -98,7 +98,7 @@ $(document).ready(function(){initNavTree('sched__expr_8cc.html',''); initResizab
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespaceoperations__research"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html">operations_research</a></td></tr>
-<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">The vehicle routing library lets one model and solve generic vehicle routing problems ranging from the Traveling Salesman Problem to more complex problems such as the Capacitated Vehicle Routing Problem with Time Windows. <br /></td></tr>
+<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">Collection of objects used to extend the <a class="el" href="classoperations__research_1_1_constraint.html" title="A constraint is the main modeling object.">Constraint</a> <a class="el" href="classoperations__research_1_1_solver.html" title="Solver Class.">Solver</a> library. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
@@ -109,12 +109,12 @@ Functions</h2></td></tr>
 <tr class="separator:aebd01080f2d18a8baf1b2bf540d5c174"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2174872e952aff88b8cf8afeb7479f89"><td class="memItemLeft" align="right" valign="top">IntExpr *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a2174872e952aff88b8cf8afeb7479f89">BuildEndExpr</a> (IntervalVar *<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>)</td></tr>
 <tr class="separator:a2174872e952aff88b8cf8afeb7479f89"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7f02a670f5a10edc1454b5ca7232892b"><td class="memItemLeft" align="right" valign="top">IntExpr *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a7f02a670f5a10edc1454b5ca7232892b">BuildSafeStartExpr</a> (IntervalVar *<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> unperformed_value)</td></tr>
-<tr class="separator:a7f02a670f5a10edc1454b5ca7232892b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8c1c5e89e441619628afaf4526a72ef0"><td class="memItemLeft" align="right" valign="top">IntExpr *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a8c1c5e89e441619628afaf4526a72ef0">BuildSafeDurationExpr</a> (IntervalVar *<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> unperformed_value)</td></tr>
-<tr class="separator:a8c1c5e89e441619628afaf4526a72ef0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a328c7f61f7f45aa548cadf5353a1cde7"><td class="memItemLeft" align="right" valign="top">IntExpr *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a328c7f61f7f45aa548cadf5353a1cde7">BuildSafeEndExpr</a> (IntervalVar *<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> unperformed_value)</td></tr>
-<tr class="separator:a328c7f61f7f45aa548cadf5353a1cde7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d628bdd9f86bae5e58ae3bb79435024"><td class="memItemLeft" align="right" valign="top">IntExpr *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a5d628bdd9f86bae5e58ae3bb79435024">BuildSafeStartExpr</a> (IntervalVar *<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, int64_t unperformed_value)</td></tr>
+<tr class="separator:a5d628bdd9f86bae5e58ae3bb79435024"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa0ee69fd9488dff98d37ac955fc6476b"><td class="memItemLeft" align="right" valign="top">IntExpr *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aa0ee69fd9488dff98d37ac955fc6476b">BuildSafeDurationExpr</a> (IntervalVar *<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, int64_t unperformed_value)</td></tr>
+<tr class="separator:aa0ee69fd9488dff98d37ac955fc6476b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a094677dae3c70117897f90af014f686c"><td class="memItemLeft" align="right" valign="top">IntExpr *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a094677dae3c70117897f90af014f686c">BuildSafeEndExpr</a> (IntervalVar *<a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>, int64_t unperformed_value)</td></tr>
+<tr class="separator:a094677dae3c70117897f90af014f686c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

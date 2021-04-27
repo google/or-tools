@@ -1,6 +1,6 @@
 var classoperations__research_1_1_optimize_var =
 [
-    [ "OptimizeVar", "classoperations__research_1_1_optimize_var.html#ad4e4776711893cc98308f12595fec2b8", null ],
+    [ "OptimizeVar", "classoperations__research_1_1_optimize_var.html#a28c1ac42c281f1f4a362d702f7025eb3", null ],
     [ "~OptimizeVar", "classoperations__research_1_1_optimize_var.html#a746d038d4dc0a23b3c22499f33b42fd5", null ],
     [ "Accept", "classoperations__research_1_1_optimize_var.html#aa30c84aec5e60d6b74e1e1eb15011d4a", null ],
     [ "AcceptDelta", "classoperations__research_1_1_optimize_var.html#ae983cf659c971e1f2095a2c5a0e81eca", null ],
@@ -14,7 +14,7 @@ var classoperations__research_1_1_optimize_var =
     [ "BeginFail", "classoperations__research_1_1_optimize_var.html#a454ac888929e304de940a94fa21c6821", null ],
     [ "BeginInitialPropagation", "classoperations__research_1_1_optimize_var.html#a4b1c8b194527e84175c219213db4a1ea", null ],
     [ "BeginNextDecision", "classoperations__research_1_1_optimize_var.html#a2475e9789e99a92fbe93b2eaf1b5f5b3", null ],
-    [ "best", "classoperations__research_1_1_optimize_var.html#a1f1de124cc3328c7d5077c5275d0bfd4", null ],
+    [ "best", "classoperations__research_1_1_optimize_var.html#a687a7f7f905d73bd37c97beefc1af25d", null ],
     [ "DebugString", "classoperations__research_1_1_optimize_var.html#aed804747c45a7e1caf81461f9e45dd91", null ],
     [ "EndFail", "classoperations__research_1_1_optimize_var.html#a8314a4c362f64e711ec7cd4264be1844", null ],
     [ "EndInitialPropagation", "classoperations__research_1_1_optimize_var.html#a975d041f983e1fa15ed2ef96ea40271f", null ],
@@ -32,10 +32,10 @@ var classoperations__research_1_1_optimize_var =
     [ "RestartSearch", "classoperations__research_1_1_optimize_var.html#a0f660e8597c620b46aa963ed7f07c4d7", null ],
     [ "solver", "classoperations__research_1_1_optimize_var.html#a5f32c22c620c811754ba7b6f977db864", null ],
     [ "Var", "classoperations__research_1_1_optimize_var.html#a8052ccc3aba839f3befd553cc05b85a0", null ],
-    [ "best_", "classoperations__research_1_1_optimize_var.html#a62c8c6ddbd6448f66e4f17e34ef8f33b", null ],
+    [ "best_", "classoperations__research_1_1_optimize_var.html#a5a6afff8edb3f57a5152a1efa00f4cab", null ],
     [ "found_initial_solution_", "classoperations__research_1_1_optimize_var.html#a7bcea05dd62f2b212dd18322fd22b32e", null ],
     [ "kNoProgress", "classoperations__research_1_1_optimize_var.html#a97c59af2c64e5f0c004243f4266173cc", null ],
     [ "maximize_", "classoperations__research_1_1_optimize_var.html#ad5d09a69c6c8c8eea9311b0513628683", null ],
-    [ "step_", "classoperations__research_1_1_optimize_var.html#a87607661db50ef1ae104b4cd6d05f8a8", null ],
+    [ "step_", "classoperations__research_1_1_optimize_var.html#a7bf0b736553f70b8682b64c195a414fc", null ],
     [ "var_", "classoperations__research_1_1_optimize_var.html#aacb45343e78641c7b582de46225d3481", null ]
 ];

@@ -9,10 +9,10 @@ var classoperations__research_1_1sat_1_1_linear_constraint_manager =
     [ "AllConstraints", "classoperations__research_1_1sat_1_1_linear_constraint_manager.html#a71a79a003419f05324e7951f69265701", null ],
     [ "ChangeLp", "classoperations__research_1_1sat_1_1_linear_constraint_manager.html#a1951610defebe3a3b82d99006793486a", null ],
     [ "DebugCheckConstraint", "classoperations__research_1_1sat_1_1_linear_constraint_manager.html#a1afbe8d162a9cba17a520812ec6d3dd4", null ],
-    [ "DEFINE_INT_TYPE", "classoperations__research_1_1sat_1_1_linear_constraint_manager.html#a22483b5c88e08d5407ba0d4aa1b021fe", null ],
+    [ "DEFINE_INT_TYPE", "classoperations__research_1_1sat_1_1_linear_constraint_manager.html#a06c07e8494062d60f06fbc1752761583", null ],
     [ "LpConstraints", "classoperations__research_1_1sat_1_1_linear_constraint_manager.html#a84ae5ff883fcce91f758a729af446864", null ],
-    [ "num_coeff_strenghtening", "classoperations__research_1_1sat_1_1_linear_constraint_manager.html#a345d5056b2f5d5a5a2f415ecc73faa27", null ],
-    [ "num_cuts", "classoperations__research_1_1sat_1_1_linear_constraint_manager.html#aacee5a7830a4e0094e7d0f6781d51615", null ],
-    [ "num_shortened_constraints", "classoperations__research_1_1sat_1_1_linear_constraint_manager.html#a2f12f20ef76075b36e0be0543bd6e9f3", null ],
+    [ "num_coeff_strenghtening", "classoperations__research_1_1sat_1_1_linear_constraint_manager.html#a043cb91961ad5cc66dd56d8606636282", null ],
+    [ "num_cuts", "classoperations__research_1_1sat_1_1_linear_constraint_manager.html#a4e8ec9d9279fe2503136ba89f2733c0c", null ],
+    [ "num_shortened_constraints", "classoperations__research_1_1sat_1_1_linear_constraint_manager.html#a5a155a7d7251f9fd35dbe09ccea840bc", null ],
     [ "SetObjectiveCoefficient", "classoperations__research_1_1sat_1_1_linear_constraint_manager.html#a36295bfe464bcdb6465fe796a43d02bf", null ]
 ];

@@ -6,7 +6,7 @@ var classoperations__research_1_1_scip_m_p_callback_context =
     [ "CanQueryVariableValues", "classoperations__research_1_1_scip_m_p_callback_context.html#a35b0a5ff10cf288bef84d8a90114aafc", null ],
     [ "constraints_added", "classoperations__research_1_1_scip_m_p_callback_context.html#a1778fb1ef8b4a25caa40cd09903f18ba", null ],
     [ "Event", "classoperations__research_1_1_scip_m_p_callback_context.html#aa78ec98396f42ae2122a53535813f938", null ],
-    [ "NumExploredNodes", "classoperations__research_1_1_scip_m_p_callback_context.html#ad59238f18cf20cbd015c5a9e51c9cf35", null ],
+    [ "NumExploredNodes", "classoperations__research_1_1_scip_m_p_callback_context.html#a30073c763dbaefec43cc583108734f76", null ],
     [ "SuggestSolution", "classoperations__research_1_1_scip_m_p_callback_context.html#acc4e362d92c1d8ec8453ff089329f943", null ],
     [ "VariableValue", "classoperations__research_1_1_scip_m_p_callback_context.html#afc5ebc320e7aa4ad2c0d8aa312ed6465", null ]
 ];

@@ -14,7 +14,7 @@ var classoperations__research_1_1glop_1_1_revised_simplex =
     [ "GetDualRay", "classoperations__research_1_1glop_1_1_revised_simplex.html#a66da73868da92948f57a83e261066ca6", null ],
     [ "GetDualRayRowCombination", "classoperations__research_1_1glop_1_1_revised_simplex.html#a0e35521f3d40e263173626ecc8c21b06", null ],
     [ "GetDualValue", "classoperations__research_1_1glop_1_1_revised_simplex.html#aa4c5e551e5a00ff4ae97d8467184221b", null ],
-    [ "GetNumberOfIterations", "classoperations__research_1_1glop_1_1_revised_simplex.html#a3269053b931945d67fbd50f3bd95f37f", null ],
+    [ "GetNumberOfIterations", "classoperations__research_1_1glop_1_1_revised_simplex.html#ad8a718ceea92060a7f7118e2bccf4fbc", null ],
     [ "GetObjectiveValue", "classoperations__research_1_1glop_1_1_revised_simplex.html#a96c1f660991b5007ca24564f69cd27b8", null ],
     [ "GetParameters", "classoperations__research_1_1glop_1_1_revised_simplex.html#a04fb52e044ec108e110796e29804cf06", null ],
     [ "GetPrimalRay", "classoperations__research_1_1glop_1_1_revised_simplex.html#a3854b494976761a458a17523bb4fe5cf", null ],

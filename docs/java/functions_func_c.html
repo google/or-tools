@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.2</span>
+                <span id="sfml">Google OR-Tools 9.0</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -145,6 +145,7 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPObjective.html#ac8bb3912a3ce86b15842e79d0b421204">MPObjective</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPQuadraticConstraint_1_1Builder.html#a542b6d7ba65ac8ab25e1a42debda37ab">MPQuadraticConstraint.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPQuadraticObjective_1_1Builder.html#a542b6d7ba65ac8ab25e1a42debda37ab">MPQuadraticObjective.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolution_1_1Builder.html#a542b6d7ba65ac8ab25e1a42debda37ab">MPSolution.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse_1_1Builder.html#a542b6d7ba65ac8ab25e1a42debda37ab">MPSolutionResponse.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#ac8bb3912a3ce86b15842e79d0b421204">MPSolver</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverCommonParameters_1_1Builder.html#a542b6d7ba65ac8ab25e1a42debda37ab">MPSolverCommonParameters.Builder</a>
@@ -199,6 +200,9 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 </li>
 <li>clearAddCliqueCuts()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a8776ea5d77226df288828a69a41a5243">SatParameters.Builder</a>
+</li>
+<li>clearAdditionalSolutions()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse_1_1Builder.html#a7a9f5abe5c8686c8d1e12c894564acbb">MPSolutionResponse.Builder</a>
 </li>
 <li>clearAddKnapsackCuts()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#ac06fe9700d14ee062f8c03c612f660f0">SatParameters.Builder</a>
@@ -304,6 +308,9 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 </li>
 <li>clearCheapestInsertionFirstSolutionNeighborsRatio()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html#ae8855811790cc501b9dd5ce4cbe3833f">RoutingSearchParameters.Builder</a>
+</li>
+<li>clearCheapestInsertionFirstSolutionUseNeighborsRatioForInitialization()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html#a5ff45cc8f53f8f294015e623b6872a34">RoutingSearchParameters.Builder</a>
 </li>
 <li>clearCheapestInsertionLsOperatorMinNeighbors()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html#a93f2459f18309fa14d4081227e3045e7">RoutingSearchParameters.Builder</a>
@@ -528,6 +535,7 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1Builder.html#af5d18ad987f46f34bc16e14dd69ad465">MPModelRequest.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPQuadraticConstraint_1_1Builder.html#af5d18ad987f46f34bc16e14dd69ad465">MPQuadraticConstraint.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPQuadraticObjective_1_1Builder.html#af5d18ad987f46f34bc16e14dd69ad465">MPQuadraticObjective.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolution_1_1Builder.html#af5d18ad987f46f34bc16e14dd69ad465">MPSolution.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse_1_1Builder.html#af5d18ad987f46f34bc16e14dd69ad465">MPSolutionResponse.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverCommonParameters_1_1Builder.html#af5d18ad987f46f34bc16e14dd69ad465">MPSolverCommonParameters.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html#af5d18ad987f46f34bc16e14dd69ad465">MPSosConstraint.Builder</a>
@@ -563,9 +571,6 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SparsePermutationProto_1_1Builder.html#af5d18ad987f46f34bc16e14dd69ad465">SparsePermutationProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SymmetryProto_1_1Builder.html#af5d18ad987f46f34bc16e14dd69ad465">SymmetryProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1TableConstraintProto_1_1Builder.html#af5d18ad987f46f34bc16e14dd69ad465">TableConstraintProto.Builder</a>
-</li>
-<li>clearFillLogsInResponse()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a34e04de8d1f5a75f2db507d0edaca5cd">SatParameters.Builder</a>
 </li>
 <li>clearFillTightenedDomainsInResponse()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#ad55551c66dbb063f552639e2d630ba97">SatParameters.Builder</a>
@@ -630,7 +635,8 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1ImprovementSearchLimitParameters_1_1Builder.html#a6a652fe772a5fc1dbffe0d4703b73555">RoutingSearchParameters.ImprovementSearchLimitParameters.Builder</a>
 </li>
 <li>clearIndex()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ElementConstraintProto_1_1Builder.html#a9b4638959fb81e79b2e780379347cc1c">ElementConstraintProto.Builder</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation_1_1Builder.html#a9b4638959fb81e79b2e780379347cc1c">DecisionStrategyProto.AffineTransformation.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ElementConstraintProto_1_1Builder.html#a9b4638959fb81e79b2e780379347cc1c">ElementConstraintProto.Builder</a>
 </li>
 <li>clearIndicatorConstraint()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPGeneralConstraintProto_1_1Builder.html#adef808f5ed9fa719eeace225e0f5bf27">MPGeneralConstraintProto.Builder</a>
@@ -725,8 +731,8 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 <li>clearLogCostScalingFactor()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html#a8afdfc1ae02bce85be734dee4f1b39ef">RoutingSearchParameters.Builder</a>
 </li>
-<li>clearLogs()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html#aeb9051c20471a7410562db62c74b3214">CpSolverResponse.Builder</a>
+<li>clearLogPrefix()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a715edf07ef9f94fcdbbf95ca11a3b743">SatParameters.Builder</a>
 </li>
 <li>clearLogSearch()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html#a84476ba06d6ec765c72d6f3f6a204349">RoutingSearchParameters.Builder</a>
@@ -736,6 +742,12 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 </li>
 <li>clearLogTag()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html#a0ae792e9d9c2bb690c412b4575a5c6c6">RoutingSearchParameters.Builder</a>
+</li>
+<li>clearLogToResponse()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#afd30dc01eeecfa78057da933832aebb8">SatParameters.Builder</a>
+</li>
+<li>clearLogToStdout()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a61b087a80f28733f723dcf782cbcf6b8">SatParameters.Builder</a>
 </li>
 <li>clearLowerBound()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraintProto_1_1Builder.html#a980de8f1f096d60438160ad7d8194e43">MPConstraintProto.Builder</a>
@@ -945,7 +957,8 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelProto_1_1Builder.html#afbd53ba269176f2972f6135d80fb9fd3">MPModelProto.Builder</a>
 </li>
 <li>clearObjectiveValue()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse_1_1Builder.html#a38d98e9ff7bd6e57fa8bfca4f8d77971">MPSolutionResponse.Builder</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolution_1_1Builder.html#a38d98e9ff7bd6e57fa8bfca4f8d77971">MPSolution.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse_1_1Builder.html#a38d98e9ff7bd6e57fa8bfca4f8d77971">MPSolutionResponse.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html#a38d98e9ff7bd6e57fa8bfca4f8d77971">CpSolverResponse.Builder</a>
 </li>
 <li>clearOffset()
@@ -973,6 +986,7 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1Builder.html#afed76e2d97b5f1b69aa4c2e32de27a64">MPModelRequest.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPQuadraticConstraint_1_1Builder.html#afed76e2d97b5f1b69aa4c2e32de27a64">MPQuadraticConstraint.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPQuadraticObjective_1_1Builder.html#afed76e2d97b5f1b69aa4c2e32de27a64">MPQuadraticObjective.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolution_1_1Builder.html#afed76e2d97b5f1b69aa4c2e32de27a64">MPSolution.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse_1_1Builder.html#afed76e2d97b5f1b69aa4c2e32de27a64">MPSolutionResponse.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverCommonParameters_1_1Builder.html#afed76e2d97b5f1b69aa4c2e32de27a64">MPSolverCommonParameters.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html#afed76e2d97b5f1b69aa4c2e32de27a64">MPSosConstraint.Builder</a>
@@ -1047,6 +1061,9 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 </li>
 <li>clearPolishLpSolution()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#ae874594192aee4eacfd8b12780e58e2e">SatParameters.Builder</a>
+</li>
+<li>clearPopulateAdditionalSolutionsUpTo()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1Builder.html#a8bee04bf7dbada364d44ad3fe51de201">MPModelRequest.Builder</a>
 </li>
 <li>clearPositiveCoeff()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation_1_1Builder.html#a851379ed9bad4fad169c2208ada64688">DecisionStrategyProto.AffineTransformation.Builder</a>
@@ -1241,6 +1258,9 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 <li>clearSolution()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html#ae25031a2ce920ed8b7448b65ab11f1c6">CpSolverResponse.Builder</a>
 </li>
+<li>clearSolutionCallback()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SolveWrapper.html#abaf985fa21b19f55c2f4cc94914a26fa">SolveWrapper</a>
+</li>
 <li>clearSolutionHint()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelProto_1_1Builder.html#a16eee463c2fd6efedfaebe242a627588">MPModelProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#a16eee463c2fd6efedfaebe242a627588">CpModelProto.Builder</a>
@@ -1259,6 +1279,9 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 </li>
 <li>clearSolutionUpperBounds()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html#af600e795ff968e6b993ab7c6bcad86f2">CpSolverResponse.Builder</a>
+</li>
+<li>clearSolveLog()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html#a1c134df952a0b687aa697e847ebb2607">CpSolverResponse.Builder</a>
 </li>
 <li>clearSolverParameters()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModelParameters_1_1Builder.html#afee6d98df4df2c6dbb5bee155e585075">RoutingModelParameters.Builder</a>
@@ -1585,9 +1608,6 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1PartialVariableAssignment_1_1Builder.html#a981bdbfdd8fb9f7fb238a82de937bcb9">PartialVariableAssignment.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1TableConstraintProto_1_1Builder.html#a981bdbfdd8fb9f7fb238a82de937bcb9">TableConstraintProto.Builder</a>
 </li>
-<li>clearVar()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation_1_1Builder.html#a445d08087dae891e9824cea8e704ac40">DecisionStrategyProto.AffineTransformation.Builder</a>
-</li>
 <li>clearVariable()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelProto_1_1Builder.html#abadb5739432c1143d962c4462f45c663">MPModelProto.Builder</a>
 </li>
@@ -1605,7 +1625,8 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1Builder.html#aaaf1ff32776edf17274a665455db5186">DecisionStrategyProto.Builder</a>
 </li>
 <li>clearVariableValue()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse_1_1Builder.html#a41ddfb3923fdbf2c9c674af2683701af">MPSolutionResponse.Builder</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolution_1_1Builder.html#a41ddfb3923fdbf2c9c674af2683701af">MPSolution.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse_1_1Builder.html#a41ddfb3923fdbf2c9c674af2683701af">MPSolutionResponse.Builder</a>
 </li>
 <li>clearVarIndex()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPAbsConstraint_1_1Builder.html#ae7dfe7e982b852d823ee9b98e1c4acc8">MPAbsConstraint.Builder</a>
@@ -1667,6 +1688,7 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1Builder.html#ad4c35acf2d13c654bdf4c231402d8e5b">MPModelRequest.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPQuadraticConstraint_1_1Builder.html#ad4c35acf2d13c654bdf4c231402d8e5b">MPQuadraticConstraint.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPQuadraticObjective_1_1Builder.html#ad4c35acf2d13c654bdf4c231402d8e5b">MPQuadraticObjective.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolution_1_1Builder.html#ad4c35acf2d13c654bdf4c231402d8e5b">MPSolution.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse_1_1Builder.html#ad4c35acf2d13c654bdf4c231402d8e5b">MPSolutionResponse.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverCommonParameters_1_1Builder.html#ad4c35acf2d13c654bdf4c231402d8e5b">MPSolverCommonParameters.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html#ad4c35acf2d13c654bdf4c231402d8e5b">MPSosConstraint.Builder</a>
@@ -1725,7 +1747,7 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html#a62c21f7be5174f84634106b2f12ec316">Domain</a>
 </li>
 <li>compose()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#ae8db7d82f6382a7f4d0e57c6f0b79e9b">Solver</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#aeac33c63c666bf5991d018a2ca13190f">Solver</a>
 </li>
 <li>computeConstraintActivities()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#ac824e10d554bc452d97976679e423b9a">MPSolver</a>
@@ -1748,17 +1770,23 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 <li>Constraint()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html#a51e6ab0a711465399b31ce0c5f851c20">Constraint</a>
 </li>
+<li>constraint()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#ad1c175f6bd0875e2f8163d8cfe97645b">MPSolver</a>
+</li>
+<li>Constraint()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html#a601e550712da80f5cac45a0324859c1b">Constraint</a>
+</li>
 <li>constraints()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a517217ba41b379c881ae8aea1a9eaeb8">Solver</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#aa3f051ba337b2c775a91a3adb08dfdc9">MPSolver</a>
 </li>
 <li>contains()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html#a6d78b75c16d23a9b67053dedd8acbf71">Assignment</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html#af042477e82012e2af71fd0bb7009df1d">Assignment</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentIntContainer.html#a6d78b75c16d23a9b67053dedd8acbf71">AssignmentIntContainer</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentIntervalContainer.html#af042477e82012e2af71fd0bb7009df1d">AssignmentIntervalContainer</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentSequenceContainer.html#a69b50dc2b8fafd2f83d6c981d2e3f0a7">AssignmentSequenceContainer</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BooleanVar.html#a3cb06b3cd652bb2a913baa2ed81c8d37">BooleanVar</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntTupleSet.html#ad87bf814db84b272f75441d16c570d16">IntTupleSet</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntTupleSet.html#a1ee57d0487a2e91c7ebe20235e565455">IntTupleSet</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html#a3cb06b3cd652bb2a913baa2ed81c8d37">IntVar</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html#ac19e22d9269721c21f0e84dd24c77f2d">Domain</a>
 </li>
@@ -1796,11 +1824,17 @@ $(document).ready(function(){initNavTree('functions_func_c.html',''); initResiza
 <li>costVar()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#ae529d7536daa4c56ea2315bbe5428935">RoutingModel</a>
 </li>
-<li>CPFeasibilityFilter()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter.html#a07676b61785a1c228d035c45f1b642b1">CPFeasibilityFilter</a>
-</li>
 <li>CpModel()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html#a6b40d4637fc4a15172d0868687a5e6bf">CpModel</a>
+</li>
+<li>CppBridge()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1init_1_1CppBridge.html#a8fe727f7d844d9af46f5f41929831f73">CppBridge</a>
+</li>
+<li>CppFlags()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1init_1_1CppFlags.html#a4a58262934d6fa0a846018c026111c15">CppFlags</a>
+</li>
+<li>CpSatHelper()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSatHelper.html#aedd839aa93edd8dc84e86253d266f480">CpSatHelper</a>
 </li>
 <li>CpSolver()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html#a14e6e324b58ee2744bfed85969fd0f10">CpSolver</a>
