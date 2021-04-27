@@ -114,17 +114,17 @@ if(BUILD_Protobuf)
     FetchContent_Declare(
       protobuf
       GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
-      GIT_TAG "v3.15.7"
+      GIT_TAG "v3.15.8"
       GIT_SUBMODULES ""
-      PATCH_COMMAND git apply "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v3.15.7.patch"
+      PATCH_COMMAND git apply "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v3.15.8.patch"
       SOURCE_SUBDIR cmake)
     FetchContent_MakeAvailable(protobuf)
   else()
     fetch_git_dependency(
       NAME Protobuf
       REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
-      TAG "v3.15.7"
-      PATCH_COMMAND "git apply \"${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v3.15.7.patch\""
+      TAG "v3.15.8"
+      PATCH_COMMAND "git apply \"${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v3.15.8.patch\""
       SOURCE_SUBDIR cmake
       )
   endif()
