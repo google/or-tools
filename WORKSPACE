@@ -40,7 +40,7 @@ protobuf_deps()
 
 git_repository(
     name = "com_google_absl",
-    commit = "997aaf3", # release 20210324.0
+    commit = "e1d388e", # release 20210324.1
     remote = "https://github.com/abseil/abseil-cpp.git",
 )
 
