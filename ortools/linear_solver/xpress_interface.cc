@@ -373,6 +373,7 @@ XpressInterface::XpressInterface(MPSolver* const solver, bool mip)
 
 XpressInterface::~XpressInterface() {
   CHECK_STATUS(XPRSdestroyprob(mLp));
+  CHECK_STATUS(XPRSfree());
 }
 
 std::string XpressInterface::SolverVersion() const {
