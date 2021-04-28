@@ -9,6 +9,7 @@ RUN apt update -qq \
  lsb-release libpcre3-dev \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+ENTRYPOINT ["/bin/bash", "-c"]
 
 # Install gcc 9
 RUN apt update -qq \

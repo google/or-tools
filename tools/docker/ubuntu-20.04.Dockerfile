@@ -11,6 +11,7 @@ RUN apt update -qq \
  lsb-release \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+ENTRYPOINT ["/usr/bin/bash", "-c"]
 
 # Swig Install
 RUN apt-get update -qq \

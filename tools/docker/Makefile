@@ -245,13 +245,13 @@ $(targets): %_archive: \
 
 export/archives/or-tools_%_v$(OR_TOOLS_VERSION).tar.gz: %_build | export/archives
 	-rm -f export/archives/or-tools_$*_v*.tar.gz
-	$(DOCKER_RUN_CMD) -w /root/or-tools -v `pwd`/export:/export $(IMAGE):$*_build /bin/sh -c \
+	$(DOCKER_RUN_CMD) -w /root/or-tools -v `pwd`/export:/export $(IMAGE):$*_build \
  "make archive && make test_archive && cp *.tar.gz /export/$*"
 	mv export/$*/or-tools_*.tar.gz $@
 
 export/archives/or-tools_flatzinc_%_v$(OR_TOOLS_VERSION).tar.gz: %_build | export/archives
 	-rm -f export/archives/or-tools_flatzinc_$*_v*.tar.gz
-	$(DOCKER_RUN_CMD) -w /root/or-tools -v `pwd`/export:/export $(IMAGE):$*_build /bin/sh -c \
+	$(DOCKER_RUN_CMD) -w /root/or-tools -v `pwd`/export:/export $(IMAGE):$*_build \
  "make fz_archive && make test_fz_archive && cp *.tar.gz /export/$*"
 	mv export/$*/or-tools_flatzinc_*.tar.gz $@
 

@@ -9,6 +9,7 @@ RUN dnf -y update \
 && dnf -y groupinstall "Development Tools" \
 && dnf -y install gcc-c++ cmake \
 && dnf clean all
+ENTRYPOINT ["/usr/bin/bash", "-c"]
 
 RUN dnf -y update \
 && dnf -y install swig \
