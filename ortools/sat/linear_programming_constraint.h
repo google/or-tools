@@ -132,7 +132,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   typedef glop::RowIndex ConstraintIndex;
 
   explicit LinearProgrammingConstraint(Model* model);
-  ~LinearProgrammingConstraint() override;
 
   // Add a new linear constraint to this LP.
   void AddLinearConstraint(const LinearConstraint& ct);
@@ -219,6 +218,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   int64_t total_num_simplex_iterations() const {
     return total_num_simplex_iterations_;
   }
+
+  // Returns some statistics about this LP.
+  std::string Statistics() const;
 
  private:
   // Helper methods for branching. Returns true if branching on the given
@@ -523,6 +525,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   int64_t total_num_simplex_iterations_ = 0;
 
   // Some stats on the LP statuses encountered.
+  int64_t num_solves_ = 0;
   std::vector<int64_t> num_solves_by_status_;
 };
 

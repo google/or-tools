@@ -180,16 +180,6 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
   integer_trail_->RegisterReversibleClass(&rc_rev_int_repository_);
 }
 
-LinearProgrammingConstraint::~LinearProgrammingConstraint() {
-  VLOG(1) << "Total number of simplex iterations: "
-          << total_num_simplex_iterations_;
-  for (int i = 0; i < num_solves_by_status_.size(); ++i) {
-    if (num_solves_by_status_[i] == 0) continue;
-    VLOG(1) << "#" << glop::ProblemStatus(i) << " : "
-            << num_solves_by_status_[i];
-  }
-}
-
 void LinearProgrammingConstraint::AddLinearConstraint(
     const LinearConstraint& ct) {
   DCHECK(!lp_constraint_is_registered_);
@@ -667,6 +657,7 @@ bool LinearProgrammingConstraint::SolveLp() {
   if (status_as_int >= num_solves_by_status_.size()) {
     num_solves_by_status_.resize(status_as_int + 1);
   }
+  num_solves_++;
   num_solves_by_status_[status_as_int]++;
   VLOG(2) << "lvl:" << trail_->CurrentDecisionLevel() << " "
           << simplex_.GetProblemStatus()
@@ -1422,9 +1413,10 @@ bool LinearProgrammingConstraint::Propagate() {
   while (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL &&
          cuts_round < max_cuts_rounds) {
     // We wait for the first batch of problem constraints to be added before we
-    // begin to generate cuts.
+    // begin to generate cuts. Note that we rely on num_solves_ since on some
+    // problems there is no other constriants than the cuts.
     cuts_round++;
-    if (!integer_lp_.empty()) {
+    if (num_solves_ > 1) {
       implied_bounds_processor_.ClearCache();
       implied_bounds_processor_.SeparateSomeImpliedBoundCuts(
           expanded_lp_solution_);
@@ -2837,6 +2829,22 @@ IntegerLiteral LinearProgrammingConstraint::LPReducedCostAverageDecision() {
   } else {
     return IntegerLiteral::GreaterOrEqual(var, value_ceil);
   }
+}
+
+std::string LinearProgrammingConstraint::Statistics() const {
+  std::string result;
+  absl::StrAppend(&result, "LP '", model_->Name(), "'\n");
+  absl::StrAppend(&result, "final dimension: ", DimensionString(), "\n");
+  absl::StrAppend(&result, "Total number of simplex iterations: ",
+                  total_num_simplex_iterations_, "\n");
+  for (int i = 0; i < num_solves_by_status_.size(); ++i) {
+    if (num_solves_by_status_[i] == 0) continue;
+    absl::StrAppend(&result, "#",
+                    glop::GetProblemStatusString(glop::ProblemStatus(i)), " : ",
+                    num_solves_by_status_[i], "\n");
+  }
+  absl::StrAppend(&result, constraint_manager_.Statistics());
+  return result;
 }
 
 }  // namespace sat

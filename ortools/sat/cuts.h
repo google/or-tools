@@ -505,6 +505,14 @@ CutGenerator CreateOverlappingCumulativeCutGenerator(
     const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
     Model* model);
 
+// Balas area cuts for the cumulative constraint. It is a simple relaxation
+// where we replace a cumulative task with demand k and duration d by a
+// no_overlap task with duration d * k / capacity_max.
+CutGenerator CreateBalasAreaCumulativeCutGenerator(
+    const std::vector<IntervalVariable>& intervals,
+    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
+    Model* model);
+
 // For a given set of intervals, we first compute the min and max of all
 // intervals. Then we create a cut that indicates that all intervals must fit
 // in that span.

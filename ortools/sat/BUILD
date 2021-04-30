@@ -1072,6 +1072,7 @@ cc_library(
         "//ortools/base:random",
         "//ortools/base:stl_util",
         "//ortools/util:random_engine",
+        "//ortools/util:time_limit",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:bit_gen_ref",

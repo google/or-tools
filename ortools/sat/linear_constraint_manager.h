@@ -71,7 +71,6 @@ class LinearConstraintManager {
         time_limit_(model->GetOrCreate<TimeLimit>()),
         model_(model),
         logger_(model->GetOrCreate<SolverLogger>()) {}
-  ~LinearConstraintManager();
 
   // Add a new constraint to the manager. Note that we canonicalize constraints
   // and merge the bounds of constraints with the same terms. We also perform
@@ -135,6 +134,9 @@ class LinearConstraintManager {
   // it or not. Returns true iff everything is fine and the cut does not violate
   // the loaded solution.
   bool DebugCheckConstraint(const LinearConstraint& cut);
+
+  // Returns statistics on the cut added.
+  std::string Statistics() const;
 
  private:
   // Heuristic that decide which constraints we should remove from the current

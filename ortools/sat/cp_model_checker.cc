@@ -1037,10 +1037,6 @@ class ConstraintChecker {
     const bool has_active_variables = ct.reservoir().actives_size() > 0;
     for (int i = 0; i < num_variables; i++) {
       const int64_t time = Value(ct.reservoir().times(i));
-      if (time < 0) {
-        VLOG(1) << "reservoir times(" << i << ") is negative.";
-        return false;
-      }
       if (!has_active_variables || Value(ct.reservoir().actives(i)) == 1) {
         deltas[time] += ct.reservoir().demands(i);
       }

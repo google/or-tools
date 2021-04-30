@@ -23,6 +23,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/random_engine.h"
+#include "ortools/util/time_limit.h"
 
 #if !defined(__PORTABLE_PLATFORM__)
 #include "google/protobuf/descriptor.h"
@@ -63,6 +64,13 @@ class ModelRandomGenerator : public absl::BitGenRef {
  private:
   random_engine_t deterministic_random_;
   absl::BitGen absl_random_;
+};
+
+// The model "singleton" shared time limit.
+class ModelSharedTimeLimit : public SharedTimeLimit {
+ public:
+  explicit ModelSharedTimeLimit(Model* model)
+      : SharedTimeLimit(model->GetOrCreate<TimeLimit>()) {}
 };
 
 // Randomizes the decision heuristic of the given SatParameters.

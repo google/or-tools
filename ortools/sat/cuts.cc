@@ -29,6 +29,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/time_limit.h"
 
@@ -2413,6 +2414,103 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
   return result;
 }
 
+struct BalasEvent {
+  AffineExpression end;
+  IntegerValue start_min;
+  IntegerValue size_min;
+  double lp_end;
+};
+
+// We generate the cut from:
+// E. Balas, On the facial structure of scheduling polyhedra,
+// Mathematical Programming Essays in Honor of George B. Dantzig
+// Part I, Mathematical Programming Studies, vol. 24,
+// Springer, 1985, pp. 179–218.
+// and
+// M. Queyranne, Structure of a simple scheduling polyhedron,
+// Mathematical Programming 58 (1993), 263–285
+//
+// The original cut is:
+//    sum(end_min_i * duration_min_i) >=
+//        (sum(duration_min_i^2) + sum(duration_min_i)^2) / 2
+// We strenghten this cuts by noticing that if all tasks starts after S,
+// then replacing end_min_i by (end_min_i - S) is still valid.
+//
+// A second difference is that we look at a set of intervals starting
+// after a given start_min, sorted by relative
+//    (end_lp - start_min) / duration_min.
+//
+// We actually compute the cuts with all the sizes actually equal to (size /
+// size_divisor), but to keep the computation in the integer domain, we multiply
+// by size_divisor where needed instead.
+void GenerateBalasCut(
+    const std::string& cut_name,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    IntegerValue size_divisor, std::vector<BalasEvent> events, Model* model,
+    LinearConstraintManager* manager) {
+  TopNCuts top_n_cuts(15);
+
+  // Sort by start min to bucketize by start_min.
+  std::sort(events.begin(), events.end(),
+            [](const BalasEvent& e1, const BalasEvent& e2) {
+              return e1.start_min < e2.start_min;
+            });
+  for (int start = 0; start + 1 < events.size(); ++start) {
+    // Skip to the next start_min value.
+    if (start > 0 && events[start].start_min == events[start - 1].start_min) {
+      continue;
+    }
+
+    const double sequence_start_min = ToDouble(events[start].start_min);
+    std::vector<BalasEvent> residual_tasks(events.begin() + start,
+                                           events.end());
+    std::sort(residual_tasks.begin(), residual_tasks.end(),
+              [](const BalasEvent& e1, const BalasEvent& e2) {
+                return e1.lp_end < e2.lp_end;
+              });
+
+    int best_end = -1;
+    double best_efficacy = 0.01;
+    IntegerValue best_min_contrib(0);
+    IntegerValue sum_duration(0);
+    IntegerValue sum_square_duration(0);
+    double lp_contrib = 0;
+    IntegerValue current_start_min(kMaxIntegerValue);
+
+    for (int i = 0; i < residual_tasks.size(); ++i) {
+      DCHECK_GE(residual_tasks[i].start_min, sequence_start_min);
+      const IntegerValue duration = residual_tasks[i].size_min;
+      sum_duration += duration;
+      sum_square_duration += duration * duration;
+      lp_contrib +=
+          residual_tasks[i].lp_end * ToDouble(duration * size_divisor);
+      current_start_min =
+          std::min(current_start_min, residual_tasks[i].start_min);
+
+      const IntegerValue min_contrib =
+          (sum_duration * sum_duration + sum_square_duration) / 2 +
+          current_start_min * sum_duration * size_divisor;
+      const double efficacy = (ToDouble(min_contrib) - lp_contrib) /
+                              std::sqrt(ToDouble(sum_square_duration));
+      // TODO(user): Check overflow and ignore if too big.
+      if (efficacy > best_efficacy) {
+        best_efficacy = efficacy;
+        best_end = i;
+        best_min_contrib = min_contrib;
+      }
+    }
+    if (best_end != -1) {
+      LinearConstraintBuilder cut(model, best_min_contrib, kMaxIntegerValue);
+      for (int i = 0; i <= best_end; ++i) {
+        cut.AddTerm(residual_tasks[i].end,
+                    residual_tasks[i].size_min * size_divisor);
+      }
+      top_n_cuts.AddCut(cut.Build(), cut_name, lp_values);
+    }
+  }
+  top_n_cuts.TransferToManager(lp_values, manager);
+}
+
 CutGenerator CreateNoOverlapBalasCutGenerator(
     const std::vector<IntervalVariable>& intervals, Model* model) {
   CutGenerator result;
@@ -2425,106 +2523,85 @@ CutGenerator CreateNoOverlapBalasCutGenerator(
 
   Trail* trail = model->GetOrCreate<Trail>();
 
-  result.generate_cuts = [trail, helper, model](
-                             const absl::StrongVector<IntegerVariable, double>&
-                                 lp_values,
-                             LinearConstraintManager* manager) {
-    if (trail->CurrentDecisionLevel() > 0) return;
+  result.generate_cuts =
+      [trail, helper, model](
+          const absl::StrongVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
+        if (trail->CurrentDecisionLevel() > 0) return;
 
-    struct Event {
-      AffineExpression end;
-      IntegerValue start_min;
-      IntegerValue size_min;
-      double lp_end;
-      int index;
-    };
-    std::vector<Event> events;
+        std::vector<BalasEvent> events;
+        std::vector<BalasEvent> reverse_events;
 
-    for (int index1 = 0; index1 < helper->NumTasks(); ++index1) {
-      if (!helper->IsPresent(index1)) continue;
-      const IntegerValue size_min = helper->SizeMin(index1);
-      if (size_min > 0) {
-        const AffineExpression end_expr = helper->Ends()[index1];
-        events.push_back({end_expr, helper->StartMin(index1), size_min,
-                          end_expr.LpValue(lp_values), index1});
-      }
-    }
-
-    // We generate the cut from:
-    // E. Balas, On the facial structure of scheduling polyhedra,
-    // Mathematical Programming Essays in Honor of George B. Dantzig
-    // Part I, Mathematical Programming Studies, vol. 24,
-    // Springer, 1985, pp. 179–218.
-    //
-    // The original cut is:
-    //    sum(end_min_i * duration_min_i) >=
-    //        (sum(duration_min_i^2) + sum(duration_min_i)^2) / 2
-    // We streghten this cuts by noticing that if all tasks starts after S,
-    // then replacing end_min_i by (end_min_i - S) is still valid.
-    //
-    // A second difference is that we look at a set of intervals starting
-    // after a given start_min, sorted by relative
-    //    (end_lp - S) / duration_min.
-    TopNCuts top_n_cuts(15);
-
-    // Sort by start min to bucketize by start_min.
-    std::sort(events.begin(), events.end(),
-              [](const Event& e1, const Event& e2) {
-                return e1.start_min < e2.start_min;
-              });
-    for (int start = 0; start + 1 < events.size(); ++start) {
-      // Skip to the next  start_min value.
-      if (start > 0 && events[start].start_min == events[start - 1].start_min) {
-        continue;
-      }
-      const IntegerValue sequence_start_min = events[start].start_min;
-      std::vector<Event> residual_tasks(events.begin() + start,
-                                        events.end());
-      std::sort(residual_tasks.begin(), residual_tasks.end(),
-                [sequence_start_min](const Event& e1, const Event& e2) {
-                  return ((e1.lp_end - sequence_start_min) / e1.size_min) <
-                         ((e2.lp_end - sequence_start_min) / e2.size_min);
-                });
-      int best_end = -1;
-      double best_efficacy = 0.01;
-      IntegerValue best_min_contrib(0);
-
-      IntegerValue sum_duration(0);
-      IntegerValue sum_square_duration(0);
-      double lp_contrib = 0;
-      IntegerValue current_start_min(kMaxIntegerValue);
-      for (int i = 0; i < residual_tasks.size(); ++i) {
-        DCHECK_GE(residual_tasks[i].start_min, sequence_start_min);
-        const IntegerValue duration = residual_tasks[i].size_min;
-        sum_duration += duration;
-        sum_square_duration += duration * duration;
-        lp_contrib +=
-            residual_tasks[i].lp_end * residual_tasks[i].size_min.value();
-        current_start_min =
-            std::min(current_start_min, residual_tasks[i].start_min);
-
-        const IntegerValue min_contrib =
-            (sum_duration * sum_duration + sum_square_duration) / 2 +
-            current_start_min * sum_duration;
-        const double efficacy = (min_contrib.value() - lp_contrib) /
-                                std::sqrt(sum_square_duration.value());
-        if (efficacy > best_efficacy) {
-          best_efficacy = efficacy;
-          best_end = i;
-          best_min_contrib = min_contrib;
+        for (int index = 0; index < helper->NumTasks(); ++index) {
+          if (!helper->IsPresent(index)) continue;
+          const IntegerValue size_min = helper->SizeMin(index);
+          if (size_min > 0) {
+            const AffineExpression end_expr = helper->Ends()[index];
+            events.push_back({end_expr, helper->StartMin(index), size_min,
+                              end_expr.LpValue(lp_values)});
+            const AffineExpression r_start_expr =
+                helper->Starts()[index].Negated();
+            reverse_events.push_back({r_start_expr, -helper->EndMax(index),
+                                      size_min,
+                                      r_start_expr.LpValue(lp_values)});
+          }
         }
-      }
-      if (best_end != -1) {
-        LinearConstraintBuilder cut(model, best_min_contrib,
-                                    kMaxIntegerValue);
-        for (int i = 0; i <= best_end; ++i) {
-          cut.AddTerm(residual_tasks[i].end, residual_tasks[i].size_min);
+        GenerateBalasCut("NoOverlapBalas", lp_values, IntegerValue(1),
+                         std::move(events), model, manager);
+        GenerateBalasCut("NoOverlapBalasMirror", lp_values, IntegerValue(1),
+                         std::move(reverse_events), model, manager);
+      };
+  return result;
+}
+
+CutGenerator CreateBalasAreaCumulativeCutGenerator(
+    const std::vector<IntervalVariable>& intervals,
+    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
+    Model* model) {
+  CutGenerator result;
+
+  SchedulingConstraintHelper* helper =
+      new SchedulingConstraintHelper(intervals, model);
+  model->TakeOwnership(helper);
+
+  result.vars = demands;
+  result.vars.push_back(capacity);
+  AddIntegerVariableFromIntervals(helper, model, &result.vars);
+
+  Trail* trail = model->GetOrCreate<Trail>();
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+
+  result.generate_cuts =
+      [trail, integer_trail, helper, demands, capacity, model](
+          const absl::StrongVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
+        if (trail->CurrentDecisionLevel() > 0) return;
+
+        std::vector<BalasEvent> events;
+        std::vector<BalasEvent> reverse_events;
+
+        for (int index = 0; index < helper->NumTasks(); ++index) {
+          if (!helper->IsPresent(index)) continue;
+          const IntegerValue area_min =
+              helper->SizeMin(index) *
+              integer_trail->LowerBound(demands[index]);
+          if (area_min > 0) {
+            const AffineExpression end_expr = helper->Ends()[index];
+            events.push_back({end_expr, helper->StartMin(index), area_min,
+                              end_expr.LpValue(lp_values)});
+            const AffineExpression r_start_expr =
+                helper->Starts()[index].Negated();
+            reverse_events.push_back({r_start_expr, -helper->EndMax(index),
+                                      area_min,
+                                      r_start_expr.LpValue(lp_values)});
+          }
         }
-        top_n_cuts.AddCut(cut.Build(), "NoOverlapBalasArea", lp_values);
-      }
-    }
-    top_n_cuts.TransferToManager(lp_values, manager);
-  };
+        const IntegerValue capacity_max = integer_trail->UpperBound(capacity);
+        GenerateBalasCut("CumulativeBalas", lp_values, capacity_max,
+                         std::move(events), model, manager);
+        GenerateBalasCut("CumulativeBalasMirror", lp_values, capacity_max,
+                         std::move(reverse_events), model, manager);
+      };
   return result;
 }
 
