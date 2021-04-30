@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -98,21 +98,21 @@ $(document).ready(function(){initNavTree('sat_2table_8cc.html',''); initResizabl
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespaceoperations__research"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html">operations_research</a></td></tr>
-<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">The vehicle routing library lets one model and solve generic vehicle routing problems ranging from the Traveling Salesman Problem to more complex problems such as the Capacitated Vehicle Routing Problem with Time Windows. <br /></td></tr>
+<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">Collection of objects used to extend the <a class="el" href="classoperations__research_1_1_constraint.html" title="A constraint is the main modeling object.">Constraint</a> <a class="el" href="classoperations__research_1_1_solver.html" title="Solver Class.">Solver</a> library. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespaceoperations__research_1_1sat"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html">operations_research::sat</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a54ff6ea10d4aafe131b6bfa4176b334a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a54ff6ea10d4aafe131b6bfa4176b334a">AddTableConstraint</a> (absl::Span&lt; const IntegerVariable &gt; vars, std::vector&lt; std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt;&gt; tuples, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
-<tr class="separator:a54ff6ea10d4aafe131b6bfa4176b334a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa933cec72d7d701242cfd600daa4a172"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aa933cec72d7d701242cfd600daa4a172">AddNegatedTableConstraint</a> (absl::Span&lt; const IntegerVariable &gt; vars, std::vector&lt; std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt;&gt; tuples, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
-<tr class="separator:aa933cec72d7d701242cfd600daa4a172"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5fa672e1993137a4dbf2fb27419236a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ac5fa672e1993137a4dbf2fb27419236a">AddTableConstraint</a> (absl::Span&lt; const IntegerVariable &gt; vars, std::vector&lt; std::vector&lt; int64_t &gt;&gt; tuples, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
+<tr class="separator:ac5fa672e1993137a4dbf2fb27419236a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d66fab73e8bf25aa8cefb9c0d255ba7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a3d66fab73e8bf25aa8cefb9c0d255ba7">AddNegatedTableConstraint</a> (absl::Span&lt; const IntegerVariable &gt; vars, std::vector&lt; std::vector&lt; int64_t &gt;&gt; tuples, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
+<tr class="separator:a3d66fab73e8bf25aa8cefb9c0d255ba7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a67988a71dd5421e1605b8c71bcf4b4cd"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a67988a71dd5421e1605b8c71bcf4b4cd">LiteralTableConstraint</a> (const std::vector&lt; std::vector&lt; Literal &gt;&gt; &amp;literal_tuples, const std::vector&lt; Literal &gt; &amp;line_literals)</td></tr>
 <tr class="separator:a67988a71dd5421e1605b8c71bcf4b4cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a31ce182acd5d18c1cca240566d510666"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a31ce182acd5d18c1cca240566d510666">TransitionConstraint</a> (const std::vector&lt; IntegerVariable &gt; &amp;vars, const std::vector&lt; std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt;&gt; &amp;automaton, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> initial_state, const std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt; &amp;final_states)</td></tr>
-<tr class="separator:a31ce182acd5d18c1cca240566d510666"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa92109463578df5bbbcd9d26f8975045"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#aa92109463578df5bbbcd9d26f8975045">TransitionConstraint</a> (const std::vector&lt; IntegerVariable &gt; &amp;vars, const std::vector&lt; std::vector&lt; int64_t &gt;&gt; &amp;automaton, int64_t initial_state, const std::vector&lt; int64_t &gt; &amp;final_states)</td></tr>
+<tr class="separator:aa92109463578df5bbbcd9d26f8975045"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

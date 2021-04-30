@@ -9,7 +9,7 @@ var classoperations__research_1_1_knapsack_solver_for_cuts =
     [ "GetUpperBound", "classoperations__research_1_1_knapsack_solver_for_cuts.html#afa66a5ae5f09a131d7fdb338b8a212ba", null ],
     [ "Init", "classoperations__research_1_1_knapsack_solver_for_cuts.html#a902b91803b24fe467929767c65b6ee4f", null ],
     [ "operator=", "classoperations__research_1_1_knapsack_solver_for_cuts.html#a661671150186312e3ac87db656e57df8", null ],
-    [ "set_node_limit", "classoperations__research_1_1_knapsack_solver_for_cuts.html#a496668ced432925ff3a7ec06e0d439eb", null ],
+    [ "set_node_limit", "classoperations__research_1_1_knapsack_solver_for_cuts.html#a4bcd14198cbb6f2c3bea61c85015e07a", null ],
     [ "set_solution_lower_bound_threshold", "classoperations__research_1_1_knapsack_solver_for_cuts.html#ae1e516e2db672b8cc4f3b5ba475bc73c", null ],
     [ "set_solution_upper_bound_threshold", "classoperations__research_1_1_knapsack_solver_for_cuts.html#afd53920302b4dcd6ef445bc52a001a5b", null ],
     [ "Solve", "classoperations__research_1_1_knapsack_solver_for_cuts.html#aab4a9c689632460b6b96f3d4bf22f86e", null ]

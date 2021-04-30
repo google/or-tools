@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -99,7 +99,7 @@ $(document).ready(function(){initNavTree('cp__model__utils_8cc.html',''); initRe
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespaceoperations__research"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html">operations_research</a></td></tr>
-<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">The vehicle routing library lets one model and solve generic vehicle routing problems ranging from the Traveling Salesman Problem to more complex problems such as the Capacitated Vehicle Routing Problem with Time Windows. <br /></td></tr>
+<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">Collection of objects used to extend the <a class="el" href="classoperations__research_1_1_constraint.html" title="A constraint is the main modeling object.">Constraint</a> <a class="el" href="classoperations__research_1_1_solver.html" title="Solver Class.">Solver</a> library. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespaceoperations__research_1_1sat"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html">operations_research::sat</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -129,8 +129,8 @@ Functions</h2></td></tr>
 <tr class="separator:a1d467595ed8fe5b85dc95328ee1c2770"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a217ba4c51953c701a68d6572d79801f1"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a217ba4c51953c701a68d6572d79801f1">UsedIntervals</a> (const ConstraintProto &amp;<a class="el" href="demon__profiler_8cc.html#a05da18ca9c7b657a4a6ea24e07c9b695">ct</a>)</td></tr>
 <tr class="separator:a217ba4c51953c701a68d6572d79801f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a44f635d04529be503aa7f14917185a37"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a44f635d04529be503aa7f14917185a37">ComputeInnerObjective</a> (const CpObjectiveProto &amp;objective, const CpSolverResponse &amp;<a class="el" href="cp__model__solver_8cc.html#abcd33b18ce6d5a90a4ba5c37cfa58829">response</a>)</td></tr>
-<tr class="separator:a44f635d04529be503aa7f14917185a37"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10826704577008404187a36808daa739"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a10826704577008404187a36808daa739">ComputeInnerObjective</a> (const CpObjectiveProto &amp;objective, const CpSolverResponse &amp;<a class="el" href="cp__model__solver_8cc.html#abcd33b18ce6d5a90a4ba5c37cfa58829">response</a>)</td></tr>
+<tr class="separator:a10826704577008404187a36808daa739"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="a970e04df3f6acfdbf5bfb4e2335e15eb"></a>
@@ -161,9 +161,9 @@ Functions</h2></td></tr>
 <b>Value:</b><div class="fragment"><div class="line">  {                                                                        \</div>
 <div class="line">    for (<span class="keywordtype">int</span>&amp; r : *<a class="code" href="demon__profiler_8cc.html#a05da18ca9c7b657a4a6ea24e07c9b695">ct</a>-&gt;mutable_##ct_name()-&gt;mutable_##field_name()) f(&amp;r); \</div>
 <div class="line">  }</div>
-<div class="ttc" id="ademon__profiler_8cc_html_a05da18ca9c7b657a4a6ea24e07c9b695"><div class="ttname"><a href="demon__profiler_8cc.html#a05da18ca9c7b657a4a6ea24e07c9b695">ct</a></div><div class="ttdeci">const Constraint * ct</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8cc_source.html#l00042">demon_profiler.cc:42</a></div></div>
+<div class="ttc" id="ademon__profiler_8cc_html_a05da18ca9c7b657a4a6ea24e07c9b695"><div class="ttname"><a href="demon__profiler_8cc.html#a05da18ca9c7b657a4a6ea24e07c9b695">ct</a></div><div class="ttdeci">const Constraint * ct</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8cc_source.html#l00043">demon_profiler.cc:43</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00161">161</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00163">163</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
 
 </div>
 </div>
@@ -198,7 +198,7 @@ Functions</h2></td></tr>
 <div class="line">    ct-&gt;mutable_##ct_name()-&gt;set_##field_name(temp);  \</div>
 <div class="line">  }</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00154">154</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__utils_8cc_source.html#l00156">156</a> of file <a class="el" href="cp__model__utils_8cc_source.html">cp_model_utils.cc</a>.</p>
 
 </div>
 </div>

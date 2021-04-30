@@ -6,7 +6,8 @@ var classGoogle_1_1OrTools_1_1Algorithms_1_1KnapsackSolver =
       [ "KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER", "classGoogle_1_1OrTools_1_1Algorithms_1_1KnapsackSolver.html#a8b06041d7c1fb05f379714f4312306ecadf8167f5f37116e99a3ec6eb4dfb3af8", null ],
       [ "KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER", "classGoogle_1_1OrTools_1_1Algorithms_1_1KnapsackSolver.html#a8b06041d7c1fb05f379714f4312306eca4d05f61469074b5aa0e447c7784eb723", null ],
       [ "KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER", "classGoogle_1_1OrTools_1_1Algorithms_1_1KnapsackSolver.html#a8b06041d7c1fb05f379714f4312306eca5f4d7c17c6be76a0a8aac60d9e40aa2a", null ],
-      [ "KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER", "classGoogle_1_1OrTools_1_1Algorithms_1_1KnapsackSolver.html#a8b06041d7c1fb05f379714f4312306eca6b75f05334d3f5e86cacaf665936421e", null ]
+      [ "KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER", "classGoogle_1_1OrTools_1_1Algorithms_1_1KnapsackSolver.html#a8b06041d7c1fb05f379714f4312306eca6b75f05334d3f5e86cacaf665936421e", null ],
+      [ "KNAPSACK_DIVIDE_AND_CONQUER_SOLVER", "classGoogle_1_1OrTools_1_1Algorithms_1_1KnapsackSolver.html#a8b06041d7c1fb05f379714f4312306ecab52a7eb1699c7b6d0eab9edea37ff2c8", null ]
     ] ],
     [ "KnapsackSolver", "classGoogle_1_1OrTools_1_1Algorithms_1_1KnapsackSolver.html#a411b4188c3477eac8d6a9fcc48025e19", null ],
     [ "KnapsackSolver", "classGoogle_1_1OrTools_1_1Algorithms_1_1KnapsackSolver.html#a30b8c8df2f8e993a007537b00deba03a", null ],

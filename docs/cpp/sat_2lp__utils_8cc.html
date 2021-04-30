@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -98,7 +98,7 @@ $(document).ready(function(){initNavTree('sat_2lp__utils_8cc.html',''); initResi
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespaceoperations__research"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html">operations_research</a></td></tr>
-<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">The vehicle routing library lets one model and solve generic vehicle routing problems ranging from the Traveling Salesman Problem to more complex problems such as the Capacitated Vehicle Routing Problem with Time Windows. <br /></td></tr>
+<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">Collection of objects used to extend the <a class="el" href="classoperations__research_1_1_constraint.html" title="A constraint is the main modeling object.">Constraint</a> <a class="el" href="classoperations__research_1_1_solver.html" title="Solver Class.">Solver</a> library. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespaceoperations__research_1_1sat"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html">operations_research::sat</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -109,12 +109,12 @@ Functions</h2></td></tr>
 <tr class="separator:ac71665cf974c4a75adc4c9ad251ae853"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8b326626fb8ca0efd32ff0564d35731"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#af8b326626fb8ca0efd32ff0564d35731">FindRationalFactor</a> (double x, int limit, double tolerance)</td></tr>
 <tr class="separator:af8b326626fb8ca0efd32ff0564d35731"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0ff539f8974998682c8a976ec9a83166"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a0ff539f8974998682c8a976ec9a83166">RemoveNearZeroTerms</a> (const SatParameters &amp;params, MPModelProto *mp_model)</td></tr>
-<tr class="separator:a0ff539f8974998682c8a976ec9a83166"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5d3559f28aa3f4859177d4c13950cf1a"><td class="memItemLeft" align="right" valign="top">std::vector&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a5d3559f28aa3f4859177d4c13950cf1a">DetectImpliedIntegers</a> (bool log_info, MPModelProto *mp_model)</td></tr>
-<tr class="separator:a5d3559f28aa3f4859177d4c13950cf1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adead4997e96ccdef87190f43c5de938f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#adead4997e96ccdef87190f43c5de938f">ConvertMPModelProtoToCpModelProto</a> (const SatParameters &amp;params, const MPModelProto &amp;mp_model, CpModelProto *cp_model)</td></tr>
-<tr class="separator:adead4997e96ccdef87190f43c5de938f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8163165c60b5914e1e8476c56b048664"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a8163165c60b5914e1e8476c56b048664">RemoveNearZeroTerms</a> (const SatParameters &amp;params, MPModelProto *mp_model, SolverLogger *logger)</td></tr>
+<tr class="separator:a8163165c60b5914e1e8476c56b048664"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae188c568fdffc07e6443ba7eb11cff1b"><td class="memItemLeft" align="right" valign="top">std::vector&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ae188c568fdffc07e6443ba7eb11cff1b">DetectImpliedIntegers</a> (MPModelProto *mp_model, SolverLogger *logger)</td></tr>
+<tr class="separator:ae188c568fdffc07e6443ba7eb11cff1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8344143223766ba5898fdba30d6f61d8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a8344143223766ba5898fdba30d6f61d8">ConvertMPModelProtoToCpModelProto</a> (const SatParameters &amp;params, const MPModelProto &amp;mp_model, CpModelProto *cp_model, SolverLogger *logger)</td></tr>
+<tr class="separator:a8344143223766ba5898fdba30d6f61d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b33067a7dffa07cd5748bc4552c85a1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a7b33067a7dffa07cd5748bc4552c85a1">ConvertBinaryMPModelProtoToBooleanProblem</a> (const MPModelProto &amp;mp_model, LinearBooleanProblem *problem)</td></tr>
 <tr class="separator:a7b33067a7dffa07cd5748bc4552c85a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4591e100a0f29a249169e5833995cd31"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a4591e100a0f29a249169e5833995cd31">ConvertBooleanProblemToLinearProgram</a> (const LinearBooleanProblem &amp;problem, glop::LinearProgram *lp)</td></tr>
@@ -207,14 +207,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a6a1f817dc422c6adab9def33880bcf4a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6a1f817dc422c6adab9def33880bcf4a">&#9670;&nbsp;</a></span>scaling_target</h2>
+<a id="a29fe8faef79a8a488024bae1a14f9e37"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a29fe8faef79a8a488024bae1a14f9e37">&#9670;&nbsp;</a></span>scaling_target</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> scaling_target = <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>{1} &lt;&lt; 50</td>
+          <td class="memname">int64_t scaling_target = int64_t{1} &lt;&lt; 50</td>
         </tr>
       </table>
 </div><div class="memdoc">

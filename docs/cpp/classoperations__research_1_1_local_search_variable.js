@@ -1,8 +1,8 @@
 var classoperations__research_1_1_local_search_variable =
 [
-    [ "Max", "classoperations__research_1_1_local_search_variable.html#a5fa627799e723b650fe562b05e1fef5f", null ],
-    [ "Min", "classoperations__research_1_1_local_search_variable.html#a53e9735282c0bf0769962bd1b6a643bc", null ],
+    [ "Max", "classoperations__research_1_1_local_search_variable.html#aa74ea8cd1b0767659f704b482d07c103", null ],
+    [ "Min", "classoperations__research_1_1_local_search_variable.html#a8cf21a67f7d81a800ff912239bb2db64", null ],
     [ "Relax", "classoperations__research_1_1_local_search_variable.html#ae52e3ea7ba54fa164737b531605b3802", null ],
-    [ "SetMax", "classoperations__research_1_1_local_search_variable.html#a81a5fd8e696cd98bcbe29d1831655782", null ],
-    [ "SetMin", "classoperations__research_1_1_local_search_variable.html#acc0e6d3b25abe493558bb4268a8dcff4", null ]
+    [ "SetMax", "classoperations__research_1_1_local_search_variable.html#a4114530e159c28c6b4b445f3e47bbc25", null ],
+    [ "SetMin", "classoperations__research_1_1_local_search_variable.html#a5cf7db3228f904353803dec1e14c2ae8", null ]
 ];

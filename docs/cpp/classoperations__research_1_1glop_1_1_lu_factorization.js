@@ -10,6 +10,7 @@ var classoperations__research_1_1glop_1_1_lu_factorization =
     [ "ComputeInverseOneNorm", "classoperations__research_1_1glop_1_1_lu_factorization.html#a05d6979828b99ac719553f75335a1937", null ],
     [ "ComputeLowerTimesUpper", "classoperations__research_1_1glop_1_1_lu_factorization.html#acd3d874c6fe9195587688508b6cd0305", null ],
     [ "ComputeOneNormConditionNumber", "classoperations__research_1_1glop_1_1_lu_factorization.html#af03b66d5eb557d6d95ad01d446c2cba8", null ],
+    [ "DeterministicTimeOfLastFactorization", "classoperations__research_1_1glop_1_1_lu_factorization.html#a627511bf305a6af5d7e114817c1792c2", null ],
     [ "DualEdgeSquaredNorm", "classoperations__research_1_1glop_1_1_lu_factorization.html#a9b738f6b485a4d4ef866b8d82ac07876", null ],
     [ "GetColumnOfU", "classoperations__research_1_1glop_1_1_lu_factorization.html#a3042b0778d3d901556345438e482d88a", null ],
     [ "GetColumnPermutation", "classoperations__research_1_1glop_1_1_lu_factorization.html#a56d08f5289eea3f018dca5b93b6fca6b", null ],

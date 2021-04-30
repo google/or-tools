@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.2</span>
+                <span id="sfml">Google OR-Tools 9.0</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -83,7 +83,7 @@ $(document).ready(function(){initNavTree('time__limit_8h_source.html',''); initR
 <div class="title">time_limit.h</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="time__limit_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2018 Google LLC</span></div>
+<a href="time__limit_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2021 Google LLC</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">// you may not use this file except in compliance with the License.</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">// You may obtain a copy of the License at</span></div>
@@ -227,12 +227,12 @@ $(document).ready(function(){initNavTree('time__limit_8h_source.html',''); initR
 <div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;    <span class="keywordflow">return</span> <span class="stringliteral">&quot;inst_retired:any_p:u&quot;</span>;</div>
 <div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;  }</div>
 <div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160; </div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;  <span class="keyword">mutable</span> int64 start_ns_;  <span class="comment">// Not const! this is initialized after instruction</span></div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                            <span class="comment">// counter initialization.</span></div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;  int64 last_ns_;</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;  int64 limit_ns_;  <span class="comment">// Not const! See the code of LimitReached().</span></div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;  <span class="keyword">const</span> int64 safety_buffer_ns_;</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;  RunningMax&lt;int64&gt; running_max_;</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;  <span class="keyword">mutable</span> int64_t start_ns_;  <span class="comment">// Not const! this is initialized after</span></div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                              <span class="comment">// instruction counter initialization.</span></div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;  int64_t last_ns_;</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;  int64_t limit_ns_;  <span class="comment">// Not const! See the code of LimitReached().</span></div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;  <span class="keyword">const</span> int64_t safety_buffer_ns_;</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;  RunningMax&lt;int64_t&gt; running_max_;</div>
 <div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160; </div>
 <div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;  <span class="comment">// Only used when FLAGS_time_limit_use_usertime is true.</span></div>
 <div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;  UserTimer user_timer_;</div>
@@ -345,7 +345,7 @@ $(document).ready(function(){initNavTree('time__limit_8h_source.html',''); initR
 <div class="line"><a name="l00470"></a><span class="lineno">  470</span>&#160; </div>
 <div class="line"><a name="l00471"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_time_limit.html#aa0975c0aa18ee607a54e7c4c8986ff0f">  471</a></span>&#160;<span class="keyword">inline</span> <a class="code" href="classoperations__research_1_1_time_limit.html#a0598aaf87dab140f870c8ada2a1f3a39">TimeLimit::TimeLimit</a>(<span class="keywordtype">double</span> limit_in_seconds, <span class="keywordtype">double</span> deterministic_limit,</div>
 <div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;                            <span class="keywordtype">double</span> instruction_limit)</div>
-<div class="line"><a name="l00473"></a><span class="lineno">  473</span>&#160;    : safety_buffer_ns_(static_cast&lt;int64&gt;(kSafetyBufferSeconds * 1e9)),</div>
+<div class="line"><a name="l00473"></a><span class="lineno">  473</span>&#160;    : safety_buffer_ns_(static_cast&lt;int64_t&gt;(kSafetyBufferSeconds * 1e9)),</div>
 <div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160;      running_max_(kHistorySize),</div>
 <div class="line"><a name="l00475"></a><span class="lineno">  475</span>&#160;      external_boolean_as_limit_(nullptr) {</div>
 <div class="line"><a name="l00476"></a><span class="lineno">  476</span>&#160;  ResetTimers(limit_in_seconds, deterministic_limit, instruction_limit);</div>
@@ -373,7 +373,7 @@ $(document).ready(function(){initNavTree('time__limit_8h_source.html',''); initR
 <div class="line"><a name="l00498"></a><span class="lineno">  498</span>&#160;  last_ns_ = start_ns_;</div>
 <div class="line"><a name="l00499"></a><span class="lineno">  499</span>&#160;  limit_ns_ = limit_in_seconds &gt;= 1e-9 * (kint64max - start_ns_)</div>
 <div class="line"><a name="l00500"></a><span class="lineno">  500</span>&#160;                  ? kint64max</div>
-<div class="line"><a name="l00501"></a><span class="lineno">  501</span>&#160;                  : <span class="keyword">static_cast&lt;</span>int64<span class="keyword">&gt;</span>(limit_in_seconds * 1e9) + start_ns_;</div>
+<div class="line"><a name="l00501"></a><span class="lineno">  501</span>&#160;                  : <span class="keyword">static_cast&lt;</span>int64_t<span class="keyword">&gt;</span>(limit_in_seconds * 1e9) + start_ns_;</div>
 <div class="line"><a name="l00502"></a><span class="lineno">  502</span>&#160;}</div>
 <div class="line"><a name="l00503"></a><span class="lineno">  503</span>&#160; </div>
 <div class="line"><a name="l00504"></a><span class="lineno">  504</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Parameters&gt;</div>
@@ -420,7 +420,7 @@ $(document).ready(function(){initNavTree('time__limit_8h_source.html',''); initR
 <div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;  }</div>
 <div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;<span class="preprocessor">#endif  </span><span class="comment">// HAS_PERF_SUBSYSTEM</span></div>
 <div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160; </div>
-<div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;  <span class="keyword">const</span> int64 current_ns = absl::GetCurrentTimeNanos();</div>
+<div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;  <span class="keyword">const</span> int64_t current_ns = absl::GetCurrentTimeNanos();</div>
 <div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160;  running_max_.Add(std::max(safety_buffer_ns_, current_ns - last_ns_));</div>
 <div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160;  last_ns_ = current_ns;</div>
 <div class="line"><a name="l00551"></a><span class="lineno">  551</span>&#160;  <span class="keywordflow">if</span> (current_ns + running_max_.GetCurrentMax() &gt;= limit_ns_) {</div>
@@ -430,7 +430,7 @@ $(document).ready(function(){initNavTree('time__limit_8h_source.html',''); initR
 <div class="line"><a name="l00555"></a><span class="lineno">  555</span>&#160;      <span class="comment">// should advance more slowly, so this is correct.</span></div>
 <div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160;      <span class="keyword">const</span> <span class="keywordtype">double</span> time_left_s = limit_in_seconds_ - user_timer_.Get();</div>
 <div class="line"><a name="l00557"></a><span class="lineno">  557</span>&#160;      <span class="keywordflow">if</span> (time_left_s &gt; <a class="code" href="classoperations__research_1_1_time_limit.html#a1837453fa693143e6ec334701557a448">kSafetyBufferSeconds</a>) {</div>
-<div class="line"><a name="l00558"></a><span class="lineno">  558</span>&#160;        limit_ns_ = <span class="keyword">static_cast&lt;</span>int64<span class="keyword">&gt;</span>(time_left_s * 1e9) + last_ns_;</div>
+<div class="line"><a name="l00558"></a><span class="lineno">  558</span>&#160;        limit_ns_ = <span class="keyword">static_cast&lt;</span>int64_t<span class="keyword">&gt;</span>(time_left_s * 1e9) + last_ns_;</div>
 <div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
 <div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;      }</div>
 <div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;    }</div>
@@ -444,7 +444,7 @@ $(document).ready(function(){initNavTree('time__limit_8h_source.html',''); initR
 <div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160; </div>
 <div class="line"><a name="l00570"></a><span class="lineno"><a class="line" href="classoperations__research_1_1_time_limit.html#a4273b83b06bfbf856393db6d0a9b8715">  570</a></span>&#160;<span class="keyword">inline</span> <span class="keywordtype">double</span> <a class="code" href="classoperations__research_1_1_time_limit.html#a4273b83b06bfbf856393db6d0a9b8715">TimeLimit::GetTimeLeft</a>()<span class="keyword"> const </span>{</div>
 <div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;  <span class="keywordflow">if</span> (limit_ns_ == kint64max) <span class="keywordflow">return</span> std::numeric_limits&lt;double&gt;::infinity();</div>
-<div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;  <span class="keyword">const</span> int64 delta_ns = limit_ns_ - absl::GetCurrentTimeNanos();</div>
+<div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;  <span class="keyword">const</span> int64_t delta_ns = limit_ns_ - absl::GetCurrentTimeNanos();</div>
 <div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;  <span class="keywordflow">if</span> (delta_ns &lt; 0) <span class="keywordflow">return</span> 0.0;</div>
 <div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;  <span class="keywordflow">if</span> (absl::GetFlag(FLAGS_time_limit_use_usertime)) {</div>
 <div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160;    <span class="keywordflow">return</span> std::max(limit_in_seconds_ - user_timer_.Get(), 0.0);</div>
@@ -499,7 +499,7 @@ $(document).ready(function(){initNavTree('time__limit_8h_source.html',''); initR
 <div class="ttc" id="aclassoperations__research_1_1_time_limit_html_ad0cdf04d71ac4f14262eb4871041ddbd"><div class="ttname"><a href="classoperations__research_1_1_time_limit.html#ad0cdf04d71ac4f14262eb4871041ddbd">operations_research::TimeLimit::MergeWithGlobalTimeLimit</a></div><div class="ttdeci">void MergeWithGlobalTimeLimit(TimeLimit *other)</div><div class="ttdef"><b>Definition:</b> <a href="time__limit_8h_source.html#l00511">time_limit.h:511</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_time_limit_html_ae3fe2e2b613455b49c6cc74dd3c7581e"><div class="ttname"><a href="classoperations__research_1_1_time_limit.html#ae3fe2e2b613455b49c6cc74dd3c7581e">operations_research::TimeLimit::GetElapsedTime</a></div><div class="ttdeci">double GetElapsedTime() const</div><div class="ttdoc">Returns the time elapsed in seconds since the construction of this object.</div><div class="ttdef"><b>Definition:</b> <a href="time__limit_8h_source.html#l00251">time_limit.h:251</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_time_limit_html_af90cfd1fc238433fc303ee28c5914eb9"><div class="ttname"><a href="classoperations__research_1_1_time_limit.html#af90cfd1fc238433fc303ee28c5914eb9">operations_research::TimeLimit::AdvanceDeterministicTime</a></div><div class="ttdeci">void AdvanceDeterministicTime(double deterministic_duration)</div><div class="ttdoc">Advances the deterministic time.</div><div class="ttdef"><b>Definition:</b> <a href="time__limit_8h_source.html#l00226">time_limit.h:226</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdef"><b>Definition:</b> <a href="cp__model_8h_source.html#l00052">cp_model.h:52</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdef"><b>Definition:</b> <a href="cp__model_8h_source.html#l00054">cp_model.h:54</a></div></div>
 <div class="ttc" id="atime__limit_8h_html_aeebe51fb8b5872f6c2e4d01a04af8f78"><div class="ttname"><a href="time__limit_8h.html#aeebe51fb8b5872f6c2e4d01a04af8f78">ABSL_DECLARE_FLAG</a></div><div class="ttdeci">ABSL_DECLARE_FLAG(bool, time_limit_use_usertime)</div><div class="ttdoc">Enables changing the behavior of the TimeLimit class to use -b usertime instead of walltime.</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

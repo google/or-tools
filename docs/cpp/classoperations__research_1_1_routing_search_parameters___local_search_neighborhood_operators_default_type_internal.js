@@ -1,4 +1,0 @@
-var classoperations__research_1_1_routing_search_parameters___local_search_neighborhood_operators_default_type_internal =
-[
-    [ "_instance", "classoperations__research_1_1_routing_search_parameters___local_search_neighborhood_operators_default_type_internal.html#aee41a88981e6086a407bebd03c411bbc", null ]
-];

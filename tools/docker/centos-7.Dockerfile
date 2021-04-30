@@ -16,6 +16,7 @@ RUN yum -y update \
 && yum clean all \
 && echo "source /opt/rh/devtoolset-9/enable" >> /etc/bashrc
 SHELL ["/bin/bash", "--login", "-c"]
+ENTRYPOINT ["/usr/bin/bash", "--login", "-c"]
 # RUN gcc --version
 
 # Install CMake 3.20.1

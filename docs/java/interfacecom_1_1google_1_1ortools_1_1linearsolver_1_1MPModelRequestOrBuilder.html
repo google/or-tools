@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.2</span>
+                <span id="sfml">Google OR-Tools 9.0</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -131,6 +131,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:abda56fd2ac60f511ddbfeeb8752b8074"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aec2661ef5f0b760a9c6e49a5f9616f23"><td class="memItemLeft" align="right" valign="top"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelDeltaProtoOrBuilder.html">com.google.ortools.linearsolver.MPModelDeltaProtoOrBuilder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder.html#aec2661ef5f0b760a9c6e49a5f9616f23">getModelDeltaOrBuilder</a> ()</td></tr>
 <tr class="separator:aec2661ef5f0b760a9c6e49a5f9616f23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3a6c5f7ff5f4964ad044acae52288f4"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder.html#ae3a6c5f7ff5f4964ad044acae52288f4">hasPopulateAdditionalSolutionsUpTo</a> ()</td></tr>
+<tr class="separator:ae3a6c5f7ff5f4964ad044acae52288f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab65b62eec1424ec40100d3cbdc34b438"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequestOrBuilder.html#ab65b62eec1424ec40100d3cbdc34b438">getPopulateAdditionalSolutionsUpTo</a> ()</td></tr>
+<tr class="separator:ab65b62eec1424ec40100d3cbdc34b438"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a23cb68138781b872be2fae610b647e46"></a>
@@ -267,6 +271,34 @@ The model to be optimized by the server.
 </pre><p><code>optional .operations_research.MPModelProto model = 1;</code> </p>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1Builder.html#ae5c10b54d192ce6651acf07c38e11ce6">MPModelRequest.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#aa29b7b9ae0d0dde6a062e4328f8e9db6">MPModelRequest</a>.</p>
+
+</div>
+</div>
+<a id="ab65b62eec1424ec40100d3cbdc34b438"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab65b62eec1424ec40100d3cbdc34b438">&#9670;&nbsp;</a></span>getPopulateAdditionalSolutionsUpTo()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int getPopulateAdditionalSolutionsUpTo </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+Controls the recovery of additional solutions, if any, saved by the
+underlying solver back in the MPSolutionResponse.additional_solutions.
+The repeated field will be length
+   min(populate_addition_solutions_up_to,
+       #additional_solutions_available_in_underlying_solver)
+These additional solutions may have a worse objective than the main
+solution returned in the response.
+</pre><p><code>optional int32 populate_additional_solutions_up_to = 11 [default = 0];</code> </p><dl class="section return"><dt>Returns</dt><dd>The populateAdditionalSolutionsUpTo. </dd></dl>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1Builder.html#a5665667a4f223c142f366fdfa49a722f">MPModelRequest.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#a5665667a4f223c142f366fdfa49a722f">MPModelRequest</a>.</p>
 
 </div>
 </div>
@@ -475,6 +507,34 @@ definition of <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_
 </pre><p><code>optional .operations_research.MPModelDeltaProto model_delta = 8;</code> </p><dl class="section return"><dt>Returns</dt><dd>Whether the modelDelta field is set. </dd></dl>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1Builder.html#a8de43308def653aba2d6fe48778a0125">MPModelRequest.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#a8d1ade7fd27796d87a759b78d6a76e19">MPModelRequest</a>.</p>
+
+</div>
+</div>
+<a id="ae3a6c5f7ff5f4964ad044acae52288f4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae3a6c5f7ff5f4964ad044acae52288f4">&#9670;&nbsp;</a></span>hasPopulateAdditionalSolutionsUpTo()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean hasPopulateAdditionalSolutionsUpTo </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+Controls the recovery of additional solutions, if any, saved by the
+underlying solver back in the MPSolutionResponse.additional_solutions.
+The repeated field will be length
+   min(populate_addition_solutions_up_to,
+       #additional_solutions_available_in_underlying_solver)
+These additional solutions may have a worse objective than the main
+solution returned in the response.
+</pre><p><code>optional int32 populate_additional_solutions_up_to = 11 [default = 0];</code> </p><dl class="section return"><dt>Returns</dt><dd>Whether the populateAdditionalSolutionsUpTo field is set. </dd></dl>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1Builder.html#a2f8cceee3cb6a1a19e1a6adf2ab69bb0">MPModelRequest.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#a2f8cceee3cb6a1a19e1a6adf2ab69bb0">MPModelRequest</a>.</p>
 
 </div>
 </div>

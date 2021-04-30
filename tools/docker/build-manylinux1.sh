@@ -127,7 +127,7 @@ TESTS=(
     "${SRC_ROOT}/ortools/sat/samples/simple_sat_program.py"
     "${SRC_ROOT}/ortools/constraint_solver/samples/tsp.py"
     "${SRC_ROOT}/ortools/constraint_solver/samples/vrp.py"
-    "${SRC_ROOT}/ortools/constraint_solver/samples/cvrpw_break.py"
+    "${SRC_ROOT}/ortools/constraint_solver/samples/cvrptw_break.py"
 )
 
 (

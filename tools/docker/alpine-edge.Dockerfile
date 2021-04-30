@@ -5,6 +5,7 @@ LABEL maintainer="corentinl@google.com"
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN apk add --no-cache git build-base linux-headers cmake xfce4-dev-tools
+ENTRYPOINT ["/bin/sh", "-c"]
 
 # SWIG
 RUN apk add --no-cache swig

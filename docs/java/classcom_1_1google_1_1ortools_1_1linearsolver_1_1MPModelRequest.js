@@ -13,6 +13,7 @@ var classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest =
     [ "getModelDeltaOrBuilder", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#a436c129a323559af9672afe8233929c7", null ],
     [ "getModelOrBuilder", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#aa29b7b9ae0d0dde6a062e4328f8e9db6", null ],
     [ "getParserForType", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#a89491fdfe66adea3024ac7c3778862b7", null ],
+    [ "getPopulateAdditionalSolutionsUpTo", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#a5665667a4f223c142f366fdfa49a722f", null ],
     [ "getSerializedSize", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#a8342b02c43d81069adc3e820423d92ac", null ],
     [ "getSolverSpecificParameters", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#a0e0dffd59923035bf32ae3e580b0241b", null ],
     [ "getSolverSpecificParametersBytes", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#af16421f7ccfd5d6d8869978411966c7a", null ],
@@ -24,6 +25,7 @@ var classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest =
     [ "hasIgnoreSolverSpecificParametersFailure", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#a3b6433981f4e5c4e52c73d097f4ec985", null ],
     [ "hasModel", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#ae0f19c11894affc210e961bf98a1e478", null ],
     [ "hasModelDelta", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#a8d1ade7fd27796d87a759b78d6a76e19", null ],
+    [ "hasPopulateAdditionalSolutionsUpTo", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#a2f8cceee3cb6a1a19e1a6adf2ab69bb0", null ],
     [ "hasSolverSpecificParameters", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#aae1f29acbd54524b52a3ae0020f5383b", null ],
     [ "hasSolverTimeLimitSeconds", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#aee9ba37e41865df8fa271b919db7b3d4", null ],
     [ "hasSolverType", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#a7efdac6dade6fea9e3249be71ae8db14", null ],
@@ -54,6 +56,7 @@ var classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest =
     [ "MODEL_DELTA_FIELD_NUMBER", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#aef8a46107d048fd0715724bd47879084", null ],
     [ "MODEL_FIELD_NUMBER", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#a4194dbbbe6a485bcc10c44dcda8e9986", null ],
     [ "PARSER", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#aa43613427915b65fa776858e0b4e96df", null ],
+    [ "POPULATE_ADDITIONAL_SOLUTIONS_UP_TO_FIELD_NUMBER", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#a92491027e5ae86c4ca3cc086a3dcc0b0", null ],
     [ "SOLVER_SPECIFIC_PARAMETERS_FIELD_NUMBER", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#a8694edeb8d3e001c7a1cc96b044fb88d", null ],
     [ "SOLVER_TIME_LIMIT_SECONDS_FIELD_NUMBER", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#a6f613fb0850eb8f721cf6616d6616868", null ],
     [ "SOLVER_TYPE_FIELD_NUMBER", "classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#ad5b6fe00155f758372ca461cc68a142a", null ]

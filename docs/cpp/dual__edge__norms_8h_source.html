@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -89,7 +89,7 @@ $(document).ready(function(){initNavTree('dual__edge__norms_8h_source.html','');
 <div class="title">dual_edge_norms.h</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="dual__edge__norms_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2018 Google LLC</span></div>
+<a href="dual__edge__norms_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2021 Google LLC</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">// you may not use this file except in compliance with the License.</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">// You may obtain a copy of the License at</span></div>
@@ -153,77 +153,78 @@ $(document).ready(function(){initNavTree('dual__edge__norms_8h_source.html','');
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;  <span class="comment">// If this is true, then the caller must re-factorize the basis before the</span></div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;  <span class="comment">// next call to GetEdgeSquaredNorms(). This is because the latter will</span></div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;  <span class="comment">// recompute the norms from scratch and therefore needs a hightened precision</span></div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;  <span class="comment">// and speed.</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;  <span class="keywordtype">bool</span> <a class="code" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#a58d6aa7af2dcdd2a53c98c0f0cef0502">NeedsBasisRefactorization</a>();</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;  <span class="comment">// Returns the dual edge squared norms. This is only valid if the caller</span></div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;  <span class="comment">// properly called UpdateBeforeBasisPivot() before each basis pivot, or just</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;  <span class="comment">// called Clear().</span></div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;  <span class="keyword">const</span> <a class="code" href="classoperations__research_1_1glop_1_1_strict_i_t_i_vector.html">DenseColumn</a>&amp; <a class="code" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#a1f1a686f26843ecfeb36e71f7626c330">GetEdgeSquaredNorms</a>();</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;  <span class="comment">// Updates the norms if the columns of the basis where permuted.</span></div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#a0c2c64e7a26487661db464cb20d4ddfe">UpdateDataOnBasisPermutation</a>(<span class="keyword">const</span> <a class="code" href="classoperations__research_1_1glop_1_1_permutation.html">ColumnPermutation</a>&amp; col_perm);</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;  <span class="comment">// Updates the norms just before a basis pivot is applied:</span></div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;  <span class="comment">// - The column at leaving_row will leave the basis and the column at</span></div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;  <span class="comment">//   entering_col will enter it.</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;  <span class="comment">// - direction is the right inverse of the entering column.</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;  <span class="comment">// - unit_row_left_inverse is the left inverse of the unit row with index</span></div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;  <span class="comment">//   given by the leaving_row. This is also the leaving dual edge.</span></div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#a07ecfa8dabb00a7f680dc64efe1127d1">UpdateBeforeBasisPivot</a>(ColIndex entering_col, RowIndex leaving_row,</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;                              <span class="keyword">const</span> <a class="code" href="structoperations__research_1_1glop_1_1_scattered_column.html">ScatteredColumn</a>&amp; direction,</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                              <span class="keyword">const</span> <a class="code" href="structoperations__research_1_1glop_1_1_scattered_row.html">ScatteredRow</a>&amp; unit_row_left_inverse);</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;  <span class="comment">// Sets the algorithm parameters.</span></div>
-<div class="line"><a name="l00087"></a><span class="lineno"><a class="line" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#ae7202d055b6b172a8a1da4f5b136f9ea">   87</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#ae7202d055b6b172a8a1da4f5b136f9ea">SetParameters</a>(<span class="keyword">const</span> GlopParameters&amp; <a class="code" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>) {</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    parameters_ = <a class="code" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>;</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;  }</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;  <span class="comment">// Stats related functions.</span></div>
-<div class="line"><a name="l00092"></a><span class="lineno"><a class="line" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#af9bc435481ae9e6e60d66a65d5394a7f">   92</a></span>&#160;  std::string <a class="code" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#af9bc435481ae9e6e60d66a65d5394a7f">StatString</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> stats_.StatString(); }</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; <span class="keyword">private</span>:</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;  <span class="comment">// Recomputes the dual edge squared norms from scratch with maximum precision.</span></div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;  <span class="comment">// The matrix must have been refactorized before because we will do a lot of</span></div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;  <span class="comment">// inversions. See NeedsBasisRefactorization(). This is checked in debug mode.</span></div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;  <span class="keywordtype">void</span> ComputeEdgeSquaredNorms();</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;  <span class="comment">// Computes the vector tau needed to update the norms using a right solve:</span></div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;  <span class="comment">//     B.tau = (u_i)^T, u_i.B = e_i for i = leaving_row.</span></div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;  <span class="keyword">const</span> <a class="code" href="classoperations__research_1_1glop_1_1_strict_i_t_i_vector.html">DenseColumn</a>&amp; ComputeTau(<span class="keyword">const</span> <a class="code" href="structoperations__research_1_1glop_1_1_scattered_column.html">ScatteredColumn</a>&amp; unit_row_left_inverse);</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;  <span class="comment">// Statistics.</span></div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;  <span class="keyword">struct </span>Stats : <span class="keyword">public</span> <a class="code" href="classoperations__research_1_1_stats_group.html">StatsGroup</a> {</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    Stats()</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        : <a class="code" href="classoperations__research_1_1_stats_group.html">StatsGroup</a>(<span class="stringliteral">&quot;DualEdgeNorms&quot;</span>),</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;          tau_density(<span class="stringliteral">&quot;tau_density&quot;</span>, this),</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;          edge_norms_accuracy(<span class="stringliteral">&quot;edge_norms_accuracy&quot;</span>, this),</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;          lower_bounded_norms(<span class="stringliteral">&quot;lower_bounded_norms&quot;</span>, this) {}</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <a class="code" href="classoperations__research_1_1_ratio_distribution.html">RatioDistribution</a> tau_density;</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <a class="code" href="classoperations__research_1_1_double_distribution.html">DoubleDistribution</a> edge_norms_accuracy;</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <a class="code" href="classoperations__research_1_1_integer_distribution.html">IntegerDistribution</a> lower_bounded_norms;</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;  };</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;  Stats stats_;</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160; </div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;  <span class="comment">// Parameters.</span></div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;  GlopParameters parameters_;</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160; </div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;  <span class="comment">// Problem data that should be updated from outside.</span></div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;  <span class="keyword">const</span> BasisFactorization&amp; basis_factorization_;</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160; </div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;  <span class="comment">// The dual edge norms.</span></div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;  <a class="code" href="namespaceoperations__research_1_1glop.html#ae5fa9e57c2d31b294195ed8a9e17bfac">DenseColumn</a> edge_squared_norms_;</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160; </div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;  <span class="comment">// Whether we should recompute the norm from scratch.</span></div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;  <span class="keywordtype">bool</span> recompute_edge_squared_norms_;</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160; </div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;  DISALLOW_COPY_AND_ASSIGN(<a class="code" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#aae480c260ae0af4e638f918eb7deaaf4">DualEdgeNorms</a>);</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;};</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;}  <span class="comment">// namespace glop</span></div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;}  <span class="comment">// namespace operations_research</span></div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160; </div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;<span class="preprocessor">#endif  </span><span class="comment">// OR_TOOLS_GLOP_DUAL_EDGE_NORMS_H_</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;  <span class="comment">// and speed. This also indicates if GetEdgeSquaredNorms() will trigger a</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;  <span class="comment">// recomputation.</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;  <span class="keywordtype">bool</span> <a class="code" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#a58d6aa7af2dcdd2a53c98c0f0cef0502">NeedsBasisRefactorization</a>();</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;  <span class="comment">// Returns the dual edge squared norms. This is only valid if the caller</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;  <span class="comment">// properly called UpdateBeforeBasisPivot() before each basis pivot, or just</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;  <span class="comment">// called Clear().</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;  <span class="keyword">const</span> <a class="code" href="classoperations__research_1_1glop_1_1_strict_i_t_i_vector.html">DenseColumn</a>&amp; <a class="code" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#a1f1a686f26843ecfeb36e71f7626c330">GetEdgeSquaredNorms</a>();</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;  <span class="comment">// Updates the norms if the columns of the basis where permuted.</span></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#a0c2c64e7a26487661db464cb20d4ddfe">UpdateDataOnBasisPermutation</a>(<span class="keyword">const</span> <a class="code" href="classoperations__research_1_1glop_1_1_permutation.html">ColumnPermutation</a>&amp; col_perm);</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;  <span class="comment">// Updates the norms just before a basis pivot is applied:</span></div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;  <span class="comment">// - The column at leaving_row will leave the basis and the column at</span></div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;  <span class="comment">//   entering_col will enter it.</span></div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;  <span class="comment">// - direction is the right inverse of the entering column.</span></div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;  <span class="comment">// - unit_row_left_inverse is the left inverse of the unit row with index</span></div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;  <span class="comment">//   given by the leaving_row. This is also the leaving dual edge.</span></div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#a07ecfa8dabb00a7f680dc64efe1127d1">UpdateBeforeBasisPivot</a>(ColIndex entering_col, RowIndex leaving_row,</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                              <span class="keyword">const</span> <a class="code" href="structoperations__research_1_1glop_1_1_scattered_column.html">ScatteredColumn</a>&amp; direction,</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;                              <span class="keyword">const</span> <a class="code" href="structoperations__research_1_1glop_1_1_scattered_row.html">ScatteredRow</a>&amp; unit_row_left_inverse);</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;  <span class="comment">// Sets the algorithm parameters.</span></div>
+<div class="line"><a name="l00088"></a><span class="lineno"><a class="line" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#ae7202d055b6b172a8a1da4f5b136f9ea">   88</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#ae7202d055b6b172a8a1da4f5b136f9ea">SetParameters</a>(<span class="keyword">const</span> GlopParameters&amp; <a class="code" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>) {</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    parameters_ = <a class="code" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;  }</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;  <span class="comment">// Stats related functions.</span></div>
+<div class="line"><a name="l00093"></a><span class="lineno"><a class="line" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#af9bc435481ae9e6e60d66a65d5394a7f">   93</a></span>&#160;  std::string <a class="code" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#af9bc435481ae9e6e60d66a65d5394a7f">StatString</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> stats_.StatString(); }</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; <span class="keyword">private</span>:</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;  <span class="comment">// Recomputes the dual edge squared norms from scratch with maximum precision.</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;  <span class="comment">// The matrix must have been refactorized before because we will do a lot of</span></div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;  <span class="comment">// inversions. See NeedsBasisRefactorization(). This is checked in debug mode.</span></div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;  <span class="keywordtype">void</span> ComputeEdgeSquaredNorms();</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;  <span class="comment">// Computes the vector tau needed to update the norms using a right solve:</span></div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;  <span class="comment">//     B.tau = (u_i)^T, u_i.B = e_i for i = leaving_row.</span></div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;  <span class="keyword">const</span> <a class="code" href="classoperations__research_1_1glop_1_1_strict_i_t_i_vector.html">DenseColumn</a>&amp; ComputeTau(<span class="keyword">const</span> <a class="code" href="structoperations__research_1_1glop_1_1_scattered_column.html">ScatteredColumn</a>&amp; unit_row_left_inverse);</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;  <span class="comment">// Statistics.</span></div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;  <span class="keyword">struct </span>Stats : <span class="keyword">public</span> <a class="code" href="classoperations__research_1_1_stats_group.html">StatsGroup</a> {</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    Stats()</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        : <a class="code" href="classoperations__research_1_1_stats_group.html">StatsGroup</a>(<span class="stringliteral">&quot;DualEdgeNorms&quot;</span>),</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;          tau_density(<span class="stringliteral">&quot;tau_density&quot;</span>, this),</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;          edge_norms_accuracy(<span class="stringliteral">&quot;edge_norms_accuracy&quot;</span>, this),</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;          lower_bounded_norms(<span class="stringliteral">&quot;lower_bounded_norms&quot;</span>, this) {}</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <a class="code" href="classoperations__research_1_1_ratio_distribution.html">RatioDistribution</a> tau_density;</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <a class="code" href="classoperations__research_1_1_double_distribution.html">DoubleDistribution</a> edge_norms_accuracy;</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <a class="code" href="classoperations__research_1_1_integer_distribution.html">IntegerDistribution</a> lower_bounded_norms;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;  };</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;  Stats stats_;</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160; </div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;  <span class="comment">// Parameters.</span></div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;  GlopParameters parameters_;</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160; </div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;  <span class="comment">// Problem data that should be updated from outside.</span></div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;  <span class="keyword">const</span> BasisFactorization&amp; basis_factorization_;</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160; </div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;  <span class="comment">// The dual edge norms.</span></div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;  <a class="code" href="namespaceoperations__research_1_1glop.html#ae5fa9e57c2d31b294195ed8a9e17bfac">DenseColumn</a> edge_squared_norms_;</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160; </div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;  <span class="comment">// Whether we should recompute the norm from scratch.</span></div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;  <span class="keywordtype">bool</span> recompute_edge_squared_norms_;</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160; </div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;  DISALLOW_COPY_AND_ASSIGN(<a class="code" href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#aae480c260ae0af4e638f918eb7deaaf4">DualEdgeNorms</a>);</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;};</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160; </div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;}  <span class="comment">// namespace glop</span></div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;}  <span class="comment">// namespace operations_research</span></div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160; </div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;<span class="preprocessor">#endif  </span><span class="comment">// OR_TOOLS_GLOP_DUAL_EDGE_NORMS_H_</span></div>
 <div class="ttc" id="abasis__representation_8h_html"><div class="ttname"><a href="basis__representation_8h.html">basis_representation.h</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_double_distribution_html"><div class="ttname"><a href="classoperations__research_1_1_double_distribution.html">operations_research::DoubleDistribution</a></div><div class="ttdef"><b>Definition:</b> <a href="stats_8h_source.html#l00275">stats.h:275</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1_integer_distribution_html"><div class="ttname"><a href="classoperations__research_1_1_integer_distribution.html">operations_research::IntegerDistribution</a></div><div class="ttdef"><b>Definition:</b> <a href="stats_8h_source.html#l00287">stats.h:287</a></div></div>
@@ -238,21 +239,21 @@ $(document).ready(function(){initNavTree('dual__edge__norms_8h_source.html','');
 <div class="ttc" id="aclassoperations__research_1_1glop_1_1_dual_edge_norms_html_aa1eaa31ee29b8635d194762c1eb80962"><div class="ttname"><a href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#aa1eaa31ee29b8635d194762c1eb80962">operations_research::glop::DualEdgeNorms::ResizeOnNewRows</a></div><div class="ttdeci">void ResizeOnNewRows(RowIndex new_size)</div><div class="ttdef"><b>Definition:</b> <a href="dual__edge__norms_8cc_source.html#l00031">dual_edge_norms.cc:31</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1glop_1_1_dual_edge_norms_html_aa71d36872f416feaa853788a7a7a7ef8"><div class="ttname"><a href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#aa71d36872f416feaa853788a7a7a7ef8">operations_research::glop::DualEdgeNorms::Clear</a></div><div class="ttdeci">void Clear()</div><div class="ttdef"><b>Definition:</b> <a href="dual__edge__norms_8cc_source.html#l00029">dual_edge_norms.cc:29</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1glop_1_1_dual_edge_norms_html_aae480c260ae0af4e638f918eb7deaaf4"><div class="ttname"><a href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#aae480c260ae0af4e638f918eb7deaaf4">operations_research::glop::DualEdgeNorms::DualEdgeNorms</a></div><div class="ttdeci">DualEdgeNorms(const BasisFactorization &amp;basis_factorization)</div><div class="ttdef"><b>Definition:</b> <a href="dual__edge__norms_8cc_source.html#l00021">dual_edge_norms.cc:21</a></div></div>
-<div class="ttc" id="aclassoperations__research_1_1glop_1_1_dual_edge_norms_html_ae7202d055b6b172a8a1da4f5b136f9ea"><div class="ttname"><a href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#ae7202d055b6b172a8a1da4f5b136f9ea">operations_research::glop::DualEdgeNorms::SetParameters</a></div><div class="ttdeci">void SetParameters(const GlopParameters &amp;parameters)</div><div class="ttdef"><b>Definition:</b> <a href="dual__edge__norms_8h_source.html#l00087">dual_edge_norms.h:87</a></div></div>
-<div class="ttc" id="aclassoperations__research_1_1glop_1_1_dual_edge_norms_html_af9bc435481ae9e6e60d66a65d5394a7f"><div class="ttname"><a href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#af9bc435481ae9e6e60d66a65d5394a7f">operations_research::glop::DualEdgeNorms::StatString</a></div><div class="ttdeci">std::string StatString() const</div><div class="ttdef"><b>Definition:</b> <a href="dual__edge__norms_8h_source.html#l00092">dual_edge_norms.h:92</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1glop_1_1_dual_edge_norms_html_ae7202d055b6b172a8a1da4f5b136f9ea"><div class="ttname"><a href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#ae7202d055b6b172a8a1da4f5b136f9ea">operations_research::glop::DualEdgeNorms::SetParameters</a></div><div class="ttdeci">void SetParameters(const GlopParameters &amp;parameters)</div><div class="ttdef"><b>Definition:</b> <a href="dual__edge__norms_8h_source.html#l00088">dual_edge_norms.h:88</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1glop_1_1_dual_edge_norms_html_af9bc435481ae9e6e60d66a65d5394a7f"><div class="ttname"><a href="classoperations__research_1_1glop_1_1_dual_edge_norms.html#af9bc435481ae9e6e60d66a65d5394a7f">operations_research::glop::DualEdgeNorms::StatString</a></div><div class="ttdeci">std::string StatString() const</div><div class="ttdef"><b>Definition:</b> <a href="dual__edge__norms_8h_source.html#l00093">dual_edge_norms.h:93</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1glop_1_1_permutation_html"><div class="ttname"><a href="classoperations__research_1_1glop_1_1_permutation.html">operations_research::glop::Permutation&lt; ColIndex &gt;</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1glop_1_1_strict_i_t_i_vector_html"><div class="ttname"><a href="classoperations__research_1_1glop_1_1_strict_i_t_i_vector.html">operations_research::glop::StrictITIVector&lt; RowIndex, Fractional &gt;</a></div></div>
 <div class="ttc" id="acp__model__fz__solver_8cc_html_a10a1eab179b472c030bdc2a2efef7219"><div class="ttname"><a href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a></div><div class="ttdeci">SatParameters parameters</div><div class="ttdef"><b>Definition:</b> <a href="cp__model__fz__solver_8cc_source.html#l00108">cp_model_fz_solver.cc:108</a></div></div>
 <div class="ttc" id="alp__data_2permutation_8h_html"><div class="ttname"><a href="lp__data_2permutation_8h.html">permutation.h</a></div></div>
 <div class="ttc" id="alp__data_8h_html"><div class="ttname"><a href="lp__data_8h.html">lp_data.h</a></div></div>
 <div class="ttc" id="alp__types_8h_html"><div class="ttname"><a href="lp__types_8h.html">lp_types.h</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_1_1glop_html_ae5fa9e57c2d31b294195ed8a9e17bfac"><div class="ttname"><a href="namespaceoperations__research_1_1glop.html#ae5fa9e57c2d31b294195ed8a9e17bfac">operations_research::glop::DenseColumn</a></div><div class="ttdeci">StrictITIVector&lt; RowIndex, Fractional &gt; DenseColumn</div><div class="ttdef"><b>Definition:</b> <a href="lp__types_8h_source.html#l00328">lp_types.h:328</a></div></div>
-<div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdoc">The vehicle routing library lets one model and solve generic vehicle routing problems ranging from th...</div><div class="ttdef"><b>Definition:</b> <a href="dense__doubly__linked__list_8h_source.html#l00021">dense_doubly_linked_list.h:21</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_1_1glop_html_ae5fa9e57c2d31b294195ed8a9e17bfac"><div class="ttname"><a href="namespaceoperations__research_1_1glop.html#ae5fa9e57c2d31b294195ed8a9e17bfac">operations_research::glop::DenseColumn</a></div><div class="ttdeci">StrictITIVector&lt; RowIndex, Fractional &gt; DenseColumn</div><div class="ttdef"><b>Definition:</b> <a href="lp__types_8h_source.html#l00329">lp_types.h:329</a></div></div>
+<div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdoc">Collection of objects used to extend the Constraint Solver library.</div><div class="ttdef"><b>Definition:</b> <a href="dense__doubly__linked__list_8h_source.html#l00021">dense_doubly_linked_list.h:21</a></div></div>
 <div class="ttc" id="aparameters_8pb_8h_html"><div class="ttname"><a href="parameters_8pb_8h.html">parameters.pb.h</a></div></div>
 <div class="ttc" id="ascattered__vector_8h_html"><div class="ttname"><a href="scattered__vector_8h.html">scattered_vector.h</a></div></div>
 <div class="ttc" id="astats_8h_html"><div class="ttname"><a href="stats_8h.html">stats.h</a></div></div>
-<div class="ttc" id="astructoperations__research_1_1glop_1_1_scattered_column_html"><div class="ttname"><a href="structoperations__research_1_1glop_1_1_scattered_column.html">operations_research::glop::ScatteredColumn</a></div><div class="ttdef"><b>Definition:</b> <a href="scattered__vector_8h_source.html#l00190">scattered_vector.h:191</a></div></div>
-<div class="ttc" id="astructoperations__research_1_1glop_1_1_scattered_row_html"><div class="ttname"><a href="structoperations__research_1_1glop_1_1_scattered_row.html">operations_research::glop::ScatteredRow</a></div><div class="ttdef"><b>Definition:</b> <a href="scattered__vector_8h_source.html#l00192">scattered_vector.h:192</a></div></div>
+<div class="ttc" id="astructoperations__research_1_1glop_1_1_scattered_column_html"><div class="ttname"><a href="structoperations__research_1_1glop_1_1_scattered_column.html">operations_research::glop::ScatteredColumn</a></div><div class="ttdef"><b>Definition:</b> <a href="scattered__vector_8h_source.html#l00196">scattered_vector.h:197</a></div></div>
+<div class="ttc" id="astructoperations__research_1_1glop_1_1_scattered_row_html"><div class="ttname"><a href="structoperations__research_1_1glop_1_1_scattered_row.html">operations_research::glop::ScatteredRow</a></div><div class="ttdef"><b>Definition:</b> <a href="scattered__vector_8h_source.html#l00198">scattered_vector.h:198</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.8.18-->

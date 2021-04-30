@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -112,7 +112,7 @@ $(document).ready(function(){initNavTree('functions_vars_r.html',''); initResiza
 , <a class="el" href="structoperations__research_1_1_g_scip_indicator_range_constraint.html#a16e845732136fe1051e4bf34801b7c53">GScipIndicatorRangeConstraint</a>
 </li>
 <li>rank
-: <a class="el" href="structoperations__research_1_1sat_1_1_shared_solution_repository_1_1_solution.html#a476766ce3f58884ab8eec27b6e58a86e">SharedSolutionRepository&lt; ValueType &gt;::Solution</a>
+: <a class="el" href="structoperations__research_1_1sat_1_1_shared_solution_repository_1_1_solution.html#ac765d7b5497f44f22c85fdc63ae9d966">SharedSolutionRepository&lt; ValueType &gt;::Solution</a>
 </li>
 <li>reasons
 : <a class="el" href="structoperations__research_1_1sat_1_1_pb_constraints_enqueue_helper.html#a2b537e8bba9403eef4d626a7a8b921a1">PbConstraintsEnqueueHelper</a>
@@ -123,8 +123,17 @@ $(document).ready(function(){initNavTree('functions_vars_r.html',''); initResiza
 <li>recycle_solutions_
 : <a class="el" href="classoperations__research_1_1_solution_collector.html#a44069f4a63ae68c2059144cc5ee976d1">SolutionCollector</a>
 </li>
+<li>reduced_costs
+: <a class="el" href="structoperations__research_1_1math__opt_1_1_indexed_dual_ray.html#a297497ff6b18b2ba7164a2152a8349dd">IndexedDualRay</a>
+, <a class="el" href="structoperations__research_1_1math__opt_1_1_indexed_dual_solution.html#a297497ff6b18b2ba7164a2152a8349dd">IndexedDualSolution</a>
+, <a class="el" href="structoperations__research_1_1math__opt_1_1_result_1_1_dual_ray.html#a8c59e260c5341833e0c29dfbeb4b92a3">Result::DualRay</a>
+, <a class="el" href="structoperations__research_1_1math__opt_1_1_result_1_1_dual_solution.html#a8c59e260c5341833e0c29dfbeb4b92a3">Result::DualSolution</a>
+</li>
 <li>reduced_domain_vars
-: <a class="el" href="structoperations__research_1_1sat_1_1_r_i_n_s_neighborhood.html#a4630143a69a0e326a38901f8ba54ae45">RINSNeighborhood</a>
+: <a class="el" href="structoperations__research_1_1sat_1_1_r_i_n_s_neighborhood.html#ab3c025953129f4798b0fe2eb84e95d6b">RINSNeighborhood</a>
+</li>
+<li>ref
+: <a class="el" href="structoperations__research_1_1sat_1_1_var_value.html#adb528a1cb1ca190150183394d082590d">VarValue</a>
 </li>
 <li>RELATION_GRAPH_LNS
 : <a class="el" href="classoperations__research_1_1bop_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a2827316d2962e3f676156ef3ec9bcf44">PROTOBUF_FINAL</a>
@@ -186,10 +195,10 @@ $(document).ready(function(){initNavTree('functions_vars_r.html',''); initResiza
 : <a class="el" href="structoperations__research_1_1_trail.html#abf5ccdc450c2bc77268fffacdae623ab">Trail</a>
 </li>
 <li>rev_int64_memory_
-: <a class="el" href="structoperations__research_1_1_trail.html#a86062a979103c966a86a05394a538a8e">Trail</a>
+: <a class="el" href="structoperations__research_1_1_trail.html#a18897eca3d360bcd9b1a212a7fe38d41">Trail</a>
 </li>
 <li>rev_int64s_
-: <a class="el" href="structoperations__research_1_1_trail.html#a593ffdb1081cd0d2cf1f7ced7faa6fd3">Trail</a>
+: <a class="el" href="structoperations__research_1_1_trail.html#a99544f426332a39e8fbed4d442ff6341">Trail</a>
 </li>
 <li>rev_int_memory_
 : <a class="el" href="structoperations__research_1_1_trail.html#a18fdc21e276b69c5c8349385bd7823bd">Trail</a>
@@ -213,10 +222,13 @@ $(document).ready(function(){initNavTree('functions_vars_r.html',''); initResiza
 : <a class="el" href="structoperations__research_1_1_trail.html#a11e8868b65567df6371bccb3a2d4ca9a">Trail</a>
 </li>
 <li>rev_uint64s_
-: <a class="el" href="structoperations__research_1_1_trail.html#a0444396c37127e95d5f265d02a1a2e8a">Trail</a>
+: <a class="el" href="structoperations__research_1_1_trail.html#ab981c88cf277d0ddf91580a9ebda9407">Trail</a>
 </li>
 <li>reversible_action
 : <a class="el" href="structoperations__research_1_1_state_info.html#a133ce5a301ebbf5352db94f502f12fa7">StateInfo</a>
+</li>
+<li>rhs
+: <a class="el" href="structoperations__research_1_1math__opt_1_1internal_1_1_variables_equality.html#a3666d6b15628f772364ddeedc3f93499">VariablesEquality</a>
 </li>
 <li>rhs_parity
 : <a class="el" href="structoperations__research_1_1sat_1_1_zero_half_cut_helper_1_1_combination_of_rows.html#ad672b27c7276e0a1588afb57c18afa11">ZeroHalfCutHelper::CombinationOfRows</a>
@@ -235,6 +247,9 @@ $(document).ready(function(){initNavTree('functions_vars_r.html',''); initResiza
 </li>
 <li>runner
 : <a class="el" href="struct_s_c_i_p___conshdlr_data.html#aa64468b7123338080275cf12a8ec1596">SCIP_ConshdlrData</a>
+</li>
+<li>runtime
+: <a class="el" href="structoperations__research_1_1math__opt_1_1_callback_data.html#a32e54c85f3390e20ab42c14f8e153581">CallbackData</a>
 </li>
 </ul>
 </div><!-- contents -->

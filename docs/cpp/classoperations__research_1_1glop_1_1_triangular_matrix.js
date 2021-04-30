@@ -26,6 +26,7 @@ var classoperations__research_1_1glop_1_1_triangular_matrix =
     [ "num_cols", "classoperations__research_1_1glop_1_1_triangular_matrix.html#a41741829541d089f1c4d34f190884813", null ],
     [ "num_entries", "classoperations__research_1_1glop_1_1_triangular_matrix.html#af69d9b7065a8f31604a8134be4307749", null ],
     [ "num_rows", "classoperations__research_1_1glop_1_1_triangular_matrix.html#a960110e64357a3e69162ebf1f71959dd", null ],
+    [ "NumFpOperationsInLastPermutedLowerSparseSolve", "classoperations__research_1_1glop_1_1_triangular_matrix.html#aec8942e8b01f9aed2abc24de9acfb6ab", null ],
     [ "PermutedComputeRowsToConsider", "classoperations__research_1_1glop_1_1_triangular_matrix.html#ac87e05f0b7e5dc3e4d6764060b4b58c9", null ],
     [ "PermutedLowerSolve", "classoperations__research_1_1glop_1_1_triangular_matrix.html#ae096114c2adaa8e7bac718ce450e135f", null ],
     [ "PermutedLowerSparseSolve", "classoperations__research_1_1glop_1_1_triangular_matrix.html#abedd52dbc024598bf0189235764f734a", null ],

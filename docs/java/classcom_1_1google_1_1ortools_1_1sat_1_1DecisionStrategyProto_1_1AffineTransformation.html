@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.2</span>
+                <span id="sfml">Google OR-Tools 9.0</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -95,8 +95,8 @@ $(document).ready(function(){initNavTree('classcom_1_1google_1_1ortools_1_1sat_1
 <div class="textblock"><pre>
 Advanced usage. Some of the variable listed above may have been transformed
 by the presolve so this is needed to properly follow the given selection
-strategy. Instead of using a value X from one of the variable listed here,
-we will use positive_coeff * X + offset instead.
+strategy. Instead of using a value X for variables[index], we will use
+positive_coeff * X + offset instead.
 </pre><p>Protobuf type</p><div class="fragment"><div class="line">operations_research.sat.DecisionStrategyProto.AffineTransformation </div>
 </div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="DecisionStrategyProto_8java_source.html#l00455">455</a> of file <a class="el" href="DecisionStrategyProto_8java_source.html">DecisionStrategyProto.java</a>.</p>
@@ -110,9 +110,9 @@ Classes</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a9595e84f1a265789b99af6f10e024e33"><td class="memItemLeft" align="right" valign="top">.lang.Override final com.google.protobuf.UnknownFieldSet&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a9595e84f1a265789b99af6f10e024e33">getUnknownFields</a> ()</td></tr>
 <tr class="separator:a9595e84f1a265789b99af6f10e024e33"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7c5e68f88e98e915c7b7202555820e92"><td class="memItemLeft" align="right" valign="top">.lang.Override int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a7c5e68f88e98e915c7b7202555820e92">getVar</a> ()</td></tr>
-<tr class="memdesc:a7c5e68f88e98e915c7b7202555820e92"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>int32 var = 1;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a7c5e68f88e98e915c7b7202555820e92">More...</a><br /></td></tr>
-<tr class="separator:a7c5e68f88e98e915c7b7202555820e92"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa2b83fbfc0451bb4ed9b1df6a5251ab8"><td class="memItemLeft" align="right" valign="top">.lang.Override int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#aa2b83fbfc0451bb4ed9b1df6a5251ab8">getIndex</a> ()</td></tr>
+<tr class="memdesc:aa2b83fbfc0451bb4ed9b1df6a5251ab8"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>int32 index = 1;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#aa2b83fbfc0451bb4ed9b1df6a5251ab8">More...</a><br /></td></tr>
+<tr class="separator:aa2b83fbfc0451bb4ed9b1df6a5251ab8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a50bf3364c41bb1e417c3db44deaacfd4"><td class="memItemLeft" align="right" valign="top">.lang.Override long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a50bf3364c41bb1e417c3db44deaacfd4">getOffset</a> ()</td></tr>
 <tr class="memdesc:a50bf3364c41bb1e417c3db44deaacfd4"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>int64 offset = 2;</code>  <a href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a50bf3364c41bb1e417c3db44deaacfd4">More...</a><br /></td></tr>
 <tr class="separator:a50bf3364c41bb1e417c3db44deaacfd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -177,8 +177,8 @@ Static Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:a0e300b76ab48c1f513df46d1ff1ba8f8"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a0e300b76ab48c1f513df46d1ff1ba8f8">VAR_FIELD_NUMBER</a> = 1</td></tr>
-<tr class="separator:a0e300b76ab48c1f513df46d1ff1ba8f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a20118c87bab0948553cef0acaa250b5d"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a20118c87bab0948553cef0acaa250b5d">INDEX_FIELD_NUMBER</a> = 1</td></tr>
+<tr class="separator:a20118c87bab0948553cef0acaa250b5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3135ea0a27953dfdd8cf7341943a6a80"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#a3135ea0a27953dfdd8cf7341943a6a80">OFFSET_FIELD_NUMBER</a> = 2</td></tr>
 <tr class="separator:a3135ea0a27953dfdd8cf7341943a6a80"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac707c51c2c9fb94bc9267fdd2ec4ebad"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformation.html#ac707c51c2c9fb94bc9267fdd2ec4ebad">POSITIVE_COEFF_FIELD_NUMBER</a> = 3</td></tr>
@@ -287,6 +287,30 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="aa2b83fbfc0451bb4ed9b1df6a5251ab8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa2b83fbfc0451bb4ed9b1df6a5251ab8">&#9670;&nbsp;</a></span>getIndex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">.lang.Override int getIndex </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>int32 index = 1;</code> </p>
+<dl class="section return"><dt>Returns</dt><dd>The index. </dd></dl>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformationOrBuilder.html#a59d053c950ff1e9f8a004d493f34e754">DecisionStrategyProto.AffineTransformationOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="DecisionStrategyProto_8java_source.html#l00551">551</a> of file <a class="el" href="DecisionStrategyProto_8java_source.html">DecisionStrategyProto.java</a>.</p>
+
+</div>
+</div>
 <a id="a50bf3364c41bb1e417c3db44deaacfd4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a50bf3364c41bb1e417c3db44deaacfd4">&#9670;&nbsp;</a></span>getOffset()</h2>
 
@@ -389,30 +413,6 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="DecisionStrategyProto_8java_source.html#l00476">476</a> of file <a class="el" href="DecisionStrategyProto_8java_source.html">DecisionStrategyProto.java</a>.</p>
-
-</div>
-</div>
-<a id="a7c5e68f88e98e915c7b7202555820e92"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7c5e68f88e98e915c7b7202555820e92">&#9670;&nbsp;</a></span>getVar()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">.lang.Override int getVar </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p><code>int32 var = 1;</code> </p>
-<dl class="section return"><dt>Returns</dt><dd>The var. </dd></dl>
-
-<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1AffineTransformationOrBuilder.html#a97aa89291497f991ea81e6d5bc889e45">DecisionStrategyProto.AffineTransformationOrBuilder</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="DecisionStrategyProto_8java_source.html#l00551">551</a> of file <a class="el" href="DecisionStrategyProto_8java_source.html">DecisionStrategyProto.java</a>.</p>
 
 </div>
 </div>
@@ -1074,6 +1074,30 @@ Protected Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a20118c87bab0948553cef0acaa250b5d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a20118c87bab0948553cef0acaa250b5d">&#9670;&nbsp;</a></span>INDEX_FIELD_NUMBER</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">final int INDEX_FIELD_NUMBER = 1</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="DecisionStrategyProto_8java_source.html#l00544">544</a> of file <a class="el" href="DecisionStrategyProto_8java_source.html">DecisionStrategyProto.java</a>.</p>
+
+</div>
+</div>
 <a id="a3135ea0a27953dfdd8cf7341943a6a80"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3135ea0a27953dfdd8cf7341943a6a80">&#9670;&nbsp;</a></span>OFFSET_FIELD_NUMBER</h2>
 
@@ -1119,30 +1143,6 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="DecisionStrategyProto_8java_source.html#l00566">566</a> of file <a class="el" href="DecisionStrategyProto_8java_source.html">DecisionStrategyProto.java</a>.</p>
-
-</div>
-</div>
-<a id="a0e300b76ab48c1f513df46d1ff1ba8f8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0e300b76ab48c1f513df46d1ff1ba8f8">&#9670;&nbsp;</a></span>VAR_FIELD_NUMBER</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">final int VAR_FIELD_NUMBER = 1</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="DecisionStrategyProto_8java_source.html#l00544">544</a> of file <a class="el" href="DecisionStrategyProto_8java_source.html">DecisionStrategyProto.java</a>.</p>
 
 </div>
 </div>

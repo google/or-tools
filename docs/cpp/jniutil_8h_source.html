@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -89,7 +89,7 @@ $(document).ready(function(){initNavTree('jniutil_8h_source.html',''); initResiz
 <div class="title">jniutil.h</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="jniutil_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2018 Google LLC</span></div>
+<a href="jniutil_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2021 Google LLC</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">// you may not use this file except in compliance with the License.</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">// You may obtain a copy of the License at</span></div>
@@ -135,23 +135,23 @@ $(document).ready(function(){initNavTree('jniutil_8h_source.html',''); initResiz
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;  <span class="comment">// Creates a new char array from a jbyteArray.</span></div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;  <span class="comment">// The caller must delete[] the returned array.</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="class_j_n_i_util.html#a6f5db428a454e2baf7edc4e6efad313b">   47</a></span>&#160;  <span class="keyword">static</span> <span class="keywordtype">char</span>* <a class="code" href="class_j_n_i_util.html#a6f5db428a454e2baf7edc4e6efad313b">MakeCharArray</a>(JNIEnv* env, jbyteArray <a class="code" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a>, <span class="keywordtype">int</span>* size) {</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    jsize n = env-&gt;GetArrayLength(<a class="code" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a>);</div>
+<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="class_j_n_i_util.html#a6f5db428a454e2baf7edc4e6efad313b">   47</a></span>&#160;  <span class="keyword">static</span> <span class="keywordtype">char</span>* <a class="code" href="class_j_n_i_util.html#a6f5db428a454e2baf7edc4e6efad313b">MakeCharArray</a>(JNIEnv* env, jbyteArray <a class="code" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, <span class="keywordtype">int</span>* size) {</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    jsize n = env-&gt;GetArrayLength(<a class="code" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>);</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    *size = n;</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    jbyte* jba = <span class="keyword">new</span> jbyte[n];</div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    env-&gt;GetByteArrayRegion(<a class="code" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a>, 0, n, jba);</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    env-&gt;GetByteArrayRegion(<a class="code" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, 0, n, jba);</div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="comment">// We make use of the fact that jbyte&#39;s are really just chars.</span></div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="comment">// If this changes (different VM, etc.) things will break.</span></div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(jba);</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;  }</div>
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;  <span class="comment">// Produces a jbyteArray from a char array.</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno"><a class="line" href="class_j_n_i_util.html#a2224bd53075f9bdb75729359d470e6f9">   59</a></span>&#160;  <span class="keyword">static</span> jbyteArray <a class="code" href="class_j_n_i_util.html#a2224bd53075f9bdb75729359d470e6f9">MakeJByteArray</a>(JNIEnv* env, <span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a>, <span class="keywordtype">int</span> size) {</div>
+<div class="line"><a name="l00059"></a><span class="lineno"><a class="line" href="class_j_n_i_util.html#a2224bd53075f9bdb75729359d470e6f9">   59</a></span>&#160;  <span class="keyword">static</span> jbyteArray <a class="code" href="class_j_n_i_util.html#a2224bd53075f9bdb75729359d470e6f9">MakeJByteArray</a>(JNIEnv* env, <span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>, <span class="keywordtype">int</span> size) {</div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="comment">// Create empty array object</span></div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    jbyteArray output = env-&gt;NewByteArray(size);</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="comment">// Fill it</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    env-&gt;SetByteArrayRegion(output, 0, size, <span class="keyword">reinterpret_cast&lt;</span><span class="keyword">const </span>jbyte*<span class="keyword">&gt;</span>(<a class="code" href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a>));</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    env-&gt;SetByteArrayRegion(output, 0, size, <span class="keyword">reinterpret_cast&lt;</span><span class="keyword">const </span>jbyte*<span class="keyword">&gt;</span>(<a class="code" href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a>));</div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keywordflow">return</span> output;</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;  }</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;};</div>
@@ -163,7 +163,7 @@ $(document).ready(function(){initNavTree('jniutil_8h_source.html',''); initResiz
 <div class="ttc" id="aclass_j_n_i_util_html_a3387a526bd53b5a94510ccdc035a7710"><div class="ttname"><a href="class_j_n_i_util.html#a3387a526bd53b5a94510ccdc035a7710">JNIUtil::MakeCString</a></div><div class="ttdeci">static char * MakeCString(JNIEnv *env, jstring str)</div><div class="ttdef"><b>Definition:</b> <a href="jniutil_8h_source.html#l00034">jniutil.h:34</a></div></div>
 <div class="ttc" id="aclass_j_n_i_util_html_a6f5db428a454e2baf7edc4e6efad313b"><div class="ttname"><a href="class_j_n_i_util.html#a6f5db428a454e2baf7edc4e6efad313b">JNIUtil::MakeCharArray</a></div><div class="ttdeci">static char * MakeCharArray(JNIEnv *env, jbyteArray a, int *size)</div><div class="ttdef"><b>Definition:</b> <a href="jniutil_8h_source.html#l00047">jniutil.h:47</a></div></div>
 <div class="ttc" id="aclass_j_n_i_util_html_afe22e1d61c504c8826aaa1dc2a58218b"><div class="ttname"><a href="class_j_n_i_util.html#afe22e1d61c504c8826aaa1dc2a58218b">JNIUtil::MakeJString</a></div><div class="ttdeci">static jstring MakeJString(JNIEnv *env, const char *cstr)</div><div class="ttdef"><b>Definition:</b> <a href="jniutil_8h_source.html#l00027">jniutil.h:27</a></div></div>
-<div class="ttc" id="aconstraint__solver_2table_8cc_html_af730895c6c6ef6e03caaf6251192dfd2"><div class="ttname"><a href="constraint__solver_2table_8cc.html#af730895c6c6ef6e03caaf6251192dfd2">a</a></div><div class="ttdeci">int64 a</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_2table_8cc_source.html#l00042">constraint_solver/table.cc:42</a></div></div>
+<div class="ttc" id="aconstraint__solver_2table_8cc_html_acb18315d548212835cd8ed4287e6c0b6"><div class="ttname"><a href="constraint__solver_2table_8cc.html#acb18315d548212835cd8ed4287e6c0b6">a</a></div><div class="ttdeci">int64_t a</div><div class="ttdef"><b>Definition:</b> <a href="constraint__solver_2table_8cc_source.html#l00046">constraint_solver/table.cc:46</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.8.18-->

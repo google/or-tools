@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -94,17 +94,17 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_p
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="probing_8h_source.html#l00028">28</a> of file <a class="el" href="probing_8h_source.html">probing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="probing_8h_source.html#l00029">29</a> of file <a class="el" href="probing_8h_source.html">probing.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ab10b5a52f5a6dd0a183f208f85be1503"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_prober.html#ab10b5a52f5a6dd0a183f208f85be1503">Prober</a> (<a class="el" href="classoperations__research_1_1sat_1_1_model.html">Model</a> *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
 <tr class="separator:ab10b5a52f5a6dd0a183f208f85be1503"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af36e6f5e83c6f89c23fadb4b4b551bfd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_prober.html#af36e6f5e83c6f89c23fadb4b4b551bfd">ProbeBooleanVariables</a> (double deterministic_time_limit, bool log_info=false)</td></tr>
-<tr class="separator:af36e6f5e83c6f89c23fadb4b4b551bfd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad8cfcc6f30fab9b947429ffa742adab7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_prober.html#ad8cfcc6f30fab9b947429ffa742adab7">ProbeBooleanVariables</a> (double deterministic_time_limit, absl::Span&lt; const BooleanVariable &gt; bool_vars, bool log_info=false)</td></tr>
-<tr class="separator:ad8cfcc6f30fab9b947429ffa742adab7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7d6a8a15f30eb61684dbad769f7a557f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_prober.html#a7d6a8a15f30eb61684dbad769f7a557f">ProbeOneVariable</a> (BooleanVariable <a class="el" href="constraint__solver_2table_8cc.html#a344010e26426d6a13411648d988bc9b6">b</a>)</td></tr>
+<tr class="memitem:a85633e19f7fa9ac7f6155b23ce845fa6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_prober.html#a85633e19f7fa9ac7f6155b23ce845fa6">ProbeBooleanVariables</a> (double deterministic_time_limit)</td></tr>
+<tr class="separator:a85633e19f7fa9ac7f6155b23ce845fa6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a40f6edf9f9c19c241dd7d220da9acaab"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_prober.html#a40f6edf9f9c19c241dd7d220da9acaab">ProbeBooleanVariables</a> (double deterministic_time_limit, absl::Span&lt; const BooleanVariable &gt; bool_vars)</td></tr>
+<tr class="separator:a40f6edf9f9c19c241dd7d220da9acaab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d6a8a15f30eb61684dbad769f7a557f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_prober.html#a7d6a8a15f30eb61684dbad769f7a557f">ProbeOneVariable</a> (BooleanVariable <a class="el" href="constraint__solver_2table_8cc.html#a9293e4d29cac928301645070dd307683">b</a>)</td></tr>
 <tr class="separator:a7d6a8a15f30eb61684dbad769f7a557f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
@@ -132,13 +132,33 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00032">32</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00034">34</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ad8cfcc6f30fab9b947429ffa742adab7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad8cfcc6f30fab9b947429ffa742adab7">&#9670;&nbsp;</a></span>ProbeBooleanVariables() <span class="overload">[1/2]</span></h2>
+<a id="a85633e19f7fa9ac7f6155b23ce845fa6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a85633e19f7fa9ac7f6155b23ce845fa6">&#9670;&nbsp;</a></span>ProbeBooleanVariables() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ProbeBooleanVariables </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>deterministic_time_limit</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00044">44</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
+
+</div>
+</div>
+<a id="a40f6edf9f9c19c241dd7d220da9acaab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a40f6edf9f9c19c241dd7d220da9acaab">&#9670;&nbsp;</a></span>ProbeBooleanVariables() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -153,13 +173,7 @@ Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">absl::Span&lt; const BooleanVariable &gt;&#160;</td>
-          <td class="paramname"><em>bool_vars</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>log_info</em> = <code>false</code>&#160;</td>
+          <td class="paramname"><em>bool_vars</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -169,37 +183,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00196">196</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
-
-</div>
-</div>
-<a id="af36e6f5e83c6f89c23fadb4b4b551bfd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af36e6f5e83c6f89c23fadb4b4b551bfd">&#9670;&nbsp;</a></span>ProbeBooleanVariables() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ProbeBooleanVariables </td>
-          <td>(</td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>deterministic_time_limit</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>log_info</em> = <code>false</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00041">41</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00198">198</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
 
 </div>
 </div>
@@ -219,7 +203,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00179">179</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="probing_8cc_source.html#l00181">181</a> of file <a class="el" href="probing_8cc_source.html">probing.cc</a>.</p>
 
 </div>
 </div>

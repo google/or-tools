@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.2</span>
+                <span id="sfml">Google OR-Tools 9.0</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -90,7 +90,7 @@ $(document).ready(function(){initNavTree('namespaceoperations__research.html',''
 </div><!--header-->
 <div class="contents">
 
-<p>The vehicle routing library lets one model and solve generic vehicle routing problems ranging from the Traveling Salesman Problem to more complex problems such as the Capacitated Vehicle Routing Problem with Time Windows.  
+<p>Collection of objects used to extend the <a class="el" href="classoperations__research_1_1_constraint.html" title="A constraint is the main modeling object.">Constraint</a> <a class="el" href="classoperations__research_1_1_solver.html" title="Solver Class.">Solver</a> library.  
 <a href="namespaceoperations__research.html#details">More...</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
@@ -200,7 +200,6 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This class is used to manage a pool of solutions.  <a href="classoperations__research_1_1_solution_pool.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_base_int_expr.html">BaseIntExpr</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is the base class for all expressions that are not variables.  <a href="classoperations__research_1_1_base_int_expr.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_rev_immutable_multi_map.html">RevImmutableMultiMap</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reversible Immutable MultiMap class.  <a href="classoperations__research_1_1_rev_immutable_multi_map.html#details">More...</a><br /></td></tr>
@@ -343,54 +342,6 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dimensions represent quantities accumulated at nodes along the routes.  <a href="classoperations__research_1_1_routing_dimension.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_sweep_arranger.html">SweepArranger</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Class to arrange indices by by their distance and their angles from the depot.  <a href="classoperations__research_1_1_sweep_arranger.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_vehicle_type_curator.html">VehicleTypeCurator</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper class that manages vehicles.  <a href="classoperations__research_1_1_vehicle_type_curator.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_decision_builder.html">IntVarFilteredDecisionBuilder</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classoperations__research_1_1_decision.html" title="A Decision represents a choice point in the search tree.">Decision</a> builder building a solution using heuristics with local search filters to evaluate its feasibility.  <a href="classoperations__research_1_1_int_var_filtered_decision_builder.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_int_var_filtered_heuristic.html">IntVarFilteredHeuristic</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generic filter-based heuristic applied to IntVars.  <a href="classoperations__research_1_1_int_var_filtered_heuristic.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_filtered_heuristic.html">RoutingFilteredHeuristic</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Filter-based heuristic dedicated to routing.  <a href="classoperations__research_1_1_routing_filtered_heuristic.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_cheapest_insertion_filtered_heuristic.html">CheapestInsertionFilteredHeuristic</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_global_cheapest_insertion_filtered_heuristic.html">GlobalCheapestInsertionFilteredHeuristic</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Filter-based decision builder which builds a solution by inserting nodes at their cheapest position on any route; potentially several routes can be built in parallel.  <a href="classoperations__research_1_1_global_cheapest_insertion_filtered_heuristic.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_local_cheapest_insertion_filtered_heuristic.html">LocalCheapestInsertionFilteredHeuristic</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Filter-base decision builder which builds a solution by inserting nodes at their cheapest position.  <a href="classoperations__research_1_1_local_cheapest_insertion_filtered_heuristic.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_cheapest_addition_filtered_heuristic.html">CheapestAdditionFilteredHeuristic</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Filtered-base decision builder based on the addition heuristic, extending a path from its start node with the cheapest arc.  <a href="classoperations__research_1_1_cheapest_addition_filtered_heuristic.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_evaluator_cheapest_addition_filtered_heuristic.html">EvaluatorCheapestAdditionFilteredHeuristic</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A <a class="el" href="classoperations__research_1_1_cheapest_addition_filtered_heuristic.html" title="Filtered-base decision builder based on the addition heuristic, extending a path from its start node ...">CheapestAdditionFilteredHeuristic</a> where the notion of 'cheapest arc' comes from an arc evaluator.  <a href="classoperations__research_1_1_evaluator_cheapest_addition_filtered_heuristic.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_comparator_cheapest_addition_filtered_heuristic.html">ComparatorCheapestAdditionFilteredHeuristic</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A <a class="el" href="classoperations__research_1_1_cheapest_addition_filtered_heuristic.html" title="Filtered-base decision builder based on the addition heuristic, extending a path from its start node ...">CheapestAdditionFilteredHeuristic</a> where the notion of 'cheapest arc' comes from an arc comparator.  <a href="classoperations__research_1_1_comparator_cheapest_addition_filtered_heuristic.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_savings_filtered_heuristic.html">SavingsFilteredHeuristic</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Filter-based decision builder which builds a solution by using Clarke &amp; Wright's Savings heuristic.  <a href="classoperations__research_1_1_savings_filtered_heuristic.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_sequential_savings_filtered_heuristic.html">SequentialSavingsFilteredHeuristic</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_parallel_savings_filtered_heuristic.html">ParallelSavingsFilteredHeuristic</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_christofides_filtered_heuristic.html">ChristofidesFilteredHeuristic</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Christofides addition heuristic.  <a href="classoperations__research_1_1_christofides_filtered_heuristic.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_base_path_filter.html">BasePathFilter</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generic path-based filter class.  <a href="classoperations__research_1_1_base_path_filter.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_c_p_feasibility_filter.html">CPFeasibilityFilter</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This filter accepts deltas for which the assignment satisfies the constraints of the <a class="el" href="classoperations__research_1_1_solver.html" title="Solver Class.">Solver</a>.  <a href="classoperations__research_1_1_c_p_feasibility_filter.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_routing_index_manager.html">RoutingIndexManager</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Manager for any NodeIndex &lt;-&gt; variable index conversion.  <a href="classoperations__research_1_1_routing_index_manager.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -435,7 +386,7 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Operator which inserts inactive nodes into a path and makes a pair of active nodes inactive.  <a href="classoperations__research_1_1_index_pair_swap_active_operator.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_filtered_heuristic_local_search_operator.html">FilteredHeuristicLocalSearchOperator</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Class of operators using a <a class="el" href="classoperations__research_1_1_routing_filtered_heuristic.html" title="Filter-based heuristic dedicated to routing.">RoutingFilteredHeuristic</a> to insert unperformed nodes after changes have been made to the current solution.  <a href="classoperations__research_1_1_filtered_heuristic_local_search_operator.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Class of operators using a RoutingFilteredHeuristic to insert unperformed nodes after changes have been made to the current solution.  <a href="classoperations__research_1_1_filtered_heuristic_local_search_operator.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_filtered_heuristic_path_l_n_s_operator.html">FilteredHeuristicPathLNSOperator</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">LNS-like operator based on a filtered first solution heuristic to rebuild the solution, after the destruction phase consisting of removing one route.  <a href="classoperations__research_1_1_filtered_heuristic_path_l_n_s_operator.html#details">More...</a><br /></td></tr>
@@ -467,13 +418,13 @@ Classes</h2></td></tr>
 Typedefs</h2></td></tr>
 <tr class="memitem:ad502b08bb4d69dfbaf025415310b8da8"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classoperations__research_1_1_var_local_search_operator.html">VarLocalSearchOperator</a>&lt; <a class="el" href="classoperations__research_1_1_sequence_var.html">SequenceVar</a>, std::vector&lt; int &gt;, <a class="el" href="classoperations__research_1_1_sequence_var_local_search_handler.html">SequenceVarLocalSearchHandler</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ad502b08bb4d69dfbaf025415310b8da8">SequenceVarLocalSearchOperatorTemplate</a></td></tr>
 <tr class="separator:ad502b08bb4d69dfbaf025415310b8da8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abec0698c301a7fe57265985e2d30e7c7"><td class="memItemLeft" align="right" valign="top">typedef std::function&lt; int64(int64)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#abec0698c301a7fe57265985e2d30e7c7">RoutingTransitCallback1</a></td></tr>
-<tr class="separator:abec0698c301a7fe57265985e2d30e7c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab35e9f27307e9c5273c9d77fcf30de0e"><td class="memItemLeft" align="right" valign="top">typedef std::function&lt; int64(int64, int64)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ab35e9f27307e9c5273c9d77fcf30de0e">RoutingTransitCallback2</a></td></tr>
-<tr class="separator:ab35e9f27307e9c5273c9d77fcf30de0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1a7c1221ae29f298e0879e516d086f8b"><td class="memItemLeft" align="right" valign="top">typedef std::pair&lt; std::vector&lt; int64 &gt;, std::vector&lt; int64 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a1a7c1221ae29f298e0879e516d086f8b">RoutingIndexPair</a></td></tr>
-<tr class="separator:a1a7c1221ae29f298e0879e516d086f8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aef7db0bee0a22d1791d040fd3853f3b7"><td class="memItemLeft" align="right" valign="top">typedef std::vector&lt; <a class="el" href="namespaceoperations__research.html#a1a7c1221ae29f298e0879e516d086f8b">RoutingIndexPair</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aef7db0bee0a22d1791d040fd3853f3b7">RoutingIndexPairs</a></td></tr>
+<tr class="memitem:aae02b84a58c3008fb747c0f6917bfe6c"><td class="memItemLeft" align="right" valign="top">typedef std::function&lt; int64_t(int64_t)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aae02b84a58c3008fb747c0f6917bfe6c">RoutingTransitCallback1</a></td></tr>
+<tr class="separator:aae02b84a58c3008fb747c0f6917bfe6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26868b9d744edcd8d59145e068678885"><td class="memItemLeft" align="right" valign="top">typedef std::function&lt; int64_t(int64_t, int64_t)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a26868b9d744edcd8d59145e068678885">RoutingTransitCallback2</a></td></tr>
+<tr class="separator:a26868b9d744edcd8d59145e068678885"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a630fe793e232b361cd9fd99f18599df1"><td class="memItemLeft" align="right" valign="top">typedef std::pair&lt; std::vector&lt; int64_t &gt;, std::vector&lt; int64_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a630fe793e232b361cd9fd99f18599df1">RoutingIndexPair</a></td></tr>
+<tr class="separator:a630fe793e232b361cd9fd99f18599df1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef7db0bee0a22d1791d040fd3853f3b7"><td class="memItemLeft" align="right" valign="top">typedef std::vector&lt; <a class="el" href="namespaceoperations__research.html#a630fe793e232b361cd9fd99f18599df1">RoutingIndexPair</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aef7db0bee0a22d1791d040fd3853f3b7">RoutingIndexPairs</a></td></tr>
 <tr class="separator:aef7db0bee0a22d1791d040fd3853f3b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
@@ -559,16 +510,16 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:af46f97d04f28e1d1c8a99d02f000d212"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#af46f97d04f28e1d1c8a99d02f000d212">CpRandomSeed</a> ()</td></tr>
-<tr class="separator:af46f97d04f28e1d1c8a99d02f000d212"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6daa2481a6bbd7b307647006a8752630"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a6daa2481a6bbd7b307647006a8752630">CpRandomSeed</a> ()</td></tr>
+<tr class="separator:a6daa2481a6bbd7b307647006a8752630"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a316abccdfa41512564d84365ea8f0ead"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a316abccdfa41512564d84365ea8f0ead">operator&lt;&lt;</a> (std::ostream &amp;out, const <a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *const s)</td></tr>
 <tr class="separator:a316abccdfa41512564d84365ea8f0ead"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a009f247167f32509baf749083e4bc984"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a009f247167f32509baf749083e4bc984">Zero</a> ()</td></tr>
-<tr class="memdesc:a009f247167f32509baf749083e4bc984"><td class="mdescLeft">&#160;</td><td class="mdescRight">NOLINT.  <a href="namespaceoperations__research.html#a009f247167f32509baf749083e4bc984">More...</a><br /></td></tr>
-<tr class="separator:a009f247167f32509baf749083e4bc984"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa96bb5a28dd9c1ccc864b1587e8e1a98"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aa96bb5a28dd9c1ccc864b1587e8e1a98">One</a> ()</td></tr>
-<tr class="memdesc:aa96bb5a28dd9c1ccc864b1587e8e1a98"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method returns 1.  <a href="namespaceoperations__research.html#aa96bb5a28dd9c1ccc864b1587e8e1a98">More...</a><br /></td></tr>
-<tr class="separator:aa96bb5a28dd9c1ccc864b1587e8e1a98"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5a9881f8a07b166ef2cbde572cea27b6"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a5a9881f8a07b166ef2cbde572cea27b6">Zero</a> ()</td></tr>
+<tr class="memdesc:a5a9881f8a07b166ef2cbde572cea27b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">NOLINT.  <a href="namespaceoperations__research.html#a5a9881f8a07b166ef2cbde572cea27b6">More...</a><br /></td></tr>
+<tr class="separator:a5a9881f8a07b166ef2cbde572cea27b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e48359348ad94d97e6c44ffd52b33e3"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a9e48359348ad94d97e6c44ffd52b33e3">One</a> ()</td></tr>
+<tr class="memdesc:a9e48359348ad94d97e6c44ffd52b33e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method returns 1.  <a href="namespaceoperations__research.html#a9e48359348ad94d97e6c44ffd52b33e3">More...</a><br /></td></tr>
+<tr class="separator:a9e48359348ad94d97e6c44ffd52b33e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a991f7a823d83b455d6b1a45141cb9ce9"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a991f7a823d83b455d6b1a45141cb9ce9">operator&lt;&lt;</a> (std::ostream &amp;out, const <a class="el" href="classoperations__research_1_1_base_object.html">BaseObject</a> *o)</td></tr>
 <tr class="separator:a991f7a823d83b455d6b1a45141cb9ce9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4f44b10aa7fc7b6e85b72e7f0c96cc1f"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a4f44b10aa7fc7b6e85b72e7f0c96cc1f">operator&lt;&lt;</a> (std::ostream &amp;out, const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> &amp;assignment)</td></tr>
@@ -576,26 +527,26 @@ Functions</h2></td></tr>
 <tr class="memitem:aea2bf322fab4e2319a23ad22acf8ccf8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aea2bf322fab4e2319a23ad22acf8ccf8">SetAssignmentFromAssignment</a> (<a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *target_assignment, const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;target_vars, const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *source_assignment, const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;source_vars)</td></tr>
 <tr class="memdesc:aea2bf322fab4e2319a23ad22acf8ccf8"><td class="mdescLeft">&#160;</td><td class="mdescRight">NOLINT.  <a href="namespaceoperations__research.html#aea2bf322fab4e2319a23ad22acf8ccf8">More...</a><br /></td></tr>
 <tr class="separator:aea2bf322fab4e2319a23ad22acf8ccf8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a64cf3e1336ec61275bdd2ae853d38406"><td class="memItemLeft" align="right" valign="top">uint64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a64cf3e1336ec61275bdd2ae853d38406">Hash1</a> (uint64 value)</td></tr>
-<tr class="memdesc:a64cf3e1336ec61275bdd2ae853d38406"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hash functions.  <a href="namespaceoperations__research.html#a64cf3e1336ec61275bdd2ae853d38406">More...</a><br /></td></tr>
-<tr class="separator:a64cf3e1336ec61275bdd2ae853d38406"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab89995e46facfc1db291ce75658dd0a5"><td class="memItemLeft" align="right" valign="top">uint64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ab89995e46facfc1db291ce75658dd0a5">Hash1</a> (uint32 value)</td></tr>
-<tr class="separator:ab89995e46facfc1db291ce75658dd0a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acfc54730764156f1fb717e99b71ba5d4"><td class="memItemLeft" align="right" valign="top">uint64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#acfc54730764156f1fb717e99b71ba5d4">Hash1</a> (int64 value)</td></tr>
-<tr class="separator:acfc54730764156f1fb717e99b71ba5d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a65a9c1ccf298ae110decc3b9d285dc16"><td class="memItemLeft" align="right" valign="top">uint64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a65a9c1ccf298ae110decc3b9d285dc16">Hash1</a> (int value)</td></tr>
-<tr class="separator:a65a9c1ccf298ae110decc3b9d285dc16"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3ca754fad158b92d7f678b5d354d8927"><td class="memItemLeft" align="right" valign="top">uint64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a3ca754fad158b92d7f678b5d354d8927">Hash1</a> (void *const ptr)</td></tr>
-<tr class="separator:a3ca754fad158b92d7f678b5d354d8927"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aec42cb0a7c3079eb8f0406914077d633"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
-<tr class="memitem:aec42cb0a7c3079eb8f0406914077d633"><td class="memTemplItemLeft" align="right" valign="top">uint64&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aec42cb0a7c3079eb8f0406914077d633">Hash1</a> (const std::vector&lt; T * &gt; &amp;ptrs)</td></tr>
-<tr class="separator:aec42cb0a7c3079eb8f0406914077d633"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac2ba31780fce352d4bba600e6e8eacad"><td class="memItemLeft" align="right" valign="top">uint64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ac2ba31780fce352d4bba600e6e8eacad">Hash1</a> (const std::vector&lt; int64 &gt; &amp;ptrs)</td></tr>
-<tr class="separator:ac2ba31780fce352d4bba600e6e8eacad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a85ea0ef5b46465c3793333ce9821f15f"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
-<tr class="memitem:a85ea0ef5b46465c3793333ce9821f15f"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_local_search_operator.html">LocalSearchOperator</a> *&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a85ea0ef5b46465c3793333ce9821f15f">MakeLocalSearchOperator</a> (<a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *solver, const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;vars, const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;secondary_vars, std::function&lt; int(int64)&gt; start_empty_path_class)</td></tr>
-<tr class="memdesc:a85ea0ef5b46465c3793333ce9821f15f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Operator Factories.  <a href="namespaceoperations__research.html#a85ea0ef5b46465c3793333ce9821f15f">More...</a><br /></td></tr>
-<tr class="separator:a85ea0ef5b46465c3793333ce9821f15f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee1401375b23909949cce272a3b787db"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aee1401375b23909949cce272a3b787db">Hash1</a> (uint64_t value)</td></tr>
+<tr class="memdesc:aee1401375b23909949cce272a3b787db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hash functions.  <a href="namespaceoperations__research.html#aee1401375b23909949cce272a3b787db">More...</a><br /></td></tr>
+<tr class="separator:aee1401375b23909949cce272a3b787db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c150546a98dce59439f838f68493d84"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a5c150546a98dce59439f838f68493d84">Hash1</a> (uint32_t value)</td></tr>
+<tr class="separator:a5c150546a98dce59439f838f68493d84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e95e16a711ae93395f3735e07708708"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a8e95e16a711ae93395f3735e07708708">Hash1</a> (int64_t value)</td></tr>
+<tr class="separator:a8e95e16a711ae93395f3735e07708708"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a53a6358ea0e13e600820df98156f132d"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a53a6358ea0e13e600820df98156f132d">Hash1</a> (int value)</td></tr>
+<tr class="separator:a53a6358ea0e13e600820df98156f132d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24d85d1e77f31f346dba6bdc02067473"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a24d85d1e77f31f346dba6bdc02067473">Hash1</a> (void *const ptr)</td></tr>
+<tr class="separator:a24d85d1e77f31f346dba6bdc02067473"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a14927dac339bd5be7348433e5ae46551"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
+<tr class="memitem:a14927dac339bd5be7348433e5ae46551"><td class="memTemplItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a14927dac339bd5be7348433e5ae46551">Hash1</a> (const std::vector&lt; T * &gt; &amp;ptrs)</td></tr>
+<tr class="separator:a14927dac339bd5be7348433e5ae46551"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a597f70b9007402fadc265ccb27687966"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a597f70b9007402fadc265ccb27687966">Hash1</a> (const std::vector&lt; int64_t &gt; &amp;ptrs)</td></tr>
+<tr class="separator:a597f70b9007402fadc265ccb27687966"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a874c7eecced7908103138cfa5099c981"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
+<tr class="memitem:a874c7eecced7908103138cfa5099c981"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_local_search_operator.html">LocalSearchOperator</a> *&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a874c7eecced7908103138cfa5099c981">MakeLocalSearchOperator</a> (<a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *solver, const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;vars, const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;secondary_vars, std::function&lt; int(int64_t)&gt; start_empty_path_class)</td></tr>
+<tr class="memdesc:a874c7eecced7908103138cfa5099c981"><td class="mdescLeft">&#160;</td><td class="mdescRight">Operator Factories.  <a href="namespaceoperations__research.html#a874c7eecced7908103138cfa5099c981">More...</a><br /></td></tr>
+<tr class="separator:a874c7eecced7908103138cfa5099c981"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a12527c82ffc8b31c5d8dc836c366d624"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
 <tr class="memitem:a12527c82ffc8b31c5d8dc836c366d624"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a12527c82ffc8b31c5d8dc836c366d624">IsArrayConstant</a> (const std::vector&lt; T &gt; &amp;values, const T &amp;value)</td></tr>
 <tr class="separator:a12527c82ffc8b31c5d8dc836c366d624"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -643,65 +594,41 @@ Functions</h2></td></tr>
 <tr class="memitem:a54470bffc3ea32cc37d0222e5dbb62a6"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a54470bffc3ea32cc37d0222e5dbb62a6">AreAllBoundOrNull</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;vars, const std::vector&lt; T &gt; &amp;values)</td></tr>
 <tr class="memdesc:a54470bffc3ea32cc37d0222e5dbb62a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if all the variables are assigned to a single value, or if their corresponding value is null.  <a href="namespaceoperations__research.html#a54470bffc3ea32cc37d0222e5dbb62a6">More...</a><br /></td></tr>
 <tr class="separator:a54470bffc3ea32cc37d0222e5dbb62a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7028ce8b481be8cb6fca7a6925d41aa7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a7028ce8b481be8cb6fca7a6925d41aa7">AreAllBoundTo</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;vars, int64 value)</td></tr>
-<tr class="memdesc:a7028ce8b481be8cb6fca7a6925d41aa7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if all variables are assigned to 'value'.  <a href="namespaceoperations__research.html#a7028ce8b481be8cb6fca7a6925d41aa7">More...</a><br /></td></tr>
-<tr class="separator:a7028ce8b481be8cb6fca7a6925d41aa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abc42d1bcfe023d3ac6f59471b75d853c"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#abc42d1bcfe023d3ac6f59471b75d853c">MaxVarArray</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;vars)</td></tr>
-<tr class="separator:abc42d1bcfe023d3ac6f59471b75d853c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5c1932027ef8bc1689d725a1c597867b"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a5c1932027ef8bc1689d725a1c597867b">MinVarArray</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;vars)</td></tr>
-<tr class="separator:a5c1932027ef8bc1689d725a1c597867b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6662a100d8715747870beb9721bb304b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a6662a100d8715747870beb9721bb304b">FillValues</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;vars, std::vector&lt; int64 &gt; *const values)</td></tr>
-<tr class="separator:a6662a100d8715747870beb9721bb304b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a60dabfa452b4264887ef76c75edf3765"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a60dabfa452b4264887ef76c75edf3765">PosIntDivUp</a> (int64 e, int64 v)</td></tr>
-<tr class="separator:a60dabfa452b4264887ef76c75edf3765"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a942ba2898a44303790c91e761b8f4630"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a942ba2898a44303790c91e761b8f4630">PosIntDivDown</a> (int64 e, int64 v)</td></tr>
-<tr class="separator:a942ba2898a44303790c91e761b8f4630"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad4e1b406f0e56c83283747b038df88a"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int64 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aad4e1b406f0e56c83283747b038df88a">ToInt64Vector</a> (const std::vector&lt; int &gt; &amp;input)</td></tr>
-<tr class="separator:aad4e1b406f0e56c83283747b038df88a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78ff06a9b302c6c96d8d917da235b749"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a78ff06a9b302c6c96d8d917da235b749">AreAllBoundTo</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;vars, int64_t value)</td></tr>
+<tr class="memdesc:a78ff06a9b302c6c96d8d917da235b749"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if all variables are assigned to 'value'.  <a href="namespaceoperations__research.html#a78ff06a9b302c6c96d8d917da235b749">More...</a><br /></td></tr>
+<tr class="separator:a78ff06a9b302c6c96d8d917da235b749"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a587a6a73cbcb4e4a4c7d3b596fa407aa"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a587a6a73cbcb4e4a4c7d3b596fa407aa">MaxVarArray</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;vars)</td></tr>
+<tr class="separator:a587a6a73cbcb4e4a4c7d3b596fa407aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e8f645f06f9749b562b6625cd822daa"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a8e8f645f06f9749b562b6625cd822daa">MinVarArray</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;vars)</td></tr>
+<tr class="separator:a8e8f645f06f9749b562b6625cd822daa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a79edaa5bfddfcd382d36a2ae25df798c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a79edaa5bfddfcd382d36a2ae25df798c">FillValues</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;vars, std::vector&lt; int64_t &gt; *const values)</td></tr>
+<tr class="separator:a79edaa5bfddfcd382d36a2ae25df798c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb0903025d265c67199f5f09cee57ed0"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#afb0903025d265c67199f5f09cee57ed0">PosIntDivUp</a> (int64_t e, int64_t v)</td></tr>
+<tr class="separator:afb0903025d265c67199f5f09cee57ed0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade1945fe75ec08245775fc4df20153d6"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ade1945fe75ec08245775fc4df20153d6">PosIntDivDown</a> (int64_t e, int64_t v)</td></tr>
+<tr class="separator:ade1945fe75ec08245775fc4df20153d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52b7945de2f8abdbd44efecab6899245"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a52b7945de2f8abdbd44efecab6899245">ToInt64Vector</a> (const std::vector&lt; int &gt; &amp;input)</td></tr>
+<tr class="separator:a52b7945de2f8abdbd44efecab6899245"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae67dc356130e9a966298d2bed4835d53"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_local_search_filter.html">LocalSearchFilter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ae67dc356130e9a966298d2bed4835d53">MakePathStateFilter</a> (<a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *solver, std::unique_ptr&lt; <a class="el" href="classoperations__research_1_1_path_state.html">PathState</a> &gt; path_state, const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;nexts)</td></tr>
 <tr class="separator:ae67dc356130e9a966298d2bed4835d53"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a85232ec63b614f08519af96d5963059b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_local_search_filter.html">LocalSearchFilter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a85232ec63b614f08519af96d5963059b">MakeUnaryDimensionFilter</a> (<a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *solver, std::unique_ptr&lt; <a class="el" href="classoperations__research_1_1_unary_dimension_checker.html">UnaryDimensionChecker</a> &gt; checker)</td></tr>
 <tr class="separator:a85232ec63b614f08519af96d5963059b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9fe9064451ca1dd829b5c45cac69c389"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a9fe9064451ca1dd829b5c45cac69c389">AppendTasksFromPath</a> (const std::vector&lt; int64 &gt; &amp;path, const <a class="el" href="structoperations__research_1_1_travel_bounds.html">TravelBounds</a> &amp;travel_bounds, const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> &amp;dimension, <a class="el" href="structoperations__research_1_1_disjunctive_propagator_1_1_tasks.html">DisjunctivePropagator::Tasks</a> *tasks)</td></tr>
-<tr class="separator:a9fe9064451ca1dd829b5c45cac69c389"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa24417adbd90d64820e9b7e274652934"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aa24417adbd90d64820e9b7e274652934">AppendTasksFromPath</a> (const std::vector&lt; int64_t &gt; &amp;path, const <a class="el" href="structoperations__research_1_1_travel_bounds.html">TravelBounds</a> &amp;travel_bounds, const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> &amp;dimension, <a class="el" href="structoperations__research_1_1_disjunctive_propagator_1_1_tasks.html">DisjunctivePropagator::Tasks</a> *tasks)</td></tr>
+<tr class="separator:aa24417adbd90d64820e9b7e274652934"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aec575fd72a48b07ceca957691d785d57"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aec575fd72a48b07ceca957691d785d57">AppendTasksFromIntervals</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1_interval_var.html">IntervalVar</a> * &gt; &amp;intervals, <a class="el" href="structoperations__research_1_1_disjunctive_propagator_1_1_tasks.html">DisjunctivePropagator::Tasks</a> *tasks)</td></tr>
 <tr class="separator:aec575fd72a48b07ceca957691d785d57"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4f6a1b9fc737ba25fee7bf42d6635182"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a4f6a1b9fc737ba25fee7bf42d6635182">FillPathEvaluation</a> (const std::vector&lt; int64 &gt; &amp;path, const <a class="el" href="classoperations__research_1_1_routing_model.html#a5fa8aee5b0c67072dbbb03f1899ec60a">RoutingModel::TransitCallback2</a> &amp;evaluator, std::vector&lt; int64 &gt; *values)</td></tr>
-<tr class="separator:a4f6a1b9fc737ba25fee7bf42d6635182"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6f501c0f1d11c53ce54282ee650d79dd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a6f501c0f1d11c53ce54282ee650d79dd">FillTravelBoundsOfVehicle</a> (int vehicle, const std::vector&lt; int64 &gt; &amp;path, const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> &amp;dimension, <a class="el" href="structoperations__research_1_1_travel_bounds.html">TravelBounds</a> *travel_bounds)</td></tr>
-<tr class="separator:a6f501c0f1d11c53ce54282ee650d79dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4e907b3668a07c9fa3f62d938f6cb855"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_decision_builder.html">DecisionBuilder</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a4e907b3668a07c9fa3f62d938f6cb855">MakeSetValuesFromTargets</a> (<a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *solver, std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; variables, std::vector&lt; int64 &gt; targets)</td></tr>
-<tr class="memdesc:a4e907b3668a07c9fa3f62d938f6cb855"><td class="mdescLeft">&#160;</td><td class="mdescRight">A decision builder which tries to assign values to variables as close as possible to target values first.  <a href="namespaceoperations__research.html#a4e907b3668a07c9fa3f62d938f6cb855">More...</a><br /></td></tr>
-<tr class="separator:a4e907b3668a07c9fa3f62d938f6cb855"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab0da8bffc5e8eafc798d8b3b1750f05b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ab0da8bffc5e8eafc798d8b3b1750f05b">FillPathEvaluation</a> (const std::vector&lt; int64_t &gt; &amp;path, const <a class="el" href="classoperations__research_1_1_routing_model.html#a5fa8aee5b0c67072dbbb03f1899ec60a">RoutingModel::TransitCallback2</a> &amp;evaluator, std::vector&lt; int64_t &gt; *values)</td></tr>
+<tr class="separator:ab0da8bffc5e8eafc798d8b3b1750f05b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3923814cbd98268f7c8b9eb9ad16bc17"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a3923814cbd98268f7c8b9eb9ad16bc17">FillTravelBoundsOfVehicle</a> (int vehicle, const std::vector&lt; int64_t &gt; &amp;path, const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> &amp;dimension, <a class="el" href="structoperations__research_1_1_travel_bounds.html">TravelBounds</a> *travel_bounds)</td></tr>
+<tr class="separator:a3923814cbd98268f7c8b9eb9ad16bc17"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a63bae1bafe417f7301057965620783e9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_decision_builder.html">DecisionBuilder</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a63bae1bafe417f7301057965620783e9">MakeSetValuesFromTargets</a> (<a class="el" href="classoperations__research_1_1_solver.html">Solver</a> *solver, std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; variables, std::vector&lt; int64_t &gt; targets)</td></tr>
+<tr class="memdesc:a63bae1bafe417f7301057965620783e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">A decision builder which tries to assign values to variables as close as possible to target values first.  <a href="namespaceoperations__research.html#a63bae1bafe417f7301057965620783e9">More...</a><br /></td></tr>
+<tr class="separator:a63bae1bafe417f7301057965620783e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa17cca151690da44e948d7fbe07abca5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aa17cca151690da44e948d7fbe07abca5">SolveModelWithSat</a> (const <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> &amp;model, const RoutingSearchParameters &amp;search_parameters, const <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *initial_solution, <a class="el" href="classoperations__research_1_1_assignment.html">Assignment</a> *solution)</td></tr>
 <tr class="memdesc:aa17cca151690da44e948d7fbe07abca5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attempts to solve the model using the cp-sat solver.  <a href="namespaceoperations__research.html#aa17cca151690da44e948d7fbe07abca5">More...</a><br /></td></tr>
 <tr class="separator:aa17cca151690da44e948d7fbe07abca5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa07240e0782c167ad1bd573cf70da3f5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aa07240e0782c167ad1bd573cf70da3f5">MakeMaxActiveVehiclesFilter</a> (const <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> &amp;routing_model)</td></tr>
-<tr class="separator:aa07240e0782c167ad1bd573cf70da3f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae3012c6b24c5be29fe921cb17f9d1d60"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ae3012c6b24c5be29fe921cb17f9d1d60">MakeNodeDisjunctionFilter</a> (const <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> &amp;routing_model)</td></tr>
-<tr class="separator:ae3012c6b24c5be29fe921cb17f9d1d60"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab6379327d3431a9fe8f7434651eece59"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ab6379327d3431a9fe8f7434651eece59">MakeVehicleAmortizedCostFilter</a> (const <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> &amp;routing_model)</td></tr>
-<tr class="separator:ab6379327d3431a9fe8f7434651eece59"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3de43a015d4ee3ce53eb030e1d7232de"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a3de43a015d4ee3ce53eb030e1d7232de">MakeTypeRegulationsFilter</a> (const <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> &amp;routing_model)</td></tr>
-<tr class="separator:a3de43a015d4ee3ce53eb030e1d7232de"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abfa47a7ce83aebfb2bba4215bfb04282"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#abfa47a7ce83aebfb2bba4215bfb04282">AppendDimensionCumulFilters</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> * &gt; &amp;dimensions, const RoutingSearchParameters &amp;parameters, bool filter_objective_cost, std::vector&lt; <a class="el" href="structoperations__research_1_1_local_search_filter_manager_1_1_filter_event.html">LocalSearchFilterManager::FilterEvent</a> &gt; *filters)</td></tr>
-<tr class="separator:abfa47a7ce83aebfb2bba4215bfb04282"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2de52d6625b60cdc32d493e175cc7bff"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a2de52d6625b60cdc32d493e175cc7bff">AppendLightWeightDimensionFilters</a> (const <a class="el" href="classoperations__research_1_1_path_state.html">PathState</a> *path_state, const std::vector&lt; <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> * &gt; &amp;dimensions, std::vector&lt; <a class="el" href="structoperations__research_1_1_local_search_filter_manager_1_1_filter_event.html">LocalSearchFilterManager::FilterEvent</a> &gt; *filters)</td></tr>
-<tr class="separator:a2de52d6625b60cdc32d493e175cc7bff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a50f814689e39c6a1261f38f347466257"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a50f814689e39c6a1261f38f347466257">MakePathCumulFilter</a> (const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> &amp;dimension, const RoutingSearchParameters &amp;parameters, bool propagate_own_objective_value, bool filter_objective_cost, bool can_use_lp=true)</td></tr>
-<tr class="separator:a50f814689e39c6a1261f38f347466257"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6956143fbdacf5edd7e4372394c29e2c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a6956143fbdacf5edd7e4372394c29e2c">MakeCumulBoundsPropagatorFilter</a> (const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> &amp;dimension)</td></tr>
-<tr class="separator:a6956143fbdacf5edd7e4372394c29e2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad96516f011b5faf2c5587c797870ca9d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ad96516f011b5faf2c5587c797870ca9d">MakeGlobalLPCumulFilter</a> (<a class="el" href="classoperations__research_1_1_global_dimension_cumul_optimizer.html">GlobalDimensionCumulOptimizer</a> *optimizer, bool filter_objective_cost)</td></tr>
-<tr class="separator:ad96516f011b5faf2c5587c797870ca9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae3ffb53eac6214b414e926238012a2a0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ae3ffb53eac6214b414e926238012a2a0">MakePickupDeliveryFilter</a> (const <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> &amp;routing_model, const <a class="el" href="classoperations__research_1_1_routing_model.html#a76874cd778ea1b9220673e019f9e7abe">RoutingModel::IndexPairs</a> &amp;pairs, const std::vector&lt; <a class="el" href="classoperations__research_1_1_routing_model.html#aa5cff2ee7fbe3a9c5c701bfba7460c83">RoutingModel::PickupAndDeliveryPolicy</a> &gt; &amp;vehicle_policies)</td></tr>
-<tr class="separator:ae3ffb53eac6214b414e926238012a2a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a67f4b4b64a6c11717020eaa963b98c51"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a67f4b4b64a6c11717020eaa963b98c51">MakeVehicleVarFilter</a> (const <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> &amp;routing_model)</td></tr>
-<tr class="separator:a67f4b4b64a6c11717020eaa963b98c51"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae9a33af72abb5c2332a1f7ca71ab8215"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ae9a33af72abb5c2332a1f7ca71ab8215">MakeVehicleBreaksFilter</a> (const <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> &amp;routing_model, const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> &amp;dimension)</td></tr>
 <tr class="separator:ae9a33af72abb5c2332a1f7ca71ab8215"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a71c94647d1b8776e1232b4dedf35b8fb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a71c94647d1b8776e1232b4dedf35b8fb">MakeCPFeasibilityFilter</a> (<a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> *routing_model)</td></tr>
-<tr class="separator:a71c94647d1b8776e1232b4dedf35b8fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae39a6c4d8ba890ec5150ea91a7aad643"><td class="memItemLeft" align="right" valign="top">RoutingModelParameters&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ae39a6c4d8ba890ec5150ea91a7aad643">BuildModelParametersFromFlags</a> ()</td></tr>
 <tr class="memdesc:ae39a6c4d8ba890ec5150ea91a7aad643"><td class="mdescLeft">&#160;</td><td class="mdescRight">Builds routing search parameters from flags.  <a href="namespaceoperations__research.html#ae39a6c4d8ba890ec5150ea91a7aad643">More...</a><br /></td></tr>
 <tr class="separator:ae39a6c4d8ba890ec5150ea91a7aad643"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -851,7 +778,25 @@ Variables</h2></td></tr>
 <tr class="separator:a49ef7e29cdcbfd555f27836e2b93dc0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>The vehicle routing library lets one model and solve generic vehicle routing problems ranging from the Traveling Salesman Problem to more complex problems such as the Capacitated Vehicle Routing Problem with Time Windows. </p>
+<div class="textblock"><p>Collection of objects used to extend the <a class="el" href="classoperations__research_1_1_constraint.html" title="A constraint is the main modeling object.">Constraint</a> <a class="el" href="classoperations__research_1_1_solver.html" title="Solver Class.">Solver</a> library. </p>
+<p>The vehicle routing library lets one model and solve generic vehicle routing problems ranging from the Traveling Salesman Problem to more complex problems such as the Capacitated Vehicle Routing Problem with Time Windows.</p>
+<p>This file contains a set of objects that simplifies writing extensions of the library.</p>
+<p>The main objects that define extensions are:</p><ul>
+<li><a class="el" href="classoperations__research_1_1_base_int_expr.html">BaseIntExpr</a>, the base class of all expressions that are not variables.</li>
+<li><a class="el" href="classoperations__research_1_1_simple_rev_f_i_f_o.html" title="This class represent a reversible FIFO structure.">SimpleRevFIFO</a>, a reversible FIFO list with templatized values. A reversible data structure is a data structure that reverts its modifications when the search is going up in the search tree, usually after a failure occurs.</li>
+<li><a class="el" href="classoperations__research_1_1_rev_immutable_multi_map.html" title="Reversible Immutable MultiMap class.">RevImmutableMultiMap</a>, a reversible immutable multimap.</li>
+<li>MakeConstraintDemon&lt;n&gt; and MakeDelayedConstraintDemon&lt;n&gt; to wrap methods of a constraint as a demon.</li>
+<li><a class="el" href="classoperations__research_1_1_rev_switch.html" title="A reversible switch that can switch once from false to true.">RevSwitch</a>, a reversible flip-once switch.</li>
+<li><a class="el" href="classoperations__research_1_1_small_rev_bit_set.html" title="This class represents a small reversible bitset (size &lt;= 64).">SmallRevBitSet</a>, <a class="el" href="classoperations__research_1_1_rev_bit_set.html" title="This class represents a reversible bitset.">RevBitSet</a>, and <a class="el" href="classoperations__research_1_1_rev_bit_matrix.html" title="Matrix version of the RevBitSet class.">RevBitMatrix</a>: reversible 1D or 2D bitsets.</li>
+<li><a class="el" href="classoperations__research_1_1_local_search_operator.html" title="The base class for all local search operators.">LocalSearchOperator</a>, <a class="el" href="classoperations__research_1_1_int_var_local_search_operator.html" title="Specialization of LocalSearchOperator built from an array of IntVars which specifies the scope of the...">IntVarLocalSearchOperator</a>, <a class="el" href="classoperations__research_1_1_change_value.html" title="Defines operators which change the value of variables; each neighbor corresponds to one modified vari...">ChangeValue</a> and <a class="el" href="classoperations__research_1_1_path_operator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li...">PathOperator</a>, to create new local search operators.</li>
+<li><a class="el" href="classoperations__research_1_1_local_search_filter.html" title="Local Search Filters are used for fast neighbor pruning.">LocalSearchFilter</a> and <a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a>, to create new local search filters.</li>
+<li><a class="el" href="classoperations__research_1_1_base_lns.html" title="This is the base class for building an Lns operator.">BaseLns</a>, to write Large Neighborhood Search operators.</li>
+<li><a class="el" href="classoperations__research_1_1_symmetry_breaker.html" title="A symmetry breaker is an object that will visit a decision and create the &#39;symmetrical&#39; decision in r...">SymmetryBreaker</a>, to describe model symmetries that will be broken during search using the 'Symmetry Breaking During Search' framework see Gent, I. P., Harvey, W., &amp; Kelsey, T. (2002). Groups and Constraints: Symmetry Breaking During Search. Principles and Practice of <a class="el" href="classoperations__research_1_1_constraint.html" title="A constraint is the main modeling object.">Constraint</a> Programming CP2002 (Vol. 2470, pp. 415-430). Springer. Retrieved from <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.11.1442">http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.11.1442</a>.</li>
+</ul>
+<p>Then, there are some internal classes that are used throughout the solver and exposed in this file:</p><ul>
+<li><a class="el" href="classoperations__research_1_1_search_log.html" title="The base class of all search logs that periodically outputs information when the search is running.">SearchLog</a>, the root class of all periodic outputs during search.</li>
+<li><a class="el" href="classoperations__research_1_1_model_cache.html" title="Implements a complete cache for model elements: expressions and constraints.">ModelCache</a>, A caching layer to avoid creating twice the same object.</li>
+</ul>
 <p>The objective of a vehicle routing problem is to build routes covering a set of nodes minimizing the overall cost of the routes (usually proportional to the sum of the lengths of each segment of the routes) while respecting some problem-specific constraints (such as the length of a route). A route is equivalent to a path connecting nodes, starting/ending at specific starting/ending nodes.</p>
 <p>The term "vehicle routing" is historical and the category of problems solved is not limited to the routing of vehicles: any problem involving finding routes visiting a given number of nodes optimally falls under this category of problems, such as finding the optimal sequence in a playlist. The literature around vehicle routing problems is extremely dense but one can find some basic introductions in the following links:</p><ul>
 <li><a href="http://en.wikipedia.org/wiki/Travelling_salesman_problem">http://en.wikipedia.org/wiki/Travelling_salesman_problem</a></li>
@@ -897,36 +842,36 @@ Variables</h2></td></tr>
 <p>Code sample: Here is a simple example solving a traveling salesman problem given a cost function callback (returns the cost of a route segment):</p>
 <ul>
 <li><p class="startli">Define a custom distance/cost function from an index to another; in this example just returns the sum of the indices:</p>
-<p class="startli">int64 MyDistance(int64 from, int64 to) { return from + to; }</p>
+<p class="startli">int64_t MyDistance(int64_t from, int64_t to) { return from + to; }</p>
 </li>
 <li><p class="startli">Create a routing model for a given problem size (int number of nodes) and number of routes (here, 1):</p>
 <p class="startli"><a class="el" href="classoperations__research_1_1_routing_index_manager.html" title="Manager for any NodeIndex &lt;-&gt; variable index conversion.">RoutingIndexManager</a> manager(...number of nodes..., 1); <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> routing(manager);</p>
 </li>
-<li><p class="startli">Set the cost function by registering an std::function&lt;int64(int64, int64)&gt; in the model and passing its index as the vehicle cost.</p>
+<li><p class="startli">Set the cost function by registering an std::function&lt;int64_t(int64_t, int64_t)&gt; in the model and passing its index as the vehicle cost.</p>
 <p class="startli">const int cost = routing.RegisterTransitCallback(MyDistance); routing.SetArcCostEvaluatorOfAllVehicles(cost);</p>
 </li>
 <li><p class="startli">Find a solution using Solve(), returns a solution if any (owned by routing):</p>
 <p class="startli">const Assignment* solution = routing.Solve(); CHECK(solution != nullptr);</p>
 </li>
 <li><p class="startli">Inspect the solution cost and route (only one route here):</p>
-<p class="startli">LOG(INFO) &lt;&lt; "Cost " &lt;&lt; solution-&gt;ObjectiveValue(); const int route_number = 0; for (int64 node = routing.Start(route_number); !routing.IsEnd(node); node = solution-&gt;Value(routing.NextVar(node))) { LOG(INFO) &lt;&lt; manager.IndexToNode(node); }</p>
+<p class="startli">LOG(INFO) &lt;&lt; "Cost " &lt;&lt; solution-&gt;ObjectiveValue(); const int route_number = 0; for (int64_t node = routing.Start(route_number); !routing.IsEnd(node); node = solution-&gt;Value(routing.NextVar(node))) { LOG(INFO) &lt;&lt; manager.IndexToNode(node); }</p>
 </li>
 </ul>
 <p>Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW, PDP. </p>
 </div><h2 class="groupheader">Typedef Documentation</h2>
-<a id="a1a7c1221ae29f298e0879e516d086f8b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1a7c1221ae29f298e0879e516d086f8b">&#9670;&nbsp;</a></span>RoutingIndexPair</h2>
+<a id="a630fe793e232b361cd9fd99f18599df1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a630fe793e232b361cd9fd99f18599df1">&#9670;&nbsp;</a></span>RoutingIndexPair</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef std::pair&lt;std::vector&lt;int64&gt;, std::vector&lt;int64&gt; &gt; <a class="el" href="namespaceoperations__research.html#a1a7c1221ae29f298e0879e516d086f8b">RoutingIndexPair</a></td>
+          <td class="memname">typedef std::pair&lt;std::vector&lt;int64_t&gt;, std::vector&lt;int64_t&gt; &gt; <a class="el" href="namespaceoperations__research.html#a630fe793e232b361cd9fd99f18599df1">RoutingIndexPair</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__types_8h_source.html#l00044">44</a> of file <a class="el" href="routing__types_8h_source.html">routing_types.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__types_8h_source.html#l00045">45</a> of file <a class="el" href="routing__types_8h_source.html">routing_types.h</a>.</p>
 
 </div>
 </div>
@@ -937,44 +882,44 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef std::vector&lt;<a class="el" href="namespaceoperations__research.html#a1a7c1221ae29f298e0879e516d086f8b">RoutingIndexPair</a>&gt; <a class="el" href="namespaceoperations__research.html#aef7db0bee0a22d1791d040fd3853f3b7">RoutingIndexPairs</a></td>
+          <td class="memname">typedef std::vector&lt;<a class="el" href="namespaceoperations__research.html#a630fe793e232b361cd9fd99f18599df1">RoutingIndexPair</a>&gt; <a class="el" href="namespaceoperations__research.html#aef7db0bee0a22d1791d040fd3853f3b7">RoutingIndexPairs</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__types_8h_source.html#l00045">45</a> of file <a class="el" href="routing__types_8h_source.html">routing_types.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__types_8h_source.html#l00046">46</a> of file <a class="el" href="routing__types_8h_source.html">routing_types.h</a>.</p>
 
 </div>
 </div>
-<a id="abec0698c301a7fe57265985e2d30e7c7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abec0698c301a7fe57265985e2d30e7c7">&#9670;&nbsp;</a></span>RoutingTransitCallback1</h2>
+<a id="aae02b84a58c3008fb747c0f6917bfe6c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae02b84a58c3008fb747c0f6917bfe6c">&#9670;&nbsp;</a></span>RoutingTransitCallback1</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef std::function&lt;int64(int64)&gt; <a class="el" href="namespaceoperations__research.html#abec0698c301a7fe57265985e2d30e7c7">RoutingTransitCallback1</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="routing__types_8h_source.html#l00041">41</a> of file <a class="el" href="routing__types_8h_source.html">routing_types.h</a>.</p>
-
-</div>
-</div>
-<a id="ab35e9f27307e9c5273c9d77fcf30de0e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab35e9f27307e9c5273c9d77fcf30de0e">&#9670;&nbsp;</a></span>RoutingTransitCallback2</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef std::function&lt;int64(int64, int64)&gt; <a class="el" href="namespaceoperations__research.html#ab35e9f27307e9c5273c9d77fcf30de0e">RoutingTransitCallback2</a></td>
+          <td class="memname">typedef std::function&lt;int64_t(int64_t)&gt; <a class="el" href="namespaceoperations__research.html#aae02b84a58c3008fb747c0f6917bfe6c">RoutingTransitCallback1</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="routing__types_8h_source.html#l00042">42</a> of file <a class="el" href="routing__types_8h_source.html">routing_types.h</a>.</p>
+
+</div>
+</div>
+<a id="a26868b9d744edcd8d59145e068678885"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a26868b9d744edcd8d59145e068678885">&#9670;&nbsp;</a></span>RoutingTransitCallback2</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef std::function&lt;int64_t(int64_t, int64_t)&gt; <a class="el" href="namespaceoperations__research.html#a26868b9d744edcd8d59145e068678885">RoutingTransitCallback2</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="routing__types_8h_source.html#l00043">43</a> of file <a class="el" href="routing__types_8h_source.html">routing_types.h</a>.</p>
 
 </div>
 </div>
@@ -990,7 +935,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01154">1154</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01147">1147</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1013,7 +958,7 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="ac5e380bc50cb14374c22d16ed40a8422a58218851ba5bf9598c535edd93376fc0"></a>ConstraintSolverParameters_TrailCompression_ConstraintSolverParameters_TrailCompression_INT_MAX_SENTINEL_DO_NOT_USE_&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="solver__parameters_8pb_8h_source.html#l00067">67</a> of file <a class="el" href="solver__parameters_8pb_8h_source.html">solver_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="solver__parameters_8pb_8h_source.html#l00068">68</a> of file <a class="el" href="solver__parameters_8pb_8h_source.html">solver_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1042,7 +987,7 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="aa0787bf78fb09d1e30f2451b5a68d4b8a6faaca695f728b47f47dd389f31e4a93"></a>INFEASIBLE&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="routing__lp__scheduling_8h_source.html#l00126">126</a> of file <a class="el" href="routing__lp__scheduling_8h_source.html">routing_lp_scheduling.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__lp__scheduling_8h_source.html#l00149">149</a> of file <a class="el" href="routing__lp__scheduling_8h_source.html">routing_lp_scheduling.h</a>.</p>
 
 </div>
 </div>
@@ -1078,7 +1023,7 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="a49e7da620d9baa1bb2715b89fcbc307cac0850adbff55b9fcb7356a72008906a2"></a>FirstSolutionStrategy_Value_FirstSolutionStrategy_Value_INT_MAX_SENTINEL_DO_NOT_USE_&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00071">71</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00072">72</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1105,7 +1050,7 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="aee2d8e1dc18095fd66f5a19750e23540abf08b412e90ec07b8afda5b72683e4cb"></a>LocalSearchMetaheuristic_Value_LocalSearchMetaheuristic_Value_INT_MAX_SENTINEL_DO_NOT_USE_&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00110">110</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00111">111</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1128,7 +1073,7 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="a761463065b9e80673178ba0dda3634baae7070559246287c5da11ef6544f810e7"></a>RoutingSearchParameters_SchedulingSolver_RoutingSearchParameters_SchedulingSolver_INT_MAX_SENTINEL_DO_NOT_USE_&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l00083">83</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l00084">84</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1157,85 +1102,11 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="a403e52e933033645c3388146d5e2edd2af2d15b703802d6a1f8f402f90de90dc6"></a>TRACE_VAR&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00123">123</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00114">114</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="abfa47a7ce83aebfb2bba4215bfb04282"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abfa47a7ce83aebfb2bba4215bfb04282">&#9670;&nbsp;</a></span>AppendDimensionCumulFilters()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void operations_research::AppendDimensionCumulFilters </td>
-          <td>(</td>
-          <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> * &gt; &amp;&#160;</td>
-          <td class="paramname"><em>dimensions</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const RoutingSearchParameters &amp;&#160;</td>
-          <td class="paramname"><em>parameters</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>filter_objective_cost</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="structoperations__research_1_1_local_search_filter_manager_1_1_filter_event.html">LocalSearchFilterManager::FilterEvent</a> &gt; *&#160;</td>
-          <td class="paramname"><em>filters</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a2de52d6625b60cdc32d493e175cc7bff"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2de52d6625b60cdc32d493e175cc7bff">&#9670;&nbsp;</a></span>AppendLightWeightDimensionFilters()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void operations_research::AppendLightWeightDimensionFilters </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_path_state.html">PathState</a> *&#160;</td>
-          <td class="paramname"><em>path_state</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> * &gt; &amp;&#160;</td>
-          <td class="paramname"><em>dimensions</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="structoperations__research_1_1_local_search_filter_manager_1_1_filter_event.html">LocalSearchFilterManager::FilterEvent</a> &gt; *&#160;</td>
-          <td class="paramname"><em>filters</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a id="aec575fd72a48b07ceca957691d785d57"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aec575fd72a48b07ceca957691d785d57">&#9670;&nbsp;</a></span>AppendTasksFromIntervals()</h2>
 
@@ -1264,8 +1135,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a9fe9064451ca1dd829b5c45cac69c389"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9fe9064451ca1dd829b5c45cac69c389">&#9670;&nbsp;</a></span>AppendTasksFromPath()</h2>
+<a id="aa24417adbd90d64820e9b7e274652934"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa24417adbd90d64820e9b7e274652934">&#9670;&nbsp;</a></span>AppendTasksFromPath()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1273,7 +1144,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">void operations_research::AppendTasksFromPath </td>
           <td>(</td>
-          <td class="paramtype">const std::vector&lt; int64 &gt; &amp;&#160;</td>
+          <td class="paramtype">const std::vector&lt; int64_t &gt; &amp;&#160;</td>
           <td class="paramname"><em>path</em>, </td>
         </tr>
         <tr>
@@ -1328,7 +1199,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02937">2937</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02940">2940</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1356,7 +1227,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02928">2928</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02931">2931</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1388,12 +1259,12 @@ Variables</h2></td></tr>
 
 <p>Returns true if all the variables are assigned to a single value, or if their corresponding value is null. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02944">2944</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02947">2947</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
-<a id="a7028ce8b481be8cb6fca7a6925d41aa7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7028ce8b481be8cb6fca7a6925d41aa7">&#9670;&nbsp;</a></span>AreAllBoundTo()</h2>
+<a id="a78ff06a9b302c6c96d8d917da235b749"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a78ff06a9b302c6c96d8d917da235b749">&#9670;&nbsp;</a></span>AreAllBoundTo()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1410,7 +1281,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>value</em>&#160;</td>
         </tr>
         <tr>
@@ -1428,7 +1299,7 @@ Variables</h2></td></tr>
 
 <p>Returns true if all variables are assigned to 'value'. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02955">2955</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02958">2958</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1458,7 +1329,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02858">2858</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02861">2861</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1488,7 +1359,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02868">2868</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02871">2871</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1508,7 +1379,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02883">2883</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02886">2886</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1528,7 +1399,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02853">2853</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02856">2856</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1548,7 +1419,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02848">2848</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02851">2851</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1568,7 +1439,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02878">2878</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02881">2881</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1588,7 +1459,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02893">2893</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02896">2896</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1608,7 +1479,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02888">2888</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02891">2891</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1710,7 +1581,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="solver__parameters_8pb_8h_source.html#l00080">80</a> of file <a class="el" href="solver__parameters_8pb_8h_source.html">solver_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="solver__parameters_8pb_8h_source.html#l00081">81</a> of file <a class="el" href="solver__parameters_8pb_8h_source.html">solver_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1748,12 +1619,12 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="solver__parameters_8pb_8h_source.html#l00087">87</a> of file <a class="el" href="solver__parameters_8pb_8h_source.html">solver_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="solver__parameters_8pb_8h_source.html#l00088">88</a> of file <a class="el" href="solver__parameters_8pb_8h_source.html">solver_parameters.pb.h</a>.</p>
 
 </div>
 </div>
-<a id="af46f97d04f28e1d1c8a99d02f000d212"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af46f97d04f28e1d1c8a99d02f000d212">&#9670;&nbsp;</a></span>CpRandomSeed()</h2>
+<a id="a6daa2481a6bbd7b307647006a8752630"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6daa2481a6bbd7b307647006a8752630">&#9670;&nbsp;</a></span>CpRandomSeed()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1762,7 +1633,7 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int64 operations_research::CpRandomSeed </td>
+          <td class="memname">int64_t operations_research::CpRandomSeed </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -1775,7 +1646,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00168">168</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00158">158</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1957,8 +1828,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a4f6a1b9fc737ba25fee7bf42d6635182"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4f6a1b9fc737ba25fee7bf42d6635182">&#9670;&nbsp;</a></span>FillPathEvaluation()</h2>
+<a id="ab0da8bffc5e8eafc798d8b3b1750f05b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab0da8bffc5e8eafc798d8b3b1750f05b">&#9670;&nbsp;</a></span>FillPathEvaluation()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1966,7 +1837,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">void operations_research::FillPathEvaluation </td>
           <td>(</td>
-          <td class="paramtype">const std::vector&lt; int64 &gt; &amp;&#160;</td>
+          <td class="paramtype">const std::vector&lt; int64_t &gt; &amp;&#160;</td>
           <td class="paramname"><em>path</em>, </td>
         </tr>
         <tr>
@@ -1978,7 +1849,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; int64 &gt; *&#160;</td>
+          <td class="paramtype">std::vector&lt; int64_t &gt; *&#160;</td>
           <td class="paramname"><em>values</em>&#160;</td>
         </tr>
         <tr>
@@ -1991,8 +1862,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a6f501c0f1d11c53ce54282ee650d79dd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6f501c0f1d11c53ce54282ee650d79dd">&#9670;&nbsp;</a></span>FillTravelBoundsOfVehicle()</h2>
+<a id="a3923814cbd98268f7c8b9eb9ad16bc17"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3923814cbd98268f7c8b9eb9ad16bc17">&#9670;&nbsp;</a></span>FillTravelBoundsOfVehicle()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2006,7 +1877,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::vector&lt; int64 &gt; &amp;&#160;</td>
+          <td class="paramtype">const std::vector&lt; int64_t &gt; &amp;&#160;</td>
           <td class="paramname"><em>path</em>, </td>
         </tr>
         <tr>
@@ -2031,8 +1902,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a6662a100d8715747870beb9721bb304b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6662a100d8715747870beb9721bb304b">&#9670;&nbsp;</a></span>FillValues()</h2>
+<a id="a79edaa5bfddfcd382d36a2ae25df798c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a79edaa5bfddfcd382d36a2ae25df798c">&#9670;&nbsp;</a></span>FillValues()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2049,7 +1920,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; int64 &gt; *const&#160;</td>
+          <td class="paramtype">std::vector&lt; int64_t &gt; *const&#160;</td>
           <td class="paramname"><em>values</em>&#160;</td>
         </tr>
         <tr>
@@ -2065,7 +1936,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02984">2984</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02987">2987</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2148,7 +2019,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00098">98</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00099">99</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2186,12 +2057,12 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00105">105</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00106">106</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
 
 </div>
 </div>
-<a id="ac2ba31780fce352d4bba600e6e8eacad"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac2ba31780fce352d4bba600e6e8eacad">&#9670;&nbsp;</a></span>Hash1() <span class="overload">[1/7]</span></h2>
+<a id="a597f70b9007402fadc265ccb27687966"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a597f70b9007402fadc265ccb27687966">&#9670;&nbsp;</a></span>Hash1() <span class="overload">[1/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2200,9 +2071,9 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">uint64 operations_research::Hash1 </td>
+          <td class="memname">uint64_t operations_research::Hash1 </td>
           <td>(</td>
-          <td class="paramtype">const std::vector&lt; int64 &gt; &amp;&#160;</td>
+          <td class="paramtype">const std::vector&lt; int64_t &gt; &amp;&#160;</td>
           <td class="paramname"><em>ptrs</em></td><td>)</td>
           <td></td>
         </tr>
@@ -2214,18 +2085,18 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00268">268</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00261">261</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
-<a id="aec42cb0a7c3079eb8f0406914077d633"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aec42cb0a7c3079eb8f0406914077d633">&#9670;&nbsp;</a></span>Hash1() <span class="overload">[2/7]</span></h2>
+<a id="a14927dac339bd5be7348433e5ae46551"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a14927dac339bd5be7348433e5ae46551">&#9670;&nbsp;</a></span>Hash1() <span class="overload">[2/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint64 operations_research::Hash1 </td>
+          <td class="memname">uint64_t operations_research::Hash1 </td>
           <td>(</td>
           <td class="paramtype">const std::vector&lt; T * &gt; &amp;&#160;</td>
           <td class="paramname"><em>ptrs</em></td><td>)</td>
@@ -2234,12 +2105,12 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00258">258</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00251">251</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
-<a id="a65a9c1ccf298ae110decc3b9d285dc16"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a65a9c1ccf298ae110decc3b9d285dc16">&#9670;&nbsp;</a></span>Hash1() <span class="overload">[3/7]</span></h2>
+<a id="a53a6358ea0e13e600820df98156f132d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a53a6358ea0e13e600820df98156f132d">&#9670;&nbsp;</a></span>Hash1() <span class="overload">[3/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2248,7 +2119,7 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">uint64 operations_research::Hash1 </td>
+          <td class="memname">uint64_t operations_research::Hash1 </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>value</em></td><td>)</td>
@@ -2262,12 +2133,12 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00246">246</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00239">239</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
-<a id="acfc54730764156f1fb717e99b71ba5d4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acfc54730764156f1fb717e99b71ba5d4">&#9670;&nbsp;</a></span>Hash1() <span class="overload">[4/7]</span></h2>
+<a id="a8e95e16a711ae93395f3735e07708708"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8e95e16a711ae93395f3735e07708708">&#9670;&nbsp;</a></span>Hash1() <span class="overload">[4/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2276,9 +2147,9 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">uint64 operations_research::Hash1 </td>
+          <td class="memname">uint64_t operations_research::Hash1 </td>
           <td>(</td>
-          <td class="paramtype">int64&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>value</em></td><td>)</td>
           <td></td>
         </tr>
@@ -2290,12 +2161,12 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00244">244</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00235">235</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
-<a id="ab89995e46facfc1db291ce75658dd0a5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab89995e46facfc1db291ce75658dd0a5">&#9670;&nbsp;</a></span>Hash1() <span class="overload">[5/7]</span></h2>
+<a id="a5c150546a98dce59439f838f68493d84"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c150546a98dce59439f838f68493d84">&#9670;&nbsp;</a></span>Hash1() <span class="overload">[5/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2304,9 +2175,9 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">uint64 operations_research::Hash1 </td>
+          <td class="memname">uint64_t operations_research::Hash1 </td>
           <td>(</td>
-          <td class="paramtype">uint32&#160;</td>
+          <td class="paramtype">uint32_t&#160;</td>
           <td class="paramname"><em>value</em></td><td>)</td>
           <td></td>
         </tr>
@@ -2318,12 +2189,12 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00233">233</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00224">224</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
-<a id="a64cf3e1336ec61275bdd2ae853d38406"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a64cf3e1336ec61275bdd2ae853d38406">&#9670;&nbsp;</a></span>Hash1() <span class="overload">[6/7]</span></h2>
+<a id="aee1401375b23909949cce272a3b787db"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee1401375b23909949cce272a3b787db">&#9670;&nbsp;</a></span>Hash1() <span class="overload">[6/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2332,9 +2203,9 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">uint64 operations_research::Hash1 </td>
+          <td class="memname">uint64_t operations_research::Hash1 </td>
           <td>(</td>
-          <td class="paramtype">uint64&#160;</td>
+          <td class="paramtype">uint64_t&#160;</td>
           <td class="paramname"><em>value</em></td><td>)</td>
           <td></td>
         </tr>
@@ -2351,12 +2222,12 @@ Variables</h2></td></tr>
 <p>value * 265</p>
 <p>value * 21</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00222">222</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00213">213</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
-<a id="a3ca754fad158b92d7f678b5d354d8927"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3ca754fad158b92d7f678b5d354d8927">&#9670;&nbsp;</a></span>Hash1() <span class="overload">[7/7]</span></h2>
+<a id="a24d85d1e77f31f346dba6bdc02067473"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a24d85d1e77f31f346dba6bdc02067473">&#9670;&nbsp;</a></span>Hash1() <span class="overload">[7/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2365,7 +2236,7 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">uint64 operations_research::Hash1 </td>
+          <td class="memname">uint64_t operations_research::Hash1 </td>
           <td>(</td>
           <td class="paramtype">void *const&#160;</td>
           <td class="paramname"><em>ptr</em></td><td>)</td>
@@ -2379,7 +2250,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00248">248</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00241">241</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2399,7 +2270,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02838">2838</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02841">2841</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2429,7 +2300,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02828">2828</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02831">2831</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2465,7 +2336,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02918">2918</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02921">2921</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2485,7 +2356,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02908">2908</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02911">2911</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2505,7 +2376,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02898">2898</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02901">2901</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2568,7 +2439,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00128">128</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00129">129</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2606,7 +2477,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00135">135</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00136">136</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2648,7 +2519,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00525">525</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00518">518</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2696,7 +2567,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00566">566</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00559">559</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2750,7 +2621,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00605">605</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00598">598</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2810,43 +2681,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00648">648</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
-
-</div>
-</div>
-<a id="a71c94647d1b8776e1232b4dedf35b8fb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a71c94647d1b8776e1232b4dedf35b8fb">&#9670;&nbsp;</a></span>MakeCPFeasibilityFilter()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a>* operations_research::MakeCPFeasibilityFilter </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> *&#160;</td>
-          <td class="paramname"><em>routing_model</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a6956143fbdacf5edd7e4372394c29e2c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6956143fbdacf5edd7e4372394c29e2c">&#9670;&nbsp;</a></span>MakeCumulBoundsPropagatorFilter()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a>* operations_research::MakeCumulBoundsPropagatorFilter </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> &amp;&#160;</td>
-          <td class="paramname"><em>dimension</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00641">641</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2888,7 +2723,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00688">688</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00681">681</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2936,7 +2771,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00724">724</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00717">717</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2990,40 +2825,12 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00768">768</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00761">761</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
-<a id="ad96516f011b5faf2c5587c797870ca9d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad96516f011b5faf2c5587c797870ca9d">&#9670;&nbsp;</a></span>MakeGlobalLPCumulFilter()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a>* operations_research::MakeGlobalLPCumulFilter </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1_global_dimension_cumul_optimizer.html">GlobalDimensionCumulOptimizer</a> *&#160;</td>
-          <td class="paramname"><em>optimizer</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>filter_objective_cost</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a85ea0ef5b46465c3793333ce9821f15f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a85ea0ef5b46465c3793333ce9821f15f">&#9670;&nbsp;</a></span>MakeLocalSearchOperator()</h2>
+<a id="a874c7eecced7908103138cfa5099c981"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a874c7eecced7908103138cfa5099c981">&#9670;&nbsp;</a></span>MakeLocalSearchOperator()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3049,7 +2856,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::function&lt; int(int64)&gt;&#160;</td>
+          <td class="paramtype">std::function&lt; int(int64_t)&gt;&#160;</td>
           <td class="paramname"><em>start_empty_path_class</em>&#160;</td>
         </tr>
         <tr>
@@ -3061,88 +2868,6 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Operator Factories. </p>
-
-</div>
-</div>
-<a id="aa07240e0782c167ad1bd573cf70da3f5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa07240e0782c167ad1bd573cf70da3f5">&#9670;&nbsp;</a></span>MakeMaxActiveVehiclesFilter()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a>* operations_research::MakeMaxActiveVehiclesFilter </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> &amp;&#160;</td>
-          <td class="paramname"><em>routing_model</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ae3012c6b24c5be29fe921cb17f9d1d60"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae3012c6b24c5be29fe921cb17f9d1d60">&#9670;&nbsp;</a></span>MakeNodeDisjunctionFilter()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a>* operations_research::MakeNodeDisjunctionFilter </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> &amp;&#160;</td>
-          <td class="paramname"><em>routing_model</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a50f814689e39c6a1261f38f347466257"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a50f814689e39c6a1261f38f347466257">&#9670;&nbsp;</a></span>MakePathCumulFilter()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a>* operations_research::MakePathCumulFilter </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_routing_dimension.html">RoutingDimension</a> &amp;&#160;</td>
-          <td class="paramname"><em>dimension</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const RoutingSearchParameters &amp;&#160;</td>
-          <td class="paramname"><em>parameters</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>propagate_own_objective_value</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>filter_objective_cost</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>can_use_lp</em> = <code>true</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
 
 </div>
 </div>
@@ -3180,42 +2905,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ae3ffb53eac6214b414e926238012a2a0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae3ffb53eac6214b414e926238012a2a0">&#9670;&nbsp;</a></span>MakePickupDeliveryFilter()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a>* operations_research::MakePickupDeliveryFilter </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> &amp;&#160;</td>
-          <td class="paramname"><em>routing_model</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_routing_model.html#a76874cd778ea1b9220673e019f9e7abe">RoutingModel::IndexPairs</a> &amp;&#160;</td>
-          <td class="paramname"><em>pairs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1_routing_model.html#aa5cff2ee7fbe3a9c5c701bfba7460c83">RoutingModel::PickupAndDeliveryPolicy</a> &gt; &amp;&#160;</td>
-          <td class="paramname"><em>vehicle_policies</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a4e907b3668a07c9fa3f62d938f6cb855"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4e907b3668a07c9fa3f62d938f6cb855">&#9670;&nbsp;</a></span>MakeSetValuesFromTargets()</h2>
+<a id="a63bae1bafe417f7301057965620783e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a63bae1bafe417f7301057965620783e9">&#9670;&nbsp;</a></span>MakeSetValuesFromTargets()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3235,7 +2926,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; int64 &gt;&#160;</td>
+          <td class="paramtype">std::vector&lt; int64_t &gt;&#160;</td>
           <td class="paramname"><em>targets</em>&#160;</td>
         </tr>
         <tr>
@@ -3247,24 +2938,6 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>A decision builder which tries to assign values to variables as close as possible to target values first. </p>
-
-</div>
-</div>
-<a id="a3de43a015d4ee3ce53eb030e1d7232de"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3de43a015d4ee3ce53eb030e1d7232de">&#9670;&nbsp;</a></span>MakeTypeRegulationsFilter()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a>* operations_research::MakeTypeRegulationsFilter </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> &amp;&#160;</td>
-          <td class="paramname"><em>routing_model</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
 
 </div>
 </div>
@@ -3290,24 +2963,6 @@ Variables</h2></td></tr>
           <td></td>
           <td>)</td>
           <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ab6379327d3431a9fe8f7434651eece59"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab6379327d3431a9fe8f7434651eece59">&#9670;&nbsp;</a></span>MakeVehicleAmortizedCostFilter()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a>* operations_research::MakeVehicleAmortizedCostFilter </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> &amp;&#160;</td>
-          <td class="paramname"><em>routing_model</em></td><td>)</td>
-          <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -3342,26 +2997,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a67f4b4b64a6c11717020eaa963b98c51"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a67f4b4b64a6c11717020eaa963b98c51">&#9670;&nbsp;</a></span>MakeVehicleVarFilter()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1_int_var_local_search_filter.html">IntVarLocalSearchFilter</a>* operations_research::MakeVehicleVarFilter </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1_routing_model.html">RoutingModel</a> &amp;&#160;</td>
-          <td class="paramname"><em>routing_model</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="abc42d1bcfe023d3ac6f59471b75d853c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abc42d1bcfe023d3ac6f59471b75d853c">&#9670;&nbsp;</a></span>MaxVarArray()</h2>
+<a id="a587a6a73cbcb4e4a4c7d3b596fa407aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a587a6a73cbcb4e4a4c7d3b596fa407aa">&#9670;&nbsp;</a></span>MaxVarArray()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3370,7 +3007,7 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int64 operations_research::MaxVarArray </td>
+          <td class="memname">int64_t operations_research::MaxVarArray </td>
           <td>(</td>
           <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;&#160;</td>
           <td class="paramname"><em>vars</em></td><td>)</td>
@@ -3383,14 +3020,14 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>The std::max&lt;int64&gt; is needed for compilation on MSVC.</p>
+<p>The std::max&lt;int64_t&gt; is needed for compilation on MSVC.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02964">2964</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02967">2967</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
-<a id="a5c1932027ef8bc1689d725a1c597867b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5c1932027ef8bc1689d725a1c597867b">&#9670;&nbsp;</a></span>MinVarArray()</h2>
+<a id="a8e8f645f06f9749b562b6625cd822daa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8e8f645f06f9749b562b6625cd822daa">&#9670;&nbsp;</a></span>MinVarArray()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3399,7 +3036,7 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int64 operations_research::MinVarArray </td>
+          <td class="memname">int64_t operations_research::MinVarArray </td>
           <td>(</td>
           <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> * &gt; &amp;&#160;</td>
           <td class="paramname"><em>vars</em></td><td>)</td>
@@ -3412,14 +3049,14 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>The std::min&lt;int64&gt; is needed for compilation on MSVC.</p>
+<p>The std::min&lt;int64_t&gt; is needed for compilation on MSVC.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02974">2974</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02977">2977</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
-<a id="aa96bb5a28dd9c1ccc864b1587e8e1a98"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa96bb5a28dd9c1ccc864b1587e8e1a98">&#9670;&nbsp;</a></span>One()</h2>
+<a id="a9e48359348ad94d97e6c44ffd52b33e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9e48359348ad94d97e6c44ffd52b33e3">&#9670;&nbsp;</a></span>One()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3428,7 +3065,7 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int64 operations_research::One </td>
+          <td class="memname">int64_t operations_research::One </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -3443,7 +3080,7 @@ Variables</h2></td></tr>
 
 <p>This method returns 1. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03147">3147</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03149">3149</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -3549,7 +3186,7 @@ Variables</h2></td></tr>
 
 <p>Support limited to pointers to classes which define DebugString(). </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00537">537</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00530">530</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -3569,12 +3206,12 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00531">531</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00524">524</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
-<a id="a942ba2898a44303790c91e761b8f4630"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a942ba2898a44303790c91e761b8f4630">&#9670;&nbsp;</a></span>PosIntDivDown()</h2>
+<a id="ade1945fe75ec08245775fc4df20153d6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade1945fe75ec08245775fc4df20153d6">&#9670;&nbsp;</a></span>PosIntDivDown()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3583,15 +3220,15 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int64 operations_research::PosIntDivDown </td>
+          <td class="memname">int64_t operations_research::PosIntDivDown </td>
           <td>(</td>
-          <td class="paramtype">int64&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>e</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>v</em>&#160;</td>
         </tr>
         <tr>
@@ -3607,12 +3244,12 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02998">2998</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l03001">3001</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
-<a id="a60dabfa452b4264887ef76c75edf3765"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a60dabfa452b4264887ef76c75edf3765">&#9670;&nbsp;</a></span>PosIntDivUp()</h2>
+<a id="afb0903025d265c67199f5f09cee57ed0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afb0903025d265c67199f5f09cee57ed0">&#9670;&nbsp;</a></span>PosIntDivUp()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3621,15 +3258,15 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int64 operations_research::PosIntDivUp </td>
+          <td class="memname">int64_t operations_research::PosIntDivUp </td>
           <td>(</td>
-          <td class="paramtype">int64&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>e</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>v</em>&#160;</td>
         </tr>
         <tr>
@@ -3645,7 +3282,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02993">2993</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02996">2996</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -3708,7 +3345,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l00097">97</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l00098">98</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3746,7 +3383,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l00104">104</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l00105">105</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3836,14 +3473,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="aad4e1b406f0e56c83283747b038df88a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aad4e1b406f0e56c83283747b038df88a">&#9670;&nbsp;</a></span>ToInt64Vector()</h2>
+<a id="a52b7945de2f8abdbd44efecab6899245"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a52b7945de2f8abdbd44efecab6899245">&#9670;&nbsp;</a></span>ToInt64Vector()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;int64&gt; operations_research::ToInt64Vector </td>
+          <td class="memname">std::vector&lt;int64_t&gt; operations_research::ToInt64Vector </td>
           <td>(</td>
           <td class="paramtype">const std::vector&lt; int &gt; &amp;&#160;</td>
           <td class="paramname"><em>input</em></td><td>)</td>
@@ -3854,8 +3491,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a009f247167f32509baf749083e4bc984"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a009f247167f32509baf749083e4bc984">&#9670;&nbsp;</a></span>Zero()</h2>
+<a id="a5a9881f8a07b166ef2cbde572cea27b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5a9881f8a07b166ef2cbde572cea27b6">&#9670;&nbsp;</a></span>Zero()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3864,7 +3501,7 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int64 operations_research::Zero </td>
+          <td class="memname">int64_t operations_research::Zero </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -3880,7 +3517,7 @@ Variables</h2></td></tr>
 <p>NOLINT. </p>
 <p>This method returns 0. It is useful when 0 can be cast either as a pointer or as an integer value and thus lead to an ambiguous function call. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03144">3144</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03146">3146</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -4235,7 +3872,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="solver__parameters_8pb_8h_source.html#l00076">76</a> of file <a class="el" href="solver__parameters_8pb_8h_source.html">solver_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="solver__parameters_8pb_8h_source.html#l00077">77</a> of file <a class="el" href="solver__parameters_8pb_8h_source.html">solver_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -4259,7 +3896,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="solver__parameters_8pb_8h_source.html#l00075">75</a> of file <a class="el" href="solver__parameters_8pb_8h_source.html">solver_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="solver__parameters_8pb_8h_source.html#l00076">76</a> of file <a class="el" href="solver__parameters_8pb_8h_source.html">solver_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -4283,7 +3920,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="solver__parameters_8pb_8h_source.html#l00074">74</a> of file <a class="el" href="solver__parameters_8pb_8h_source.html">solver_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="solver__parameters_8pb_8h_source.html#l00075">75</a> of file <a class="el" href="solver__parameters_8pb_8h_source.html">solver_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -4307,7 +3944,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00094">94</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00095">95</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
 
 </div>
 </div>
@@ -4331,7 +3968,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00093">93</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00094">94</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
 
 </div>
 </div>
@@ -4355,7 +3992,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00092">92</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00093">93</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
 
 </div>
 </div>
@@ -4379,7 +4016,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00124">124</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00125">125</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
 
 </div>
 </div>
@@ -4403,7 +4040,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00123">123</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00124">124</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
 
 </div>
 </div>
@@ -4427,7 +4064,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00122">122</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__enums_8pb_8h_source.html#l00123">123</a> of file <a class="el" href="routing__enums_8pb_8h_source.html">routing_enums.pb.h</a>.</p>
 
 </div>
 </div>
@@ -4451,7 +4088,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l00093">93</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l00094">94</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -4475,7 +4112,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l00092">92</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l00093">93</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -4499,7 +4136,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l00091">91</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l00092">92</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>

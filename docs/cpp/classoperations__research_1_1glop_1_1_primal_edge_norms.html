@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -95,7 +95,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1glop_1_1_
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8h_source.html#l00054">54</a> of file <a class="el" href="primal__edge__norms_8h_source.html">primal_edge_norms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8h_source.html#l00056">56</a> of file <a class="el" href="primal__edge__norms_8h_source.html">primal_edge_norms.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -105,6 +105,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aa71d36872f416feaa853788a7a7a7ef8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af507437729fd1e93677772e748ca1cfc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_primal_edge_norms.html#af507437729fd1e93677772e748ca1cfc">NeedsBasisRefactorization</a> () const</td></tr>
 <tr class="separator:af507437729fd1e93677772e748ca1cfc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a11b5738482346b103919cf0e6481c977"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceoperations__research_1_1glop.html#a4dc8ae0f97c4110f3cc770715b2bbd12">DenseRow</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_primal_edge_norms.html#a11b5738482346b103919cf0e6481c977">GetSquaredNorms</a> ()</td></tr>
+<tr class="separator:a11b5738482346b103919cf0e6481c977"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a67a5105630385abc274872ab7a28e70f"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceoperations__research_1_1glop.html#a4dc8ae0f97c4110f3cc770715b2bbd12">DenseRow</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_primal_edge_norms.html#a67a5105630385abc274872ab7a28e70f">GetEdgeSquaredNorms</a> ()</td></tr>
 <tr class="separator:a67a5105630385abc274872ab7a28e70f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6f599ec9c50fc8a7421f98203a06a428"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceoperations__research_1_1glop.html#a4dc8ae0f97c4110f3cc770715b2bbd12">DenseRow</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_primal_edge_norms.html#a6f599ec9c50fc8a7421f98203a06a428">GetDevexWeights</a> ()</td></tr>
@@ -117,6 +119,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ac770d9d78b0dda3be3bacb43038170e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7202d055b6b172a8a1da4f5b136f9ea"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_primal_edge_norms.html#ae7202d055b6b172a8a1da4f5b136f9ea">SetParameters</a> (const GlopParameters &amp;<a class="el" href="cp__model__fz__solver_8cc.html#a10a1eab179b472c030bdc2a2efef7219">parameters</a>)</td></tr>
 <tr class="separator:ae7202d055b6b172a8a1da4f5b136f9ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad3a8fd026015306e23a8ed6889b48f18"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_primal_edge_norms.html#ad3a8fd026015306e23a8ed6889b48f18">SetPricingRule</a> (GlopParameters::PricingRule rule)</td></tr>
+<tr class="separator:ad3a8fd026015306e23a8ed6889b48f18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a241d43fe7b6c19b4705e688db918fea7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_primal_edge_norms.html#a241d43fe7b6c19b4705e688db918fea7">AddRecomputationWatcher</a> (bool *watcher)</td></tr>
+<tr class="separator:a241d43fe7b6c19b4705e688db918fea7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af9bc435481ae9e6e60d66a65d5394a7f"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_primal_edge_norms.html#af9bc435481ae9e6e60d66a65d5394a7f">StatString</a> () const</td></tr>
 <tr class="separator:af9bc435481ae9e6e60d66a65d5394a7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeccc8138b268e621d96d105e0ddd474a"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1glop_1_1_primal_edge_norms.html#aeccc8138b268e621d96d105e0ddd474a">DeterministicTime</a> () const</td></tr>
@@ -160,6 +166,34 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a241d43fe7b6c19b4705e688db918fea7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a241d43fe7b6c19b4705e688db918fea7">&#9670;&nbsp;</a></span>AddRecomputationWatcher()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void AddRecomputationWatcher </td>
+          <td>(</td>
+          <td class="paramtype">bool *&#160;</td>
+          <td class="paramname"><em>watcher</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8h_source.html#l00129">129</a> of file <a class="el" href="primal__edge__norms_8h_source.html">primal_edge_norms.h</a>.</p>
+
+</div>
+</div>
 <a id="aa71d36872f416feaa853788a7a7a7ef8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa71d36872f416feaa853788a7a7a7ef8">&#9670;&nbsp;</a></span>Clear()</h2>
 
@@ -202,7 +236,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8h_source.html#l00118">118</a> of file <a class="el" href="primal__edge__norms_8h_source.html">primal_edge_norms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8h_source.html#l00135">135</a> of file <a class="el" href="primal__edge__norms_8h_source.html">primal_edge_norms.h</a>.</p>
 
 </div>
 </div>
@@ -221,7 +255,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8cc_source.html#l00052">52</a> of file <a class="el" href="primal__edge__norms_8cc_source.html">primal_edge_norms.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8cc_source.html#l00065">65</a> of file <a class="el" href="primal__edge__norms_8cc_source.html">primal_edge_norms.cc</a>.</p>
 
 </div>
 </div>
@@ -240,7 +274,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8cc_source.html#l00047">47</a> of file <a class="el" href="primal__edge__norms_8cc_source.html">primal_edge_norms.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8cc_source.html#l00060">60</a> of file <a class="el" href="primal__edge__norms_8cc_source.html">primal_edge_norms.cc</a>.</p>
 
 </div>
 </div>
@@ -259,7 +293,26 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8cc_source.html#l00057">57</a> of file <a class="el" href="primal__edge__norms_8cc_source.html">primal_edge_norms.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8cc_source.html#l00070">70</a> of file <a class="el" href="primal__edge__norms_8cc_source.html">primal_edge_norms.cc</a>.</p>
+
+</div>
+</div>
+<a id="a11b5738482346b103919cf0e6481c977"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a11b5738482346b103919cf0e6481c977">&#9670;&nbsp;</a></span>GetSquaredNorms()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="namespaceoperations__research_1_1glop.html#a4dc8ae0f97c4110f3cc770715b2bbd12">DenseRow</a> &amp; GetSquaredNorms </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8cc_source.html#l00049">49</a> of file <a class="el" href="primal__edge__norms_8cc_source.html">primal_edge_norms.cc</a>.</p>
 
 </div>
 </div>
@@ -278,7 +331,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8cc_source.html#l00043">43</a> of file <a class="el" href="primal__edge__norms_8cc_source.html">primal_edge_norms.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8cc_source.html#l00044">44</a> of file <a class="el" href="primal__edge__norms_8cc_source.html">primal_edge_norms.cc</a>.</p>
 
 </div>
 </div>
@@ -306,7 +359,35 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8h_source.html#l00110">110</a> of file <a class="el" href="primal__edge__norms_8h_source.html">primal_edge_norms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8h_source.html#l00116">116</a> of file <a class="el" href="primal__edge__norms_8h_source.html">primal_edge_norms.h</a>.</p>
+
+</div>
+</div>
+<a id="ad3a8fd026015306e23a8ed6889b48f18"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad3a8fd026015306e23a8ed6889b48f18">&#9670;&nbsp;</a></span>SetPricingRule()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SetPricingRule </td>
+          <td>(</td>
+          <td class="paramtype">GlopParameters::PricingRule&#160;</td>
+          <td class="paramname"><em>rule</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8h_source.html#l00121">121</a> of file <a class="el" href="primal__edge__norms_8h_source.html">primal_edge_norms.h</a>.</p>
 
 </div>
 </div>
@@ -333,7 +414,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8h_source.html#l00115">115</a> of file <a class="el" href="primal__edge__norms_8h_source.html">primal_edge_norms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8h_source.html#l00132">132</a> of file <a class="el" href="primal__edge__norms_8h_source.html">primal_edge_norms.h</a>.</p>
 
 </div>
 </div>
@@ -363,7 +444,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8cc_source.html#l00062">62</a> of file <a class="el" href="primal__edge__norms_8cc_source.html">primal_edge_norms.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8cc_source.html#l00075">75</a> of file <a class="el" href="primal__edge__norms_8cc_source.html">primal_edge_norms.cc</a>.</p>
 
 </div>
 </div>
@@ -411,7 +492,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8cc_source.html#l00086">86</a> of file <a class="el" href="primal__edge__norms_8cc_source.html">primal_edge_norms.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="primal__edge__norms_8cc_source.html#l00100">100</a> of file <a class="el" href="primal__edge__norms_8cc_source.html">primal_edge_norms.cc</a>.</p>
 
 </div>
 </div>

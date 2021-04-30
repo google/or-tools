@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -89,7 +89,7 @@ $(document).ready(function(){initNavTree('vlog__is__on_8h_source.html',''); init
 <div class="title">vlog_is_on.h</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="vlog__is__on_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2018 Google LLC</span></div>
+<a href="vlog__is__on_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2021 Google LLC</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">// you may not use this file except in compliance with the License.</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">// You may obtain a copy of the License at</span></div>
@@ -119,8 +119,8 @@ $(document).ready(function(){initNavTree('vlog__is__on_8h_source.html',''); init
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="comment">// parsing of --vmodule flag and/or SetVLOGLevel calls.</span></div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#define VLOG_IS_ON(verboselevel)                                            \</span></div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">  __extension__({                                                           \</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">    static int32* vlocal__ = &amp;google::kLogSiteUninitialized;                \</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">    int32 verbose_level__ = (verboselevel);                                 \</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">    static int32_t* vlocal__ = &amp;google::kLogSiteUninitialized;              \</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">    int32_t verbose_level__ = (verboselevel);                               \</span></div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">    (*vlocal__ &gt;= verbose_level__) &amp;&amp;                                       \</span></div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="preprocessor">        ((vlocal__ != &amp;google::kLogSiteUninitialized) ||                    \</span></div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="preprocessor">         (google::InitVLOG3__(&amp;vlocal__, &amp;absl::GetFlag(FLAGS_v), __FILE__, \</span></div>
@@ -149,7 +149,7 @@ $(document).ready(function(){initNavTree('vlog__is__on_8h_source.html',''); init
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="comment">// initialized.  We make this a large value, so the common-case check</span></div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="comment">// of &quot;*vlocal__ &gt;= verbose_level__&quot; in VLOG_IS_ON definition</span></div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="comment">// passes in such cases and InitVLOG3__ is then triggered.</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="keyword">extern</span> <a class="code" href="integral__types_8h.html#a56f1a81c92849566ae864511088eb7e8">int32</a> <a class="code" href="namespacegoogle.html#a3ed2cb5f44f4ef1d3faa82daae0e158c">kLogSiteUninitialized</a>;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="keyword">extern</span> int32_t <a class="code" href="namespacegoogle.html#a19c4fdc6f7943ab1c9bf25f17ec06776">kLogSiteUninitialized</a>;</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="comment">// Helper routine which determines the logging info for a particalur VLOG site.</span></div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="comment">//   site_flag     is the address of the site-local pointer to the controlling</span></div>
@@ -159,22 +159,21 @@ $(document).ready(function(){initNavTree('vlog__is__on_8h_source.html',''); init
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="comment">//   verbose_level is the argument to VLOG_IS_ON</span></div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="comment">// We will return the return value for VLOG_IS_ON</span></div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="comment">// and if possible set *site_flag appropriately.</span></div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="keyword">extern</span> <a class="code" href="logging__export_8h.html#a980c97856a47502c2877b93460f44f87">GOOGLE_GLOG_DLL_DECL</a> <span class="keywordtype">bool</span> <a class="code" href="namespacegoogle.html#a39ee322ad22fd9a06fa76528653e25e2">InitVLOG3__</a>(<a class="code" href="integral__types_8h.html#a56f1a81c92849566ae864511088eb7e8">int32</a>** site_flag,</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;                                             <a class="code" href="integral__types_8h.html#a56f1a81c92849566ae864511088eb7e8">int32</a>* site_default,</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="keyword">extern</span> <a class="code" href="logging__export_8h.html#a980c97856a47502c2877b93460f44f87">GOOGLE_GLOG_DLL_DECL</a> <span class="keywordtype">bool</span> <a class="code" href="namespacegoogle.html#af07f2b174857ee11ff4c7486e29dbff8">InitVLOG3__</a>(int32_t** site_flag,</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;                                             int32_t* site_default,</div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;                                             <span class="keyword">const</span> <span class="keywordtype">char</span>* fname,</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                                             <a class="code" href="integral__types_8h.html#a56f1a81c92849566ae864511088eb7e8">int32</a> verbose_level);</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                                             int32_t verbose_level);</div>
 <div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;}  <span class="comment">// namespace google</span></div>
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
 <div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="preprocessor">#endif  </span><span class="comment">// OR_TOOLS_BASE_VLOG_IS_ON_H_</span></div>
 <div class="ttc" id="aintegral__types_8h_html"><div class="ttname"><a href="integral__types_8h.html">integral_types.h</a></div></div>
-<div class="ttc" id="aintegral__types_8h_html_a56f1a81c92849566ae864511088eb7e8"><div class="ttname"><a href="integral__types_8h.html#a56f1a81c92849566ae864511088eb7e8">int32</a></div><div class="ttdeci">int int32</div><div class="ttdef"><b>Definition:</b> <a href="integral__types_8h_source.html#l00033">integral_types.h:33</a></div></div>
 <div class="ttc" id="alog__severity_8h_html"><div class="ttname"><a href="log__severity_8h.html">log_severity.h</a></div></div>
 <div class="ttc" id="alogging__export_8h_html_a980c97856a47502c2877b93460f44f87"><div class="ttname"><a href="logging__export_8h.html#a980c97856a47502c2877b93460f44f87">GOOGLE_GLOG_DLL_DECL</a></div><div class="ttdeci">#define GOOGLE_GLOG_DLL_DECL</div><div class="ttdef"><b>Definition:</b> <a href="logging__export_8h_source.html#l00027">logging_export.h:27</a></div></div>
 <div class="ttc" id="anamespacegoogle_html"><div class="ttname"><a href="namespacegoogle.html">google</a></div><div class="ttdef"><b>Definition:</b> <a href="log__severity_8h_source.html#l00024">log_severity.h:24</a></div></div>
-<div class="ttc" id="anamespacegoogle_html_a39ee322ad22fd9a06fa76528653e25e2"><div class="ttname"><a href="namespacegoogle.html#a39ee322ad22fd9a06fa76528653e25e2">google::InitVLOG3__</a></div><div class="ttdeci">bool InitVLOG3__(int32 **site_flag, int32 *site_default, const char *fname, int32 verbose_level)</div><div class="ttdef"><b>Definition:</b> <a href="vlog__is__on_8cc_source.html#l00186">vlog_is_on.cc:186</a></div></div>
-<div class="ttc" id="anamespacegoogle_html_a3ed2cb5f44f4ef1d3faa82daae0e158c"><div class="ttname"><a href="namespacegoogle.html#a3ed2cb5f44f4ef1d3faa82daae0e158c">google::kLogSiteUninitialized</a></div><div class="ttdeci">int32 kLogSiteUninitialized</div><div class="ttdef"><b>Definition:</b> <a href="vlog__is__on_8cc_source.html#l00090">vlog_is_on.cc:90</a></div></div>
+<div class="ttc" id="anamespacegoogle_html_a19c4fdc6f7943ab1c9bf25f17ec06776"><div class="ttname"><a href="namespacegoogle.html#a19c4fdc6f7943ab1c9bf25f17ec06776">google::kLogSiteUninitialized</a></div><div class="ttdeci">int32_t kLogSiteUninitialized</div><div class="ttdef"><b>Definition:</b> <a href="vlog__is__on_8cc_source.html#l00090">vlog_is_on.cc:90</a></div></div>
 <div class="ttc" id="anamespacegoogle_html_ae10ec63d828053e42aa69b1d531602d7"><div class="ttname"><a href="namespacegoogle.html#ae10ec63d828053e42aa69b1d531602d7">google::SetVLOGLevel</a></div><div class="ttdeci">int SetVLOGLevel(const char *module_pattern, int log_level)</div><div class="ttdef"><b>Definition:</b> <a href="vlog__is__on_8cc_source.html#l00151">vlog_is_on.cc:151</a></div></div>
+<div class="ttc" id="anamespacegoogle_html_af07f2b174857ee11ff4c7486e29dbff8"><div class="ttname"><a href="namespacegoogle.html#af07f2b174857ee11ff4c7486e29dbff8">google::InitVLOG3__</a></div><div class="ttdeci">bool InitVLOG3__(int32_t **site_flag, int32_t *site_default, const char *fname, int32_t verbose_level)</div><div class="ttdef"><b>Definition:</b> <a href="vlog__is__on_8cc_source.html#l00186">vlog_is_on.cc:186</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.8.18-->

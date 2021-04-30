@@ -51,6 +51,6 @@ var classoperations__research_1_1_search =
     [ "SetBranchSelector", "classoperations__research_1_1_search.html#a3bf8c2d6f6b4c7e89391e2e8020e44e3", null ],
     [ "should_finish", "classoperations__research_1_1_search.html#a21c5c4600c96dd71c2ac34c708ae7f0a", null ],
     [ "should_restart", "classoperations__research_1_1_search.html#a201ebe439ffb790ad9dfe2281cd00a79", null ],
-    [ "solution_counter", "classoperations__research_1_1_search.html#a01c04dd720bd35af4a2785f8f5f2ea35", null ],
-    [ "unchecked_solution_counter", "classoperations__research_1_1_search.html#a689b5c755d6a4d49ee37b5954d76b3ca", null ]
+    [ "solution_counter", "classoperations__research_1_1_search.html#ad570cae460256843926a00468e9e3331", null ],
+    [ "unchecked_solution_counter", "classoperations__research_1_1_search.html#a3f23e463e482693b57e104e8965a630a", null ]
 ];

@@ -7,5 +7,5 @@ var classoperations__research_1_1bop_1_1_optimizer_selector =
     [ "SelectOptimizer", "classoperations__research_1_1bop_1_1_optimizer_selector.html#aaf18e37117e9af6653b54036df144bf7", null ],
     [ "SetOptimizerRunnability", "classoperations__research_1_1bop_1_1_optimizer_selector.html#aea662acd751f6856386caee7e026d704", null ],
     [ "TemporarilyMarkOptimizerAsUnselectable", "classoperations__research_1_1bop_1_1_optimizer_selector.html#aba3277a6875194d8b552e63b7d736831", null ],
-    [ "UpdateScore", "classoperations__research_1_1bop_1_1_optimizer_selector.html#a9edd4ec2756961d1162f8510541435c0", null ]
+    [ "UpdateScore", "classoperations__research_1_1bop_1_1_optimizer_selector.html#a173a5d1de91155150d12922f838b2abf", null ]
 ];

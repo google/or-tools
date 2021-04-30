@@ -2,7 +2,7 @@ var classoperations__research_1_1fz_1_1_model =
 [
     [ "Model", "classoperations__research_1_1fz_1_1_model.html#a48c927d7e3902ef77eee6b41a6acd431", null ],
     [ "~Model", "classoperations__research_1_1fz_1_1_model.html#a252c349b237f7779edf32778eb541a99", null ],
-    [ "AddConstant", "classoperations__research_1_1fz_1_1_model.html#ab23573301037cf16d0f11d5a3fd967a4", null ],
+    [ "AddConstant", "classoperations__research_1_1fz_1_1_model.html#a53faae2fb37d7ca81fa263d77b968d4c", null ],
     [ "AddConstraint", "classoperations__research_1_1fz_1_1_model.html#a66285857f52f8aadfa0aa8bcebb8598c", null ],
     [ "AddConstraint", "classoperations__research_1_1fz_1_1_model.html#ac06ff8f8b48463ca8f5f0cd471e04a4f", null ],
     [ "AddOutput", "classoperations__research_1_1fz_1_1_model.html#a863321a9f10b6f2a51cfe900ddc62784", null ],

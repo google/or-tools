@@ -6,5 +6,5 @@ var structgtl_1_1_log_legacy =
     [ "LogFirstSeparator", "structgtl_1_1_log_legacy.html#a80f4a7dc45884441655fb88968288a48", null ],
     [ "LogOpening", "structgtl_1_1_log_legacy.html#add54e720c5b3a634fc126572ecbbb041", null ],
     [ "LogSeparator", "structgtl_1_1_log_legacy.html#a771672cfa0321943de9360688d1c5c4e", null ],
-    [ "MaxElements", "structgtl_1_1_log_legacy.html#a4d653ef379fe61e03b4c6328a73245cb", null ]
+    [ "MaxElements", "structgtl_1_1_log_legacy.html#a8a55f0fe7e919a64df6f8dd0c681e0f7", null ]
 ];

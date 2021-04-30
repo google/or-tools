@@ -188,6 +188,7 @@ function build_fz() {
   make fz -l 4 UNIX_PYTHON_VER=3.9
   echo "DONE" | tee -a build.log
 
+  mv or-tools_*.tar.gz export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/fz_build"
 }
 
@@ -217,7 +218,7 @@ function build_archive() {
   make test_fz_archive UNIX_PYTHON_VER=3.9
   echo "DONE" | tee -a build.log
 
-  # TODO(mizux) copy archives to export/
+  mv or-tools_*.tar.gz export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/archive_build"
 }
 
@@ -242,7 +243,7 @@ function build_examples() {
   make dotnet_examples_archive UNIX_PYTHON_VER=3.9
   echo "DONE" | tee -a build.log
 
-  # TODO(mizux) copy example to export/
+  mv or-tools_*_examples_*.tar.gz export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/examples_build"
 }
 

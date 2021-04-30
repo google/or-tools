@@ -11,13 +11,13 @@ var classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTra
     [ "MergeFrom", "classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#a67eef3374888e85bdb523ae39a13e2ac", null ],
     [ "ToString", "classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#aa73e7c4dd1df5fd5fbf81c7764ee1533", null ],
     [ "WriteTo", "classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#a3b36e6a370fa4c10b03b619d8f1f1ab1", null ],
+    [ "IndexFieldNumber", "classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#a1cf9ee00ed574678bb2dca73a4b7d0bf", null ],
     [ "OffsetFieldNumber", "classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#a12f0687287af579e61b58dff9a12bb94", null ],
     [ "PositiveCoeffFieldNumber", "classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#ad85aa307807b1f7b6ddf1bf959e220a4", null ],
-    [ "VarFieldNumber", "classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#ab982438c3bc36350f73b87fc3fecc14f", null ],
     [ "Descriptor", "classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#acbefcf491fe57d4ebe699914922577fb", null ],
     [ "Descriptor", "classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#a7c99520addb6e55b2ee5fa30205e76f9", null ],
+    [ "Index", "classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#a075e1e3c9dd399cef584d7338cc37938", null ],
     [ "Offset", "classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#aad7df986191652e206d6f1bce4ef209b", null ],
     [ "Parser", "classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#a50883842cd1dd39894904e67cc2b63cf", null ],
-    [ "PositiveCoeff", "classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#aafc44d363af17acf49ae8dc425202d30", null ],
-    [ "Var", "classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#ad2586af1a975f4d44febda95291fdc63", null ]
+    [ "PositiveCoeff", "classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html#aafc44d363af17acf49ae8dc425202d30", null ]
 ];

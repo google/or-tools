@@ -2,7 +2,7 @@ var classoperations__research_1_1sat_1_1_int_var =
 [
     [ "IntVar", "classoperations__research_1_1sat_1_1_int_var.html#a7400b108444b2375d723b848e23bb169", null ],
     [ "IntVar", "classoperations__research_1_1sat_1_1_int_var.html#ada2fae0afd55e85812dcc8e78e8ecbd4", null ],
-    [ "AddConstant", "classoperations__research_1_1sat_1_1_int_var.html#a4927017e2b77774933a43bfc83b6ab39", null ],
+    [ "AddConstant", "classoperations__research_1_1sat_1_1_int_var.html#add6215760d3f0f623be0bbe82f75f443", null ],
     [ "DebugString", "classoperations__research_1_1sat_1_1_int_var.html#a764be64f3029f8b8e23511061d8de355", null ],
     [ "index", "classoperations__research_1_1sat_1_1_int_var.html#acca41811e8aaab0112b987749c0ecb93", null ],
     [ "MutableProto", "classoperations__research_1_1sat_1_1_int_var.html#a02b89136ac6040e03a762f9588bbb38f", null ],

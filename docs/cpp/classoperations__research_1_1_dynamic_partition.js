@@ -11,7 +11,7 @@ var classoperations__research_1_1_dynamic_partition =
     [ "ElementsInHierarchicalOrder", "classoperations__research_1_1_dynamic_partition.html#a53166e5f309a55b2753a60b958406340", null ],
     [ "ElementsInPart", "classoperations__research_1_1_dynamic_partition.html#a11ea4d0620bbdca30b7d9b8a23f8cdd8", null ],
     [ "ElementsInSamePartAs", "classoperations__research_1_1_dynamic_partition.html#a897ee69dceefdd60a6a4e90ab8b18a25", null ],
-    [ "FprintOfPart", "classoperations__research_1_1_dynamic_partition.html#a2a478f293b8fec5ca7e59a82190f0e86", null ],
+    [ "FprintOfPart", "classoperations__research_1_1_dynamic_partition.html#a9b5c93a4cf6d2e548d76291fe7ba5b5d", null ],
     [ "NumElements", "classoperations__research_1_1_dynamic_partition.html#a84daba977c20d7a54c86ef77e8986267", null ],
     [ "NumParts", "classoperations__research_1_1_dynamic_partition.html#ae91b7d9b6c4f0675b9ad3f38e5761853", null ],
     [ "ParentOfPart", "classoperations__research_1_1_dynamic_partition.html#ab8257c32911b0b991bec1af210d993be", null ],

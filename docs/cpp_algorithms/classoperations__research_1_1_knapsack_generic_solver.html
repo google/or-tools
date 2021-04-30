@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.2</span>
+                <span id="sfml">Google OR-Tools 9.0</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -88,7 +88,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_knapsack
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00605">605</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00614">614</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -96,16 +96,16 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a2a7bff5cf8a51192eadec54eb0499064"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a25594d97a0a532f9d814bdc6dea380"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_knapsack_generic_solver.html#a2a25594d97a0a532f9d814bdc6dea380">~KnapsackGenericSolver</a> () override</td></tr>
 <tr class="separator:a2a25594d97a0a532f9d814bdc6dea380"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a51cac72a6280d047002a1b9bf34d7948"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_knapsack_generic_solver.html#a51cac72a6280d047002a1b9bf34d7948">Init</a> (const std::vector&lt; int64 &gt; &amp;profits, const std::vector&lt; std::vector&lt; int64 &gt; &gt; &amp;weights, const std::vector&lt; int64 &gt; &amp;capacities) override</td></tr>
-<tr class="separator:a51cac72a6280d047002a1b9bf34d7948"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a734b6464309adbbdeb63ef759f690ff1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_knapsack_generic_solver.html#a734b6464309adbbdeb63ef759f690ff1">Init</a> (const std::vector&lt; int64_t &gt; &amp;profits, const std::vector&lt; std::vector&lt; int64_t &gt; &gt; &amp;weights, const std::vector&lt; int64_t &gt; &amp;capacities) override</td></tr>
+<tr class="separator:a734b6464309adbbdeb63ef759f690ff1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c677592ee5e7312c64475ebae949eab"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_knapsack_generic_solver.html#a5c677592ee5e7312c64475ebae949eab">GetNumberOfItems</a> () const</td></tr>
 <tr class="separator:a5c677592ee5e7312c64475ebae949eab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a35bfa97bc24861491acb8d3d20087306"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_knapsack_generic_solver.html#a35bfa97bc24861491acb8d3d20087306">GetLowerAndUpperBoundWhenItem</a> (int item_id, bool is_item_in, int64 *lower_bound, int64 *upper_bound) override</td></tr>
-<tr class="separator:a35bfa97bc24861491acb8d3d20087306"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac9849a7043959c65033fa6f4a63bb10e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_knapsack_generic_solver.html#ac9849a7043959c65033fa6f4a63bb10e">GetLowerAndUpperBoundWhenItem</a> (int item_id, bool is_item_in, int64_t *lower_bound, int64_t *upper_bound) override</td></tr>
+<tr class="separator:ac9849a7043959c65033fa6f4a63bb10e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3df2fc3d96fbcac78a632d7dbf3b8550"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_knapsack_generic_solver.html#a3df2fc3d96fbcac78a632d7dbf3b8550">set_master_propagator_id</a> (int master_propagator_id)</td></tr>
 <tr class="separator:a3df2fc3d96fbcac78a632d7dbf3b8550"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad596c251b64c28e1e5b34e9de44b2dd7"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_knapsack_generic_solver.html#ad596c251b64c28e1e5b34e9de44b2dd7">Solve</a> (TimeLimit *time_limit, bool *is_solution_optimal) override</td></tr>
-<tr class="separator:ad596c251b64c28e1e5b34e9de44b2dd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a788a597dac89a082d3ed4994d654dec1"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_knapsack_generic_solver.html#a788a597dac89a082d3ed4994d654dec1">Solve</a> (TimeLimit *time_limit, bool *is_solution_optimal) override</td></tr>
+<tr class="separator:a788a597dac89a082d3ed4994d654dec1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abfd4cb3faa2f1d6840b8123765fa2fc4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_knapsack_generic_solver.html#abfd4cb3faa2f1d6840b8123765fa2fc4">best_solution</a> (int item_id) const override</td></tr>
 <tr class="separator:abfd4cb3faa2f1d6840b8123765fa2fc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae194e7bee4a383e5ee6c8ed341b49b7e"><td class="memItemLeft" align="right" valign="top">virtual std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_base_knapsack_solver.html#ae194e7bee4a383e5ee6c8ed341b49b7e">GetName</a> () const</td></tr>
@@ -190,12 +190,12 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1_base_knapsack_solver.html#af75968e8e76e35de6e7cdfaa0488b131">BaseKnapsackSolver</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00629">629</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00638">638</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
-<a id="a35bfa97bc24861491acb8d3d20087306"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a35bfa97bc24861491acb8d3d20087306">&#9670;&nbsp;</a></span>GetLowerAndUpperBoundWhenItem()</h2>
+<a id="ac9849a7043959c65033fa6f4a63bb10e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac9849a7043959c65033fa6f4a63bb10e">&#9670;&nbsp;</a></span>GetLowerAndUpperBoundWhenItem()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -218,13 +218,13 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64 *&#160;</td>
+          <td class="paramtype">int64_t *&#160;</td>
           <td class="paramname"><em>lower_bound</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64 *&#160;</td>
+          <td class="paramtype">int64_t *&#160;</td>
           <td class="paramname"><em>upper_bound</em>&#160;</td>
         </tr>
         <tr>
@@ -240,7 +240,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented from <a class="el" href="classoperations__research_1_1_base_knapsack_solver.html#ae85c7e2f3bfc7d9a752a3ee4a4205c28">BaseKnapsackSolver</a>.</p>
+<p>Reimplemented from <a class="el" href="classoperations__research_1_1_base_knapsack_solver.html#a89ae568099e8a8937bb049a1626e6d3a">BaseKnapsackSolver</a>.</p>
 
 </div>
 </div>
@@ -267,7 +267,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00590">590</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00599">599</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -294,12 +294,12 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00614">614</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00623">623</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
-<a id="a51cac72a6280d047002a1b9bf34d7948"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a51cac72a6280d047002a1b9bf34d7948">&#9670;&nbsp;</a></span>Init()</h2>
+<a id="a734b6464309adbbdeb63ef759f690ff1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a734b6464309adbbdeb63ef759f690ff1">&#9670;&nbsp;</a></span>Init()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -310,19 +310,19 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void Init </td>
           <td>(</td>
-          <td class="paramtype">const std::vector&lt; int64 &gt; &amp;&#160;</td>
+          <td class="paramtype">const std::vector&lt; int64_t &gt; &amp;&#160;</td>
           <td class="paramname"><em>profits</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::vector&lt; std::vector&lt; int64 &gt; &gt; &amp;&#160;</td>
+          <td class="paramtype">const std::vector&lt; std::vector&lt; int64_t &gt; &gt; &amp;&#160;</td>
           <td class="paramname"><em>weights</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::vector&lt; int64 &gt; &amp;&#160;</td>
+          <td class="paramtype">const std::vector&lt; int64_t &gt; &amp;&#160;</td>
           <td class="paramname"><em>capacities</em>&#160;</td>
         </tr>
         <tr>
@@ -338,7 +338,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implements <a class="el" href="classoperations__research_1_1_base_knapsack_solver.html#ac978ac74a7ba1451dd87398ac903234c">BaseKnapsackSolver</a>.</p>
+<p>Implements <a class="el" href="classoperations__research_1_1_base_knapsack_solver.html#abb1c2efb23ee210447502a9baab0812a">BaseKnapsackSolver</a>.</p>
 
 </div>
 </div>
@@ -366,12 +366,12 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00622">622</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00631">631</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
-<a id="ad596c251b64c28e1e5b34e9de44b2dd7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad596c251b64c28e1e5b34e9de44b2dd7">&#9670;&nbsp;</a></span>Solve()</h2>
+<a id="a788a597dac89a082d3ed4994d654dec1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a788a597dac89a082d3ed4994d654dec1">&#9670;&nbsp;</a></span>Solve()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -380,7 +380,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int64 Solve </td>
+          <td class="memname">int64_t Solve </td>
           <td>(</td>
           <td class="paramtype">TimeLimit *&#160;</td>
           <td class="paramname"><em>time_limit</em>, </td>
@@ -404,7 +404,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implements <a class="el" href="classoperations__research_1_1_base_knapsack_solver.html#a64d6539ac3d0d0cd8c1e6c4ea41dac52">BaseKnapsackSolver</a>.</p>
+<p>Implements <a class="el" href="classoperations__research_1_1_base_knapsack_solver.html#aae09d1be6e3ce3d746c833f7da003de9">BaseKnapsackSolver</a>.</p>
 
 </div>
 </div>

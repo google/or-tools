@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.2</span>
+                <span id="sfml">Google OR-Tools 9.0</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -89,8 +89,22 @@ $(document).ready(function(){initNavTree('classcom_1_1google_1_1ortools_1_1const
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Local Search Filters are used for fast neighbor pruning. </p>
+<div class="textblock"><p>Classes to which this template function can be applied to as of 04/2014. </p>
 <p><br  />
+ Usage: LocalSearchOperator* op = MakeLocalSearchOperator&lt;Relocate&gt;(...);<br  />
+ class TwoOpt;<br  />
+ class Relocate;<br  />
+ class Exchange;<br  />
+ class Cross;<br  />
+ class MakeActiveOperator;<br  />
+ class MakeInactiveOperator;<br  />
+ class MakeChainInactiveOperator;<br  />
+ class SwapActiveOperator;<br  />
+ class ExtendedSwapActiveOperator;<br  />
+ class MakeActiveAndRelocate;<br  />
+ class RelocateAndMakeActiveOperator;<br  />
+ class RelocateAndMakeInactiveOperator;<br  />
+ Local Search Filters are used for fast neighbor pruning.<br  />
  Filtering a move is done in several phases:<br  />
 </p><ul>
 <li>in the Relax phase, filters determine which parts of their internals<br  />
@@ -112,7 +126,7 @@ $(document).ready(function(){initNavTree('classcom_1_1google_1_1ortools_1_1const
  Accept()/Revert(). </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00029">29</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00043">43</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -200,7 +214,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00032">32</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00046">46</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -219,7 +233,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00145">145</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00159">159</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -273,9 +287,7 @@ Protected Member Functions</h2></td></tr>
  but the delta (a,0) will be accepted.<br  />
  TODO(user): Remove arguments when there are no more need for those. </p>
 
-<p>Reimplemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter.html#ad9cd3297f1293dc55cd071af3db5fbcc">CPFeasibilityFilter</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BasePathFilter.html#ad9cd3297f1293dc55cd071af3db5fbcc">BasePathFilter</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00098">98</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00112">112</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -307,7 +319,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Dual of <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html#abc29e3675f4a7c35669bfa31de0f5f34" title="Lets the filter know what delta and deltadelta will be passed in the next  Accept().">Relax()</a>, lets the filter know that the delta was accepted. </p>
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00083">83</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00097">97</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -328,9 +340,9 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html#a155da317e33b817886120f10038c12cf">BaseObject</a>.</p>
 
-<p>Reimplemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html#a155da317e33b817886120f10038c12cf">IntVarLocalSearchFilter</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter.html#a155da317e33b817886120f10038c12cf">CPFeasibilityFilter</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BasePathFilter.html#a155da317e33b817886120f10038c12cf">BasePathFilter</a>.</p>
+<p>Reimplemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html#a155da317e33b817886120f10038c12cf">IntVarLocalSearchFilter</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00046">46</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00060">60</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -351,7 +363,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Objective value from the last time Accept() was called and returned true. </p>
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00141">141</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00155">155</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -372,7 +384,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Objective value from last time Synchronize() was called. </p>
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00134">134</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00148">148</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -391,7 +403,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00102">102</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00116">116</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -424,7 +436,7 @@ Protected Member Functions</h2></td></tr>
 <p>Lets the filter know what delta and deltadelta will be passed in the next<br  />
  Accept(). </p>
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00076">76</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00090">90</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -445,7 +457,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Sets the filter to empty solution. </p>
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00127">127</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00141">141</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -466,7 +478,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Cancels the changes made by the last <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html#abc29e3675f4a7c35669bfa31de0f5f34" title="Lets the filter know what delta and deltadelta will be passed in the next  Accept().">Relax()</a>/Accept() calls. </p>
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00120">120</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00134">134</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -495,7 +507,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html#aeb590aba470ae6ec1e69cdad7bb5961c">IntVarLocalSearchFilter</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00057">57</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00071">71</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -516,7 +528,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html#a71489e94aa126da236972db0ade7229a">IntVarLocalSearchFilter</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00062">62</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00076">76</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -537,7 +549,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html#ad4b835b84e76e8d03a518291271069a9">IntVarLocalSearchFilter</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00067">67</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00081">81</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -576,7 +588,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html#a064b7cfaa67ccf0d3f3ce31b27c4bb62">IntVarLocalSearchFilter</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00113">113</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00127">127</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -603,7 +615,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#ad146fa8579a5f8a876c4688cc5a68520">SolutionCollector</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVar.html#ad146fa8579a5f8a876c4688cc5a68520">SequenceVar</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLog.html#ad146fa8579a5f8a876c4688cc5a68520">SearchLog</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLimit.html#ad146fa8579a5f8a876c4688cc5a68520">SearchLimit</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimit.html#ad146fa8579a5f8a876c4688cc5a68520">RegularLimit</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationMonitor.html#ad146fa8579a5f8a876c4688cc5a68520">PropagationMonitor</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#ad146fa8579a5f8a876c4688cc5a68520">PropagationBaseObject</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Pack.html#ad146fa8579a5f8a876c4688cc5a68520">Pack</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1OptimizeVar.html#ad146fa8579a5f8a876c4688cc5a68520">OptimizeVar</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMonitor.html#ad146fa8579a5f8a876c4688cc5a68520">LocalSearchMonitor</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilterManager.html#ad146fa8579a5f8a876c4688cc5a68520">LocalSearchFilterManager</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarIterator.html#ad146fa8579a5f8a876c4688cc5a68520">IntVarIterator</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalVehicleBreaksConstraint.html#ad146fa8579a5f8a876c4688cc5a68520">GlobalVehicleBreaksConstraint</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Demon.html#ad146fa8579a5f8a876c4688cc5a68520">Demon</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html#ad146fa8579a5f8a876c4688cc5a68520">DecisionBuilder</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision.html#ad146fa8579a5f8a876c4688cc5a68520">Decision</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter.html#ad146fa8579a5f8a876c4688cc5a68520">CPFeasibilityFilter</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html#ad146fa8579a5f8a876c4688cc5a68520">Constraint</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BooleanVar.html#ad146fa8579a5f8a876c4688cc5a68520">BooleanVar</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html#ad146fa8579a5f8a876c4688cc5a68520">Assignment</a>.</p>
+<p>Reimplemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#ad146fa8579a5f8a876c4688cc5a68520">SolutionCollector</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVar.html#ad146fa8579a5f8a876c4688cc5a68520">SequenceVar</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLog.html#ad146fa8579a5f8a876c4688cc5a68520">SearchLog</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLimit.html#ad146fa8579a5f8a876c4688cc5a68520">SearchLimit</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimit.html#ad146fa8579a5f8a876c4688cc5a68520">RegularLimit</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationMonitor.html#ad146fa8579a5f8a876c4688cc5a68520">PropagationMonitor</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#ad146fa8579a5f8a876c4688cc5a68520">PropagationBaseObject</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Pack.html#ad146fa8579a5f8a876c4688cc5a68520">Pack</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1OptimizeVar.html#ad146fa8579a5f8a876c4688cc5a68520">OptimizeVar</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMonitor.html#ad146fa8579a5f8a876c4688cc5a68520">LocalSearchMonitor</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilterManager.html#ad146fa8579a5f8a876c4688cc5a68520">LocalSearchFilterManager</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarIterator.html#ad146fa8579a5f8a876c4688cc5a68520">IntVarIterator</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalVehicleBreaksConstraint.html#ad146fa8579a5f8a876c4688cc5a68520">GlobalVehicleBreaksConstraint</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Demon.html#ad146fa8579a5f8a876c4688cc5a68520">Demon</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html#ad146fa8579a5f8a876c4688cc5a68520">DecisionBuilder</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision.html#ad146fa8579a5f8a876c4688cc5a68520">Decision</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html#ad146fa8579a5f8a876c4688cc5a68520">Constraint</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BooleanVar.html#ad146fa8579a5f8a876c4688cc5a68520">BooleanVar</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html#ad146fa8579a5f8a876c4688cc5a68520">Assignment</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="BaseObject_8java_source.html#l00048">48</a> of file <a class="el" href="BaseObject_8java_source.html">BaseObject.java</a>.</p>
 

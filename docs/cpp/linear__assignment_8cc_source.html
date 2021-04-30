@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -89,7 +89,7 @@ $(document).ready(function(){initNavTree('linear__assignment_8cc_source.html',''
 <div class="title">linear_assignment.cc</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="linear__assignment_8cc.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2018 Google LLC</span></div>
+<a href="linear__assignment_8cc.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2021 Google LLC</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">// you may not use this file except in compliance with the License.</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">// You may obtain a copy of the License at</span></div>
@@ -106,17 +106,16 @@ $(document).ready(function(){initNavTree('linear__assignment_8cc_source.html',''
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="commandlineflags_8h.html">ortools/base/commandlineflags.h</a>&quot;</span></div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
-<div class="line"><a name="l00018"></a><span class="lineno"><a class="line" href="linear__assignment_8cc.html#a9fa7f553c42f15ff2794002088e8f726">   18</a></span>&#160;<a class="code" href="linear__assignment_8cc.html#a9fa7f553c42f15ff2794002088e8f726">ABSL_FLAG</a>(<a class="code" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>, assignment_alpha, 5,</div>
+<div class="line"><a name="l00018"></a><span class="lineno"><a class="line" href="linear__assignment_8cc.html#a62a8e6624be7b15a7a18228b4af9b38e">   18</a></span>&#160;<a class="code" href="linear__assignment_8cc.html#a62a8e6624be7b15a7a18228b4af9b38e">ABSL_FLAG</a>(int64_t, assignment_alpha, 5,</div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;          <span class="stringliteral">&quot;Divisor for epsilon at each Refine &quot;</span></div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;          <span class="stringliteral">&quot;step of LinearSumAssignment.&quot;</span>);</div>
-<div class="line"><a name="l00021"></a><span class="lineno"><a class="line" href="linear__assignment_8cc.html#a4015b4551920cb92d7c74084a7a5f51e">   21</a></span>&#160;<a class="code" href="linear__assignment_8cc.html#a9fa7f553c42f15ff2794002088e8f726">ABSL_FLAG</a>(<span class="keywordtype">int</span>, assignment_progress_logging_period, 5000,</div>
+<div class="line"><a name="l00021"></a><span class="lineno"><a class="line" href="linear__assignment_8cc.html#a4015b4551920cb92d7c74084a7a5f51e">   21</a></span>&#160;<a class="code" href="linear__assignment_8cc.html#a62a8e6624be7b15a7a18228b4af9b38e">ABSL_FLAG</a>(<span class="keywordtype">int</span>, assignment_progress_logging_period, 5000,</div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;          <span class="stringliteral">&quot;Number of relabelings to do between logging progress messages &quot;</span></div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;          <span class="stringliteral">&quot;when verbose level is 4 or more.&quot;</span>);</div>
-<div class="line"><a name="l00024"></a><span class="lineno"><a class="line" href="linear__assignment_8cc.html#ad7134473cbacc89fd7c1466febd579ff">   24</a></span>&#160;<a class="code" href="linear__assignment_8cc.html#a9fa7f553c42f15ff2794002088e8f726">ABSL_FLAG</a>(<span class="keywordtype">bool</span>, assignment_stack_order, <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00024"></a><span class="lineno"><a class="line" href="linear__assignment_8cc.html#ad7134473cbacc89fd7c1466febd579ff">   24</a></span>&#160;<a class="code" href="linear__assignment_8cc.html#a62a8e6624be7b15a7a18228b4af9b38e">ABSL_FLAG</a>(<span class="keywordtype">bool</span>, assignment_stack_order, <span class="keyword">true</span>,</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;          <span class="stringliteral">&quot;Process active nodes in stack (as opposed to queue) order.&quot;</span>);</div>
 <div class="ttc" id="acommandlineflags_8h_html"><div class="ttname"><a href="commandlineflags_8h.html">commandlineflags.h</a></div></div>
-<div class="ttc" id="aintegral__types_8h_html_a7cde0074dfd288f2d70c0e035dacb28a"><div class="ttname"><a href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a></div><div class="ttdeci">int64_t int64</div><div class="ttdef"><b>Definition:</b> <a href="integral__types_8h_source.html#l00034">integral_types.h:34</a></div></div>
-<div class="ttc" id="alinear__assignment_8cc_html_a9fa7f553c42f15ff2794002088e8f726"><div class="ttname"><a href="linear__assignment_8cc.html#a9fa7f553c42f15ff2794002088e8f726">ABSL_FLAG</a></div><div class="ttdeci">ABSL_FLAG(int64, assignment_alpha, 5, &quot;Divisor for epsilon at each Refine &quot; &quot;step of LinearSumAssignment.&quot;)</div></div>
+<div class="ttc" id="alinear__assignment_8cc_html_a62a8e6624be7b15a7a18228b4af9b38e"><div class="ttname"><a href="linear__assignment_8cc.html#a62a8e6624be7b15a7a18228b4af9b38e">ABSL_FLAG</a></div><div class="ttdeci">ABSL_FLAG(int64_t, assignment_alpha, 5, &quot;Divisor for epsilon at each Refine &quot; &quot;step of LinearSumAssignment.&quot;)</div></div>
 <div class="ttc" id="alinear__assignment_8h_html"><div class="ttname"><a href="linear__assignment_8h.html">linear_assignment.h</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

@@ -11,7 +11,7 @@ var classoperations__research_1_1_blossom_graph =
     [ "DebugEdgeIsTightAndExternal", "classoperations__research_1_1_blossom_graph.html#a41347b63abb9f92b02b1705cdae50cad", null ],
     [ "DebugString", "classoperations__research_1_1_blossom_graph.html#a764be64f3029f8b8e23511061d8de355", null ],
     [ "DebugUpdateNodeDual", "classoperations__research_1_1_blossom_graph.html#ad7e519048b150893f06581b7f270c118", null ],
-    [ "DEFINE_INT_TYPE", "classoperations__research_1_1_blossom_graph.html#a2f30c14215da6ce3f49392b829fca999", null ],
+    [ "DEFINE_INT_TYPE", "classoperations__research_1_1_blossom_graph.html#a10d5779065b7b04bb0e5f419109171c7", null ],
     [ "DEFINE_INT_TYPE", "classoperations__research_1_1_blossom_graph.html#ab59ebfa854d4743c3ebd16274840a915", null ],
     [ "DEFINE_INT_TYPE", "classoperations__research_1_1_blossom_graph.html#a947a267bc3126134a5b7f7562a9124aa", null ],
     [ "DisplayStats", "classoperations__research_1_1_blossom_graph.html#ad74099ecb3f19aea3065345aeb146333", null ],

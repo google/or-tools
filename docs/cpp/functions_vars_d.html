@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -127,6 +127,9 @@ $(document).ready(function(){initNavTree('functions_vars_d.html',''); initResiza
 <li>delayed_bound_demons_
 : <a class="el" href="classoperations__research_1_1_boolean_var.html#a5114f46a021e08dd81c2d7462a8bc735">BooleanVar</a>
 </li>
+<li>delta
+: <a class="el" href="structoperations__research_1_1sat_1_1_neighborhood.html#a9229601d319030879a64b25531c8a411">Neighborhood</a>
+</li>
 <li>delta_changes_
 : <a class="el" href="classoperations__research_1_1_var_local_search_operator.html#a6525132991e9140755b271a1cf43fee7">VarLocalSearchOperator&lt; V, Val, Handler &gt;</a>
 </li>
@@ -135,7 +138,8 @@ $(document).ready(function(){initNavTree('functions_vars_d.html',''); initResiza
 , <a class="el" href="structoperations__research_1_1_state_info.html#acb5ba97551079e0b072c62c21d784ac5">StateInfo</a>
 </li>
 <li>description
-: <a class="el" href="structoperations__research_1_1_scip_constraint_handler_description.html#a2e1454f6988673f814408646edaeb320">ScipConstraintHandlerDescription</a>
+: <a class="el" href="structoperations__research_1_1_g_scip_event_handler_description.html#a2e1454f6988673f814408646edaeb320">GScipEventHandlerDescription</a>
+, <a class="el" href="structoperations__research_1_1_scip_constraint_handler_description.html#a2e1454f6988673f814408646edaeb320">ScipConstraintHandlerDescription</a>
 </li>
 <li>destroy
 : <a class="el" href="struct_swig_py_client_data.html#ad7eb0381152beb0af081ac87daa594c9">SwigPyClientData</a>
@@ -163,25 +167,28 @@ $(document).ready(function(){initNavTree('functions_vars_d.html',''); initResiza
 : <a class="el" href="structoperations__research_1_1_routing_model_1_1_cost_class_1_1_dimension_cost.html#a0c310f28070bbb116acea285b7b891ee">RoutingModel::CostClass::DimensionCost</a>
 </li>
 <li>dimension_capacities
-: <a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#a249df6aa5bd9c90924e5e5b0012786e4">RoutingModel::VehicleClass</a>
+: <a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#acc6d9c6c1b86ff13372f60a060366ff8">RoutingModel::VehicleClass</a>
 </li>
 <li>dimension_end_cumuls_max
-: <a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#abf408711522975c20e4ce1c37033e12e">RoutingModel::VehicleClass</a>
+: <a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#a6ff665a114fc7216643abe4ebd9485eb">RoutingModel::VehicleClass</a>
 </li>
 <li>dimension_end_cumuls_min
-: <a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#ab9b7cbea1e22c00a42d9d053fe43dcc6">RoutingModel::VehicleClass</a>
+: <a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#ae20502504f924b9e57b872ecd6d5ede9">RoutingModel::VehicleClass</a>
 </li>
 <li>dimension_evaluator_classes
-: <a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#a3bfe49204f799d059f70a2c016973a12">RoutingModel::VehicleClass</a>
+: <a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#ae7e66da164cc3f276dfaac687ab3f36e">RoutingModel::VehicleClass</a>
 </li>
 <li>dimension_start_cumuls_max
-: <a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#ae9ab15c58c9e4de66d043fb151c50535">RoutingModel::VehicleClass</a>
+: <a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#af485ce6118a7a6f07e373df6c297125f">RoutingModel::VehicleClass</a>
 </li>
 <li>dimension_start_cumuls_min
-: <a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#aae36a2ea4a1377bb08a7b3610868ab0b">RoutingModel::VehicleClass</a>
+: <a class="el" href="structoperations__research_1_1_routing_model_1_1_vehicle_class.html#aef9f8484ea0ae76b6168116d750a1b1b">RoutingModel::VehicleClass</a>
 </li>
 <li>dimension_transit_evaluator_class_and_cost_coefficient
 : <a class="el" href="structoperations__research_1_1_routing_model_1_1_cost_class.html#af2f6e7be2de171fceb7a2de8e62b6fab">RoutingModel::CostClass</a>
+</li>
+<li>disabled
+: <a class="el" href="struct_s_c_i_p___messagehdlr_data.html#a23a6eca8a8b09f8bb1c8f49056f427b5">SCIP_MessagehdlrData</a>
 </li>
 <li>display_all_solutions
 : <a class="el" href="structoperations__research_1_1fz_1_1_flatzinc_sat_parameters.html#ab766be681c57a63a8b227fc01eac5796">FlatzincSatParameters</a>
@@ -203,11 +210,10 @@ $(document).ready(function(){initNavTree('functions_vars_d.html',''); initResiza
 : <a class="el" href="structoperations__research_1_1fz_1_1_flatzinc_sat_parameters.html#a2f756327be3a74650aba1b723ba8d71c">FlatzincSatParameters</a>
 </li>
 <li>distance
-: <a class="el" href="structoperations__research_1_1_cheapest_insertion_filtered_heuristic_1_1_start_end_value.html#a3b397c04a34b9ac7392257939f90b1bb">CheapestInsertionFilteredHeuristic::StartEndValue</a>
-, <a class="el" href="structoperations__research_1_1_sweep_index.html#a79b8e036dca6911e3295a47d99f21f43">SweepIndex</a>
+: <a class="el" href="structoperations__research_1_1_cheapest_insertion_filtered_heuristic_1_1_start_end_value.html#a655ac5f27be9e0897ecb004c8f1b2f1c">CheapestInsertionFilteredHeuristic::StartEndValue</a>
 </li>
 <li>distance_duration
-: <a class="el" href="structoperations__research_1_1_disjunctive_propagator_1_1_tasks.html#a7cc44fe8f5261fa7bacc58867dfb3882">DisjunctivePropagator::Tasks</a>
+: <a class="el" href="structoperations__research_1_1_disjunctive_propagator_1_1_tasks.html#a10679034cef02c42959f43b6d3db9aba">DisjunctivePropagator::Tasks</a>
 </li>
 <li>DL_MOVING_AVERAGE_RESTART
 : <a class="el" href="classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a05adc2466da73c2014809c69035a07ca">PROTOBUF_FINAL</a>
@@ -221,9 +227,6 @@ $(document).ready(function(){initNavTree('functions_vars_d.html',''); initResiza
 </li>
 <li>domain_map
 : <a class="el" href="structoperations__research_1_1fz_1_1_parser_context.html#afba9266326cf8629fd07db76ba0ef18b">ParserContext</a>
-</li>
-<li>domain_strategy
-: <a class="el" href="structoperations__research_1_1sat_1_1_strategy.html#a3fb4ec4afb28873c4155e5a96f836d0f">Strategy</a>
 </li>
 <li>DomainReductionStrategy_ARRAYSIZE
 : <a class="el" href="classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a6ffbee61e6d6118bd6e6e642561eab29">PROTOBUF_FINAL</a>
@@ -247,14 +250,32 @@ $(document).ready(function(){initNavTree('functions_vars_d.html',''); initResiza
 <li>dual
 : <a class="el" href="structoperations__research_1_1_blossom_graph_1_1_node.html#aaac09b61c2e9f87b7b2234836d5a950a">BlossomGraph::Node</a>
 </li>
+<li>dual_linear_constraints_filter
+: <a class="el" href="structoperations__research_1_1math__opt_1_1_model_solve_parameters.html#af49e7e3489730377f09f92d06c4fd0d5">ModelSolveParameters</a>
+</li>
+<li>dual_rays
+: <a class="el" href="structoperations__research_1_1math__opt_1_1_indexed_solutions.html#abcc13b24b3d5ff188d37fb4af2ef94e3">IndexedSolutions</a>
+, <a class="el" href="structoperations__research_1_1math__opt_1_1_result.html#af8a0308f391215b9c41b855832504054">Result</a>
+</li>
+<li>dual_solutions
+: <a class="el" href="structoperations__research_1_1math__opt_1_1_indexed_solutions.html#a0c16ef549b2b4ae1c919befe358db529">IndexedSolutions</a>
+, <a class="el" href="structoperations__research_1_1math__opt_1_1_result.html#add1943472845692060a2649cea91b9e5">Result</a>
+</li>
 <li>dual_values
 : <a class="el" href="structoperations__research_1_1glop_1_1_problem_solution.html#ac6b277da46124f6b08841906b0febbed">ProblemSolution</a>
+, <a class="el" href="structoperations__research_1_1math__opt_1_1_indexed_dual_ray.html#aeadb7c4134d66923e3cfa1d48f5b4e8f">IndexedDualRay</a>
+, <a class="el" href="structoperations__research_1_1math__opt_1_1_indexed_dual_solution.html#aeadb7c4134d66923e3cfa1d48f5b4e8f">IndexedDualSolution</a>
+, <a class="el" href="structoperations__research_1_1math__opt_1_1_result_1_1_dual_ray.html#a801b3639c3daff80850bf450a95fab3d">Result::DualRay</a>
+, <a class="el" href="structoperations__research_1_1math__opt_1_1_result_1_1_dual_solution.html#a801b3639c3daff80850bf450a95fab3d">Result::DualSolution</a>
+</li>
+<li>dual_variables_filter
+: <a class="el" href="structoperations__research_1_1math__opt_1_1_model_solve_parameters.html#a63b1200dd27a8a1e749d5013c32aba47">ModelSolveParameters</a>
 </li>
 <li>duration_max
-: <a class="el" href="structoperations__research_1_1_disjunctive_propagator_1_1_tasks.html#a702574cf13b54bc225f06ce3a548d4e3">DisjunctivePropagator::Tasks</a>
+: <a class="el" href="structoperations__research_1_1_disjunctive_propagator_1_1_tasks.html#abd7699021e5652feb514e0d68c973df2">DisjunctivePropagator::Tasks</a>
 </li>
 <li>duration_min
-: <a class="el" href="structoperations__research_1_1_disjunctive_propagator_1_1_tasks.html#a115f81774c290337166f498824bf5b87">DisjunctivePropagator::Tasks</a>
+: <a class="el" href="structoperations__research_1_1_disjunctive_propagator_1_1_tasks.html#ad5082bc7cd5927cc9fcc9278fac7184a">DisjunctivePropagator::Tasks</a>
 </li>
 <li>dvalue
 : <a class="el" href="structswig__const__info.html#ab88920172b5a32b077bd95bb1f3d6f8e">swig_const_info</a>

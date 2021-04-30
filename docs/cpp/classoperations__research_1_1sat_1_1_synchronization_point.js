@@ -2,7 +2,7 @@ var classoperations__research_1_1sat_1_1_synchronization_point =
 [
     [ "SynchronizationPoint", "classoperations__research_1_1sat_1_1_synchronization_point.html#a8e26568e9054f7d3880c62cf50b0cdf1", null ],
     [ "deterministic_time", "classoperations__research_1_1sat_1_1_synchronization_point.html#ae525d235b02bcfc962d845e28f5f0125", null ],
-    [ "GenerateTask", "classoperations__research_1_1sat_1_1_synchronization_point.html#af3fb0ae96b55099327acd6adb30647dc", null ],
+    [ "GenerateTask", "classoperations__research_1_1sat_1_1_synchronization_point.html#a810989291f53ab959329c68c269cd2c7", null ],
     [ "name", "classoperations__research_1_1sat_1_1_synchronization_point.html#a1d89c28bd42ba9a52da008bb69367171", null ],
     [ "score", "classoperations__research_1_1sat_1_1_synchronization_point.html#a321c6d764d7a95cb82eea2a0e1198028", null ],
     [ "Synchronize", "classoperations__research_1_1sat_1_1_synchronization_point.html#aad936f0a60794f472d82278a9723d0d4", null ],

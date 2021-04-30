@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -98,7 +98,7 @@ $(document).ready(function(){initNavTree('cp__model__solver_8h.html',''); initRe
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespaceoperations__research"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html">operations_research</a></td></tr>
-<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">The vehicle routing library lets one model and solve generic vehicle routing problems ranging from the Traveling Salesman Problem to more complex problems such as the Capacitated Vehicle Routing Problem with Time Windows. <br /></td></tr>
+<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">Collection of objects used to extend the <a class="el" href="classoperations__research_1_1_constraint.html" title="A constraint is the main modeling object.">Constraint</a> <a class="el" href="classoperations__research_1_1_solver.html" title="Solver Class.">Solver</a> library. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespaceoperations__research_1_1sat"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html">operations_research::sat</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -126,9 +126,6 @@ Functions</h2></td></tr>
 <tr class="memitem:a0a9777d760241f28010442a2c01f45e0"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a0a9777d760241f28010442a2c01f45e0">NewFeasibleSolutionObserver</a> (const std::function&lt; void(const CpSolverResponse &amp;<a class="el" href="cp__model__solver_8cc.html#abcd33b18ce6d5a90a4ba5c37cfa58829">response</a>)&gt; &amp;observer)</td></tr>
 <tr class="memdesc:a0a9777d760241f28010442a2c01f45e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a solution observer with the model with model.Add(NewFeasibleSolutionObserver([](response){...}));.  <a href="namespaceoperations__research_1_1sat.html#a0a9777d760241f28010442a2c01f45e0">More...</a><br /></td></tr>
 <tr class="separator:a0a9777d760241f28010442a2c01f45e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad04337634227eac006d3e33a7028f82f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ad04337634227eac006d3e33a7028f82f">SetSynchronizationFunction</a> (std::function&lt; CpSolverResponse()&gt; f, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
-<tr class="memdesc:ad04337634227eac006d3e33a7028f82f"><td class="mdescLeft">&#160;</td><td class="mdescRight">If set, the underlying solver will call this function regularly in a deterministic way.  <a href="namespaceoperations__research_1_1sat.html#ad04337634227eac006d3e33a7028f82f">More...</a><br /></td></tr>
-<tr class="separator:ad04337634227eac006d3e33a7028f82f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1684fe34484d78336d3cdac55ec6de57"><td class="memItemLeft" align="right" valign="top">std::function&lt; SatParameters(Model *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a1684fe34484d78336d3cdac55ec6de57">NewSatParameters</a> (const std::string &amp;params)</td></tr>
 <tr class="memdesc:a1684fe34484d78336d3cdac55ec6de57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates parameters for the solver, which you can add to the model with.  <a href="namespaceoperations__research_1_1sat.html#a1684fe34484d78336d3cdac55ec6de57">More...</a><br /></td></tr>
 <tr class="separator:a1684fe34484d78336d3cdac55ec6de57"><td class="memSeparator" colspan="2">&#160;</td></tr>

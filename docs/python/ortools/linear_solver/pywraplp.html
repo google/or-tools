@@ -209,6 +209,10 @@ class Solver(object):
         &#34;&#34;&#34;
         return _pywraplp.Solver_variables(self)
 
+    def variable(self, index: &#34;int&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        r&#34;&#34;&#34;Returns the variable at position index.&#34;&#34;&#34;
+        return _pywraplp.Solver_variable(self, index)
+
     def LookupVariable(self, var_name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
         r&#34;&#34;&#34;
         Looks up a variable by name, and returns nullptr if it does not exist. The
@@ -250,6 +254,10 @@ class Solver(object):
         They are listed in the order in which they were created.
         &#34;&#34;&#34;
         return _pywraplp.Solver_constraints(self)
+
+    def constraint(self, index: &#34;int&#34;) -&gt; &#34;operations_research::MPConstraint *&#34;:
+        r&#34;&#34;&#34; Returns the constraint at the given index.&#34;&#34;&#34;
+        return _pywraplp.Solver_constraint(self, index)
 
     def LookupConstraint(self, constraint_name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPConstraint *&#34;:
         r&#34;&#34;&#34;
@@ -417,11 +425,11 @@ class Solver(object):
         r&#34;&#34;&#34; Suppresses solver logging.&#34;&#34;&#34;
         return _pywraplp.Solver_SuppressOutput(self)
 
-    def iterations(self) -&gt; &#34;int64&#34;:
+    def iterations(self) -&gt; &#34;int64_t&#34;:
         r&#34;&#34;&#34; Returns the number of simplex iterations.&#34;&#34;&#34;
         return _pywraplp.Solver_iterations(self)
 
-    def nodes(self) -&gt; &#34;int64&#34;:
+    def nodes(self) -&gt; &#34;int64_t&#34;:
         r&#34;&#34;&#34;
         Returns the number of branch-and-bound nodes evaluated during the solve.
 
@@ -473,15 +481,11 @@ class Solver(object):
         &#34;&#34;&#34;
         return _pywraplp.Solver_NextSolution(self)
 
-    def set_time_limit(self, time_limit_milliseconds: &#34;int64&#34;) -&gt; &#34;void&#34;:
+    def set_time_limit(self, time_limit_milliseconds: &#34;int64_t&#34;) -&gt; &#34;void&#34;:
         return _pywraplp.Solver_set_time_limit(self, time_limit_milliseconds)
 
-    def wall_time(self) -&gt; &#34;int64&#34;:
+    def wall_time(self) -&gt; &#34;int64_t&#34;:
         return _pywraplp.Solver_wall_time(self)
-
-    @staticmethod
-    def SetGurobiLibraryPath(full_library_path: &#34;std::string const &amp;&#34;) -&gt; &#34;void&#34;:
-        return _pywraplp.Solver_SetGurobiLibraryPath(full_library_path)
 
     def LoadModelFromProto(self, input_model: &#34;operations_research::MPModelProto const &amp;&#34;) -&gt; &#34;std::string&#34;:
         return _pywraplp.Solver_LoadModelFromProto(self, input_model)
@@ -560,13 +564,13 @@ class Solver(object):
     def Infinity() -&gt; &#34;double&#34;:
         return _pywraplp.Solver_Infinity()
 
-    def SetTimeLimit(self, x: &#34;int64&#34;) -&gt; &#34;void&#34;:
+    def SetTimeLimit(self, x: &#34;int64_t&#34;) -&gt; &#34;void&#34;:
         return _pywraplp.Solver_SetTimeLimit(self, x)
 
-    def WallTime(self) -&gt; &#34;int64&#34;:
+    def WallTime(self) -&gt; &#34;int64_t&#34;:
         return _pywraplp.Solver_WallTime(self)
 
-    def Iterations(self) -&gt; &#34;int64&#34;:
+    def Iterations(self) -&gt; &#34;int64_t&#34;:
         return _pywraplp.Solver_Iterations(self)
 
 # Register Solver in _pywraplp:
@@ -635,9 +639,6 @@ def Solver_infinity() -&gt; &#34;double&#34;:
     You can use -MPSolver::infinity() for negative infinity.
     &#34;&#34;&#34;
     return _pywraplp.Solver_infinity()
-
-def Solver_SetGurobiLibraryPath(full_library_path: &#34;std::string const &amp;&#34;) -&gt; &#34;void&#34;:
-    return _pywraplp.Solver_SetGurobiLibraryPath(full_library_path)
 
 def Solver_Infinity() -&gt; &#34;double&#34;:
     return _pywraplp.Solver_Infinity()
@@ -1197,19 +1198,6 @@ well as a short version (i.e. "SCIP_MIXED_INTEGER_PROGRAMMING" or "SCIP").</p>
       - GLPK_MIXED_INTEGER_PROGRAMMING or GLPK or GLPK_MIP
     &#34;&#34;&#34;
     return _pywraplp.Solver_CreateSolver(solver_id)</code></pre>
-</details>
-</dd>
-<dt id="pywraplp.Solver_SetGurobiLibraryPath"><code class="name flex">
-<span>def <span class="ident">Solver_SetGurobiLibraryPath</span></span>(<span>full_library_path: std::string const &) ‑> void</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def Solver_SetGurobiLibraryPath(full_library_path: &#34;std::string const &amp;&#34;) -&gt; &#34;void&#34;:
-    return _pywraplp.Solver_SetGurobiLibraryPath(full_library_path)</code></pre>
 </details>
 </dd>
 </dl>
@@ -2323,6 +2311,10 @@ though which users build and solve problems.</p>
         &#34;&#34;&#34;
         return _pywraplp.Solver_variables(self)
 
+    def variable(self, index: &#34;int&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        r&#34;&#34;&#34;Returns the variable at position index.&#34;&#34;&#34;
+        return _pywraplp.Solver_variable(self, index)
+
     def LookupVariable(self, var_name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
         r&#34;&#34;&#34;
         Looks up a variable by name, and returns nullptr if it does not exist. The
@@ -2364,6 +2356,10 @@ though which users build and solve problems.</p>
         They are listed in the order in which they were created.
         &#34;&#34;&#34;
         return _pywraplp.Solver_constraints(self)
+
+    def constraint(self, index: &#34;int&#34;) -&gt; &#34;operations_research::MPConstraint *&#34;:
+        r&#34;&#34;&#34; Returns the constraint at the given index.&#34;&#34;&#34;
+        return _pywraplp.Solver_constraint(self, index)
 
     def LookupConstraint(self, constraint_name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPConstraint *&#34;:
         r&#34;&#34;&#34;
@@ -2531,11 +2527,11 @@ though which users build and solve problems.</p>
         r&#34;&#34;&#34; Suppresses solver logging.&#34;&#34;&#34;
         return _pywraplp.Solver_SuppressOutput(self)
 
-    def iterations(self) -&gt; &#34;int64&#34;:
+    def iterations(self) -&gt; &#34;int64_t&#34;:
         r&#34;&#34;&#34; Returns the number of simplex iterations.&#34;&#34;&#34;
         return _pywraplp.Solver_iterations(self)
 
-    def nodes(self) -&gt; &#34;int64&#34;:
+    def nodes(self) -&gt; &#34;int64_t&#34;:
         r&#34;&#34;&#34;
         Returns the number of branch-and-bound nodes evaluated during the solve.
 
@@ -2587,15 +2583,11 @@ though which users build and solve problems.</p>
         &#34;&#34;&#34;
         return _pywraplp.Solver_NextSolution(self)
 
-    def set_time_limit(self, time_limit_milliseconds: &#34;int64&#34;) -&gt; &#34;void&#34;:
+    def set_time_limit(self, time_limit_milliseconds: &#34;int64_t&#34;) -&gt; &#34;void&#34;:
         return _pywraplp.Solver_set_time_limit(self, time_limit_milliseconds)
 
-    def wall_time(self) -&gt; &#34;int64&#34;:
+    def wall_time(self) -&gt; &#34;int64_t&#34;:
         return _pywraplp.Solver_wall_time(self)
-
-    @staticmethod
-    def SetGurobiLibraryPath(full_library_path: &#34;std::string const &amp;&#34;) -&gt; &#34;void&#34;:
-        return _pywraplp.Solver_SetGurobiLibraryPath(full_library_path)
 
     def LoadModelFromProto(self, input_model: &#34;operations_research::MPModelProto const &amp;&#34;) -&gt; &#34;std::string&#34;:
         return _pywraplp.Solver_LoadModelFromProto(self, input_model)
@@ -2674,13 +2666,13 @@ though which users build and solve problems.</p>
     def Infinity() -&gt; &#34;double&#34;:
         return _pywraplp.Solver_Infinity()
 
-    def SetTimeLimit(self, x: &#34;int64&#34;) -&gt; &#34;void&#34;:
+    def SetTimeLimit(self, x: &#34;int64_t&#34;) -&gt; &#34;void&#34;:
         return _pywraplp.Solver_SetTimeLimit(self, x)
 
-    def WallTime(self) -&gt; &#34;int64&#34;:
+    def WallTime(self) -&gt; &#34;int64_t&#34;:
         return _pywraplp.Solver_WallTime(self)
 
-    def Iterations(self) -&gt; &#34;int64&#34;:
+    def Iterations(self) -&gt; &#34;int64_t&#34;:
         return _pywraplp.Solver_Iterations(self)</code></pre>
 </details>
 <h3>Class variables</h3>
@@ -2864,20 +2856,6 @@ def CreateSolver(solver_id: &#34;std::string const &amp;&#34;) -&gt; &#34;operat
 <pre><code class="python">@staticmethod
 def Infinity() -&gt; &#34;double&#34;:
     return _pywraplp.Solver_Infinity()</code></pre>
-</details>
-</dd>
-<dt id="pywraplp.Solver.SetGurobiLibraryPath"><code class="name flex">
-<span>def <span class="ident">SetGurobiLibraryPath</span></span>(<span>full_library_path: std::string const &) ‑> void</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@staticmethod
-def SetGurobiLibraryPath(full_library_path: &#34;std::string const &amp;&#34;) -&gt; &#34;void&#34;:
-    return _pywraplp.Solver_SetGurobiLibraryPath(full_library_path)</code></pre>
 </details>
 </dd>
 <dt id="pywraplp.Solver.SolveWithProto"><code class="name flex">
@@ -3252,7 +3230,7 @@ interruption is not supported; returns false and does nothing.</p></div>
 </details>
 </dd>
 <dt id="pywraplp.Solver.Iterations"><code class="name flex">
-<span>def <span class="ident">Iterations</span></span>(<span>self) ‑> int64</span>
+<span>def <span class="ident">Iterations</span></span>(<span>self) ‑> int64_t</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -3260,7 +3238,7 @@ interruption is not supported; returns false and does nothing.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def Iterations(self) -&gt; &#34;int64&#34;:
+<pre><code class="python">def Iterations(self) -&gt; &#34;int64_t&#34;:
     return _pywraplp.Solver_Iterations(self)</code></pre>
 </details>
 </dd>
@@ -3552,7 +3530,7 @@ configuration file format. Returns true if the operation was successful.</p></di
 </details>
 </dd>
 <dt id="pywraplp.Solver.SetTimeLimit"><code class="name flex">
-<span>def <span class="ident">SetTimeLimit</span></span>(<span>self, x: int64) ‑> void</span>
+<span>def <span class="ident">SetTimeLimit</span></span>(<span>self, x: int64_t) ‑> void</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -3560,7 +3538,7 @@ configuration file format. Returns true if the operation was successful.</p></di
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def SetTimeLimit(self, x: &#34;int64&#34;) -&gt; &#34;void&#34;:
+<pre><code class="python">def SetTimeLimit(self, x: &#34;int64_t&#34;) -&gt; &#34;void&#34;:
     return _pywraplp.Solver_SetTimeLimit(self, x)</code></pre>
 </details>
 </dd>
@@ -3686,7 +3664,7 @@ this method directly.</p></div>
 </details>
 </dd>
 <dt id="pywraplp.Solver.WallTime"><code class="name flex">
-<span>def <span class="ident">WallTime</span></span>(<span>self) ‑> int64</span>
+<span>def <span class="ident">WallTime</span></span>(<span>self) ‑> int64_t</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -3694,8 +3672,22 @@ this method directly.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def WallTime(self) -&gt; &#34;int64&#34;:
+<pre><code class="python">def WallTime(self) -&gt; &#34;int64_t&#34;:
     return _pywraplp.Solver_WallTime(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.constraint"><code class="name flex">
+<span>def <span class="ident">constraint</span></span>(<span>self, index: int) ‑> operations_research::MPConstraint *</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the constraint at the given index.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def constraint(self, index: &#34;int&#34;) -&gt; &#34;operations_research::MPConstraint *&#34;:
+    r&#34;&#34;&#34; Returns the constraint at the given index.&#34;&#34;&#34;
+    return _pywraplp.Solver_constraint(self, index)</code></pre>
 </details>
 </dd>
 <dt id="pywraplp.Solver.constraints"><code class="name flex">
@@ -3718,7 +3710,7 @@ this method directly.</p></div>
 </details>
 </dd>
 <dt id="pywraplp.Solver.iterations"><code class="name flex">
-<span>def <span class="ident">iterations</span></span>(<span>self) ‑> int64</span>
+<span>def <span class="ident">iterations</span></span>(<span>self) ‑> int64_t</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns the number of simplex iterations.</p></div>
@@ -3726,13 +3718,13 @@ this method directly.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def iterations(self) -&gt; &#34;int64&#34;:
+<pre><code class="python">def iterations(self) -&gt; &#34;int64_t&#34;:
     r&#34;&#34;&#34; Returns the number of simplex iterations.&#34;&#34;&#34;
     return _pywraplp.Solver_iterations(self)</code></pre>
 </details>
 </dd>
 <dt id="pywraplp.Solver.nodes"><code class="name flex">
-<span>def <span class="ident">nodes</span></span>(<span>self) ‑> int64</span>
+<span>def <span class="ident">nodes</span></span>(<span>self) ‑> int64_t</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns the number of branch-and-bound nodes evaluated during the solve.</p>
@@ -3741,7 +3733,7 @@ this method directly.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def nodes(self) -&gt; &#34;int64&#34;:
+<pre><code class="python">def nodes(self) -&gt; &#34;int64_t&#34;:
     r&#34;&#34;&#34;
     Returns the number of branch-and-bound nodes evaluated during the solve.
 
@@ -3751,7 +3743,7 @@ this method directly.</p></div>
 </details>
 </dd>
 <dt id="pywraplp.Solver.set_time_limit"><code class="name flex">
-<span>def <span class="ident">set_time_limit</span></span>(<span>self, time_limit_milliseconds: int64) ‑> void</span>
+<span>def <span class="ident">set_time_limit</span></span>(<span>self, time_limit_milliseconds: int64_t) ‑> void</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -3759,8 +3751,22 @@ this method directly.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def set_time_limit(self, time_limit_milliseconds: &#34;int64&#34;) -&gt; &#34;void&#34;:
+<pre><code class="python">def set_time_limit(self, time_limit_milliseconds: &#34;int64_t&#34;) -&gt; &#34;void&#34;:
     return _pywraplp.Solver_set_time_limit(self, time_limit_milliseconds)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.variable"><code class="name flex">
+<span>def <span class="ident">variable</span></span>(<span>self, index: int) ‑> operations_research::MPVariable *</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the variable at position index.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def variable(self, index: &#34;int&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
+    r&#34;&#34;&#34;Returns the variable at position index.&#34;&#34;&#34;
+    return _pywraplp.Solver_variable(self, index)</code></pre>
 </details>
 </dd>
 <dt id="pywraplp.Solver.variables"><code class="name flex">
@@ -3782,7 +3788,7 @@ the order in which they were created.)</p></div>
 </details>
 </dd>
 <dt id="pywraplp.Solver.wall_time"><code class="name flex">
-<span>def <span class="ident">wall_time</span></span>(<span>self) ‑> int64</span>
+<span>def <span class="ident">wall_time</span></span>(<span>self) ‑> int64_t</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -3790,7 +3796,7 @@ the order in which they were created.)</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wall_time(self) -&gt; &#34;int64&#34;:
+<pre><code class="python">def wall_time(self) -&gt; &#34;int64_t&#34;:
     return _pywraplp.Solver_wall_time(self)</code></pre>
 </details>
 </dd>
@@ -4233,7 +4239,6 @@ automatically rounds it to the nearest integer; see: man 3 round).</p></div>
 <li><code><a title="pywraplp.ExportModelAsMpsFormat" href="#pywraplp.ExportModelAsMpsFormat">ExportModelAsMpsFormat</a></code></li>
 <li><code><a title="pywraplp.FindErrorInModelProto" href="#pywraplp.FindErrorInModelProto">FindErrorInModelProto</a></code></li>
 <li><code><a title="pywraplp.Solver_CreateSolver" href="#pywraplp.Solver_CreateSolver">Solver_CreateSolver</a></code></li>
-<li><code><a title="pywraplp.Solver_SetGurobiLibraryPath" href="#pywraplp.Solver_SetGurobiLibraryPath">Solver_SetGurobiLibraryPath</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
@@ -4363,7 +4368,6 @@ automatically rounds it to the nearest integer; see: man 3 round).</p></div>
 <li><code><a title="pywraplp.Solver.RowConstraint" href="#pywraplp.Solver.RowConstraint">RowConstraint</a></code></li>
 <li><code><a title="pywraplp.Solver.SAT_INTEGER_PROGRAMMING" href="#pywraplp.Solver.SAT_INTEGER_PROGRAMMING">SAT_INTEGER_PROGRAMMING</a></code></li>
 <li><code><a title="pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING" href="#pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING">SCIP_MIXED_INTEGER_PROGRAMMING</a></code></li>
-<li><code><a title="pywraplp.Solver.SetGurobiLibraryPath" href="#pywraplp.Solver.SetGurobiLibraryPath">SetGurobiLibraryPath</a></code></li>
 <li><code><a title="pywraplp.Solver.SetHint" href="#pywraplp.Solver.SetHint">SetHint</a></code></li>
 <li><code><a title="pywraplp.Solver.SetNumThreads" href="#pywraplp.Solver.SetNumThreads">SetNumThreads</a></code></li>
 <li><code><a title="pywraplp.Solver.SetSolverSpecificParametersAsString" href="#pywraplp.Solver.SetSolverSpecificParametersAsString">SetSolverSpecificParametersAsString</a></code></li>
@@ -4379,11 +4383,13 @@ automatically rounds it to the nearest integer; see: man 3 round).</p></div>
 <li><code><a title="pywraplp.Solver.WallTime" href="#pywraplp.Solver.WallTime">WallTime</a></code></li>
 <li><code><a title="pywraplp.Solver.XPRESS_LINEAR_PROGRAMMING" href="#pywraplp.Solver.XPRESS_LINEAR_PROGRAMMING">XPRESS_LINEAR_PROGRAMMING</a></code></li>
 <li><code><a title="pywraplp.Solver.XPRESS_MIXED_INTEGER_PROGRAMMING" href="#pywraplp.Solver.XPRESS_MIXED_INTEGER_PROGRAMMING">XPRESS_MIXED_INTEGER_PROGRAMMING</a></code></li>
+<li><code><a title="pywraplp.Solver.constraint" href="#pywraplp.Solver.constraint">constraint</a></code></li>
 <li><code><a title="pywraplp.Solver.constraints" href="#pywraplp.Solver.constraints">constraints</a></code></li>
 <li><code><a title="pywraplp.Solver.infinity" href="#pywraplp.Solver.infinity">infinity</a></code></li>
 <li><code><a title="pywraplp.Solver.iterations" href="#pywraplp.Solver.iterations">iterations</a></code></li>
 <li><code><a title="pywraplp.Solver.nodes" href="#pywraplp.Solver.nodes">nodes</a></code></li>
 <li><code><a title="pywraplp.Solver.set_time_limit" href="#pywraplp.Solver.set_time_limit">set_time_limit</a></code></li>
+<li><code><a title="pywraplp.Solver.variable" href="#pywraplp.Solver.variable">variable</a></code></li>
 <li><code><a title="pywraplp.Solver.variables" href="#pywraplp.Solver.variables">variables</a></code></li>
 <li><code><a title="pywraplp.Solver.wall_time" href="#pywraplp.Solver.wall_time">wall_time</a></code></li>
 </ul>

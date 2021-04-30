@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -89,7 +89,7 @@ $(document).ready(function(){initNavTree('int__type_8h_source.html',''); initRes
 <div class="title">int_type.h</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="int__type_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2018 Google LLC</span></div>
+<a href="int__type_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">// Copyright 2010-2021 Google LLC</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">// you may not use this file except in compliance with the License.</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">// You may obtain a copy of the License at</span></div>
@@ -107,7 +107,7 @@ $(document).ready(function(){initNavTree('int__type_8h_source.html',''); initRes
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="comment">// as native integer types, but which prevent assignment, construction, and</span></div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">// other operations from other similar integer-like types.  Essentially, the</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">// template class IntType&lt;IntTypeName, ValueType&gt; (where ValueType assumes</span></div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="comment">// valid scalar types such as int, uint, int32, etc) has the additional</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="comment">// valid scalar types such as int, uint, int32_t, etc) has the additional</span></div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="comment">// property that it cannot be assigned to or constructed from other IntTypes</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="comment">// or native integer types of equal or implicitly convertible type.</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="comment">//</span></div>
@@ -131,8 +131,8 @@ $(document).ready(function(){initNavTree('int__type_8h_source.html',''); initRes
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="comment">// DISALLOWED OPERATIONS / TYPE-SAFETY ENFORCEMENT -----------------------------</span></div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="comment">//</span></div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="comment">//  Consider these definitions and variable declarations:</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="comment">//    DEFINE_INT_TYPE(GlobalDocID, int64);</span></div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="comment">//    DEFINE_INT_TYPE(LocalDocID, int64);</span></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="comment">//    DEFINE_INT_TYPE(GlobalDocID, int64_t);</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="comment">//    DEFINE_INT_TYPE(LocalDocID, int64_t);</span></div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="comment">//    GlobalDocID global;</span></div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="comment">//    LocalDocID local;</span></div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="comment">//</span></div>
@@ -154,11 +154,11 @@ $(document).ready(function(){initNavTree('int__type_8h_source.html',''); initRes
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="comment">//</span></div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="comment">//  3) Implicit conversion from an IntType to a native integer type.</span></div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="comment">//    void GetGlobalDoc(int64 global) { ...</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="comment">//    void GetGlobalDoc(int64_t global) { ...</span></div>
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="comment">//    GetGlobalDoc(global);            &lt;-- Fails to compile!</span></div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="comment">//    GetGlobalDoc(local);             &lt;-- Fails to compile!</span></div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="comment">//    void GetLocalDoc(int32 local) { ...</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="comment">//    void GetLocalDoc(int32_t local) { ...</span></div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="comment">//    GetLocalDoc(global);             &lt;-- Fails to compile!</span></div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="comment">//    GetLocalDoc(local);              &lt;-- Fails to compile!</span></div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="comment">//</span></div>
@@ -189,7 +189,7 @@ $(document).ready(function(){initNavTree('int__type_8h_source.html',''); initRes
 <div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="comment">//</span></div>
 <div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="comment">// EXAMPLES --------------------------------------------------------------------</span></div>
 <div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="comment">//    DEFINE_INT_TYPE(GlobalDocID, int64);</span></div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="comment">//    DEFINE_INT_TYPE(GlobalDocID, int64_t);</span></div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="comment">//    GlobalDocID global = 3;</span></div>
 <div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;<span class="comment">//    std::cout &lt;&lt; global;                      &lt;-- Prints 3 to stdout.</span></div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="comment">//</span></div>
@@ -197,7 +197,7 @@ $(document).ready(function(){initNavTree('int__type_8h_source.html',''); initRes
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;<span class="comment">//      std::cout &lt;&lt; i;</span></div>
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;<span class="comment">//    }                                    &lt;-- Print(ln)s 0 1 2 to stdout</span></div>
 <div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;<span class="comment">//    DEFINE_INT_TYPE(LocalDocID, int64);</span></div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;<span class="comment">//    DEFINE_INT_TYPE(LocalDocID, int64_t);</span></div>
 <div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;<span class="comment">//    LocalDocID local;</span></div>
 <div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;<span class="comment">//    std::cout &lt;&lt; local;                       &lt;-- Prints 0 to stdout it</span></div>
 <div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;<span class="comment">//    default</span></div>
@@ -220,8 +220,8 @@ $(document).ready(function(){initNavTree('int__type_8h_source.html',''); initRes
 <div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;<span class="comment">// class is to prevent *accidental* mingling of similar logical integer types --</span></div>
 <div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;<span class="comment">// and not type casting from one type to another.</span></div>
 <div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;<span class="comment">//  DEFINE_INT_TYPE(GlobalDocID, int64);</span></div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;<span class="comment">//  DEFINE_INT_TYPE(LocalDocID, int64);</span></div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;<span class="comment">//  DEFINE_INT_TYPE(GlobalDocID, int64_t);</span></div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;<span class="comment">//  DEFINE_INT_TYPE(LocalDocID, int64_t);</span></div>
 <div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;<span class="comment">//  GlobalDocID global;</span></div>
 <div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;<span class="comment">//  LocalDocID local;</span></div>
 <div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;<span class="comment">//</span></div>
@@ -230,7 +230,7 @@ $(document).ready(function(){initNavTree('int__type_8h_source.html',''); initRes
 <div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;<span class="comment">//  void GetGlobalDoc(GlobalDocID global) { ...</span></div>
 <div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;<span class="comment">//  GetGlobalDoc(local.value());                  &lt;-- Compiles fine.</span></div>
 <div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;<span class="comment">//  void GetGlobalDoc(int64 global) { ...</span></div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;<span class="comment">//  void GetGlobalDoc(int64_t global) { ...</span></div>
 <div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;<span class="comment">//  GetGlobalDoc(local.value());                  &lt;-- Compiles fine.</span></div>
 <div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160; </div>
 <div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;<span class="preprocessor">#ifndef OR_TOOLS_BASE_INT_TYPE_H_</span></div>
@@ -363,7 +363,7 @@ $(document).ready(function(){initNavTree('int__type_8h_source.html',''); initRes
 <div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;  <span class="comment">// The integer value of type ValueType.</span></div>
 <div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;  <a class="code" href="classgtl_1_1_int_type.html#a8ce21899428bfa1c091d13fe6caf4ed6">ValueType</a> value_;</div>
 <div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160; </div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;  COMPILE_ASSERT(<a class="code" href="demon__profiler_8cc.html#a21edc7ca4cc5802c8779d68556bc09cf">std::is_integral&lt;ValueType&gt;::value</a>,</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;  COMPILE_ASSERT(<a class="code" href="demon__profiler_8cc.html#ac072af30c4ffbc834bb4c681f6ecb514">std::is_integral&lt;ValueType&gt;::value</a>,</div>
 <div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;                 invalid_integer_type_for_id_type_);</div>
 <div class="line"><a name="l00277"></a><span class="lineno"><a class="line" href="namespacegtl.html#a89ffad389c014361a4b7dc1da96194a6">  277</a></span>&#160;} <a class="code" href="namespacegtl.html#a89ffad389c014361a4b7dc1da96194a6">ABSL_ATTRIBUTE_PACKED</a>;</div>
 <div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160; </div>
@@ -449,7 +449,7 @@ $(document).ready(function(){initNavTree('int__type_8h_source.html',''); initRes
 <div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;<span class="comment">// Allows it to be used as a key to hashable containers.</span></div>
 <div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;<span class="keyword">namespace </span>std {</div>
 <div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> IntTypeName, <span class="keyword">typename</span> ValueType&gt;</div>
-<div class="line"><a name="l00361"></a><span class="lineno"><a class="line" href="structstd_1_1hash_3_01gtl_1_1_int_type_3_01_int_type_name_00_01_value_type_01_4_01_4.html">  361</a></span>&#160;<span class="keyword">struct </span><a class="code" href="matrix__utils_8cc.html#ad96c5e641806a06a23e5d5b9fca20e89">hash</a>&lt;<a class="code" href="namespacegtl.html">gtl</a>::IntType&lt;IntTypeName, ValueType&gt; &gt;</div>
+<div class="line"><a name="l00361"></a><span class="lineno"><a class="line" href="structstd_1_1hash_3_01gtl_1_1_int_type_3_01_int_type_name_00_01_value_type_01_4_01_4.html">  361</a></span>&#160;<span class="keyword">struct </span><a class="code" href="matrix__utils_8cc.html#a95d4078c018ac04247ee3785eab30e7b">hash</a>&lt;<a class="code" href="namespacegtl.html">gtl</a>::IntType&lt;IntTypeName, ValueType&gt; &gt;</div>
 <div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;    : <a class="code" href="classgtl_1_1_int_type.html">gtl::IntType</a>&lt;IntTypeName, ValueType&gt;::Hasher {};</div>
 <div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;}  <span class="comment">// namespace std</span></div>
 <div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160; </div>
@@ -476,9 +476,9 @@ $(document).ready(function(){initNavTree('int__type_8h_source.html',''); initRes
 <div class="ttc" id="aclassgtl_1_1_int_type_html_aef661b2f6eb505cab460af98b6661c35"><div class="ttname"><a href="classgtl_1_1_int_type.html#aef661b2f6eb505cab460af98b6661c35">gtl::IntType::IntType</a></div><div class="ttdeci">constexpr IntType()</div><div class="ttdef"><b>Definition:</b> <a href="int__type_8h_source.html#l00201">int_type.h:201</a></div></div>
 <div class="ttc" id="aclassgtl_1_1_int_type_html_afbeb3ea2eee6f9695aa8328ce7d9bac4"><div class="ttname"><a href="classgtl_1_1_int_type.html#afbeb3ea2eee6f9695aa8328ce7d9bac4">gtl::IntType::value</a></div><div class="ttdeci">constexpr ValueType value() const</div><div class="ttdef"><b>Definition:</b> <a href="int__type_8h_source.html#l00213">int_type.h:213</a></div></div>
 <div class="ttc" id="aclassgtl_1_1_int_type_html_aff7406a6f04de903acc5b65b8ce0b04a"><div class="ttname"><a href="classgtl_1_1_int_type.html#aff7406a6f04de903acc5b65b8ce0b04a">gtl::IntType::TypeName</a></div><div class="ttdeci">static constexpr absl::string_view TypeName()</div><div class="ttdef"><b>Definition:</b> <a href="int__type_8h_source.html#l00188">int_type.h:188</a></div></div>
-<div class="ttc" id="ademon__profiler_8cc_html_a21edc7ca4cc5802c8779d68556bc09cf"><div class="ttname"><a href="demon__profiler_8cc.html#a21edc7ca4cc5802c8779d68556bc09cf">value</a></div><div class="ttdeci">int64 value</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8cc_source.html#l00043">demon_profiler.cc:43</a></div></div>
+<div class="ttc" id="ademon__profiler_8cc_html_ac072af30c4ffbc834bb4c681f6ecb514"><div class="ttname"><a href="demon__profiler_8cc.html#ac072af30c4ffbc834bb4c681f6ecb514">value</a></div><div class="ttdeci">int64_t value</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8cc_source.html#l00044">demon_profiler.cc:44</a></div></div>
 <div class="ttc" id="amacros_8h_html"><div class="ttname"><a href="macros_8h.html">macros.h</a></div></div>
-<div class="ttc" id="amatrix__utils_8cc_html_ad96c5e641806a06a23e5d5b9fca20e89"><div class="ttname"><a href="matrix__utils_8cc.html#ad96c5e641806a06a23e5d5b9fca20e89">hash</a></div><div class="ttdeci">int64 hash</div><div class="ttdef"><b>Definition:</b> <a href="matrix__utils_8cc_source.html#l00060">matrix_utils.cc:60</a></div></div>
+<div class="ttc" id="amatrix__utils_8cc_html_a95d4078c018ac04247ee3785eab30e7b"><div class="ttname"><a href="matrix__utils_8cc.html#a95d4078c018ac04247ee3785eab30e7b">hash</a></div><div class="ttdeci">int64_t hash</div><div class="ttdef"><b>Definition:</b> <a href="matrix__utils_8cc_source.html#l00061">matrix_utils.cc:61</a></div></div>
 <div class="ttc" id="anamespacegtl_html"><div class="ttname"><a href="namespacegtl.html">gtl</a></div><div class="ttdef"><b>Definition:</b> <a href="container__logging_8h_source.html#l00046">container_logging.h:46</a></div></div>
 <div class="ttc" id="anamespacegtl_html_a005a7b730220139729dd3bc0ac7a3e37"><div class="ttname"><a href="namespacegtl.html#a005a7b730220139729dd3bc0ac7a3e37">gtl::INT_TYPE_ARITHMETIC_OP</a></div><div class="ttdeci">INT_TYPE_ARITHMETIC_OP(+)</div></div>
 <div class="ttc" id="anamespacegtl_html_a89ffad389c014361a4b7dc1da96194a6"><div class="ttname"><a href="namespacegtl.html#a89ffad389c014361a4b7dc1da96194a6">gtl::ABSL_ATTRIBUTE_PACKED</a></div><div class="ttdeci">class gtl::IntType ABSL_ATTRIBUTE_PACKED</div></div>

@@ -2,6 +2,7 @@ var classoperations__research_1_1_g_scip_parameters___bool_params_entry___do_not
 [
     [ "SuperType", "classoperations__research_1_1_g_scip_parameters___bool_params_entry___do_not_use.html#ac19af38a443411be7bdca4cc2f9e9f4c", null ],
     [ "GScipParameters_BoolParamsEntry_DoNotUse", "classoperations__research_1_1_g_scip_parameters___bool_params_entry___do_not_use.html#ae45f4fb6959da9702d1a12bc5954a780", null ],
+    [ "GScipParameters_BoolParamsEntry_DoNotUse", "classoperations__research_1_1_g_scip_parameters___bool_params_entry___do_not_use.html#a7f4b6f2cf1e9bef93e4dc8b4eff06ddf", null ],
     [ "GScipParameters_BoolParamsEntry_DoNotUse", "classoperations__research_1_1_g_scip_parameters___bool_params_entry___do_not_use.html#ab8251d41956ac028f18d93a6a96d3bfe", null ],
     [ "GetMetadata", "classoperations__research_1_1_g_scip_parameters___bool_params_entry___do_not_use.html#ab586d26cf9d20d52de0e3d2081fc1419", null ],
     [ "internal_default_instance", "classoperations__research_1_1_g_scip_parameters___bool_params_entry___do_not_use.html#affb7625ff7d2903dc857c553395ac39e", null ],

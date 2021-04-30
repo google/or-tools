@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -87,6 +87,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_n
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper-members.html">List of all members</a>  </div>
   <div class="headertitle">
@@ -95,7 +96,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1_n
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00064">64</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00067">67</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -103,8 +104,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a08c018489eb0c4c309f144780ebb8cce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab25d3ac59ae6adc23d30b5fdc892b812"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#ab25d3ac59ae6adc23d30b5fdc892b812">TaskIsAvailable</a> () override</td></tr>
 <tr class="separator:ab25d3ac59ae6adc23d30b5fdc892b812"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a600568ec5f62e9175d11d08920d1bab1"><td class="memItemLeft" align="right" valign="top">std::function&lt; void()&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a600568ec5f62e9175d11d08920d1bab1">GenerateTask</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> task_id) override</td></tr>
-<tr class="separator:a600568ec5f62e9175d11d08920d1bab1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a474b2f12e1648545bb78f734d14c4280"><td class="memItemLeft" align="right" valign="top">std::function&lt; void()&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a474b2f12e1648545bb78f734d14c4280">GenerateTask</a> (int64_t task_id) override</td></tr>
+<tr class="separator:a474b2f12e1648545bb78f734d14c4280"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afa21407ae134806ac4337d0b2473b210"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#afa21407ae134806ac4337d0b2473b210">Synchronize</a> () override</td></tr>
 <tr class="separator:afa21407ae134806ac4337d0b2473b210"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a586408c556a6e1732ac80d8df9cdee5b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1sat_1_1_neighborhood.html">Neighborhood</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a586408c556a6e1732ac80d8df9cdee5b">FixGivenVariables</a> (const CpSolverResponse &amp;initial_solution, const std::vector&lt; int &gt; &amp;variables_to_fix) const</td></tr>
@@ -117,14 +118,20 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a307d968091a3bddbbce257cca9b79fbb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15cb168917371b5fb2d17b00e640de63"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1sat_1_1_neighborhood.html">Neighborhood</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a15cb168917371b5fb2d17b00e640de63">FullNeighborhood</a> () const</td></tr>
 <tr class="separator:a15cb168917371b5fb2d17b00e640de63"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3536511769245b28739a715de62b0193"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a3536511769245b28739a715de62b0193">IsActive</a> (int <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>) const</td></tr>
-<tr class="separator:a3536511769245b28739a715de62b0193"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9cbca4684dddbad2d60b4dbcb1f90aba"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; int &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a9cbca4684dddbad2d60b4dbcb1f90aba">ActiveVariables</a> () const</td></tr>
-<tr class="separator:a9cbca4684dddbad2d60b4dbcb1f90aba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac3e42ca3d76c8f2ce836a85688768672"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; std::vector&lt; int &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#ac3e42ca3d76c8f2ce836a85688768672">ConstraintToVar</a> () const</td></tr>
-<tr class="separator:ac3e42ca3d76c8f2ce836a85688768672"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a126969fed21452a041a7014fb86ff105"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; std::vector&lt; int &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a126969fed21452a041a7014fb86ff105">VarToConstraint</a> () const</td></tr>
-<tr class="separator:a126969fed21452a041a7014fb86ff105"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a722dba5a22f807fafa782b85eda60ba7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a722dba5a22f807fafa782b85eda60ba7">CopyAndFixVariables</a> (const CpModelProto &amp;source_model, const absl::flat_hash_set&lt; int &gt; &amp;fixed_variables_set, const CpSolverResponse &amp;initial_solution, CpModelProto *output_model) const</td></tr>
+<tr class="separator:a722dba5a22f807fafa782b85eda60ba7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac18c0fe53e351d0a5d105b8bc7d53c08"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#ac18c0fe53e351d0a5d105b8bc7d53c08">AddSolutionHinting</a> (const CpSolverResponse &amp;initial_solution, CpModelProto *<a class="el" href="cp__model__solver_8cc.html#a6ac76d8a372013f67c4973012948ec84">model_proto</a>) const</td></tr>
+<tr class="separator:ac18c0fe53e351d0a5d105b8bc7d53c08"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abefd04794ae1f2f60e1fbf1938b8f262"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#abefd04794ae1f2f60e1fbf1938b8f262">IsActive</a> (int <a class="el" href="sat__solver_8cc.html#a8392bdc4ed570e6a95c7fca35b09f83f">var</a>) const ABSL_SHARED_LOCKS_REQUIRED(<a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a67e2097ff88593dbd0ddc8f393ed9019">graph_mutex_</a>)</td></tr>
+<tr class="separator:abefd04794ae1f2f60e1fbf1938b8f262"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e4ba9b4d3bb23e61c0733c71925649a"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a1e4ba9b4d3bb23e61c0733c71925649a">ActiveVariables</a> () const</td></tr>
+<tr class="separator:a1e4ba9b4d3bb23e61c0733c71925649a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c701668fe51d4444b40e6eec5820c89"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a4c701668fe51d4444b40e6eec5820c89">NumActiveVariables</a> () const</td></tr>
+<tr class="separator:a4c701668fe51d4444b40e6eec5820c89"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa1b045e0bf63e7a0075deb32e4c7bd03"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; std::vector&lt; int &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#aa1b045e0bf63e7a0075deb32e4c7bd03">ConstraintToVar</a> () const ABSL_SHARED_LOCKS_REQUIRED(<a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a67e2097ff88593dbd0ddc8f393ed9019">graph_mutex_</a>)</td></tr>
+<tr class="separator:aa1b045e0bf63e7a0075deb32e4c7bd03"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a022e714f3c0cdff0f08e81d8e512684c"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; std::vector&lt; int &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a022e714f3c0cdff0f08e81d8e512684c">VarToConstraint</a> () const ABSL_SHARED_LOCKS_REQUIRED(<a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a67e2097ff88593dbd0ddc8f393ed9019">graph_mutex_</a>)</td></tr>
+<tr class="separator:a022e714f3c0cdff0f08e81d8e512684c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6aef4ca16709a75231ee1691c306c641"><td class="memItemLeft" align="right" valign="top">const absl::Span&lt; const int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a6aef4ca16709a75231ee1691c306c641">TypeToConstraints</a> (ConstraintProto::ConstraintCase type) const</td></tr>
 <tr class="separator:a6aef4ca16709a75231ee1691c306c641"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b0ea5233e98dcd85233c074a034fd05"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a8b0ea5233e98dcd85233c074a034fd05">GetActiveIntervals</a> (const CpSolverResponse &amp;initial_solution) const</td></tr>
@@ -133,8 +140,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a9f348ae7c22fbaa73b72bc976455ab14"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af4a8d38991f3497e048a3b56b830087f"><td class="memItemLeft" align="right" valign="top">const SatParameters &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#af4a8d38991f3497e048a3b56b830087f">Parameters</a> () const</td></tr>
 <tr class="separator:af4a8d38991f3497e048a3b56b830087f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a49496d349c274724b25a6b077cc8fdb4"><td class="memItemLeft" align="right" valign="top">absl::Mutex *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a49496d349c274724b25a6b077cc8fdb4">MutableMutex</a> () const</td></tr>
-<tr class="separator:a49496d349c274724b25a6b077cc8fdb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e31a4150ae965379d0f05d51a0c1673"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1sat_1_1_shared_response_manager.html">SharedResponseManager</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a0e31a4150ae965379d0f05d51a0c1673">shared_response</a> () const</td></tr>
 <tr class="separator:a0e31a4150ae965379d0f05d51a0c1673"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a321c6d764d7a95cb82eea2a0e1198028"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_sub_solver.html#a321c6d764d7a95cb82eea2a0e1198028">score</a> () const</td></tr>
@@ -143,6 +148,11 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae525d235b02bcfc962d845e28f5f0125"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1d89c28bd42ba9a52da008bb69367171"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_sub_solver.html#a1d89c28bd42ba9a52da008bb69367171">name</a> () const</td></tr>
 <tr class="separator:a1d89c28bd42ba9a52da008bb69367171"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
+Public Attributes</h2></td></tr>
+<tr class="memitem:a67e2097ff88593dbd0ddc8f393ed9019"><td class="memItemLeft" align="right" valign="top">absl::Mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1_neighborhood_generator_helper.html#a67e2097ff88593dbd0ddc8f393ed9019">graph_mutex_</a></td></tr>
+<tr class="separator:a67e2097ff88593dbd0ddc8f393ed9019"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -198,13 +208,13 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00032">32</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00034">34</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a9cbca4684dddbad2d60b4dbcb1f90aba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9cbca4684dddbad2d60b4dbcb1f90aba">&#9670;&nbsp;</a></span>ActiveVariables()</h2>
+<a id="a1e4ba9b4d3bb23e61c0733c71925649a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1e4ba9b4d3bb23e61c0733c71925649a">&#9670;&nbsp;</a></span>ActiveVariables()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -213,7 +223,7 @@ Protected Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const std::vector&lt;int&gt;&amp; ActiveVariables </td>
+          <td class="memname">std::vector&lt;int&gt; ActiveVariables </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -226,12 +236,42 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00106">106</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00128">128</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
 
 </div>
 </div>
-<a id="ac3e42ca3d76c8f2ce836a85688768672"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac3e42ca3d76c8f2ce836a85688768672">&#9670;&nbsp;</a></span>ConstraintToVar()</h2>
+<a id="ac18c0fe53e351d0a5d105b8bc7d53c08"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac18c0fe53e351d0a5d105b8bc7d53c08">&#9670;&nbsp;</a></span>AddSolutionHinting()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void AddSolutionHinting </td>
+          <td>(</td>
+          <td class="paramtype">const CpSolverResponse &amp;&#160;</td>
+          <td class="paramname"><em>initial_solution</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">CpModelProto *&#160;</td>
+          <td class="paramname"><em>model_proto</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00303">303</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+
+</div>
+</div>
+<a id="aa1b045e0bf63e7a0075deb32e4c7bd03"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa1b045e0bf63e7a0075deb32e4c7bd03">&#9670;&nbsp;</a></span>ConstraintToVar()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -253,7 +293,49 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00110">110</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00142">142</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
+
+</div>
+</div>
+<a id="a722dba5a22f807fafa782b85eda60ba7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a722dba5a22f807fafa782b85eda60ba7">&#9670;&nbsp;</a></span>CopyAndFixVariables()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool CopyAndFixVariables </td>
+          <td>(</td>
+          <td class="paramtype">const CpModelProto &amp;&#160;</td>
+          <td class="paramname"><em>source_model</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const absl::flat_hash_set&lt; int &gt; &amp;&#160;</td>
+          <td class="paramname"><em>fixed_variables_set</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const CpSolverResponse &amp;&#160;</td>
+          <td class="paramname"><em>initial_solution</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">CpModelProto *&#160;</td>
+          <td class="paramname"><em>output_model</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00198">198</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
@@ -300,7 +382,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00292">292</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00348">348</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
@@ -330,7 +412,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00229">229</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00270">270</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
@@ -349,12 +431,12 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00188">188</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00226">226</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
-<a id="a600568ec5f62e9175d11d08920d1bab1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a600568ec5f62e9175d11d08920d1bab1">&#9670;&nbsp;</a></span>GenerateTask()</h2>
+<a id="a474b2f12e1648545bb78f734d14c4280"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a474b2f12e1648545bb78f734d14c4280">&#9670;&nbsp;</a></span>GenerateTask()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -365,7 +447,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">std::function&lt;void()&gt; GenerateTask </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>task_id</em></td><td>)</td>
           <td></td>
         </tr>
@@ -377,9 +459,9 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implements <a class="el" href="classoperations__research_1_1sat_1_1_sub_solver.html#aef743d21765bbc6b76186204b4d3945b">SubSolver</a>.</p>
+<p>Implements <a class="el" href="classoperations__research_1_1sat_1_1_sub_solver.html#a5e087d47801fe78aff861e688b6d2e3d">SubSolver</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00074">74</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00077">77</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
 
 </div>
 </div>
@@ -399,12 +481,12 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00198">198</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00238">238</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
-<a id="a3536511769245b28739a715de62b0193"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3536511769245b28739a715de62b0193">&#9670;&nbsp;</a></span>IsActive()</h2>
+<a id="abefd04794ae1f2f60e1fbf1938b8f262"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abefd04794ae1f2f60e1fbf1938b8f262">&#9670;&nbsp;</a></span>IsActive()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -419,7 +501,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00178">178</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00188">188</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
@@ -446,34 +528,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00133">133</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
-
-</div>
-</div>
-<a id="a49496d349c274724b25a6b077cc8fdb4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a49496d349c274724b25a6b077cc8fdb4">&#9670;&nbsp;</a></span>MutableMutex()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">absl::Mutex* MutableMutex </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00142">142</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00167">167</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
 
 </div>
 </div>
@@ -504,6 +559,33 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a4c701668fe51d4444b40e6eec5820c89"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4c701668fe51d4444b40e6eec5820c89">&#9670;&nbsp;</a></span>NumActiveVariables()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int NumActiveVariables </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00135">135</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
+
+</div>
+</div>
 <a id="af4a8d38991f3497e048a3b56b830087f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af4a8d38991f3497e048a3b56b830087f">&#9670;&nbsp;</a></span>Parameters()</h2>
 
@@ -527,7 +609,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00134">134</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00168">168</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
 
 </div>
 </div>
@@ -557,7 +639,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00278">278</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00331">331</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
@@ -577,7 +659,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00263">263</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00321">321</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
@@ -631,7 +713,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00144">144</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00170">170</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
 
 </div>
 </div>
@@ -660,7 +742,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1sat_1_1_sub_solver.html#ae13c194d355f54c75f87897e3c5beb6b">SubSolver</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00052">52</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8cc_source.html#l00054">54</a> of file <a class="el" href="cp__model__lns_8cc_source.html">cp_model_lns.cc</a>.</p>
 
 </div>
 </div>
@@ -689,7 +771,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1sat_1_1_sub_solver.html#a1754d73c22a8492998b642c9d8df907a">SubSolver</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00073">73</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00076">76</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
 
 </div>
 </div>
@@ -717,12 +799,12 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00118">118</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00152">152</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
 
 </div>
 </div>
-<a id="a126969fed21452a041a7014fb86ff105"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a126969fed21452a041a7014fb86ff105">&#9670;&nbsp;</a></span>VarToConstraint()</h2>
+<a id="a022e714f3c0cdff0f08e81d8e512684c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a022e714f3c0cdff0f08e81d8e512684c">&#9670;&nbsp;</a></span>VarToConstraint()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -744,7 +826,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00113">113</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00146">146</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
 
 </div>
 </div>
@@ -770,6 +852,30 @@ Protected Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="subsolver_8h_source.html#l00089">89</a> of file <a class="el" href="subsolver_8h_source.html">subsolver.h</a>.</p>
+
+</div>
+</div>
+<a id="a67e2097ff88593dbd0ddc8f393ed9019"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a67e2097ff88593dbd0ddc8f393ed9019">&#9670;&nbsp;</a></span>graph_mutex_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">absl::Mutex graph_mutex_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">mutable</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cp__model__lns_8h_source.html#l00179">179</a> of file <a class="el" href="cp__model__lns_8h_source.html">cp_model_lns.h</a>.</p>
 
 </div>
 </div>

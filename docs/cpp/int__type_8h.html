@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -212,15 +212,15 @@ Variables</h2></td></tr>
 <div class="line">  constexpr IntType&lt;IntTypeName, ValueType&gt; <span class="keyword">operator</span> op(                  \</div>
 <div class="line">      IntType&lt;IntTypeName, ValueType&gt; <span class="keywordtype">id</span>,                                 \</div>
 <div class="line">      <span class="keyword">typename</span> IntType&lt;IntTypeName, ValueType&gt;::ValueType arg_val) {      \</div>
-<div class="line">    return IntType&lt;IntTypeName, ValueType&gt;(<span class="keywordtype">id</span>.<a class="code" href="demon__profiler_8cc.html#a21edc7ca4cc5802c8779d68556bc09cf">value</a>() op arg_val);        \</div>
+<div class="line">    return IntType&lt;IntTypeName, ValueType&gt;(<span class="keywordtype">id</span>.<a class="code" href="demon__profiler_8cc.html#ac072af30c4ffbc834bb4c681f6ecb514">value</a>() op arg_val);        \</div>
 <div class="line">  }                                                                       \</div>
 <div class="line">  template &lt;typename IntTypeName, typename ValueType&gt;                     \</div>
 <div class="line">  constexpr IntType&lt;IntTypeName, ValueType&gt; <span class="keyword">operator</span> op(                  \</div>
 <div class="line">      <span class="keyword">typename</span> IntType&lt;IntTypeName, ValueType&gt;::ValueType arg_val,        \</div>
 <div class="line">      IntType&lt;IntTypeName, ValueType&gt; <span class="keywordtype">id</span>) {                               \</div>
-<div class="line">    return IntType&lt;IntTypeName, ValueType&gt;(arg_val op <span class="keywordtype">id</span>.<a class="code" href="demon__profiler_8cc.html#a21edc7ca4cc5802c8779d68556bc09cf">value</a>());        \</div>
+<div class="line">    return IntType&lt;IntTypeName, ValueType&gt;(arg_val op <span class="keywordtype">id</span>.<a class="code" href="demon__profiler_8cc.html#ac072af30c4ffbc834bb4c681f6ecb514">value</a>());        \</div>
 <div class="line">  }</div>
-<div class="ttc" id="ademon__profiler_8cc_html_a21edc7ca4cc5802c8779d68556bc09cf"><div class="ttname"><a href="demon__profiler_8cc.html#a21edc7ca4cc5802c8779d68556bc09cf">value</a></div><div class="ttdeci">int64 value</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8cc_source.html#l00043">demon_profiler.cc:43</a></div></div>
+<div class="ttc" id="ademon__profiler_8cc_html_ac072af30c4ffbc834bb4c681f6ecb514"><div class="ttname"><a href="demon__profiler_8cc.html#ac072af30c4ffbc834bb4c681f6ecb514">value</a></div><div class="ttdeci">int64_t value</div><div class="ttdef"><b>Definition:</b> <a href="demon__profiler_8cc_source.html#l00044">demon_profiler.cc:44</a></div></div>
 </div><!-- fragment -->
 <p class="definition">Definition at line <a class="el" href="int__type_8h_source.html#l00295">295</a> of file <a class="el" href="int__type_8h_source.html">int_type.h</a>.</p>
 

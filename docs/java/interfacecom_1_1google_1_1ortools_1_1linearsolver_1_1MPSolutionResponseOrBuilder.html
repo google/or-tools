@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.2</span>
+                <span id="sfml">Google OR-Tools 9.0</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -129,8 +129,150 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae281124732432b2600cc910ec5d83bad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8612c86b5dd6d9337fb16fc42e72ebf5"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponseOrBuilder.html#a8612c86b5dd6d9337fb16fc42e72ebf5">getReducedCost</a> (int index)</td></tr>
 <tr class="separator:a8612c86b5dd6d9337fb16fc42e72ebf5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d8f7de4d21cb58c48445ef7980136b8"><td class="memItemLeft" align="right" valign="top">java.util.List&lt; <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolution.html">com.google.ortools.linearsolver.MPSolution</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponseOrBuilder.html#a4d8f7de4d21cb58c48445ef7980136b8">getAdditionalSolutionsList</a> ()</td></tr>
+<tr class="separator:a4d8f7de4d21cb58c48445ef7980136b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a684289674310cd3c176c9c969600fd3a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolution.html">com.google.ortools.linearsolver.MPSolution</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponseOrBuilder.html#a684289674310cd3c176c9c969600fd3a">getAdditionalSolutions</a> (int index)</td></tr>
+<tr class="separator:a684289674310cd3c176c9c969600fd3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a926e48de7fc6f13847d637a2631d63e9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponseOrBuilder.html#a926e48de7fc6f13847d637a2631d63e9">getAdditionalSolutionsCount</a> ()</td></tr>
+<tr class="separator:a926e48de7fc6f13847d637a2631d63e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a946072f1ad5080477442996d3972d678"><td class="memItemLeft" align="right" valign="top">java.util.List&lt;? extends <a class="el" href="interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionOrBuilder.html">com.google.ortools.linearsolver.MPSolutionOrBuilder</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponseOrBuilder.html#a946072f1ad5080477442996d3972d678">getAdditionalSolutionsOrBuilderList</a> ()</td></tr>
+<tr class="separator:a946072f1ad5080477442996d3972d678"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b4cb40be756bbfa0c018d479e9b170c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionOrBuilder.html">com.google.ortools.linearsolver.MPSolutionOrBuilder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponseOrBuilder.html#a5b4cb40be756bbfa0c018d479e9b170c">getAdditionalSolutionsOrBuilder</a> (int index)</td></tr>
+<tr class="separator:a5b4cb40be756bbfa0c018d479e9b170c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a684289674310cd3c176c9c969600fd3a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a684289674310cd3c176c9c969600fd3a">&#9670;&nbsp;</a></span>getAdditionalSolutions()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolution.html">com.google.ortools.linearsolver.MPSolution</a> getAdditionalSolutions </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+[Advanced usage.]
+If `MPModelRequest.populate_additional_solutions_up_to` &gt; 0, up to that
+number of additional solutions may be populated here, if available. These
+additional solutions are different than the main solution described by the
+above fields `objective_value` and `variable_value`.
+</pre><p><code>repeated .operations_research.MPSolution additional_solutions = 8;</code> </p>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse_1_1Builder.html#a684289674310cd3c176c9c969600fd3a">MPSolutionResponse.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse.html#a3042b6dc9ce472f281397022391a3008">MPSolutionResponse</a>.</p>
+
+</div>
+</div>
+<a id="a926e48de7fc6f13847d637a2631d63e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a926e48de7fc6f13847d637a2631d63e9">&#9670;&nbsp;</a></span>getAdditionalSolutionsCount()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int getAdditionalSolutionsCount </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+[Advanced usage.]
+If `MPModelRequest.populate_additional_solutions_up_to` &gt; 0, up to that
+number of additional solutions may be populated here, if available. These
+additional solutions are different than the main solution described by the
+above fields `objective_value` and `variable_value`.
+</pre><p><code>repeated .operations_research.MPSolution additional_solutions = 8;</code> </p>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse_1_1Builder.html#a926e48de7fc6f13847d637a2631d63e9">MPSolutionResponse.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse.html#ad2360f7c4192be7ff854af025a2f7270">MPSolutionResponse</a>.</p>
+
+</div>
+</div>
+<a id="a4d8f7de4d21cb58c48445ef7980136b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d8f7de4d21cb58c48445ef7980136b8">&#9670;&nbsp;</a></span>getAdditionalSolutionsList()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">java.util.List&lt;<a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolution.html">com.google.ortools.linearsolver.MPSolution</a>&gt; getAdditionalSolutionsList </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+[Advanced usage.]
+If `MPModelRequest.populate_additional_solutions_up_to` &gt; 0, up to that
+number of additional solutions may be populated here, if available. These
+additional solutions are different than the main solution described by the
+above fields `objective_value` and `variable_value`.
+</pre><p><code>repeated .operations_research.MPSolution additional_solutions = 8;</code> </p>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse_1_1Builder.html#a4d8f7de4d21cb58c48445ef7980136b8">MPSolutionResponse.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse.html#aa80191660ea4bdcacd6e06e21e92a63b">MPSolutionResponse</a>.</p>
+
+</div>
+</div>
+<a id="a5b4cb40be756bbfa0c018d479e9b170c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b4cb40be756bbfa0c018d479e9b170c">&#9670;&nbsp;</a></span>getAdditionalSolutionsOrBuilder()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionOrBuilder.html">com.google.ortools.linearsolver.MPSolutionOrBuilder</a> getAdditionalSolutionsOrBuilder </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+[Advanced usage.]
+If `MPModelRequest.populate_additional_solutions_up_to` &gt; 0, up to that
+number of additional solutions may be populated here, if available. These
+additional solutions are different than the main solution described by the
+above fields `objective_value` and `variable_value`.
+</pre><p><code>repeated .operations_research.MPSolution additional_solutions = 8;</code> </p>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse_1_1Builder.html#a5b4cb40be756bbfa0c018d479e9b170c">MPSolutionResponse.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse.html#aa24b9c24ba74a42f0101020ced785675">MPSolutionResponse</a>.</p>
+
+</div>
+</div>
+<a id="a946072f1ad5080477442996d3972d678"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a946072f1ad5080477442996d3972d678">&#9670;&nbsp;</a></span>getAdditionalSolutionsOrBuilderList()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">java.util.List&lt;? extends <a class="el" href="interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionOrBuilder.html">com.google.ortools.linearsolver.MPSolutionOrBuilder</a>&gt; getAdditionalSolutionsOrBuilderList </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+[Advanced usage.]
+If `MPModelRequest.populate_additional_solutions_up_to` &gt; 0, up to that
+number of additional solutions may be populated here, if available. These
+additional solutions are different than the main solution described by the
+above fields `objective_value` and `variable_value`.
+</pre><p><code>repeated .operations_research.MPSolution additional_solutions = 8;</code> </p>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse_1_1Builder.html#a946072f1ad5080477442996d3972d678">MPSolutionResponse.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse.html#a1c9434771e8458b1f0d1fc4feff31489">MPSolutionResponse</a>.</p>
+
+</div>
+</div>
 <a id="a8acd7d1e0e85ee50dd3362794d5ec2bb"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8acd7d1e0e85ee50dd3362794d5ec2bb">&#9670;&nbsp;</a></span>getBestObjectiveBound()</h2>
 

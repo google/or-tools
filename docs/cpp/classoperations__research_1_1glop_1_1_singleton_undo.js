@@ -7,5 +7,6 @@ var classoperations__research_1_1glop_1_1_singleton_undo =
       [ "MAKE_CONSTRAINT_AN_EQUALITY", "classoperations__research_1_1glop_1_1_singleton_undo.html#a9a2c9c31d675b34f6ec35cc1ca89e047a629106ec8d53390d18c3f330156486ec", null ]
     ] ],
     [ "SingletonUndo", "classoperations__research_1_1glop_1_1_singleton_undo.html#a91238ea5ce3d56a927b2fa4b68b3e9aa", null ],
-    [ "Undo", "classoperations__research_1_1glop_1_1_singleton_undo.html#ab55c02f6db7b2044d8a1093ebd3dbf2f", null ]
+    [ "Entry", "classoperations__research_1_1glop_1_1_singleton_undo.html#a5bd396e2699dfe1e7ee6777e78b36572", null ],
+    [ "Undo", "classoperations__research_1_1glop_1_1_singleton_undo.html#a64a706a64aee1739f874227985b72bcc", null ]
 ];

@@ -1,9 +1,9 @@
 var classoperations__research_1_1sat_1_1_var_domination =
 [
     [ "VarDomination", "classoperations__research_1_1sat_1_1_var_domination.html#abd92844dd87c0248682d5840219d3a41", null ],
-    [ "ActivityShouldNotChange", "classoperations__research_1_1sat_1_1_var_domination.html#a7b3e19ea0bc9643cd98679632fb72c13", null ],
-    [ "ActivityShouldNotDecrease", "classoperations__research_1_1sat_1_1_var_domination.html#a00174020e05dcb9b7b5270f5f99ef7ae", null ],
-    [ "ActivityShouldNotIncrease", "classoperations__research_1_1sat_1_1_var_domination.html#a3c403add1108067dbdbcf06bcc564086", null ],
+    [ "ActivityShouldNotChange", "classoperations__research_1_1sat_1_1_var_domination.html#a262642c2245a54b7c5735b380b34b603", null ],
+    [ "ActivityShouldNotDecrease", "classoperations__research_1_1sat_1_1_var_domination.html#a935b4b8f506279a6f5442af0f36498f7", null ],
+    [ "ActivityShouldNotIncrease", "classoperations__research_1_1sat_1_1_var_domination.html#a05d64b4f946bd02789aecd5f9b3a4c05", null ],
     [ "CanFreelyDecrease", "classoperations__research_1_1sat_1_1_var_domination.html#a389ac04ee9f0eddeadb87a8ef5af6dad", null ],
     [ "CanFreelyDecrease", "classoperations__research_1_1sat_1_1_var_domination.html#a0655355d0154d230a263d3fa42ce7ca8", null ],
     [ "CanOnlyDominateEachOther", "classoperations__research_1_1sat_1_1_var_domination.html#afe7098f5dfd54c7383692e28fad65dc3", null ],

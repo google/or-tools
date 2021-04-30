@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -98,19 +98,19 @@ $(document).ready(function(){initNavTree('linear__programming__constraint_8cc.ht
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespaceoperations__research"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html">operations_research</a></td></tr>
-<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">The vehicle routing library lets one model and solve generic vehicle routing problems ranging from the Traveling Salesman Problem to more complex problems such as the Capacitated Vehicle Routing Problem with Time Windows. <br /></td></tr>
+<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">Collection of objects used to extend the <a class="el" href="classoperations__research_1_1_constraint.html" title="A constraint is the main modeling object.">Constraint</a> <a class="el" href="classoperations__research_1_1_solver.html" title="Solver Class.">Solver</a> library. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespaceoperations__research_1_1sat"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html">operations_research::sat</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a2a367e1c70abb013c50b1a7d1cf00bb3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a2a367e1c70abb013c50b1a7d1cf00bb3">SeparateSubtourInequalities</a> (int num_nodes, const std::vector&lt; int &gt; &amp;tails, const std::vector&lt; int &gt; &amp;heads, const std::vector&lt; Literal &gt; &amp;literals, const <a class="el" href="classabsl_1_1_strong_vector.html">absl::StrongVector</a>&lt; IntegerVariable, double &gt; &amp;lp_values, absl::Span&lt; const <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt; demands, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="routing__flow_8cc.html#adf3be22c64f10c0783c0cf277e857adf">capacity</a>, LinearConstraintManager *manager, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
-<tr class="separator:a2a367e1c70abb013c50b1a7d1cf00bb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad114b3c6ee51d854d3715a8a3be50f99"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ad114b3c6ee51d854d3715a8a3be50f99">SeparateSubtourInequalities</a> (int num_nodes, const std::vector&lt; int &gt; &amp;tails, const std::vector&lt; int &gt; &amp;heads, const std::vector&lt; Literal &gt; &amp;literals, const <a class="el" href="classabsl_1_1_strong_vector.html">absl::StrongVector</a>&lt; IntegerVariable, double &gt; &amp;lp_values, absl::Span&lt; const int64_t &gt; demands, int64_t <a class="el" href="routing__flow_8cc.html#a2acb49f4df5288066c43610bede123ec">capacity</a>, LinearConstraintManager *manager, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
+<tr class="separator:ad114b3c6ee51d854d3715a8a3be50f99"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae9e5d88686fd52d3bd1a89d7754ca18c"><td class="memItemLeft" align="right" valign="top">CutGenerator&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ae9e5d88686fd52d3bd1a89d7754ca18c">CreateStronglyConnectedGraphCutGenerator</a> (int num_nodes, const std::vector&lt; int &gt; &amp;tails, const std::vector&lt; int &gt; &amp;heads, const std::vector&lt; Literal &gt; &amp;literals, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
 <tr class="separator:ae9e5d88686fd52d3bd1a89d7754ca18c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a83551f805175c3a30ea146efaad2ec63"><td class="memItemLeft" align="right" valign="top">CutGenerator&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a83551f805175c3a30ea146efaad2ec63">CreateCVRPCutGenerator</a> (int num_nodes, const std::vector&lt; int &gt; &amp;tails, const std::vector&lt; int &gt; &amp;heads, const std::vector&lt; Literal &gt; &amp;literals, const std::vector&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> &gt; &amp;demands, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> <a class="el" href="routing__flow_8cc.html#adf3be22c64f10c0783c0cf277e857adf">capacity</a>, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
-<tr class="separator:a83551f805175c3a30ea146efaad2ec63"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a5fb77a89e69aa0f99f00187dbdd798"><td class="memItemLeft" align="right" valign="top">CutGenerator&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a0a5fb77a89e69aa0f99f00187dbdd798">CreateCVRPCutGenerator</a> (int num_nodes, const std::vector&lt; int &gt; &amp;tails, const std::vector&lt; int &gt; &amp;heads, const std::vector&lt; Literal &gt; &amp;literals, const std::vector&lt; int64_t &gt; &amp;demands, int64_t <a class="el" href="routing__flow_8cc.html#a2acb49f4df5288066c43610bede123ec">capacity</a>, Model *<a class="el" href="gurobi__interface_8cc.html#a0728f23c9a47655d38e0bf1a2f200bcf">model</a>)</td></tr>
+<tr class="separator:a0a5fb77a89e69aa0f99f00187dbdd798"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

@@ -2,7 +2,7 @@ var class_connected_components_finder =
 [
     [ "ConnectedComponentsFinder", "class_connected_components_finder.html#a9d3b69f74c9aa5e8ddbf4e4056320a66", null ],
     [ "ConnectedComponentsFinder", "class_connected_components_finder.html#aa734f643cbf03341560a258b421414e7", null ],
-    [ "AddEdge", "class_connected_components_finder.html#a3e071f70e8c79a30a74cba46917630ec", null ],
+    [ "AddEdge", "class_connected_components_finder.html#a52a1af0d0ad4b70e83987131b8585cab", null ],
     [ "AddNode", "class_connected_components_finder.html#a5ad4abab1ba8325ac397efcba89563d4", null ],
     [ "Connected", "class_connected_components_finder.html#ac7782f36c09257f370347166e02480f1", null ],
     [ "FindConnectedComponents", "class_connected_components_finder.html#aa1ba612c449ee127c1e747851c56a5fd", null ],

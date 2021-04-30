@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.2</span>
+                <span id="sfml">Google OR-Tools 9.0</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -90,7 +90,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1_sequence
 <div class="textblock"><p>A sequence variable is a variable whose domain is a set of possible orderings of the interval variables. </p>
 <p>It allows ordering of tasks. It has two sets of methods: <a class="el" href="classoperations__research_1_1_sequence_var.html#a01635a3b908310e048be6c6b85366bb8" title="Computes the set of indices of interval variables that can be ranked first in the set of unranked act...">ComputePossibleFirstsAndLasts()</a>, which returns the list of interval variables that can be ranked first or last; and RankFirst/RankNotFirst/RankLast/RankNotLast, which can be used to create the search decision. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04548">4548</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04552">4552</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -100,15 +100,15 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3a8465a1fa06dd401fa6924a492ce47b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed804747c45a7e1caf81461f9e45dd91"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_sequence_var.html#aed804747c45a7e1caf81461f9e45dd91">DebugString</a> () const override</td></tr>
 <tr class="separator:aed804747c45a7e1caf81461f9e45dd91"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab20a9a046b8e111cb838352b13ca4a52"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_sequence_var.html#ab20a9a046b8e111cb838352b13ca4a52">DurationRange</a> (int64 *const dmin, int64 *const dmax) const</td></tr>
-<tr class="memdesc:ab20a9a046b8e111cb838352b13ca4a52"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the minimum and maximum duration of combined interval vars in the sequence.  <a href="classoperations__research_1_1_sequence_var.html#ab20a9a046b8e111cb838352b13ca4a52">More...</a><br /></td></tr>
-<tr class="separator:ab20a9a046b8e111cb838352b13ca4a52"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a44d1e13f3ecce6542a84e54ab67275fb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_sequence_var.html#a44d1e13f3ecce6542a84e54ab67275fb">HorizonRange</a> (int64 *const hmin, int64 *const hmax) const</td></tr>
-<tr class="memdesc:a44d1e13f3ecce6542a84e54ab67275fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the minimum start min and the maximum end max of all interval vars in the sequence.  <a href="classoperations__research_1_1_sequence_var.html#a44d1e13f3ecce6542a84e54ab67275fb">More...</a><br /></td></tr>
-<tr class="separator:a44d1e13f3ecce6542a84e54ab67275fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a356dffbba8246298635e4d5714f5ff25"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_sequence_var.html#a356dffbba8246298635e4d5714f5ff25">ActiveHorizonRange</a> (int64 *const hmin, int64 *const hmax) const</td></tr>
-<tr class="memdesc:a356dffbba8246298635e4d5714f5ff25"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the minimum start min and the maximum end max of all unranked interval vars in the sequence.  <a href="classoperations__research_1_1_sequence_var.html#a356dffbba8246298635e4d5714f5ff25">More...</a><br /></td></tr>
-<tr class="separator:a356dffbba8246298635e4d5714f5ff25"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a38e9cb6169470555a7403c5102030294"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_sequence_var.html#a38e9cb6169470555a7403c5102030294">DurationRange</a> (int64_t *const dmin, int64_t *const dmax) const</td></tr>
+<tr class="memdesc:a38e9cb6169470555a7403c5102030294"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the minimum and maximum duration of combined interval vars in the sequence.  <a href="classoperations__research_1_1_sequence_var.html#a38e9cb6169470555a7403c5102030294">More...</a><br /></td></tr>
+<tr class="separator:a38e9cb6169470555a7403c5102030294"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a157c0f2f0636c4de7bded81fe83c6cec"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_sequence_var.html#a157c0f2f0636c4de7bded81fe83c6cec">HorizonRange</a> (int64_t *const hmin, int64_t *const hmax) const</td></tr>
+<tr class="memdesc:a157c0f2f0636c4de7bded81fe83c6cec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the minimum start min and the maximum end max of all interval vars in the sequence.  <a href="classoperations__research_1_1_sequence_var.html#a157c0f2f0636c4de7bded81fe83c6cec">More...</a><br /></td></tr>
+<tr class="separator:a157c0f2f0636c4de7bded81fe83c6cec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a757086e12f4615673721fd77ca49da7b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_sequence_var.html#a757086e12f4615673721fd77ca49da7b">ActiveHorizonRange</a> (int64_t *const hmin, int64_t *const hmax) const</td></tr>
+<tr class="memdesc:a757086e12f4615673721fd77ca49da7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the minimum start min and the maximum end max of all unranked interval vars in the sequence.  <a href="classoperations__research_1_1_sequence_var.html#a757086e12f4615673721fd77ca49da7b">More...</a><br /></td></tr>
+<tr class="separator:a757086e12f4615673721fd77ca49da7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a31d0bb3a9647ebb39d997f77a1eff435"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_sequence_var.html#a31d0bb3a9647ebb39d997f77a1eff435">ComputeStatistics</a> (int *const ranked, int *const not_ranked, int *const unperformed) const</td></tr>
 <tr class="memdesc:a31d0bb3a9647ebb39d997f77a1eff435"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute statistics on the sequence.  <a href="classoperations__research_1_1_sequence_var.html#a31d0bb3a9647ebb39d997f77a1eff435">More...</a><br /></td></tr>
 <tr class="separator:a31d0bb3a9647ebb39d997f77a1eff435"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -139,9 +139,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a48652126caaa7e7311103d6820a5c79c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1_int_var.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_sequence_var.html#a48652126caaa7e7311103d6820a5c79c">Next</a> (int index) const</td></tr>
 <tr class="memdesc:a48652126caaa7e7311103d6820a5c79c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the next of the index_th interval of the sequence.  <a href="classoperations__research_1_1_sequence_var.html#a48652126caaa7e7311103d6820a5c79c">More...</a><br /></td></tr>
 <tr class="separator:a48652126caaa7e7311103d6820a5c79c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a53616c71ad0a199caa949b8e32679b59"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_sequence_var.html#a53616c71ad0a199caa949b8e32679b59">size</a> () const</td></tr>
-<tr class="memdesc:a53616c71ad0a199caa949b8e32679b59"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of interval vars in the sequence.  <a href="classoperations__research_1_1_sequence_var.html#a53616c71ad0a199caa949b8e32679b59">More...</a><br /></td></tr>
-<tr class="separator:a53616c71ad0a199caa949b8e32679b59"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa326d81dcac346461f3b8528bf0b49de"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_sequence_var.html#aa326d81dcac346461f3b8528bf0b49de">size</a> () const</td></tr>
+<tr class="memdesc:aa326d81dcac346461f3b8528bf0b49de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of interval vars in the sequence.  <a href="classoperations__research_1_1_sequence_var.html#aa326d81dcac346461f3b8528bf0b49de">More...</a><br /></td></tr>
+<tr class="separator:aa326d81dcac346461f3b8528bf0b49de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afcde421cf076575a27bed81c80093ac8"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_sequence_var.html#afcde421cf076575a27bed81c80093ac8">Accept</a> (<a class="el" href="classoperations__research_1_1_model_visitor.html">ModelVisitor</a> *const visitor) const</td></tr>
 <tr class="memdesc:afcde421cf076575a27bed81c80093ac8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Accepts the given visitor.  <a href="classoperations__research_1_1_sequence_var.html#afcde421cf076575a27bed81c80093ac8">More...</a><br /></td></tr>
 <tr class="separator:afcde421cf076575a27bed81c80093ac8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -277,8 +277,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a356dffbba8246298635e4d5714f5ff25"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a356dffbba8246298635e4d5714f5ff25">&#9670;&nbsp;</a></span>ActiveHorizonRange()</h2>
+<a id="a757086e12f4615673721fd77ca49da7b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a757086e12f4615673721fd77ca49da7b">&#9670;&nbsp;</a></span>ActiveHorizonRange()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -286,13 +286,13 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void ActiveHorizonRange </td>
           <td>(</td>
-          <td class="paramtype">int64 *const&#160;</td>
+          <td class="paramtype">int64_t *const&#160;</td>
           <td class="paramname"><em>hmin</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64 *const&#160;</td>
+          <td class="paramtype">int64_t *const&#160;</td>
           <td class="paramname"><em>hmax</em>&#160;</td>
         </tr>
         <tr>
@@ -429,8 +429,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ab20a9a046b8e111cb838352b13ca4a52"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab20a9a046b8e111cb838352b13ca4a52">&#9670;&nbsp;</a></span>DurationRange()</h2>
+<a id="a38e9cb6169470555a7403c5102030294"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a38e9cb6169470555a7403c5102030294">&#9670;&nbsp;</a></span>DurationRange()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -438,13 +438,13 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void DurationRange </td>
           <td>(</td>
-          <td class="paramtype">int64 *const&#160;</td>
+          <td class="paramtype">int64_t *const&#160;</td>
           <td class="paramname"><em>dmin</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64 *const&#160;</td>
+          <td class="paramtype">int64_t *const&#160;</td>
           <td class="paramname"><em>dmax</em>&#160;</td>
         </tr>
         <tr>
@@ -512,7 +512,7 @@ Public Member Functions</h2></td></tr>
 <p>This method pushes the demon onto the propagation queue. </p>
 <p>It will be processed directly if the queue is empty. It will be enqueued according to its priority otherwise. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03192">3192</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03194">3194</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -540,7 +540,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03193">3193</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03195">3195</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -633,7 +633,7 @@ Public Member Functions</h2></td></tr>
 <p>This method freezes the propagation queue. </p>
 <p>It is useful when you need to apply multiple modifications at once. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03183">3183</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03185">3185</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -664,8 +664,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a44d1e13f3ecce6542a84e54ab67275fb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a44d1e13f3ecce6542a84e54ab67275fb">&#9670;&nbsp;</a></span>HorizonRange()</h2>
+<a id="a157c0f2f0636c4de7bded81fe83c6cec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a157c0f2f0636c4de7bded81fe83c6cec">&#9670;&nbsp;</a></span>HorizonRange()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -673,13 +673,13 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void HorizonRange </td>
           <td>(</td>
-          <td class="paramtype">int64 *const&#160;</td>
+          <td class="paramtype">int64_t *const&#160;</td>
           <td class="paramname"><em>hmin</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64 *const&#160;</td>
+          <td class="paramtype">int64_t *const&#160;</td>
           <td class="paramname"><em>hmax</em>&#160;</td>
         </tr>
         <tr>
@@ -905,7 +905,7 @@ Public Member Functions</h2></td></tr>
 
 <p>This method clears the failure callback. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03206">3206</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03208">3208</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -933,7 +933,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03200">3200</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03202">3202</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -989,12 +989,12 @@ Public Member Functions</h2></td></tr>
 
 <p>Shortcut for variable cleaner. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03209">3209</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03211">3211</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
-<a id="a53616c71ad0a199caa949b8e32679b59"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a53616c71ad0a199caa949b8e32679b59">&#9670;&nbsp;</a></span>size()</h2>
+<a id="aa326d81dcac346461f3b8528bf0b49de"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa326d81dcac346461f3b8528bf0b49de">&#9670;&nbsp;</a></span>size()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1003,7 +1003,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int64 size </td>
+          <td class="memname">int64_t size </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -1018,7 +1018,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the number of interval vars in the sequence. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04624">4624</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04628">4628</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1045,7 +1045,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03179">3179</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03181">3181</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1075,7 +1075,7 @@ Public Member Functions</h2></td></tr>
 <p>This method unfreezes the propagation queue. </p>
 <p>All modifications that happened when the queue was frozen will be processed. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03187">3187</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03189">3189</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>

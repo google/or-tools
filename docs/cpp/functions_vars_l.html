@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -102,7 +102,7 @@ $(document).ready(function(){initNavTree('functions_vars_l.html',''); initResiza
 , <a class="el" href="structoperations__research_1_1sat_1_1_linear_constraint.html#a0ee34e5c6fbf075def1a6c2f0c42d040">LinearConstraint</a>
 </li>
 <li>lbd
-: <a class="el" href="structoperations__research_1_1sat_1_1_clause_info.html#ab936491a95d91a181081d85c4457c7c5">ClauseInfo</a>
+: <a class="el" href="structoperations__research_1_1sat_1_1_clause_info.html#aeae764750e16aaa4d963129a5dd92b6d">ClauseInfo</a>
 </li>
 <li>LBD_MOVING_AVERAGE_RESTART
 : <a class="el" href="classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a13ba09bbfc5bba6baa4b160257aae28f">PROTOBUF_FINAL</a>
@@ -110,11 +110,17 @@ $(document).ready(function(){initNavTree('functions_vars_l.html',''); initResiza
 <li>left_depth
 : <a class="el" href="structoperations__research_1_1_state_info.html#af40da30f99ec5fe6e1659d25909a2161">StateInfo</a>
 </li>
+<li>len
+: <a class="el" href="struct___g_r_bsvec.html#afed088663f8704004425cdae2120b9b3">_GRBsvec</a>
+</li>
 <li>LET_SOLVER_DECIDE
 : <a class="el" href="classoperations__research_1_1glop_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a9b6c44c0fdadd5197f7338a59fc5d628">PROTOBUF_FINAL</a>
 </li>
 <li>level
-: <a class="el" href="structoperations__research_1_1sat_1_1_assignment_info.html#afefd28242df91e46e762af1f7eaf623f">AssignmentInfo</a>
+: <a class="el" href="structoperations__research_1_1sat_1_1_assignment_info.html#a6a330c3b2adf87bfa27e9a9450d8bc40">AssignmentInfo</a>
+</li>
+<li>lhs
+: <a class="el" href="structoperations__research_1_1math__opt_1_1internal_1_1_variables_equality.html#acff6d8a3b8db52ea99e67bab6de610fa">VariablesEquality</a>
 </li>
 <li>limit_
 : <a class="el" href="classutil_1_1_reverse_arc_static_graph_1_1_opposite_incoming_arc_iterator.html#a75b1547aca9874081404a5e388a3310d">ReverseArcStaticGraph&lt; NodeIndexType, ArcIndexType &gt;::OppositeIncomingArcIterator</a>
@@ -128,8 +134,12 @@ $(document).ready(function(){initNavTree('functions_vars_l.html',''); initResiza
 <li>linear_coefficients
 : <a class="el" href="structoperations__research_1_1_g_scip_quadratic_range.html#aec14579470b876cfd73430466440a1aa">GScipQuadraticRange</a>
 </li>
+<li>linear_constraint
+: <a class="el" href="structoperations__research_1_1math__opt_1_1_callback_result_1_1_generated_linear_constraint.html#ac9e29c31846c20153162dca604561b9c">CallbackResult::GeneratedLinearConstraint</a>
+</li>
 <li>linear_constraints
-: <a class="el" href="structoperations__research_1_1sat_1_1_linear_relaxation.html#a787dea05b34122764c7fb5fd13e9a1c9">LinearRelaxation</a>
+: <a class="el" href="structoperations__research_1_1math__opt_1_1_model_summary.html#a9cfc0d8ea5cf26ee3b87427b27f20fe7">ModelSummary</a>
+, <a class="el" href="structoperations__research_1_1sat_1_1_linear_relaxation.html#a787dea05b34122764c7fb5fd13e9a1c9">LinearRelaxation</a>
 </li>
 <li>LINEAR_PROGRAM
 : <a class="el" href="classoperations__research_1_1glop_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a5b61e4e8876944e17fbfe32c5d091cfc">PROTOBUF_FINAL</a>
@@ -145,9 +155,6 @@ $(document).ready(function(){initNavTree('functions_vars_l.html',''); initResiza
 </li>
 <li>linear_variables
 : <a class="el" href="structoperations__research_1_1_g_scip_quadratic_range.html#adb9c98458c4fdee32cfc04f30f94505b">GScipQuadraticRange</a>
-</li>
-<li>link
-: <a class="el" href="structoperations__research_1_1_link.html#a6824c3bafe148ed277f7c1f8013ab022">Link</a>
 </li>
 <li>literal
 : <a class="el" href="structoperations__research_1_1sat_1_1_integer_encoder_1_1_value_literal_pair.html#af63dcc00f2023fdf498e0829e6fb8a6b">IntegerEncoder::ValueLiteralPair</a>
@@ -179,10 +186,21 @@ $(document).ready(function(){initNavTree('functions_vars_l.html',''); initResiza
 <li>log_invalid_names
 : <a class="el" href="structoperations__research_1_1_m_p_model_export_options.html#ae5002134fe40f95dc42499fc3ae35713">MPModelExportOptions</a>
 </li>
+<li>log_prefix
+: <a class="el" href="structoperations__research_1_1_cpp_flags.html#ac9d22cd58c301875ff2e6ecfc5296bbb">CppFlags</a>
+</li>
+<li>log_search_progress
+: <a class="el" href="structoperations__research_1_1fz_1_1_flatzinc_sat_parameters.html#ad5cb64f2e8b9cc681c86a1346b74308b">FlatzincSatParameters</a>
+</li>
+<li>logtostderr
+: <a class="el" href="structoperations__research_1_1_cpp_flags.html#ad29da8bf95650587ab8c6fcafab37535">CppFlags</a>
+</li>
 <li>lower_bound
-: <a class="el" href="structoperations__research_1_1bop_1_1_learned_info.html#ad9847fd6c05481cd3c2d5ca7471b8e7f">LearnedInfo</a>
+: <a class="el" href="structoperations__research_1_1bop_1_1_learned_info.html#a8e4368b4553131cf24b49b9de6e6189f">LearnedInfo</a>
 , <a class="el" href="structoperations__research_1_1_g_scip_linear_range.html#a1e2f9a2352c1d9a6cada9544898fceec">GScipLinearRange</a>
 , <a class="el" href="structoperations__research_1_1_g_scip_quadratic_range.html#a1e2f9a2352c1d9a6cada9544898fceec">GScipQuadraticRange</a>
+, <a class="el" href="structoperations__research_1_1math__opt_1_1_bounded_linear_expression.html#a1e2f9a2352c1d9a6cada9544898fceec">BoundedLinearExpression</a>
+, <a class="el" href="structoperations__research_1_1math__opt_1_1_lower_bounded_linear_expression.html#a1e2f9a2352c1d9a6cada9544898fceec">LowerBoundedLinearExpression</a>
 , <a class="el" href="structoperations__research_1_1sat_1_1_implied_bound_entry.html#ac6420aaa41bdee5430eb0bb90df18c9e">ImpliedBoundEntry</a>
 </li>
 <li>lower_bound_change

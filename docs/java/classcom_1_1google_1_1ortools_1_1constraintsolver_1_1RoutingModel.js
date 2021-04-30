@@ -139,6 +139,8 @@ var classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel =
     [ "size", "classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a22727e9c338fb1aaa6722031445373c3", null ],
     [ "solve", "classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a966fdc3a41787f4c95efc859f55f2033", null ],
     [ "solve", "classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#ab9e9724af4a8b189a4e0904392550315", null ],
+    [ "SolveFromAssignmentsWithParameters", "classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a49b3952eb7d8eb892e8d49d705a5f785", null ],
+    [ "SolveFromAssignmentsWithParameters", "classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a8351eab268d6c5c7d62aefb9b01f5111", null ],
     [ "solveFromAssignmentWithParameters", "classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#ae38e19e708d7c71a3684dc80f1c6ef42", null ],
     [ "solver", "classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a731f5347bbdd221db54ada93d1a4f677", null ],
     [ "solveWithParameters", "classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a5a01bdebbce134a13b5621596b90692b", null ],

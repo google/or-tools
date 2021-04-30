@@ -13,7 +13,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 8.2</span>
+                <span id="sfml">Google OR-Tools 9.0</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -98,7 +98,7 @@ If a parameter is unset (or, equivalently, set to its default value),
 then the routing library will pick its preferred value for that parameter
 automatically: this should be the case for most parameters.
 To see those "default" parameters, call GetDefaultRoutingSearchParameters().
-Next ID: 46
+Next ID: 47
 </pre><p>Protobuf type</p><div class="fragment"><div class="line">operations_research.RoutingSearchParameters </div>
 </div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l00018">18</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
@@ -150,6 +150,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a1d98a81af936dd881147064af6d8d898"><td class="memItemLeft" align="right" valign="top">.lang.Override int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html#a1d98a81af936dd881147064af6d8d898">getCheapestInsertionLsOperatorMinNeighbors</a> ()</td></tr>
 <tr class="memdesc:a1d98a81af936dd881147064af6d8d898"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>int32 cheapest_insertion_ls_operator_min_neighbors = 45;</code>  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html#a1d98a81af936dd881147064af6d8d898">More...</a><br /></td></tr>
 <tr class="separator:a1d98a81af936dd881147064af6d8d898"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59aa9ec2a0074294a2d8fd348dacdec7"><td class="memItemLeft" align="right" valign="top">.lang.Override boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html#a59aa9ec2a0074294a2d8fd348dacdec7">getCheapestInsertionFirstSolutionUseNeighborsRatioForInitialization</a> ()</td></tr>
+<tr class="separator:a59aa9ec2a0074294a2d8fd348dacdec7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3aed9af62b5fa3ebb7c4ef450f4d2f8"><td class="memItemLeft" align="right" valign="top">.lang.Override boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html#af3aed9af62b5fa3ebb7c4ef450f4d2f8">getCheapestInsertionAddUnperformedEntries</a> ()</td></tr>
 <tr class="separator:af3aed9af62b5fa3ebb7c4ef450f4d2f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a23683ccfc68ea9e94151920d8c4ed511"><td class="memItemLeft" align="right" valign="top">.lang.Override boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html#a23683ccfc68ea9e94151920d8c4ed511">getChristofidesUseMinimumMatching</a> ()</td></tr>
@@ -322,6 +324,8 @@ Static Public Attributes</h2></td></tr>
 <tr class="separator:a9c2446bf26793fdf54407311dfcdb4a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae285c462922bd2c4d167ae72da2a2800"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html#ae285c462922bd2c4d167ae72da2a2800">CHEAPEST_INSERTION_LS_OPERATOR_MIN_NEIGHBORS_FIELD_NUMBER</a> = 45</td></tr>
 <tr class="separator:ae285c462922bd2c4d167ae72da2a2800"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a56637fcdff98330f17e84accdec58d72"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html#a56637fcdff98330f17e84accdec58d72">CHEAPEST_INSERTION_FIRST_SOLUTION_USE_NEIGHBORS_RATIO_FOR_INITIALIZATION_FIELD_NUMBER</a> = 46</td></tr>
+<tr class="separator:a56637fcdff98330f17e84accdec58d72"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74124f0fe0800e936d6762e95c30d1b1"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html#a74124f0fe0800e936d6762e95c30d1b1">CHEAPEST_INSERTION_ADD_UNPERFORMED_ENTRIES_FIELD_NUMBER</a> = 40</td></tr>
 <tr class="separator:a74124f0fe0800e936d6762e95c30d1b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae9f1da899e54b72b67cb75d9de02741f"><td class="memItemLeft" align="right" valign="top">static final int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html#ae9f1da899e54b72b67cb75d9de02741f">CHRISTOFIDES_USE_MINIMUM_MATCHING_FIELD_NUMBER</a> = 30</td></tr>
@@ -403,7 +407,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09034">9034</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09062">9062</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -428,7 +432,7 @@ the GlobalCheapestInsertion heuristic.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a186124d9dbed1b21211074461d813a33">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08124">8124</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08145">8145</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -454,7 +458,7 @@ GlobalCheapestInsertion first solution heuristic.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a9e0fdc113677bb1a9f51f11fc53efb05">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08040">8040</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08045">8045</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -478,7 +482,7 @@ GlobalCheapestInsertion first solution heuristic.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#ab3f4cf33f713ab2891b900b4b4222774">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08079">8079</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08084">8084</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -515,7 +519,32 @@ heuristic.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a1d9b40d216c08f804ff13f0a735ecbd3">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08068">8068</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08073">8073</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+
+</div>
+</div>
+<a id="a59aa9ec2a0074294a2d8fd348dacdec7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a59aa9ec2a0074294a2d8fd348dacdec7">&#9670;&nbsp;</a></span>getCheapestInsertionFirstSolutionUseNeighborsRatioForInitialization()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">.lang.Override boolean getCheapestInsertionFirstSolutionUseNeighborsRatioForInitialization </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+Whether or not to only consider closest neighbors when initializing the
+assignment for the first solution.
+</pre><p><code>bool cheapest_insertion_first_solution_use_neighbors_ratio_for_initialization = 46;</code> </p><dl class="section return"><dt>Returns</dt><dd>The cheapestInsertionFirstSolutionUseNeighborsRatioForInitialization. </dd></dl>
+
+<p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#ad72881dbef6cf76f905ceaf81ae8af5b">RoutingSearchParametersOrBuilder</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08129">8129</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -539,7 +568,7 @@ heuristic.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a49d75fbad7641c00b78708e0e6d04d98">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08108">8108</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08113">8113</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -566,7 +595,7 @@ local_search_operators.use_global_cheapest_insertion_chain_lns below).
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#ac54f93850f572358c8d5634484715a57">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08097">8097</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08102">8102</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -591,7 +620,7 @@ Christofides algorithm.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a4c418c23083d28be367e1d6a90735039">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08140">8140</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08161">8161</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -615,7 +644,7 @@ Christofides algorithm.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#aad330a4a557ea19283080b1b0ffb3a08">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08414">8414</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08435">8435</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -639,7 +668,7 @@ Christofides algorithm.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a482fc1487e28524d016a17c682d2ac71">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08407">8407</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08428">8428</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -666,7 +695,7 @@ Christofides algorithm.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l12328">12328</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l12413">12413</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -685,7 +714,7 @@ Christofides algorithm.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l12353">12353</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l12438">12438</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -712,7 +741,7 @@ Christofides algorithm.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l00321">321</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l00326">326</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -736,7 +765,7 @@ First solution strategies, used as starting point of local search.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a4364e17453eb47d19a81b651bf505a3b">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07917">7917</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07922">7922</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -760,7 +789,7 @@ First solution strategies, used as starting point of local search.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a9ea977a74c55588ff9121132bee70ac6">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07906">7906</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07911">7911</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -787,7 +816,7 @@ used. Must be positive.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a50eaea8755cdd9b1ad13014434abf8a3">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08316">8316</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08337">8337</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -812,7 +841,7 @@ phase of the FilteredHeuristicCloseNodesLNSOperator.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a01b38559b7312f3fd548b71a18504ca0">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08271">8271</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08292">8292</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -837,7 +866,7 @@ FilteredHeuristicExpensiveChainLNSOperator operator.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a9b3af2ac4009d60eaf93c03a8dbb5497">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08255">8255</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08276">8276</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -862,7 +891,7 @@ parameters are set.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a2ebaf5b69f2423b6836b103005663f27">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08593">8593</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08614">8614</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -887,7 +916,7 @@ parameters are set.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a5c046508367310201bbbb8b2c97d7b29">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08605">8605</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08626">8626</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -912,7 +941,7 @@ neighbor.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#ad6edd46c92d9d5c54731430eb84cef35">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08552">8552</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08573">8573</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -937,7 +966,7 @@ neighbor.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a08b63c77c857cd692873eb202bcdc4e3">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08564">8564</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08585">8585</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -961,7 +990,7 @@ Local search metaheuristics used to guide the search.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a96361630d9c9b38f96d8877deaf4c71b">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08296">8296</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08317">8317</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -985,7 +1014,7 @@ Local search metaheuristics used to guide the search.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a5f911d265314bc46810dae0e8f158700">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08285">8285</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08306">8306</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1009,7 +1038,7 @@ Local search metaheuristics used to guide the search.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#ac8bda5db5c06f0275ff0d3790851114d">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08159">8159</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08180">8180</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1032,7 +1061,7 @@ Local search metaheuristics used to guide the search.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a7b5eb4457c5b37e2a42d8a3e08ad28d6">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08166">8166</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08187">8187</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1056,7 +1085,7 @@ Local search metaheuristics used to guide the search.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#ae8bc74efccd4d9b1e3e1fe1aa843ec00">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08681">8681</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08702">8702</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1081,7 +1110,7 @@ following way: log_cost_scaling_factor * (cost + log_cost_offset)
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#ac70d9748527d7051eddff10a8678a2b4">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08670">8670</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08691">8691</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1116,7 +1145,7 @@ search done.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#ab325c2ffba6af317f3615ebdd63eb42e">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08654">8654</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08675">8675</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1141,7 +1170,7 @@ solution. Useful to sort out logs when several solves are run in parallel.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a22e7e2a6e2e1c4ddc7dcca53ed87ca3f">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08697">8697</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08718">8718</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1166,7 +1195,7 @@ solution. Useful to sort out logs when several solves are run in parallel.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a1fd59f60eca62087e493fa889e258448">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08720">8720</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08741">8741</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1190,7 +1219,7 @@ solution. Useful to sort out logs when several solves are run in parallel.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a076c62d581397bb31bd63c986dfbfd64">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08433">8433</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08454">8454</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1214,7 +1243,7 @@ solution. Useful to sort out logs when several solves are run in parallel.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a119e8f0d54cc5f251a5f92f68ad92a06">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08426">8426</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08447">8447</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1240,7 +1269,7 @@ unsuccessful in the past operators
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a2a5a8449b1560544c120775bd8ea49fe">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08218">8218</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08239">8239</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1267,7 +1296,7 @@ This parameter should be between 0 and 1.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#acc1004f076903ba91f688265ad3ae89c">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08201">8201</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08222">8222</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1292,7 +1321,7 @@ solutions found during the search. 0 means "unspecified".
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#afb05bf0d8ac33b2f86737baacd892f7b">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08468">8468</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08489">8489</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1318,7 +1347,7 @@ the nearest integer.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#aaf8a407063882230a3921ffc26912f88">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08452">8452</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08473">8473</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1337,7 +1366,7 @@ the nearest integer.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l12348">12348</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l12433">12433</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1367,7 +1396,7 @@ K*(K-1)/2 * number_of_routes * number_of_nodes.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a9a30cd2e0563786bd1addf558338443a">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08239">8239</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08260">8260</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1392,7 +1421,7 @@ of the nodes.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a0d699cd3f96ba6dfc30f0b6bbf4f2407">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07989">7989</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07994">7994</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1424,7 +1453,7 @@ This parameter must be greater than 0, and its default value is 1.
 </pre>
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a50c300d9171f5644996c517dc31b5da8">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08008">8008</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08013">8013</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1453,7 +1482,7 @@ minimum of the two numbers determined by these parameters.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a63795ece48015dbf7010b08ae218fe09">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07973">7973</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07978">7978</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1479,7 +1508,7 @@ the savings. If unspecified, its value is considered to be 1.0.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#ae12d92eebb3c04c6b3ff6eadee688f67">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07953">7953</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07958">7958</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1503,7 +1532,7 @@ When true, the routes are built in parallel, sequentially otherwise.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a0b6ff22a3dbdf99631494848ebce26df">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08023">8023</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08028">8028</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1522,7 +1551,7 @@ When true, the routes are built in parallel, sequentially otherwise.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08868">8868</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08892">8892</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1548,7 +1577,7 @@ Limit to the number of solutions generated during the search. 0 means
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#ab893269a7a3fbec10f5c535ab8d77ab1">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08485">8485</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08506">8506</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1572,7 +1601,7 @@ Limit to the time spent in the search.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#ac5f100e3a462422bd82242894e13fa8a">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08512">8512</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08533">8533</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1596,7 +1625,7 @@ Limit to the time spent in the search.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#ad33d40f997d74e1da451bc7f20d55e12">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08523">8523</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08544">8544</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1641,7 +1670,7 @@ be run before the CP-SAT solver (cf. use_cp_sat).
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a06c1080d6b80116b8d37ad97e76ce9f3">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08362">8362</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08383">8383</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1668,7 +1697,7 @@ As of 5/2019, only TSP models can be solved.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#acdf9180150c170fce7a3689b58c7b039">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08395">8395</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08416">8416</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1695,7 +1724,7 @@ As of 5/2019, only TSP models can be solved.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#aaf2602a4822851b6e3728f37512211f1">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08381">8381</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08402">8402</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1721,7 +1750,7 @@ be run before the CP-SAT solver (cf. use_cp_sat).
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#ae360165b543a98e2aa3d8849612530e0">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08349">8349</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08370">8370</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1747,7 +1776,7 @@ to solve the problem.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a993f56ca03127027a1ea767544da0e76">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08333">8333</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08354">8354</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1779,7 +1808,7 @@ increase memory consumption in all cases.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a1361b5abfa7012efad9a62c5c178bee8">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08628">8628</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08649">8649</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1805,7 +1834,7 @@ objective improvement.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#abeb60c45de8d842e7ce7a6b69e742892">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08183">8183</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08204">8204</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1831,7 +1860,7 @@ Use filtered version of first solution strategy if available.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#ad0c6d4986f680ae86a4ded23c93d655f">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07936">7936</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07941">7941</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1850,7 +1879,7 @@ Use filtered version of first solution strategy if available.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09144">9144</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09174">9174</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1875,7 +1904,7 @@ parameters are set.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#acf83eab937dff0be947d3a2835361d69">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08580">8580</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08601">8601</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1900,7 +1929,7 @@ neighbor.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a8ba951287874df2bf6fb088016f272c6">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08539">8539</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08560">8560</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1924,7 +1953,7 @@ neighbor.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a333f2d0686be2fe320613122a0a671ec">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08151">8151</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08172">8172</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1948,7 +1977,7 @@ Limit to the time spent in the search.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html#a0c54ad0f347bbad5ca707ef492b437eb">RoutingSearchParametersOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08500">8500</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08521">8521</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1975,7 +2004,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l00327">327</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l00332">332</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -1994,7 +2023,7 @@ Limit to the time spent in the search.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08735">8735</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08756">8756</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2021,7 +2050,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09335">9335</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09368">9368</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2049,7 +2078,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09338">9338</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09371">9371</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2068,7 +2097,7 @@ Limit to the time spent in the search.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09334">9334</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09367">9367</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2096,7 +2125,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09348">9348</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09381">9381</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2152,7 +2181,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09307">9307</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09340">9340</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2190,7 +2219,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09312">9312</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09345">9345</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2218,7 +2247,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09285">9285</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09318">9318</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2256,7 +2285,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09289">9289</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09322">9322</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2284,7 +2313,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09274">9274</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09307">9307</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2322,7 +2351,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09279">9279</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09312">9312</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2350,7 +2379,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09319">9319</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09352">9352</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2388,7 +2417,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09325">9325</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09358">9358</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2416,7 +2445,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09295">9295</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09328">9328</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2454,7 +2483,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09300">9300</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09333">9333</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2482,7 +2511,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09263">9263</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09296">9296</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2520,7 +2549,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09268">9268</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09301">9301</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2547,7 +2576,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l12343">12343</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l12428">12428</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2566,7 +2595,7 @@ Limit to the time spent in the search.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09342">9342</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l09375">9375</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2586,7 +2615,7 @@ Limit to the time spent in the search.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08745">8745</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08766">8766</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2611,7 +2640,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08112">8112</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08133">8133</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2635,7 +2664,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08027">8027</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08032">8032</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2659,7 +2688,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08072">8072</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08077">8077</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2683,7 +2712,31 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08044">8044</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08049">8049</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+
+</div>
+</div>
+<a id="a56637fcdff98330f17e84accdec58d72"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a56637fcdff98330f17e84accdec58d72">&#9670;&nbsp;</a></span>CHEAPEST_INSERTION_FIRST_SOLUTION_USE_NEIGHBORS_RATIO_FOR_INITIALIZATION_FIELD_NUMBER</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">final int CHEAPEST_INSERTION_FIRST_SOLUTION_USE_NEIGHBORS_RATIO_FOR_INITIALIZATION_FIELD_NUMBER = 46</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08117">8117</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2707,7 +2760,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08101">8101</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08106">8106</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2731,7 +2784,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08083">8083</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08088">8088</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2755,7 +2808,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08128">8128</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08149">8149</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2779,7 +2832,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08401">8401</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08422">8422</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2803,7 +2856,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07896">7896</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07901">7901</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2827,7 +2880,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08302">8302</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08323">8323</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2851,7 +2904,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08259">8259</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08280">8280</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2875,7 +2928,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08243">8243</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08264">8264</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2899,7 +2952,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08568">8568</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08589">8589</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2923,7 +2976,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08527">8527</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08548">8548</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2947,7 +3000,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08275">8275</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08296">8296</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2971,7 +3024,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08144">8144</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08165">8165</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -2995,7 +3048,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08674">8674</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08695">8695</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3019,7 +3072,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08658">8658</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08679">8679</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3043,7 +3096,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08632">8632</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08653">8653</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3067,7 +3120,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08685">8685</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08706">8706</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3091,7 +3144,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08420">8420</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08441">8441</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3115,7 +3168,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08205">8205</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08226">8226</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3139,7 +3192,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08187">8187</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08208">8208</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3163,7 +3216,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08456">8456</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08477">8477</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3187,7 +3240,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08439">8439</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08460">8460</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3211,7 +3264,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08222">8222</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08243">8243</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3235,7 +3288,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07977">7977</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07982">7982</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3259,7 +3312,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07993">7993</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07998">7998</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3283,7 +3336,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07957">7957</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07962">7962</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3307,7 +3360,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07940">7940</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07945">7945</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3331,7 +3384,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08012">8012</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08017">8017</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3355,7 +3408,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08472">8472</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08493">8493</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3379,7 +3432,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08489">8489</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08510">8510</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3403,7 +3456,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08337">8337</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08358">8358</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3427,7 +3480,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08368">8368</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08389">8389</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3451,7 +3504,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08320">8320</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08341">8341</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3475,7 +3528,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08609">8609</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08630">8630</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3499,7 +3552,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08170">8170</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l08191">8191</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>
@@ -3523,7 +3576,7 @@ Limit to the time spent in the search.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07923">7923</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingSearchParameters_8java_source.html#l07928">7928</a> of file <a class="el" href="RoutingSearchParameters_8java_source.html">RoutingSearchParameters.java</a>.</p>
 
 </div>
 </div>

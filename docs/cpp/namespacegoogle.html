@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -158,8 +158,8 @@ Functions</h2></td></tr>
 <tr class="separator:a1d1a2cfb1e7c80c14baccc762df3df3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a40cb559795a506a869f6643c1bd949ca"><td class="memItemLeft" align="right" valign="top">static const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#a40cb559795a506a869f6643c1bd949ca">GetAnsiColorCode</a> (<a class="el" href="namespacegoogle.html#aa25e41570c47498a3c40189913d2ed81">GLogColor</a> color)</td></tr>
 <tr class="separator:a40cb559795a506a869f6643c1bd949ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2c7abbf3e9728f6210d17963a0bb58c4"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="integral__types_8h.html#a56f1a81c92849566ae864511088eb7e8">int32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#a2c7abbf3e9728f6210d17963a0bb58c4">MaxLogSize</a> ()</td></tr>
-<tr class="separator:a2c7abbf3e9728f6210d17963a0bb58c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab2b99122a259ede199e6872c7f367bf"><td class="memItemLeft" align="right" valign="top">static int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#aab2b99122a259ede199e6872c7f367bf">MaxLogSize</a> ()</td></tr>
+<tr class="separator:aab2b99122a259ede199e6872c7f367bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a60193b592b1a0e1d930682ade407ad63"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#a60193b592b1a0e1d930682ade407ad63">GetLogSeverityName</a> (<a class="el" href="log__severity_8h.html#a88e450ea80e6caaddd7d4ad0864b651d">LogSeverity</a> severity)</td></tr>
 <tr class="separator:a60193b592b1a0e1d930682ade407ad63"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4f56829b020851f8919bdb557b6c10cf"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#a4f56829b020851f8919bdb557b6c10cf">ColoredWriteToStderr</a> (<a class="el" href="log__severity_8h.html#a88e450ea80e6caaddd7d4ad0864b651d">LogSeverity</a> severity, const char *<a class="el" href="trace_8cc.html#a36bd74109f547f7f8198faf5a12d2879">message</a>, size_t len)</td></tr>
@@ -215,6 +215,9 @@ Functions</h2></td></tr>
 <tr class="memitem:af26ad2ccd61c6e3e70610fe61f6b2519"><td class="memItemLeft" align="right" valign="top">template&lt;&gt; </td></tr>
 <tr class="memitem:af26ad2ccd61c6e3e70610fe61f6b2519"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#af26ad2ccd61c6e3e70610fe61f6b2519">MakeCheckOpValueString</a> (std::ostream *os, const unsigned char &amp;v)</td></tr>
 <tr class="separator:af26ad2ccd61c6e3e70610fe61f6b2519"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04927adbc15c18dbc8b483dcbca9dad4"><td class="memItemLeft" align="right" valign="top">template&lt;&gt; </td></tr>
+<tr class="memitem:a04927adbc15c18dbc8b483dcbca9dad4"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#a04927adbc15c18dbc8b483dcbca9dad4">MakeCheckOpValueString</a> (std::ostream *os, const std::nullptr_t &amp;v)</td></tr>
+<tr class="separator:a04927adbc15c18dbc8b483dcbca9dad4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1749056ff206ebc4f581e6bc0bae841d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#a1749056ff206ebc4f581e6bc0bae841d">InitGoogleLogging</a> (const char *argv0)</td></tr>
 <tr class="separator:a1749056ff206ebc4f581e6bc0bae841d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a70bf67dee61470b69573aae771282e30"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#a70bf67dee61470b69573aae771282e30">ShutdownGoogleLogging</a> ()</td></tr>
@@ -228,18 +231,18 @@ Functions</h2></td></tr>
 <tr class="separator:a8dcfdaf010deb65ca2d5d5f819f67252"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af2c12c2f1bc6ab200566b05c2d805c53"><td class="memItemLeft" align="right" valign="top">signed char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#af2c12c2f1bc6ab200566b05c2d805c53">GetReferenceableValue</a> (signed char t)</td></tr>
 <tr class="separator:af2c12c2f1bc6ab200566b05c2d805c53"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0999d738c2207601b319f644c4056d93"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a4355d16fcf9f644c9ac84293f0b1801f">int16</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#a0999d738c2207601b319f644c4056d93">GetReferenceableValue</a> (<a class="el" href="integral__types_8h.html#a4355d16fcf9f644c9ac84293f0b1801f">int16</a> t)</td></tr>
-<tr class="separator:a0999d738c2207601b319f644c4056d93"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad8214b6de50cda951762c400cd0c9815"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a05f6b0ae8f6a6e135b0e290c25fe0e4e">uint16</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#ad8214b6de50cda951762c400cd0c9815">GetReferenceableValue</a> (<a class="el" href="integral__types_8h.html#a05f6b0ae8f6a6e135b0e290c25fe0e4e">uint16</a> t)</td></tr>
-<tr class="separator:ad8214b6de50cda951762c400cd0c9815"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a43a846772d4fa4f66404e90e29446d57"><td class="memItemLeft" align="right" valign="top">int16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#a43a846772d4fa4f66404e90e29446d57">GetReferenceableValue</a> (int16_t t)</td></tr>
+<tr class="separator:a43a846772d4fa4f66404e90e29446d57"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ce511e8f375402d150d3c55d24569a4"><td class="memItemLeft" align="right" valign="top">uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#a8ce511e8f375402d150d3c55d24569a4">GetReferenceableValue</a> (uint16_t t)</td></tr>
+<tr class="separator:a8ce511e8f375402d150d3c55d24569a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abfb30e3382589c8190fe6cb3bae8911c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#abfb30e3382589c8190fe6cb3bae8911c">GetReferenceableValue</a> (int t)</td></tr>
 <tr class="separator:abfb30e3382589c8190fe6cb3bae8911c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a10fd61a1e975ccd31174afd08163b93d"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#a10fd61a1e975ccd31174afd08163b93d">GetReferenceableValue</a> (unsigned int t)</td></tr>
 <tr class="separator:a10fd61a1e975ccd31174afd08163b93d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac160ff13b7a1003d76c694f21bab9bde"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#ac160ff13b7a1003d76c694f21bab9bde">GetReferenceableValue</a> (<a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> t)</td></tr>
-<tr class="separator:ac160ff13b7a1003d76c694f21bab9bde"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aba9a0b80b2a693424a012a1e65cd706a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#aba9a0b80b2a693424a012a1e65cd706a">GetReferenceableValue</a> (<a class="el" href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a> t)</td></tr>
-<tr class="separator:aba9a0b80b2a693424a012a1e65cd706a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ada23c58a18fdc247e34b1244ea11b9f0"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#ada23c58a18fdc247e34b1244ea11b9f0">GetReferenceableValue</a> (int64_t t)</td></tr>
+<tr class="separator:ada23c58a18fdc247e34b1244ea11b9f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc9a9686bc18764b72143ec2ca755ec6"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#afc9a9686bc18764b72143ec2ca755ec6">GetReferenceableValue</a> (uint64_t t)</td></tr>
+<tr class="separator:afc9a9686bc18764b72143ec2ca755ec6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a914049143a7ff3a624cabe5865165314"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a914049143a7ff3a624cabe5865165314"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#a914049143a7ff3a624cabe5865165314">MakeCheckOpValueString</a> (std::ostream *os, const T &amp;v)</td></tr>
 <tr class="separator:a914049143a7ff3a624cabe5865165314"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -283,8 +286,8 @@ Functions</h2></td></tr>
 <tr class="separator:aa235835addc47ca264cabf303237cde5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae10ec63d828053e42aa69b1d531602d7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#ae10ec63d828053e42aa69b1d531602d7">SetVLOGLevel</a> (const char *module_pattern, int log_level)</td></tr>
 <tr class="separator:ae10ec63d828053e42aa69b1d531602d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a39ee322ad22fd9a06fa76528653e25e2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#a39ee322ad22fd9a06fa76528653e25e2">InitVLOG3__</a> (<a class="el" href="integral__types_8h.html#a56f1a81c92849566ae864511088eb7e8">int32</a> **site_flag, <a class="el" href="integral__types_8h.html#a56f1a81c92849566ae864511088eb7e8">int32</a> *site_default, const char *fname, <a class="el" href="integral__types_8h.html#a56f1a81c92849566ae864511088eb7e8">int32</a> verbose_level)</td></tr>
-<tr class="separator:a39ee322ad22fd9a06fa76528653e25e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af07f2b174857ee11ff4c7486e29dbff8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#af07f2b174857ee11ff4c7486e29dbff8">InitVLOG3__</a> (int32_t **site_flag, int32_t *site_default, const char *fname, int32_t verbose_level)</td></tr>
+<tr class="separator:af07f2b174857ee11ff4c7486e29dbff8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
@@ -344,8 +347,8 @@ Variables</h2></td></tr>
 <tr class="separator:ada71130f5f3b55dbec713c608b9e5447"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac8976e82fa12927de3d5a369f5c08ebb"><td class="memItemLeft" align="right" valign="top">static char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#ac8976e82fa12927de3d5a369f5c08ebb">crash_buf</a> [<a class="el" href="namespacegoogle.html#abaf22b53e0939d4028fac0117e1c5ba3">kLogBufSize</a>+1] = {0}</td></tr>
 <tr class="separator:ac8976e82fa12927de3d5a369f5c08ebb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3ed2cb5f44f4ef1d3faa82daae0e158c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="integral__types_8h.html#a56f1a81c92849566ae864511088eb7e8">int32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#a3ed2cb5f44f4ef1d3faa82daae0e158c">kLogSiteUninitialized</a> = 1000</td></tr>
-<tr class="separator:a3ed2cb5f44f4ef1d3faa82daae0e158c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19c4fdc6f7943ab1c9bf25f17ec06776"><td class="memItemLeft" align="right" valign="top">int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#a19c4fdc6f7943ab1c9bf25f17ec06776">kLogSiteUninitialized</a> = 1000</td></tr>
+<tr class="separator:a19c4fdc6f7943ab1c9bf25f17ec06776"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ba4fd5cf403f1a38ef6c026529f2039"><td class="memItemLeft" align="right" valign="top">static absl::Mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#a2ba4fd5cf403f1a38ef6c026529f2039">vmodule_lock</a></td></tr>
 <tr class="separator:a2ba4fd5cf403f1a38ef6c026529f2039"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5ca1212d018fd6796bc3869c5e5f1c94"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structgoogle_1_1_v_module_info.html">VModuleInfo</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegoogle.html#a5ca1212d018fd6796bc3869c5e5f1c94">vmodule_list</a> = 0</td></tr>
@@ -382,7 +385,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01383">1383</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01384">1384</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -424,7 +427,7 @@ Variables</h2></td></tr>
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="aa739a176bcc5230a3536ef27a860c1a8a7b5e9804203d4b1300aad76e5f9a3302"></a>COUNTER&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00857">857</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00865">865</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -445,7 +448,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01550">1550</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01551">1551</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -487,7 +490,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l01218">1218</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l01226">1226</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -866,7 +869,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01505">1505</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01506">1506</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -886,7 +889,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01509">1509</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01510">1510</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -934,7 +937,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01713">1713</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01714">1714</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -953,7 +956,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01682">1682</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01683">1683</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -1001,7 +1004,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00518">518</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00521">521</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1029,7 +1032,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00515">515</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00518">518</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1057,12 +1060,12 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00523">523</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00526">526</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
-<a id="a0999d738c2207601b319f644c4056d93"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0999d738c2207601b319f644c4056d93">&#9670;&nbsp;</a></span>GetReferenceableValue() <span class="overload">[4/10]</span></h2>
+<a id="a43a846772d4fa4f66404e90e29446d57"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a43a846772d4fa4f66404e90e29446d57">&#9670;&nbsp;</a></span>GetReferenceableValue() <span class="overload">[4/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1071,9 +1074,9 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="integral__types_8h.html#a4355d16fcf9f644c9ac84293f0b1801f">int16</a> google::GetReferenceableValue </td>
+          <td class="memname">int16_t google::GetReferenceableValue </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="integral__types_8h.html#a4355d16fcf9f644c9ac84293f0b1801f">int16</a>&#160;</td>
+          <td class="paramtype">int16_t&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
           <td></td>
         </tr>
@@ -1085,12 +1088,12 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00521">521</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00524">524</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
-<a id="ac160ff13b7a1003d76c694f21bab9bde"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac160ff13b7a1003d76c694f21bab9bde">&#9670;&nbsp;</a></span>GetReferenceableValue() <span class="overload">[5/10]</span></h2>
+<a id="ada23c58a18fdc247e34b1244ea11b9f0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ada23c58a18fdc247e34b1244ea11b9f0">&#9670;&nbsp;</a></span>GetReferenceableValue() <span class="overload">[5/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1099,9 +1102,9 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> google::GetReferenceableValue </td>
+          <td class="memname">int64_t google::GetReferenceableValue </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
           <td></td>
         </tr>
@@ -1113,7 +1116,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00525">525</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00528">528</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1141,12 +1144,12 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00520">520</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00523">523</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
-<a id="ad8214b6de50cda951762c400cd0c9815"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad8214b6de50cda951762c400cd0c9815">&#9670;&nbsp;</a></span>GetReferenceableValue() <span class="overload">[7/10]</span></h2>
+<a id="a8ce511e8f375402d150d3c55d24569a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8ce511e8f375402d150d3c55d24569a4">&#9670;&nbsp;</a></span>GetReferenceableValue() <span class="overload">[7/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1155,9 +1158,9 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="integral__types_8h.html#a05f6b0ae8f6a6e135b0e290c25fe0e4e">uint16</a> google::GetReferenceableValue </td>
+          <td class="memname">uint16_t google::GetReferenceableValue </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="integral__types_8h.html#a05f6b0ae8f6a6e135b0e290c25fe0e4e">uint16</a>&#160;</td>
+          <td class="paramtype">uint16_t&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
           <td></td>
         </tr>
@@ -1169,12 +1172,12 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00522">522</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00525">525</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
-<a id="aba9a0b80b2a693424a012a1e65cd706a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aba9a0b80b2a693424a012a1e65cd706a">&#9670;&nbsp;</a></span>GetReferenceableValue() <span class="overload">[8/10]</span></h2>
+<a id="afc9a9686bc18764b72143ec2ca755ec6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc9a9686bc18764b72143ec2ca755ec6">&#9670;&nbsp;</a></span>GetReferenceableValue() <span class="overload">[8/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1183,9 +1186,9 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a> google::GetReferenceableValue </td>
+          <td class="memname">uint64_t google::GetReferenceableValue </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="integral__types_8h.html#abc0f5bc07737e498f287334775dff2b6">uint64</a>&#160;</td>
+          <td class="paramtype">uint64_t&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
           <td></td>
         </tr>
@@ -1197,7 +1200,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00526">526</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00529">529</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1225,7 +1228,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00519">519</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00522">522</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1253,7 +1256,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00524">524</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00527">527</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1281,7 +1284,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01631">1631</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01632">1632</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -1303,12 +1306,12 @@ Variables</h2></td></tr>
 <dl class="section examples"><dt>Examples</dt><dd><a class="el" href="nurses_cp_8cc-example.html#a6">nurses_cp.cc</a>.</dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01867">1867</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01873">1873</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
-<a id="a39ee322ad22fd9a06fa76528653e25e2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a39ee322ad22fd9a06fa76528653e25e2">&#9670;&nbsp;</a></span>InitVLOG3__()</h2>
+<a id="af07f2b174857ee11ff4c7486e29dbff8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af07f2b174857ee11ff4c7486e29dbff8">&#9670;&nbsp;</a></span>InitVLOG3__()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1316,13 +1319,13 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="logging__export_8h.html#a980c97856a47502c2877b93460f44f87">GOOGLE_GLOG_DLL_DECL</a> bool InitVLOG3__ </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="integral__types_8h.html#a56f1a81c92849566ae864511088eb7e8">int32</a> **&#160;</td>
+          <td class="paramtype">int32_t **&#160;</td>
           <td class="paramname"><em>site_flag</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="integral__types_8h.html#a56f1a81c92849566ae864511088eb7e8">int32</a> *&#160;</td>
+          <td class="paramtype">int32_t *&#160;</td>
           <td class="paramname"><em>site_default</em>, </td>
         </tr>
         <tr>
@@ -1334,7 +1337,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="integral__types_8h.html#a56f1a81c92849566ae864511088eb7e8">int32</a>&#160;</td>
+          <td class="paramtype">int32_t&#160;</td>
           <td class="paramname"><em>verbose_level</em>&#160;</td>
         </tr>
         <tr>
@@ -1365,7 +1368,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01388">1388</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01389">1389</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -1403,7 +1406,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l01176">1176</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l01184">1184</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1430,7 +1433,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01381">1381</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01382">1382</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -1449,7 +1452,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01566">1566</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01567">1567</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -1485,12 +1488,12 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00602">602</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00610">610</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
 <a id="a6a22d301f4696f37c73848815558a8b3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6a22d301f4696f37c73848815558a8b3">&#9670;&nbsp;</a></span>MakeCheckOpValueString() <span class="overload">[1/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a22d301f4696f37c73848815558a8b3">&#9670;&nbsp;</a></span>MakeCheckOpValueString() <span class="overload">[1/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1515,12 +1518,12 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01841">1841</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01842">1842</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
 <a id="a0ffd1376f9f36ea82aeb350bc138215a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0ffd1376f9f36ea82aeb350bc138215a">&#9670;&nbsp;</a></span>MakeCheckOpValueString() <span class="overload">[2/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0ffd1376f9f36ea82aeb350bc138215a">&#9670;&nbsp;</a></span>MakeCheckOpValueString() <span class="overload">[2/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1545,12 +1548,42 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01850">1850</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01851">1851</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+
+</div>
+</div>
+<a id="a04927adbc15c18dbc8b483dcbca9dad4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04927adbc15c18dbc8b483dcbca9dad4">&#9670;&nbsp;</a></span>MakeCheckOpValueString() <span class="overload">[3/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="logging__export_8h.html#a980c97856a47502c2877b93460f44f87">GOOGLE_GLOG_DLL_DECL</a> void MakeCheckOpValueString </td>
+          <td>(</td>
+          <td class="paramtype">std::ostream *&#160;</td>
+          <td class="paramname"><em>os</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::nullptr_t &amp;&#160;</td>
+          <td class="paramname"><em>v</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01869">1869</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
 <a id="a914049143a7ff3a624cabe5865165314"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a914049143a7ff3a624cabe5865165314">&#9670;&nbsp;</a></span>MakeCheckOpValueString() <span class="overload">[3/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a914049143a7ff3a624cabe5865165314">&#9670;&nbsp;</a></span>MakeCheckOpValueString() <span class="overload">[4/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1583,12 +1616,12 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00545">545</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l00548">548</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
 <a id="af26ad2ccd61c6e3e70610fe61f6b2519"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af26ad2ccd61c6e3e70610fe61f6b2519">&#9670;&nbsp;</a></span>MakeCheckOpValueString() <span class="overload">[4/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af26ad2ccd61c6e3e70610fe61f6b2519">&#9670;&nbsp;</a></span>MakeCheckOpValueString() <span class="overload">[5/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1613,12 +1646,12 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01859">1859</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01860">1860</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
-<a id="a2c7abbf3e9728f6210d17963a0bb58c4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2c7abbf3e9728f6210d17963a0bb58c4">&#9670;&nbsp;</a></span>MaxLogSize()</h2>
+<a id="aab2b99122a259ede199e6872c7f367bf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aab2b99122a259ede199e6872c7f367bf">&#9670;&nbsp;</a></span>MaxLogSize()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1627,7 +1660,7 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static <a class="el" href="integral__types_8h.html#a56f1a81c92849566ae864511088eb7e8">int32</a> google::MaxLogSize </td>
+          <td class="memname">static int32_t google::MaxLogSize </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -1678,7 +1711,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l01463">1463</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8h_source.html#l01471">1471</a> of file <a class="el" href="base_2logging_8h_source.html">base/logging.h</a>.</p>
 
 </div>
 </div>
@@ -1708,7 +1741,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01481">1481</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01482">1482</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -1744,7 +1777,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01748">1748</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01749">1749</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -1894,7 +1927,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01554">1554</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01555">1555</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -1913,7 +1946,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01259">1259</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01260">1260</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -1943,7 +1976,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01513">1513</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01514">1514</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -1963,7 +1996,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01558">1558</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01559">1559</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -1993,7 +2026,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01517">1517</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01518">1518</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -2013,7 +2046,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01562">1562</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01563">1563</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -2099,7 +2132,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01602">1602</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01603">1603</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -2118,7 +2151,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01871">1871</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01877">1877</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -2138,7 +2171,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01798">1798</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01799">1799</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -2157,7 +2190,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01705">1705</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01706">1706</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -2321,7 +2354,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01048">1048</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01049">1049</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -2417,7 +2450,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01257">1257</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01258">1258</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -2441,7 +2474,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01050">1050</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01051">1051</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -2465,7 +2498,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01051">1051</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01052">1052</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -2489,7 +2522,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01049">1049</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01050">1050</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -2513,7 +2546,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01047">1047</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01048">1048</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -2537,7 +2570,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01256">1256</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01257">1257</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -2553,7 +2586,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01386">1386</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01387">1387</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -2717,7 +2750,7 @@ Variables</h2></td></tr>
 <div class="line">    <span class="stringliteral">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span></div>
 <div class="line">    <span class="stringliteral">&quot;0123456789+-_.=/:,@&quot;</span></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01597">1597</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01598">1598</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -2745,14 +2778,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a3ed2cb5f44f4ef1d3faa82daae0e158c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3ed2cb5f44f4ef1d3faa82daae0e158c">&#9670;&nbsp;</a></span>kLogSiteUninitialized</h2>
+<a id="a19c4fdc6f7943ab1c9bf25f17ec06776"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19c4fdc6f7943ab1c9bf25f17ec06776">&#9670;&nbsp;</a></span>kLogSiteUninitialized</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="integral__types_8h.html#a56f1a81c92849566ae864511088eb7e8">int32</a> kLogSiteUninitialized = 1000</td>
+          <td class="memname">int32_t kLogSiteUninitialized = 1000</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -2829,7 +2862,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01680">1680</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01681">1681</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -2911,7 +2944,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01056">1056</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01057">1057</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>
@@ -2935,7 +2968,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01060">1060</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base_2logging_8cc_source.html#l01061">1061</a> of file <a class="el" href="base_2logging_8cc_source.html">base/logging.cc</a>.</p>
 
 </div>
 </div>

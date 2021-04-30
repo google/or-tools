@@ -62,7 +62,7 @@ rather than for solving specific optimization problems.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python"># Copyright 2010-2018 Google LLC
+<pre><code class="python"># Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the &#34;License&#34;);
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -114,6 +114,7 @@ from __future__ import print_function
 
 import collections
 import numbers
+import threading
 import time
 
 from ortools.sat import cp_model_pb2
@@ -316,8 +317,40 @@ class LinearExpr(object):
             &#39;calling %% on a linear expression is not supported, &#39;
             &#39;please use CpModel.AddModuloEquality&#39;)
 
+    def __pow__(self, _):
+        raise NotImplementedError(
+            &#39;calling ** on a linear expression is not supported, &#39;
+            &#39;please use CpModel.AddMultiplicationEquality&#39;)
+
+    def __lshift__(self, _):
+        raise NotImplementedError(
+            &#39;calling left shift on a linear expression is not supported&#39;)
+
+    def __rshift__(self, _):
+        raise NotImplementedError(
+            &#39;calling right shift on a linear expression is not supported&#39;)
+
+    def __and__(self, _):
+        raise NotImplementedError(
+            &#39;calling and on a linear expression is not supported, &#39;
+            &#39;please use CpModel.AddBoolAnd&#39;)
+
+    def __or__(self, _):
+        raise NotImplementedError(
+            &#39;calling or on a linear expression is not supported, &#39;
+            &#39;please use CpModel.AddBoolOr&#39;)
+
+    def __xor__(self, _):
+        raise NotImplementedError(
+            &#39;calling xor on a linear expression is not supported, &#39;
+            &#39;please use CpModel.AddBoolXor&#39;)
+
     def __neg__(self):
         return _ProductCst(self, -1)
+
+    def __bool__(self):
+        raise NotImplementedError(
+            &#39;Evaluating a LinearExpr instance as a Boolean is not implemented.&#39;)
 
     def __eq__(self, arg):
         if arg is None:
@@ -543,6 +576,12 @@ class IntVar(LinearExpr):
         &#34;&#34;&#34;Returns the variable protobuf.&#34;&#34;&#34;
         return self.__var
 
+    def IsEqualTo(self, other):
+        &#34;&#34;&#34;Returns true if self == other in the python sense.&#34;&#34;&#34;
+        if not isinstance(other, IntVar):
+            return False
+        return self.Index() == other.Index()
+
     def __str__(self):
         if not self.__var.name:
             if len(self.__var.domain
@@ -572,7 +611,7 @@ class IntVar(LinearExpr):
             if bound &lt; 0 or bound &gt; 1:
                 raise TypeError(
                     &#39;Cannot call Not on a non boolean variable: %s&#39; % self)
-        if not self.__negation:
+        if self.__negation is None:
             self.__negation = _NotBooleanVariable(self)
         return self.__negation
 
@@ -591,6 +630,10 @@ class _NotBooleanVariable(LinearExpr):
 
     def __str__(self):
         return &#39;not(%s)&#39; % str(self.__boolvar)
+
+    def __bool__(self):
+        raise NotImplementedError(
+            &#39;Evaluating a literal as a Boolean value is not implemented.&#39;)
 
 
 class BoundedLinearExpression(object):
@@ -631,6 +674,30 @@ class BoundedLinearExpression(object):
 
     def Bounds(self):
         return self.__bounds
+
+    def __bool__(self):
+        # Check for x == y
+        if self.__bounds == [0, 0]:
+            coeffs_map, constant = self.__expr.GetVarValueMap()
+            if constant != 0:
+                return False
+            for coeff in coeffs_map.values():
+                if coeff != 0:
+                    return False
+            return True
+        elif self.__bounds == [INT_MIN, -1, 1, INT_MAX]:
+            # Check for x != y
+            coeffs_map, constant = self.__expr.GetVarValueMap()
+            if constant != 0:
+                return True
+            for coeff in coeffs_map.values():
+                if coeff != 0:
+                    return True
+            return False
+
+        raise NotImplementedError(
+            &#39;Evaluating a BoundedLinearExpr as a Boolean value is not supported.&#39;
+        )
 
 
 class Constraint(object):
@@ -763,6 +830,36 @@ class IntervalVar(object):
 
     def Name(self):
         return self.__ct.name
+
+
+def ObjectIsATrueLiteral(literal):
+    &#34;&#34;&#34;Checks if literal is either True, or a Boolean literals fixed to True.&#34;&#34;&#34;
+    if isinstance(literal, IntVar):
+        proto = literal.Proto()
+        return (len(proto.domain) == 2 and proto.domain[0] == 1 and
+                proto.domain[1] == 1)
+    if isinstance(literal, _NotBooleanVariable):
+        proto = literal.Not().Proto()
+        return (len(proto.domain) == 2 and proto.domain[0] == 0 and
+                proto.domain[1] == 0)
+    if isinstance(literal, numbers.Integral):
+        return literal == 1
+    return False
+
+
+def ObjectIsAFalseLiteral(literal):
+    &#34;&#34;&#34;Checks if literal is either False, or a Boolean literals fixed to False.&#34;&#34;&#34;
+    if isinstance(literal, IntVar):
+        proto = literal.Proto()
+        return (len(proto.domain) == 2 and proto.domain[0] == 0 and
+                proto.domain[1] == 0)
+    if isinstance(literal, _NotBooleanVariable):
+        proto = literal.Not().Proto()
+        return (len(proto.domain) == 2 and proto.domain[0] == 1 and
+                proto.domain[1] == 1)
+    if isinstance(literal, numbers.Integral):
+        return literal == 0
+    return False
 
 
 class CpModel(object):
@@ -1580,7 +1677,7 @@ class CpModel(object):
         return index
 
     def VarIndexToVarProto(self, var_index):
-        if var_index &gt; 0:
+        if var_index &gt;= 0:
             return self.__model.variables[var_index]
         else:
             return self.__model.variables[-var_index - 1]
@@ -1650,15 +1747,25 @@ class CpModel(object):
 
     def ModelStats(self):
         &#34;&#34;&#34;Returns a string containing some model statistics.&#34;&#34;&#34;
-        return pywrapsat.SatHelper.ModelStats(self.__model)
+        return pywrapsat.CpSatHelper.ModelStats(self.__model)
 
     def Validate(self):
         &#34;&#34;&#34;Returns a string indicating that the model is invalid.&#34;&#34;&#34;
-        return pywrapsat.SatHelper.ValidateModel(self.__model)
+        return pywrapsat.CpSatHelper.ValidateModel(self.__model)
 
     def ExportToFile(self, file):
-        &#34;&#34;&#34;Write the model as a ascii protocol buffer to &#39;file&#39;.&#34;&#34;&#34;
-        return pywrapsat.SatHelper.WriteModelToFile(self.__model, file)
+        &#34;&#34;&#34;Write the model as a protocol buffer to &#39;file&#39;.
+
+    Args:
+      file: file to write the model to. If the filename ends with &#39;txt&#39;, the
+            model will be written as a text file, otherwise, the binary format
+            will be used.
+
+
+    Returns:
+      True if the model was correctly written.
+    &#34;&#34;&#34;
+        return pywrapsat.CpSatHelper.WriteModelToFile(self.__model, file)
 
     def AssertIsBooleanVariable(self, x):
         if isinstance(x, IntVar):
@@ -1753,19 +1860,36 @@ class CpSolver(object):
         self.__model = None
         self.__solution: cp_model_pb2.CpSolverResponse = None
         self.parameters = sat_parameters_pb2.SatParameters()
+        self.log_callback = None
+        self.__solve_wrapper: pywrapsat.SolveWrapper = None
+        self.__lock = threading.Lock()
 
-    def Solve(self, model):
-        &#34;&#34;&#34;Solves the given model and returns the solve status.&#34;&#34;&#34;
-        self.__solution = pywrapsat.SatHelper.SolveWithParameters(
-            model.Proto(), self.parameters)
+    def Solve(self, model, solution_callback=None):
+        &#34;&#34;&#34;Solves a problem and passes each solution to the callback if not null.&#34;&#34;&#34;
+        with self.__lock:
+            solve_wrapper = pywrapsat.SolveWrapper()
+
+        solve_wrapper.SetParameters(self.parameters)
+        if solution_callback is not None:
+            solve_wrapper.AddSolutionCallback(solution_callback)
+
+        if self.log_callback is not None:
+            solve_wrapper.AddLogCallback(self.log_callback)
+
+        self.__solution = solve_wrapper.Solve(model.Proto())
+
+        if solution_callback is not None:
+            solve_wrapper.ClearSolutionCallback(solution_callback)
+
+        with self.__lock:
+            self.__solve_wrapper = None
+
         return self.__solution.status
 
+    # DEPRECATED, just use Solve() with the callback argument.
     def SolveWithSolutionCallback(self, model, callback):
-        &#34;&#34;&#34;Solves a problem and passes each solution found to the callback.&#34;&#34;&#34;
-        self.__solution = (
-            pywrapsat.SatHelper.SolveWithParametersAndSolutionCallback(
-                model.Proto(), self.parameters, callback))
-        return self.__solution.status
+        &#34;&#34;&#34;DEPRECATED Use Solve() with the callback argument.&#34;&#34;&#34;
+        return self.Solve(model, callback)
 
     def SearchForAllSolutions(self, model, callback):
         &#34;&#34;&#34;Search for all solutions of a satisfiability problem.
@@ -1789,15 +1913,21 @@ class CpSolver(object):
         if model.HasObjective():
             raise TypeError(&#39;Search for all solutions is only defined on &#39;
                             &#39;satisfiability problems&#39;)
-        # Store old values.
+        # Store old parameter.
         enumerate_all = self.parameters.enumerate_all_solutions
         self.parameters.enumerate_all_solutions = True
-        self.__solution = (
-            pywrapsat.SatHelper.SolveWithParametersAndSolutionCallback(
-                model.Proto(), self.parameters, callback))
-        # Restore parameters.
+
+        self.Solve(model, callback)
+
+        # Restore parameter.
         self.parameters.enumerate_all_solutions = enumerate_all
         return self.__solution.status
+
+    def StopSearch(self):
+        &#34;&#34;&#34;Stops the current search asynchronously.&#34;&#34;&#34;
+        with self.__lock:
+            if self.__solve_wrapper:
+                self.__solve_wrapper.StopSearch()
 
     def Value(self, expression):
         &#34;&#34;&#34;Returns the value of a linear expression after solve.&#34;&#34;&#34;
@@ -1847,7 +1977,7 @@ class CpSolver(object):
 
     def ResponseStats(self):
         &#34;&#34;&#34;Returns some statistics on the solution found as a string.&#34;&#34;&#34;
-        return pywrapsat.SatHelper.SolverResponseStats(self.__solution)
+        return pywrapsat.CpSatHelper.SolverResponseStats(self.__solution)
 
     def ResponseProto(self):
         &#34;&#34;&#34;Returns the response object.&#34;&#34;&#34;
@@ -2031,6 +2161,57 @@ class VarArraySolutionPrinter(CpSolverSolutionCallback):
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="cp_model.ObjectIsAFalseLiteral"><code class="name flex">
+<span>def <span class="ident">ObjectIsAFalseLiteral</span></span>(<span>literal)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Checks if literal is either False, or a Boolean literals fixed to False.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def ObjectIsAFalseLiteral(literal):
+    &#34;&#34;&#34;Checks if literal is either False, or a Boolean literals fixed to False.&#34;&#34;&#34;
+    if isinstance(literal, IntVar):
+        proto = literal.Proto()
+        return (len(proto.domain) == 2 and proto.domain[0] == 0 and
+                proto.domain[1] == 0)
+    if isinstance(literal, _NotBooleanVariable):
+        proto = literal.Not().Proto()
+        return (len(proto.domain) == 2 and proto.domain[0] == 1 and
+                proto.domain[1] == 1)
+    if isinstance(literal, numbers.Integral):
+        return literal == 0
+    return False</code></pre>
+</details>
+</dd>
+<dt id="cp_model.ObjectIsATrueLiteral"><code class="name flex">
+<span>def <span class="ident">ObjectIsATrueLiteral</span></span>(<span>literal)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Checks if literal is either True, or a Boolean literals fixed to True.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def ObjectIsATrueLiteral(literal):
+    &#34;&#34;&#34;Checks if literal is either True, or a Boolean literals fixed to True.&#34;&#34;&#34;
+    if isinstance(literal, IntVar):
+        proto = literal.Proto()
+        return (len(proto.domain) == 2 and proto.domain[0] == 1 and
+                proto.domain[1] == 1)
+    if isinstance(literal, _NotBooleanVariable):
+        proto = literal.Not().Proto()
+        return (len(proto.domain) == 2 and proto.domain[0] == 0 and
+                proto.domain[1] == 0)
+    if isinstance(literal, numbers.Integral):
+        return literal == 1
+    return False</code></pre>
+</details>
+</dd>
+</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
@@ -2086,7 +2267,31 @@ class VarArraySolutionPrinter(CpSolverSolutionCallback):
         return self.__expr
 
     def Bounds(self):
-        return self.__bounds</code></pre>
+        return self.__bounds
+
+    def __bool__(self):
+        # Check for x == y
+        if self.__bounds == [0, 0]:
+            coeffs_map, constant = self.__expr.GetVarValueMap()
+            if constant != 0:
+                return False
+            for coeff in coeffs_map.values():
+                if coeff != 0:
+                    return False
+            return True
+        elif self.__bounds == [INT_MIN, -1, 1, INT_MAX]:
+            # Check for x != y
+            coeffs_map, constant = self.__expr.GetVarValueMap()
+            if constant != 0:
+                return True
+            for coeff in coeffs_map.values():
+                if coeff != 0:
+                    return True
+            return False
+
+        raise NotImplementedError(
+            &#39;Evaluating a BoundedLinearExpr as a Boolean value is not supported.&#39;
+        )</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
@@ -3111,7 +3316,7 @@ Returns:
         return index
 
     def VarIndexToVarProto(self, var_index):
-        if var_index &gt; 0:
+        if var_index &gt;= 0:
             return self.__model.variables[var_index]
         else:
             return self.__model.variables[-var_index - 1]
@@ -3181,15 +3386,25 @@ Returns:
 
     def ModelStats(self):
         &#34;&#34;&#34;Returns a string containing some model statistics.&#34;&#34;&#34;
-        return pywrapsat.SatHelper.ModelStats(self.__model)
+        return pywrapsat.CpSatHelper.ModelStats(self.__model)
 
     def Validate(self):
         &#34;&#34;&#34;Returns a string indicating that the model is invalid.&#34;&#34;&#34;
-        return pywrapsat.SatHelper.ValidateModel(self.__model)
+        return pywrapsat.CpSatHelper.ValidateModel(self.__model)
 
     def ExportToFile(self, file):
-        &#34;&#34;&#34;Write the model as a ascii protocol buffer to &#39;file&#39;.&#34;&#34;&#34;
-        return pywrapsat.SatHelper.WriteModelToFile(self.__model, file)
+        &#34;&#34;&#34;Write the model as a protocol buffer to &#39;file&#39;.
+
+    Args:
+      file: file to write the model to. If the filename ends with &#39;txt&#39;, the
+            model will be written as a text file, otherwise, the binary format
+            will be used.
+
+
+    Returns:
+      True if the model was correctly written.
+    &#34;&#34;&#34;
+        return pywrapsat.CpSatHelper.WriteModelToFile(self.__model, file)
 
     def AssertIsBooleanVariable(self, x):
         if isinstance(x, IntVar):
@@ -4494,14 +4709,33 @@ Raises:
 <span>def <span class="ident">ExportToFile</span></span>(<span>self, file)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Write the model as a ascii protocol buffer to 'file'.</p></div>
+<div class="desc"><p>Write the model as a protocol buffer to 'file'.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file</code></strong></dt>
+<dd>file to write the model to. If the filename ends with 'txt', the
+model will be written as a text file, otherwise, the binary format
+will be used.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>True if the model was correctly written.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def ExportToFile(self, file):
-    &#34;&#34;&#34;Write the model as a ascii protocol buffer to &#39;file&#39;.&#34;&#34;&#34;
-    return pywrapsat.SatHelper.WriteModelToFile(self.__model, file)</code></pre>
+    &#34;&#34;&#34;Write the model as a protocol buffer to &#39;file&#39;.
+
+Args:
+  file: file to write the model to. If the filename ends with &#39;txt&#39;, the
+        model will be written as a text file, otherwise, the binary format
+        will be used.
+
+
+Returns:
+  True if the model was correctly written.
+&#34;&#34;&#34;
+    return pywrapsat.CpSatHelper.WriteModelToFile(self.__model, file)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpModel.GetBoolVarFromProtoIndex"><code class="name flex">
@@ -4702,7 +4936,7 @@ Raises:
 </summary>
 <pre><code class="python">def ModelStats(self):
     &#34;&#34;&#34;Returns a string containing some model statistics.&#34;&#34;&#34;
-    return pywrapsat.SatHelper.ModelStats(self.__model)</code></pre>
+    return pywrapsat.CpSatHelper.ModelStats(self.__model)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpModel.Negated"><code class="name flex">
@@ -4971,7 +5205,7 @@ Returns:
 </summary>
 <pre><code class="python">def Validate(self):
     &#34;&#34;&#34;Returns a string indicating that the model is invalid.&#34;&#34;&#34;
-    return pywrapsat.SatHelper.ValidateModel(self.__model)</code></pre>
+    return pywrapsat.CpSatHelper.ValidateModel(self.__model)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpModel.VarIndexToVarProto"><code class="name flex">
@@ -4984,7 +5218,7 @@ Returns:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def VarIndexToVarProto(self, var_index):
-    if var_index &gt; 0:
+    if var_index &gt;= 0:
         return self.__model.variables[var_index]
     else:
         return self.__model.variables[-var_index - 1]</code></pre>
@@ -5021,19 +5255,36 @@ about the solve procedure.</p></div>
         self.__model = None
         self.__solution: cp_model_pb2.CpSolverResponse = None
         self.parameters = sat_parameters_pb2.SatParameters()
+        self.log_callback = None
+        self.__solve_wrapper: pywrapsat.SolveWrapper = None
+        self.__lock = threading.Lock()
 
-    def Solve(self, model):
-        &#34;&#34;&#34;Solves the given model and returns the solve status.&#34;&#34;&#34;
-        self.__solution = pywrapsat.SatHelper.SolveWithParameters(
-            model.Proto(), self.parameters)
+    def Solve(self, model, solution_callback=None):
+        &#34;&#34;&#34;Solves a problem and passes each solution to the callback if not null.&#34;&#34;&#34;
+        with self.__lock:
+            solve_wrapper = pywrapsat.SolveWrapper()
+
+        solve_wrapper.SetParameters(self.parameters)
+        if solution_callback is not None:
+            solve_wrapper.AddSolutionCallback(solution_callback)
+
+        if self.log_callback is not None:
+            solve_wrapper.AddLogCallback(self.log_callback)
+
+        self.__solution = solve_wrapper.Solve(model.Proto())
+
+        if solution_callback is not None:
+            solve_wrapper.ClearSolutionCallback(solution_callback)
+
+        with self.__lock:
+            self.__solve_wrapper = None
+
         return self.__solution.status
 
+    # DEPRECATED, just use Solve() with the callback argument.
     def SolveWithSolutionCallback(self, model, callback):
-        &#34;&#34;&#34;Solves a problem and passes each solution found to the callback.&#34;&#34;&#34;
-        self.__solution = (
-            pywrapsat.SatHelper.SolveWithParametersAndSolutionCallback(
-                model.Proto(), self.parameters, callback))
-        return self.__solution.status
+        &#34;&#34;&#34;DEPRECATED Use Solve() with the callback argument.&#34;&#34;&#34;
+        return self.Solve(model, callback)
 
     def SearchForAllSolutions(self, model, callback):
         &#34;&#34;&#34;Search for all solutions of a satisfiability problem.
@@ -5057,15 +5308,21 @@ about the solve procedure.</p></div>
         if model.HasObjective():
             raise TypeError(&#39;Search for all solutions is only defined on &#39;
                             &#39;satisfiability problems&#39;)
-        # Store old values.
+        # Store old parameter.
         enumerate_all = self.parameters.enumerate_all_solutions
         self.parameters.enumerate_all_solutions = True
-        self.__solution = (
-            pywrapsat.SatHelper.SolveWithParametersAndSolutionCallback(
-                model.Proto(), self.parameters, callback))
-        # Restore parameters.
+
+        self.Solve(model, callback)
+
+        # Restore parameter.
         self.parameters.enumerate_all_solutions = enumerate_all
         return self.__solution.status
+
+    def StopSearch(self):
+        &#34;&#34;&#34;Stops the current search asynchronously.&#34;&#34;&#34;
+        with self.__lock:
+            if self.__solve_wrapper:
+                self.__solve_wrapper.StopSearch()
 
     def Value(self, expression):
         &#34;&#34;&#34;Returns the value of a linear expression after solve.&#34;&#34;&#34;
@@ -5115,7 +5372,7 @@ about the solve procedure.</p></div>
 
     def ResponseStats(self):
         &#34;&#34;&#34;Returns some statistics on the solution found as a string.&#34;&#34;&#34;
-        return pywrapsat.SatHelper.SolverResponseStats(self.__solution)
+        return pywrapsat.CpSatHelper.SolverResponseStats(self.__solution)
 
     def ResponseProto(self):
         &#34;&#34;&#34;Returns the response object.&#34;&#34;&#34;
@@ -5238,7 +5495,7 @@ about the solve procedure.</p></div>
 </summary>
 <pre><code class="python">def ResponseStats(self):
     &#34;&#34;&#34;Returns some statistics on the solution found as a string.&#34;&#34;&#34;
-    return pywrapsat.SatHelper.SolverResponseStats(self.__solution)</code></pre>
+    return pywrapsat.CpSatHelper.SolverResponseStats(self.__solution)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpSolver.SearchForAllSolutions"><code class="name flex">
@@ -5289,30 +5546,46 @@ Returns:
     if model.HasObjective():
         raise TypeError(&#39;Search for all solutions is only defined on &#39;
                         &#39;satisfiability problems&#39;)
-    # Store old values.
+    # Store old parameter.
     enumerate_all = self.parameters.enumerate_all_solutions
     self.parameters.enumerate_all_solutions = True
-    self.__solution = (
-        pywrapsat.SatHelper.SolveWithParametersAndSolutionCallback(
-            model.Proto(), self.parameters, callback))
-    # Restore parameters.
+
+    self.Solve(model, callback)
+
+    # Restore parameter.
     self.parameters.enumerate_all_solutions = enumerate_all
     return self.__solution.status</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpSolver.Solve"><code class="name flex">
-<span>def <span class="ident">Solve</span></span>(<span>self, model)</span>
+<span>def <span class="ident">Solve</span></span>(<span>self, model, solution_callback=None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Solves the given model and returns the solve status.</p></div>
+<div class="desc"><p>Solves a problem and passes each solution to the callback if not null.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def Solve(self, model):
-    &#34;&#34;&#34;Solves the given model and returns the solve status.&#34;&#34;&#34;
-    self.__solution = pywrapsat.SatHelper.SolveWithParameters(
-        model.Proto(), self.parameters)
+<pre><code class="python">def Solve(self, model, solution_callback=None):
+    &#34;&#34;&#34;Solves a problem and passes each solution to the callback if not null.&#34;&#34;&#34;
+    with self.__lock:
+        solve_wrapper = pywrapsat.SolveWrapper()
+
+    solve_wrapper.SetParameters(self.parameters)
+    if solution_callback is not None:
+        solve_wrapper.AddSolutionCallback(solution_callback)
+
+    if self.log_callback is not None:
+        solve_wrapper.AddLogCallback(self.log_callback)
+
+    self.__solution = solve_wrapper.Solve(model.Proto())
+
+    if solution_callback is not None:
+        solve_wrapper.ClearSolutionCallback(solution_callback)
+
+    with self.__lock:
+        self.__solve_wrapper = None
+
     return self.__solution.status</code></pre>
 </details>
 </dd>
@@ -5320,17 +5593,14 @@ Returns:
 <span>def <span class="ident">SolveWithSolutionCallback</span></span>(<span>self, model, callback)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Solves a problem and passes each solution found to the callback.</p></div>
+<div class="desc"><p>DEPRECATED Use Solve() with the callback argument.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def SolveWithSolutionCallback(self, model, callback):
-    &#34;&#34;&#34;Solves a problem and passes each solution found to the callback.&#34;&#34;&#34;
-    self.__solution = (
-        pywrapsat.SatHelper.SolveWithParametersAndSolutionCallback(
-            model.Proto(), self.parameters, callback))
-    return self.__solution.status</code></pre>
+    &#34;&#34;&#34;DEPRECATED Use Solve() with the callback argument.&#34;&#34;&#34;
+    return self.Solve(model, callback)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpSolver.StatusName"><code class="name flex">
@@ -5347,6 +5617,22 @@ Returns:
     if status is None:
         status = self.__solution.status
     return cp_model_pb2.CpSolverStatus.Name(status)</code></pre>
+</details>
+</dd>
+<dt id="cp_model.CpSolver.StopSearch"><code class="name flex">
+<span>def <span class="ident">StopSearch</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Stops the current search asynchronously.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def StopSearch(self):
+    &#34;&#34;&#34;Stops the current search asynchronously.&#34;&#34;&#34;
+    with self.__lock:
+        if self.__solve_wrapper:
+            self.__solve_wrapper.StopSearch()</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpSolver.SufficientAssumptionsForInfeasibility"><code class="name flex">
@@ -5732,6 +6018,12 @@ model is feasible, or optimal if you provided an objective function.</p>
         &#34;&#34;&#34;Returns the variable protobuf.&#34;&#34;&#34;
         return self.__var
 
+    def IsEqualTo(self, other):
+        &#34;&#34;&#34;Returns true if self == other in the python sense.&#34;&#34;&#34;
+        if not isinstance(other, IntVar):
+            return False
+        return self.Index() == other.Index()
+
     def __str__(self):
         if not self.__var.name:
             if len(self.__var.domain
@@ -5761,7 +6053,7 @@ model is feasible, or optimal if you provided an objective function.</p>
             if bound &lt; 0 or bound &gt; 1:
                 raise TypeError(
                     &#39;Cannot call Not on a non boolean variable: %s&#39; % self)
-        if not self.__negation:
+        if self.__negation is None:
             self.__negation = _NotBooleanVariable(self)
         return self.__negation</code></pre>
 </details>
@@ -5783,6 +6075,22 @@ model is feasible, or optimal if you provided an objective function.</p>
 <pre><code class="python">def Index(self):
     &#34;&#34;&#34;Returns the index of the variable in the model.&#34;&#34;&#34;
     return self.__index</code></pre>
+</details>
+</dd>
+<dt id="cp_model.IntVar.IsEqualTo"><code class="name flex">
+<span>def <span class="ident">IsEqualTo</span></span>(<span>self, other)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns true if self == other in the python sense.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def IsEqualTo(self, other):
+    &#34;&#34;&#34;Returns true if self == other in the python sense.&#34;&#34;&#34;
+    if not isinstance(other, IntVar):
+        return False
+    return self.Index() == other.Index()</code></pre>
 </details>
 </dd>
 <dt id="cp_model.IntVar.Name"><code class="name flex">
@@ -5823,7 +6131,7 @@ Note that this method is nilpotent: `x.Not().Not() == x`.
         if bound &lt; 0 or bound &gt; 1:
             raise TypeError(
                 &#39;Cannot call Not on a non boolean variable: %s&#39; % self)
-    if not self.__negation:
+    if self.__negation is None:
         self.__negation = _NotBooleanVariable(self)
     return self.__negation</code></pre>
 </details>
@@ -6139,8 +6447,40 @@ model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)
             &#39;calling %% on a linear expression is not supported, &#39;
             &#39;please use CpModel.AddModuloEquality&#39;)
 
+    def __pow__(self, _):
+        raise NotImplementedError(
+            &#39;calling ** on a linear expression is not supported, &#39;
+            &#39;please use CpModel.AddMultiplicationEquality&#39;)
+
+    def __lshift__(self, _):
+        raise NotImplementedError(
+            &#39;calling left shift on a linear expression is not supported&#39;)
+
+    def __rshift__(self, _):
+        raise NotImplementedError(
+            &#39;calling right shift on a linear expression is not supported&#39;)
+
+    def __and__(self, _):
+        raise NotImplementedError(
+            &#39;calling and on a linear expression is not supported, &#39;
+            &#39;please use CpModel.AddBoolAnd&#39;)
+
+    def __or__(self, _):
+        raise NotImplementedError(
+            &#39;calling or on a linear expression is not supported, &#39;
+            &#39;please use CpModel.AddBoolOr&#39;)
+
+    def __xor__(self, _):
+        raise NotImplementedError(
+            &#39;calling xor on a linear expression is not supported, &#39;
+            &#39;please use CpModel.AddBoolXor&#39;)
+
     def __neg__(self):
         return _ProductCst(self, -1)
+
+    def __bool__(self):
+        raise NotImplementedError(
+            &#39;Evaluating a LinearExpr instance as a Boolean is not implemented.&#39;)
 
     def __eq__(self, arg):
         if arg is None:
@@ -6565,6 +6905,12 @@ def Term(cls, expression, coefficient):
 <ul></ul>
 </div>
 <ul id="index">
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="cp_model.ObjectIsAFalseLiteral" href="#cp_model.ObjectIsAFalseLiteral">ObjectIsAFalseLiteral</a></code></li>
+<li><code><a title="cp_model.ObjectIsATrueLiteral" href="#cp_model.ObjectIsATrueLiteral">ObjectIsATrueLiteral</a></code></li>
+</ul>
+</li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
@@ -6659,6 +7005,7 @@ def Term(cls, expression, coefficient):
 <li><code><a title="cp_model.CpSolver.Solve" href="#cp_model.CpSolver.Solve">Solve</a></code></li>
 <li><code><a title="cp_model.CpSolver.SolveWithSolutionCallback" href="#cp_model.CpSolver.SolveWithSolutionCallback">SolveWithSolutionCallback</a></code></li>
 <li><code><a title="cp_model.CpSolver.StatusName" href="#cp_model.CpSolver.StatusName">StatusName</a></code></li>
+<li><code><a title="cp_model.CpSolver.StopSearch" href="#cp_model.CpSolver.StopSearch">StopSearch</a></code></li>
 <li><code><a title="cp_model.CpSolver.SufficientAssumptionsForInfeasibility" href="#cp_model.CpSolver.SufficientAssumptionsForInfeasibility">SufficientAssumptionsForInfeasibility</a></code></li>
 <li><code><a title="cp_model.CpSolver.UserTime" href="#cp_model.CpSolver.UserTime">UserTime</a></code></li>
 <li><code><a title="cp_model.CpSolver.Value" href="#cp_model.CpSolver.Value">Value</a></code></li>
@@ -6677,6 +7024,7 @@ def Term(cls, expression, coefficient):
 <h4><code><a title="cp_model.IntVar" href="#cp_model.IntVar">IntVar</a></code></h4>
 <ul class="">
 <li><code><a title="cp_model.IntVar.Index" href="#cp_model.IntVar.Index">Index</a></code></li>
+<li><code><a title="cp_model.IntVar.IsEqualTo" href="#cp_model.IntVar.IsEqualTo">IsEqualTo</a></code></li>
 <li><code><a title="cp_model.IntVar.Name" href="#cp_model.IntVar.Name">Name</a></code></li>
 <li><code><a title="cp_model.IntVar.Not" href="#cp_model.IntVar.Not">Not</a></code></li>
 <li><code><a title="cp_model.IntVar.Proto" href="#cp_model.IntVar.Proto">Proto</a></code></li>

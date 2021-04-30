@@ -1,5 +1,10 @@
 var interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponseOrBuilder =
 [
+    [ "getAdditionalSolutions", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponseOrBuilder.html#a684289674310cd3c176c9c969600fd3a", null ],
+    [ "getAdditionalSolutionsCount", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponseOrBuilder.html#a926e48de7fc6f13847d637a2631d63e9", null ],
+    [ "getAdditionalSolutionsList", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponseOrBuilder.html#a4d8f7de4d21cb58c48445ef7980136b8", null ],
+    [ "getAdditionalSolutionsOrBuilder", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponseOrBuilder.html#a5b4cb40be756bbfa0c018d479e9b170c", null ],
+    [ "getAdditionalSolutionsOrBuilderList", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponseOrBuilder.html#a946072f1ad5080477442996d3972d678", null ],
     [ "getBestObjectiveBound", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponseOrBuilder.html#a8acd7d1e0e85ee50dd3362794d5ec2bb", null ],
     [ "getDualValue", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponseOrBuilder.html#a96dea02c104b9700b72d0c6ac397cfd4", null ],
     [ "getDualValueCount", "interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponseOrBuilder.html#a5f7b63b17acb235a17f30cdfe5b7b563", null ],

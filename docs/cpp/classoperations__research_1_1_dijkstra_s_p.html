@@ -29,7 +29,7 @@
   <td id="projectlogo"><img alt="Logo" src="orLogo.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">OR-Tools
-   &#160;<span id="projectnumber">8.2</span>
+   &#160;<span id="projectnumber">9.0</span>
    </div>
   </td>
  </tr>
@@ -102,19 +102,19 @@ class operations_research::DijkstraSP&lt; S &gt;</h3>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a26e3b87ba6aa299f848e480bf3d22a86"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_dijkstra_s_p.html#a26e3b87ba6aa299f848e480bf3d22a86">DijkstraSP</a> (int node_count, int start_node, std::function&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>(int, int)&gt; graph, <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> disconnected_distance)</td></tr>
-<tr class="separator:a26e3b87ba6aa299f848e480bf3d22a86"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a48b9f284876a7bfaa4d6841cac33554e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_dijkstra_s_p.html#a48b9f284876a7bfaa4d6841cac33554e">ShortestPath</a> (int end_node, std::vector&lt; int &gt; *nodes)</td></tr>
+<tr class="memitem:a9f2ce80cc694cce5fab43a7d24e36a11"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_dijkstra_s_p.html#a9f2ce80cc694cce5fab43a7d24e36a11">DijkstraSP</a> (int node_count, int start_node, std::function&lt; int64_t(int, int)&gt; graph, int64_t disconnected_distance)</td></tr>
+<tr class="separator:a9f2ce80cc694cce5fab43a7d24e36a11"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a48b9f284876a7bfaa4d6841cac33554e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_dijkstra_s_p.html#a48b9f284876a7bfaa4d6841cac33554e">ShortestPath</a> (int end_node, std::vector&lt; int &gt; *<a class="el" href="routing__search_8cc.html#a6b7983ccd32c86cbbc3d4d9cda4cac17">nodes</a>)</td></tr>
 <tr class="separator:a48b9f284876a7bfaa4d6841cac33554e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:a16f35892a0d488e2eafd3bc2f5762503"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_dijkstra_s_p.html#a16f35892a0d488e2eafd3bc2f5762503">kInfinity</a> = <a class="el" href="integral__types_8h.html#a74ea76ea27f48fb1b6e148e1577b3719">kint64max</a> / 2</td></tr>
-<tr class="separator:a16f35892a0d488e2eafd3bc2f5762503"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad437d1ef7c1ace92a552ef6de9cae7f1"><td class="memItemLeft" align="right" valign="top">static constexpr int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1_dijkstra_s_p.html#ad437d1ef7c1ace92a552ef6de9cae7f1">kInfinity</a> = <a class="el" href="integral__types_8h.html#a808bd435380aa1e2bbd6f13ac7759897">kint64max</a> / 2</td></tr>
+<tr class="separator:ad437d1ef7c1ace92a552ef6de9cae7f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a26e3b87ba6aa299f848e480bf3d22a86"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a26e3b87ba6aa299f848e480bf3d22a86">&#9670;&nbsp;</a></span>DijkstraSP()</h2>
+<a id="a9f2ce80cc694cce5fab43a7d24e36a11"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f2ce80cc694cce5fab43a7d24e36a11">&#9670;&nbsp;</a></span>DijkstraSP()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -137,13 +137,13 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::function&lt; <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>(int, int)&gt;&#160;</td>
+          <td class="paramtype">std::function&lt; int64_t(int, int)&gt;&#160;</td>
           <td class="paramname"><em>graph</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a>&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>disconnected_distance</em>&#160;</td>
         </tr>
         <tr>
@@ -198,13 +198,13 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="dijkstra_8cc_source.html#l00062">62</a> of file <a class="el" href="dijkstra_8cc_source.html">dijkstra.cc</a>.</p>
+<p class="definition">Definition at line <a class="el" href="dijkstra_8cc_source.html#l00063">63</a> of file <a class="el" href="dijkstra_8cc_source.html">dijkstra.cc</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a16f35892a0d488e2eafd3bc2f5762503"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a16f35892a0d488e2eafd3bc2f5762503">&#9670;&nbsp;</a></span>kInfinity</h2>
+<a id="ad437d1ef7c1ace92a552ef6de9cae7f1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad437d1ef7c1ace92a552ef6de9cae7f1">&#9670;&nbsp;</a></span>kInfinity</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -213,7 +213,7 @@ Static Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr <a class="el" href="integral__types_8h.html#a7cde0074dfd288f2d70c0e035dacb28a">int64</a> kInfinity = <a class="el" href="integral__types_8h.html#a74ea76ea27f48fb1b6e148e1577b3719">kint64max</a> / 2</td>
+          <td class="memname">constexpr int64_t kInfinity = <a class="el" href="integral__types_8h.html#a808bd435380aa1e2bbd6f13ac7759897">kint64max</a> / 2</td>
         </tr>
       </table>
   </td>

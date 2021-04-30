@@ -1,6 +1,7 @@
 var classoperations__research_1_1glop_1_1_variables_info =
 [
-    [ "VariablesInfo", "classoperations__research_1_1glop_1_1_variables_info.html#aacbf93909cfe1456cd390410c1525ce8", null ],
+    [ "VariablesInfo", "classoperations__research_1_1glop_1_1_variables_info.html#ab30db4c926fe6bf5fcbb3be8177d0cf4", null ],
+    [ "EndDualPhaseI", "classoperations__research_1_1glop_1_1_variables_info.html#a7a1a02496fca5057c918fb1f16a5c898", null ],
     [ "GetBoundDifference", "classoperations__research_1_1glop_1_1_variables_info.html#a611fb1da73c33e2716b380db980fa825", null ],
     [ "GetCanDecreaseBitRow", "classoperations__research_1_1glop_1_1_variables_info.html#a71d4734d51e7037c043b68a74bd7857f", null ],
     [ "GetCanIncreaseBitRow", "classoperations__research_1_1glop_1_1_variables_info.html#a6cc56ab5da3a82aa2793d18a37f422c4", null ],
@@ -14,9 +15,11 @@ var classoperations__research_1_1glop_1_1_variables_info =
     [ "GetTypeRow", "classoperations__research_1_1glop_1_1_variables_info.html#a78146b251b30383686ec55362254cc3b", null ],
     [ "GetVariableLowerBounds", "classoperations__research_1_1glop_1_1_variables_info.html#a89d50221a4ec3f33fd60e6424550c5f9", null ],
     [ "GetVariableUpperBounds", "classoperations__research_1_1glop_1_1_variables_info.html#a2f2f9339835d7c7199d6bf8bb325aefd", null ],
-    [ "InitializeAndComputeType", "classoperations__research_1_1glop_1_1_variables_info.html#a84f09868c621660464ade82b504ba600", null ],
+    [ "InitializeFromBasisState", "classoperations__research_1_1glop_1_1_variables_info.html#ad401fcfc84cd01c7aff52c7226a071b9", null ],
+    [ "InitializeToDefaultStatus", "classoperations__research_1_1glop_1_1_variables_info.html#aa4f80506e3b396ad0b23dd73b779913d", null ],
+    [ "LoadBoundsAndReturnTrueIfUnchanged", "classoperations__research_1_1glop_1_1_variables_info.html#ae8cd58179f49029e9b55fc53c1461494", null ],
     [ "MakeBoxedVariableRelevant", "classoperations__research_1_1glop_1_1_variables_info.html#a7aec5aa12d972d66a67d267aa9dd1b97", null ],
-    [ "Update", "classoperations__research_1_1glop_1_1_variables_info.html#ae636e3fb39ec1660660286628306cd15", null ],
+    [ "TransformToDualPhaseIProblem", "classoperations__research_1_1glop_1_1_variables_info.html#afa547fd7ed9d419d400f058eebd97d2f", null ],
     [ "UpdateToBasicStatus", "classoperations__research_1_1glop_1_1_variables_info.html#ab717dd0f604f9207435f9ab5336d1113", null ],
     [ "UpdateToNonBasicStatus", "classoperations__research_1_1glop_1_1_variables_info.html#a84dcc462db65072ec3a28b87bb3cd3ad", null ]
 ];
