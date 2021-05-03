@@ -63,6 +63,14 @@ class ImpliedBoundsProcessor {
         integer_trail_(integer_trail),
         implied_bounds_(implied_bounds) {}
 
+  // See if some of the implied bounds equation are violated and add them to
+  // the IB cut pool if it is the case.
+  //
+  // Important: This must be called before we process any constraints with a
+  // different lp_values or level zero bounds.
+  void RecomputeCacheAndSeparateSomeImpliedBoundCuts(
+      const absl::StrongVector<IntegerVariable, double>& lp_values);
+
   // Processes and updates the given cut.
   void ProcessUpperBoundedConstraint(
       const absl::StrongVector<IntegerVariable, double>& lp_values,
@@ -90,11 +98,6 @@ class ImpliedBoundsProcessor {
       const absl::StrongVector<IntegerVariable, double>& lp_values,
       LinearConstraint* cut, std::vector<SlackInfo>* slack_infos);
 
-  // See if some of the implied bounds equation are violated and add them to
-  // the IB cut pool if it is the case.
-  void SeparateSomeImpliedBoundCuts(
-      const absl::StrongVector<IntegerVariable, double>& lp_values);
-
   // Only used for debugging.
   //
   // Substituting back the slack created by the function above should give
@@ -105,12 +108,11 @@ class ImpliedBoundsProcessor {
                   const std::vector<SlackInfo>& info);
 
   // Add a new variable that could be used in the new cuts.
+  // Note that the cache must be computed to take this into account.
   void AddLpVariable(IntegerVariable var) { lp_vars_.insert(var); }
 
-  // Must be called before we process any constraints with a different
-  // lp_values or level zero bounds.
-  void ClearCache() const { cache_.clear(); }
-
+  // Once RecomputeCacheAndSeparateSomeImpliedBoundCuts() has been called,
+  // we can get the best implied bound for each variables.
   struct BestImpliedBoundInfo {
     double bool_lp_value = 0.0;
     double slack_lp_value = std::numeric_limits<double>::infinity();
@@ -500,15 +502,15 @@ CutGenerator CreateCumulativeCutGenerator(
 // as follows:
 //   sum(demands of always present intervals)
 //   + sum(presence_literal * min_of_demand) <= capacity.
-CutGenerator CreateOverlappingCumulativeCutGenerator(
+CutGenerator CreateCumulativeOverlappingCutGenerator(
     const std::vector<IntervalVariable>& intervals,
     const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
     Model* model);
 
-// Balas area cuts for the cumulative constraint. It is a simple relaxation
+// Completion time cuts for the cumulative constraint. It is a simple relaxation
 // where we replace a cumulative task with demand k and duration d by a
 // no_overlap task with duration d * k / capacity_max.
-CutGenerator CreateBalasAreaCumulativeCutGenerator(
+CutGenerator CreateCumulativeCompletionTimeCutGenerator(
     const std::vector<IntervalVariable>& intervals,
     const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
     Model* model);
@@ -531,9 +533,9 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
     const std::vector<IntervalVariable>& intervals, Model* model);
 
 // For a given set of intervals in a no_overlap constraint, we detect violated
-// area based cuts from Balas 85 [see note in the code] and create a cut for
+// area based cuts from Queyranne 93 [see note in the code] and create a cut for
 // these.
-CutGenerator CreateNoOverlapBalasCutGenerator(
+CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
     const std::vector<IntervalVariable>& intervals, Model* model);
 
 // Extracts the variables that have a Literal view from base variables and

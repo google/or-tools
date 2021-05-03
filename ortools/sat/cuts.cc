@@ -436,7 +436,8 @@ void ConvertToKnapsackForm(const LinearConstraint& constraint,
   }
 }
 
-// TODO(user): Move the cut generator into a class and reuse variables.
+// TODO(user): This is no longer used as we try to separate all cut with
+// knapsack now, remove.
 CutGenerator CreateKnapsackCoverCutGenerator(
     const std::vector<LinearConstraint>& base_constraints,
     const std::vector<IntegerVariable>& vars, Model* model) {
@@ -482,7 +483,8 @@ CutGenerator CreateKnapsackCoverCutGenerator(
     LinearConstraint mutable_constraint;
 
     // Iterate through all knapsack constraints.
-    implied_bounds_processor.ClearCache();
+    implied_bounds_processor.RecomputeCacheAndSeparateSomeImpliedBoundCuts(
+        lp_values);
     for (const LinearConstraint& constraint : knapsack_constraints) {
       if (model->GetOrCreate<TimeLimit>()->LimitReached()) break;
       VLOG(2) << "Processing constraint: " << constraint.DebugString();
@@ -1576,9 +1578,9 @@ ImpliedBoundsProcessor::ComputeBestImpliedBound(
   return result;
 }
 
-// TODO(user): restrict to a subset of the variables to not spend too much time.
-void ImpliedBoundsProcessor::SeparateSomeImpliedBoundCuts(
+void ImpliedBoundsProcessor::RecomputeCacheAndSeparateSomeImpliedBoundCuts(
     const absl::StrongVector<IntegerVariable, double>& lp_values) {
+  cache_.clear();
   for (const IntegerVariable var :
        implied_bounds_->VariablesWithImpliedBounds()) {
     if (!lp_vars_.contains(PositiveVariable(var))) continue;
@@ -1590,6 +1592,7 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraintWithSlackCreation(
     bool substitute_only_inner_variables, IntegerVariable first_slack,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
     LinearConstraint* cut, std::vector<SlackInfo>* slack_infos) {
+  if (cache_.empty()) return;  // Nothing to do.
   tmp_terms_.clear();
   IntegerValue new_ub = cut->ub;
   bool changed = false;
@@ -1612,16 +1615,7 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraintWithSlackCreation(
     // Find the best implied bound to use.
     // TODO(user): We could also use implied upper bound, that is try with
     // NegationOf(var).
-    const BestImpliedBoundInfo info = ComputeBestImpliedBound(var, lp_values);
-    {
-      // This make sure the implied bound for NegationOf(var) is "cached" so
-      // that GetCachedImpliedBoundInfo() will work. It will also add any
-      // relevant implied bound cut.
-      //
-      // TODO(user): this is a bit hacky. Find a cleaner way.
-      ComputeBestImpliedBound(NegationOf(var), lp_values);
-    }
-
+    const BestImpliedBoundInfo info = GetCachedImpliedBoundInfo(var);
     const int old_size = tmp_terms_.size();
 
     // Shall we keep the original term ?
@@ -1705,7 +1699,7 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraintWithSlackCreation(
     }
 
     // Add all the new terms coefficient to the overflow detection to avoid
-    // issue when merging terms refering to the same variable.
+    // issue when merging terms referring to the same variable.
     for (int i = old_size; i < tmp_terms_.size(); ++i) {
       overflow_detection =
           CapAdd(overflow_detection, std::abs(tmp_terms_[i].second.value()));
@@ -2219,7 +2213,7 @@ CutGenerator CreateCumulativeCutGenerator(
   return result;
 }
 
-CutGenerator CreateOverlappingCumulativeCutGenerator(
+CutGenerator CreateCumulativeOverlappingCutGenerator(
     const std::vector<IntervalVariable>& intervals,
     const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
     Model* model) {
@@ -2414,19 +2408,14 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
   return result;
 }
 
-struct BalasEvent {
+struct CtEvent {
   AffineExpression end;
   IntegerValue start_min;
   IntegerValue size_min;
   double lp_end;
 };
 
-// We generate the cut from:
-// E. Balas, On the facial structure of scheduling polyhedra,
-// Mathematical Programming Essays in Honor of George B. Dantzig
-// Part I, Mathematical Programming Studies, vol. 24,
-// Springer, 1985, pp. 179–218.
-// and
+// We generate the cut from the Smith's rule from:
 // M. Queyranne, Structure of a simple scheduling polyhedron,
 // Mathematical Programming 58 (1993), 263–285
 //
@@ -2437,22 +2426,21 @@ struct BalasEvent {
 // then replacing end_min_i by (end_min_i - S) is still valid.
 //
 // A second difference is that we look at a set of intervals starting
-// after a given start_min, sorted by relative
-//    (end_lp - start_min) / duration_min.
+// after a given start_min, sorted by relative (end_lp - start_min).
 //
 // We actually compute the cuts with all the sizes actually equal to (size /
 // size_divisor), but to keep the computation in the integer domain, we multiply
 // by size_divisor where needed instead.
-void GenerateBalasCut(
+void GenerateCompletionTimeCut(
     const std::string& cut_name,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
-    IntegerValue size_divisor, std::vector<BalasEvent> events, Model* model,
+    IntegerValue size_divisor, std::vector<CtEvent> events, Model* model,
     LinearConstraintManager* manager) {
   TopNCuts top_n_cuts(15);
 
   // Sort by start min to bucketize by start_min.
   std::sort(events.begin(), events.end(),
-            [](const BalasEvent& e1, const BalasEvent& e2) {
+            [](const CtEvent& e1, const CtEvent& e2) {
               return e1.start_min < e2.start_min;
             });
   for (int start = 0; start + 1 < events.size(); ++start) {
@@ -2462,10 +2450,9 @@ void GenerateBalasCut(
     }
 
     const double sequence_start_min = ToDouble(events[start].start_min);
-    std::vector<BalasEvent> residual_tasks(events.begin() + start,
-                                           events.end());
+    std::vector<CtEvent> residual_tasks(events.begin() + start, events.end());
     std::sort(residual_tasks.begin(), residual_tasks.end(),
-              [](const BalasEvent& e1, const BalasEvent& e2) {
+              [](const CtEvent& e1, const CtEvent& e2) {
                 return e1.lp_end < e2.lp_end;
               });
 
@@ -2511,7 +2498,7 @@ void GenerateBalasCut(
   top_n_cuts.TransferToManager(lp_values, manager);
 }
 
-CutGenerator CreateNoOverlapBalasCutGenerator(
+CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
     const std::vector<IntervalVariable>& intervals, Model* model) {
   CutGenerator result;
 
@@ -2529,8 +2516,8 @@ CutGenerator CreateNoOverlapBalasCutGenerator(
           LinearConstraintManager* manager) {
         if (trail->CurrentDecisionLevel() > 0) return;
 
-        std::vector<BalasEvent> events;
-        std::vector<BalasEvent> reverse_events;
+        std::vector<CtEvent> events;
+        std::vector<CtEvent> reverse_events;
 
         for (int index = 0; index < helper->NumTasks(); ++index) {
           if (!helper->IsPresent(index)) continue;
@@ -2546,15 +2533,17 @@ CutGenerator CreateNoOverlapBalasCutGenerator(
                                       r_start_expr.LpValue(lp_values)});
           }
         }
-        GenerateBalasCut("NoOverlapBalas", lp_values, IntegerValue(1),
-                         std::move(events), model, manager);
-        GenerateBalasCut("NoOverlapBalasMirror", lp_values, IntegerValue(1),
-                         std::move(reverse_events), model, manager);
+        GenerateCompletionTimeCut("NoOverlapCompletionTime", lp_values,
+                                  IntegerValue(1), std::move(events), model,
+                                  manager);
+        GenerateCompletionTimeCut("NoOverlapCompletionTimeMirror", lp_values,
+                                  IntegerValue(1), std::move(reverse_events),
+                                  model, manager);
       };
   return result;
 }
 
-CutGenerator CreateBalasAreaCumulativeCutGenerator(
+CutGenerator CreateCumulativeCompletionTimeCutGenerator(
     const std::vector<IntervalVariable>& intervals,
     const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
     Model* model) {
@@ -2577,8 +2566,8 @@ CutGenerator CreateBalasAreaCumulativeCutGenerator(
           LinearConstraintManager* manager) {
         if (trail->CurrentDecisionLevel() > 0) return;
 
-        std::vector<BalasEvent> events;
-        std::vector<BalasEvent> reverse_events;
+        std::vector<CtEvent> events;
+        std::vector<CtEvent> reverse_events;
 
         for (int index = 0; index < helper->NumTasks(); ++index) {
           if (!helper->IsPresent(index)) continue;
@@ -2597,10 +2586,12 @@ CutGenerator CreateBalasAreaCumulativeCutGenerator(
           }
         }
         const IntegerValue capacity_max = integer_trail->UpperBound(capacity);
-        GenerateBalasCut("CumulativeBalas", lp_values, capacity_max,
-                         std::move(events), model, manager);
-        GenerateBalasCut("CumulativeBalasMirror", lp_values, capacity_max,
-                         std::move(reverse_events), model, manager);
+        GenerateCompletionTimeCut("CumulativeCompletionTime", lp_values,
+                                  capacity_max, std::move(events), model,
+                                  manager);
+        GenerateCompletionTimeCut("CumulativeCompletionTimeMirror", lp_values,
+                                  capacity_max, std::move(reverse_events),
+                                  model, manager);
       };
   return result;
 }
