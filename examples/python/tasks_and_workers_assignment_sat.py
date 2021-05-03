@@ -98,7 +98,7 @@ def tasks_and_workers_assignment_sat():
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = 60 * 60 * 2
     objective_printer = ObjectivePrinter()
-    status = solver.SolveWithSolutionCallback(model, objective_printer)
+    status = solver.Solve(model, objective_printer)
     print(solver.ResponseStats())
 
     if status == cp_model.OPTIMAL:

@@ -78,7 +78,8 @@ def main(board_size):
     ### Solve model.
     solver = cp_model.CpSolver()
     solution_printer = NQueenSolutionPrinter(queens)
-    status = solver.SearchForAllSolutions(model, solution_printer)
+    solver.parameters.enumerate_all_solutions = True
+    status = solver.Solve(model, solution_printer)
 
     print()
     print('Statistics')

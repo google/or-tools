@@ -573,7 +573,8 @@ class CpModelTest(unittest.TestCase):
 
         solver = cp_model.CpSolver()
         solution_counter = SolutionCounter()
-        status = solver.SearchForAllSolutions(model, solution_counter)
+        solver.parameters.enumerate_all_solutions = True
+        status = solver.Solve(model, solution_counter)
         self.assertEqual(status, cp_model.OPTIMAL)
         self.assertEqual(4, solution_counter.solution_count())
 

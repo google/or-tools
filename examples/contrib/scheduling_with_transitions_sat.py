@@ -297,7 +297,7 @@ def main(args):
   if parameters:
     text_format.Merge(parameters, solver.parameters)
   solution_printer = SolutionPrinter(makespan)
-  status = solver.SolveWithSolutionCallback(model, solution_printer)
+  status = solver.Solve(model, solution_printer)
 
   #----------------------------------------------------------------------------
   # Print solution.

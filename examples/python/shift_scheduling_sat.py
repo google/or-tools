@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -378,7 +379,7 @@ def solve_shift_scheduling(params, output_proto):
     if params:
         text_format.Parse(params, solver.parameters)
     solution_printer = cp_model.ObjectiveSolutionPrinter()
-    status = solver.SolveWithSolutionCallback(model, solution_printer)
+    status = solver.Solve(model, solution_printer)
 
     # Print solution.
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:

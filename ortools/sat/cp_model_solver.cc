@@ -564,12 +564,13 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
     const IntegerVariable capacity =
         mapping->Integer(ct.cumulative().capacity());
     relaxation->cut_generators.push_back(
-        CreateOverlappingCumulativeCutGenerator(intervals, capacity, demands,
+        CreateCumulativeOverlappingCutGenerator(intervals, capacity, demands,
                                                 m));
     relaxation->cut_generators.push_back(
         CreateCumulativeCutGenerator(intervals, capacity, demands, m));
     relaxation->cut_generators.push_back(
-        CreateBalasAreaCumulativeCutGenerator(intervals, capacity, demands, m));
+        CreateCumulativeCompletionTimeCutGenerator(intervals, capacity, demands,
+                                                   m));
   }
 
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kNoOverlap) {
@@ -582,7 +583,7 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
     relaxation->cut_generators.push_back(
         CreateNoOverlapPrecedenceCutGenerator(intervals, m));
     relaxation->cut_generators.push_back(
-        CreateNoOverlapBalasCutGenerator(intervals, m));
+        CreateNoOverlapCompletionTimeCutGenerator(intervals, m));
   }
 
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinMax) {
@@ -3053,7 +3054,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   {
     const std::string error = ValidateCpModel(model_proto);
     if (!error.empty()) {
-      SOLVER_LOG(logger, error);
+      SOLVER_LOG(logger, "Invalid model: ", error);
       shared_response_manager->MutableResponse()->set_status(
           CpSolverStatus::MODEL_INVALID);
       return shared_response_manager->GetResponse();

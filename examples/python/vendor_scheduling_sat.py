@@ -123,10 +123,11 @@ def main():
 
     # Solve model.
     solver = cp_model.CpSolver()
+    solver.parameters.enumerate_all_solutions = True
     solution_printer = SolutionPrinter(num_vendors, num_hours,
                                        possible_schedules, selected_schedules,
                                        hours_stat, min_vendors)
-    status = solver.SearchForAllSolutions(model, solution_printer)
+    status = solver.Solve(model, solution_printer)
     print('Status = %s' % solver.StatusName(status))
 
     print('Statistics')

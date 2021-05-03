@@ -263,7 +263,7 @@ def main(args):
     if parameters:
         text_format.Merge(parameters, solver.parameters)
     solution_printer = SolutionPrinter()
-    solver.SolveWithSolutionCallback(model, solution_printer)
+    solver.Solve(model, solution_printer)
     print(solver.ResponseStats())
     for job_id in all_jobs:
         print('job %i starts at %i end ends at %i' %

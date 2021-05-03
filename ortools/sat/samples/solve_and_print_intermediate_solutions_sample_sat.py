@@ -68,7 +68,7 @@ def SolveAndPrintIntermediateSolutionsSampleSat():
     # [START solve]
     solver = cp_model.CpSolver()
     solution_printer = VarArrayAndObjectiveSolutionPrinter([x, y, z])
-    status = solver.SolveWithSolutionCallback(model, solution_printer)
+    status = solver.Solve(model, solution_printer)
     # [END solve]
 
     print('Status = %s' % solver.StatusName(status))

@@ -79,7 +79,7 @@ public class SolveAndPrintIntermediateSolutionsSampleSat {
     CpSolver solver = new CpSolver();
     VarArraySolutionPrinterWithObjective cb =
         new VarArraySolutionPrinterWithObjective(new IntVar[] {x, y, z});
-    solver.solveWithSolutionCallback(model, cb);
+    solver.solve(model, cb);
     // [END solve]
 
     System.out.println(cb.getSolutionCount() + " solutions found.");

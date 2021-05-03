@@ -147,7 +147,7 @@ public class BalanceGroupSat
 
         var solutionPrinter = new SolutionPrinter(values, colors, allGroups, allItems, itemInGroup);
 
-        var status = solver.SolveWithSolutionCallback(model, solutionPrinter);
+        var status = solver.Solve(model, solutionPrinter);
     }
 
     public class SolutionPrinter : CpSolverSolutionCallback

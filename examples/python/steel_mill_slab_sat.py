@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -423,7 +424,7 @@ def steel_mill_slab(problem, break_symmetries):
     solver = cp_model.CpSolver()
     solver.parameters.num_search_workers = 8
     objective_printer = cp_model.ObjectiveSolutionPrinter()
-    status = solver.SolveWithSolutionCallback(model, objective_printer)
+    status = solver.Solve(model, objective_printer)
 
     ### Output the solution.
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
@@ -593,7 +594,7 @@ def steel_mill_slab_with_valid_slabs(problem, break_symmetries):
     solver.num_search_workers = 8
     solution_printer = SteelMillSlabSolutionPrinter(orders, assign, loads,
                                                     losses)
-    status = solver.SolveWithSolutionCallback(model, solution_printer)
+    status = solver.Solve(model, solution_printer)
 
     ### Output the solution.
     if status == cp_model.OPTIMAL:
@@ -661,7 +662,7 @@ def steel_mill_slab_with_column_generation(problem):
     solver.parameters.num_search_workers = 8
     solver.parameters.log_search_progress = True
     solution_printer = cp_model.ObjectiveSolutionPrinter()
-    status = solver.SolveWithSolutionCallback(model, solution_printer)
+    status = solver.Solve(model, solution_printer)
 
     ### Output the solution.
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):

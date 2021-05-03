@@ -14,6 +14,7 @@
 #include "ortools/sat/cp_model_search.h"
 
 #include <cstdint>
+#include <limits>
 #include <random>
 
 #include "absl/container/flat_hash_map.h"
@@ -115,7 +116,7 @@ const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
   return [&view, &parameters, random, strategies]() {
     for (const DecisionStrategyProto& strategy : strategies) {
       int candidate;
-      int64_t candidate_value = kint64max;
+      int64_t candidate_value = std::numeric_limits<int64_t>::max();
 
       // TODO(user): Improve the complexity if this becomes an issue which
       // may be the case if we do a fixed_search.
@@ -187,7 +188,7 @@ const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
         }
       }
 
-      if (candidate_value == kint64max) continue;
+      if (candidate_value == std::numeric_limits<int64_t>::max()) continue;
       if (parameters.randomize_search()) {
         CHECK(!active_refs.empty());
         const IntegerValue threshold(

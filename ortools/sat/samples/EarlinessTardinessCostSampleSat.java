@@ -72,9 +72,11 @@ public class EarlinessTardinessCostSampleSat {
 
     // Force the solver to follow the decision strategy exactly.
     solver.getParameters().setSearchBranching(SatParameters.SearchBranching.FIXED_SEARCH);
+    // Tell the solver to enumerate all solutions.
+    solver.getParameters().setEnumerateAllSolutions(true);
 
     // Solve the problem with the printer callback.
-    solver.searchAllSolutions(model, new CpSolverSolutionCallback() {
+    solver.solve(model, new CpSolverSolutionCallback() {
       public CpSolverSolutionCallback init(IntVar[] variables) {
         variableArray = variables;
         return this;

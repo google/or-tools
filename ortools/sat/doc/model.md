@@ -115,7 +115,7 @@ def SolutionHintingSampleSat():
   # Creates a solver and solves.
   solver = cp_model.CpSolver()
   solution_printer = cp_model.VarArrayAndObjectiveSolutionPrinter([x, y, z])
-  status = solver.SolveWithSolutionCallback(model, solution_printer)
+  status = solver.Solve(model, solution_printer)
 
   print('Status = %s' % solver.StatusName(status))
   print('Number of solutions found: %i' % solution_printer.solution_count())
@@ -214,7 +214,7 @@ public class SolutionHintingSampleSat {
     CpSolver solver = new CpSolver();
     VarArraySolutionPrinterWithObjective cb =
         new VarArraySolutionPrinterWithObjective(new IntVar[] {x, y, z});
-    solver.solveWithSolutionCallback(model, cb);
+    solver.solve(model, cb);
   }
 
   static class VarArraySolutionPrinterWithObjective extends CpSolverSolutionCallback {
@@ -298,7 +298,7 @@ public class SolutionHintingSampleSat
         // Creates a solver and solves the model.
         CpSolver solver = new CpSolver();
         VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, y, z });
-        CpSolverStatus status = solver.SolveWithSolutionCallback(model, cb);
+        CpSolverStatus status = solver.Solve(model, cb);
     }
 }
 ```

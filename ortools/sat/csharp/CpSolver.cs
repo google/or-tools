@@ -19,13 +19,7 @@ namespace Google.OrTools.Sat
 {
     public class CpSolver
     {
-        public CpSolverStatus Solve(CpModel model)
-        {
-            SolveWithSolutionCallback(model, null);
-            return response_.Status;
-        }
-
-        public CpSolverStatus SolveWithSolutionCallback(CpModel model, SolutionCallback cb)
+        public CpSolverStatus Solve(CpModel model, SolutionCallback cb = null)
         {
             // Setup search.
             CreateSolveWrapper();
@@ -54,11 +48,17 @@ namespace Google.OrTools.Sat
             return response_.Status;
         }
 
+        [ObsoleteAttribute("This method is obsolete. Call Solve instead.", false)]
+        public CpSolverStatus SolveWithSolutionCallback(CpModel model, SolutionCallback cb)
+        {
+            return Solve(model, cb);
+        }
+
         public CpSolverStatus SearchAllSolutions(CpModel model, SolutionCallback cb)
         {
             string old_parameters = string_parameters_;
             string_parameters_ += " enumerate_all_solutions:true";
-            SolveWithSolutionCallback(model, cb);
+            Solve(model, cb);
             string_parameters_ = old_parameters;
             return response_.Status;
         }

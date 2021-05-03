@@ -72,7 +72,10 @@ public class SearchForAllSolutionsSampleSat
         // [START solve]
         CpSolver solver = new CpSolver();
         VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, y, z });
-        solver.SearchAllSolutions(model, cb);
+        // Search for all solutions.
+        solver.StringParameters = "enumerate_all_solutions:true";
+        // And solve.
+        solver.Solve(model, cb);
         // [END solve]
 
         Console.WriteLine(String.Format("Number of solutions found: {0}", cb.SolutionCount()));

@@ -95,8 +95,7 @@ def jobshop_with_maintenance():
     # Solve model.
     solver = cp_model.CpSolver()
     solution_printer = SolutionPrinter()
-    status = solver.SolveWithSolutionCallback(model, solution_printer)
-    #status = solver.Solve(model)
+    status = solver.Solve(model, solution_printer)
 
     # Output solution.
     if status == cp_model.OPTIMAL:

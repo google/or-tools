@@ -64,7 +64,10 @@ public class StopAfterNSolutionsSampleSat {
     CpSolver solver = new CpSolver();
     VarArraySolutionPrinterWithLimit cb =
         new VarArraySolutionPrinterWithLimit(new IntVar[] {x, y, z}, 5);
-    solver.searchAllSolutions(model, cb);
+    // Tell the solver to enumerate all solutions.
+    solver.getParameters().setEnumerateAllSolutions(true);
+    // And solve.
+    solver.solve(model, cb);
 
     System.out.println(cb.getSolutionCount() + " solutions found.");
     if (cb.getSolutionCount() != 5) {

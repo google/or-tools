@@ -61,7 +61,10 @@ def SearchForAllSolutionsSampleSat():
     # [START solve]
     solver = cp_model.CpSolver()
     solution_printer = VarArraySolutionPrinter([x, y, z])
-    status = solver.SearchForAllSolutions(model, solution_printer)
+    # Enumerate all solutions.
+    solver.parameters.enumerate_all_solutions = True
+    # Solve.
+    status = solver.Solve(model, solution_printer)
     # [END solve]
 
     print('Status = %s' % solver.StatusName(status))

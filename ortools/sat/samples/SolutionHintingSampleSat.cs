@@ -80,7 +80,7 @@ public class SolutionHintingSampleSat
         // [START solve]
         CpSolver solver = new CpSolver();
         VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, y, z });
-        CpSolverStatus status = solver.SolveWithSolutionCallback(model, cb);
+        CpSolverStatus status = solver.Solve(model, cb);
         // [END solve]
     }
 }

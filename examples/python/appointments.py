@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,7 +74,10 @@ def EnumerateAllKnapsacksWithRepetition(item_sizes, total_size_min,
 
     solver = cp_model.CpSolver()
     solution_collector = AllSolutionCollector(variables)
-    solver.SearchForAllSolutions(model, solution_collector)
+    # Enumerate all solutions.
+    solver.parameters.enumerate_all_solutions = True
+    # Solve
+    solver.Solve(model, solution_collector)
     return solution_collector.combinations()
 
 

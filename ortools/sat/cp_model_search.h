@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_SEARCH_H_
 #define OR_TOOLS_SAT_CP_MODEL_SEARCH_H_
 
+#include <cstdint>
 #include <functional>
 #include <vector>
 

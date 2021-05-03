@@ -71,7 +71,10 @@ public class SearchForAllSolutionsSampleSat {
     // [START solve]
     CpSolver solver = new CpSolver();
     VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] {x, y, z});
-    solver.searchAllSolutions(model, cb);
+    // Tell the solver to enumerate all solutions.
+    solver.getParameters().setEnumerateAllSolutions(true);
+    // And solve.
+    solver.solve(model, cb);
     // [END solve]
 
     System.out.println(cb.getSolutionCount() + " solutions found.");

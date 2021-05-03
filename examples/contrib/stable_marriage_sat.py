@@ -94,7 +94,8 @@ def main(ranks, pair_num):
 
   solver = cp_model.CpSolver()
   solution_printer = SolutionPrinter(wife, husband)
-  solver.SearchForAllSolutions(model, solution_printer)
+  solver.parameters.enumerate_all_solutions = True
+  solver.Solve(model, solution_printer)
 
 
 if __name__ == "__main__":

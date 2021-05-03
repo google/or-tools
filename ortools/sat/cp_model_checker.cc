@@ -277,6 +277,21 @@ std::string ValidateCircuitConstraint(const CpModelProto& model,
 
 std::string ValidateRoutesConstraint(const CpModelProto& model,
                                      const ConstraintProto& ct) {
+  int num_nodes = 0;
+  absl::flat_hash_set<int> nodes;
+  for (const int node : ct.routes().tails()) {
+    nodes.insert(node);
+    num_nodes = std::max(num_nodes, node + 1);
+  }
+  for (const int node : ct.routes().heads()) {
+    nodes.insert(node);
+    num_nodes = std::max(num_nodes, node + 1);
+  }
+  if (num_nodes != nodes.size()) {
+    return absl::StrCat(
+        "All nodes in a route constraint must have incident arcs");
+  }
+
   const int size = ct.routes().tails().size();
   if (ct.routes().heads().size() != size ||
       ct.routes().literals().size() != size) {
@@ -1033,7 +1048,6 @@ class ConstraintChecker {
     const int64_t min_level = ct.reservoir().min_level();
     const int64_t max_level = ct.reservoir().max_level();
     std::map<int64_t, int64_t> deltas;
-    deltas[0] = 0;
     const bool has_active_variables = ct.reservoir().actives_size() > 0;
     for (int i = 0; i < num_variables; i++) {
       const int64_t time = Value(ct.reservoir().times(i));

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -172,7 +173,7 @@ def flexible_jobshop():
     # Solve model.
     solver = cp_model.CpSolver()
     solution_printer = SolutionPrinter()
-    status = solver.SolveWithSolutionCallback(model, solution_printer)
+    status = solver.Solve(model, solution_printer)
 
     # Print final solution.
     for job_id in all_jobs:

@@ -57,7 +57,7 @@ public class SolutionHintingSampleSat {
     CpSolver solver = new CpSolver();
     VarArraySolutionPrinterWithObjective cb =
         new VarArraySolutionPrinterWithObjective(new IntVar[] {x, y, z});
-    solver.solveWithSolutionCallback(model, cb);
+    solver.solve(model, cb);
     // [END solve]
   }
 

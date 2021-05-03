@@ -498,10 +498,11 @@ public class NetworkRoutingSat
             cpModel.AddAllDifferent(nodeVars);
 
             var solver = new CpSolver();
+            solver.StringParameters = "enumerate_all_solutions:true";
 
             var solutionPrinter =
                 new FeasibleSolutionChecker(demandIndex, ref _allPaths, maxLength, arcVars, maxPaths, nodeVars);
-            var status = solver.SearchAllSolutions(cpModel, solutionPrinter);
+            var status = solver.Solve(cpModel, solutionPrinter);
         }
 
         private long[,] getArcsData()
@@ -765,9 +766,10 @@ public class NetworkRoutingSat
             cpModel.Minimize(LinearExpr.Sum(obj));
 
             CpSolver solver = new CpSolver();
-            solver.StringParameters = parameters;
+            solver.StringParameters =
+                parameters + " enumerate_all_solutions:true";
 
-            CpSolverStatus status = solver.SearchAllSolutions(
+            CpSolverStatus status = solver.Solve(
                 cpModel, new FeasibleSolutionChecker2(maxUsageCost, comfortableTrafficVars, trafficVars));
 
             return (long)solver.ObjectiveValue;

@@ -391,10 +391,12 @@ def earliness_tardiness_cost_sample_sat():
 
   # Force the solver to follow the decision strategy exactly.
   solver.parameters.search_branching = cp_model.FIXED_SEARCH
+  # Enumerate all solutions.
+  solver.parameters.enumerate_all_solutions = True
 
   # Search and print out all solutions.
   solution_printer = VarArraySolutionPrinter([x, expr])
-  solver.SearchForAllSolutions(model, solution_printer)
+  solver.Solve(model, solution_printer)
 
 
 earliness_tardiness_cost_sample_sat()
@@ -543,9 +545,11 @@ public class EarlinessTardinessCostSampleSat {
 
     // Force the solver to follow the decision strategy exactly.
     solver.getParameters().setSearchBranching(SatParameters.SearchBranching.FIXED_SEARCH);
+    // Tell the solver to enumerate all solutions.
+    solver.getParameters().setEnumerateAllSolutions(true);
 
     // Solve the problem with the printer callback.
-    solver.searchAllSolutions(
+    solver.solve(
         model,
         new CpSolverSolutionCallback() {
           public CpSolverSolutionCallback init(IntVar[] variables) {
@@ -642,10 +646,11 @@ public class EarlinessTardinessCostSampleSat
         CpSolver solver = new CpSolver();
 
         // Force solver to follow the decision strategy exactly.
-        solver.StringParameters = "search_branching:FIXED_SEARCH";
+        // Tell the solver to search for all solutions.
+        solver.StringParameters = "search_branching:FIXED_SEARCH, enumerate_all_solutions:true";
 
         VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, expr });
-        solver.SearchAllSolutions(model, cb);
+        solver.Solve(model, cb);
     }
 }
 ```
@@ -754,10 +759,12 @@ def step_function_sample_sat():
 
   # Force the solver to follow the decision strategy exactly.
   solver.parameters.search_branching = cp_model.FIXED_SEARCH
+  # Enumerate all solutions.
+  solver.parameters.enumerate_all_solutions = True
 
   # Search and print out all solutions.
   solution_printer = VarArraySolutionPrinter([x, expr])
-  solver.SearchForAllSolutions(model, solution_printer)
+  solver.Solve(model, solution_printer)
 
 
 step_function_sample_sat()
@@ -909,9 +916,11 @@ public class StepFunctionSampleSat {
 
     // Force the solver to follow the decision strategy exactly.
     solver.getParameters().setSearchBranching(SatParameters.SearchBranching.FIXED_SEARCH);
+    // Tell the solver to enumerate all solutions.
+    solver.getParameters().setEnumerateAllSolutions(true);
 
     // Solve the problem with the printer callback.
-    solver.searchAllSolutions(
+    solver.solve(
         model,
         new CpSolverSolutionCallback() {
           public CpSolverSolutionCallback init(IntVar[] variables) {
@@ -1012,10 +1021,11 @@ public class StepFunctionSampleSat
         CpSolver solver = new CpSolver();
 
         // Force solver to follow the decision strategy exactly.
-        solver.StringParameters = "search_branching:FIXED_SEARCH";
+        // Tells the solver to enumerate all solutions.
+        solver.StringParameters = "search_branching:FIXED_SEARCH, enumerate_all_solutions:true";
 
         VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, expr });
-        solver.SearchAllSolutions(model, cb);
+        solver.Solve(model, cb);
     }
 }
 ```

@@ -83,9 +83,10 @@ public class EarlinessTardinessCostSampleSat
         CpSolver solver = new CpSolver();
 
         // Force solver to follow the decision strategy exactly.
-        solver.StringParameters = "search_branching:FIXED_SEARCH";
+        // Tell the solver to search for all solutions.
+        solver.StringParameters = "search_branching:FIXED_SEARCH, enumerate_all_solutions:true";
 
         VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, expr });
-        solver.SearchAllSolutions(model, cb);
+        solver.Solve(model, cb);
     }
 }

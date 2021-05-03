@@ -1828,7 +1828,9 @@ class CpSolver(object):
         return self.Solve(model, callback)
 
     def SearchForAllSolutions(self, model, callback):
-        """Search for all solutions of a satisfiability problem.
+        """DEPRECATED Use Solve() with the right parameter.
+
+    Search for all solutions of a satisfiability problem.
 
     This method searches for all feasible solutions of a given model.
     Then it feeds the solution to the callback.

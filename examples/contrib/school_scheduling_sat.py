@@ -117,7 +117,7 @@ class SchoolSchedulingSatSolver(object):
     print('Solving')
     solver = cp_model.CpSolver()
     solution_printer = SchoolSchedulingSatSolutionPrinter()
-    status = solver.Solve(self.model)
+    status = solver.Solve(self.model, solution_printer)
     print()
     print('status', status)
     print('Branches', solver.NumBranches())

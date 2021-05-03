@@ -163,7 +163,7 @@ def main():
     solver = cp_model.CpSolver()
     solution_printer = SolutionPrinter(values, colors, all_groups, all_items,
                                        item_in_group)
-    status = solver.SolveWithSolutionCallback(model, solution_printer)
+    status = solver.Solve(model, solution_printer)
 
     if status == cp_model.OPTIMAL:
         print('Optimal epsilon: %i' % solver.ObjectiveValue())

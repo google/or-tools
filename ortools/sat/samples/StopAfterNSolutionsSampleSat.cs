@@ -63,7 +63,8 @@ public class StopAfterNSolutionsSampleSat
         // Creates a solver and solves the model.
         CpSolver solver = new CpSolver();
         VarArraySolutionPrinterWithLimit cb = new VarArraySolutionPrinterWithLimit(new IntVar[] { x, y, z }, 5);
-        solver.SearchAllSolutions(model, cb);
+        solver.StringParameters = "enumerate_all_solutions:true";
+        solver.Solve(model, cb);
         Console.WriteLine(String.Format("Number of solutions found: {0}", cb.SolutionCount()));
     }
 }

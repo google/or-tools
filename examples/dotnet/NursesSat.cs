@@ -195,7 +195,8 @@ public class NursesSat
         to_print.Add(5091);
         to_print.Add(7003);
         NurseSolutionObserver cb = new NurseSolutionObserver(shift, num_nurses, num_days, num_shifts, to_print);
-        CpSolverStatus status = solver.SearchAllSolutions(model, cb);
+        solver.StringParameters = "enumerate_all_solutions:true";
+        CpSolverStatus status = solver.Solve(model, cb);
 
         // Statistics.
         Console.WriteLine("Statistics");

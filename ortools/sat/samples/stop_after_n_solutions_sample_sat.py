@@ -51,7 +51,10 @@ def StopAfterNSolutionsSampleSat():
     # Create a solver and solve.
     solver = cp_model.CpSolver()
     solution_printer = VarArraySolutionPrinterWithLimit([x, y, z], 5)
-    status = solver.SearchForAllSolutions(model, solution_printer)
+    # Enumerate all solutions.
+    solver.parameters.enumerate_all_solutions = True
+    # Solve.
+    status = solver.Solve(model, solution_printer)
     print('Status = %s' % solver.StatusName(status))
     print('Number of solutions found: %i' % solution_printer.solution_count())
     assert solution_printer.solution_count() == 5

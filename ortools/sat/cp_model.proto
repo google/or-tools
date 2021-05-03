@@ -218,6 +218,11 @@ message CircuitConstraintProto {
 // - Self-arcs are allowed except for node 0.
 // - There is no cycle in this graph, except through node 0.
 //
+// Note: Currently this constraint expect all the nodes in [0, num_nodes) to
+// have at least one incident arc. The model will be considered invalid if it
+// is not the case. You can add self-arc fixed to one to ignore some nodes if
+// needed.
+//
 // TODO(user): It is probably possible to generalize this constraint to a
 // no-cycle in a general graph, or a no-cycle with sum incoming <= 1 and sum
 // outgoing <= 1 (more efficient implementation). On the other hand, having this

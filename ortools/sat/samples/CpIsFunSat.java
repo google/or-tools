@@ -84,7 +84,10 @@ public class CpIsFunSat {
     // Create a solver and solve the model.
     CpSolver solver = new CpSolver();
     VarArraySolutionPrinter cb = new VarArraySolutionPrinter(letters);
-    solver.searchAllSolutions(model, cb);
+    // Tell the solver to enumerate all solutions.
+    solver.getParameters().setEnumerateAllSolutions(true);
+    // And solve.
+    solver.solve(model, cb);
     // [END solve]
 
     System.out.println("Statistics");

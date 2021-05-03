@@ -84,10 +84,12 @@ def step_function_sample_sat():
 
     # Force the solver to follow the decision strategy exactly.
     solver.parameters.search_branching = cp_model.FIXED_SEARCH
+    # Enumerate all solutions.
+    solver.parameters.enumerate_all_solutions = True
 
     # Search and print out all solutions.
     solution_printer = VarArraySolutionPrinter([x, expr])
-    solver.SearchForAllSolutions(model, solution_printer)
+    solver.Solve(model, solution_printer)
 
 
 step_function_sample_sat()

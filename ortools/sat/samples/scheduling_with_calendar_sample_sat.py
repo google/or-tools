@@ -70,10 +70,12 @@ def SchedulingWithCalendarSampleSat():
 
     # Force the solver to follow the decision strategy exactly.
     solver.parameters.search_branching = cp_model.FIXED_SEARCH
+    # Enumerate all solutions.
+    solver.parameters.enumerate_all_solutions = True
 
     # Search and print all solutions.
     solution_printer = VarArraySolutionPrinter([start, duration, across])
-    solver.SearchForAllSolutions(model, solution_printer)
+    solver.Solve(model, solution_printer)
 
 
 SchedulingWithCalendarSampleSat()

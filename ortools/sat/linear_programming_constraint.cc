@@ -1417,8 +1417,8 @@ bool LinearProgrammingConstraint::Propagate() {
     // problems there is no other constriants than the cuts.
     cuts_round++;
     if (num_solves_ > 1) {
-      implied_bounds_processor_.ClearCache();
-      implied_bounds_processor_.SeparateSomeImpliedBoundCuts(
+      // This must be called first.
+      implied_bounds_processor_.RecomputeCacheAndSeparateSomeImpliedBoundCuts(
           expanded_lp_solution_);
 
       // The "generic" cuts are currently part of this class as they are using

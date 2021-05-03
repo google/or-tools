@@ -76,7 +76,7 @@ public class SolveAndPrintIntermediateSolutionsSampleSat
         // [START solve]
         CpSolver solver = new CpSolver();
         VarArraySolutionPrinterWithObjective cb = new VarArraySolutionPrinterWithObjective(new IntVar[] { x, y, z });
-        solver.SolveWithSolutionCallback(model, cb);
+        solver.Solve(model, cb);
         // [END solve]
 
         Console.WriteLine(String.Format("Number of solutions found: {0}", cb.SolutionCount()));
