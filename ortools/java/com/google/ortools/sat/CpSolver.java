@@ -33,13 +33,16 @@ public final class CpSolver {
     this.solveWrapper = null;
   }
 
-  /** Solves the given module, and returns the solve status. */
+  /** Solves the given model, and returns the solve status. */
   public CpSolverStatus solve(CpModel model) {
     return solveWithSolutionCallback(model, null);
   }
 
-  /** Solves a problem and passes each solution found to the callback. */
-  public CpSolverStatus solveWithSolutionCallback(CpModel model, CpSolverSolutionCallback cb) {
+  /**
+   * Solves the given model, calls the solution callback at each incumbent solution, and returns the
+   * solve status.
+   */
+  public CpSolverStatus solve(CpModel model, CpSolverSolutionCallback cb) {
     // Setup search.
     createSolveWrapper(); // Synchronized.
     solveWrapper.setParameters(solveParameters.build());
@@ -62,6 +65,17 @@ public final class CpSolver {
   }
 
   /**
+   * Solves the given model, passes each incumber solution to the solution callback if not null, and
+   * returns the solve status.
+   *
+   * @deprecated Use the solve() method with the same signature.
+   */
+  @Deprecated
+  public CpSolverStatus solveWithSolutionCallback(CpModel model, CpSolverSolutionCallback cb) {
+    return solve(model, cb);
+  }
+
+  /**
    * Searches for all solutions of a satisfiability problem.
    *
    * <p>This method searches for all feasible solutions of a given model. Then it feeds the
@@ -72,11 +86,14 @@ public final class CpSolver {
    * @param model the model to solve
    * @param cb the callback that will be called at each solution
    * @return the status of the solve (FEASIBLE, INFEASIBLE...)
+   * @deprecated Use the solve() method with the same signature, after setting the
+   *     enumerate_all_solution parameter to true.
    */
+  @Deprecated
   public CpSolverStatus searchAllSolutions(CpModel model, CpSolverSolutionCallback cb) {
     boolean oldValue = solveParameters.getEnumerateAllSolutions();
     solveParameters.setEnumerateAllSolutions(true);
-    solveWithSolutionCallback(model, cb);
+    solve(model, cb);
     solveParameters.setEnumerateAllSolutions(oldValue);
     return solveResponse.getStatus();
   }

@@ -1054,7 +1054,6 @@ public final class CpModel {
   /**
    * Write the model as a protocol buffer to 'file'.
    *
-   *
    * @param file file to write the model to. If the filename ends with 'txt', the
    *    model will be written as a text file, otherwise, the binary format will be used.
    *
