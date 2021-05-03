@@ -168,6 +168,7 @@
 //    the arc tail array adds another m * sizeof(NodeIndexType).
 
 #include <algorithm>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <string>

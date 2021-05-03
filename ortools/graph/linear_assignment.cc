@@ -13,6 +13,8 @@
 
 #include "ortools/graph/linear_assignment.h"
 
+#include <cstdint>
+
 #include "ortools/base/commandlineflags.h"
 
 ABSL_FLAG(int64_t, assignment_alpha, 5,

@@ -13,6 +13,9 @@
 
 #include "ortools/graph/perfect_matching.h"
 
+#include <cstdint>
+#include <limits>
+
 #include "absl/memory/memory.h"
 #include "ortools/util/saturated_arithmetic.h"
 
@@ -99,7 +102,8 @@ MinCostPerfectMatching::Status MinCostPerfectMatching::Solve() {
 
   optimal_solution_found_ = true;
   optimal_cost_ = graph_->DualObjective().value();
-  if (optimal_cost_ == kint64max) return Status::COST_OVERFLOW;
+  if (optimal_cost_ == std::numeric_limits<int64_t>::max())
+    return Status::COST_OVERFLOW;
   return Status::OPTIMAL;
 }
 
@@ -111,7 +115,7 @@ const BlossomGraph::NodeIndex BlossomGraph::kNoNodeIndex =
 const BlossomGraph::EdgeIndex BlossomGraph::kNoEdgeIndex =
     BlossomGraph::EdgeIndex(-1);
 const BlossomGraph::CostValue BlossomGraph::kMaxCostValue =
-    BlossomGraph::CostValue(kint64max);
+    BlossomGraph::CostValue(std::numeric_limits<int64_t>::max());
 
 BlossomGraph::BlossomGraph(int num_nodes) {
   graph_.resize(num_nodes);
@@ -1253,7 +1257,8 @@ CostValue BlossomGraph::Dual(const Node& node) const {
 }
 
 CostValue BlossomGraph::DualObjective() const {
-  if (dual_objective_ == kint64max) return CostValue(kint64max);
+  if (dual_objective_ == std::numeric_limits<int64_t>::max())
+    return CostValue(std::numeric_limits<int64_t>::max());
   CHECK_EQ(dual_objective_ % 2, 0);
   return dual_objective_ / 2;
 }

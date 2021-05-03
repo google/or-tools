@@ -11,7 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -22,7 +24,7 @@
 namespace operations_research {
 class BellmanFord {
  public:
-  static constexpr int64_t kInfinity = kint64max / 2;
+  static constexpr int64_t kInfinity = std::numeric_limits<int64_t>::max() / 2;
 
   BellmanFord(int node_count, int start_node,
               std::function<int64_t(int, int)> graph,
@@ -51,7 +53,7 @@ class BellmanFord {
 
 void BellmanFord::Initialize() {
   for (int i = 0; i < node_count_; i++) {
-    distance_[i] = kint64max / 2;
+    distance_[i] = std::numeric_limits<int64_t>::max() / 2;
     predecessor_[i] = -1;
   }
   distance_[start_node_] = 0;

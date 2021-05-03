@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_PORT_SYSINFO_H_
 #define OR_TOOLS_PORT_SYSINFO_H_
 
+#include <cstdint>
+
 #include "ortools/base/integral_types.h"
 
 namespace operations_research {

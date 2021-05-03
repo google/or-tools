@@ -18,6 +18,7 @@
 #ifndef OR_TOOLS_GRAPH_SHORTESTPATHS_H_
 #define OR_TOOLS_GRAPH_SHORTESTPATHS_H_
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>

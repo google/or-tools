@@ -26,6 +26,7 @@
 #ifndef OR_TOOLS_GRAPH_PERFECT_MATCHING_H_
 #define OR_TOOLS_GRAPH_PERFECT_MATCHING_H_
 
+#include <cstdint>
 #include <limits>
 #include <vector>
 

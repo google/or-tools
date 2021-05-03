@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdint>
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/sysinfo.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)

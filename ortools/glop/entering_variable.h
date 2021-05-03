@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_GLOP_ENTERING_VARIABLE_H_
 #define OR_TOOLS_GLOP_ENTERING_VARIABLE_H_
 
+#include <cstdint>
+
 #include "absl/random/bit_gen_ref.h"
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/parameters.pb.h"

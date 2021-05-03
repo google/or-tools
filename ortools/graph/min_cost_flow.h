@@ -169,6 +169,7 @@
 #define OR_TOOLS_GRAPH_MIN_COST_FLOW_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <stack>
 #include <string>
 #include <vector>

@@ -123,6 +123,7 @@
 
 #include <math.h>
 
+#include <cstdint>
 #include <limits>
 #include <set>
 

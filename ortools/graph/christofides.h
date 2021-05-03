@@ -20,6 +20,8 @@
 #ifndef OR_TOOLS_GRAPH_CHRISTOFIDES_H_
 #define OR_TOOLS_GRAPH_CHRISTOFIDES_H_
 
+#include <cstdint>
+
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ortools/base/integral_types.h"

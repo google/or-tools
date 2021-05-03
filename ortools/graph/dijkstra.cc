@@ -11,7 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <set>
 #include <vector>
@@ -48,7 +50,7 @@ class Element {
 template <class S>
 class DijkstraSP {
  public:
-  static constexpr int64_t kInfinity = kint64max / 2;
+  static constexpr int64_t kInfinity = std::numeric_limits<int64_t>::max() / 2;
 
   DijkstraSP(int node_count, int start_node,
              std::function<int64_t(int, int)> graph,

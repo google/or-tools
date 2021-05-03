@@ -24,7 +24,9 @@
 #ifndef OR_TOOLS_GRAPH_CLIQUES_H_
 #define OR_TOOLS_GRAPH_CLIQUES_H_
 
+#include <cstdint>
 #include <functional>
+#include <limits>
 #include <numeric>
 #include <vector>
 
@@ -202,7 +204,7 @@ class BronKerboschAlgorithm {
   // it returns COMPLETED any subsequent call to the method will resume the
   // search from the beginning.
   BronKerboschAlgorithmStatus RunWithTimeLimit(TimeLimit* time_limit) {
-    return RunWithTimeLimit(kint64max, time_limit);
+    return RunWithTimeLimit(std::numeric_limits<int64_t>::max(), time_limit);
   }
 
  private:
@@ -552,7 +554,7 @@ BronKerboschAlgorithmStatus BronKerboschAlgorithm<NodeIndex>::RunIterations(
 
 template <typename NodeIndex>
 BronKerboschAlgorithmStatus BronKerboschAlgorithm<NodeIndex>::Run() {
-  return RunIterations(kint64max);
+  return RunIterations(std::numeric_limits<int64_t>::max());
 }
 
 template <typename NodeIndex>

@@ -82,6 +82,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <stack>
@@ -533,16 +534,16 @@ class HamiltonianPathSolver {
     static int32_t Add(int32_t a, int32_t b) {
       const int64_t a64 = a;
       const int64_t b64 = b;
-      const int64_t min_int32 = kint32min;
-      const int64_t max_int32 = kint32max;
+      const int64_t min_int32 = std::numeric_limits<int32_t>::min();
+      const int64_t max_int32 = std::numeric_limits<int32_t>::max();
       return static_cast<int32_t>(
           std::max(min_int32, std::min(max_int32, a64 + b64)));
     }
     static int32_t Sub(int32_t a, int32_t b) {
       const int64_t a64 = a;
       const int64_t b64 = b;
-      const int64_t min_int32 = kint32min;
-      const int64_t max_int32 = kint32max;
+      const int64_t min_int32 = std::numeric_limits<int32_t>::min();
+      const int64_t max_int32 = std::numeric_limits<int32_t>::max();
       return static_cast<int32_t>(
           std::max(min_int32, std::min(max_int32, a64 - b64)));
     }

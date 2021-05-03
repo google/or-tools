@@ -196,6 +196,7 @@
 #define OR_TOOLS_GRAPH_LINEAR_ASSIGNMENT_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <deque>
 #include <limits>
