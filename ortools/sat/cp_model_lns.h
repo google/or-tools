@@ -137,6 +137,26 @@ class NeighborhoodGeneratorHelper : public SubSolver {
     return active_variables_.size();
   }
 
+  bool DifficultyMeansFullNeighborhood(double difficulty) const {
+    absl::ReaderMutexLock lock(&graph_mutex_);
+    const int target_size = std::ceil(difficulty * active_variables_.size());
+    return target_size == active_variables_.size();
+  }
+
+  // Returns the number of active variable. The graph_mutex_ must be locked
+  // before calling this method.
+  int NumActiveVariablesWhileHoldingLock() const
+      ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_) {
+    return active_variables_.size();
+  }
+
+  // Returns the active variable with given index. The graph_mutex_ must be
+  // locked before calling this method.
+  int GetActiveVariableWhileHoldingLock(int index) const
+      ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_) {
+    return active_variables_[index];
+  }
+
   // Constraints <-> Variables graph.
   // Note that only non-constant variable are listed here.
   const std::vector<std::vector<int>>& ConstraintToVar() const
@@ -381,9 +401,9 @@ class NeighborhoodGenerator {
 };
 
 // Pick a random subset of variables.
-class SimpleNeighborhoodGenerator : public NeighborhoodGenerator {
+class RelaxRandomVariablesGenerator : public NeighborhoodGenerator {
  public:
-  explicit SimpleNeighborhoodGenerator(
+  explicit RelaxRandomVariablesGenerator(
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
@@ -393,9 +413,9 @@ class SimpleNeighborhoodGenerator : public NeighborhoodGenerator {
 // Pick a random subset of constraints and relax all the variables of these
 // constraints. Note that to satisfy the difficulty, we might not relax all the
 // variable of the "last" constraint.
-class SimpleConstraintNeighborhoodGenerator : public NeighborhoodGenerator {
+class RelaxRandomConstraintsGenerator : public NeighborhoodGenerator {
  public:
-  explicit SimpleConstraintNeighborhoodGenerator(
+  explicit RelaxRandomConstraintsGenerator(
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,

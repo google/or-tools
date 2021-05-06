@@ -2823,11 +2823,11 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       // Enqueue all the possible LNS neighborhood subsolvers.
       // Each will have their own metrics.
       subsolvers.push_back(absl::make_unique<LnsSolver>(
-          absl::make_unique<SimpleNeighborhoodGenerator>(
+          absl::make_unique<RelaxRandomVariablesGenerator>(
               helper, absl::StrCat("rnd_var_lns_", local_params.name())),
           local_params, helper, &shared));
       subsolvers.push_back(absl::make_unique<LnsSolver>(
-          absl::make_unique<SimpleConstraintNeighborhoodGenerator>(
+          absl::make_unique<RelaxRandomConstraintsGenerator>(
               helper, absl::StrCat("rnd_cst_lns_", local_params.name())),
           local_params, helper, &shared));
       subsolvers.push_back(absl::make_unique<LnsSolver>(

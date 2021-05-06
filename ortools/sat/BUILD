@@ -1206,6 +1206,7 @@ cc_library(
         "//ortools/util:adaptative_parameter_value",
         "//ortools/util:random_engine",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/synchronization",
     ],
 )
