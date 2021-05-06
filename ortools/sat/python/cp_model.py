@@ -52,6 +52,7 @@ import collections
 import numbers
 import threading
 import time
+import warnings
 
 from ortools.sat import cp_model_pb2
 from ortools.sat import sat_parameters_pb2
@@ -1383,6 +1384,7 @@ class CpModel(object):
 
     def AddProdEquality(self, target, variables):
         """Deprecated, use AddMultiplicationEquality."""
+        warnings.warn("AddProdEquality is deprecated; use AddMultiplicationEquality.", DeprecationWarning)
         return self.AddMultiplicationEquality(target, variables)
 
     # Scheduling support
@@ -1825,6 +1827,8 @@ class CpSolver(object):
     # DEPRECATED, just use Solve() with the callback argument.
     def SolveWithSolutionCallback(self, model, callback):
         """DEPRECATED Use Solve() with the callback argument."""
+        warnings.warn("SolveWithSolutionCallback is deprecated; use Solve() with the callback argument.",
+                      DeprecationWarning)
         return self.Solve(model, callback)
 
     def SearchForAllSolutions(self, model, callback):
@@ -1848,6 +1852,8 @@ class CpSolver(object):
       * *INFEASIBLE* if the solver has proved there are no solution
       * *OPTIMAL* if all solutions have been found
     """
+        warnings.warn("SearchForAllSolutions is deprecated; use Solve() with enumerate_all_solutions = True.",
+                      DeprecationWarning)
         if model.HasObjective():
             raise TypeError('Search for all solutions is only defined on '
                             'satisfiability problems')
