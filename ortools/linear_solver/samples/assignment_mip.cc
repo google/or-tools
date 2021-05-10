@@ -93,7 +93,7 @@ void AssignmentMip() {
   // Print solution.
   // [START print_solution]
   // Check that the problem has a feasible solution.
-  if (result_status != MPSolver::OPTIMAL &
+  if (result_status != MPSolver::OPTIMAL &&
       result_status != MPSolver::FEASIBLE) {
     LOG(FATAL) << "No solution found.";
   }
