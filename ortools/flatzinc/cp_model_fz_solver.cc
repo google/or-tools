@@ -1079,6 +1079,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     }
   } else {
     m.parameters.set_search_branching(SatParameters::FIXED_SEARCH);
+    m.parameters.set_keep_all_feasible_solutions_in_presolve(true);
   }
   if (p.max_time_in_seconds > 0) {
     m.parameters.set_max_time_in_seconds(p.max_time_in_seconds);
