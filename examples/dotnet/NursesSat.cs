@@ -18,7 +18,8 @@ using Google.OrTools.Sat;
 
 public class NurseSolutionObserver : CpSolverSolutionCallback
 {
-    public NurseSolutionObserver(IntVar[,,] shifts, int num_nurses, int num_days, int num_shifts, HashSet<int> to_print, int last_solution_explored)
+    public NurseSolutionObserver(IntVar[,,] shifts, int num_nurses, int num_days, int num_shifts, HashSet<int> to_print,
+                                 int last_solution_explored)
     {
         shifts_ = shifts;
         num_nurses_ = num_nurses;
@@ -49,7 +50,8 @@ public class NurseSolutionObserver : CpSolverSolutionCallback
                 }
             }
         }
-        if (solution_count_ >= last_solution_explored_) {
+        if (solution_count_ >= last_solution_explored_)
+        {
             StopSearch();
         }
     }
