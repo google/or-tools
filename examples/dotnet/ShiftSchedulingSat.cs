@@ -46,7 +46,7 @@ public class ShiftSchedulingSat
                                           (3, 0, 5, -2),
                                           // Employee 5 wants a night shift on the second Thursday.
                                           (5, 3, 10, -2),
-                                          // Employee 2 does not want a night shift on the third Friday.
+                                          // Employee 2 does not want a night shift on the first Friday.
                                           (2, 3, 4, 4)
         };
 
@@ -390,7 +390,7 @@ public class ShiftSchedulingSat
         // Forbid sequences that are too short.
         foreach (var length in Range(1, hardMin))
         {
-            foreach (var start in Range(works.Length - length - 1))
+            foreach (var start in Range(works.Length - length + 1))
             {
                 model.AddBoolOr(NegatedBoundedSpan(works, start, length));
             }
@@ -402,7 +402,7 @@ public class ShiftSchedulingSat
         {
             foreach (var length in Range(hardMin, softMin))
             {
-                foreach (var start in Range(works.Length - length - 1))
+                foreach (var start in Range(works.Length - length + 1))
                 {
                     var span = NegatedBoundedSpan(works, start, length).ToList();
                     var name = $": under_span(start={start}, length={length})";
@@ -422,7 +422,7 @@ public class ShiftSchedulingSat
         {
             foreach (var length in Range(softMax + 1, hardMax + 1))
             {
-                foreach (var start in Range(works.Length - length - 1))
+                foreach (var start in Range(works.Length - length + 1))
                 {
                     var span = NegatedBoundedSpan(works, start, length).ToList();
                     var name = $": over_span(start={start}, length={length})";
