@@ -672,7 +672,6 @@ test_dotnet_contrib:
 	$(MAKE) run SOURCE=examples/contrib/eq20.cs
 	$(MAKE) run SOURCE=examples/contrib/fill_a_pix.cs
 	$(MAKE) run SOURCE=examples/contrib/furniture_moving.cs
-	$(MAKE) run SOURCE=examples/contrib/furniture_moving_intervals.cs
 	$(MAKE) run SOURCE=examples/contrib/futoshiki.cs
 	$(MAKE) run SOURCE=examples/contrib/golomb_ruler.cs
 	$(MAKE) run SOURCE=examples/contrib/grocery.cs
@@ -700,7 +699,6 @@ test_dotnet_contrib:
 	$(MAKE) run SOURCE=examples/contrib/nurse_rostering_transition.cs
 	$(MAKE) run SOURCE=examples/contrib/olympic.cs
 	$(MAKE) run SOURCE=examples/contrib/organize_day.cs
-	$(MAKE) run SOURCE=examples/contrib/organize_day_intervals.cs
 	$(MAKE) run SOURCE=examples/contrib/p_median.cs
 	$(MAKE) run SOURCE=examples/contrib/pandigital_numbers.cs
 	$(MAKE) run SOURCE=examples/contrib/perfect_square_sequence.cs
@@ -772,6 +770,9 @@ test_dotnet_dotnet:
 	$(MAKE) run SOURCE=examples/dotnet/csls_api.cs
 	$(MAKE) run SOURCE=examples/dotnet/csrabbitspheasants.cs
 	$(MAKE) run SOURCE=examples/dotnet/cstsp.cs
+	$(MAKE) run SOURCE=examples/dotnet/furniture_moving_intervals.cs
+	$(MAKE) run SOURCE=examples/dotnet/organize_day_intervals.cs
+	$(MAKE) run SOURCE=examples/dotnet/techtalk_scheduling.cs
 	$(MAKE) run SOURCE=examples/dotnet/GateSchedulingSat.cs
 	$(MAKE) run SOURCE=examples/dotnet/JobshopFt06Sat.cs
 	$(MAKE) run SOURCE=examples/dotnet/JobshopSat.cs
