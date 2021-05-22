@@ -25,10 +25,10 @@
 #include "absl/strings/string_view.h"
 #include "ortools/base/int_type.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/indexed_model.h"
+#include "ortools/math_opt/core/solver.h"
 #include "ortools/math_opt/cpp/key_types.h"
-#include "ortools/math_opt/indexed_model.h"
 #include "ortools/math_opt/model_update.pb.h"
-#include "ortools/math_opt/solver.h"
 #include "ortools/base/status_macros.h"
 
 namespace operations_research {
@@ -48,19 +48,36 @@ absl::StatusOr<Result> MathOpt::Solve(
 
   bool attempted_incremental_solve = false;
   if (solver_ != nullptr) {
-    const ModelUpdateProto model_update = model_->ExportModelUpdate();
-    ASSIGN_OR_RETURN(const bool did_update, solver_->Update(model_update));
+    const absl::optional<ModelUpdateProto> model_update =
+        update_tracker_->ExportModelUpdate();
+    bool did_update = false;
+    if (model_update == absl::nullopt) {
+      did_update = true;
+    } else {
+      ASSIGN_OR_RETURN(did_update, solver_->Update(*model_update));
+      update_tracker_->Checkpoint();
+    }
     if (did_update) {
       attempted_incremental_solve = true;
     } else {
       solver_ = nullptr;
+      // Note that we could keep the same tracker but it is simpler to have both
+      // solver_ and update_tracker_ synchronized. This removes the need for an
+      // extra branch below where we would have solver_ == nullptr but
+      // update_tracker_ != nullptr.
+      //
+      // This code will be removed when b/185769575 is addressed since we won't
+      // have a use-case where solver_ == nullptr anymore (the class that will
+      // represent an incremental solve will always have a solver by
+      // construction).
+      update_tracker_ = nullptr;
     }
   }
   if (solver_ == nullptr) {
+    update_tracker_ = model_->NewUpdateTracker();
     ASSIGN_OR_RETURN(solver_, Solver::New(solver_type_, model_->ExportModel(),
                                           solver_initializer_));
   }
-  model_->Checkpoint();
 
   Solver::Callback cb = nullptr;
   if (callback != nullptr) {
@@ -107,6 +124,15 @@ std::vector<Variable> MathOpt::SortedVariables() {
             [](const Variable& l, const Variable& r) {
               return l.typed_id() < r.typed_id();
             });
+  return result;
+}
+
+std::vector<LinearConstraint> MathOpt::ColumnNonzeros(const Variable variable) {
+  std::vector<LinearConstraint> result;
+  for (const LinearConstraintId constraint :
+       model_->linear_constraints_with_variable(variable.typed_id())) {
+    result.push_back(LinearConstraint(model_.get(), constraint));
+  }
   return result;
 }
 

@@ -24,13 +24,13 @@
 #include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solution.pb.h"
-#include "ortools/math_opt/solver_interface.h"
 
 namespace operations_research {
 namespace math_opt {

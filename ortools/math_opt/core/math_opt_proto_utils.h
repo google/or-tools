@@ -11,16 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_MATH_OPT_PROTO_UTILS_H_
-#define OR_TOOLS_MATH_OPT_MATH_OPT_PROTO_UTILS_H_
+#ifndef OR_TOOLS_MATH_OPT_CORE_MATH_OPT_PROTO_UTILS_H_
+#define OR_TOOLS_MATH_OPT_CORE_MATH_OPT_PROTO_UTILS_H_
 
+#include <algorithm>
 #include <cstdint>
 
-#include "absl/container/flat_hash_set.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "absl/container/flat_hash_set.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/model.pb.h"
+#include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 
 namespace operations_research {
@@ -135,4 +137,4 @@ bool SparseVectorFilterPredicate::AcceptsAndUpdate(const int64_t id,
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_MATH_OPT_PROTO_UTILS_H_
+#endif  // OR_TOOLS_MATH_OPT_CORE_MATH_OPT_PROTO_UTILS_H_

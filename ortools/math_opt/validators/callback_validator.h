@@ -16,7 +16,7 @@
 
 #include "absl/status/status.h"
 #include "ortools/math_opt/callback.pb.h"
-#include "ortools/math_opt/model_summary.h"
+#include "ortools/math_opt/core/model_summary.h"
 
 namespace operations_research {
 namespace math_opt {

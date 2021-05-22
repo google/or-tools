@@ -20,9 +20,9 @@
 
 #include "ortools/base/logging.h"
 #include "absl/container/flat_hash_set.h"
+#include "ortools/math_opt/core/indexed_model.h"
 #include "ortools/math_opt/cpp/arrow_operator_proxy.h"
 #include "ortools/math_opt/cpp/key_types.h"
-#include "ortools/math_opt/indexed_model.h"
 
 namespace operations_research {
 namespace math_opt {

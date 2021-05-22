@@ -112,8 +112,8 @@ cc_library(
     hdrs = ["map_filter.h"],
     deps = [
         ":id_set",
-        "//ortools/math_opt:indexed_model",
         "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:indexed_model",
         "@com_google_absl//absl/types:optional",
     ],
 )

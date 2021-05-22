@@ -13,22 +13,27 @@
 
 // An index based C++ API for building optimization problems.
 //
+// TODO(b/188550843): move/rename to core/model_storage.h
+//
 // Models problems of the form:
-//   min c * x + d
-//   s.t. clb <= A * x <= cub
-//        vlb <= x <= vub
-//        x_i integer for i in I
-// where:
-//  * x in R^m are the decision variables,
-//  * c in R^m,
-//  * d in R,
-//  * vlb and lbu in R^m and can be infinte,
-//  * clb, cub are in R^n and can be infinite,
-//  * A is an m by n matrix.
-//  * I is a subset of the variables.
+//   min sum_{j in J} c_j * x_j + d
+//   s.t. lb^c_i <= sum_{j in J} A_ij * x_j <= ub^c_i        for all i in I,
+//        lb^v_j <= x_j <= ub^v_j                            for all j in J,
+//        x_j integer                                        for all j in Z,
+// where above:
+//  * I: the set of linear constraints,
+//  * J: the set of variables,
+//  * Z: a subset of J, the integer variables,
+//  * x: the decision variables (indexed by J),
+//  * c: the linear objective, one double per variable,
+//  * d: the objective offset, a double scalar,
+//  * lb^c: the constraint lower bounds, one double per linear constraint,
+//  * ub^c: the constraint upper bounds, one double per linear constraint,
+//  * lb^v: the variable lower bounds, one double per variable,
+//  * ub^v: the variable upper bounds, one double per variable,
+//  * A: the linear constraint matrix, a double per variable/constraint pair.
 //
 // The min in the objective can also be changed to a max.
-//
 //
 // A simple example:
 //
@@ -61,9 +66,12 @@
 //
 // Modify the problem and get a model update proto:
 //
-//   model.Checkpoint();
+//   const std::unique_ptr<IndexedModel::UpdateTracker> update_tracker =
+//     model.NewUpdateTracker();
 //   c.set_upper_bound(2.0);
-//   const ModelUpdate update_proto = model.ExportModelUpdate();
+//   const absl::optional<ModelUpdateProto> update_proto =
+//     update_tracker->ExportModelUpdate();
+//   update_tracker->Checkpoint();
 //
 // Reading and writing model properties:
 //
@@ -89,13 +97,14 @@
 // Incrementalism, the ModelUpdate proto, and Checkpoints:
 //
 // To update an existing model as specified by a Model proto, solvers consume a
-// ModelUpdate proto, which describes the changes to a model (e.g. new
-// variables or a change in a variable bound). IndexedModel tracks the changes
-// made and produces a ModelUpdate proto describing these changes with the
-// method IndexedModel::ExportModelUpdate(). The changes returned will be the
-// modifications since the previous call to IndexedModel::Checkpoint(). Note
-// that, for newly initialized models, before the first checkpoint, there is no
-// additional memory overhead from tracking changes. See
+// ModelUpdate proto, which describes the changes to a model (e.g. new variables
+// or a change in a variable bound). IndexedModel::UpdateTracker tracks the
+// changes made and produces a ModelUpdate proto describing these changes with
+// the method UpdateTracker::ExportModelUpdate(). The changes returned will be
+// the modifications since the previous call to
+// UpdateTracker::Checkpoint(). Note that, for newly initialized models, before
+// the first checkpoint, there is no additional memory overhead from tracking
+// changes. See
 // g3doc/ortools/math_opt/g3doc/model_building_complexity.md
 // for details.
 //
@@ -109,23 +118,27 @@
 // bound, or is NaN). The exported models are validated instead, see
 // model_validator.h.
 
-#ifndef OR_TOOLS_MATH_OPT_INDEXED_MODEL_H_
-#define OR_TOOLS_MATH_OPT_INDEXED_MODEL_H_
+#ifndef OR_TOOLS_MATH_OPT_CORE_INDEXED_MODEL_H_
+#define OR_TOOLS_MATH_OPT_CORE_INDEXED_MODEL_H_
 
 #include <cstdint>
 #include <limits>
+#include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "ortools/base/integral_types.h"
+#include "absl/base/thread_annotations.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/string_view.h"
+#include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
-#include "ortools/base/int_type.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/int_type.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/result.pb.h"
@@ -147,8 +160,99 @@ DEFINE_INT_TYPE(LinearConstraintId, int64_t);
 // function) unless otherwise specified.
 class IndexedModel {
  public:
+  // Tracks the changes of the model.
+  //
+  // For each update tracker we define a checkpoint that is the starting point
+  // used to compute the ModelUpdateProto.
+  //
+  // Lifecycle: the IndexedModel must outlive all the UpdateTracker instances
+  // since they keep a reference to it. They use this reference in their
+  // destructor so it is not safe to destroy an UpdateTracker after the
+  // destruction of the IndexedModel.
+  //
+  // Thread-safety: UpdateTracker methods must not be used while modifying the
+  // IndexedModel. The user is expected to use proper synchronization primitives
+  // to serialize changes to the model and the use of the update trackers. The
+  // methods of different instances of UpdateTracker are safe to be called
+  // concurrently (i.e. multiple trackers can be called concurrently on
+  // ExportModelUpdate() or Checkpoint()).
+  //
+  // Example:
+  //   IndexedModel model;
+  //   ...
+  //   ASSIGN_OR_RETURN(const auto solver,
+  //                    Solver::New(solver_type, model.ExportModel(),
+  //                                /*initializer=*/{}));
+  //   const std::unique_ptr<IndexedModel::UpdateTracker> update_tracker =
+  //     model.NewUpdatesTracker();
+  //
+  //   ASSIGN_OR_RETURN(const auto result_1,
+  //                    solver->Solve(/*parameters=*/{});
+  //
+  //   model.AddVariable(0.0, 1.0, true, "y");
+  //   model.set_maximize(true);
+  //
+  //   const absl::optional<ModelUpdateProto> update_proto =
+  //     update_tracker.ExportModelUpdate();
+  //   update_tracker.Checkpoint();
+  //
+  //   if (update_proto) {
+  //     ASSIGN_OR_RETURN(const bool updated, solver->Update(*update_proto));
+  //     if (!updated) {
+  //       // The update is not supported by the solver, we create a new one.
+  //       ASSIGN_OR_RETURN(const auto new_model_proto, model.ExportModel());
+  //       ASSIGN_OR_RETURN(solver,
+  //                        Solver::New(solver_type, new_model_proto,
+  //                                    /*initializer=*/{}));
+  //     }
+  //   }
+  //   ASSIGN_OR_RETURN(const auto result_2,
+  //                    solver->Solve(/*parameters=*/{});
+  //
+  class UpdateTracker {
+   public:
+    ~UpdateTracker() ABSL_LOCKS_EXCLUDED(indexed_model_.update_trackers_lock_);
+
+    // Returns a proto representation of the changes to the model since the most
+    // recent checkpoint (i.e. last time Checkpoint() was called); nullopt if
+    // the update would have been empty.
+    absl::optional<ModelUpdateProto> ExportModelUpdate()
+        ABSL_LOCKS_EXCLUDED(indexed_model_.update_trackers_lock_);
+
+    // Uses the current model state as the starting point to calculate the
+    // ModelUpdateProto next time ExportModelUpdate() is called.
+    void Checkpoint() ABSL_LOCKS_EXCLUDED(indexed_model_.update_trackers_lock_);
+
+   private:
+    friend class IndexedModel;
+
+    // Registers in update_trackers_ and calls Checkpoint() to synchronize the
+    // checkpoint to the current state of the model.
+    explicit UpdateTracker(IndexedModel& indexed_model)
+        ABSL_LOCKS_EXCLUDED(indexed_model.update_trackers_lock_);
+
+    // Same as Checkpoint() but the caller must have acquired the
+    // update_trackers_lock_ mutex.
+    void CheckpointLocked()
+        ABSL_EXCLUSIVE_LOCKS_REQUIRED(indexed_model_.update_trackers_lock_);
+
+    IndexedModel& indexed_model_;
+
+    // All incremental updates that occurred since last checkpoint. It is
+    // filled-in each time Checkpoint() is called on any update tracker. When an
+    // ExportModelUpdate() is requested on a tracker, all these are merged along
+    // with the remaining updates.
+    std::vector<std::shared_ptr<const ModelUpdateProto>> updates_
+        ABSL_GUARDED_BY(indexed_model_.update_trackers_lock_);
+  };
+
   // Creates an empty minimization problem.
   explicit IndexedModel(absl::string_view name = "") : name_(name) {}
+
+  // TODO(b/185892243): add `std::unique_ptr<IndexedModel> Clone()` method.
+  IndexedModel(const IndexedModel&) = delete;
+  IndexedModel& operator=(const IndexedModel&) = delete;
+
   inline const std::string& name() const { return name_; }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -347,13 +451,18 @@ class IndexedModel {
   // Returns a proto representation of the optimization model.
   ModelProto ExportModel() const;
 
-  // Returns a proto representation of the changes to the model since the most
-  // recent checkpoint.
-  ModelUpdateProto ExportModelUpdate();
-
-  // Use the current model state as the starting point to calculate the
-  // ModelUpdateProto next time ExportModelUpdate() is called.
-  void Checkpoint();
+  // Returns a tracker that can be used to generate a ModelUpdateProto with the
+  // updates that happened since the last checkpoint. The tracker initial
+  // checkpoint corresponds to the current state of the model.
+  //
+  // The returned UpdateTracker keeps a reference to this IndexedModel. Thus the
+  // IndexedModel must not be destroyed before the destruction of all its
+  // UpdateTracker instances.
+  //
+  // Thread-safety: this method must not be used while modifying the
+  // IndexedModel. The user is expected to use proper synchronization primitive
+  // to serialize changes to the model and the use of this method.
+  std::unique_ptr<UpdateTracker> NewUpdateTracker();
 
  private:
   struct VariableData {
@@ -402,6 +511,18 @@ class IndexedModel {
       absl::Span<const std::pair<LinearConstraintId, VariableId>> entries,
       SparseDoubleMatrixProto& matrix) const;
 
+  // Returns a proto representation of the changes to the model since the most
+  // recent call to SharedCheckpoint() or nullopt if no changes happened.
+  //
+  // Thread-safety: this method must not be called concurrently (due to
+  // EnsureLazyMatrixXxx() functions).
+  absl::optional<ModelUpdateProto> ExportSharedModelUpdate()
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(update_trackers_lock_);
+
+  // Use the current model state as the starting point to calculate the
+  // ModelUpdateProto next time ExportSharedModelUpdate() is called.
+  void SharedCheckpoint() ABSL_EXCLUSIVE_LOCKS_REQUIRED(update_trackers_lock_);
+
   std::string name_;
   VariableId next_variable_id_ = VariableId(0);
   LinearConstraintId next_linear_constraint_id_ = LinearConstraintId(0);
@@ -449,6 +570,18 @@ class IndexedModel {
   //   lin_con_id < linear_constraints_checkpoint_
   absl::flat_hash_set<std::pair<LinearConstraintId, VariableId>>
       dirty_linear_constraint_matrix_keys_;
+
+  // Lock used to serialize access to update_trackers_ and to the all fields of
+  // UpdateTracker. We use only one lock since trackers are modified in group
+  // (they share a chain of ModelUpdateProto and the update of one tracker
+  // usually requires the update of some of the others).
+  absl::Mutex update_trackers_lock_;
+
+  // The UpdateTracker instances tracking the changes of to this model. This
+  // collection is updated by UpdateTracker constructor and destructor. It is
+  // used internally by UpdateTracker instances to know about other instances.
+  absl::flat_hash_set<UpdateTracker*> update_trackers_
+      ABSL_GUARDED_BY(update_trackers_lock_);
 };
 
 // A solution to the problem modeled in IndexedModel.
@@ -819,4 +952,4 @@ const absl::flat_hash_map<VariableId, double>& IndexedModel::linear_objective()
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_INDEXED_MODEL_H_
+#endif  // OR_TOOLS_MATH_OPT_CORE_INDEXED_MODEL_H_

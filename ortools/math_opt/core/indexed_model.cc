@@ -11,26 +11,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/math_opt/indexed_model.h"
+#include "ortools/math_opt/core/indexed_model.h"
 
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "ortools/base/logging.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/memory/memory.h"
 #include "absl/strings/string_view.h"
+#include "absl/synchronization/mutex.h"
+#include "absl/types/optional.h"
 #include "absl/types/span.h"
-#include "ortools/base/int_type.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/int_type.h"
+#include "ortools/math_opt/core/model_update_merge.h"
+#include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
-#include "ortools/math_opt/sparse_vector_view.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -272,13 +277,30 @@ ModelProto IndexedModel::ExportModel() const {
   return result;
 }
 
-ModelUpdateProto IndexedModel::ExportModelUpdate() {
-  ModelUpdateProto result;
+absl::optional<ModelUpdateProto> IndexedModel::ExportSharedModelUpdate() {
+  // We must detect the empty case to prevent unneeded copies and merging in
+  // UpdateTracker::ExportModelUpdate().
+  if (variables_checkpoint_ == next_variable_id_ &&
+      linear_constraints_checkpoint_ == next_linear_constraint_id_ &&
+      !dirty_objective_direction_ && !dirty_objective_offset_ &&
+      dirty_variable_deletes_.empty() && dirty_variable_lower_bounds_.empty() &&
+      dirty_variable_upper_bounds_.empty() &&
+      dirty_variable_is_integer_.empty() &&
+      dirty_linear_objective_coefficients_.empty() &&
+      dirty_linear_constraint_deletes_.empty() &&
+      dirty_linear_constraint_lower_bounds_.empty() &&
+      dirty_linear_constraint_upper_bounds_.empty() &&
+      dirty_linear_constraint_matrix_keys_.empty()) {
+    return absl::nullopt;
+  }
+
   // TODO(user): these are used to efficiently extract the constraint matrix
   // update, but it would be good to avoid calling these because they result in
   // a large allocation.
   EnsureLazyMatrixRows();
   EnsureLazyMatrixColumns();
+
+  ModelUpdateProto result;
 
   // Variable/constraint deletions.
   for (const VariableId del_var : SortedSetKeys(dirty_variable_deletes_)) {
@@ -380,7 +402,11 @@ ModelUpdateProto IndexedModel::ExportModelUpdate() {
   ExportLinearConstraintMatrix(
       constraint_matrix_updates,
       *result.mutable_linear_constraint_matrix_updates());
-  return result;
+
+  // Named returned value optimization (NRVO) does not apply here since the
+  // return type if not the same type as `result`. To make things clear, we
+  // explicitly call the constructor here.
+  return {std::move(result)};
 }
 
 void IndexedModel::EnsureLazyMatrixColumns() {
@@ -407,7 +433,7 @@ void IndexedModel::EnsureLazyMatrixRows() {
   }
 }
 
-void IndexedModel::Checkpoint() {
+void IndexedModel::SharedCheckpoint() {
   variables_checkpoint_ = next_variable_id_;
   linear_constraints_checkpoint_ = next_linear_constraint_id_;
   dirty_objective_direction_ = false;
@@ -468,6 +494,133 @@ IndexedSolutions IndexedSolutionsFromProto(
     solutions.basis.push_back(std::move(indexed_basis));
   }
   return solutions;
+}
+
+std::unique_ptr<IndexedModel::UpdateTracker> IndexedModel::NewUpdateTracker() {
+  // UpdateTracker constructor will call UpdateTracker::Checkpoint() that
+  // flushes the current update to all other trackers and updates the checkpoint
+  // of this model to the current state of the model as returned by
+  // ExportModel().
+  return absl::WrapUnique(new UpdateTracker(*this));
+}
+
+IndexedModel::UpdateTracker::UpdateTracker(IndexedModel& indexed_model)
+    : indexed_model_(indexed_model) {
+  absl::MutexLock lock(&indexed_model_.update_trackers_lock_);
+  CHECK(indexed_model_.update_trackers_.insert(this).second);
+  CheckpointLocked();
+}
+
+IndexedModel::UpdateTracker::~UpdateTracker() {
+  absl::MutexLock lock(&indexed_model_.update_trackers_lock_);
+  CHECK(indexed_model_.update_trackers_.erase(this));
+}
+
+absl::optional<ModelUpdateProto>
+IndexedModel::UpdateTracker::ExportModelUpdate() {
+  absl::MutexLock lock(&indexed_model_.update_trackers_lock_);
+
+  // No updates have been pushed, the checkpoint of this tracker is in sync with
+  // the shared checkpoint of IndexedModel. We can return the IndexedModel
+  // shared update without merging.
+  if (updates_.empty()) {
+    return indexed_model_.ExportSharedModelUpdate();
+  }
+
+  // Find all trackers with the same checkpoint. By construction, all trackers
+  // that have the same first update also share all next updates.
+  std::vector<UpdateTracker*> all_trackers_at_checkpoint;
+  bool found_this = false;
+  for (UpdateTracker* const tracker : indexed_model_.update_trackers_) {
+    if (!tracker->updates_.empty() &&
+        tracker->updates_.front() == updates_.front()) {
+      // Note that we set `found_this` inside the if branch to make sure we also
+      // detect a bug in this code that would not include `this` in the list of
+      // trackers.
+      if (tracker == this) {
+        found_this = true;
+      }
+      all_trackers_at_checkpoint.push_back(tracker);
+
+      // Validate that we have the same updates in debug mode only. In optimized
+      // mode, only test the size of the updates_ vectors.
+      CHECK_EQ(updates_.size(), tracker->updates_.size());
+      if (DEBUG_MODE) {
+        for (int i = 0; i < updates_.size(); ++i) {
+          CHECK_EQ(updates_[i], tracker->updates_[i])
+              << "Two trackers have the same checkpoint but different updates.";
+        }
+      }
+    }
+  }
+  CHECK(found_this);
+
+  // Possible optimizations here:
+  //
+  // * Maybe optimize the case where the first update is singly used by `this`
+  //   and use it as starting point instead of making a copy. This may be more
+  //   complicated if it is shared with multiple trackers since in that case we
+  //   must make sure to only update the shared instance if and only if only
+  //   trackers have a pointer to it, not external code (i.e. its use count is
+  //   the same as the number of trackers).
+  //
+  // * Use n-way merge here if the performances justify it.
+  const auto merge = std::make_shared<ModelUpdateProto>();
+  for (const auto& update : updates_) {
+    MergeIntoUpdate(/*from=*/*update, /*into=*/*merge);
+  }
+
+  // Push the merge to all trackers that have the same checkpoint (including
+  // this tracker).
+  for (UpdateTracker* const tracker : all_trackers_at_checkpoint) {
+    tracker->updates_.clear();
+    tracker->updates_.push_back(merge);
+  }
+
+  ModelUpdateProto update = *merge;
+  const absl::optional<ModelUpdateProto> pending_update =
+      indexed_model_.ExportSharedModelUpdate();
+  if (pending_update) {
+    MergeIntoUpdate(/*from=*/*pending_update, /*into=*/update);
+  }
+
+  // Named returned value optimization (NRVO) does not apply here since the
+  // return type if not the same type as `result`. To make things clear, we
+  // explicitly call the constructor here.
+  return {std::move(update)};
+}
+
+void IndexedModel::UpdateTracker::Checkpoint() {
+  absl::MutexLock lock(&indexed_model_.update_trackers_lock_);
+
+  CheckpointLocked();
+}
+
+void IndexedModel::UpdateTracker::CheckpointLocked() {
+  // Optimize the case where we have a single tracker and we don't want to
+  // update it. In that case we don't need to update trackers since we would
+  // only update this one and clear it immediately.
+  if (indexed_model_.update_trackers_.size() == 1) {
+    CHECK(*indexed_model_.update_trackers_.begin() == this);
+  } else {
+    absl::optional<ModelUpdateProto> update =
+        indexed_model_.ExportSharedModelUpdate();
+    if (update) {
+      const auto shared_update =
+          std::make_shared<ModelUpdateProto>(*std::move(update));
+
+      bool found_this = false;
+      for (UpdateTracker* const tracker : indexed_model_.update_trackers_) {
+        if (tracker == this) {
+          found_this = true;
+        }
+        tracker->updates_.push_back(shared_update);
+      }
+      CHECK(found_this);
+    }
+  }
+  indexed_model_.SharedCheckpoint();
+  updates_.clear();
 }
 
 }  // namespace math_opt

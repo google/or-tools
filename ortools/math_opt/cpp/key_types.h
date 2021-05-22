@@ -41,7 +41,7 @@
 
 #include "ortools/base/logging.h"
 #include "absl/strings/string_view.h"
-#include "ortools/math_opt/indexed_model.h"
+#include "ortools/math_opt/core/indexed_model.h"
 
 namespace operations_research {
 namespace math_opt {

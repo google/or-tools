@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/math_opt/solver.h"
+#include "ortools/math_opt/core/solver.h"
 
 #include <stdint.h>
 
@@ -20,26 +20,26 @@
 #include <string>
 #include <utility>
 
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/model_summary.h"
+#include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
-#include "ortools/math_opt/model_summary.h"
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
-#include "ortools/math_opt/solver_interface.h"
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/math_opt/validators/model_parameters_validator.h"
 #include "ortools/math_opt/validators/model_validator.h"
 #include "ortools/math_opt/validators/solution_validator.h"
 #include "ortools/math_opt/validators/solver_parameters_validator.h"
+#include "ortools/base/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {

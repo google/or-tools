@@ -23,8 +23,8 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/map_util.h"
-#include "ortools/math_opt/model_summary.h"
-#include "ortools/math_opt/sparse_vector_view.h"
+#include "ortools/math_opt/core/model_summary.h"
+#include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/validators/sparse_vector_validator.h"
 #include "ortools/base/status_macros.h"
 

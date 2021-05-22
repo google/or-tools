@@ -16,8 +16,8 @@
 #include <utility>
 #include <vector>
 
+#include "ortools/math_opt/core/indexed_model.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
-#include "ortools/math_opt/indexed_model.h"
 
 namespace operations_research {
 namespace math_opt {

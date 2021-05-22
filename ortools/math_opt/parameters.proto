@@ -28,6 +28,7 @@ enum SolverType {
   SOLVER_TYPE_GUROBI = 2;
   SOLVER_TYPE_GLOP = 3;
   SOLVER_TYPE_CP_SAT = 4;
+  SOLVER_TYPE_GLPK = 6;
 }
 
 enum LPAlgorithm {

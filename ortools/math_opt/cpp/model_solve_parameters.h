@@ -17,11 +17,11 @@
 #include <initializer_list>
 #include <optional>
 
+#include "ortools/math_opt/core/indexed_model.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/map_filter.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/result.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
-#include "ortools/math_opt/indexed_model.h"
 #include "ortools/math_opt/model_parameters.pb.h"
 
 namespace operations_research {

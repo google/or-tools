@@ -22,7 +22,7 @@
 #include "absl/time/time.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/math_opt/callback.pb.h"
-#include "ortools/math_opt/solver_interface.h"
+#include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 

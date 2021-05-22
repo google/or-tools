@@ -18,8 +18,8 @@
 
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
-#include "ortools/base/logging.h"
 #include "absl/status/statusor.h"
+#include "ortools/base/logging.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 namespace {
@@ -102,7 +102,7 @@ void SolveVersion2() {
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
-absl::ParseCommandLine(argc, argv);
+  absl::ParseCommandLine(argc, argv);
   SolveVersion1();
   SolveVersion2();
   return 0;

@@ -26,10 +26,10 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "ortools/math_opt/callback.pb.h"
-#include "ortools/math_opt/model_summary.h"
+#include "ortools/math_opt/core/model_summary.h"
+#include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
-#include "ortools/math_opt/sparse_vector_view.h"
 #include "ortools/math_opt/validators/model_parameters_validator.h"
 #include "ortools/math_opt/validators/scalar_validator.h"
 #include "ortools/math_opt/validators/solution_validator.h"
@@ -198,18 +198,19 @@ absl::Status ValidateCallbackDataProto(
   switch (event) {
     case CALLBACK_EVENT_MIP_NODE:
     case CALLBACK_EVENT_MIP_SOLUTION: {
-      if (!has_primal_solution) {
+      if (has_primal_solution) {
+        const SparseVectorFilterProto& filter =
+            event == CALLBACK_EVENT_MIP_NODE
+                ? callback_registration.mip_node_filter()
+                : callback_registration.mip_solution_filter();
+        RETURN_IF_ERROR(ValidatePrimalSolution(cb_data.primal_solution(),
+                                               filter, model_summary))
+            << "Invalid CallbackDataProto.primal_solution";
+      } else if (event == CALLBACK_EVENT_MIP_SOLUTION) {
         return absl::InvalidArgumentError(
             absl::StrCat("Must provide primal_solution for event ", event, " (",
                          ProtoEnumToString(event), ")"));
       }
-      const SparseVectorFilterProto& filter =
-          event == CALLBACK_EVENT_MIP_NODE
-              ? callback_registration.mip_node_filter()
-              : callback_registration.mip_solution_filter();
-      RETURN_IF_ERROR(ValidatePrimalSolution(cb_data.primal_solution(), filter,
-                                             model_summary))
-          << "Invalid CallbackDataProto.primal_solution";
       break;
     }
 

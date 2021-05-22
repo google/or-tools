@@ -20,11 +20,11 @@
 #include <utility>
 
 #include "google/protobuf/message.h"
+#include "ortools/math_opt/core/indexed_model.h"
 #include "ortools/math_opt/cpp/key_types.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/result.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
-#include "ortools/math_opt/indexed_model.h"
 #include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"

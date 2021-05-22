@@ -17,8 +17,8 @@
 #include <string>
 
 #include "absl/status/status.h"
-#include "ortools/math_opt/model_summary.h"
-#include "ortools/math_opt/sparse_vector_view.h"
+#include "ortools/math_opt/core/model_summary.h"
+#include "ortools/math_opt/core/sparse_vector_view.h"
 
 namespace operations_research {
 namespace math_opt {

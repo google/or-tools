@@ -42,8 +42,8 @@
 //
 // For more information, see the class comments below.
 
-#ifndef OR_TOOLS_MATH_OPT_SPARSE_VECTOR_VIEW_H_
-#define OR_TOOLS_MATH_OPT_SPARSE_VECTOR_VIEW_H_
+#ifndef OR_TOOLS_MATH_OPT_CORE_SPARSE_VECTOR_VIEW_H_
+#define OR_TOOLS_MATH_OPT_CORE_SPARSE_VECTOR_VIEW_H_
 
 #include <stdint.h>
 
@@ -51,11 +51,11 @@
 #include <iterator>
 #include <utility>
 
-#include "absl/container/flat_hash_map.h"
-#include "absl/types/span.h"
-#include "google/protobuf/message.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "google/protobuf/message.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/types/span.h"
 #include "ortools/base/map_util.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 
@@ -134,21 +134,20 @@ class SparseVectorView {
 };
 
 // Returns a view for values that are  vector-like collection like
-// std::vector<T> or google::protobuf::RepeatedField<T>. See other overloads for
-// other values-types.
+// std::vector<T> or google::protobuf::RepeatedField<T>. See other overloads for other
+// values-types.
 template <typename Collection, typename T = typename Collection::value_type>
 SparseVectorView<T> MakeView(absl::Span<const int64_t> ids,
                              const Collection& values) {
   return SparseVectorView<T>(ids, values);
 }
 
-// Returns a view for values that are google::protobuf::RepeatedPtrField<T>.
-// Common use for this overload is when T = std::string. See other overloads for
-// other values-types.
+// Returns a view for values that are google::protobuf::RepeatedPtrField<T>. Common use
+// for this overload is when T = std::string. See other overloads for other
+// values-types.
 template <typename T>
-SparseVectorView<const T*> MakeView(
-    const google::protobuf::RepeatedField<int64_t>& ids,
-    const google::protobuf::RepeatedPtrField<T>& values) {
+SparseVectorView<const T*> MakeView(const google::protobuf::RepeatedField<int64_t>& ids,
+                                    const google::protobuf::RepeatedPtrField<T>& values) {
   return SparseVectorView<const T*>(ids, values);
 }
 
@@ -223,4 +222,4 @@ absl::flat_hash_map<IndexType, T> SparseVectorView<T>::as_map() {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_SPARSE_VECTOR_VIEW_H_
+#endif  // OR_TOOLS_MATH_OPT_CORE_SPARSE_VECTOR_VIEW_H_

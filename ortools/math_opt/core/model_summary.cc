@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/math_opt/model_summary.h"
+#include "ortools/math_opt/core/model_summary.h"
 
 #include <cstdint>
 #include <initializer_list>

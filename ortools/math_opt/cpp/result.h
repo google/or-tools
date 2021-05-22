@@ -20,9 +20,9 @@
 #include "ortools/base/logging.h"
 #include "absl/status/statusor.h"
 #include "absl/time/time.h"
+#include "ortools/math_opt/core/indexed_model.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
-#include "ortools/math_opt/indexed_model.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/base/protoutil.h"
@@ -38,11 +38,9 @@ struct Result {
   // A solution to an optimization problem.
   //
   // E.g. consider a simple linear program:
-  //    min c * x
-  //    s.t. A * x >= b
-  //    x >= 0
-  // where c, x in R^m, b, y in R^n, and A in R^{m*n}.
-  //
+  //   min c * x
+  //   s.t. A * x >= b
+  //   x >= 0.
   // A primal solution is assignment values to x. It is feasible if it satisfies
   // A * x >= b and x >= 0 from above. In the class PrimalSolution below,
   // variable_values is x and objective_value is c * x.
@@ -62,11 +60,9 @@ struct Result {
   // optimization problem.
   //
   // E.g. consider a simple linear program:
-  //    min c * x
-  //    s.t. A * x >= b
-  //    x >= 0
-  // where c, x in R^m, b, y in R^n, and A in R^{m*n}.
-  //
+  //   min c * x
+  //   s.t. A * x >= b
+  //   x >= 0
   // A primal ray is an x that satisfies:
   //   c * x < 0
   //   A * x >= 0
@@ -89,12 +85,10 @@ struct Result {
   // A solution to the dual of an optimization problem.
   //
   // E.g. consider the primal dual pair linear program pair:
-  //    (Primal)              (Dual)
-  //    min c * x             max b * y
-  //    s.t. A * x >= b       s.t. y * A + r = c
-  //    x >= 0                y, r >= 0
-  // where c, x, r are in R^m, b, y in R^n and A in R^{m*n}.
-  //
+  //   (Primal)             (Dual)
+  //   min c * x            max b * y
+  //   s.t. A * x >= b      s.t. y * A + r = c
+  //   x >= 0               y, r >= 0.
   // The dual solution is the pair (y, r). It is feasible if it satisfies the
   // constraints from (Dual) above.
   //
@@ -115,12 +109,10 @@ struct Result {
   // problem; equivalently, a certificate of primal infeasibility.
   //
   // E.g. consider the primal dual pair linear program pair:
-  //    (Primal)              (Dual)
-  //    min c * x             max b * y
-  //    s.t. A * x >= b       s.t. y * A + r = c
-  //    x >= 0                y, r >= 0
-  // where c, x, r are in R^m, b, y in R^n and A in R^{m*n}.
-  //
+  //    (Primal)              (Dual)
+  //    min c * x             max b * y
+  //    s.t. A * x >= b       s.t. y * A + r = c
+  //    x >= 0                y, r >= 0.
   // The dual ray is the pair (y, r) satisfying:
   //   b * y > 0
   //   y * A + r = 0
@@ -140,6 +132,33 @@ struct Result {
     LinearConstraintMap<double> dual_values;
     VariableMap<double> reduced_costs;
   };
+
+  // A combinatorial characterization for a solution to a linear program.
+  //
+  // The simplex method for solving linear programs always returns a "basic
+  // feasible solution" which can be described combinatorially as a Basis. A
+  // basis assigns a BasisStatus for every variable and linear constraint.
+  //
+  // E.g. consider a standard form LP:
+  //   min c * x
+  //   s.t. A * x = b
+  //   x >= 0
+  // that has more variables than constraints and with full row rank A.
+  //
+  // Let n be the number of variables and m the number of linear constraints. A
+  // valid basis for this problem can be constructed as follows:
+  //  * All constraints will have basis status FIXED.
+  //  * Pick m variables such that the columns of A are linearly independent and
+  //    assign the status BASIC.
+  //  * Assign the status AT_LOWER for the remaining n - m variables.
+  //
+  // The basic solution for this basis is the unique solution of A * x = b that
+  // has all variables with status AT_LOWER fixed to their lower bounds (all
+  // zero). The resulting solution is called a basic feasible solution if it
+  // also satisfies x >= 0.
+  //
+  // See go/mathopt-basis for treatment of the general case and an explanation
+  // of how a dual solution is determined for a basis.
   struct Basis {
     Basis() = default;
     Basis(IndexedModel* model, IndexedBasis indexed_basis);
@@ -271,7 +290,7 @@ struct Result {
   // of starting from scratch.
   //
   // We have three components involve in Solve(): MathOpt, the solver wrapper
-  // (solver.h) and the actual solver (SCIP, ...). For some model modifications,
+  // (solver.h) and the actual solver (SCIP, ...). For some model modifications,
   // the wrapper can support modifying the actual solver's in-memory model
   // instead of recreating it from scratch. This member is set to true when this
   // happens.

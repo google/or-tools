@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_SOLVER_INTERFACE_H_
-#define OR_TOOLS_MATH_OPT_SOLVER_INTERFACE_H_
+#ifndef OR_TOOLS_MATH_OPT_CORE_SOLVER_INTERFACE_H_
+#define OR_TOOLS_MATH_OPT_CORE_SOLVER_INTERFACE_H_
 
 #include <functional>
 #include <memory>
@@ -152,4 +152,4 @@ class AllSolversRegistry {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVER_INTERFACE_H_
+#endif  // OR_TOOLS_MATH_OPT_CORE_SOLVER_INTERFACE_H_

@@ -67,6 +67,8 @@ message CallbackDataProto {
   // Note that, because of variable filters, it is possible that when a solution
   // is found, it is empty. The message will be set but left empty in this case,
   // while it will be unset when no solution is available.
+  //
+  // TODO(b/186740537): change the type to SparseDoubleVectorProto.
   PrimalSolutionProto primal_solution = 2;
 
   // If event == CALLBACK_EVENT_MESSAGE, return the messages from the solver.
@@ -153,6 +155,9 @@ message CallbackResultProto {
   // taken to be undefined, and is up to the underlying solver to deal with it.
   // For example, Gurobi will try to solve a Sub-MIP to get a fully feasible
   // solution if necessary.
+  //
+  // TODO(b/183631989) rename to suggested_solutions.
+  // TODO(b/186740537): change the type to SparseDoubleVectorProto.
   repeated PrimalSolutionProto suggested_solution = 5;
 }
 

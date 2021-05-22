@@ -70,9 +70,9 @@
 #include "absl/time/time.h"
 #include "absl/types/optional.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/indexed_model.h"
 #include "ortools/math_opt/cpp/map_filter.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
-#include "ortools/math_opt/indexed_model.h"
 
 namespace operations_research {
 namespace math_opt {

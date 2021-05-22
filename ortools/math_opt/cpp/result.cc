@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/math_opt/indexed_model.h"
+#include "ortools/math_opt/core/indexed_model.h"
 #include "ortools/math_opt/result.pb.h"
 
 namespace operations_research {

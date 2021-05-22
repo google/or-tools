@@ -25,7 +25,7 @@
 #include "scip/type_scip.h"
 #include "ortools/gscip/gscip.h"
 #include "ortools/math_opt/callback.pb.h"
-#include "ortools/math_opt/solver_interface.h"
+#include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/solvers/message_callback_data.h"
 
 namespace operations_research {

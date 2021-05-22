@@ -118,17 +118,17 @@
 #include "absl/memory/memory.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "ortools/math_opt/core/indexed_model.h"
+#include "ortools/math_opt/core/solver.h"
 #include "ortools/math_opt/cpp/callback.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/linear_constraint.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/model_solve_parameters.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/objective.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/result.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/variable_and_expressions.h"  // IWYU pragma: export
-#include "ortools/math_opt/indexed_model.h"
 #include "ortools/math_opt/model.pb.h"  // IWYU pragma: export
 #include "ortools/math_opt/parameters.pb.h"  // IWYU pragma: export
 #include "ortools/math_opt/result.pb.h"  // IWYU pragma: export
-#include "ortools/math_opt/solver.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -194,6 +194,8 @@ class MathOpt {
   // Returns all the existing (created and not deleted) variables in the model,
   // sorted by id.
   std::vector<Variable> SortedVariables();
+
+  std::vector<LinearConstraint> ColumnNonzeros(Variable variable);
 
   // Adds a linear constraint to the model with bounds [-inf, +inf].
   inline LinearConstraint AddLinearConstraint(absl::string_view name = "");
@@ -287,6 +289,7 @@ class MathOpt {
   const SolverInitializerProto solver_initializer_;
   const std::unique_ptr<IndexedModel> model_;
   std::unique_ptr<Solver> solver_;
+  std::unique_ptr<IndexedModel::UpdateTracker> update_tracker_;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

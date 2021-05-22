@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/math_opt/solver_interface.h"
+#include "ortools/math_opt/core/solver_interface.h"
 
 #include <algorithm>
 #include <memory>
@@ -19,13 +19,13 @@
 #include <utility>
 #include <vector>
 
+#include "ortools/base/logging.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/parameters.pb.h"

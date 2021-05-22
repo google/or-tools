@@ -15,8 +15,8 @@
 #define OR_TOOLS_MATH_OPT_VALIDATORS_SOLUTION_VALIDATOR_H_
 
 #include "absl/status/status.h"
+#include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/model_parameters.pb.h"
-#include "ortools/math_opt/model_summary.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solution.pb.h"
 

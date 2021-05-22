@@ -25,6 +25,7 @@
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/cleanup.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -37,17 +38,17 @@
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/base/map_util.h"
 #include "ortools/math_opt/callback.pb.h"
-#include "ortools/math_opt/math_opt_proto_utils.h"
+#include "ortools/math_opt/core/math_opt_proto_utils.h"
+#include "ortools/math_opt/core/solver_interface.h"
+#include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solution.pb.h"
-#include "ortools/math_opt/solver_interface.h"
 #include "ortools/math_opt/solvers/gurobi_callback.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
-#include "ortools/math_opt/sparse_vector_view.h"
 #include "ortools/port/proto_utils.h"
 #include "absl/status/status.h"
 #include "ortools/base/status_macros.h"
@@ -382,12 +383,6 @@ absl::Status GurobiSolver::GetDoubleAttrArray(
   RETURN_IF_GUROBI_ERROR(GRBgetdblattrarray(gurobi_model_, name, 0,
                                             attr_out.size(), attr_out.data()))
       << "Error getting Gurobi double array attribute: " << name;
-  return absl::OkStatus();
-}
-
-absl::Status GurobiSolver::RunSolver() {
-  CHECK(gurobi_model_ != nullptr);
-  RETURN_IF_GUROBI_ERROR(GRBoptimize(gurobi_model_));
   return absl::OkStatus();
 }
 
@@ -1465,6 +1460,11 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
     RETURN_IF_GUROBI_ERROR(GRBsetcallbackfunc(gurobi_model_, GurobiCallback,
                                               gurobi_cb_data.get()));
   }
+  auto callback_cleanup = absl::MakeCleanup([&]() {
+    if (cb != nullptr) {
+      GRBsetcallbackfunc(gurobi_model_, nullptr, nullptr);
+    }
+  });
 
   // Need to run GRBupdatemodel before setting basis and getting the obj sense.
   CHECK(gurobi_model_ != nullptr);
@@ -1477,16 +1477,25 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
     RETURN_IF_ERROR(SetGurobiBasis(model_parameters.initial_basis()));
   }
 
-  RETURN_IF_ERROR(RunSolver());
-  if (gurobi_cb_data != nullptr) {
-    if (gurobi_cb_data->status.ok()) {
-      gurobi_cb_data->status =
-          GurobiCallbackImplFlush(gurobi_cb_data->callback_input,
-                                  gurobi_cb_data->message_callback_data);
-    }
+  const int gurobi_error = GRBoptimize(gurobi_model_);
+  // Check for callback errors when GurobiSolver::GurobiCallback signals their
+  // existence through GRB_ERROR_CALLBACK and when GRBterminate is called (in
+  // which case gurobi_error could also be kGrbOk)
+  if (gurobi_error == kGrbOk && gurobi_cb_data != nullptr &&
+      gurobi_cb_data->status.ok()) {
+    gurobi_cb_data->status = GurobiCallbackImplFlush(
+        gurobi_cb_data->callback_input, gurobi_cb_data->message_callback_data);
+  }
+  if ((gurobi_error == GRB_ERROR_CALLBACK || gurobi_error == kGrbOk) &&
+      gurobi_cb_data != nullptr) {
     RETURN_IF_ERROR(gurobi_cb_data->status) << "Error in callback";
+  }
+  RETURN_IF_GUROBI_ERROR(gurobi_error);
+  if (cb != nullptr) {
+    std::move(callback_cleanup).Cancel();
     RETURN_IF_GUROBI_ERROR(GRBsetcallbackfunc(gurobi_model_, nullptr, nullptr));
   }
+
   RETURN_IF_ERROR(
       ExtractSolveResultProto(is_maximize, solve_result, model_parameters));
   // Reset Gurobi parameters.

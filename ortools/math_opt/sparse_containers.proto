@@ -52,9 +52,8 @@ message SparseVectorFilterProto {
 // A sparse representation of a matrix of doubles.
 //
 // The matrix is stored as triples of row id, column id, and coefficient. These
-// three vectors must be of equal length. For all i, the tuple
-// (variable_ids[i], constraint_ids[i]) should be distinct. Entries must be in
-// row major order.
+// three vectors must be of equal length. For all i, the tuple (row_ids[i],
+// column_ids[i]) should be distinct. Entries must be in row major order.
 //
 // TODO(user): consider CSR.
 message SparseDoubleMatrixProto {

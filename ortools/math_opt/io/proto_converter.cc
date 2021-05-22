@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/math_opt/proto_converter.h"
+#include "ortools/math_opt/io/proto_converter.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -19,18 +19,18 @@
 #include <utility>
 #include <vector>
 
+#include "ortools/base/integral_types.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "ortools/base/integral_types.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
-#include "ortools/math_opt/math_opt_proto_utils.h"
+#include "ortools/math_opt/core/math_opt_proto_utils.h"
+#include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
-#include "ortools/math_opt/sparse_vector_view.h"
 #include "ortools/math_opt/validators/model_validator.h"
+#include "ortools/base/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_MODEL_SUMMARY_H_
-#define OR_TOOLS_MATH_OPT_MODEL_SUMMARY_H_
+#ifndef OR_TOOLS_MATH_OPT_CORE_MODEL_SUMMARY_H_
+#define OR_TOOLS_MATH_OPT_CORE_MODEL_SUMMARY_H_
 
 #include <cstdint>
 #include <initializer_list>
@@ -20,10 +20,10 @@
 #include <string>
 #include <utility>
 
+#include "ortools/base/logging.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/linked_hash_map.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 
 namespace operations_research {
@@ -124,4 +124,4 @@ int64_t IdNameBiMap::LargestId() const {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_MODEL_SUMMARY_H_
+#endif  // OR_TOOLS_MATH_OPT_CORE_MODEL_SUMMARY_H_

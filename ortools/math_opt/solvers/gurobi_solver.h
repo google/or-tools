@@ -27,13 +27,13 @@
 #include "absl/types/span.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solution.pb.h"
-#include "ortools/math_opt/solver_interface.h"
 #include "ortools/math_opt/solvers/gurobi_callback.h"
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
@@ -103,7 +103,6 @@ class GurobiSolver : public SolverInterface {
   using IdHashMap = gtl::linked_hash_map<int64_t, int>;
   using ConstraintMap = gtl::linked_hash_map<int64_t, ConstraintData>;
 
-  absl::Status RunSolver();
   // Returns a termination reason and a detailed explanation string.
   static absl::StatusOr<
       std::pair<SolveResultProto::TerminationReason, std::string>>

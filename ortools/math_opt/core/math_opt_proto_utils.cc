@@ -11,20 +11,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/math_opt/math_opt_proto_utils.h"
+#include "ortools/math_opt/core/math_opt_proto_utils.h"
 
 #include <stdint.h>
 
 #include <algorithm>
 #include <functional>
 
-#include "absl/base/log_severity.h"
-#include "absl/container/flat_hash_set.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "absl/container/flat_hash_set.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
-#include "ortools/math_opt/sparse_vector_view.h"
 
 namespace operations_research {
 namespace math_opt {

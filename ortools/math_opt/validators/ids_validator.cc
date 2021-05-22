@@ -26,7 +26,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/math_opt/model_summary.h"
+#include "ortools/math_opt/core/model_summary.h"
 #include "ortools/base/status_macros.h"
 
 namespace operations_research {

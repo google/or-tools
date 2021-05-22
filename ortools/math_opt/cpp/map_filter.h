@@ -19,8 +19,8 @@
 
 #include "absl/types/optional.h"
 #include "ortools/base/int_type.h"
+#include "ortools/math_opt/core/indexed_model.h"
 #include "ortools/math_opt/cpp/id_set.h"
-#include "ortools/math_opt/indexed_model.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 
 namespace operations_research {

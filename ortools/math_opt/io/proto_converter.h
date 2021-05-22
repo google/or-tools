@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_PROTO_CONVERTER_H_
-#define OR_TOOLS_MATH_OPT_PROTO_CONVERTER_H_
+#ifndef OR_TOOLS_MATH_OPT_IO_PROTO_CONVERTER_H_
+#define OR_TOOLS_MATH_OPT_IO_PROTO_CONVERTER_H_
 
 #include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -35,4 +35,4 @@ absl::StatusOr<::operations_research::MPModelProto> MathOptModelToMPModelProto(
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_PROTO_CONVERTER_H_
+#endif  // OR_TOOLS_MATH_OPT_IO_PROTO_CONVERTER_H_

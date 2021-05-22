@@ -19,11 +19,10 @@
 #include <utility>
 #include <vector>
 
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
-#include "ortools/base/logging.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/random/random.h"
 #include "absl/random/uniform_int_distribution.h"
 #include "absl/status/statusor.h"
@@ -31,6 +30,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "ortools/base/logging.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 ABSL_FLAG(int, num_facilities, 3000, "Number of facilities.");
@@ -453,7 +453,7 @@ void Benders(const Network network, const double location_demand,
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
-absl::ParseCommandLine(argc, argv);
+  absl::ParseCommandLine(argc, argv);
   const Network network(absl::GetFlag(FLAGS_num_facilities),
                         absl::GetFlag(FLAGS_num_locations),
                         absl::GetFlag(FLAGS_edge_probability));
