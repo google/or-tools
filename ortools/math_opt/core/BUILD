@@ -9,6 +9,7 @@ cc_library(
         "//ortools/base",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "@com_google_absl//absl/container:flat_hash_set",
     ],
@@ -41,11 +42,24 @@ cc_library(
 )
 
 cc_library(
+    name = "model_update_merge",
+    srcs = ["model_update_merge.cc"],
+    hdrs = ["model_update_merge.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+    ],
+)
+
+cc_library(
     name = "indexed_model",
     srcs = ["indexed_model.cc"],
     hdrs = ["indexed_model.h"],
     deps = [
         ":sparse_vector_view",
+        ":model_update_merge",
         "//ortools/base",
         "//ortools/base:int_type",
         "//ortools/base:map_util",
