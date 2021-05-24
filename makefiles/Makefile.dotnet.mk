@@ -519,7 +519,7 @@ endef
 
 $(foreach sample,$(DOTNET_SAMPLES),$(eval $(call dotnet-sample-target,$(sample),$(subst _,,$(sample)))))
 
-DOTNET_EXAMPLES := contrib java
+DOTNET_EXAMPLES := contrib dotnet
 
 define dotnet-example-target =
 $$(TEMP_DOTNET_DIR)/$1: | $$(TEMP_DOTNET_DIR)
