@@ -128,7 +128,7 @@ public class NetworkRoutingSat
         }
     }
 
-    private static (bool IsSet, string Value) getArgValue(string[] args, string arg)
+    private static(bool IsSet, string Value) getArgValue(string[] args, string arg)
     {
         string lookup = $"--{arg}=";
 
@@ -766,11 +766,10 @@ public class NetworkRoutingSat
             cpModel.Minimize(LinearExpr.Sum(obj));
 
             CpSolver solver = new CpSolver();
-            solver.StringParameters =
-                parameters + " enumerate_all_solutions:true";
+            solver.StringParameters = parameters + " enumerate_all_solutions:true";
 
-            CpSolverStatus status = solver.Solve(
-                cpModel, new FeasibleSolutionChecker2(maxUsageCost, comfortableTrafficVars, trafficVars));
+            CpSolverStatus status =
+                solver.Solve(cpModel, new FeasibleSolutionChecker2(maxUsageCost, comfortableTrafficVars, trafficVars));
 
             return (long)solver.ObjectiveValue;
         }

@@ -64,7 +64,8 @@ public class SpeakerScheduling
                     matching.AddArcWithCost(dummy, value - first_slot_, 0);
                 }
             }
-            if (matching.Solve() == LinearSumAssignment.Status.OPTIMAL && matching.OptimalCost() < large) // No violated arcs.
+            if (matching.Solve() == LinearSumAssignment.Status.OPTIMAL &&
+                matching.OptimalCost() < large) // No violated arcs.
             {
                 for (int speaker = 0; speaker < number_of_variables; ++speaker)
                 {
