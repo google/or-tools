@@ -61,11 +61,13 @@ class CpModelView {
   // Helpers to generate a decision.
   BooleanOrIntegerLiteral GreaterOrEqual(int var, int64_t value) const;
   BooleanOrIntegerLiteral LowerOrEqual(int var, int64_t value) const;
+  BooleanOrIntegerLiteral MedianValue(int var) const;
 
  private:
   const CpModelMapping& mapping_;
   const VariablesAssignment& boolean_assignment_;
   const IntegerTrail& integer_trail_;
+  const IntegerEncoder& integer_encoder_;
 };
 
 // Constructs the search strategy specified in the given CpModelProto. A

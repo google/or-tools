@@ -23,9 +23,7 @@
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
-#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/probing.h"
-#include "ortools/sat/pseudo_costs.h"
 #include "ortools/sat/rins.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
@@ -650,6 +648,134 @@ std::vector<std::function<BooleanOrIntegerLiteral()>> CompleteHeuristics(
   return complete_heuristics;
 }
 
+IntegerSearchHelper::IntegerSearchHelper(Model* model)
+    : model_(model),
+      sat_solver_(model->GetOrCreate<SatSolver>()),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      encoder_(model->GetOrCreate<IntegerEncoder>()),
+      implied_bounds_(model->GetOrCreate<ImpliedBounds>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
+      pseudo_costs_(model->GetOrCreate<PseudoCosts>()) {
+  // This is needed for recording the pseudo-costs.
+  const ObjectiveDefinition* objective = model->Get<ObjectiveDefinition>();
+  if (objective != nullptr) objective_var_ = objective->objective_var;
+}
+
+bool IntegerSearchHelper::BeforeTakingDecision() {
+  // If we pushed root level deductions, we restart to incorporate them.
+  // Note that in the present of assumptions, it is important to return to
+  // the level zero first ! otherwise, the new deductions will not be
+  // incorporated and the solver will loop forever.
+  if (integer_trail_->HasPendingRootLevelDeduction()) {
+    sat_solver_->Backtrack(0);
+    if (!sat_solver_->RestoreSolverToAssumptionLevel()) {
+      return false;
+    }
+  }
+
+  if (sat_solver_->CurrentDecisionLevel() == 0) {
+    if (!implied_bounds_->EnqueueNewDeductions()) return false;
+
+    auto* level_zero_callbacks = model_->GetOrCreate<LevelZeroCallbackHelper>();
+    for (const auto& cb : level_zero_callbacks->callbacks) {
+      if (!cb()) return false;
+    }
+
+    if (model_->GetOrCreate<SatParameters>()->use_sat_inprocessing() &&
+        !model_->GetOrCreate<Inprocessing>()->InprocessingRound()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+LiteralIndex IntegerSearchHelper::GetDecision(
+    std::function<BooleanOrIntegerLiteral()> f) {
+  LiteralIndex decision = kNoLiteralIndex;
+  while (true) {
+    BooleanOrIntegerLiteral new_decision;
+    if (integer_trail_->InPropagationLoop()) {
+      const IntegerVariable var =
+          integer_trail_->NextVariableToBranchOnInPropagationLoop();
+      if (var != kNoIntegerVariable) {
+        new_decision.integer_literal =
+            GreaterOrEqualToMiddleValue(var, integer_trail_);
+      }
+    }
+    if (!new_decision.HasValue()) {
+      new_decision = f();
+    }
+    if (!new_decision.HasValue() &&
+        integer_trail_->CurrentBranchHadAnIncompletePropagation()) {
+      const IntegerVariable var = integer_trail_->FirstUnassignedVariable();
+      if (var != kNoIntegerVariable) {
+        new_decision.integer_literal = AtMinValue(var, integer_trail_);
+      }
+    }
+    if (!new_decision.HasValue()) break;
+
+    // Convert integer decision to literal one if needed.
+    //
+    // TODO(user): Ideally it would be cool to delay the creation even more
+    // until we have a conflict with these decisions, but it is currrently
+    // hard to do so.
+    if (new_decision.boolean_literal_index != kNoLiteralIndex) {
+      decision = new_decision.boolean_literal_index;
+    } else {
+      decision =
+          encoder_->GetOrCreateAssociatedLiteral(new_decision.integer_literal)
+              .Index();
+    }
+    if (sat_solver_->Assignment().LiteralIsAssigned(Literal(decision))) {
+      // TODO(user): It would be nicer if this can never happen. For now, it
+      // does because of the Propagate() not reaching the fixed point as
+      // mentionned in a TODO above. As a work-around, we display a message
+      // but do not crash and recall the decision heuristic.
+      VLOG(1) << "Trying to take a decision that is already assigned!"
+              << " Fix this. Continuing for now...";
+      continue;
+    }
+    break;
+  }
+  return decision;
+}
+
+bool IntegerSearchHelper::TakeDecision(Literal decision) {
+  // Record the changelist and objective bounds for updating pseudo costs.
+  const std::vector<PseudoCosts::VariableBoundChange> bound_changes =
+      GetBoundChanges(decision.Index(), model_);
+  IntegerValue old_obj_lb = kMinIntegerValue;
+  IntegerValue old_obj_ub = kMaxIntegerValue;
+  if (objective_var_ != kNoIntegerVariable) {
+    old_obj_lb = integer_trail_->LowerBound(objective_var_);
+    old_obj_ub = integer_trail_->UpperBound(objective_var_);
+  }
+  const int old_level = sat_solver_->CurrentDecisionLevel();
+
+  // TODO(user): on some problems, this function can be quite long. Expand
+  // so that we can check the time limit at each step?
+  sat_solver_->EnqueueDecisionAndBackjumpOnConflict(decision);
+
+  // Update the implied bounds each time we enqueue a literal at level zero.
+  // This is "almost free", so we might as well do it.
+  if (old_level == 0 && sat_solver_->CurrentDecisionLevel() == 1) {
+    implied_bounds_->ProcessIntegerTrail(decision);
+  }
+
+  // Update the pseudo costs.
+  if (sat_solver_->CurrentDecisionLevel() > old_level &&
+      objective_var_ != kNoIntegerVariable) {
+    const IntegerValue new_obj_lb = integer_trail_->LowerBound(objective_var_);
+    const IntegerValue new_obj_ub = integer_trail_->UpperBound(objective_var_);
+    const IntegerValue objective_bound_change =
+        (new_obj_lb - old_obj_lb) + (old_obj_ub - new_obj_ub);
+    pseudo_costs_->UpdateCost(bound_changes, objective_bound_change);
+  }
+
+  sat_solver_->AdvanceDeterministicTime(time_limit_);
+  return sat_solver_->ReapplyAssumptionsIfNeeded();
+}
+
 SatSolver::Status SolveIntegerProblem(Model* model) {
   TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
   if (time_limit->LimitReached()) return SatSolver::LIMIT_REACHED;
@@ -658,6 +784,8 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
   const int num_policies = heuristics.decision_policies.size();
   CHECK_NE(num_policies, 0);
   CHECK_EQ(num_policies, heuristics.restart_policies.size());
+
+  auto* helper = model->GetOrCreate<IntegerSearchHelper>();
 
   // This is needed for recording the pseudo-costs.
   IntegerVariable objective_var = kNoIntegerVariable;
@@ -679,14 +807,6 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
   // how to fix.
   if (!sat_solver->FinishPropagation()) return sat_solver->UnsatStatus();
 
-  // Create and initialize pseudo costs.
-  // TODO(user): If this ever shows up in a cpu profile, find a way to not
-  // execute the code when pseudo costs are not needed.
-  PseudoCosts* pseudo_costs = model->GetOrCreate<PseudoCosts>();
-
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  auto* implied_bounds = model->GetOrCreate<ImpliedBounds>();
   auto* prober = model->GetOrCreate<Prober>();
 
   const SatParameters& sat_parameters = *(model->GetOrCreate<SatParameters>());
@@ -706,90 +826,23 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
       heuristics.policy_index = (heuristics.policy_index + 1) % num_policies;
     }
 
-    // If we pushed root level deductions, we restart to incorporate them.
-    // Note that in the present of assumptions, it is important to return to
-    // the level zero first ! otherwise, the new deductions will not be
-    // incorporated and the solver will loop forever.
-    if (integer_trail->HasPendingRootLevelDeduction()) {
-      sat_solver->Backtrack(0);
-      if (!sat_solver->RestoreSolverToAssumptionLevel()) {
-        return sat_solver->UnsatStatus();
-      }
-    }
-
-    if (sat_solver->CurrentDecisionLevel() == 0) {
-      if (!implied_bounds->EnqueueNewDeductions()) {
-        return SatSolver::INFEASIBLE;
-      }
-
-      auto* level_zero_callbacks =
-          model->GetOrCreate<LevelZeroCallbackHelper>();
-      for (const auto& cb : level_zero_callbacks->callbacks) {
-        if (!cb()) {
-          return SatSolver::INFEASIBLE;
-        }
-      }
-
-      if (sat_parameters.use_sat_inprocessing() &&
-          !model->GetOrCreate<Inprocessing>()->InprocessingRound()) {
-        return SatSolver::INFEASIBLE;
-      }
-    }
+    if (!helper->BeforeTakingDecision()) return sat_solver->UnsatStatus();
 
     LiteralIndex decision = kNoLiteralIndex;
     while (true) {
-      BooleanOrIntegerLiteral new_decision;
-      if (integer_trail->InPropagationLoop()) {
-        const IntegerVariable var =
-            integer_trail->NextVariableToBranchOnInPropagationLoop();
-        if (var != kNoIntegerVariable) {
-          new_decision.integer_literal =
-              GreaterOrEqualToMiddleValue(var, integer_trail);
-        }
-      }
-      if (!new_decision.HasValue()) {
-        new_decision = heuristics.decision_policies[heuristics.policy_index]();
-      }
-      if (!new_decision.HasValue() &&
-          integer_trail->CurrentBranchHadAnIncompletePropagation()) {
-        const IntegerVariable var = integer_trail->FirstUnassignedVariable();
-        if (var != kNoIntegerVariable) {
-          new_decision.integer_literal = AtMinValue(var, integer_trail);
-        }
-      }
-      if (!new_decision.HasValue()) break;
+      decision = helper->GetDecision(
+          heuristics.decision_policies[heuristics.policy_index]);
 
-      // Convert integer decision to literal one if needed.
+      // Probing?
       //
-      // TODO(user): Ideally it would be cool to delay the creation even more
-      // until we have a conflict with these decisions, but it is currrently
-      // hard to do so.
-      if (new_decision.boolean_literal_index != kNoLiteralIndex) {
-        decision = new_decision.boolean_literal_index;
-      } else {
-        decision =
-            encoder->GetOrCreateAssociatedLiteral(new_decision.integer_literal)
-                .Index();
-      }
-
-      if (sat_solver->Assignment().LiteralIsAssigned(Literal(decision))) {
-        // TODO(user): It would be nicer if this can never happen. For now, it
-        // does because of the Propagate() not reaching the fixed point as
-        // mentionned in a TODO above. As a work-around, we display a message
-        // but do not crash and recall the decision heuristic.
-        VLOG(1) << "Trying to take a decision that is already assigned!"
-                << " Fix this. Continuing for now...";
-        continue;
-      }
-
-      // Probing.
-      if (sat_solver->CurrentDecisionLevel() == 0 &&
+      // TODO(user,user): Be smarter about what variables we probe, we can
+      // also do more than one.
+      if (decision != kNoLiteralIndex &&
+          sat_solver->CurrentDecisionLevel() == 0 &&
           sat_parameters.probing_period_at_root() > 0 &&
           ++num_decisions_without_probing >=
               sat_parameters.probing_period_at_root()) {
         num_decisions_without_probing = 0;
-        // TODO(user,user): Be smarter about what variables we probe, we can
-        // also do more than one.
         if (!prober->ProbeOneVariable(Literal(decision).Variable())) {
           return SatSolver::INFEASIBLE;
         }
@@ -831,39 +884,7 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
       return SatSolver::FEASIBLE;
     }
 
-    // Record the changelist and objective bounds for updating pseudo costs.
-    const std::vector<PseudoCosts::VariableBoundChange> bound_changes =
-        GetBoundChanges(decision, model);
-    IntegerValue old_obj_lb = kMinIntegerValue;
-    IntegerValue old_obj_ub = kMaxIntegerValue;
-    if (objective_var != kNoIntegerVariable) {
-      old_obj_lb = integer_trail->LowerBound(objective_var);
-      old_obj_ub = integer_trail->UpperBound(objective_var);
-    }
-    const int old_level = sat_solver->CurrentDecisionLevel();
-
-    // TODO(user): on some problems, this function can be quite long. Expand
-    // so that we can check the time limit at each step?
-    sat_solver->EnqueueDecisionAndBackjumpOnConflict(Literal(decision));
-
-    // Update the implied bounds each time we enqueue a literal at level zero.
-    // This is "almost free", so we might as well do it.
-    if (old_level == 0 && sat_solver->CurrentDecisionLevel() == 1) {
-      implied_bounds->ProcessIntegerTrail(Literal(decision));
-    }
-
-    // Update the pseudo costs.
-    if (sat_solver->CurrentDecisionLevel() > old_level &&
-        objective_var != kNoIntegerVariable) {
-      const IntegerValue new_obj_lb = integer_trail->LowerBound(objective_var);
-      const IntegerValue new_obj_ub = integer_trail->UpperBound(objective_var);
-      const IntegerValue objective_bound_change =
-          (new_obj_lb - old_obj_lb) + (old_obj_ub - new_obj_ub);
-      pseudo_costs->UpdateCost(bound_changes, objective_bound_change);
-    }
-
-    sat_solver->AdvanceDeterministicTime(time_limit);
-    if (!sat_solver->ReapplyAssumptionsIfNeeded()) {
+    if (!helper->TakeDecision(Literal(decision))) {
       return sat_solver->UnsatStatus();
     }
 

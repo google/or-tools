@@ -336,6 +336,10 @@ class PresolveContext {
     return interval_usage_[c];
   }
 
+  // Checks if a constraint contains an enforcement literal set to false,
+  // or if it has been cleared.
+  bool ConstraintIsInactive(int ct_index) const;
+
   // Make sure we never delete an "assumption" literal by using a special
   // constraint for that.
   void RegisterVariablesUsedInAssumptions() {
@@ -361,6 +365,17 @@ class PresolveContext {
   const SatParameters& params() const { return params_; }
   TimeLimit* time_limit() { return time_limit_; }
   ModelRandomGenerator* random() { return random_; }
+
+  // Scan all interval constraints in the model for later query.
+  // The index is temporary as it will not be updated after variable
+  // substitution.
+  void BuildIntervalDictionary();
+
+  // These getters perform a lookup in the interval dictionary.
+  // They return the index of the interval constraint if present, or -1 if not.
+  int GetIntervalFromStartAndEnd(int start, int end);
+  int GetIntervalFromStartEndAndPresence(int start, int end, int presence);
+  bool IsStartAndEndOfOneInterval(int start, int end);
 
   // For each variables, list the constraints that just enforce a lower bound
   // (resp. upper bound) on that variable. If all the constraints in which a
@@ -523,6 +538,12 @@ class PresolveContext {
   // phase, and is cleared afterwards.
   absl::flat_hash_map<std::tuple<int, int, int, int>, int>
       reified_precedences_cache_;
+
+  // Cache for intervals.
+  absl::flat_hash_map<std::tuple<int, int>, int> interval_dictionary_;
+  absl::flat_hash_map<std::tuple<int, int, int>, int>
+      optional_interval_dictionary_;
+  absl::flat_hash_set<std::pair<int, int>> start_end_of_intervals_;
 };
 
 }  // namespace sat

@@ -140,6 +140,15 @@ IntegerEncoder::PartialDomainEncoding(IntegerVariable var) const {
   return result;
 }
 
+std::vector<IntegerEncoder::ValueLiteralPair> IntegerEncoder::RawDomainEncoding(
+    IntegerVariable var) const {
+  CHECK(VariableIsPositive(var));
+  const PositiveOnlyIndex index = GetPositiveOnlyIndex(var);
+  if (index >= equality_by_var_.size()) return {};
+
+  return equality_by_var_[index];
+}
+
 // Note that by not inserting the literal in "order" we can in the worst case
 // use twice as much implication (2 by literals) instead of only one between
 // consecutive literals.
@@ -474,8 +483,8 @@ LiteralIndex IntegerEncoder::SearchForLiteralAtOrBefore(
 
 IntegerTrail::~IntegerTrail() {
   if (parameters_.log_search_progress() && num_decisions_to_break_loop_ > 0) {
-    LOG(INFO) << "Num decisions to break propagation loop: "
-              << num_decisions_to_break_loop_;
+    VLOG(1) << "Num decisions to break propagation loop: "
+            << num_decisions_to_break_loop_;
   }
 }
 
@@ -1078,11 +1087,12 @@ bool IntegerTrail::ReasonIsValid(
         num_literal_assigned_after_root_node++;
       }
     }
-    DLOG_IF(INFO, num_literal_assigned_after_root_node == 0)
-        << "Propagating a literal with no reason at a positive level!\n"
-        << "level:" << integer_search_levels_.size() << " "
-        << ReasonDebugString(literal_reason, integer_reason) << "\n"
-        << DebugString();
+    if (num_literal_assigned_after_root_node == 0) {
+      VLOG(2) << "Propagating a literal with no reason at a positive level!\n"
+              << "level:" << integer_search_levels_.size() << " "
+              << ReasonDebugString(literal_reason, integer_reason) << "\n"
+              << DebugString();
+    }
   }
 
   return true;

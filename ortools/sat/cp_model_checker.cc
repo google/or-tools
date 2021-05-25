@@ -277,17 +277,17 @@ std::string ValidateCircuitConstraint(const CpModelProto& model,
 
 std::string ValidateRoutesConstraint(const CpModelProto& model,
                                      const ConstraintProto& ct) {
-  int num_nodes = 0;
+  int max_node = 0;
   absl::flat_hash_set<int> nodes;
   for (const int node : ct.routes().tails()) {
     nodes.insert(node);
-    num_nodes = std::max(num_nodes, node + 1);
+    max_node = std::max(max_node, node);
   }
   for (const int node : ct.routes().heads()) {
     nodes.insert(node);
-    num_nodes = std::max(num_nodes, node + 1);
+    max_node = std::max(max_node, node);
   }
-  if (num_nodes != nodes.size()) {
+  if (!nodes.empty() && max_node != nodes.size() - 1) {
     return absl::StrCat(
         "All nodes in a route constraint must have incident arcs");
   }

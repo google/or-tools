@@ -38,6 +38,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/commandlineflags.h"
@@ -69,6 +70,7 @@
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/intervals.h"
+#include "ortools/sat/lb_tree_search.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/linear_relaxation.h"
 #include "ortools/sat/optimization.h"
@@ -567,7 +569,7 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
         CreateCumulativeOverlappingCutGenerator(intervals, capacity, demands,
                                                 m));
     relaxation->cut_generators.push_back(
-        CreateCumulativeCutGenerator(intervals, capacity, demands, m));
+        CreateCumulativeEnergyCutGenerator(intervals, capacity, demands, m));
     relaxation->cut_generators.push_back(
         CreateCumulativeCompletionTimeCutGenerator(intervals, capacity, demands,
                                                    m));
@@ -1242,6 +1244,9 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   // Check the model is still feasible before continuing.
   if (sat_solver->IsModelUnsat()) return unsat();
 
+  // Fully encode variables as needed by the search strategy.
+  AddFullEncodingFromSearchBranching(model_proto, model);
+
   // Force some variables to be fully encoded.
   MaybeFullyEncodeMoreVariables(model_proto, model);
 
@@ -1646,8 +1651,10 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
     const IntegerVariable objective_var = objective.objective_var;
     CHECK_NE(objective_var, kNoIntegerVariable);
 
-    // Code a simple random heuristic + search.
-    if (parameters.optimize_with_core()) {
+    if (parameters.optimize_with_lb_tree_search()) {
+      auto* search = model->GetOrCreate<LbTreeSearch>();
+      status = search->Search(solution_observer);
+    } else if (parameters.optimize_with_core()) {
       // TODO(user): This doesn't work with splitting in chunk for now. It
       // shouldn't be too hard to fix.
       if (parameters.optimize_with_max_hs()) {
@@ -2288,6 +2295,25 @@ class FullProblemSolver : public SubSolver {
     deterministic_time_since_last_synchronize_ = 0.0;
   }
 
+  std::string StatisticsString() const override {
+    const auto& lps =
+        *local_model_->GetOrCreate<LinearProgrammingConstraintCollection>();
+    std::string lp_stats;
+    if (!lps.empty() &&
+        local_model_->GetOrCreate<SatParameters>()->linearization_level() >=
+            2) {
+      for (const auto* lp : lps) {
+        const std::string raw_statistics = lp->Statistics();
+        const std::vector<absl::string_view> lines =
+            absl::StrSplit(raw_statistics, '\n', absl::SkipEmpty());
+        for (const absl::string_view& line : lines) {
+          absl::StrAppend(&lp_stats, "     ", line, "\n");
+        }
+      }
+    }
+    return lp_stats;
+  }
+
  private:
   SharedClasses* shared_;
   const bool split_in_chunks_;
@@ -2398,6 +2424,8 @@ class FeasibilityPumpSolver : public SubSolver {
         deterministic_time_since_last_synchronize_);
     deterministic_time_since_last_synchronize_ = 0.0;
   }
+
+  // TODO(user, fdid): Display feasibility pump statistics.
 
  private:
   SharedClasses* shared_;
@@ -2531,9 +2559,10 @@ class LnsSolver : public SubSolver {
         }
       }
 
-      // Copy the rest of the model.
+      // Copy the rest of the model and overwrite the name.
       CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
           helper_->ModelProto(), context.get());
+      lns_fragment.set_name(absl::StrCat("lns_", task_id));
 
       // Overwrite solution hinting.
       if (neighborhood.delta.has_solution_hint()) {
@@ -2696,6 +2725,8 @@ class LnsSolver : public SubSolver {
     deterministic_time_ = generator_->deterministic_time();
     shared_->time_limit->AdvanceDeterministicTime(deterministic_time_ - old);
   }
+
+  // TODO(user,user): Display LNS success rate.
 
  private:
   std::unique_ptr<NeighborhoodGenerator> generator_;
@@ -2919,6 +2950,16 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
                       parameters.interleave_batch_size());
   } else {
     NonDeterministicLoop(subsolvers, num_search_workers);
+  }
+
+  if (parameters.log_subsolver_statistics()) {
+    SOLVER_LOG(logger, "");
+    SOLVER_LOG(logger, "Sub-solver search statistics:");
+    for (const auto& subsolver : subsolvers) {
+      const std::string stats = subsolver->StatisticsString();
+      if (stats.empty()) continue;
+      SOLVER_LOG(logger, absl::StrCat("  '", subsolver->name(), "':\n", stats));
+    }
   }
 }
 

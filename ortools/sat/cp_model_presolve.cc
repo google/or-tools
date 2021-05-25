@@ -3063,14 +3063,17 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
   int new_size = 0;
   for (int i = 0; i < proto.intervals_size(); ++i) {
     const int interval_index = proto.intervals(i);
-    if (context_->working_model->constraints(interval_index)
-            .constraint_case() ==
-        ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) {
+    if (context_->ConstraintIsInactive(interval_index)) {
       continue;
     }
+
     ct->mutable_no_overlap()->set_intervals(new_size++, interval_index);
   }
-  ct->mutable_no_overlap()->mutable_intervals()->Truncate(new_size);
+
+  if (new_size < initial_num_intervals) {
+    ct->mutable_no_overlap()->mutable_intervals()->Truncate(new_size);
+    context_->UpdateRuleStats("no_overlap: removed inactive intervals");
+  }
 
   // Sort by start min.
   std::sort(
@@ -3117,24 +3120,73 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
   return new_size < initial_num_intervals;
 }
 
+bool CpModelPresolver::PresolveNoOverlap2D(int c, ConstraintProto* ct) {
+  if (context_->ModelIsUnsat()) {
+    return false;
+  }
+
+  const NoOverlap2DConstraintProto& proto = ct->no_overlap_2d();
+  const int initial_num_boxes = proto.x_intervals_size();
+
+  // Filter absent boxes.
+  int new_size = 0;
+  for (int i = 0; i < proto.x_intervals_size(); ++i) {
+    const int x_interval_index = proto.x_intervals(i);
+    const ConstraintProto& x_interval_proto =
+        context_->working_model->constraints(x_interval_index);
+
+    const int y_interval_index = proto.y_intervals(i);
+    const ConstraintProto& y_interval_proto =
+        context_->working_model->constraints(y_interval_index);
+
+    if (context_->ConstraintIsInactive(x_interval_index) ||
+        context_->ConstraintIsInactive(y_interval_index)) {
+      continue;
+    }
+
+    if (proto.boxes_with_null_area_can_overlap() &&
+        (SizeMax(x_interval_proto.interval()) == 0 ||
+         SizeMax(y_interval_proto.interval()) == 0)) {
+      continue;
+    }
+    ct->mutable_no_overlap_2d()->set_x_intervals(new_size, x_interval_index);
+    ct->mutable_no_overlap_2d()->set_y_intervals(new_size, y_interval_index);
+    new_size++;
+  }
+
+  if (new_size < initial_num_boxes) {
+    context_->UpdateRuleStats("no_overlap_2d: removed inactive boxes");
+    ct->mutable_no_overlap_2d()->mutable_x_intervals()->Truncate(new_size);
+    ct->mutable_no_overlap_2d()->mutable_y_intervals()->Truncate(new_size);
+  }
+
+  if (new_size == 0) {
+    context_->UpdateRuleStats("no_overlap_2d: no boxes");
+    return RemoveConstraint(ct);
+  }
+
+  if (new_size == 1) {
+    context_->UpdateRuleStats("no_overlap_2d: only one box");
+    return RemoveConstraint(ct);
+  }
+
+  // TODO(user): Remove isolated boxes.
+
+  return new_size < initial_num_boxes;
+}
+
 bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
 
   const CumulativeConstraintProto& proto = ct->cumulative();
-
-  // Filter absent intervals.
-  int new_size = 0;
   bool changed = false;
+
+  // Filter absent intervals, or zero demands.
+  int new_size = 0;
   int num_zero_demand_removed = 0;
-  int64_t sum_of_max_demands = 0;
-  int64_t max_of_performed_demand_mins = 0;
+  int num_fixed_demands = 0;
   for (int i = 0; i < proto.intervals_size(); ++i) {
-    const ConstraintProto& interval_ct =
-        context_->working_model->constraints(proto.intervals(i));
-    if (interval_ct.constraint_case() ==
-        ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) {
-      continue;
-    }
+    if (context_->ConstraintIsInactive(proto.intervals(i))) continue;
 
     const int demand_ref = proto.demands(i);
     const int64_t demand_max = context_->MaxOf(demand_ref);
@@ -3142,31 +3194,13 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       num_zero_demand_removed++;
       continue;
     }
-    sum_of_max_demands += demand_max;
-
-    if (interval_ct.enforcement_literal().empty()) {
-      max_of_performed_demand_mins =
-          std::max(max_of_performed_demand_mins, context_->MinOf(demand_ref));
+    if (context_->IsFixed(demand_ref)) {
+      num_fixed_demands++;
     }
 
     ct->mutable_cumulative()->set_intervals(new_size, proto.intervals(i));
     ct->mutable_cumulative()->set_demands(new_size, proto.demands(i));
     new_size++;
-  }
-
-  const int capacity_ref = proto.capacity();
-  if (max_of_performed_demand_mins > context_->MinOf(capacity_ref)) {
-    context_->UpdateRuleStats("cumulative: propagate min capacity.");
-    if (!context_->IntersectDomainWith(
-            capacity_ref, Domain(max_of_performed_demand_mins,
-                                 std::numeric_limits<int64_t>::max()))) {
-      return true;
-    }
-  }
-
-  if (sum_of_max_demands <= context_->MinOf(capacity_ref)) {
-    context_->UpdateRuleStats("cumulative: capacity exceeds sum of demands");
-    return RemoveConstraint(ct);
   }
 
   if (new_size < proto.intervals_size()) {
@@ -3184,9 +3218,70 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     return RemoveConstraint(ct);
   }
 
+  {
+    int64_t max_of_performed_demand_mins = 0;
+    int64_t sum_of_max_demands = 0;
+    for (int i = 0; i < proto.intervals_size(); ++i) {
+      const ConstraintProto& interval_ct =
+          context_->working_model->constraints(proto.intervals(i));
+
+      const int demand_ref = proto.demands(i);
+      sum_of_max_demands += context_->MaxOf(demand_ref);
+
+      if (interval_ct.enforcement_literal().empty()) {
+        max_of_performed_demand_mins =
+            std::max(max_of_performed_demand_mins, context_->MinOf(demand_ref));
+      }
+    }
+
+    const int capacity_ref = proto.capacity();
+    if (max_of_performed_demand_mins > context_->MinOf(capacity_ref)) {
+      context_->UpdateRuleStats("cumulative: propagate min capacity.");
+      if (!context_->IntersectDomainWith(
+              capacity_ref, Domain(max_of_performed_demand_mins,
+                                   std::numeric_limits<int64_t>::max()))) {
+        return true;
+      }
+    }
+
+    if (max_of_performed_demand_mins > context_->MaxOf(capacity_ref)) {
+      context_->UpdateRuleStats("cumulative: cannot fit performed demands");
+      return context_->NotifyThatModelIsUnsat();
+    }
+
+    if (sum_of_max_demands <= context_->MinOf(capacity_ref)) {
+      context_->UpdateRuleStats("cumulative: capacity exceeds sum of demands");
+      return RemoveConstraint(ct);
+    }
+  }
+
+  if (num_fixed_demands == new_size && context_->IsFixed(proto.capacity())) {
+    int64_t gcd = 0;
+    for (int i = 0; i < ct->cumulative().demands_size(); ++i) {
+      const int64_t demand = context_->MinOf(ct->cumulative().demands(i));
+      gcd = MathUtil::GCD64(gcd, demand);
+      if (gcd == 1) break;
+    }
+    if (gcd > 1) {
+      changed = true;
+      for (int i = 0; i < ct->cumulative().demands_size(); ++i) {
+        const int64_t demand = context_->MinOf(ct->cumulative().demands(i));
+        ct->mutable_cumulative()->set_demands(
+            i, context_->GetOrCreateConstantVar(demand / gcd));
+      }
+      context_->UpdateRuleStats(
+          "cumulative: divide demands and capacity by gcd");
+
+      const int64_t old_capacity = context_->MinOf(proto.capacity());
+      ct->mutable_cumulative()->set_capacity(
+          context_->GetOrCreateConstantVar(old_capacity / gcd));
+    }
+  }
+
   if (HasEnforcementLiteral(*ct)) return changed;
 
   const int num_intervals = proto.intervals_size();
+  const int capacity_ref = proto.capacity();
   const int64_t capacity_max = context_->MaxOf(capacity_ref);
 
   bool with_start_view = false;
@@ -4614,6 +4709,8 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       return PresolveAllDiff(ct);
     case ConstraintProto::ConstraintCase::kNoOverlap:
       return PresolveNoOverlap(ct);
+    case ConstraintProto::ConstraintCase::kNoOverlap2D:
+      return PresolveNoOverlap2D(c, ct);
     case ConstraintProto::ConstraintCase::kCumulative:
       return PresolveCumulative(ct);
     case ConstraintProto::ConstraintCase::kCircuit:
@@ -5062,23 +5159,6 @@ void CpModelPresolver::PresolveToFixPoint() {
       context_->UpdateNewConstraintsVariableUsage();
     }
 
-    // Re-add to the queue the constraints that touch a variable that changed.
-    //
-    // TODO(user): Avoid reprocessing the constraints that changed the variables
-    // with the use of timestamp.
-    if (context_->ModelIsUnsat()) return;
-    in_queue.resize(context_->working_model->constraints_size(), false);
-    for (const int v : context_->modified_domains.PositionsSetAtLeastOnce()) {
-      if (context_->VariableIsNotUsedAnymore(v)) continue;
-      if (context_->IsFixed(v)) context_->ExploitFixedDomain(v);
-      for (const int c : context_->VarToConstraints(v)) {
-        if (c >= 0 && !in_queue[c]) {
-          in_queue[c] = true;
-          queue.push_back(c);
-        }
-      }
-    }
-
     // Re-add to the queue constraints that have unique variables. Note that to
     // not enter an infinite loop, we call each (var, constraint) pair at most
     // once.
@@ -5104,6 +5184,49 @@ void CpModelPresolver::PresolveToFixPoint() {
       }
     }
 
+    for (int i = 0; i < 2; ++i) {
+      // Re-add to the queue the constraints that touch a variable that changed.
+      //
+      // TODO(user): Avoid reprocessing the constraints that changed the
+      // variables with the use of timestamp.
+      if (context_->ModelIsUnsat()) return;
+      in_queue.resize(context_->working_model->constraints_size(), false);
+      for (const int v : context_->modified_domains.PositionsSetAtLeastOnce()) {
+        if (context_->VariableIsNotUsedAnymore(v)) continue;
+        if (context_->IsFixed(v)) context_->ExploitFixedDomain(v);
+        for (const int c : context_->VarToConstraints(v)) {
+          if (c >= 0 && !in_queue[c]) {
+            in_queue[c] = true;
+            queue.push_back(c);
+          }
+        }
+      }
+
+      // If we reach the end of the loop, try to detect dominance relations.
+      if (!queue.empty() || i == 1) break;
+
+      // Detect & exploit dominance between variables, or variables that can
+      // move freely in one direction. Or variables that are just blocked by one
+      // constraint in one direction.
+      //
+      // TODO(user): We can support assumptions but we need to not cut them out
+      // of the feasible region.
+      if (!context_->keep_all_feasible_solutions &&
+          context_->working_model->assumptions().empty()) {
+        VarDomination var_dom;
+        DualBoundStrengthening dual_bound_strengthening;
+        DetectDominanceRelations(*context_, &var_dom,
+                                 &dual_bound_strengthening);
+        if (!dual_bound_strengthening.Strengthen(context_)) return;
+
+        // TODO(user): The Strengthen() function above might make some
+        // inequality tight. Currently, because we only do that for implication,
+        // this will not change who dominate who, but in general we should
+        // process the new constraint direction before calling this.
+        if (!ExploitDominanceRelations(var_dom, context_)) return;
+      }
+    }
+
     // Make sure the order is deterministic! because var_to_constraints[]
     // order changes from one run to the next.
     std::sort(queue.begin(), queue.end());
@@ -5111,26 +5234,6 @@ void CpModelPresolver::PresolveToFixPoint() {
   }
 
   if (context_->ModelIsUnsat()) return;
-
-  // Detect & exploit dominance between variables, or variables that can move
-  // freely in one direction. Or variables that are just blocked by one
-  // constraint in one direction.
-  //
-  // TODO(user): We can support assumptions but we need to not cut them out of
-  // the feasible region.
-  if (!context_->keep_all_feasible_solutions &&
-      context_->working_model->assumptions().empty()) {
-    VarDomination var_dom;
-    DualBoundStrengthening dual_bound_strengthening;
-    DetectDominanceRelations(*context_, &var_dom, &dual_bound_strengthening);
-    if (!dual_bound_strengthening.Strengthen(context_)) return;
-
-    // TODO(user): The Strengthen() function above might make some inequality
-    // tight. Currently, because we only do that for implication, this will not
-    // change who dominate who, but in general we should process the new
-    // constraint direction before calling this.
-    if (!ExploitDominanceRelations(var_dom, context_)) return;
-  }
 
   // Second "pass" for transformation better done after all of the above and
   // that do not need a fix-point loop.
@@ -5151,8 +5254,10 @@ void CpModelPresolver::PresolveToFixPoint() {
         }
         break;
       case ConstraintProto::ConstraintCase::kNoOverlap2D:
-        // TODO(user): Implement if we ever support optional intervals in
-        // this constraint. Currently we do not.
+        // Filter out absent intervals.
+        if (PresolveNoOverlap2D(c, ct)) {
+          context_->UpdateConstraintVariableUsage(c);
+        }
         break;
       case ConstraintProto::ConstraintCase::kCumulative:
         // Filter out absent intervals.

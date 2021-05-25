@@ -44,6 +44,13 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  // A O(n^2) algorithm to analyze all the relevant [x_min, x_max] intervals
+  // and infer a threshold of the y size of a bounding box after which there
+  // is no point checking for energy overload.
+  bool AnalyzeIntervals(SchedulingConstraintHelper* x,
+                        SchedulingConstraintHelper* y, IntegerValue x_threshold,
+                        IntegerValue* y_threshold);
+
   void SortBoxesIntoNeighbors(int box, absl::Span<const int> local_boxes,
                               IntegerValue total_sum_of_areas);
   bool FailWhenEnergyIsTooLarge(int box, absl::Span<const int> local_boxes,
@@ -51,6 +58,11 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
 
   SchedulingConstraintHelper& x_;
   SchedulingConstraintHelper& y_;
+
+  // When the size of the bounding box is greater than any of the corresponding
+  // dimension, then there is no point checking for overload.
+  IntegerValue threshold_x_;
+  IntegerValue threshold_y_;
 
   std::vector<absl::Span<int>> x_split_;
   std::vector<absl::Span<int>> y_split_;

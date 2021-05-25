@@ -60,7 +60,7 @@ DEFINE_INT_TYPE(IntegerValue, int64_t);
 //
 // It is symmetric so the set of possible ranges stays the same when we take the
 // negation of a variable. Moreover, we need some IntegerValue that fall outside
-// this range on both side so that we can usally take care of integer overflow
+// this range on both side so that we can usually take care of integer overflow
 // by simply doing "saturated arithmetic" and if one of the bound overflow, the
 // two bounds will "cross" each others and we will get an empty range.
 constexpr IntegerValue kMaxIntegerValue(
@@ -336,6 +336,10 @@ class IntegerEncoder {
   // span the full domain of the given variable (but it might).
   std::vector<ValueLiteralPair> PartialDomainEncoding(
       IntegerVariable var) const;
+
+  // Raw encoding. May be incomplete and is not sorted. Contains all literals,
+  // true or false.
+  std::vector<ValueLiteralPair> RawDomainEncoding(IntegerVariable var) const;
 
   // Returns the "canonical" (i_lit, negation of i_lit) pair. This mainly
   // deal with domain with initial hole like [1,2][5,6] so that if one ask

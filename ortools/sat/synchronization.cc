@@ -612,42 +612,29 @@ bool SharedResponseManager::ProblemIsSolved() const {
          best_response_.status() == CpSolverStatus::INFEASIBLE;
 }
 
-std::string ExtractWorkerName(const std::string& improvement_info) {
+std::string ExtractSubSolverName(const std::string& improvement_info) {
   if (improvement_info.empty()) return "";
 
-  std::string worker_name = improvement_info;
-
-  // Remove ' [hint]' suffix.
-  const auto& hint_suffix = worker_name.find(" [");
-  if (hint_suffix != std::string::npos) {
-    worker_name.erase(hint_suffix);
+  // We assume the subsolver name is always first.
+  for (int i = 0; i < improvement_info.size(); ++i) {
+    if (!std::isalnum(improvement_info[i]) && improvement_info[i] != '_') {
+      return improvement_info.substr(0, i);
+    }
   }
 
-  // Remove lns info suffix.
-  const auto& lns_suffix = worker_name.find('(');
-  if (lns_suffix != std::string::npos) {
-    worker_name.erase(lns_suffix);
-  }
-
-  // Remove fixed_bools suffix.
-  const auto fixed_suffix = worker_name.find(" fixed_bools:");
-  if (fixed_suffix != std::string::npos) {
-    worker_name.erase(fixed_suffix);
-  }
-
-  return worker_name;
+  return improvement_info;
 }
 
 void SharedResponseManager::RegisterSolutionFound(
     const std::string& improvement_info) {
   if (improvement_info.empty()) return;
-  primal_improvements_count_[ExtractWorkerName(improvement_info)]++;
+  primal_improvements_count_[ExtractSubSolverName(improvement_info)]++;
 }
 
 void SharedResponseManager::RegisterObjectiveBoundImprovement(
     const std::string& improvement_info) {
   if (improvement_info.empty() || improvement_info == "initial domain") return;
-  dual_improvements_count_[ExtractWorkerName(improvement_info)]++;
+  dual_improvements_count_[ExtractSubSolverName(improvement_info)]++;
 }
 
 void SharedResponseManager::DisplayImprovementStatistics() {
@@ -659,6 +646,7 @@ void SharedResponseManager::DisplayImprovementStatistics() {
     }
   }
   if (!dual_improvements_count_.empty()) {
+    SOLVER_LOG(logger_, "");
     SOLVER_LOG(logger_, "Objective bounds found per subsolver:");
     for (const auto& entry : dual_improvements_count_) {
       SOLVER_LOG(logger_, "  '", entry.first, "': ", entry.second);

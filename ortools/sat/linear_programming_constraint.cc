@@ -2832,15 +2832,15 @@ IntegerLiteral LinearProgrammingConstraint::LPReducedCostAverageDecision() {
 }
 
 std::string LinearProgrammingConstraint::Statistics() const {
-  std::string result;
-  absl::StrAppend(&result, "LP '", model_->Name(), "'\n");
-  absl::StrAppend(&result, "final dimension: ", DimensionString(), "\n");
-  absl::StrAppend(&result, "Total number of simplex iterations: ",
+  std::string result = "LP statistics:\n";
+  absl::StrAppend(&result, "  final dimension: ", DimensionString(), "\n");
+  absl::StrAppend(&result, "  total number of simplex iterations: ",
                   total_num_simplex_iterations_, "\n");
+  absl::StrAppend(&result, "  num solves: \n");
   for (int i = 0; i < num_solves_by_status_.size(); ++i) {
     if (num_solves_by_status_[i] == 0) continue;
-    absl::StrAppend(&result, "#",
-                    glop::GetProblemStatusString(glop::ProblemStatus(i)), " : ",
+    absl::StrAppend(&result, "    - #",
+                    glop::GetProblemStatusString(glop::ProblemStatus(i)), ": ",
                     num_solves_by_status_[i], "\n");
   }
   absl::StrAppend(&result, constraint_manager_.Statistics());

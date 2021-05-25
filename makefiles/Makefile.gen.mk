@@ -1346,7 +1346,8 @@ SAT_DEPS = \
  $(SRC_DIR)/ortools/sat/integer.h \
  $(SRC_DIR)/ortools/sat/integer_search.h \
  $(SRC_DIR)/ortools/sat/intervals.h \
- $(SRC_DIR)/ortools/sat/linear_constraint.h \
+ $(SRC_DIR)/ortools/sat/lb_tree_search.h \
+  $(SRC_DIR)/ortools/sat/linear_constraint.h \
  $(SRC_DIR)/ortools/sat/linear_constraint_manager.h \
  $(SRC_DIR)/ortools/sat/linear_programming_constraint.h \
  $(SRC_DIR)/ortools/sat/linear_relaxation.h \
@@ -1417,6 +1418,7 @@ SAT_LIB_OBJS = \
  $(OBJ_DIR)/sat/integer_expr.$O \
  $(OBJ_DIR)/sat/integer_search.$O \
  $(OBJ_DIR)/sat/intervals.$O \
+ $(OBJ_DIR)/sat/lb_tree_search.$O \
  $(OBJ_DIR)/sat/linear_constraint.$O \
  $(OBJ_DIR)/sat/linear_constraint_manager.$O \
  $(OBJ_DIR)/sat/linear_programming_constraint.$O \
@@ -2203,6 +2205,27 @@ objs/sat/intervals.$O: ortools/sat/intervals.cc ortools/sat/intervals.h \
  ortools/sat/linear_constraint.h ortools/sat/precedences.h \
  ortools/util/sort.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sintervals.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sintervals.$O
+
+objs/sat/lb_tree_search.$O: ortools/sat/lb_tree_search.cc \
+ ortools/sat/lb_tree_search.h ortools/base/strong_vector.h \
+ ortools/base/int_type.h ortools/base/macros.h ortools/sat/integer.h \
+ ortools/base/hash.h ortools/base/basictypes.h \
+ ortools/base/integral_types.h ortools/base/logging.h \
+ ortools/base/commandlineflags.h ortools/base/log_severity.h \
+ ortools/base/logging_export.h ortools/base/vlog_is_on.h \
+ ortools/base/map_util.h ortools/graph/iterators.h ortools/sat/model.h \
+ ortools/base/typeid.h ortools/sat/sat_base.h ortools/util/bitset.h \
+ ortools/sat/sat_solver.h ortools/base/timer.h ortools/sat/clause.h \
+ ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
+ ortools/sat/drat_writer.h ortools/base/file.h \
+ ortools/gen/ortools/sat/sat_parameters.pb.h ortools/sat/util.h \
+ ortools/util/random_engine.h ortools/util/stats.h \
+ ortools/util/time_limit.h ortools/util/running_stat.h \
+ ortools/sat/pb_constraint.h ortools/sat/restart.h \
+ ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
+ ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
+ ortools/base/mathutil.h | $(OBJ_DIR)/sat
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Slb_tree_search.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Slb_tree_search.$O
 
 objs/sat/linear_constraint.$O: ortools/sat/linear_constraint.cc \
  ortools/sat/linear_constraint.h ortools/base/strong_vector.h \

@@ -493,7 +493,8 @@ Neighborhood RelaxRandomConstraintsGenerator::Generate(
 
   {
     absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
-    const int num_active_vars = helper_.NumActiveVariablesWhileHoldingLock();
+    const int num_active_vars =
+        helper_.ActiveVariablesWhileHoldingLock().size();
     const int target_size = std::ceil(difficulty * num_active_vars);
     CHECK_GT(target_size, 0);
 
@@ -535,12 +536,14 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
 
     // The number of active variables can decrease asynchronously.
     // We read the exact number while locked.
-    const int num_active_vars = helper_.NumActiveVariablesWhileHoldingLock();
+    const int num_active_vars =
+        helper_.ActiveVariablesWhileHoldingLock().size();
     const int target_size = std::ceil(difficulty * num_active_vars);
     CHECK_GT(target_size, 0) << difficulty << " " << num_active_vars;
 
-    const int first_var = helper_.GetActiveVariableWhileHoldingLock(
-        absl::Uniform<int>(random, 0, num_active_vars));
+    const int first_var =
+        helper_.ActiveVariablesWhileHoldingLock()[absl::Uniform<int>(
+            random, 0, num_active_vars)];
 
     visited_variables_set[first_var] = true;
     visited_variables.push_back(first_var);
@@ -602,7 +605,8 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
   std::vector<int> random_variables;
   {
     absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
-    const int num_active_vars = helper_.NumActiveVariablesWhileHoldingLock();
+    const int num_active_vars =
+        helper_.ActiveVariablesWhileHoldingLock().size();
     const int target_size = std::ceil(difficulty * num_active_vars);
     CHECK_GT(target_size, 0);
 

@@ -486,7 +486,7 @@ CutGenerator CreateLinMaxCutGenerator(
 // demand * min_size. We choose the most violated formulation.
 //
 // The maximum energy is capacity * span of intervals at level 0.
-CutGenerator CreateCumulativeCutGenerator(
+CutGenerator CreateCumulativeEnergyCutGenerator(
     const std::vector<IntervalVariable>& intervals,
     const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
     Model* model);

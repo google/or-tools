@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 188
+// NEXT TAG: 190
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -369,6 +369,11 @@ message SatParameters {
   // Whether the solver should log the search progress. By default, it logs to
   // LOG(INFO). This can be overwritten by the log_destination parameter.
   optional bool log_search_progress = 41 [default = false];
+
+  // Whether the solver should display per sub-solver search statistics.
+  // This is only useful is log_search_progress is set to true, and if the
+  // number of search workers is > 1.
+  optional bool log_subsolver_statistics = 189 [default = false];
 
   // Add a prefix to all logs.
   optional string log_prefix = 185 [default = ""];
@@ -795,6 +800,13 @@ message SatParameters {
   // use a core-based approach (like in max-SAT) when we try to increase the
   // lower bound instead.
   optional bool optimize_with_core = 83 [default = false];
+
+  // Do a more conventional tree search (by opposition to SAT based one) where
+  // we keep all the explored node in a tree. This is meant to be used in a
+  // portfolio and focus on improving the objective lower bound. Keeping the
+  // whole tree allow us to report a better objective lower bound coming from
+  // the worst open node in the tree.
+  optional bool optimize_with_lb_tree_search = 188 [default = false];
 
   // If non-negative, perform a binary search on the objective variable in order
   // to find an [min, max] interval outside of which the solver proved unsat/sat

@@ -83,6 +83,9 @@ class SubSolver {
   // Returns the name of this SubSolver. Used in logs.
   std::string name() const { return name_; }
 
+  // Returns search statistics.
+  virtual std::string StatisticsString() const { return std::string(); }
+
  protected:
   const std::string name_;
   double score_ = 0.0;

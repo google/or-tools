@@ -261,6 +261,12 @@ class CpModelMapping {
 // needs to be fully encoded. Try to come up with a more robust design.
 void MaybeFullyEncodeMoreVariables(const CpModelProto& model_proto, Model* m);
 
+// Inspect the search strategy stored in the model, and adds a full encoding to
+// variables appearing in a SELECT_MEDIAN_VALUE search strategy if the search
+// branching is set to FIXED_SEARCH.
+void AddFullEncodingFromSearchBranching(const CpModelProto& model_proto,
+                                        Model* m);
+
 // Calls one of the functions below.
 // Returns false if we do not know how to load the given constraints.
 bool LoadConstraint(const ConstraintProto& ct, Model* m);

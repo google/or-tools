@@ -143,18 +143,11 @@ class NeighborhoodGeneratorHelper : public SubSolver {
     return target_size == active_variables_.size();
   }
 
-  // Returns the number of active variable. The graph_mutex_ must be locked
-  // before calling this method.
-  int NumActiveVariablesWhileHoldingLock() const
-      ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_) {
-    return active_variables_.size();
-  }
-
-  // Returns the active variable with given index. The graph_mutex_ must be
+  // Returns the vector of active variables. The graph_mutex_ must be
   // locked before calling this method.
-  int GetActiveVariableWhileHoldingLock(int index) const
+  const std::vector<int>& ActiveVariablesWhileHoldingLock() const
       ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_) {
-    return active_variables_[index];
+    return active_variables_;
   }
 
   // Constraints <-> Variables graph.
@@ -197,6 +190,9 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 
   // Note: This mutex needs to be public for thread annotations.
   mutable absl::Mutex graph_mutex_;
+
+  // TODO(user): Display LNS statistics through the StatisticsString()
+  // method.
 
  private:
   // Recompute most of the class member. This needs to be called when the

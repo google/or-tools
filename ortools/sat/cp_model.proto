@@ -154,6 +154,8 @@ message NoOverlapConstraintProto {
 }
 
 // The boxes defined by [start_x, end_x) * [start_y, end_y) cannot overlap.
+// Furthermore, one box is optional if at least one of the x or y interval is
+// optional.
 message NoOverlap2DConstraintProto {
   repeated int32 x_intervals = 1;
   repeated int32 y_intervals = 2;  // Same size as x_intervals.
@@ -164,6 +166,8 @@ message NoOverlap2DConstraintProto {
 // a capacity. Note that intervals are interpreted as [start, end) and as
 // such intervals like [2,3) and [3,4) do not overlap for the point of view of
 // this constraint. Moreover, intervals of size zero are ignored.
+//
+// TODO(user,user): Switch to linear expression for demands and capacity.
 message CumulativeConstraintProto {
   int32 capacity = 1;
   repeated int32 intervals = 2;

@@ -26,6 +26,8 @@
 #include <vector>
 
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/pseudo_costs.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 
@@ -220,6 +222,34 @@ SatSolver::Status ContinuousProbing(
     const std::vector<BooleanVariable>& bool_vars,
     const std::vector<IntegerVariable>& int_vars,
     const std::function<void()>& feasible_solution_observer, Model* model);
+
+// An helper class to share the code used by the different kind of search.
+class IntegerSearchHelper {
+ public:
+  explicit IntegerSearchHelper(Model* model);
+
+  // Executes some code before a new decision.
+  // Returns false if model is UNSAT.
+  bool BeforeTakingDecision();
+
+  // Calls the decision heuristics and extract a non-fixed literal.
+  LiteralIndex GetDecision(std::function<BooleanOrIntegerLiteral()> f);
+
+  // Tries to take the current decision, this might backjump.
+  // Returns false if the model is UNSAT.
+  bool TakeDecision(Literal decision);
+
+ private:
+  Model* model_;
+  SatSolver* sat_solver_;
+  IntegerTrail* integer_trail_;
+  IntegerEncoder* encoder_;
+  ImpliedBounds* implied_bounds_;
+  TimeLimit* time_limit_;
+  PseudoCosts* pseudo_costs_;
+  IntegerVariable objective_var_ = kNoIntegerVariable;
+};
+
 }  // namespace sat
 }  // namespace operations_research
 

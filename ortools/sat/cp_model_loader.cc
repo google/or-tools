@@ -775,7 +775,7 @@ class FullEncodingFixedPointComputer {
   // Note that we always consider a fixed variable to be fully encoded here.
   const bool IsFullyEncoded(int v) {
     const IntegerVariable variable = mapping_->Integer(v);
-    if (v == kNoIntegerVariable) return false;
+    if (variable == kNoIntegerVariable) return false;
     return integer_trail_->IsFixed(variable) ||
            integer_encoder_->VariableIsFullyEncoded(variable);
   }
@@ -1006,6 +1006,26 @@ bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
 void MaybeFullyEncodeMoreVariables(const CpModelProto& model_proto, Model* m) {
   FullEncodingFixedPointComputer fixpoint(model_proto, m);
   fixpoint.ComputeFixedPoint();
+}
+
+void AddFullEncodingFromSearchBranching(const CpModelProto& model_proto,
+                                        Model* m) {
+  if (model_proto.search_strategy().empty()) return;
+
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
+  for (const DecisionStrategyProto& strategy : model_proto.search_strategy()) {
+    if (strategy.domain_reduction_strategy() ==
+        DecisionStrategyProto::SELECT_MEDIAN_VALUE) {
+      for (const int ref : strategy.variables()) {
+        const IntegerVariable variable = mapping->Integer(PositiveRef(ref));
+        if (variable == kNoIntegerVariable) return;
+        if (!integer_trail->IsFixed(variable)) {
+          m->Add(FullyEncodeVariable(variable));
+        }
+      }
+    }
+  }
 }
 
 // ============================================================================

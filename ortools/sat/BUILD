@@ -176,6 +176,7 @@ cc_library(
         ":integer",
         ":integer_expr",
         ":integer_search",
+        ":lb_tree_search",
         ":linear_programming_constraint",
         ":linear_relaxation",
         ":model",
@@ -646,6 +647,23 @@ cc_library(
         ":util",
     ],
 )
+
+cc_library(
+    name = "lb_tree_search",
+    srcs = ["lb_tree_search.cc"],
+    hdrs = ["lb_tree_search.h"],
+    deps = [
+        ":cp_model_loader",
+        ":integer",
+        ":integer_search",
+        ":sat_base",
+        ":sat_solver",
+        ":synchronization",
+        ":util",
+        "@com_google_absl//absl/container:flat_hash_set",
+    ],
+)
+
 
 cc_library(
     name = "pseudo_costs",

@@ -2194,7 +2194,7 @@ GenerateCumulativeCut(const std::string& cut_name,
   };
 }
 
-CutGenerator CreateCumulativeCutGenerator(
+CutGenerator CreateCumulativeEnergyCutGenerator(
     const std::vector<IntervalVariable>& intervals,
     const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
     Model* model) {

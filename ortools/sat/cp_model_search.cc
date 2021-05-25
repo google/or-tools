@@ -28,7 +28,8 @@ namespace sat {
 CpModelView::CpModelView(Model* model)
     : mapping_(*model->GetOrCreate<CpModelMapping>()),
       boolean_assignment_(model->GetOrCreate<Trail>()->Assignment()),
-      integer_trail_(*model->GetOrCreate<IntegerTrail>()) {}
+      integer_trail_(*model->GetOrCreate<IntegerTrail>()),
+      integer_encoder_(*model->GetOrCreate<IntegerEncoder>()) {}
 
 int CpModelView::NumVariables() const { return mapping_.NumProtoVariables(); }
 
@@ -95,6 +96,33 @@ BooleanOrIntegerLiteral CpModelView::LowerOrEqual(int var,
   } else if (mapping_.IsInteger(var)) {
     result.integer_literal = IntegerLiteral::LowerOrEqual(mapping_.Integer(var),
                                                           IntegerValue(value));
+  }
+  return result;
+}
+
+BooleanOrIntegerLiteral CpModelView::MedianValue(int var) const {
+  DCHECK(!IsFixed(var));
+  BooleanOrIntegerLiteral result;
+  if (mapping_.IsBoolean(var)) {
+    result.boolean_literal_index = mapping_.Literal(var).NegatedIndex();
+  } else if (mapping_.IsInteger(var)) {
+    const IntegerVariable variable = mapping_.Integer(var);
+    CHECK_NE(variable, kNoIntegerVariable);
+    CHECK(integer_encoder_.VariableIsFullyEncoded(variable));
+    std::vector<IntegerEncoder::ValueLiteralPair> encoding =
+        integer_encoder_.RawDomainEncoding(variable);
+    std::sort(encoding.begin(), encoding.end());
+    std::vector<Literal> unassigned_sorted_literals;
+    for (const auto& p : encoding) {
+      if (!boolean_assignment_.LiteralIsAssigned(p.literal)) {
+        unassigned_sorted_literals.push_back(p.literal);
+      }
+    }
+    // 5 values -> returns the second.
+    // 4 values -> returns the second too.
+    // Array is 0 based.
+    const int target = (unassigned_sorted_literals.size() + 1) / 2 - 1;
+    result.boolean_literal_index = unassigned_sorted_literals[target].Index();
   }
   return result;
 }
@@ -238,8 +266,7 @@ const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
         case DecisionStrategyProto::SELECT_UPPER_HALF:
           return view.GreaterOrEqual(var, ub - (ub - lb) / 2);
         case DecisionStrategyProto::SELECT_MEDIAN_VALUE:
-          // TODO(user): Implement the correct method.
-          return view.LowerOrEqual(var, lb);
+          return view.MedianValue(var);
         default:
           LOG(FATAL) << "Unknown DomainReductionStrategy "
                      << strategy.domain_reduction_strategy();
@@ -399,6 +426,13 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
 
   {
     SatParameters new_params = base_params;
+    new_params.set_optimize_with_lb_tree_search(true);
+    new_params.set_linearization_level(2);
+    strategies["lb_tree_search"] = new_params;
+  }
+
+  {
+    SatParameters new_params = base_params;
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     new_params.set_use_probing_search(true);
     strategies["probing"] = new_params;
@@ -492,6 +526,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
   }
   if (num_workers > 12) {
     names.push_back("probing");
+    names.push_back("lb_tree_search");
   }
 
   // Creates the diverse set of parameters with names and seed. We remove the

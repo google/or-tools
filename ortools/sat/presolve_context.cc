@@ -285,6 +285,18 @@ ABSL_MUST_USE_RESULT bool PresolveContext::SetLiteralToTrue(int lit) {
   return SetLiteralToFalse(NegatedRef(lit));
 }
 
+bool PresolveContext::ConstraintIsInactive(int index) const {
+  const ConstraintProto& ct = working_model->constraints(index);
+  if (ct.constraint_case() ==
+      ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) {
+    return true;
+  }
+  for (const int literal : ct.enforcement_literal()) {
+    if (LiteralIsFalse(literal)) return true;
+  }
+  return false;
+}
+
 void PresolveContext::UpdateRuleStats(const std::string& name, int num_times) {
   // We only count if we are going to display it.
   if (logger_->LoggingIsEnabled()) {
@@ -444,6 +456,16 @@ bool PresolveContext::AddRelation(int x, int y, int64_t c, int64_t o,
     // This is important so we don't use [-1, 0] as a representative for [0, 1].
     allow_rep_x = MinOf(rep_x) >= MinOf(rep_y);
     allow_rep_y = MinOf(rep_y) >= MinOf(rep_x);
+  }
+  if (allow_rep_x && allow_rep_y) {
+    // If both representative are okay, we force the choice to the variable
+    // with lower index. This is needed because we have two "equivalence"
+    // relations, and we want the same representative in both.
+    if (rep_x < rep_y) {
+      allow_rep_y = false;
+    } else {
+      allow_rep_x = false;
+    }
   }
   return repo->TryAdd(x, y, c, o, allow_rep_x, allow_rep_y);
 }
@@ -1474,6 +1496,46 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(int time_i, int time_j,
 
 void PresolveContext::ClearPrecedenceCache() {
   reified_precedences_cache_.clear();
+}
+
+void PresolveContext::BuildIntervalDictionary() {
+  interval_dictionary_.clear();
+  optional_interval_dictionary_.clear();
+  start_end_of_intervals_.clear();
+
+  for (int i = 0; i < working_model->constraints_size(); ++i) {
+    const ConstraintProto& ct = working_model->constraints(i);
+    if (ct.constraint_case() != ConstraintProto::ConstraintCase::kInterval) {
+      continue;
+    }
+    start_end_of_intervals_.insert(
+        std::make_pair(ct.interval().start(), ct.interval().end()));
+    if (ct.enforcement_literal().empty()) {
+      interval_dictionary_[std::make_tuple(ct.interval().start(),
+                                           ct.interval().end())] = i;
+    } else {
+      CHECK_EQ(ct.enforcement_literal_size(), 1);
+      optional_interval_dictionary_[std::make_tuple(
+          ct.interval().start(), ct.interval().end(),
+          ct.enforcement_literal(0))] = i;
+    }
+  }
+}
+
+int PresolveContext::GetIntervalFromStartAndEnd(int start, int end) {
+  const auto& it = interval_dictionary_.find(std::make_tuple(start, end));
+  return it == interval_dictionary_.end() ? -1 : it->second;
+}
+
+int PresolveContext::GetIntervalFromStartEndAndPresence(int start, int end,
+                                                        int presence) {
+  const auto& it =
+      optional_interval_dictionary_.find(std::make_tuple(start, end, presence));
+  return it == optional_interval_dictionary_.end() ? -1 : it->second;
+}
+
+bool PresolveContext::IsStartAndEndOfOneInterval(int start, int end) {
+  return start_end_of_intervals_.contains(std::make_pair(start, end));
 }
 
 }  // namespace sat

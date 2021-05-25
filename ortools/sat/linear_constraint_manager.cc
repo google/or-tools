@@ -45,39 +45,33 @@ size_t ComputeHashOfTerms(const LinearConstraint& ct) {
 
 std::string LinearConstraintManager::Statistics() const {
   std::string result;
-  absl::StrAppend(&result, "Managed constraints: ", constraint_infos_.size(),
+  absl::StrAppend(&result, "  managed constraints: ", constraint_infos_.size(),
                   "\n");
   if (num_merged_constraints_ > 0) {
-    absl::StrAppend(&result,
-                    "num_merged_constraints: ", num_merged_constraints_, "\n");
+    absl::StrAppend(&result, "  merged constraints: ", num_merged_constraints_,
+                    "\n");
   }
   if (num_shortened_constraints_ > 0) {
-    absl::StrAppend(&result,
-                    "num_shortened_constraints: ", num_shortened_constraints_,
-                    "\n");
+    absl::StrAppend(
+        &result, "  shortened constraints: ", num_shortened_constraints_, "\n");
   }
   if (num_splitted_constraints_ > 0) {
     absl::StrAppend(
-        &result, "num_splitted_constraints: ", num_splitted_constraints_, "\n");
+        &result, "  splitted constraints: ", num_splitted_constraints_, "\n");
   }
   if (num_coeff_strenghtening_ > 0) {
-    absl::StrAppend(
-        &result, "num_coeff_strenghtening: ", num_coeff_strenghtening_, "\n");
-  }
-  if (num_simplifications_ > 0) {
-    absl::StrAppend(&result, "  - num simplifications: ", num_simplifications_,
+    absl::StrAppend(&result,
+                    "  coefficient strenghtenings: ", num_coeff_strenghtening_,
                     "\n");
   }
-  absl::StrAppend(&result, "Total cuts added: ", num_cuts_, " (out of ",
+  if (num_simplifications_ > 0) {
+    absl::StrAppend(&result, "  num simplifications: ", num_simplifications_,
+                    "\n");
+  }
+  absl::StrAppend(&result, "  total cuts added: ", num_cuts_, " (out of ",
                   num_add_cut_calls_, " calls)\n");
   for (const auto& entry : type_to_num_cuts_) {
-    if (entry.second == 1) {
-      absl::StrAppend(&result, "  - added 1 cut of type '", entry.first,
-                      "'.\n");
-    } else {
-      absl::StrAppend(&result, "  - added ", entry.second, " cuts of type '",
-                      entry.first, "'.\n");
-    }
+    absl::StrAppend(&result, "    - '", entry.first, "': ", entry.second, "\n");
   }
   if (!result.empty()) result.pop_back();  // Remove last \n.
   return result;
