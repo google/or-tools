@@ -1673,10 +1673,12 @@ objs/sat/cp_model_loader.$O: ortools/sat/cp_model_loader.cc \
  ortools/base/mathutil.h ortools/sat/linear_constraint.h \
  ortools/sat/precedences.h ortools/base/stl_util.h \
  ortools/sat/all_different.h ortools/sat/circuit.h \
- ortools/sat/cumulative.h ortools/sat/diffn.h ortools/sat/disjunctive.h \
- ortools/sat/theta_tree.h ortools/sat/implied_bounds.h \
- ortools/sat/symmetry.h ortools/algorithms/sparse_permutation.h \
- ortools/sat/table.h ortools/sat/timetable.h ortools/util/logging.h | $(OBJ_DIR)/sat
+ ortools/sat/cumulative.h ortools/sat/diffn.h ortools/sat/diffn_util.h \
+ ortools/graph/connected_components.h ortools/base/ptr_util.h \
+ ortools/sat/disjunctive.h ortools/sat/theta_tree.h \
+ ortools/sat/implied_bounds.h ortools/sat/symmetry.h \
+ ortools/algorithms/sparse_permutation.h ortools/sat/table.h \
+ ortools/sat/timetable.h ortools/util/logging.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_loader.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_loader.$O
 
 objs/sat/cp_model_objective.$O: ortools/sat/cp_model_objective.cc \
@@ -1952,7 +1954,9 @@ objs/sat/cuts.$O: ortools/sat/cuts.cc ortools/sat/cuts.h \
  ortools/glop/reduced_costs.h ortools/glop/pricing.h \
  ortools/glop/variable_values.h ortools/lp_data/lp_print_utils.h \
  ortools/lp_data/sparse_row.h ortools/util/logging.h \
- ortools/algorithms/knapsack_solver_for_cuts.h ortools/base/stl_util.h | $(OBJ_DIR)/sat
+ ortools/algorithms/knapsack_solver_for_cuts.h ortools/base/stl_util.h \
+ ortools/sat/diffn_util.h ortools/graph/connected_components.h \
+ ortools/base/ptr_util.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scuts.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scuts.$O
 
 objs/sat/diffn.$O: ortools/sat/diffn.cc ortools/sat/diffn.h \
@@ -1960,8 +1964,9 @@ objs/sat/diffn.$O: ortools/sat/diffn.cc ortools/sat/diffn.h \
  ortools/base/integral_types.h ortools/base/logging.h \
  ortools/base/commandlineflags.h ortools/base/log_severity.h \
  ortools/base/logging_export.h ortools/base/vlog_is_on.h \
- ortools/sat/disjunctive.h ortools/sat/integer.h ortools/base/hash.h \
- ortools/base/basictypes.h ortools/base/map_util.h \
+ ortools/sat/diffn_util.h ortools/graph/connected_components.h \
+ ortools/base/map_util.h ortools/base/ptr_util.h ortools/sat/integer.h \
+ ortools/base/hash.h ortools/base/basictypes.h \
  ortools/base/strong_vector.h ortools/graph/iterators.h \
  ortools/sat/model.h ortools/base/typeid.h ortools/sat/sat_base.h \
  ortools/util/bitset.h ortools/sat/sat_solver.h ortools/base/timer.h \
@@ -1976,17 +1981,18 @@ objs/sat/diffn.$O: ortools/sat/diffn.cc ortools/sat/diffn.h \
  ortools/sat/intervals.h ortools/sat/cp_constraints.h \
  ortools/sat/integer_expr.h ortools/base/mathutil.h \
  ortools/sat/linear_constraint.h ortools/sat/precedences.h \
- ortools/sat/theta_tree.h ortools/base/iterator_adaptors.h \
- ortools/base/stl_util.h ortools/sat/cumulative.h ortools/util/sort.h | $(OBJ_DIR)/sat
+ ortools/sat/disjunctive.h ortools/sat/theta_tree.h \
+ ortools/base/iterator_adaptors.h ortools/base/stl_util.h \
+ ortools/sat/cumulative.h ortools/util/sort.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sdiffn.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sdiffn.$O
 
 objs/sat/diffn_util.$O: ortools/sat/diffn_util.cc ortools/sat/diffn_util.h \
- ortools/base/int_type.h ortools/base/macros.h \
- ortools/base/integral_types.h ortools/base/logging.h \
- ortools/base/commandlineflags.h ortools/base/log_severity.h \
- ortools/base/logging_export.h ortools/base/vlog_is_on.h \
- ortools/sat/disjunctive.h ortools/sat/integer.h ortools/base/hash.h \
- ortools/base/basictypes.h ortools/base/map_util.h \
+ ortools/graph/connected_components.h ortools/base/logging.h \
+ ortools/base/commandlineflags.h ortools/base/integral_types.h \
+ ortools/base/log_severity.h ortools/base/logging_export.h \
+ ortools/base/macros.h ortools/base/vlog_is_on.h ortools/base/map_util.h \
+ ortools/base/ptr_util.h ortools/sat/integer.h ortools/base/hash.h \
+ ortools/base/basictypes.h ortools/base/int_type.h \
  ortools/base/strong_vector.h ortools/graph/iterators.h \
  ortools/sat/model.h ortools/base/typeid.h ortools/sat/sat_base.h \
  ortools/util/bitset.h ortools/sat/sat_solver.h ortools/base/timer.h \
@@ -2001,8 +2007,7 @@ objs/sat/diffn_util.$O: ortools/sat/diffn_util.cc ortools/sat/diffn_util.h \
  ortools/sat/intervals.h ortools/sat/cp_constraints.h \
  ortools/sat/integer_expr.h ortools/base/mathutil.h \
  ortools/sat/linear_constraint.h ortools/sat/precedences.h \
- ortools/sat/theta_tree.h ortools/base/iterator_adaptors.h \
- ortools/base/stl_util.h ortools/sat/cumulative.h ortools/util/sort.h | $(OBJ_DIR)/sat
+ ortools/base/stl_util.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sdiffn_util.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sdiffn_util.$O
 
 objs/sat/disjunctive.$O: ortools/sat/disjunctive.cc \
