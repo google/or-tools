@@ -249,6 +249,12 @@ class SchedulingConstraintHelper : public PropagatorInterface,
     return cached_shifted_start_min_[t];
   }
 
+  // As with ShiftedStartMin(), we can compute the shifted end max (that is
+  // start_max + size_min.
+  IntegerValue ShiftedEndMax(int t) const {
+    return -cached_negated_shifted_end_max_[t];
+  }
+
   bool StartIsFixed(int t) const;
   bool EndIsFixed(int t) const;
   bool SizeIsFixed(int t) const;

@@ -224,6 +224,7 @@ void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
 
   solver->Backtrack(0);
   solver->SetAssumptionLevel(0);
+  if (!solver->FinishPropagation()) return;
   while (!limit->LimitReached()) {
     // We want each literal in candidate to appear last once in our propagation
     // order. We want to do that while maximizing the reutilization of the
@@ -1223,7 +1224,7 @@ SatSolver::Status FindCores(std::vector<Literal> assumptions,
     if (sat_solver->parameters().minimize_core()) {
       MinimizeCoreWithPropagation(limit, sat_solver, &core);
     }
-    CHECK(!core.empty());
+    if (core.empty()) return sat_solver->UnsatStatus();
     cores->push_back(core);
     if (!sat_solver->parameters().find_multiple_cores()) break;
 

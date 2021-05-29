@@ -26,11 +26,13 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -2413,6 +2415,8 @@ struct CtEvent {
   IntegerValue start_min;
   IntegerValue size_min;
   double lp_end;
+  IntegerValue y_min;
+  IntegerValue y_max;
 };
 
 // We generate the cut from the Smith's rule from:
@@ -2427,14 +2431,10 @@ struct CtEvent {
 //
 // A second difference is that we look at a set of intervals starting
 // after a given start_min, sorted by relative (end_lp - start_min).
-//
-// We actually compute the cuts with all the sizes actually equal to (size /
-// size_divisor), but to keep the computation in the integer domain, we multiply
-// by size_divisor where needed instead.
 void GenerateCompletionTimeCut(
     const std::string& cut_name,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
-    IntegerValue size_divisor, std::vector<CtEvent> events, Model* model,
+    std::vector<CtEvent> events, Model* model,
     LinearConstraintManager* manager) {
   TopNCuts top_n_cuts(15);
 
@@ -2461,36 +2461,47 @@ void GenerateCompletionTimeCut(
     IntegerValue best_min_contrib(0);
     IntegerValue sum_duration(0);
     IntegerValue sum_square_duration(0);
-    double lp_contrib = 0;
+    IntegerValue best_size_divisor(0);
+    double unscaled_lp_contrib = 0;
     IntegerValue current_start_min(kMaxIntegerValue);
+    IntegerValue y_min = kMaxIntegerValue;
+    IntegerValue y_max = kMinIntegerValue;
 
     for (int i = 0; i < residual_tasks.size(); ++i) {
       DCHECK_GE(residual_tasks[i].start_min, sequence_start_min);
       const IntegerValue duration = residual_tasks[i].size_min;
       sum_duration += duration;
       sum_square_duration += duration * duration;
-      lp_contrib +=
-          residual_tasks[i].lp_end * ToDouble(duration * size_divisor);
+      unscaled_lp_contrib += residual_tasks[i].lp_end * ToDouble(duration);
       current_start_min =
           std::min(current_start_min, residual_tasks[i].start_min);
+      y_min = std::min(y_min, residual_tasks[i].y_min);
+      y_max = std::max(y_max, residual_tasks[i].y_max);
 
+      const IntegerValue size_divisor = y_max - y_min;
+
+      // We compute the cuts with all the sizes actually equal to
+      //     (size / size_divisor), but to keep the computation in the integer
+      // domain, we multiply by size_divisor where needed instead.
       const IntegerValue min_contrib =
           (sum_duration * sum_duration + sum_square_duration) / 2 +
           current_start_min * sum_duration * size_divisor;
-      const double efficacy = (ToDouble(min_contrib) - lp_contrib) /
+      const double efficacy = (ToDouble(min_contrib) -
+                               unscaled_lp_contrib * ToDouble(size_divisor)) /
                               std::sqrt(ToDouble(sum_square_duration));
       // TODO(user): Check overflow and ignore if too big.
       if (efficacy > best_efficacy) {
         best_efficacy = efficacy;
         best_end = i;
         best_min_contrib = min_contrib;
+        best_size_divisor = size_divisor;
       }
     }
     if (best_end != -1) {
       LinearConstraintBuilder cut(model, best_min_contrib, kMaxIntegerValue);
       for (int i = 0; i <= best_end; ++i) {
         cut.AddTerm(residual_tasks[i].end,
-                    residual_tasks[i].size_min * size_divisor);
+                    residual_tasks[i].size_min * best_size_divisor);
       }
       top_n_cuts.AddCut(cut.Build(), cut_name, lp_values);
     }
@@ -2516,29 +2527,27 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
           LinearConstraintManager* manager) {
         if (trail->CurrentDecisionLevel() > 0) return;
 
-        std::vector<CtEvent> events;
-        std::vector<CtEvent> reverse_events;
-
-        for (int index = 0; index < helper->NumTasks(); ++index) {
-          if (!helper->IsPresent(index)) continue;
-          const IntegerValue size_min = helper->SizeMin(index);
-          if (size_min > 0) {
-            const AffineExpression end_expr = helper->Ends()[index];
-            events.push_back({end_expr, helper->StartMin(index), size_min,
-                              end_expr.LpValue(lp_values)});
-            const AffineExpression r_start_expr =
-                helper->Starts()[index].Negated();
-            reverse_events.push_back({r_start_expr, -helper->EndMax(index),
-                                      size_min,
-                                      r_start_expr.LpValue(lp_values)});
+        auto generate_cuts = [&lp_values, model, manager,
+                              helper](const std::string& cut_name) {
+          std::vector<CtEvent> events;
+          for (int index = 0; index < helper->NumTasks(); ++index) {
+            if (!helper->IsPresent(index)) continue;
+            const IntegerValue size_min = helper->SizeMin(index);
+            if (size_min > 0) {
+              const AffineExpression end_expr = helper->Ends()[index];
+              events.push_back({end_expr, helper->StartMin(index), size_min,
+                                end_expr.LpValue(lp_values), IntegerValue(0),
+                                IntegerValue(1)});
+            }
           }
-        }
-        GenerateCompletionTimeCut("NoOverlapCompletionTime", lp_values,
-                                  IntegerValue(1), std::move(events), model,
-                                  manager);
-        GenerateCompletionTimeCut("NoOverlapCompletionTimeMirror", lp_values,
-                                  IntegerValue(1), std::move(reverse_events),
-                                  model, manager);
+          GenerateCompletionTimeCut(cut_name, lp_values, std::move(events),
+                                    model, manager);
+        };
+
+        helper->SynchronizeAndSetTimeDirection(true);
+        generate_cuts("NoOverlapCompletionTime");
+        helper->SynchronizeAndSetTimeDirection(false);
+        generate_cuts("NoOverlapCompletionTimeMirror");
       };
   return result;
 }
@@ -2566,32 +2575,117 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
           LinearConstraintManager* manager) {
         if (trail->CurrentDecisionLevel() > 0) return;
 
-        std::vector<CtEvent> events;
-        std::vector<CtEvent> reverse_events;
-
-        for (int index = 0; index < helper->NumTasks(); ++index) {
-          if (!helper->IsPresent(index)) continue;
-          const IntegerValue area_min =
-              helper->SizeMin(index) *
-              integer_trail->LowerBound(demands[index]);
-          if (area_min > 0) {
-            const AffineExpression end_expr = helper->Ends()[index];
-            events.push_back({end_expr, helper->StartMin(index), area_min,
-                              end_expr.LpValue(lp_values)});
-            const AffineExpression r_start_expr =
-                helper->Starts()[index].Negated();
-            reverse_events.push_back({r_start_expr, -helper->EndMax(index),
-                                      area_min,
-                                      r_start_expr.LpValue(lp_values)});
-          }
-        }
         const IntegerValue capacity_max = integer_trail->UpperBound(capacity);
-        GenerateCompletionTimeCut("CumulativeCompletionTime", lp_values,
-                                  capacity_max, std::move(events), model,
-                                  manager);
-        GenerateCompletionTimeCut("CumulativeCompletionTimeMirror", lp_values,
-                                  capacity_max, std::move(reverse_events),
-                                  model, manager);
+        auto generate_cuts = [&lp_values, model, manager, helper, capacity_max,
+                              integer_trail,
+                              &demands](const std::string& cut_name) {
+          std::vector<CtEvent> events;
+          for (int index = 0; index < helper->NumTasks(); ++index) {
+            if (!helper->IsPresent(index)) continue;
+            const IntegerValue area_min =
+                helper->SizeMin(index) *
+                integer_trail->LowerBound(demands[index]);
+            if (area_min > 0) {
+              const AffineExpression end_expr = helper->Ends()[index];
+              events.push_back({end_expr, helper->StartMin(index), area_min,
+                                end_expr.LpValue(lp_values), IntegerValue(0),
+                                capacity_max});
+            }
+          }
+          GenerateCompletionTimeCut(cut_name, lp_values, std::move(events),
+                                    model, manager);
+        };
+
+        helper->SynchronizeAndSetTimeDirection(true);
+        generate_cuts("CumulativeCompletionTime");
+        helper->SynchronizeAndSetTimeDirection(false);
+        generate_cuts("CumulativeCompletionTimeMirror");
+      };
+  return result;
+}
+
+CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
+    const std::vector<IntervalVariable>& x_intervals,
+    const std::vector<IntervalVariable>& y_intervals, Model* model) {
+  CutGenerator result;
+
+  SchedulingConstraintHelper* x_helper =
+      new SchedulingConstraintHelper(x_intervals, model);
+  model->TakeOwnership(x_helper);
+
+  SchedulingConstraintHelper* y_helper =
+      new SchedulingConstraintHelper(y_intervals, model);
+  model->TakeOwnership(y_helper);
+  AddIntegerVariableFromIntervals(x_helper, model, &result.vars);
+  AddIntegerVariableFromIntervals(y_helper, model, &result.vars);
+
+  Trail* trail = model->GetOrCreate<Trail>();
+
+  result.generate_cuts =
+      [trail, x_helper, y_helper, model](
+          const absl::StrongVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
+        if (trail->CurrentDecisionLevel() > 0) return;
+
+        x_helper->SynchronizeAndSetTimeDirection(true);
+        y_helper->SynchronizeAndSetTimeDirection(true);
+
+        const int num_boxes = x_helper->NumTasks();
+        std::vector<int> active_boxes;
+        std::vector<IntegerValue> cached_areas(num_boxes);
+        std::vector<Rectangle> cached_rectangles(num_boxes);
+        for (int box = 0; box < num_boxes; ++box) {
+          cached_areas[box] = x_helper->SizeMin(box) * y_helper->SizeMin(box);
+          if (cached_areas[box] == 0) continue;
+          if (!y_helper->IsPresent(box) || !y_helper->IsPresent(box)) continue;
+
+          // TODO(user): Also consider shifted end max.
+          Rectangle& rectangle = cached_rectangles[box];
+          rectangle.x_min = x_helper->ShiftedStartMin(box);
+          rectangle.x_max = x_helper->EndMax(box);
+          rectangle.y_min = y_helper->ShiftedStartMin(box);
+          rectangle.y_max = y_helper->EndMax(box);
+
+          active_boxes.push_back(box);
+        }
+
+        if (active_boxes.size() <= 1) return;
+
+        std::vector<absl::Span<int>> components =
+            GetOverlappingRectangleComponents(cached_rectangles,
+                                              absl::MakeSpan(active_boxes));
+        for (absl::Span<int> boxes : components) {
+          if (boxes.size() <= 1) continue;
+
+          auto generate_cuts = [&lp_values, model, manager, &boxes,
+                                &cached_areas](
+                                   const std::string& cut_name,
+                                   SchedulingConstraintHelper* x_helper,
+                                   SchedulingConstraintHelper* y_helper) {
+            std::vector<CtEvent> events;
+
+            for (const int box : boxes) {
+              const AffineExpression x_end_expr = x_helper->Ends()[box];
+              events.push_back({x_end_expr, x_helper->ShiftedStartMin(box),
+                                cached_areas[box],
+                                x_end_expr.LpValue(lp_values),
+                                y_helper->ShiftedStartMin(box),
+                                y_helper->ShiftedEndMax(box)});
+            }
+
+            GenerateCompletionTimeCut(cut_name, lp_values, std::move(events),
+                                      model, manager);
+          };
+
+          x_helper->SynchronizeAndSetTimeDirection(true);
+          y_helper->SynchronizeAndSetTimeDirection(true);
+          generate_cuts("NoOverlap2dXCompletionTime", x_helper, y_helper);
+          generate_cuts("NoOverlap2dYCompletionTime", y_helper, x_helper);
+          x_helper->SynchronizeAndSetTimeDirection(false);
+          y_helper->SynchronizeAndSetTimeDirection(false);
+          generate_cuts("NoOverlap2dXCompletionTimeMirror", x_helper, y_helper);
+          generate_cuts("NoOverlap2dYCompletionTimeMirror", y_helper, x_helper);
+        }
       };
   return result;
 }

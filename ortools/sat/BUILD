@@ -664,7 +664,6 @@ cc_library(
     ],
 )
 
-
 cc_library(
     name = "pseudo_costs",
     srcs = ["pseudo_costs.cc"],
@@ -999,6 +998,7 @@ cc_library(
     srcs = ["cuts.cc"],
     hdrs = ["cuts.h"],
     deps = [
+        ":diffn_util",
         ":implied_bounds",
         ":integer",
         ":intervals",
@@ -1153,11 +1153,24 @@ cc_library(
 )
 
 cc_library(
+    name = "diffn_util",
+    srcs = ["diffn_util.cc"],
+    hdrs = ["diffn_util.h"],
+    deps = [
+        ":integer",
+        ":intervals",
+        "@com_google_absl//absl/strings:str_format",
+        "//ortools/graph:connected_components",
+    ],
+)
+
+cc_library(
     name = "diffn",
     srcs = ["diffn.cc"],
     hdrs = ["diffn.h"],
     deps = [
         ":cumulative",
+        ":diffn_util",
         ":disjunctive",
         ":integer",
         ":intervals",

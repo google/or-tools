@@ -515,6 +515,12 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
     const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
     Model* model);
 
+// Completion time cuts for the no_overlap_2d constraint. It actually generates
+// the completion time cumulative cuts in both axis.
+CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
+    const std::vector<IntervalVariable>& x_intervals,
+    const std::vector<IntervalVariable>& y_intervals, Model* model);
+
 // For a given set of intervals, we first compute the min and max of all
 // intervals. Then we create a cut that indicates that all intervals must fit
 // in that span.

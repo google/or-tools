@@ -588,6 +588,18 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
         CreateNoOverlapCompletionTimeCutGenerator(intervals, m));
   }
 
+  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kNoOverlap2D) {
+    if (linearization_level < 2) return;
+    if (HasEnforcementLiteral(ct)) return;
+    std::vector<IntervalVariable> x_intervals =
+        mapping->Intervals(ct.no_overlap_2d().x_intervals());
+    std::vector<IntervalVariable> y_intervals =
+        mapping->Intervals(ct.no_overlap_2d().y_intervals());
+    relaxation->cut_generators.push_back(
+        CreateNoOverlap2dCompletionTimeCutGenerator(x_intervals, y_intervals,
+                                                    m));
+  }
+
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinMax) {
     if (!m->GetOrCreate<SatParameters>()->add_lin_max_cuts()) return;
     if (HasEnforcementLiteral(ct)) return;
@@ -2870,7 +2882,9 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
               helper, absl::StrCat("graph_cst_lns_", local_params.name())),
           local_params, helper, &shared));
 
-      if (!helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty()) {
+      if (!helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty() ||
+          !helper->TypeToConstraints(ConstraintProto::kNoOverlap2D).empty() ||
+          !helper->TypeToConstraints(ConstraintProto::kCumulative).empty()) {
         subsolvers.push_back(absl::make_unique<LnsSolver>(
             absl::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
                 helper, absl::StrCat("scheduling_time_window_lns_",

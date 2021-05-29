@@ -20,6 +20,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/sat/diffn_util.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
@@ -36,21 +37,15 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   // boxes. If strict is true, these boxes must not 'cross' another box, and are
   // pushed by the other boxes.
   NonOverlappingRectanglesEnergyPropagator(SchedulingConstraintHelper* x,
-                                           SchedulingConstraintHelper* y)
-      : x_(*x), y_(*y) {}
+                                           SchedulingConstraintHelper* y,
+                                           Model* model)
+      : x_(*x), y_(*y), random_(model->GetOrCreate<ModelRandomGenerator>()) {}
   ~NonOverlappingRectanglesEnergyPropagator() override;
 
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  // A O(n^2) algorithm to analyze all the relevant [x_min, x_max] intervals
-  // and infer a threshold of the y size of a bounding box after which there
-  // is no point checking for energy overload.
-  bool AnalyzeIntervals(SchedulingConstraintHelper* x,
-                        SchedulingConstraintHelper* y, IntegerValue x_threshold,
-                        IntegerValue* y_threshold);
-
   void SortBoxesIntoNeighbors(int box, absl::Span<const int> local_boxes,
                               IntegerValue total_sum_of_areas);
   bool FailWhenEnergyIsTooLarge(int box, absl::Span<const int> local_boxes,
@@ -58,32 +53,16 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
 
   SchedulingConstraintHelper& x_;
   SchedulingConstraintHelper& y_;
+  ModelRandomGenerator* random_;
 
   // When the size of the bounding box is greater than any of the corresponding
-  // dimension, then there is no point checking for overload.
+  // rectangles, then there is no point checking for overload.
   IntegerValue threshold_x_;
   IntegerValue threshold_y_;
 
-  std::vector<absl::Span<int>> x_split_;
-  std::vector<absl::Span<int>> y_split_;
-
   std::vector<int> active_boxes_;
   std::vector<IntegerValue> cached_areas_;
-
-  struct Dimension {
-    IntegerValue x_min;
-    IntegerValue x_max;
-    IntegerValue y_min;
-    IntegerValue y_max;
-
-    void TakeUnionWith(const Dimension& other) {
-      x_min = std::min(x_min, other.x_min);
-      y_min = std::min(y_min, other.y_min);
-      x_max = std::max(x_max, other.x_max);
-      y_max = std::max(y_max, other.y_max);
-    }
-  };
-  std::vector<Dimension> cached_dimensions_;
+  std::vector<Rectangle> cached_rectangles_;
 
   struct Neighbor {
     int box;
@@ -177,7 +156,7 @@ inline std::function<void(Model*)> NonOverlappingRectangles(
     model->TakeOwnership(y_helper);
 
     NonOverlappingRectanglesEnergyPropagator* energy_constraint =
-        new NonOverlappingRectanglesEnergyPropagator(x_helper, y_helper);
+        new NonOverlappingRectanglesEnergyPropagator(x_helper, y_helper, model);
     GenericLiteralWatcher* const watcher =
         model->GetOrCreate<GenericLiteralWatcher>();
     watcher->SetPropagatorPriority(energy_constraint->RegisterWith(watcher), 3);

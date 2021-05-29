@@ -644,6 +644,68 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
   return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
 }
 
+namespace {
+void AddPrecedenceConstraints(const absl::Span<const int> intervals,
+                              const absl::flat_hash_set<int>& ignored_intervals,
+                              const CpSolverResponse& initial_solution,
+                              const NeighborhoodGeneratorHelper& helper,
+                              Neighborhood* neighborhood) {
+  // Sort all non-relaxed intervals of this constraint by current start
+  // time.
+  std::vector<std::pair<int64_t, int>> start_interval_pairs;
+  for (const int i : intervals) {
+    if (ignored_intervals.contains(i)) continue;
+    const ConstraintProto& interval_ct = helper.ModelProto().constraints(i);
+
+    // TODO(user): we ignore size zero for now.
+    const int size_var = interval_ct.interval().size();
+    if (initial_solution.solution(size_var) == 0) continue;
+
+    const int start_var = interval_ct.interval().start();
+    const int64_t start_value = initial_solution.solution(start_var);
+    start_interval_pairs.push_back({start_value, i});
+  }
+  std::sort(start_interval_pairs.begin(), start_interval_pairs.end());
+
+  // Add precedence between the remaining intervals, forcing their order.
+  for (int i = 0; i + 1 < start_interval_pairs.size(); ++i) {
+    const int before_start = helper.ModelProto()
+                                 .constraints(start_interval_pairs[i].second)
+                                 .interval()
+                                 .start();
+    const int before_end = helper.ModelProto()
+                               .constraints(start_interval_pairs[i].second)
+                               .interval()
+                               .end();
+    const int after_start = helper.ModelProto()
+                                .constraints(start_interval_pairs[i + 1].second)
+                                .interval()
+                                .start();
+
+    // If the end was smaller we keep it that way, otherwise we just order the
+    // start variables.
+    LinearConstraintProto* linear =
+        neighborhood->delta.add_constraints()->mutable_linear();
+    linear->add_domain(std::numeric_limits<int64_t>::min());
+    if (initial_solution.solution(before_end) <=
+        initial_solution.solution(after_start)) {
+      // If the end was smaller than the next start, keep it that way.
+      linear->add_domain(0);
+      linear->add_vars(before_end);
+    } else {
+      // Otherwise, keep the same minimum separation. This is done in order
+      // to "simplify" the neighborhood.
+      linear->add_domain(initial_solution.solution(before_start) -
+                         initial_solution.solution(after_start));
+      linear->add_vars(before_start);
+    }
+    linear->add_coeffs(1);
+    linear->add_vars(after_start);
+    linear->add_coeffs(-1);
+  }
+}
+}  // namespace
+
 Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
     const absl::Span<const int> intervals_to_relax,
     const CpSolverResponse& initial_solution,
@@ -687,46 +749,22 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
   }
 
   for (const int c : helper.TypeToConstraints(ConstraintProto::kNoOverlap)) {
-    // Sort all non-relaxed intervals of this constraint by current start
-    // time.
-    std::vector<std::pair<int64_t, int>> start_interval_pairs;
-    for (const int i :
-         helper.ModelProto().constraints(c).no_overlap().intervals()) {
-      if (ignored_intervals.contains(i)) continue;
-      const ConstraintProto& interval_ct = helper.ModelProto().constraints(i);
-
-      // TODO(user): we ignore size zero for now.
-      const int size_var = interval_ct.interval().size();
-      if (initial_solution.solution(size_var) == 0) continue;
-
-      const int start_var = interval_ct.interval().start();
-      const int64_t start_value = initial_solution.solution(start_var);
-      start_interval_pairs.push_back({start_value, i});
-    }
-    std::sort(start_interval_pairs.begin(), start_interval_pairs.end());
-
-    // Add precedence between the remaining intervals, forcing their order.
-    for (int i = 0; i + 1 < start_interval_pairs.size(); ++i) {
-      const int before_var = helper.ModelProto()
-                                 .constraints(start_interval_pairs[i].second)
-                                 .interval()
-                                 .end();
-      const int after_var = helper.ModelProto()
-                                .constraints(start_interval_pairs[i + 1].second)
-                                .interval()
-                                .start();
-      CHECK_LE(initial_solution.solution(before_var),
-               initial_solution.solution(after_var));
-
-      LinearConstraintProto* linear =
-          neighborhood.delta.add_constraints()->mutable_linear();
-      linear->add_domain(std::numeric_limits<int64_t>::min());
-      linear->add_domain(0);
-      linear->add_vars(before_var);
-      linear->add_coeffs(1);
-      linear->add_vars(after_var);
-      linear->add_coeffs(-1);
-    }
+    AddPrecedenceConstraints(
+        helper.ModelProto().constraints(c).no_overlap().intervals(),
+        ignored_intervals, initial_solution, helper, &neighborhood);
+  }
+  for (const int c : helper.TypeToConstraints(ConstraintProto::kCumulative)) {
+    AddPrecedenceConstraints(
+        helper.ModelProto().constraints(c).cumulative().intervals(),
+        ignored_intervals, initial_solution, helper, &neighborhood);
+  }
+  for (const int c : helper.TypeToConstraints(ConstraintProto::kNoOverlap2D)) {
+    AddPrecedenceConstraints(
+        helper.ModelProto().constraints(c).no_overlap_2d().x_intervals(),
+        ignored_intervals, initial_solution, helper, &neighborhood);
+    AddPrecedenceConstraints(
+        helper.ModelProto().constraints(c).no_overlap_2d().y_intervals(),
+        ignored_intervals, initial_solution, helper, &neighborhood);
   }
 
   // Set the current solution as a hint.

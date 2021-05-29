@@ -1,0 +1,102 @@
+// Copyright 2010-2021 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef OR_TOOLS_SAT_DIFFN_UTIL_H_
+#define OR_TOOLS_SAT_DIFFN_UTIL_H_
+
+#include <cstdint>
+#include <vector>
+
+#include "absl/container/flat_hash_set.h"
+#include "absl/strings/str_format.h"
+#include "ortools/graph/connected_components.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/intervals.h"
+
+namespace operations_research {
+namespace sat {
+
+struct Rectangle {
+  IntegerValue x_min;
+  IntegerValue x_max;
+  IntegerValue y_min;
+  IntegerValue y_max;
+
+  void TakeUnionWith(const Rectangle& other) {
+    x_min = std::min(x_min, other.x_min);
+    y_min = std::min(y_min, other.y_min);
+    x_max = std::max(x_max, other.x_max);
+    y_max = std::max(y_max, other.y_max);
+  }
+
+  IntegerValue Area() const { return (x_max - x_min) * (y_max - y_min); }
+
+  bool IsDisjoint(const Rectangle& other) const;
+
+  std::string DebugString() const {
+    return absl::StrFormat("rectangle(x(%i..%i), y(%i..%i))", x_min.value(),
+                           x_max.value(), y_min.value(), y_max.value());
+  }
+};
+
+// Creates a graph when two nodes are connected iif their rectangles overlap.
+// Then partition into connected components.
+//
+// This method removes all singleton components. It will modify the
+// active_rectangle span in place.
+std::vector<absl::Span<int>> GetOverlappingRectangleComponents(
+    const std::vector<Rectangle>& rectangles,
+    absl::Span<int> active_rectangles);
+
+// Visible for testing. The algo is in O(n^4) so shouldn't be used directly.
+// Returns true if there exist a bounding box with too much energy.
+bool BoxesAreInEnergyConflict(const std::vector<Rectangle>& rectangles,
+                              const std::vector<IntegerValue>& energies,
+                              absl::Span<const int> boxes,
+                              Rectangle* conflict = nullptr);
+
+// Checks that there is indeed a conflict for the given bounding_box and
+// report it. This returns false for convenience as we usually want to return
+// false on a conflict.
+//
+// TODO(user): relax the bounding box dimension to have a relaxed explanation.
+// We can also minimize the number of required intervals.
+bool ReportEnergyConflict(Rectangle bounding_box, absl::Span<const int> boxes,
+                          SchedulingConstraintHelper* x,
+                          SchedulingConstraintHelper* y);
+
+// A O(n^2) algorithm to analyze all the relevant X intervals and infer a
+// threshold of the y size of a bounding box after which there is no point
+// checking for energy overload.
+//
+// Returns false on conflict, and fill the bounding box that caused the
+// conflict.
+//
+// If transpose is true, we analyze the relevant Y intervals instead.
+bool AnalyzeIntervals(bool transpose, absl::Span<const int> boxes,
+                      const std::vector<Rectangle>& rectangles,
+                      const std::vector<IntegerValue>& rectangle_energies,
+                      IntegerValue* x_threshold, IntegerValue* y_threshold,
+                      Rectangle* conflict = nullptr);
+
+// Removes boxes with a size above the thresholds. Also randomize the order.
+// Because we rely on various heuristic, this allow to change the order from
+// one call to the next.
+absl::Span<int> FilterBoxesAndRandomize(
+    const std::vector<Rectangle>& cached_rectangles, absl::Span<int> boxes,
+    IntegerValue threshold_x, IntegerValue threshold_y, absl::BitGenRef random);
+
+}  // namespace sat
+}  // namespace operations_research
+
+#endif  // OR_TOOLS_SAT_DIFFN_UTIL_H_
