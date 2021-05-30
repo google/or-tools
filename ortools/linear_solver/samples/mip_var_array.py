@@ -46,6 +46,7 @@ def main():
     # [START solver]
     # Create the mip solver with the SCIP backend.
     solver = pywraplp.Solver.CreateSolver('SCIP')
+    # [END solver]
 
     # [START program_part2]
     # [START variables]
