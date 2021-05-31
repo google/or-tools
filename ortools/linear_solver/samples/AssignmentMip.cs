@@ -78,7 +78,7 @@ public class AssignmentMip
         {
             for (int j = 0; j < numTasks; ++j)
             {
-                objective.SetCoefficient(x[i, j], 1);
+                objective.SetCoefficient(x[i, j], costs[i, j]);
             }
         }
         objective.SetMinimization();
