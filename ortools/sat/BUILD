@@ -89,7 +89,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
-        ":cp_model_loader",
+        ":cp_model_mapping",
         ":cp_model_utils",
         ":integer",
         ":linear_programming_constraint",
@@ -129,6 +129,7 @@ cc_library(
     hdrs = ["cp_model_search.h"],
     deps = [
         ":cp_model_cc_proto",
+        ":cp_model_mapping",
         ":cp_model_utils",
         ":integer",
         ":integer_search",
@@ -215,6 +216,29 @@ cc_library(
 )
 
 cc_library(
+    name = "cp_model_mapping",
+    hdrs = ["cp_model_mapping.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        ":integer",
+        ":intervals",
+        ":linear_constraint",
+        ":model",
+        ":sat_base",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "//ortools/base",
+        "//ortools/base:int_type",
+        "//ortools/base:strong_vector",
+        "//ortools/util:logging",
+        "//ortools/util:sorted_interval_list",
+    ],
+)
+
+cc_library(
     name = "cp_model_loader",
     srcs = ["cp_model_loader.cc"],
     hdrs = ["cp_model_loader.h"],
@@ -224,6 +248,7 @@ cc_library(
         ":circuit",
         ":cp_constraints",
         ":cp_model_cc_proto",
+        ":cp_model_mapping",
         ":cp_model_symmetries",
         ":cp_model_utils",
         ":cumulative",
@@ -233,6 +258,7 @@ cc_library(
         ":integer",
         ":integer_expr",
         ":intervals",
+        ":linear_relaxation",
         ":model",
         ":pb_constraint",
         ":precedences",
@@ -304,9 +330,11 @@ cc_library(
     srcs = ["cp_model_presolve.cc"],
     hdrs = ["cp_model_presolve.h"],
     deps = [
+        ":circuit",
         ":cp_model_cc_proto",
         ":cp_model_checker",
         ":cp_model_expand",
+        ":cp_model_mapping",
         ":cp_model_loader",
         ":cp_model_objective",
         ":cp_model_symmetries",
@@ -635,6 +663,7 @@ cc_library(
     srcs = ["integer_search.cc"],
     hdrs = ["integer_search.h"],
     deps = [
+        ":cp_model_mapping",
         ":integer",
         ":linear_programming_constraint",
         ":probing",
@@ -653,7 +682,7 @@ cc_library(
     srcs = ["lb_tree_search.cc"],
     hdrs = ["lb_tree_search.h"],
     deps = [
-        ":cp_model_loader",
+        ":cp_model_mapping",
         ":integer",
         ":integer_search",
         ":sat_base",
@@ -921,7 +950,8 @@ cc_library(
     srcs = ["linear_relaxation.cc"],
     hdrs = ["linear_relaxation.h"],
     deps = [
-        ":cp_model_loader",
+        ":circuit",
+        ":cp_model_mapping",
         ":integer",
         ":linear_programming_constraint",
         ":model",
@@ -1056,6 +1086,7 @@ cc_library(
     deps = [
         ":boolean_problem",
         ":boolean_problem_cc_proto",
+        ":cp_model_mapping",
         ":encoding",
         ":integer",
         ":integer_expr",
@@ -1225,7 +1256,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
-        ":cp_model_loader",
+        ":cp_model_mapping",
         ":cp_model_utils",
         ":linear_programming_constraint",
         ":model",
@@ -1249,7 +1280,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
-        ":cp_model_loader",
+        ":cp_model_mapping",
         ":integer",
         ":linear_constraint",
         ":synchronization",
@@ -1269,7 +1300,7 @@ cc_library(
     hdrs = ["rins.h"],
     visibility = ["//visibility:public"],
     deps = [
-        ":cp_model_loader",
+        ":cp_model_mapping",
         ":integer",
         ":linear_programming_constraint",
         ":model",

@@ -984,8 +984,8 @@ message SatParameters {
 
   // Temporary flag util the feature is more mature. This convert intervals to
   // the newer proto format that support affine start/var/end instead of just
-  // variables. It changes a bit the search and is not always better currently.
-  optional bool convert_intervals = 177 [default = false];
+  // variables.
+  optional bool convert_intervals = 177 [default = true];
 
   // Whether we try to automatically detect the symmetries in a model and
   // exploit them. Currently, at level 1 we detect them in presolve and try

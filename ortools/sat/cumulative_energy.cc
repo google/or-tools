@@ -105,7 +105,7 @@ void CumulativeEnergyConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
 bool CumulativeEnergyConstraint::Propagate() {
   // This only uses one time direction, but the helper might be used elsewhere.
   // TODO(user): just keep the current direction?
-  helper_->SynchronizeAndSetTimeDirection(true);
+  if (!helper_->SynchronizeAndSetTimeDirection(true)) return false;
 
   const IntegerValue capacity_max = integer_trail_->UpperBound(capacity_);
   // TODO(user): force capacity_max >= 0, fail/remove optionals when 0.

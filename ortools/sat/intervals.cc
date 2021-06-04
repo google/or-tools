@@ -90,7 +90,9 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
 
   RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
   InitSortedVectors();
-  SynchronizeAndSetTimeDirection(true);
+  if (!SynchronizeAndSetTimeDirection(true)) {
+    model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+  }
 }
 
 SchedulingConstraintHelper::SchedulingConstraintHelper(int num_tasks,
@@ -141,24 +143,50 @@ void SchedulingConstraintHelper::RegisterWith(GenericLiteralWatcher* watcher) {
   integer_trail_->RegisterReversibleClass(this);
 }
 
-void SchedulingConstraintHelper::UpdateCachedValues(int t) {
+bool SchedulingConstraintHelper::UpdateCachedValues(int t) {
   recompute_cache_[t] = false;
+  if (IsAbsent(t)) return true;
 
-  const IntegerValue dmin = integer_trail_->LowerBound(sizes_[t]);
-  const IntegerValue smin = integer_trail_->LowerBound(starts_[t]);
-  const IntegerValue smax = integer_trail_->UpperBound(starts_[t]);
-  const IntegerValue emin = integer_trail_->LowerBound(ends_[t]);
-  const IntegerValue emax = integer_trail_->UpperBound(ends_[t]);
+  IntegerValue smin = integer_trail_->LowerBound(starts_[t]);
+  IntegerValue smax = integer_trail_->UpperBound(starts_[t]);
+  IntegerValue dmin = integer_trail_->LowerBound(sizes_[t]);
+  IntegerValue dmax = integer_trail_->UpperBound(sizes_[t]);
+  IntegerValue emin = integer_trail_->LowerBound(ends_[t]);
+  IntegerValue emax = integer_trail_->UpperBound(ends_[t]);
 
-  cached_duration_min_[t] = dmin;
-  cached_start_min_[t] = smin;
-  cached_negated_end_max_[t] = -emax;
+  // Detect first if we have a conflict using the relation start + size = end.
+  if (smin + dmin - emax > 0) {
+    ClearReason();
+    AddStartMinReason(t, smin);
+    AddSizeMinReason(t, dmin);
+    AddEndMaxReason(t, emax);
+    return PushTaskAbsence(t);
+  }
+  if (smax + dmax - emin < 0) {
+    ClearReason();
+    AddStartMaxReason(t, smax);
+    AddSizeMaxReason(t, dmax);
+    AddEndMinReason(t, emin);
+    return PushTaskAbsence(t);
+  }
 
-  // Sometimes, for optional interval with non-optional bounds, the two
-  // part of the max here is not the same. We always consider the value assuming
+  // Sometimes, for optional interval with non-optional bounds, this propagation
+  // give tighter bounds. We always consider the value assuming
   // the interval is present.
-  cached_end_min_[t] = std::max(emin, smin + dmin);
-  cached_negated_start_max_[t] = -std::min(smax, emax - dmin);
+  //
+  // Note that this is also useful in case not everything was propagated. Note
+  // also that since there is no conflict, we reach the fix point in one pass.
+  smin = std::max(smin, emin - dmax);
+  smax = std::min(smax, emax - dmin);
+  dmin = std::max(dmin, emin - smax);
+  emin = std::max(emin, smin + dmin);
+  emax = std::min(emax, smax + dmax);
+
+  cached_start_min_[t] = smin;
+  cached_end_min_[t] = emin;
+  cached_negated_start_max_[t] = -smax;
+  cached_negated_end_max_[t] = -emax;
+  cached_size_min_[t] = dmin;
 
   // Note that we use the cached value here for EndMin()/StartMax().
   const IntegerValue new_shifted_start_min = EndMin(t) - dmin;
@@ -171,9 +199,10 @@ void SchedulingConstraintHelper::UpdateCachedValues(int t) {
     recompute_negated_shifted_end_max_ = true;
     cached_negated_shifted_end_max_[t] = new_negated_shifted_end_max;
   }
+  return true;
 }
 
-void SchedulingConstraintHelper::ResetFromSubset(
+bool SchedulingConstraintHelper::ResetFromSubset(
     const SchedulingConstraintHelper& other, absl::Span<const int> tasks) {
   current_time_direction_ = other.current_time_direction_;
 
@@ -195,7 +224,7 @@ void SchedulingConstraintHelper::ResetFromSubset(
   }
 
   InitSortedVectors();
-  SynchronizeAndSetTimeDirection(true);
+  return SynchronizeAndSetTimeDirection(true);
 }
 
 void SchedulingConstraintHelper::InitSortedVectors() {
@@ -206,7 +235,7 @@ void SchedulingConstraintHelper::InitSortedVectors() {
 
   cached_shifted_start_min_.resize(num_tasks);
   cached_negated_shifted_end_max_.resize(num_tasks);
-  cached_duration_min_.resize(num_tasks);
+  cached_size_min_.resize(num_tasks);
   cached_start_min_.resize(num_tasks);
   cached_end_min_.resize(num_tasks);
   cached_negated_start_max_.resize(num_tasks);
@@ -231,8 +260,7 @@ void SchedulingConstraintHelper::InitSortedVectors() {
   recompute_negated_shifted_end_max_ = true;
 }
 
-void SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
-    bool is_forward) {
+void SchedulingConstraintHelper::SetTimeDirection(bool is_forward) {
   if (current_time_direction_ != is_forward) {
     current_time_direction_ = is_forward;
 
@@ -249,16 +277,23 @@ void SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
     std::swap(cached_shifted_start_min_, cached_negated_shifted_end_max_);
     std::swap(recompute_shifted_start_min_, recompute_negated_shifted_end_max_);
   }
+}
+
+bool SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
+    bool is_forward) {
+  SetTimeDirection(is_forward);
   if (recompute_all_cache_) {
     for (int t = 0; t < recompute_cache_.size(); ++t) {
-      UpdateCachedValues(t);
+      if (!UpdateCachedValues(t)) return false;
     }
   } else {
     for (int t = 0; t < recompute_cache_.size(); ++t) {
-      if (recompute_cache_[t]) UpdateCachedValues(t);
+      if (recompute_cache_[t])
+        if (!UpdateCachedValues(t)) return false;
     }
   }
   recompute_all_cache_ = false;
+  return true;
 }
 
 const std::vector<TaskTime>&
@@ -398,14 +433,14 @@ bool SchedulingConstraintHelper::PushIntervalBound(int t, IntegerLiteral lit) {
   if (!PushIntegerLiteralIfTaskPresent(t, lit)) return false;
   if (IsAbsent(t)) return true;
   if (!precedences_->PropagateOutgoingArcs(lit.var)) return false;
-  UpdateCachedValues(t);
+  if (!UpdateCachedValues(t)) return false;
   return true;
 }
 
 bool SchedulingConstraintHelper::IncreaseStartMin(int t,
                                                   IntegerValue new_start_min) {
   if (starts_[t].var == kNoIntegerVariable) {
-    if (new_start_min > starts_[t].constant) return ReportConflict();
+    if (new_start_min > starts_[t].constant) return PushTaskAbsence(t);
     return true;
   }
   return PushIntervalBound(t, starts_[t].GreaterOrEqual(new_start_min));
@@ -414,15 +449,15 @@ bool SchedulingConstraintHelper::IncreaseStartMin(int t,
 bool SchedulingConstraintHelper::DecreaseEndMax(int t,
                                                 IntegerValue new_end_max) {
   if (ends_[t].var == kNoIntegerVariable) {
-    if (new_end_max < ends_[t].constant) return ReportConflict();
+    if (new_end_max < ends_[t].constant) return PushTaskAbsence(t);
     return true;
   }
   return PushIntervalBound(t, ends_[t].LowerOrEqual(new_end_max));
 }
 
 bool SchedulingConstraintHelper::PushTaskAbsence(int t) {
-  DCHECK_NE(reason_for_presence_[t], kNoLiteralIndex);
-  DCHECK(!IsAbsent(t));
+  if (IsAbsent(t)) return true;
+  if (!IsOptional(t)) return ReportConflict();
 
   AddOtherReason(t);
 

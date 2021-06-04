@@ -1498,45 +1498,5 @@ void PresolveContext::ClearPrecedenceCache() {
   reified_precedences_cache_.clear();
 }
 
-void PresolveContext::BuildIntervalDictionary() {
-  interval_dictionary_.clear();
-  optional_interval_dictionary_.clear();
-  start_end_of_intervals_.clear();
-
-  for (int i = 0; i < working_model->constraints_size(); ++i) {
-    const ConstraintProto& ct = working_model->constraints(i);
-    if (ct.constraint_case() != ConstraintProto::ConstraintCase::kInterval) {
-      continue;
-    }
-    start_end_of_intervals_.insert(
-        std::make_pair(ct.interval().start(), ct.interval().end()));
-    if (ct.enforcement_literal().empty()) {
-      interval_dictionary_[std::make_tuple(ct.interval().start(),
-                                           ct.interval().end())] = i;
-    } else {
-      CHECK_EQ(ct.enforcement_literal_size(), 1);
-      optional_interval_dictionary_[std::make_tuple(
-          ct.interval().start(), ct.interval().end(),
-          ct.enforcement_literal(0))] = i;
-    }
-  }
-}
-
-int PresolveContext::GetIntervalFromStartAndEnd(int start, int end) {
-  const auto& it = interval_dictionary_.find(std::make_tuple(start, end));
-  return it == interval_dictionary_.end() ? -1 : it->second;
-}
-
-int PresolveContext::GetIntervalFromStartEndAndPresence(int start, int end,
-                                                        int presence) {
-  const auto& it =
-      optional_interval_dictionary_.find(std::make_tuple(start, end, presence));
-  return it == optional_interval_dictionary_.end() ? -1 : it->second;
-}
-
-bool PresolveContext::IsStartAndEndOfOneInterval(int start, int end) {
-  return start_end_of_intervals_.contains(std::make_pair(start, end));
-}
-
 }  // namespace sat
 }  // namespace operations_research

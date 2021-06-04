@@ -1436,7 +1436,10 @@ bool LinearProgrammingConstraint::Propagate() {
           (trail_->CurrentDecisionLevel() == 0 ||
            !sat_parameters_.only_add_cuts_at_level_zero())) {
         for (const CutGenerator& generator : cut_generators_) {
-          generator.generate_cuts(expanded_lp_solution_, &constraint_manager_);
+          if (!generator.generate_cuts(expanded_lp_solution_,
+                                       &constraint_manager_)) {
+            return false;
+          }
         }
       }
 
@@ -1484,32 +1487,34 @@ bool LinearProgrammingConstraint::Propagate() {
   if (objective_is_defined_ &&
       (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL ||
        simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE)) {
-    // Try to filter optimal objective value. Note that GetObjectiveValue()
-    // already take care of the scaling so that it returns an objective in the
-    // CP world.
-    const double relaxed_optimal_objective = simplex_.GetObjectiveValue();
-    const IntegerValue approximate_new_lb(static_cast<int64_t>(
-        std::ceil(relaxed_optimal_objective - kCpEpsilon)));
-
     // TODO(user): Maybe do a bit less computation when we cannot propagate
     // anything.
     if (sat_parameters_.use_exact_lp_reason()) {
       if (!ExactLpReasonning()) return false;
 
       // Display when the inexact bound would have propagated more.
-      const IntegerValue propagated_lb =
-          integer_trail_->LowerBound(objective_cp_);
-      if (approximate_new_lb > propagated_lb) {
-        VLOG(2) << "LP objective [ " << ToDouble(propagated_lb) << ", "
-                << ToDouble(integer_trail_->UpperBound(objective_cp_))
-                << " ] approx_lb += "
-                << ToDouble(approximate_new_lb - propagated_lb) << " gap: "
-                << integer_trail_->UpperBound(objective_cp_) - propagated_lb;
+      if (VLOG_IS_ON(2)) {
+        const double relaxed_optimal_objective = simplex_.GetObjectiveValue();
+        const IntegerValue approximate_new_lb(static_cast<int64_t>(
+            std::ceil(relaxed_optimal_objective - kCpEpsilon)));
+        const IntegerValue propagated_lb =
+            integer_trail_->LowerBound(objective_cp_);
+        if (approximate_new_lb > propagated_lb) {
+          VLOG(2) << "LP objective [ " << ToDouble(propagated_lb) << ", "
+                  << ToDouble(integer_trail_->UpperBound(objective_cp_))
+                  << " ] approx_lb += "
+                  << ToDouble(approximate_new_lb - propagated_lb) << " gap: "
+                  << integer_trail_->UpperBound(objective_cp_) - propagated_lb;
+        }
       }
     } else {
+      // Try to filter optimal objective value. Note that GetObjectiveValue()
+      // already take care of the scaling so that it returns an objective in the
+      // CP world.
       FillReducedCostReasonIn(simplex_.GetReducedCosts(), &integer_reason_);
       const double objective_cp_ub =
           ToDouble(integer_trail_->UpperBound(objective_cp_));
+      const double relaxed_optimal_objective = simplex_.GetObjectiveValue();
       ReducedCostStrengtheningDeductions(objective_cp_ub -
                                          relaxed_optimal_objective);
       if (!deductions_.empty()) {
@@ -1519,6 +1524,8 @@ bool LinearProgrammingConstraint::Propagate() {
       }
 
       // Push new objective lb.
+      const IntegerValue approximate_new_lb(static_cast<int64_t>(
+          std::ceil(relaxed_optimal_objective - kCpEpsilon)));
       if (approximate_new_lb > integer_trail_->LowerBound(objective_cp_)) {
         const IntegerLiteral deduction =
             IntegerLiteral::GreaterOrEqual(objective_cp_, approximate_new_lb);
@@ -2547,6 +2554,7 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
         SeparateSubtourInequalities(
             num_nodes, tails, heads, literals, lp_values,
             /*demands=*/{}, /*capacity=*/0, manager, model);
+        return true;
       };
   return result;
 }
@@ -2566,6 +2574,7 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
         SeparateSubtourInequalities(num_nodes, tails, heads, literals,
                                     lp_values, demands, capacity, manager,
                                     model);
+        return true;
       };
   return result;
 }

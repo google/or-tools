@@ -484,7 +484,7 @@ class IntegerEncoder {
   // Arguments:
   //  - map is just encoding_by_var_[associated_lit.var] and is passed as a
   //    slight optimization.
-  //  - 'it' is the current position of associated_lit in map, i.e we must have
+  //  - 'it' is the current position of associated_lit in map, i.e. we must have
   //    it->second == associated_lit.
   void AddImplications(const std::map<IntegerValue, Literal>& map,
                        std::map<IntegerValue, Literal>::const_iterator it,
@@ -941,7 +941,7 @@ class IntegerTrail : public SatPropagator {
     // The current bound on this variable.
     IntegerValue current_bound;
 
-    // Trail index of the last TrailEntry in the trail refering to this var.
+    // Trail index of the last TrailEntry in the trail referring to this var.
     int current_trail_index;
   };
   absl::StrongVector<IntegerVariable, VarInfo> vars_;

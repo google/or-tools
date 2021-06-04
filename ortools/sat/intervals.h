@@ -196,8 +196,8 @@ class SchedulingConstraintHelper : public PropagatorInterface,
 
   // Resets the class to the same state as if it was constructed with
   // the given subset of tasks from other.
-  void ResetFromSubset(const SchedulingConstraintHelper& other,
-                       absl::Span<const int> tasks);
+  ABSL_MUST_USE_RESULT bool ResetFromSubset(
+      const SchedulingConstraintHelper& other, absl::Span<const int> tasks);
 
   // Returns the number of task.
   int NumTasks() const { return starts_.size(); }
@@ -206,7 +206,8 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   // either forward/backward. This will impact all the functions below. This
   // MUST be called at the beginning of all Propagate() call that uses this
   // helper.
-  void SynchronizeAndSetTimeDirection(bool is_forward);
+  void SetTimeDirection(bool is_forward);
+  ABSL_MUST_USE_RESULT bool SynchronizeAndSetTimeDirection(bool is_forward);
 
   // Helpers for the current bounds on the current task time window.
   //      [  (size-min)         ...        (size-min)  ]
@@ -221,7 +222,7 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   // cases where pushing the start of one task will change values for many
   // others. This is fine as the new values will be picked up as we reach the
   // propagation fixed point.
-  IntegerValue SizeMin(int t) const { return cached_duration_min_[t]; }
+  IntegerValue SizeMin(int t) const { return cached_size_min_[t]; }
   IntegerValue SizeMax(int t) const {
     // This one is "rare" so we don't cache it.
     return integer_trail_->UpperBound(sizes_[t]);
@@ -287,11 +288,14 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   void AddAbsenceReason(int t);
   void AddSizeMinReason(int t);
   void AddSizeMinReason(int t, IntegerValue lower_bound);
+  void AddSizeMaxReason(int t, IntegerValue upper_bound);
   void AddStartMinReason(int t, IntegerValue lower_bound);
   void AddStartMaxReason(int t, IntegerValue upper_bound);
   void AddEndMinReason(int t, IntegerValue lower_bound);
   void AddEndMaxReason(int t, IntegerValue upper_bound);
+
   void AddEnergyAfterReason(int t, IntegerValue energy_min, IntegerValue time);
+  void AddEnergyMinInIntervalReason(int t, IntegerValue min, IntegerValue max);
 
   // Adds the reason why task "before" must be before task "after".
   // That is StartMax(before) < EndMin(after).
@@ -363,8 +367,13 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   bool InPropagationLoop() const { return integer_trail_->InPropagationLoop(); }
 
  private:
+  // Generic reason for a <= upper_bound, given that a = b + c in case the
+  // current upper bound of a is not good enough.
+  void AddGenericReason(const AffineExpression& a, IntegerValue upper_bound,
+                        const AffineExpression& b, const AffineExpression& c);
+
   void InitSortedVectors();
-  void UpdateCachedValues(int t);
+  ABSL_MUST_USE_RESULT bool UpdateCachedValues(int t);
 
   // Internal function for IncreaseStartMin()/DecreaseEndMax().
   bool PushIntervalBound(int t, IntegerLiteral lit);
@@ -401,7 +410,7 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   int previous_level_ = 0;
 
   // The caches of all relevant interval values.
-  std::vector<IntegerValue> cached_duration_min_;
+  std::vector<IntegerValue> cached_size_min_;
   std::vector<IntegerValue> cached_start_min_;
   std::vector<IntegerValue> cached_end_min_;
   std::vector<IntegerValue> cached_negated_start_max_;
@@ -493,98 +502,106 @@ inline void SchedulingConstraintHelper::AddAbsenceReason(int t) {
 }
 
 inline void SchedulingConstraintHelper::AddSizeMinReason(int t) {
-  AddOtherReason(t);
-  if (sizes_[t].var != kNoIntegerVariable) {
-    integer_reason_.push_back(
-        integer_trail_->LowerBoundAsLiteral(sizes_[t].var));
+  AddSizeMinReason(t, SizeMin(t));
+}
+
+inline void SchedulingConstraintHelper::AddGenericReason(
+    const AffineExpression& a, IntegerValue upper_bound,
+    const AffineExpression& b, const AffineExpression& c) {
+  if (integer_trail_->UpperBound(a) <= upper_bound) {
+    if (a.var != kNoIntegerVariable) {
+      integer_reason_.push_back(a.LowerOrEqual(upper_bound));
+    }
+    return;
+  }
+  CHECK_NE(a.var, kNoIntegerVariable);
+
+  // Here we assume that the upper_bound on a comes from the lower bound of b +
+  // c.
+  const IntegerValue slack = upper_bound - integer_trail_->UpperBound(b) -
+                             integer_trail_->UpperBound(c);
+  CHECK_GE(slack, 0);
+  if (b.var == kNoIntegerVariable && c.var == kNoIntegerVariable) return;
+  if (b.var == kNoIntegerVariable) {
+    integer_reason_.push_back(c.LowerOrEqual(upper_bound - b.constant));
+  } else if (c.var == kNoIntegerVariable) {
+    integer_reason_.push_back(b.LowerOrEqual(upper_bound - c.constant));
+  } else {
+    integer_trail_->AppendRelaxedLinearReason(
+        slack, {IntegerValue(1), IntegerValue(1)},
+        {NegationOf(b.var), NegationOf(c.var)}, &integer_reason_);
   }
 }
 
 inline void SchedulingConstraintHelper::AddSizeMinReason(
     int t, IntegerValue lower_bound) {
   AddOtherReason(t);
-  if (sizes_[t].var != kNoIntegerVariable) {
-    integer_reason_.push_back(sizes_[t].GreaterOrEqual(lower_bound));
-  }
+  DCHECK(!IsAbsent(t));
+  AddGenericReason(sizes_[t].Negated(), -lower_bound, minus_ends_[t],
+                   starts_[t]);
+}
+
+inline void SchedulingConstraintHelper::AddSizeMaxReason(
+    int t, IntegerValue upper_bound) {
+  AddOtherReason(t);
+  CHECK(!IsAbsent(t));
+  AddGenericReason(sizes_[t], upper_bound, ends_[t], minus_starts_[t]);
 }
 
 inline void SchedulingConstraintHelper::AddStartMinReason(
     int t, IntegerValue lower_bound) {
-  DCHECK_GE(StartMin(t), lower_bound);
   AddOtherReason(t);
-  if (starts_[t].var != kNoIntegerVariable) {
-    integer_reason_.push_back(starts_[t].GreaterOrEqual(lower_bound));
-  }
+  DCHECK(!IsAbsent(t));
+  AddGenericReason(minus_starts_[t], -lower_bound, minus_ends_[t], sizes_[t]);
 }
 
 inline void SchedulingConstraintHelper::AddStartMaxReason(
     int t, IntegerValue upper_bound) {
   AddOtherReason(t);
-
-  // Note that we cannot use the cache here!
-  if (integer_trail_->UpperBound(starts_[t]) <= upper_bound) {
-    if (starts_[t].var != kNoIntegerVariable) {
-      integer_reason_.push_back(starts_[t].LowerOrEqual(upper_bound));
-    }
-  } else {
-    // This might happen if we used StartMax() <= EndMax() - SizeMin().
-    if (sizes_[t].var != kNoIntegerVariable) {
-      integer_reason_.push_back(
-          integer_trail_->LowerBoundAsLiteral(sizes_[t].var));
-    }
-    if (ends_[t].var != kNoIntegerVariable) {
-      integer_reason_.push_back(
-          ends_[t].LowerOrEqual(upper_bound + SizeMin(t)));
-    }
-  }
+  DCHECK(!IsAbsent(t));
+  AddGenericReason(starts_[t], upper_bound, ends_[t], sizes_[t].Negated());
 }
 
 inline void SchedulingConstraintHelper::AddEndMinReason(
     int t, IntegerValue lower_bound) {
   AddOtherReason(t);
-
-  // Note that we cannot use the cache here!
-  if (integer_trail_->LowerBound(ends_[t]) >= lower_bound) {
-    if (ends_[t].var != kNoIntegerVariable) {
-      integer_reason_.push_back(ends_[t].GreaterOrEqual(lower_bound));
-    }
-  } else {
-    // This might happen if we used EndMin() >= StartMin() + SizeMin().
-    if (sizes_[t].var != kNoIntegerVariable) {
-      integer_reason_.push_back(
-          integer_trail_->LowerBoundAsLiteral(sizes_[t].var));
-    }
-    if (starts_[t].var != kNoIntegerVariable) {
-      integer_reason_.push_back(
-          starts_[t].GreaterOrEqual(lower_bound - SizeMin(t)));
-    }
-  }
+  DCHECK(!IsAbsent(t));
+  AddGenericReason(minus_ends_[t], -lower_bound, minus_starts_[t],
+                   sizes_[t].Negated());
 }
 
 inline void SchedulingConstraintHelper::AddEndMaxReason(
     int t, IntegerValue upper_bound) {
-  DCHECK_LE(EndMax(t), upper_bound);
   AddOtherReason(t);
-  if (ends_[t].var != kNoIntegerVariable) {
-    integer_reason_.push_back(ends_[t].LowerOrEqual(upper_bound));
-  }
+  DCHECK(!IsAbsent(t));
+  AddGenericReason(ends_[t], upper_bound, starts_[t], sizes_[t]);
 }
 
 inline void SchedulingConstraintHelper::AddEnergyAfterReason(
     int t, IntegerValue energy_min, IntegerValue time) {
-  AddOtherReason(t);
   if (StartMin(t) >= time) {
-    if (starts_[t].var != kNoIntegerVariable) {
-      integer_reason_.push_back(starts_[t].GreaterOrEqual(time));
-    }
+    AddStartMinReason(t, time);
   } else {
-    if (ends_[t].var != kNoIntegerVariable) {
-      integer_reason_.push_back(ends_[t].GreaterOrEqual(time + energy_min));
-    }
+    AddEndMinReason(t, time + energy_min);
   }
-  if (sizes_[t].var != kNoIntegerVariable) {
-    integer_reason_.push_back(sizes_[t].GreaterOrEqual(energy_min));
+  AddSizeMinReason(t, energy_min);
+}
+
+inline void SchedulingConstraintHelper::AddEnergyMinInIntervalReason(
+    int t, IntegerValue time_min, IntegerValue time_max) {
+  const IntegerValue energy_min = SizeMin(t);
+  CHECK_LE(time_min + energy_min, time_max);
+  if (StartMin(t) >= time_min) {
+    AddStartMinReason(t, time_min);
+  } else {
+    AddEndMinReason(t, time_min + energy_min);
   }
+  if (EndMax(t) <= time_max) {
+    AddEndMaxReason(t, time_max);
+  } else {
+    AddStartMaxReason(t, time_max - energy_min);
+  }
+  AddSizeMinReason(t, energy_min);
 }
 
 // =============================================================================

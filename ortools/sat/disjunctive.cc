@@ -251,7 +251,7 @@ IntegerValue TaskSet::ComputeEndMin(int task_to_ignore,
 
 bool DisjunctiveWithTwoItems::Propagate() {
   DCHECK_EQ(helper_->NumTasks(), 2);
-  helper_->SynchronizeAndSetTimeDirection(true);
+  if (!helper_->SynchronizeAndSetTimeDirection(true)) return false;
 
   // We can't propagate anything if one of the interval is absent for sure.
   if (helper_->IsAbsent(0) || helper_->IsAbsent(1)) return true;
@@ -342,7 +342,7 @@ void CombinedDisjunctive<time_direction>::AddNoOverlap(
 
 template <bool time_direction>
 bool CombinedDisjunctive<time_direction>::Propagate() {
-  helper_->SynchronizeAndSetTimeDirection(time_direction);
+  if (!helper_->SynchronizeAndSetTimeDirection(time_direction)) return false;
   const auto& task_by_increasing_end_min = helper_->TaskByIncreasingEndMin();
   const auto& task_by_decreasing_start_max =
       helper_->TaskByDecreasingStartMax();
@@ -458,7 +458,8 @@ bool CombinedDisjunctive<time_direction>::Propagate() {
 }
 
 bool DisjunctiveOverloadChecker::Propagate() {
-  helper_->SynchronizeAndSetTimeDirection(/*is_forward=*/true);
+  if (!helper_->SynchronizeAndSetTimeDirection(/*is_forward=*/true))
+    return false;
 
   // Split problem into independent part.
   //
@@ -631,14 +632,14 @@ bool DisjunctiveOverloadChecker::PropagateSubwindow(
 int DisjunctiveOverloadChecker::RegisterWith(GenericLiteralWatcher* watcher) {
   // This propagator reach the fix point in one pass.
   const int id = watcher->Register(this);
-  helper_->SynchronizeAndSetTimeDirection(/*is_forward=*/true);
+  helper_->SetTimeDirection(/*is_forward=*/true);
   helper_->WatchAllTasks(id, watcher, /*watch_start_max=*/false,
                          /*watch_end_max=*/true);
   return id;
 }
 
 bool DisjunctiveDetectablePrecedences::Propagate() {
-  helper_->SynchronizeAndSetTimeDirection(time_direction_);
+  if (!helper_->SynchronizeAndSetTimeDirection(time_direction_)) return false;
 
   to_propagate_.clear();
   processed_.assign(helper_->NumTasks(), false);
@@ -727,6 +728,7 @@ bool DisjunctiveDetectablePrecedences::PropagateSubwindow() {
   // TODO(user): Maybe it is just faster to merge ComputeEndMin() with
   // AddEntry().
   task_set_.Clear();
+  to_propagate_.clear();
   bool need_update = false;
   IntegerValue task_set_end_min = kMinIntegerValue;
 
@@ -862,7 +864,7 @@ bool DisjunctiveDetectablePrecedences::PropagateSubwindow() {
 int DisjunctiveDetectablePrecedences::RegisterWith(
     GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  helper_->SynchronizeAndSetTimeDirection(time_direction_);
+  helper_->SetTimeDirection(time_direction_);
   helper_->WatchAllTasks(id, watcher, /*watch_start_max=*/true,
                          /*watch_end_max=*/false);
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
@@ -870,7 +872,7 @@ int DisjunctiveDetectablePrecedences::RegisterWith(
 }
 
 bool DisjunctivePrecedences::Propagate() {
-  helper_->SynchronizeAndSetTimeDirection(time_direction_);
+  if (!helper_->SynchronizeAndSetTimeDirection(time_direction_)) return false;
   window_.clear();
   IntegerValue window_end = kMinIntegerValue;
   for (const TaskTime task_time : helper_->TaskByIncreasingShiftedStartMin()) {
@@ -983,14 +985,14 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
 int DisjunctivePrecedences::RegisterWith(GenericLiteralWatcher* watcher) {
   // This propagator reach the fixed point in one go.
   const int id = watcher->Register(this);
-  helper_->SynchronizeAndSetTimeDirection(time_direction_);
+  helper_->SetTimeDirection(time_direction_);
   helper_->WatchAllTasks(id, watcher, /*watch_start_max=*/false,
                          /*watch_end_max=*/false);
   return id;
 }
 
 bool DisjunctiveNotLast::Propagate() {
-  helper_->SynchronizeAndSetTimeDirection(time_direction_);
+  if (!helper_->SynchronizeAndSetTimeDirection(time_direction_)) return false;
 
   const auto& task_by_decreasing_start_max =
       helper_->TaskByDecreasingStartMax();
@@ -1171,7 +1173,7 @@ int DisjunctiveNotLast::RegisterWith(GenericLiteralWatcher* watcher) {
 
 bool DisjunctiveEdgeFinding::Propagate() {
   const int num_tasks = helper_->NumTasks();
-  helper_->SynchronizeAndSetTimeDirection(time_direction_);
+  if (!helper_->SynchronizeAndSetTimeDirection(time_direction_)) return false;
   is_gray_.resize(num_tasks, false);
   non_gray_task_to_event_.resize(num_tasks);
 
@@ -1385,7 +1387,7 @@ bool DisjunctiveEdgeFinding::PropagateSubwindow(IntegerValue window_end_min) {
 
 int DisjunctiveEdgeFinding::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  helper_->SynchronizeAndSetTimeDirection(time_direction_);
+  helper_->SetTimeDirection(time_direction_);
   helper_->WatchAllTasks(id, watcher, /*watch_start_max=*/false,
                          /*watch_end_max=*/true);
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);

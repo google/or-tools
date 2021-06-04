@@ -477,7 +477,7 @@ CutGenerator CreateKnapsackCoverCutGenerator(
     // TODO(user): When we use implied-bound substitution, we might still infer
     // an interesting cut even if all variables are integer. See if we still
     // want to skip all such constraints.
-    if (AllVarsTakeIntegerValue(vars, lp_values)) return;
+    if (AllVarsTakeIntegerValue(vars, lp_values)) return true;
 
     KnapsackSolverForCuts knapsack_solver(
         "Knapsack on demand cover cut generator");
@@ -611,6 +611,7 @@ CutGenerator CreateKnapsackCoverCutGenerator(
     if (skipped_constraints > 0) {
       VLOG(2) << "Skipped constraints: " << skipped_constraints;
     }
+    return true;
   };
 
   return result;
@@ -683,7 +684,7 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
     // as low as 2 could lead to the better cut (this is exactly the Letchford &
     // Lodi function).
     //
-    // Another intersting fact, is that if we want to compute the maximum alpha
+    // Another interesting fact, is that if we want to compute the maximum alpha
     // for a constraint with 2 terms like:
     //    divisor * Y + (ratio * divisor + remainder) * X
     //               <= rhs_ratio * divisor + rhs_remainder
@@ -1229,7 +1230,7 @@ bool CoverCutHelper::TrySimpleKnapsack(
   // Note(user): past this point, now that a given "base" cover has been chosen,
   // we basically compute the cut (of the form sum X <= bound) with the maximum
   // possible violation. Note also that we lift as much as possible, so we don't
-  // necessarilly optimize for the cut efficacity though. But we do get a
+  // necessarily optimize for the cut efficacity though. But we do get a
   // stronger cut.
   if (rhs >= 0) return false;
   if (new_size == 0) return false;
@@ -1356,7 +1357,7 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
 
         if (CapProd(x_ub, y_ub) >= kMaxSafeInteger) {
           VLOG(3) << "Potential overflow in PositiveMultiplicationCutGenerator";
-          return;
+          return true;
         }
 
         const double x_lp_value = lp_values[x];
@@ -1425,6 +1426,7 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
         try_add_above_cut(y_ub, x_ub, x_ub * y_ub);
         try_add_below_cut(y_ub, x_lb, x_lb * y_ub);
         try_add_below_cut(y_lb, x_ub, x_ub * y_lb);
+        return true;
       };
 
   return result;
@@ -1443,10 +1445,10 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
         const int64_t x_ub = integer_trail->LevelZeroUpperBound(x).value();
         const int64_t x_lb = integer_trail->LevelZeroLowerBound(x).value();
 
-        if (x_lb == x_ub) return;
+        if (x_lb == x_ub) return true;
 
         // Check for potential overflows.
-        if (x_ub > (int64_t{1} << 31)) return;
+        if (x_ub > (int64_t{1} << 31)) return true;
         DCHECK_GE(x_lb, 0);
 
         const double y_lp_value = lp_values[y];
@@ -1492,6 +1494,7 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
           below_cut.ub = kMaxIntegerValue;
           manager->AddCut(below_cut, "SquareLower", lp_values);
         }
+        return true;
       };
 
   return result;
@@ -1829,7 +1832,7 @@ CutGenerator CreateAllDifferentCutGenerator(
         // These cuts work at all levels but the generator adds too many cuts on
         // some instances and degrade the performance so we only use it at level
         // 0.
-        if (trail->CurrentDecisionLevel() > 0) return;
+        if (trail->CurrentDecisionLevel() > 0) return true;
         std::vector<std::pair<double, IntegerVariable>> sorted_vars;
         for (const IntegerVariable var : vars) {
           if (integer_trail->LevelZeroLowerBound(var) ==
@@ -1845,6 +1848,7 @@ CutGenerator CreateAllDifferentCutGenerator(
         std::reverse(sorted_vars.begin(), sorted_vars.end());
         TryToGenerateAllDiffCut(sorted_vars, *integer_trail, lp_values,
                                 manager);
+        return true;
       };
   VLOG(1) << "Created all_diff cut generator of size: " << vars.size();
   return result;
@@ -1978,6 +1982,7 @@ CutGenerator CreateLinMaxCutGenerator(
         if (violation > 1e-2) {
           manager->AddCut(cut.Build(), "LinMax", lp_values);
         }
+        return true;
       };
   return result;
 }
@@ -2015,7 +2020,7 @@ void AddIntegerVariableFromIntervals(SchedulingConstraintHelper* helper,
   gtl::STLSortAndRemoveDuplicates(vars);
 }
 
-std::function<void(const absl::StrongVector<IntegerVariable, double>&,
+std::function<bool(const absl::StrongVector<IntegerVariable, double>&,
                    LinearConstraintManager*)>
 GenerateCumulativeCut(const std::string& cut_name,
                       SchedulingConstraintHelper* helper,
@@ -2028,7 +2033,7 @@ GenerateCumulativeCut(const std::string& cut_name,
   return [capacity, demands, trail, integer_trail, helper, model, cut_name,
           encoder](const absl::StrongVector<IntegerVariable, double>& lp_values,
                    LinearConstraintManager* manager) {
-    if (trail->CurrentDecisionLevel() > 0) return;
+    if (trail->CurrentDecisionLevel() > 0) return true;
 
     const auto demand_is_fixed = [integer_trail, &demands](int i) {
       return demands.empty() || integer_trail->IsFixed(demands[i]);
@@ -2049,7 +2054,7 @@ GenerateCumulativeCut(const std::string& cut_name,
       }
     }
 
-    if (active_intervals.size() < 2) return;
+    if (active_intervals.size() < 2) return true;
 
     std::sort(active_intervals.begin(), active_intervals.end(),
               [helper](int a, int b) {
@@ -2193,6 +2198,7 @@ GenerateCumulativeCut(const std::string& cut_name,
         manager->AddCut(cut.Build(), cut_name, lp_values);
       }
     }
+    return true;
   };
 }
 
@@ -2243,7 +2249,7 @@ CutGenerator CreateCumulativeOverlappingCutGenerator(
       [helper, capacity, demands, trail, integer_trail, model](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
-        if (trail->CurrentDecisionLevel() > 0) return;
+        if (trail->CurrentDecisionLevel() > 0) return true;
 
         std::vector<Event> events;
         // Iterate through the intervals. If start_max < end_min, the demand
@@ -2325,6 +2331,7 @@ CutGenerator CreateCumulativeOverlappingCutGenerator(
           cut_events.resize(new_size);
           added_positive_event = false;
         }
+        return true;
       };
   return result;
 }
@@ -2362,7 +2369,7 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
       [trail, helper, model](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
-        if (trail->CurrentDecisionLevel() > 0) return;
+        if (trail->CurrentDecisionLevel() > 0) return true;
 
         // TODO(user): We can do much better in term of complexity:
         // Sort all tasks by min start time, loop other them 1 by 1,
@@ -2405,6 +2412,7 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
             }
           }
         }
+        return true;
       };
 
   return result;
@@ -2525,7 +2533,7 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
       [trail, helper, model](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
-        if (trail->CurrentDecisionLevel() > 0) return;
+        if (trail->CurrentDecisionLevel() > 0) return true;
 
         auto generate_cuts = [&lp_values, model, manager,
                               helper](const std::string& cut_name) {
@@ -2544,10 +2552,11 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
                                     model, manager);
         };
 
-        helper->SynchronizeAndSetTimeDirection(true);
+        if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
         generate_cuts("NoOverlapCompletionTime");
-        helper->SynchronizeAndSetTimeDirection(false);
+        if (!helper->SynchronizeAndSetTimeDirection(false)) return false;
         generate_cuts("NoOverlapCompletionTimeMirror");
+        return true;
       };
   return result;
 }
@@ -2573,7 +2582,7 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
       [trail, integer_trail, helper, demands, capacity, model](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
-        if (trail->CurrentDecisionLevel() > 0) return;
+        if (trail->CurrentDecisionLevel() > 0) return true;
 
         const IntegerValue capacity_max = integer_trail->UpperBound(capacity);
         auto generate_cuts = [&lp_values, model, manager, helper, capacity_max,
@@ -2596,10 +2605,11 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
                                     model, manager);
         };
 
-        helper->SynchronizeAndSetTimeDirection(true);
+        if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
         generate_cuts("CumulativeCompletionTime");
-        helper->SynchronizeAndSetTimeDirection(false);
+        if (!helper->SynchronizeAndSetTimeDirection(false)) return false;
         generate_cuts("CumulativeCompletionTimeMirror");
+        return true;
       };
   return result;
 }
@@ -2625,10 +2635,10 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
       [trail, x_helper, y_helper, model](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
-        if (trail->CurrentDecisionLevel() > 0) return;
+        if (trail->CurrentDecisionLevel() > 0) return true;
 
-        x_helper->SynchronizeAndSetTimeDirection(true);
-        y_helper->SynchronizeAndSetTimeDirection(true);
+        if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
+        if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
 
         const int num_boxes = x_helper->NumTasks();
         std::vector<int> active_boxes;
@@ -2639,17 +2649,20 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
           if (cached_areas[box] == 0) continue;
           if (!y_helper->IsPresent(box) || !y_helper->IsPresent(box)) continue;
 
-          // TODO(user): Also consider shifted end max.
+          // TODO(user): It might be possible/better to use some shifted value
+          // here, but for now this code is not in the hot spot, so better be
+          // defensive and only do connected components on really disjoint
+          // boxes.
           Rectangle& rectangle = cached_rectangles[box];
-          rectangle.x_min = x_helper->ShiftedStartMin(box);
+          rectangle.x_min = x_helper->StartMin(box);
           rectangle.x_max = x_helper->EndMax(box);
-          rectangle.y_min = y_helper->ShiftedStartMin(box);
+          rectangle.y_min = y_helper->StartMin(box);
           rectangle.y_max = y_helper->EndMax(box);
 
           active_boxes.push_back(box);
         }
 
-        if (active_boxes.size() <= 1) return;
+        if (active_boxes.size() <= 1) return true;
 
         std::vector<absl::Span<int>> components =
             GetOverlappingRectangleComponents(cached_rectangles,
@@ -2677,15 +2690,16 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
                                       model, manager);
           };
 
-          x_helper->SynchronizeAndSetTimeDirection(true);
-          y_helper->SynchronizeAndSetTimeDirection(true);
+          if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
+          if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
           generate_cuts("NoOverlap2dXCompletionTime", x_helper, y_helper);
           generate_cuts("NoOverlap2dYCompletionTime", y_helper, x_helper);
-          x_helper->SynchronizeAndSetTimeDirection(false);
-          y_helper->SynchronizeAndSetTimeDirection(false);
+          if (!x_helper->SynchronizeAndSetTimeDirection(false)) return false;
+          if (!y_helper->SynchronizeAndSetTimeDirection(false)) return false;
           generate_cuts("NoOverlap2dXCompletionTimeMirror", x_helper, y_helper);
           generate_cuts("NoOverlap2dYCompletionTimeMirror", y_helper, x_helper);
         }
+        return true;
       };
   return result;
 }
@@ -2746,6 +2760,7 @@ CutGenerator CreateCliqueCutGenerator(
 
           manager->AddCut(builder.Build(), "clique", lp_values);
         }
+        return true;
       };
   return result;
 }

@@ -58,10 +58,10 @@ bool TimeTableEdgeFinding::Propagate() {
   while (true) {
     const int64_t old_timestamp = integer_trail_->num_enqueues();
 
-    helper_->SynchronizeAndSetTimeDirection(true);
+    if (!helper_->SynchronizeAndSetTimeDirection(true)) return false;
     if (!TimeTableEdgeFindingPass()) return false;
 
-    helper_->SynchronizeAndSetTimeDirection(false);
+    if (!helper_->SynchronizeAndSetTimeDirection(false)) return false;
     if (!TimeTableEdgeFindingPass()) return false;
 
     // Stop if no propagation.

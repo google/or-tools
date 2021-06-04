@@ -116,8 +116,8 @@ NonOverlappingRectanglesEnergyPropagator::
 
 bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
   const int num_boxes = x_.NumTasks();
-  x_.SynchronizeAndSetTimeDirection(true);
-  y_.SynchronizeAndSetTimeDirection(true);
+  if (!x_.SynchronizeAndSetTimeDirection(true)) return false;
+  if (!y_.SynchronizeAndSetTimeDirection(true)) return false;
 
   active_boxes_.clear();
   cached_areas_.resize(num_boxes);
@@ -127,12 +127,16 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
     if (cached_areas_[box] == 0) continue;
     if (!x_.IsPresent(box) || !y_.IsPresent(box)) continue;
 
-    // TODO(user): Also consider shifted end max.
+    // The code needs the size min to be larger or equal to the mandatory part
+    // for it to works correctly. This is always enforced by the helper.
+    DCHECK_GE(x_.SizeMin(box), x_.EndMin(box) - x_.StartMax(box));
+    DCHECK_GE(y_.SizeMin(box), y_.EndMin(box) - y_.StartMax(box));
+
     Rectangle& rectangle = cached_rectangles_[box];
     rectangle.x_min = x_.ShiftedStartMin(box);
-    rectangle.x_max = x_.EndMax(box);
+    rectangle.x_max = x_.ShiftedEndMax(box);
     rectangle.y_min = y_.ShiftedStartMin(box);
-    rectangle.y_max = y_.EndMax(box);
+    rectangle.y_max = y_.ShiftedEndMax(box);
 
     active_boxes_.push_back(box);
   }
@@ -181,9 +185,9 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
 int NonOverlappingRectanglesEnergyPropagator::RegisterWith(
     GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  x_.WatchAllTasks(id, watcher, /*watch_start_max=*/false,
+  x_.WatchAllTasks(id, watcher, /*watch_start_max=*/true,
                    /*watch_end_max=*/true);
-  y_.WatchAllTasks(id, watcher, /*watch_start_max=*/false,
+  y_.WatchAllTasks(id, watcher, /*watch_start_max=*/true,
                    /*watch_end_max=*/true);
   return id;
 }
@@ -220,10 +224,8 @@ bool NonOverlappingRectanglesEnergyPropagator::FailWhenEnergyIsTooLarge(
   IntegerValue sum_of_areas = cached_areas_[box];
 
   const auto add_box_energy_in_rectangle_reason = [&](int b) {
-    x_.AddEnergyAfterReason(b, x_.SizeMin(b), area.x_min);
-    x_.AddEndMaxReason(b, area.x_max);
-    y_.AddEnergyAfterReason(b, y_.SizeMin(b), area.y_min);
-    y_.AddEndMaxReason(b, area.y_max);
+    x_.AddEnergyMinInIntervalReason(b, area.x_min, area.x_max);
+    y_.AddEnergyMinInIntervalReason(b, area.y_min, area.y_max);
   };
 
   for (int i = 0; i < neighbors_.size(); ++i) {
@@ -457,8 +459,10 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   // And finally propagate.
   // TODO(user): Sorting of boxes seems influential on the performance. Test.
   for (const absl::Span<const int> boxes : boxes_to_propagate_) {
-    x_.ResetFromSubset(x, boxes);
-    y_.ResetFromSubset(y, boxes);
+    x_.ClearOtherHelper();
+    y_.ClearOtherHelper();
+    if (!x_.ResetFromSubset(x, boxes)) return false;
+    if (!y_.ResetFromSubset(y, boxes)) return false;
 
     // Collect the common overlapping coordinates of all boxes.
     IntegerValue lb(std::numeric_limits<int64_t>::min());
@@ -489,8 +493,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
 }
 
 bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
-  global_x_.SynchronizeAndSetTimeDirection(true);
-  global_y_.SynchronizeAndSetTimeDirection(true);
+  if (!global_x_.SynchronizeAndSetTimeDirection(true)) return false;
+  if (!global_y_.SynchronizeAndSetTimeDirection(true)) return false;
 
   std::function<bool()> inner_propagate;
   if (watcher_->GetCurrentId() == fast_id_) {

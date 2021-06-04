@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_LB_TREE_SEARCH_H_
 #define OR_TOOLS_SAT_LB_TREE_SEARCH_H_
 
+#include <limits>
 #include <vector>
 
 #include "ortools/sat/integer.h"
@@ -81,8 +82,8 @@ class LbTreeSearch {
     IntegerValue false_objective;
 
     // Points to adjacent nodes in the tree. Large if no connection.
-    int true_child = kint32max;
-    int false_child = kint32max;
+    int true_child = std::numeric_limits<int32_t>::max();
+    int false_child = std::numeric_limits<int32_t>::max();
 
     // Instead of storing the full reason for an objective LB increase in one
     // the branches (which can lead to a quadratic memory usage), we stores the
@@ -95,8 +96,8 @@ class LbTreeSearch {
     // and skip all the nodes in-between by connecting directly the correct
     // ancestor to this node. Note that when we do that, the level of the nodes
     // in the sub-branch change, but this still work.
-    int true_level = kint32max;
-    int false_level = kint32max;
+    int true_level = std::numeric_limits<int32_t>::max();
+    int false_level = std::numeric_limits<int32_t>::max();
   };
 
   // Returns true if this node objective lb is greater than the root level

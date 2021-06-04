@@ -44,6 +44,7 @@
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_expand.h"
 #include "ortools/sat/cp_model_loader.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_objective.h"
 #include "ortools/sat/cp_model_symmetries.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -2341,18 +2342,22 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
 
 namespace {
 
-void AddLinearExpression(int64_t coeff, const LinearExpressionProto& exp,
-                         LinearConstraintProto* linear_ct) {
-  const int size = exp.vars().size();
-  for (int i = 0; i < size; ++i) {
-    linear_ct->add_vars(exp.vars(i));
-    linear_ct->add_coeffs(coeff * exp.coeffs(i));
-  }
-  if (exp.offset() != 0) {
-    FillDomainInProto(ReadDomainFromProto(*linear_ct)
-                          .AdditionWith(Domain(-coeff * exp.offset())),
-                      linear_ct);
-  }
+void AddLinearConstraintFromInterval(const ConstraintProto& ct,
+                                     PresolveContext* context) {
+  const int start = ct.interval().start();
+  const int end = ct.interval().end();
+  const int size = ct.interval().size();
+  ConstraintProto* new_ct = context->working_model->add_constraints();
+  *(new_ct->mutable_enforcement_literal()) = ct.enforcement_literal();
+  new_ct->mutable_linear()->add_domain(0);
+  new_ct->mutable_linear()->add_domain(0);
+  new_ct->mutable_linear()->add_vars(start);
+  new_ct->mutable_linear()->add_coeffs(1);
+  new_ct->mutable_linear()->add_vars(size);
+  new_ct->mutable_linear()->add_coeffs(1);
+  new_ct->mutable_linear()->add_vars(end);
+  new_ct->mutable_linear()->add_coeffs(-1);
+  context->UpdateNewConstraintsVariableUsage();
 }
 
 }  // namespace
@@ -2392,21 +2397,7 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
 
   if (context_->IntervalUsage(c) == 0) {
     if (!ct->interval().has_start_view()) {
-      // Convert to linear.
-      const int start = ct->interval().start();
-      const int end = ct->interval().end();
-      const int size = ct->interval().size();
-      ConstraintProto* new_ct = context_->working_model->add_constraints();
-      *(new_ct->mutable_enforcement_literal()) = ct->enforcement_literal();
-      new_ct->mutable_linear()->add_domain(0);
-      new_ct->mutable_linear()->add_domain(0);
-      new_ct->mutable_linear()->add_vars(start);
-      new_ct->mutable_linear()->add_coeffs(1);
-      new_ct->mutable_linear()->add_vars(size);
-      new_ct->mutable_linear()->add_coeffs(1);
-      new_ct->mutable_linear()->add_vars(end);
-      new_ct->mutable_linear()->add_coeffs(-1);
-      context_->UpdateNewConstraintsVariableUsage();
+      AddLinearConstraintFromInterval(*ct, context_);
     }
     context_->UpdateRuleStats("interval: unused, converted to linear");
     return RemoveConstraint(ct);
@@ -2423,6 +2414,10 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
     if (!ct->interval().has_start_view()) {
       changed = true;
 
+      // Add a linear constraint. Our new format require a separate linear
+      // constraint which allow us to reuse all the propagation code.
+      AddLinearConstraintFromInterval(*ct, context_);
+
       // Fill the view fields.
       interval->mutable_start_view()->add_vars(interval->start());
       interval->mutable_start_view()->add_coeffs(1);
@@ -2433,20 +2428,6 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
       interval->mutable_end_view()->add_vars(interval->end());
       interval->mutable_end_view()->add_coeffs(1);
       interval->mutable_end_view()->set_offset(0);
-
-      // Create a new linear constraint to detect affine relation and propagate
-      // the domain properly.
-      //
-      // Note(user): Aving an extra constraint is not super clean, but reusing
-      // the code is a must.
-      ConstraintProto* new_ct = context_->working_model->add_constraints();
-      *(new_ct->mutable_enforcement_literal()) = ct->enforcement_literal();
-      new_ct->mutable_linear()->add_domain(0);
-      new_ct->mutable_linear()->add_domain(0);
-      AddLinearExpression(1, interval->start_view(), new_ct->mutable_linear());
-      AddLinearExpression(1, interval->size_view(), new_ct->mutable_linear());
-      AddLinearExpression(-1, interval->end_view(), new_ct->mutable_linear());
-      context_->UpdateNewConstraintsVariableUsage();
 
       // Set the old fields to their default. Not really needed.
       interval->set_start(0);
@@ -2459,17 +2440,6 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
     changed |= CanonicalizeLinearExpression(*ct, interval->mutable_size_view());
     changed |= CanonicalizeLinearExpression(*ct, interval->mutable_end_view());
     return changed;
-  }
-
-  // If the interval is of fixed size, we can add the corresponsing affine
-  // relation to our pool.
-  //
-  // TODO(user): This will currently add another linear relation to the proto
-  // in addition to the interval at the end of the presolve though.
-  if (/* DISABLES CODE */ (false) && ct->enforcement_literal().empty() &&
-      context_->IsFixed(ct->interval().size())) {
-    context_->StoreAffineRelation(ct->interval().end(), ct->interval().start(),
-                                  1, context_->MinOf(ct->interval().size()));
   }
 
   // This never change the constraint-variable graph.
@@ -3973,9 +3943,8 @@ void CpModelPresolver::Probe() {
   // Important: Because the model_proto do not contains affine relation or the
   // objective, we cannot call DetectOptionalVariables() ! This might wrongly
   // detect optionality and derive bad conclusion.
-  mapping->CreateVariables(model_proto, /*view_all_booleans_as_integers=*/false,
-                           &model);
-  mapping->ExtractEncoding(model_proto, &model);
+  LoadVariables(model_proto, /*view_all_booleans_as_integers=*/false, &model);
+  ExtractEncoding(model_proto, &model);
   auto* sat_solver = model.GetOrCreate<SatSolver>();
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (mapping->ConstraintIsAlreadyLoaded(&ct)) continue;

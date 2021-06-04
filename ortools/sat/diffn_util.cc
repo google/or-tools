@@ -13,7 +13,6 @@
 
 #include "ortools/sat/diffn_util.h"
 
-#include "absl/algorithm/container.h"
 #include "ortools/base/stl_util.h"
 
 namespace operations_research {
@@ -58,16 +57,14 @@ bool ReportEnergyConflict(Rectangle bounding_box, absl::Span<const int> boxes,
   IntegerValue total_energy(0);
   for (const int b : boxes) {
     const IntegerValue x_min = x->ShiftedStartMin(b);
-    const IntegerValue x_max = x->EndMax(b);
+    const IntegerValue x_max = x->ShiftedEndMax(b);
     if (x_min < bounding_box.x_min || x_max > bounding_box.x_max) continue;
     const IntegerValue y_min = y->ShiftedStartMin(b);
-    const IntegerValue y_max = y->EndMax(b);
+    const IntegerValue y_max = y->ShiftedEndMax(b);
     if (y_min < bounding_box.y_min || y_max > bounding_box.y_max) continue;
 
-    x->AddEnergyAfterReason(b, x->SizeMin(b), bounding_box.x_min);
-    x->AddEndMaxReason(b, bounding_box.x_max);
-    y->AddEnergyAfterReason(b, y->SizeMin(b), bounding_box.y_min);
-    y->AddEndMaxReason(b, bounding_box.y_max);
+    x->AddEnergyMinInIntervalReason(b, bounding_box.x_min, bounding_box.x_max);
+    y->AddEnergyMinInIntervalReason(b, bounding_box.y_min, bounding_box.y_max);
 
     total_energy += x->SizeMin(b) * y->SizeMin(b);
 

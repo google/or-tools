@@ -18,7 +18,7 @@
 
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/file.h"
-#include "ortools/sat/cp_model_loader.h"
+#include "ortools/sat/cp_model_mapping.h"
 #endif  // __PORTABLE_PLATFORM__
 
 #include "absl/container/flat_hash_set.h"

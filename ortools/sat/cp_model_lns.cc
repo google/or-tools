@@ -21,7 +21,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_loader.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
@@ -256,11 +256,35 @@ std::vector<int> NeighborhoodGeneratorHelper::GetActiveIntervals(
 
     // We filter out fixed intervals. Because of presolve, if there is an
     // enforcement literal, it cannot be fixed.
-    if (interval_ct.enforcement_literal().empty() &&
-        IsConstant(PositiveRef(interval_ct.interval().start())) &&
-        IsConstant(PositiveRef(interval_ct.interval().size())) &&
-        IsConstant(PositiveRef(interval_ct.interval().end()))) {
-      continue;
+    if (interval_ct.enforcement_literal().empty()) {
+      if (interval_ct.interval().has_start_view()) {
+        bool is_constant = true;
+        for (const int v : interval_ct.interval().start_view().vars()) {
+          if (!IsConstant(v)) {
+            is_constant = false;
+            break;
+          }
+        }
+        for (const int v : interval_ct.interval().size_view().vars()) {
+          if (!IsConstant(v)) {
+            is_constant = false;
+            break;
+          }
+        }
+        for (const int v : interval_ct.interval().end_view().vars()) {
+          if (!IsConstant(v)) {
+            is_constant = false;
+            break;
+          }
+        }
+        if (is_constant) continue;
+      } else {
+        if (IsConstant(PositiveRef(interval_ct.interval().start())) &&
+            IsConstant(PositiveRef(interval_ct.interval().size())) &&
+            IsConstant(PositiveRef(interval_ct.interval().end()))) {
+          continue;
+        }
+      }
     }
 
     active_intervals.push_back(i);
@@ -645,6 +669,51 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
 }
 
 namespace {
+
+LinearExpressionProto GetStart(const IntervalConstraintProto& interval) {
+  if (interval.has_start_view()) return interval.start_view();
+  LinearExpressionProto result;
+  result.add_vars(interval.start());
+  result.add_coeffs(1);
+  return result;
+}
+
+LinearExpressionProto GetSize(const IntervalConstraintProto& interval) {
+  if (interval.has_size_view()) return interval.size_view();
+  LinearExpressionProto result;
+  result.add_vars(interval.size());
+  result.add_coeffs(1);
+  return result;
+}
+
+LinearExpressionProto GetEnd(const IntervalConstraintProto& interval) {
+  if (interval.has_end_view()) return interval.end_view();
+  LinearExpressionProto result;
+  result.add_vars(interval.end());
+  result.add_coeffs(1);
+  return result;
+}
+
+int64_t GetLinearExpressionValue(const LinearExpressionProto& expr,
+                                 const CpSolverResponse& initial_solution) {
+  int64_t result = expr.offset();
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    result += expr.coeffs(i) * initial_solution.solution(expr.vars(i));
+  }
+  return result;
+}
+
+void AddLinearExpressionToConstraint(const int64_t coeff,
+                                     const LinearExpressionProto& expr,
+                                     LinearConstraintProto* constraint,
+                                     int64_t* rhs_offset) {
+  *rhs_offset -= coeff * expr.offset();
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    constraint->add_vars(expr.vars(i));
+    constraint->add_coeffs(expr.coeffs(i) * coeff);
+  }
+}
+
 void AddPrecedenceConstraints(const absl::Span<const int> intervals,
                               const absl::flat_hash_set<int>& ignored_intervals,
                               const CpSolverResponse& initial_solution,
@@ -658,50 +727,63 @@ void AddPrecedenceConstraints(const absl::Span<const int> intervals,
     const ConstraintProto& interval_ct = helper.ModelProto().constraints(i);
 
     // TODO(user): we ignore size zero for now.
-    const int size_var = interval_ct.interval().size();
-    if (initial_solution.solution(size_var) == 0) continue;
+    const LinearExpressionProto size_var = GetSize(interval_ct.interval());
+    if (GetLinearExpressionValue(size_var, initial_solution) == 0) continue;
 
-    const int start_var = interval_ct.interval().start();
-    const int64_t start_value = initial_solution.solution(start_var);
+    const LinearExpressionProto start_var = GetStart(interval_ct.interval());
+    const int64_t start_value =
+        GetLinearExpressionValue(start_var, initial_solution);
+
     start_interval_pairs.push_back({start_value, i});
   }
   std::sort(start_interval_pairs.begin(), start_interval_pairs.end());
 
   // Add precedence between the remaining intervals, forcing their order.
   for (int i = 0; i + 1 < start_interval_pairs.size(); ++i) {
-    const int before_start = helper.ModelProto()
-                                 .constraints(start_interval_pairs[i].second)
-                                 .interval()
-                                 .start();
-    const int before_end = helper.ModelProto()
-                               .constraints(start_interval_pairs[i].second)
-                               .interval()
-                               .end();
-    const int after_start = helper.ModelProto()
-                                .constraints(start_interval_pairs[i + 1].second)
-                                .interval()
-                                .start();
+    const LinearExpressionProto before_start =
+        GetStart(helper.ModelProto()
+                     .constraints(start_interval_pairs[i].second)
+                     .interval());
+    const LinearExpressionProto before_end =
+        GetEnd(helper.ModelProto()
+                   .constraints(start_interval_pairs[i].second)
+                   .interval());
+    const LinearExpressionProto after_start =
+        GetStart(helper.ModelProto()
+                     .constraints(start_interval_pairs[i + 1].second)
+                     .interval());
 
     // If the end was smaller we keep it that way, otherwise we just order the
     // start variables.
     LinearConstraintProto* linear =
         neighborhood->delta.add_constraints()->mutable_linear();
     linear->add_domain(std::numeric_limits<int64_t>::min());
-    if (initial_solution.solution(before_end) <=
-        initial_solution.solution(after_start)) {
+    int64_t rhs_offset = 0;
+    if (GetLinearExpressionValue(before_end, initial_solution) <=
+        GetLinearExpressionValue(after_start, initial_solution)) {
       // If the end was smaller than the next start, keep it that way.
-      linear->add_domain(0);
-      linear->add_vars(before_end);
+      AddLinearExpressionToConstraint(1, before_end, linear, &rhs_offset);
     } else {
       // Otherwise, keep the same minimum separation. This is done in order
       // to "simplify" the neighborhood.
-      linear->add_domain(initial_solution.solution(before_start) -
-                         initial_solution.solution(after_start));
-      linear->add_vars(before_start);
+      rhs_offset = GetLinearExpressionValue(before_start, initial_solution) -
+                   GetLinearExpressionValue(after_start, initial_solution);
+      AddLinearExpressionToConstraint(1, before_start, linear, &rhs_offset);
     }
-    linear->add_coeffs(1);
-    linear->add_vars(after_start);
-    linear->add_coeffs(-1);
+
+    AddLinearExpressionToConstraint(-1, after_start, linear, &rhs_offset);
+    linear->add_domain(rhs_offset);
+
+    // The linear constraint should be satisfied by the current solution.
+    if (DEBUG_MODE) {
+      int64_t activity = 0;
+      for (int i = 0; i < linear->vars().size(); ++i) {
+        activity +=
+            linear->coeffs(i) * initial_solution.solution(linear->vars(i));
+      }
+      CHECK_GE(activity, linear->domain(0));
+      CHECK_LE(activity, linear->domain(1));
+    }
   }
 }
 }  // namespace
@@ -797,8 +879,9 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
 
   for (const int i : active_intervals) {
     const ConstraintProto& interval_ct = helper_.ModelProto().constraints(i);
-    const int start_var = interval_ct.interval().start();
-    const int64_t start_value = initial_solution.solution(start_var);
+    const LinearExpressionProto start_var = GetStart(interval_ct.interval());
+    const int64_t start_value =
+        GetLinearExpressionValue(start_var, initial_solution);
     start_interval_pairs.push_back({start_value, i});
   }
   std::sort(start_interval_pairs.begin(), start_interval_pairs.end());

@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "ortools/sat/boolean_problem.pb.h"
-#include "ortools/sat/cp_model_loader.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"

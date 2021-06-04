@@ -336,6 +336,7 @@ bool TimeTablingPerTask::Propagate() {
   if (!SweepAllTasks(/*is_forward=*/true)) return false;
 
   // We reuse the same profile, but reversed, to update the maximum end times.
+  if (!helper_->SynchronizeAndSetTimeDirection(false)) return false;
   ReverseProfile();
 
   // Update the maximum end times (reversed problem).
@@ -345,7 +346,7 @@ bool TimeTablingPerTask::Propagate() {
 }
 
 bool TimeTablingPerTask::BuildProfile() {
-  helper_->SynchronizeAndSetTimeDirection(true);  // forward
+  if (!helper_->SynchronizeAndSetTimeDirection(true)) return false;
 
   // Update the set of tasks that contribute to the profile. Tasks that were
   // contributing are still part of the profile so we only need to check the
@@ -430,8 +431,6 @@ bool TimeTablingPerTask::BuildProfile() {
 }
 
 void TimeTablingPerTask::ReverseProfile() {
-  helper_->SynchronizeAndSetTimeDirection(false);  // backward
-
   // We keep the sentinels inchanged.
   for (int i = 1; i + 1 < profile_.size(); ++i) {
     profile_[i].start = -profile_[i + 1].start;

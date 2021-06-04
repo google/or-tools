@@ -13,7 +13,9 @@
 
 #include "ortools/sat/lb_tree_search.h"
 
-#include "ortools/sat/cp_model_loader.h"
+#include <cstdint>
+
+#include "ortools/sat/cp_model_mapping.h"
 
 namespace operations_research {
 namespace sat {
