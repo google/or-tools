@@ -3027,6 +3027,45 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
     }
   }
 
+  // Split constraints in disjoint sets.
+  {
+    if (proto->intervals_size() > 1) {
+      std::vector<IndexedInterval> indexed_intervals;
+      for (int i = 0; i < proto->intervals().size(); ++i) {
+        const int index = proto->intervals(i);
+        indexed_intervals.push_back({index,
+                                     IntegerValue(context_->StartMin(index)),
+                                     IntegerValue(context_->EndMax(index))});
+      }
+      std::vector<std::vector<int>> components;
+      ConstructNonOverlappingSets(false, &indexed_intervals, &components);
+
+      if (components.size() > 1) {
+        NoOverlapConstraintProto* dest = proto;
+        dest->clear_intervals();
+        for (const std::vector<int>& intervals : components) {
+          if (components.size() <= 1) continue;
+
+          // Create a new no_overlap constraint after the first iteration.
+          if (dest == nullptr) {
+            dest = context_->working_model->add_constraints()
+                       ->mutable_no_overlap();
+          }
+          // Fill in the intervals. Unfortunately, the Assign() method does not
+          // compile in or-tools.
+          for (const int i : intervals) {
+            dest->add_intervals(i);
+          }
+          // Zero the ptr, so than we can create a new no_overlap constraint
+          // at the next iteration.
+          dest = nullptr;
+        }
+        changed = true;
+        context_->UpdateNewConstraintsVariableUsage();
+      }
+    }
+  }
+
   std::vector<int> constant_intervals;
   int64_t size_min_of_non_constant_intervals =
       std::numeric_limits<int64_t>::max();
@@ -3141,38 +3180,6 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
     }
   }
 
-  if (proto->intervals_size() > 1) {
-    // Sort all intervals by start min.
-    std::sort(proto->mutable_intervals()->begin(),
-              proto->mutable_intervals()->end(), [this](int i1, int i2) {
-                return context_->StartMin(i1) < context_->StartMin(i2);
-              });
-
-    // Split no_overlap in disjoint subsets.
-    int64_t end_max_so_far = context_->EndMax(proto->intervals(0));
-    for (int i = 1; i < proto->intervals_size(); ++i) {
-      const int interval_index = proto->intervals(i);
-      if (context_->StartMin(interval_index) >= end_max_so_far) {
-        // Create a new overlap with the rest.
-        // TODO(user): We can split all at once.
-        // TODO(user,user): Can we split more aggressively ?
-        NoOverlapConstraintProto* new_ct =
-            context_->working_model->add_constraints()->mutable_no_overlap();
-        for (int j = i; j < proto->intervals_size(); ++j) {
-          new_ct->add_intervals(ct->no_overlap().intervals(j));
-        }
-        proto->mutable_intervals()->Truncate(i);
-        context_->UpdateNewConstraintsVariableUsage();
-        context_->UpdateRuleStats(
-            "no_overlap: split into disjoint no_overlap constraints");
-        changed = true;
-        break;
-      }
-      end_max_so_far =
-          std::max(end_max_so_far, context_->EndMax(interval_index));
-    }
-  }
-
   if (proto->intervals_size() == 1) {
     context_->UpdateRuleStats("no_overlap: only one interval");
     return RemoveConstraint(ct);
@@ -3243,6 +3250,8 @@ bool CpModelPresolver::PresolveNoOverlap2D(int c, ConstraintProto* ct) {
                              &no_overlaps);
     for (const std::vector<int>& no_overlap : no_overlaps) {
       ConstraintProto* new_ct = context_->working_model->add_constraints();
+      // Unfortunately, the Assign() method does not work in or-tools as the
+      // protobuf int32_t type is not the int type.
       for (const int i : no_overlap) {
         new_ct->mutable_no_overlap()->add_intervals(i);
       }

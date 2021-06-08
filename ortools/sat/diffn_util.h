@@ -120,6 +120,12 @@ void ConstructOverlappingSets(bool already_sorted,
                               std::vector<IndexedInterval>* intervals,
                               std::vector<std::vector<int>>* result);
 
+// Given n intervals, returns the set of connected components (using the overlap
+// relation between 2 intervals).
+void ConstructNonOverlappingSets(bool already_sorted,
+                                 std::vector<IndexedInterval>* intervals,
+                                 std::vector<std::vector<int>>* result);
+
 }  // namespace sat
 }  // namespace operations_research
 
