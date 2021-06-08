@@ -166,7 +166,7 @@ std::string PresolveContext::IntervalDebugString(int ct_ref) const {
   if (IntervalIsConstant(ct_ref)) {
     return absl::StrCat("interval_", ct_ref, "(", StartMin(ct_ref), "..",
                         EndMax(ct_ref), ")");
-  } else if (IntervalIsOptional(ct_ref)) {
+  } else if (ConstraintIsOptional(ct_ref)) {
     const int literal =
         working_model->constraints(ct_ref).enforcement_literal(0);
     if (SizeMin(ct_ref) == SizeMax(ct_ref)) {
@@ -228,16 +228,6 @@ int64_t PresolveContext::SizeMax(int ct_ref) const {
       working_model->constraints(ct_ref).interval();
   if (interval.has_size_view()) return MaxOf(interval.size_view());
   return MaxOf(interval.size());
-}
-
-bool PresolveContext::IntervalIsOptional(int ct_ref) const {
-  const ConstraintProto& ct = working_model->constraints(ct_ref);
-  bool contains_one_free_literal = false;
-  for (const int literal : ct.enforcement_literal()) {
-    if (LiteralIsFalse(literal)) return false;
-    if (!LiteralIsTrue(literal)) contains_one_free_literal = true;
-  }
-  return contains_one_free_literal;
 }
 
 // Important: To be sure a variable can be removed, we need it to not be a
@@ -390,6 +380,16 @@ bool PresolveContext::ConstraintIsInactive(int index) const {
     if (LiteralIsFalse(literal)) return true;
   }
   return false;
+}
+
+bool PresolveContext::ConstraintIsOptional(int ct_ref) const {
+  const ConstraintProto& ct = working_model->constraints(ct_ref);
+  bool contains_one_free_literal = false;
+  for (const int literal : ct.enforcement_literal()) {
+    if (LiteralIsFalse(literal)) return false;
+    if (!LiteralIsTrue(literal)) contains_one_free_literal = true;
+  }
+  return contains_one_free_literal;
 }
 
 void PresolveContext::UpdateRuleStats(const std::string& name, int num_times) {

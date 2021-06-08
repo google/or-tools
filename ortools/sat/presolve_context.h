@@ -108,7 +108,6 @@ class PresolveContext {
   int64_t SizeMax(int ct_ref) const;
   int64_t EndMin(int ct_ref) const;
   int64_t EndMax(int ct_ref) const;
-  bool IntervalIsOptional(int ct_ref) const;
   std::string IntervalDebugString(int ct_ref) const;
 
   // Helpers to query the current domain of a linear expression.
@@ -350,6 +349,10 @@ class PresolveContext {
   // Checks if a constraint contains an enforcement literal set to false,
   // or if it has been cleared.
   bool ConstraintIsInactive(int ct_index) const;
+
+  // Checks if a constraint contains an enforcement literal not fixed, and
+  // no enforcement literals set to false.
+  bool ConstraintIsOptional(int ct_ref) const;
 
   // Make sure we never delete an "assumption" literal by using a special
   // constraint for that.
