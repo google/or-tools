@@ -129,6 +129,9 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
 void AppendCircuitRelaxation(const ConstraintProto& ct, Model* model,
                              LinearRelaxation* relaxation);
 
+void AppendRoutesRelaxation(const ConstraintProto& ct, Model* model,
+                            LinearRelaxation* relaxation);
+
 void AppendIntervalRelaxation(const ConstraintProto& ct, Model* model,
                               LinearRelaxation* relaxation);
 

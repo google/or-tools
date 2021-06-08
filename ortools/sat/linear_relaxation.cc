@@ -536,6 +536,59 @@ void AppendCircuitRelaxation(const ConstraintProto& ct, Model* model,
   }
 }
 
+void AppendRoutesRelaxation(const ConstraintProto& ct, Model* model,
+                            LinearRelaxation* relaxation) {
+  if (HasEnforcementLiteral(ct)) return;
+  auto* mapping = model->GetOrCreate<CpModelMapping>();
+  const int num_arcs = ct.routes().literals_size();
+  CHECK_EQ(num_arcs, ct.routes().tails_size());
+  CHECK_EQ(num_arcs, ct.routes().heads_size());
+
+  // Each node except node zero must have exactly one incoming and one outgoing
+  // arc (note that it can be the unique self-arc of this node too). For node
+  // zero, the number of incoming arcs should be the same as the number of
+  // outgoing arcs.
+  std::map<int, std::vector<Literal>> incoming_arc_constraints;
+  std::map<int, std::vector<Literal>> outgoing_arc_constraints;
+  for (int i = 0; i < num_arcs; i++) {
+    const Literal arc = mapping->Literal(ct.routes().literals(i));
+    const int tail = ct.routes().tails(i);
+    const int head = ct.routes().heads(i);
+
+    // Make sure this literal has a view.
+    model->Add(NewIntegerVariableFromLiteral(arc));
+    outgoing_arc_constraints[tail].push_back(arc);
+    incoming_arc_constraints[head].push_back(arc);
+  }
+  for (const auto* node_map :
+       {&outgoing_arc_constraints, &incoming_arc_constraints}) {
+    for (const auto& entry : *node_map) {
+      if (entry.first == 0) continue;
+      const std::vector<Literal>& exactly_one = entry.second;
+      if (exactly_one.size() > 1) {
+        LinearConstraintBuilder at_least_one_lc(model, IntegerValue(1),
+                                                kMaxIntegerValue);
+        for (const Literal l : exactly_one) {
+          CHECK(at_least_one_lc.AddLiteralTerm(l, IntegerValue(1)));
+        }
+
+        // We separate the two constraints.
+        relaxation->at_most_ones.push_back(exactly_one);
+        relaxation->linear_constraints.push_back(at_least_one_lc.Build());
+      }
+    }
+  }
+  LinearConstraintBuilder zero_node_balance_lc(model, IntegerValue(0),
+                                               IntegerValue(0));
+  for (const Literal& incoming_arc : incoming_arc_constraints[0]) {
+    CHECK(zero_node_balance_lc.AddLiteralTerm(incoming_arc, IntegerValue(1)));
+  }
+  for (const Literal& outgoing_arc : outgoing_arc_constraints[0]) {
+    CHECK(zero_node_balance_lc.AddLiteralTerm(outgoing_arc, IntegerValue(-1)));
+  }
+  relaxation->linear_constraints.push_back(zero_node_balance_lc.Build());
+}
+
 void AppendIntervalRelaxation(const ConstraintProto& ct, Model* model,
                               LinearRelaxation* relaxation) {
   // If the interval is using views, then the linear equation is already
@@ -911,6 +964,10 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
     }
     case ConstraintProto::ConstraintCase::kCircuit: {
       AppendCircuitRelaxation(ct, model, relaxation);
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kRoutes: {
+      AppendRoutesRelaxation(ct, model, relaxation);
       break;
     }
     case ConstraintProto::ConstraintCase::kInterval: {
