@@ -140,12 +140,6 @@ class CpModelPresolver {
   bool PresolveLinearOnBooleans(ConstraintProto* ct);
   void PresolveLinearEqualityModuloTwo(ConstraintProto* ct);
 
-  // To simplify dealing with the two kind of intervals.
-  int64_t StartMin(const IntervalConstraintProto& interval) const;
-  int64_t EndMax(const IntervalConstraintProto& interval) const;
-  int64_t SizeMin(const IntervalConstraintProto& interval) const;
-  int64_t SizeMax(const IntervalConstraintProto& interval) const;
-
   // SetPPC is short for set packing, partitioning and covering constraints.
   // These are sum of booleans <=, = and >= 1 respectively.
   bool ProcessSetPPC();

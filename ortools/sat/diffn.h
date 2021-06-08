@@ -61,7 +61,7 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   IntegerValue threshold_y_;
 
   std::vector<int> active_boxes_;
-  std::vector<IntegerValue> cached_areas_;
+  std::vector<IntegerValue> cached_energies_;
   std::vector<Rectangle> cached_rectangles_;
 
   struct Neighbor {
@@ -99,20 +99,18 @@ class NonOverlappingRectanglesDisjunctivePropagator
  private:
   bool PropagateTwoBoxes();
   bool FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
-      const SchedulingConstraintHelper& x, const SchedulingConstraintHelper& y,
+      const SchedulingConstraintHelper& x, SchedulingConstraintHelper* y,
       std::function<bool()> inner_propagate);
 
   SchedulingConstraintHelper& global_x_;
   SchedulingConstraintHelper& global_y_;
   SchedulingConstraintHelper x_;
-  SchedulingConstraintHelper y_;
   const bool strict_;
 
   GenericLiteralWatcher* watcher_;
   int fast_id_;  // Propagator id of the "fast" version.
 
-  std::vector<int> active_boxes_;
-  std::vector<IntegerValue> events_time_;
+  std::vector<IndexedInterval> indexed_intervals_;
   std::vector<std::vector<int>> events_overlapping_boxes_;
 
   absl::flat_hash_set<absl::Span<int>> reduced_overlapping_boxes_;

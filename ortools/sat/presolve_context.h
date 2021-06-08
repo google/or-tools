@@ -100,6 +100,17 @@ class PresolveContext {
   bool DomainContains(int ref, int64_t value) const;
   Domain DomainOf(int ref) const;
 
+  // Helper to query the state of an interval.
+  bool IntervalIsConstant(int ct_ref) const;
+  int64_t StartMin(int ct_ref) const;
+  int64_t StartMax(int ct_ref) const;
+  int64_t SizeMin(int ct_ref) const;
+  int64_t SizeMax(int ct_ref) const;
+  int64_t EndMin(int ct_ref) const;
+  int64_t EndMax(int ct_ref) const;
+  bool IntervalIsOptional(int ct_ref) const;
+  std::string IntervalDebugString(int ct_ref) const;
+
   // Helpers to query the current domain of a linear expression.
   // This doesn't check for integer overflow, but our linear expression
   // should be such that this cannot happen (tested at validation).

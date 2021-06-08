@@ -96,6 +96,30 @@ absl::Span<int> FilterBoxesAndRandomize(
     const std::vector<Rectangle>& cached_rectangles, absl::Span<int> boxes,
     IntegerValue threshold_x, IntegerValue threshold_y, absl::BitGenRef random);
 
+// Given the total energy of all rectangles (sum of energies[box]) we know that
+// any box with an area greater than that cannot participate in any "bounding
+// box" conflict. As we remove this box, the total energy decrease, so we might
+// remove more. This works in O(n log n).
+absl::Span<int> FilterBoxesThatAreTooLarge(
+    const std::vector<Rectangle>& cached_rectangles,
+    const std::vector<IntegerValue>& energies, absl::Span<int> boxes);
+
+// Given n fixed intervals, returns the subsets of intervals that overlap during
+// at least one time unit. Note that we only return "maximal" subset and filter
+// subset strictly included in another.
+//
+// All Intervals must have a positive size.
+//
+// The algo is in O(n log n) + O(result_size) which is usually O(n^2).
+struct IndexedInterval {
+  int index;
+  IntegerValue start;
+  IntegerValue end;
+};
+void ConstructOverlappingSets(bool already_sorted,
+                              std::vector<IndexedInterval>* intervals,
+                              std::vector<std::vector<int>>* result);
+
 }  // namespace sat
 }  // namespace operations_research
 

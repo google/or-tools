@@ -313,5 +313,81 @@ absl::Span<int> FilterBoxesAndRandomize(
   return {&boxes[0], new_size};
 }
 
+absl::Span<int> FilterBoxesThatAreTooLarge(
+    const std::vector<Rectangle>& cached_rectangles,
+    const std::vector<IntegerValue>& energies, absl::Span<int> boxes) {
+  // Sort the boxes by increasing area.
+  std::sort(boxes.begin(), boxes.end(), [&cached_rectangles](int a, int b) {
+    return cached_rectangles[a].Area() < cached_rectangles[b].Area();
+  });
+
+  IntegerValue total_energy(0);
+  for (const int box : boxes) total_energy += energies[box];
+
+  // Remove all the large boxes until we have one with area smaller than the
+  // energy of the boxes below.
+  int new_size = boxes.size();
+  while (new_size > 0 &&
+         cached_rectangles[boxes[new_size - 1]].Area() >= total_energy) {
+    --new_size;
+    total_energy -= energies[boxes[new_size]];
+  }
+  return boxes.subspan(0, new_size);
+}
+
+void ConstructOverlappingSets(bool already_sorted,
+                              std::vector<IndexedInterval>* intervals,
+                              std::vector<std::vector<int>>* result) {
+  result->clear();
+  if (already_sorted) {
+    DCHECK(
+        std::is_sorted(intervals->begin(), intervals->end(),
+                       [](const IndexedInterval& a, const IndexedInterval& b) {
+                         return a.start < b.start;
+                       }));
+  } else {
+    std::sort(intervals->begin(), intervals->end(),
+              [](const IndexedInterval& a, const IndexedInterval& b) {
+                return a.start < b.start;
+              });
+  }
+  IntegerValue min_end_in_set = kMaxIntegerValue;
+  intervals->push_back({-1, kMaxIntegerValue, kMaxIntegerValue});  // Sentinel.
+  const int size = intervals->size();
+
+  // We do a line sweep. The "current" subset crossing the "line" at
+  // (time, time + 1) will be in (*intervals)[start_index, end_index) at the end
+  // of the loop block.
+  int start_index = 0;
+  for (int end_index = 0; end_index < size;) {
+    const IntegerValue time = (*intervals)[end_index].start;
+
+    // First, if there is some deletion, we will push the "old" set to the
+    // result before updating it. Otherwise, we will have a superset later, so
+    // we just continue for now.
+    if (min_end_in_set <= time) {
+      result->push_back({});
+      min_end_in_set = kMaxIntegerValue;
+      for (int i = start_index; i < end_index; ++i) {
+        result->back().push_back((*intervals)[i].index);
+        if ((*intervals)[i].end <= time) {
+          std::swap((*intervals)[start_index++], (*intervals)[i]);
+        } else {
+          min_end_in_set = std::min(min_end_in_set, (*intervals)[i].end);
+        }
+      }
+
+      // Do not output subset of size one.
+      if (result->back().size() == 1) result->pop_back();
+    }
+
+    // Add all the new intervals starting exactly at "time".
+    do {
+      min_end_in_set = std::min(min_end_in_set, (*intervals)[end_index].end);
+      ++end_index;
+    } while (end_index < size && (*intervals)[end_index].start == time);
+  }
+}
+
 }  // namespace sat
 }  // namespace operations_research

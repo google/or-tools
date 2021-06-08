@@ -2006,6 +2006,11 @@ class FullProblemSolver : public SubSolver {
   }
 
   std::string StatisticsString() const override {
+    // The local model may have been deleted at the end of GenerateTask.
+    // Do not crash in this case.
+    // TODO(user): Revisit this case.
+    if (local_model_ == nullptr) return std::string();
+
     const auto& lps =
         *local_model_->GetOrCreate<LinearProgrammingConstraintCollection>();
     std::string lp_stats;

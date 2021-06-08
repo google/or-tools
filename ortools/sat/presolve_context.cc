@@ -145,6 +145,101 @@ int64_t PresolveContext::MaxOf(const LinearExpressionProto& expr) const {
   return result;
 }
 
+// Note that we only support converted intervals.
+bool PresolveContext::IntervalIsConstant(int ct_ref) const {
+  const ConstraintProto& proto = working_model->constraints(ct_ref);
+  if (!proto.enforcement_literal().empty()) return false;
+  if (!proto.interval().has_start_view()) return false;
+  for (const int var : proto.interval().start_view().vars()) {
+    if (!IsFixed(var)) return false;
+  }
+  for (const int var : proto.interval().size_view().vars()) {
+    if (!IsFixed(var)) return false;
+  }
+  for (const int var : proto.interval().end_view().vars()) {
+    if (!IsFixed(var)) return false;
+  }
+  return true;
+}
+
+std::string PresolveContext::IntervalDebugString(int ct_ref) const {
+  if (IntervalIsConstant(ct_ref)) {
+    return absl::StrCat("interval_", ct_ref, "(", StartMin(ct_ref), "..",
+                        EndMax(ct_ref), ")");
+  } else if (IntervalIsOptional(ct_ref)) {
+    const int literal =
+        working_model->constraints(ct_ref).enforcement_literal(0);
+    if (SizeMin(ct_ref) == SizeMax(ct_ref)) {
+      return absl::StrCat("interval_", ct_ref, "(lit=", literal, ", ",
+                          StartMin(ct_ref), " --(", SizeMin(ct_ref), ")--> ",
+                          EndMax(ct_ref), ")");
+    } else {
+      return absl::StrCat("interval_", ct_ref, "(lit=", literal, ", ",
+                          StartMin(ct_ref), " --(", SizeMin(ct_ref), "..",
+                          SizeMax(ct_ref), ")--> ", EndMax(ct_ref), ")");
+    }
+  } else if (SizeMin(ct_ref) == SizeMax(ct_ref)) {
+    return absl::StrCat("interval_", ct_ref, "(", StartMin(ct_ref), " --(",
+                        SizeMin(ct_ref), ")--> ", EndMax(ct_ref), ")");
+  } else {
+    return absl::StrCat("interval_", ct_ref, "(", StartMin(ct_ref), " --(",
+                        SizeMin(ct_ref), "..", SizeMax(ct_ref), ")--> ",
+                        EndMax(ct_ref), ")");
+  }
+}
+
+int64_t PresolveContext::StartMin(int ct_ref) const {
+  const IntervalConstraintProto& interval =
+      working_model->constraints(ct_ref).interval();
+  if (interval.has_start_view()) return MinOf(interval.start_view());
+  return MinOf(interval.start());
+}
+
+int64_t PresolveContext::StartMax(int ct_ref) const {
+  const IntervalConstraintProto& interval =
+      working_model->constraints(ct_ref).interval();
+  if (interval.has_start_view()) return MaxOf(interval.start_view());
+  return MaxOf(interval.start());
+}
+
+int64_t PresolveContext::EndMin(int ct_ref) const {
+  const IntervalConstraintProto& interval =
+      working_model->constraints(ct_ref).interval();
+  if (interval.has_end_view()) return MinOf(interval.end_view());
+  return MinOf(interval.end());
+}
+
+int64_t PresolveContext::EndMax(int ct_ref) const {
+  const IntervalConstraintProto& interval =
+      working_model->constraints(ct_ref).interval();
+  if (interval.has_end_view()) return MaxOf(interval.end_view());
+  return MaxOf(interval.end());
+}
+
+int64_t PresolveContext::SizeMin(int ct_ref) const {
+  const IntervalConstraintProto& interval =
+      working_model->constraints(ct_ref).interval();
+  if (interval.has_size_view()) return MinOf(interval.size_view());
+  return MinOf(interval.size());
+}
+
+int64_t PresolveContext::SizeMax(int ct_ref) const {
+  const IntervalConstraintProto& interval =
+      working_model->constraints(ct_ref).interval();
+  if (interval.has_size_view()) return MaxOf(interval.size_view());
+  return MaxOf(interval.size());
+}
+
+bool PresolveContext::IntervalIsOptional(int ct_ref) const {
+  const ConstraintProto& ct = working_model->constraints(ct_ref);
+  bool contains_one_free_literal = false;
+  for (const int literal : ct.enforcement_literal()) {
+    if (LiteralIsFalse(literal)) return false;
+    if (!LiteralIsTrue(literal)) contains_one_free_literal = true;
+  }
+  return contains_one_free_literal;
+}
+
 // Important: To be sure a variable can be removed, we need it to not be a
 // representative of both affine and equivalence relation.
 bool PresolveContext::VariableIsNotRepresentativeOfEquivalenceClass(

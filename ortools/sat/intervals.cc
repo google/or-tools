@@ -516,8 +516,9 @@ void SchedulingConstraintHelper::WatchAllTasks(int id,
 void SchedulingConstraintHelper::AddOtherReason(int t) {
   if (other_helper_ == nullptr || already_added_to_other_reasons_[t]) return;
   already_added_to_other_reasons_[t] = true;
-  other_helper_->AddStartMaxReason(t, event_for_other_helper_);
-  other_helper_->AddEndMinReason(t, event_for_other_helper_ + 1);
+  const int mapped_t = map_to_other_helper_[t];
+  other_helper_->AddStartMaxReason(mapped_t, event_for_other_helper_);
+  other_helper_->AddEndMinReason(mapped_t, event_for_other_helper_ + 1);
 }
 
 void SchedulingConstraintHelper::ImportOtherReasons() {

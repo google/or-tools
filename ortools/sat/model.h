@@ -56,15 +56,15 @@ class Model {
   /**
    * This makes it possible  to have a nicer API on the client side, and it
    * allows both of these forms:
-   *   - ConstraintCreationFunction(contraint_args, &model);
-   *   - model.Add(ConstraintCreationFunction(contraint_args));
+   *   - ConstraintCreationFunction(constraint_args, &model);
+   *   - model.Add(ConstraintCreationFunction(constraint_args));
    *
    * The second form is a bit nicer for the client and it also allows to store
    * constraints and add them later. However, the function creating the
    * constraint is slighly more involved.
    *
    * \code
-   std::function<void(Model*)> ConstraintCreationFunction(contraint_args) {
+   std::function<void(Model*)> ConstraintCreationFunction(constraint_args) {
      return [=] (Model* model) {
         ... the same code ...
      };

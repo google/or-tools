@@ -347,9 +347,11 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   // will be added. This other reason specifies that on the other helper, the
   // corresponding interval overlaps 'event'.
   void SetOtherHelper(SchedulingConstraintHelper* other_helper,
+                      absl::Span<const int> map_to_other_helper,
                       IntegerValue event) {
     CHECK(other_helper != nullptr);
     other_helper_ = other_helper;
+    map_to_other_helper_ = map_to_other_helper;
     event_for_other_helper_ = event;
   }
 
@@ -442,6 +444,7 @@ class SchedulingConstraintHelper : public PropagatorInterface,
 
   // Optional 'proxy' helper used in the diffn constraint.
   SchedulingConstraintHelper* other_helper_ = nullptr;
+  absl::Span<const int> map_to_other_helper_;
   IntegerValue event_for_other_helper_;
   std::vector<bool> already_added_to_other_reasons_;
 };

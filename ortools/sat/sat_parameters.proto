@@ -373,7 +373,7 @@ message SatParameters {
   // Whether the solver should display per sub-solver search statistics.
   // This is only useful is log_search_progress is set to true, and if the
   // number of search workers is > 1.
-  optional bool log_subsolver_statistics = 189 [default = false];
+  optional bool log_subsolver_statistics = 189 [default = true];
 
   // Add a prefix to all logs.
   optional string log_prefix = 185 [default = ""];

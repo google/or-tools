@@ -83,7 +83,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
       }
 
       // Anything not propagated by the BinaryImplicationGraph is a "new"
-      // binary clause. This is becaue the BinaryImplicationGraph has the
+      // binary clause. This is because the BinaryImplicationGraph has the
       // highest priority of all propagators.
       if (trail_.AssignmentType(l.Variable()) !=
           implication_graph_->PropagatorId()) {

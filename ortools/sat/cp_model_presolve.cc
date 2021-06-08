@@ -48,6 +48,7 @@
 #include "ortools/sat/cp_model_objective.h"
 #include "ortools/sat/cp_model_symmetries.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/diffn_util.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/probing.h"
 #include "ortools/sat/sat_base.h"
@@ -3000,94 +3001,197 @@ void ExtractClauses(bool use_bool_and, const ClauseContainer& container,
 
 }  // namespace
 
-int64_t CpModelPresolver::StartMin(
-    const IntervalConstraintProto& interval) const {
-  if (interval.has_start_view()) return context_->MinOf(interval.start_view());
-  return context_->MinOf(interval.start());
-}
-
-int64_t CpModelPresolver::EndMax(
-    const IntervalConstraintProto& interval) const {
-  if (interval.has_end_view()) return context_->MaxOf(interval.end_view());
-  return context_->MaxOf(interval.end());
-}
-
-int64_t CpModelPresolver::SizeMin(
-    const IntervalConstraintProto& interval) const {
-  if (interval.has_size_view()) return context_->MinOf(interval.size_view());
-  return context_->MinOf(interval.size());
-}
-
-int64_t CpModelPresolver::SizeMax(
-    const IntervalConstraintProto& interval) const {
-  if (interval.has_size_view()) return context_->MaxOf(interval.size_view());
-  return context_->MaxOf(interval.size());
-}
-
 bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
-  const NoOverlapConstraintProto& proto = ct->no_overlap();
-  const int initial_num_intervals = proto.intervals_size();
+  NoOverlapConstraintProto* proto = ct->mutable_no_overlap();
+  bool changed = false;
+  int new_size = 0;
 
   // Filter absent intervals.
-  int new_size = 0;
-  for (int i = 0; i < proto.intervals_size(); ++i) {
-    const int interval_index = proto.intervals(i);
-    if (context_->ConstraintIsInactive(interval_index)) {
-      continue;
+  {
+    const int initial_num_intervals = proto->intervals_size();
+
+    for (int i = 0; i < initial_num_intervals; ++i) {
+      const int interval_index = proto->intervals(i);
+      if (context_->ConstraintIsInactive(interval_index)) {
+        continue;
+      }
+
+      proto->set_intervals(new_size++, interval_index);
     }
 
-    ct->mutable_no_overlap()->set_intervals(new_size++, interval_index);
-  }
-
-  if (new_size < initial_num_intervals) {
-    ct->mutable_no_overlap()->mutable_intervals()->Truncate(new_size);
-    context_->UpdateRuleStats("no_overlap: removed inactive intervals");
-  }
-
-  // Sort by start min.
-  std::sort(
-      ct->mutable_no_overlap()->mutable_intervals()->begin(),
-      ct->mutable_no_overlap()->mutable_intervals()->end(),
-      [this](int i1, int i2) {
-        return StartMin(context_->working_model->constraints(i1).interval()) <
-               StartMin(context_->working_model->constraints(i2).interval());
-      });
-
-  // Remove intervals that cannot overlap any others.
-  //
-  // TODO(user): We might also want to split this constraints into many
-  // independent no overlap constraints.
-  int64_t end_max_so_far = std::numeric_limits<int64_t>::min();
-  new_size = 0;
-  for (int i = 0; i < proto.intervals_size(); ++i) {
-    const int interval_index = proto.intervals(i);
-    const IntervalConstraintProto& interval =
-        context_->working_model->constraints(interval_index).interval();
-    const int64_t end_max_of_previous_intervals = end_max_so_far;
-    end_max_so_far = std::max(end_max_so_far, EndMax(interval));
-    if (StartMin(interval) >= end_max_of_previous_intervals &&
-        (i + 1 == proto.intervals_size() ||
-         end_max_so_far <= StartMin(context_->working_model
-                                        ->constraints(proto.intervals(i + 1))
-                                        .interval()))) {
-      context_->UpdateRuleStats("no_overlap: removed redundant intervals");
-      continue;
+    if (new_size < initial_num_intervals) {
+      proto->mutable_intervals()->Truncate(new_size);
+      context_->UpdateRuleStats("no_overlap: removed absent intervals");
+      changed = true;
     }
-    ct->mutable_no_overlap()->set_intervals(new_size++, interval_index);
   }
-  ct->mutable_no_overlap()->mutable_intervals()->Truncate(new_size);
 
-  if (proto.intervals_size() == 1) {
+  std::vector<int> constant_intervals;
+  int64_t size_min_of_non_constant_intervals =
+      std::numeric_limits<int64_t>::max();
+  int64_t start_min_of_non_constant_intervals =
+      std::numeric_limits<int64_t>::max();
+  int64_t end_max_of_non_constant_intervals =
+      std::numeric_limits<int64_t>::min();
+  int num_variable_intervals = 0;
+  for (int i = 0; i < proto->intervals_size(); ++i) {
+    const int interval_index = proto->intervals(i);
+    if (context_->IntervalIsConstant(interval_index)) {
+      constant_intervals.push_back(interval_index);
+    } else {
+      num_variable_intervals++;
+      start_min_of_non_constant_intervals =
+          std::min(start_min_of_non_constant_intervals,
+                   context_->StartMin(interval_index));
+      size_min_of_non_constant_intervals =
+          std::min(size_min_of_non_constant_intervals,
+                   context_->SizeMin(interval_index));
+      end_max_of_non_constant_intervals = std::max(
+          end_max_of_non_constant_intervals, context_->EndMax(interval_index));
+    }
+  }
+
+  absl::flat_hash_set<int> intervals_to_remove;
+  auto remove_intervals_and_rebuild_constant_intervals =
+      [this, &intervals_to_remove, &constant_intervals, &new_size, &changed,
+       proto](const std::string& message) {
+        if (!intervals_to_remove.empty()) {
+          new_size = 0;
+          const int old_size = proto->intervals_size();
+          constant_intervals.clear();
+          for (int i = 0; i < old_size; ++i) {
+            const int interval_index = proto->intervals(i);
+            if (intervals_to_remove.contains(interval_index)) {
+              continue;
+            }
+            proto->set_intervals(new_size++, interval_index);
+
+            // Rebuild the constant_intervals vector.
+            if (context_->IntervalIsConstant(interval_index)) {
+              constant_intervals.push_back(interval_index);
+            }
+          }
+          CHECK_LT(new_size, old_size);
+          proto->mutable_intervals()->Truncate(new_size);
+          context_->UpdateRuleStats(message);
+          intervals_to_remove.clear();
+          changed = true;
+        }
+      };
+
+  if (!constant_intervals.empty()) {
+    // Sort constant_intervals by start min.
+    std::sort(constant_intervals.begin(), constant_intervals.end(),
+              [this](int i1, int i2) {
+                return context_->StartMin(i1) < context_->StartMin(i2);
+              });
+    // Check for overlapping constant intervals. We need to check feasibility
+    // before we simplify the constraint, as we might remove conflicting
+    // overlapping constant intervals.
+    for (int i = 0; i + 1 < constant_intervals.size(); ++i) {
+      if (context_->EndMax(constant_intervals[i]) >
+          context_->StartMin(constant_intervals[i + 1])) {
+        context_->UpdateRuleStats("no_overlap: constant intervals overlap");
+        return context_->NotifyThatModelIsUnsat();
+      }
+    }
+
+    if (num_variable_intervals == 0) {
+      context_->UpdateRuleStats("no_overlap: no variable intervals");
+      return RemoveConstraint(ct);
+    }
+
+    // We can remove constant intervals that cannot overlap with any
+    // non-constant ones.
+    // TODO(user): We currently only use min and max of all variable
+    // intervals. We could use a finer information.
+    for (const int index : constant_intervals) {
+      if (context_->EndMax(index) <= start_min_of_non_constant_intervals ||
+          context_->StartMin(index) >= end_max_of_non_constant_intervals) {
+        intervals_to_remove.insert(index);
+      }
+    }
+    remove_intervals_and_rebuild_constant_intervals(
+        "no_overlap: removed constant isolated intervals");
+
+    // Re-sort constant intervals by start min.
+    std::sort(constant_intervals.begin(), constant_intervals.end(),
+              [this](int i1, int i2) {
+                return context_->StartMin(i1) < context_->StartMin(i2);
+              });
+
+    // If two constant intervals are separated by a gap smaller that the min
+    // size of all non-constant intervals, then we can merge them.
+    for (int i = 0; i + 1 < constant_intervals.size(); ++i) {
+      const int start = i;
+      while (i + 1 < constant_intervals.size() &&
+             context_->StartMin(constant_intervals[i + 1]) -
+                     context_->EndMax(constant_intervals[i]) <
+                 size_min_of_non_constant_intervals) {
+        i++;
+      }
+      if (i != start) {
+        for (int j = start; j <= i; ++j) {
+          intervals_to_remove.insert(constant_intervals[j]);
+        }
+        const int64_t new_start = context_->StartMin(constant_intervals[start]);
+        const int64_t new_end = context_->EndMax(constant_intervals[i]);
+        proto->add_intervals(context_->working_model->constraints_size());
+        IntervalConstraintProto* new_interval =
+            context_->working_model->add_constraints()->mutable_interval();
+        new_interval->set_start(context_->GetOrCreateConstantVar(new_start));
+        new_interval->set_size(
+            context_->GetOrCreateConstantVar(new_end - new_start));
+        new_interval->set_end(context_->GetOrCreateConstantVar(new_end));
+      }
+    }
+    remove_intervals_and_rebuild_constant_intervals(
+        "no_overlap: merge constant contiguous intervals");
+    context_->UpdateNewConstraintsVariableUsage();
+  }
+
+  if (proto->intervals_size() > 1) {
+    // Sort all intervals by start min.
+    std::sort(proto->mutable_intervals()->begin(),
+              proto->mutable_intervals()->end(), [this](int i1, int i2) {
+                return context_->StartMin(i1) < context_->StartMin(i2);
+              });
+
+    // Split no_overlap in disjoint sub-sets.
+    int64_t end_max_so_far = context_->EndMax(proto->intervals(0));
+    for (int i = 1; i < proto->intervals_size(); ++i) {
+      const int interval_index = proto->intervals(i);
+      if (context_->StartMin(interval_index) >= end_max_so_far) {
+        // Create a new overlap with the rest.
+        // TODO(user): We can split all at once.
+        NoOverlapConstraintProto* new_ct =
+            context_->working_model->add_constraints()->mutable_no_overlap();
+        for (int j = i; j < proto->intervals_size(); ++j) {
+          new_ct->add_intervals(ct->no_overlap().intervals(j));
+        }
+        proto->mutable_intervals()->Truncate(i);
+        context_->UpdateNewConstraintsVariableUsage();
+        context_->UpdateRuleStats(
+            "no_overlap: split into disjoint no_overlap constraints");
+        changed = true;
+        break;
+      }
+      end_max_so_far =
+          std::max(end_max_so_far, context_->EndMax(interval_index));
+    }
+  }
+
+  if (proto->intervals_size() == 1) {
     context_->UpdateRuleStats("no_overlap: only one interval");
     return RemoveConstraint(ct);
   }
-  if (proto.intervals().empty()) {
+  if (proto->intervals().empty()) {
     context_->UpdateRuleStats("no_overlap: no intervals");
     return RemoveConstraint(ct);
   }
 
-  return new_size < initial_num_intervals;
+  return changed;
 }
 
 bool CpModelPresolver::PresolveNoOverlap2D(int c, ConstraintProto* ct) {
@@ -3098,16 +3202,15 @@ bool CpModelPresolver::PresolveNoOverlap2D(int c, ConstraintProto* ct) {
   const NoOverlap2DConstraintProto& proto = ct->no_overlap_2d();
   const int initial_num_boxes = proto.x_intervals_size();
 
+  bool has_zero_sizes = false;
+  bool x_constant = true;
+  bool y_constant = true;
+
   // Filter absent boxes.
   int new_size = 0;
   for (int i = 0; i < proto.x_intervals_size(); ++i) {
     const int x_interval_index = proto.x_intervals(i);
-    const ConstraintProto& x_interval_proto =
-        context_->working_model->constraints(x_interval_index);
-
     const int y_interval_index = proto.y_intervals(i);
-    const ConstraintProto& y_interval_proto =
-        context_->working_model->constraints(y_interval_index);
 
     if (context_->ConstraintIsInactive(x_interval_index) ||
         context_->ConstraintIsInactive(y_interval_index)) {
@@ -3115,13 +3218,46 @@ bool CpModelPresolver::PresolveNoOverlap2D(int c, ConstraintProto* ct) {
     }
 
     if (proto.boxes_with_null_area_can_overlap() &&
-        (SizeMax(x_interval_proto.interval()) == 0 ||
-         SizeMax(y_interval_proto.interval()) == 0)) {
-      continue;
+        (context_->SizeMax(x_interval_index) == 0 ||
+         context_->SizeMax(y_interval_index) == 0)) {
+      if (proto.boxes_with_null_area_can_overlap()) continue;
+      has_zero_sizes = true;
     }
     ct->mutable_no_overlap_2d()->set_x_intervals(new_size, x_interval_index);
     ct->mutable_no_overlap_2d()->set_y_intervals(new_size, y_interval_index);
     new_size++;
+
+    if (x_constant && !context_->IntervalIsConstant(x_interval_index)) {
+      x_constant = false;
+    }
+    if (y_constant && !context_->IntervalIsConstant(y_interval_index)) {
+      y_constant = false;
+    }
+  }
+
+  if (!has_zero_sizes && (x_constant || y_constant)) {
+    context_->UpdateRuleStats(
+        "no_overlap_2d: a dimension is constant, splitting into many no "
+        "overlaps");
+    std::vector<IndexedInterval> indexed_intervals;
+    for (int i = 0; i < new_size; ++i) {
+      int x = proto.x_intervals(i);
+      int y = proto.y_intervals(i);
+      if (x_constant) std::swap(x, y);
+      indexed_intervals.push_back({x, IntegerValue(context_->StartMin(y)),
+                                   IntegerValue(context_->EndMax(y))});
+    }
+    std::vector<std::vector<int>> no_overlaps;
+    ConstructOverlappingSets(/*already_sorted=*/false, &indexed_intervals,
+                             &no_overlaps);
+    for (const std::vector<int>& no_overlap : no_overlaps) {
+      ConstraintProto* new_ct = context_->working_model->add_constraints();
+      for (const int i : no_overlap) {
+        new_ct->mutable_no_overlap()->add_intervals(i);
+      }
+    }
+    context_->UpdateNewConstraintsVariableUsage();
+    return RemoveConstraint(ct);
   }
 
   if (new_size < initial_num_boxes) {
@@ -3262,18 +3398,19 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
 
   bool has_optional_interval = false;
   for (int i = 0; i < num_intervals; ++i) {
+    const int index = proto.intervals(i);
     // TODO(user): adapt in the presence of optional intervals.
+    if (context_->IntervalIsOptional(index)) has_optional_interval = true;
     const ConstraintProto& ct =
         context_->working_model->constraints(proto.intervals(i));
-    if (!ct.enforcement_literal().empty()) has_optional_interval = true;
     const IntervalConstraintProto& interval = ct.interval();
     if (interval.has_start_view()) with_start_view = true;
     start_refs[i] = interval.start();
     const int demand_ref = proto.demands(i);
-    if (SizeMin(interval) == 1 && SizeMax(interval) == 1) {
+    if (context_->SizeMin(index) == 1 && context_->SizeMax(index) == 1) {
       num_duration_one++;
     }
-    if (SizeMin(interval) == 0) {
+    if (context_->SizeMin(index) == 0) {
       // The behavior for zero-duration interval is currently not the same in
       // the no-overlap and the cumulative constraint.
       return changed;
@@ -3285,7 +3422,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     }
     if (demand_min > capacity_max) {
       context_->UpdateRuleStats("cumulative: demand_min exceeds capacity max");
-      if (ct.enforcement_literal().empty()) {
+      if (!context_->IntervalIsOptional(index)) {
         return context_->NotifyThatModelIsUnsat();
       } else {
         CHECK_EQ(ct.enforcement_literal().size(), 1);
