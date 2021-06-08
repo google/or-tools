@@ -125,7 +125,7 @@ endforeach()
 ##  Java Native Maven Package  ##
 #################################
 set(JAVA_NATIVE_PROJECT_PATH ${PROJECT_BINARY_DIR}/java/${JAVA_NATIVE_PROJECT})
-file(MAKE_DIRECTORY ${JAVA_NATIVE_PROJECT_PATH}/${JAVA_RESOURCES_PATH}/${NATIVE_IDENTIFIER})
+file(MAKE_DIRECTORY ${JAVA_NATIVE_PROJECT_PATH}/${JAVA_RESOURCES_PATH}/${JAVA_NATIVE_PROJECT})
 
 configure_file(
   ${PROJECT_SOURCE_DIR}/ortools/java/pom-native.xml.in
@@ -138,7 +138,7 @@ add_custom_target(java_native_package
   COMMAND ${CMAKE_COMMAND} -E copy
     $<TARGET_FILE:jniortools>
     $<$<NOT:$<PLATFORM_ID:Windows>>:$<TARGET_SONAME_FILE:${PROJECT_NAME}>>
-    ${JAVA_RESOURCES_PATH}/${NATIVE_IDENTIFIER}/
+    ${JAVA_RESOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
   COMMAND ${MAVEN_EXECUTABLE} compile -B
   COMMAND ${MAVEN_EXECUTABLE} package -B
   COMMAND ${MAVEN_EXECUTABLE} install -B $<$<BOOL:${SKIP_GPG}>:-Dgpg.skip=true>
