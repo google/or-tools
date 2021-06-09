@@ -31,13 +31,14 @@ import java.util.Objects;
 
 /** Load native libraries needed for using ortools-java.*/
 public class Loader {
+  private static final String RESOURCE_PATH = "ortools-" + Platform.RESOURCE_PREFIX + "/";
+
   /** Try to locate the native libraries directory.*/
   private static URI getNativeResourceURI() throws IOException {
     ClassLoader loader = Loader.class.getClassLoader();
-    String resource = Platform.RESOURCE_PREFIX + "/";
-    URL resourceURL = loader.getResource(resource);
+    URL resourceURL = loader.getResource(RESOURCE_PATH);
     Objects.requireNonNull(resourceURL,
-        String.format("Resource %s was not found in ClassLoader %s", resource, loader));
+        String.format("Resource %s was not found in ClassLoader %s", RESOURCE_PATH, loader));
 
     URI resourceURI;
     try {
@@ -105,7 +106,7 @@ public class Loader {
         URI resourceURI = getNativeResourceURI();
         Path tempPath = unpackNativeResources(resourceURI);
         // Load the native library
-        System.load(tempPath.resolve(Platform.RESOURCE_PREFIX)
+        System.load(tempPath.resolve(RESOURCE_PATH)
                         .resolve(System.mapLibraryName("jniortools"))
                         .toString());
         loaded = true;
