@@ -45,6 +45,24 @@ public final class ScalProd implements LinearExpr {
     }
   }
 
+  public ScalProd(IntVar var, long coefficient, long offset) {
+    this.variables = new IntVar[] {var};
+    this.coefficients = new long[] {coefficient};
+    this.offset = offset;
+  }
+
+  public ScalProd(Literal lit, long coefficient, long offset) {
+    if (lit.getIndex() >= 0) {
+      this.variables = new IntVar[] {(IntVar) lit};
+      this.coefficients = new long[] {coefficient};
+      this.offset = offset;
+    } else {
+      this.variables = new IntVar[] {(IntVar) lit.not()};
+      this.coefficients = new long[] {-coefficient};
+      this.offset = offset + coefficient;
+    }
+  }
+
   public ScalProd(Literal[] literals) {
     int size = literals.length;
     this.variables = new IntVar[size];

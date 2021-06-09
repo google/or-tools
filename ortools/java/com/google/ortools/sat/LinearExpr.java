@@ -81,6 +81,21 @@ public interface LinearExpr {
 
   /** Creates a linear term (var * coefficient). */
   static LinearExpr term(IntVar variable, long coefficient) {
-    return new ScalProd(new IntVar[] {variable}, new long[] {coefficient});
+    return new ScalProd(variable, coefficient, 0);
+  }
+
+  /** Creates an affine expression (var * coefficient + offset). */
+  static LinearExpr affine(IntVar variable, long coefficient, long offset) {
+    return new ScalProd(variable, coefficient, offset);
+  }
+
+  /** Creates a linear term (lit * coefficient). */
+  static LinearExpr term(Literal lit, long coefficient) {
+    return new ScalProd(lit, coefficient, 0);
+  }
+
+  /** Creates an affine expression (lit * coefficient + offset). */
+  static LinearExpr affine(Literal lit, long coefficient, long offset) {
+    return new ScalProd(lit, coefficient, offset);
   }
 }
