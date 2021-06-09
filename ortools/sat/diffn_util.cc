@@ -389,9 +389,8 @@ void ConstructOverlappingSets(bool already_sorted,
   }
 }
 
-void ConstructNonOverlappingSets(bool already_sorted,
-                                 std::vector<IndexedInterval>* intervals,
-                                 std::vector<std::vector<int>>* result) {
+void GetOverlappingIntervalComponents(std::vector<IndexedInterval>* intervals,
+                                      std::vector<std::vector<int>>* result) {
   result->clear();
   if (intervals->empty()) return;
   if (intervals->size() == 1) {
@@ -399,29 +398,21 @@ void ConstructNonOverlappingSets(bool already_sorted,
     return;
   }
 
-  if (already_sorted) {
-    DCHECK(
-        std::is_sorted(intervals->begin(), intervals->end(),
-                       [](const IndexedInterval& a, const IndexedInterval& b) {
-                         return a.start < b.start;
-                       }));
-  } else {
-    std::sort(intervals->begin(), intervals->end(),
-              [](const IndexedInterval& a, const IndexedInterval& b) {
-                return a.start < b.start;
-              });
-  }
+  std::sort(intervals->begin(), intervals->end(),
+            [](const IndexedInterval& a, const IndexedInterval& b) {
+              return a.start < b.start;
+            });
 
   IntegerValue end_max_so_far = (*intervals)[0].end;
   result->push_back({(*intervals)[0].index});
   for (int i = 1; i < intervals->size(); ++i) {
-    const IndexedInterval& j = (*intervals)[i];
-    if (j.start >= end_max_so_far) {
-      result->push_back({j.index});
+    const IndexedInterval& interval = (*intervals)[i];
+    if (interval.start >= end_max_so_far) {
+      result->push_back({interval.index});
     } else {
-      result->back().push_back(j.index);
+      result->back().push_back(interval.index);
     }
-    end_max_so_far = std::max(end_max_so_far, j.end);
+    end_max_so_far = std::max(end_max_so_far, interval.end);
   }
 }
 

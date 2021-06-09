@@ -3028,41 +3028,32 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
   }
 
   // Split constraints in disjoint sets.
-  {
-    if (proto->intervals_size() > 1) {
-      std::vector<IndexedInterval> indexed_intervals;
-      for (int i = 0; i < proto->intervals().size(); ++i) {
-        const int index = proto->intervals(i);
-        indexed_intervals.push_back({index,
-                                     IntegerValue(context_->StartMin(index)),
-                                     IntegerValue(context_->EndMax(index))});
-      }
-      std::vector<std::vector<int>> components;
-      ConstructNonOverlappingSets(false, &indexed_intervals, &components);
+  if (proto->intervals_size() > 1) {
+    std::vector<IndexedInterval> indexed_intervals;
+    for (int i = 0; i < proto->intervals().size(); ++i) {
+      const int index = proto->intervals(i);
+      indexed_intervals.push_back({index,
+                                   IntegerValue(context_->StartMin(index)),
+                                   IntegerValue(context_->EndMax(index))});
+    }
+    std::vector<std::vector<int>> components;
+    GetOverlappingIntervalComponents(&indexed_intervals, &components);
 
-      if (components.size() > 1) {
-        NoOverlapConstraintProto* dest = proto;
-        dest->clear_intervals();
-        for (const std::vector<int>& intervals : components) {
-          if (components.size() <= 1) continue;
+    if (components.size() > 1) {
+      for (const std::vector<int>& intervals : components) {
+        if (intervals.size() <= 1) continue;
 
-          // Create a new no_overlap constraint after the first iteration.
-          if (dest == nullptr) {
-            dest = context_->working_model->add_constraints()
-                       ->mutable_no_overlap();
-          }
-          // Fill in the intervals. Unfortunately, the Assign() method does not
-          // compile in or-tools.
-          for (const int i : intervals) {
-            dest->add_intervals(i);
-          }
-          // Zero the ptr, so than we can create a new no_overlap constraint
-          // at the next iteration.
-          dest = nullptr;
+        NoOverlapConstraintProto* new_no_overlap =
+            context_->working_model->add_constraints()->mutable_no_overlap();
+        // Fill in the intervals. Unfortunately, the Assign() method does not
+        // compile in or-tools.
+        for (const int i : intervals) {
+          new_no_overlap->add_intervals(i);
         }
-        changed = true;
-        context_->UpdateNewConstraintsVariableUsage();
       }
+      context_->UpdateNewConstraintsVariableUsage();
+      context_->UpdateRuleStats("no_overlap: split into disjoint components");
+      return RemoveConstraint(ct);
     }
   }
 

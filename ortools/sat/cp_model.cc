@@ -169,7 +169,7 @@ LinearExpr LinearExpr::Term(IntVar var, int64_t coefficient) {
 
 LinearExpr LinearExpr::BooleanSum(absl::Span<const BoolVar> vars) {
   LinearExpr result;
-  for (const IntVar& var : vars) {
+  for (const BoolVar& var : vars) {
     result.AddVar(var);
   }
   return result;
@@ -190,9 +190,12 @@ LinearExpr& LinearExpr::AddConstant(int64_t value) {
   return *this;
 }
 
-void LinearExpr::AddVar(IntVar var) { AddTerm(var, 1); }
+LinearExpr& LinearExpr::AddVar(IntVar var) {
+  AddTerm(var, 1);
+  return *this;
+}
 
-void LinearExpr::AddTerm(IntVar var, int64_t coeff) {
+LinearExpr& LinearExpr::AddTerm(IntVar var, int64_t coeff) {
   const int index = var.index_;
   if (RefIsPositive(index)) {
     variables_.push_back(var);
@@ -202,6 +205,7 @@ void LinearExpr::AddTerm(IntVar var, int64_t coeff) {
     coefficients_.push_back(-coeff);
     constant_ += coeff;
   }
+  return *this;
 }
 
 Constraint::Constraint(ConstraintProto* proto) : proto_(proto) {}

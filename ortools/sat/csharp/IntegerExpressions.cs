@@ -73,6 +73,18 @@ namespace Google.OrTools.Sat
             return Prod(var, coeff);
         }
 
+        public static LinearExpr Affine(IntVar var, long coeff, long offset)
+        {
+            if (offset == 0)
+            {
+                return Prod(var, coeff);
+            }
+            else
+            {
+                return new SumArray(Prod(var, coeff), offset);
+            }
+        }
+
         public int Index
         {
             get {

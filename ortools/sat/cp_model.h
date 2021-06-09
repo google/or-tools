@@ -268,10 +268,10 @@ class LinearExpr {
   LinearExpr& AddConstant(int64_t value);
 
   /// Adds a single integer variable to the linear expression.
-  void AddVar(IntVar var);
+  LinearExpr& AddVar(IntVar var);
 
   /// Adds a term (var * coeff) to the linear expression.
-  void AddTerm(IntVar var, int64_t coeff);
+  LinearExpr& AddTerm(IntVar var, int64_t coeff);
 
   /// Constructs the sum of a list of variables.
   static LinearExpr Sum(absl::Span<const IntVar> vars);
@@ -286,7 +286,7 @@ class LinearExpr {
   /// Constructs the scalar product of Booleans and coefficients.
   static LinearExpr BooleanScalProd(absl::Span<const BoolVar> vars,
                                     absl::Span<const int64_t> coeffs);
-  /// Construncts var * coefficient.
+  /// Constructs var * coefficient.
   static LinearExpr Term(IntVar var, int64_t coefficient);
 
   /// Returns the vector of variables.
