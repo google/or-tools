@@ -48,6 +48,7 @@ NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
   }
   *model_proto_with_only_variables_.mutable_variables() =
       model_proto_.variables();
+  InitializeHelperData();
   RecomputeHelperData();
   Synchronize();
 }
@@ -112,6 +113,18 @@ void NeighborhoodGeneratorHelper::Synchronize() {
   }
 }
 
+void NeighborhoodGeneratorHelper::InitializeHelperData() {
+  type_to_constraints_.clear();
+  const int num_constraints = model_proto_.constraints_size();
+  for (int c = 0; c < num_constraints; ++c) {
+    const int type = model_proto_.constraints(c).constraint_case();
+    if (type >= type_to_constraints_.size()) {
+      type_to_constraints_.resize(type + 1);
+    }
+    type_to_constraints_[type].push_back(c);
+  }
+}
+
 void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // Recompute all the data in case new variables have been fixed.
   //
@@ -147,16 +160,6 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
         }
       }
     }
-  }
-
-  type_to_constraints_.clear();
-  const int num_constraints = model_proto_.constraints_size();
-  for (int c = 0; c < num_constraints; ++c) {
-    const int type = model_proto_.constraints(c).constraint_case();
-    if (type >= type_to_constraints_.size()) {
-      type_to_constraints_.resize(type + 1);
-    }
-    type_to_constraints_[type].push_back(c);
   }
 
   active_variables_.clear();

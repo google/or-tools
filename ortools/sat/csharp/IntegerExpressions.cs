@@ -39,8 +39,7 @@ namespace Google.OrTools.Sat
         }
     }
 
-    public interface ILiteral
-    {
+    public interface ILiteral {
         ILiteral Not();
         int GetIndex();
     }

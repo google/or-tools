@@ -195,6 +195,11 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // method.
 
  private:
+  // Precompute stuff that will never change. During the execution, only the
+  // domain of the variable will change, so data that only depends on the
+  // constraints need to be computed just once.
+  void InitializeHelperData();
+
   // Recompute most of the class member. This needs to be called when the
   // domains of the variables are updated.
   void RecomputeHelperData();

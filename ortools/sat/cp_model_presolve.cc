@@ -3060,23 +3060,14 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
   std::vector<int> constant_intervals;
   int64_t size_min_of_non_constant_intervals =
       std::numeric_limits<int64_t>::max();
-  int64_t start_min_of_non_constant_intervals =
-      std::numeric_limits<int64_t>::max();
-  int64_t end_max_of_non_constant_intervals =
-      std::numeric_limits<int64_t>::min();
   for (int i = 0; i < proto->intervals_size(); ++i) {
     const int interval_index = proto->intervals(i);
     if (context_->IntervalIsConstant(interval_index)) {
       constant_intervals.push_back(interval_index);
     } else {
-      start_min_of_non_constant_intervals =
-          std::min(start_min_of_non_constant_intervals,
-                   context_->StartMin(interval_index));
       size_min_of_non_constant_intervals =
           std::min(size_min_of_non_constant_intervals,
                    context_->SizeMin(interval_index));
-      end_max_of_non_constant_intervals = std::max(
-          end_max_of_non_constant_intervals, context_->EndMax(interval_index));
     }
   }
 
@@ -3103,27 +3094,7 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
       return RemoveConstraint(ct);
     }
 
-    // We can remove constant intervals that cannot overlap with any
-    // non-constant ones.
-    // TODO(user): We currently only use min and max of all variable
-    // intervals. We could use a finer information using the Domain class.
     absl::flat_hash_set<int> intervals_to_remove;
-    {
-      int new_size = 0;
-      for (const int index : constant_intervals) {
-        if (context_->EndMax(index) <= start_min_of_non_constant_intervals ||
-            context_->StartMin(index) >= end_max_of_non_constant_intervals) {
-          intervals_to_remove.insert(index);
-        } else {
-          constant_intervals[new_size++] = index;
-        }
-      }
-      if (new_size < constant_intervals.size()) {
-        constant_intervals.resize(new_size);
-        context_->UpdateRuleStats(
-            "no_overlap: removed constant isolated intervals");
-      }
-    }
 
     // If two constant intervals are separated by a gap smaller that the min
     // size of all non-constant intervals, then we can merge them.
@@ -3197,6 +3168,8 @@ bool CpModelPresolver::PresolveNoOverlap2D(int c, ConstraintProto* ct) {
 
   // Filter absent boxes.
   int new_size = 0;
+  std::vector<Rectangle> bounding_boxes;
+  std::vector<int> active_boxes;
   for (int i = 0; i < proto.x_intervals_size(); ++i) {
     const int x_interval_index = proto.x_intervals(i);
     const int y_interval_index = proto.y_intervals(i);
@@ -3214,6 +3187,12 @@ bool CpModelPresolver::PresolveNoOverlap2D(int c, ConstraintProto* ct) {
     }
     ct->mutable_no_overlap_2d()->set_x_intervals(new_size, x_interval_index);
     ct->mutable_no_overlap_2d()->set_y_intervals(new_size, y_interval_index);
+    bounding_boxes.push_back(
+        {IntegerValue(context_->StartMin(x_interval_index)),
+         IntegerValue(context_->EndMax(x_interval_index)),
+         IntegerValue(context_->StartMin(y_interval_index)),
+         IntegerValue(context_->EndMax(y_interval_index))});
+    active_boxes.push_back(new_size);
     new_size++;
 
     if (x_constant && !context_->IntervalIsConstant(x_interval_index)) {
@@ -3222,6 +3201,24 @@ bool CpModelPresolver::PresolveNoOverlap2D(int c, ConstraintProto* ct) {
     if (y_constant && !context_->IntervalIsConstant(y_interval_index)) {
       y_constant = false;
     }
+  }
+
+  std::vector<absl::Span<int>> components = GetOverlappingRectangleComponents(
+      bounding_boxes, absl::MakeSpan(active_boxes));
+  if (components.size() > 1) {
+    for (const absl::Span<int> boxes : components) {
+      if (boxes.size() <= 1) continue;
+
+      NoOverlap2DConstraintProto* new_no_overlap_2d =
+          context_->working_model->add_constraints()->mutable_no_overlap_2d();
+      for (const int b : boxes) {
+        new_no_overlap_2d->add_x_intervals(proto.x_intervals(b));
+        new_no_overlap_2d->add_y_intervals(proto.y_intervals(b));
+      }
+    }
+    context_->UpdateNewConstraintsVariableUsage();
+    context_->UpdateRuleStats("no_overlap_2d: split into disjoint components");
+    return RemoveConstraint(ct);
   }
 
   if (!has_zero_sizes && (x_constant || y_constant)) {
@@ -3267,50 +3264,168 @@ bool CpModelPresolver::PresolveNoOverlap2D(int c, ConstraintProto* ct) {
     return RemoveConstraint(ct);
   }
 
-  // TODO(user): Remove isolated boxes.
-
   return new_size < initial_num_boxes;
 }
 
 bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
 
-  const CumulativeConstraintProto& proto = ct->cumulative();
+  CumulativeConstraintProto* proto = ct->mutable_cumulative();
   bool changed = false;
-
-  // Filter absent intervals, or zero demands.
-  int new_size = 0;
-  int num_zero_demand_removed = 0;
   int num_fixed_demands = 0;
-  for (int i = 0; i < proto.intervals_size(); ++i) {
-    if (context_->ConstraintIsInactive(proto.intervals(i))) continue;
 
-    const int demand_ref = proto.demands(i);
-    const int64_t demand_max = context_->MaxOf(demand_ref);
-    if (demand_max == 0) {
-      num_zero_demand_removed++;
-      continue;
+  {
+    // Filter absent intervals, or zero demands.
+    int new_size = 0;
+    int num_zero_demand_removed = 0;
+    int num_zero_size_removed = 0;
+    for (int i = 0; i < proto->intervals_size(); ++i) {
+      if (context_->ConstraintIsInactive(proto->intervals(i))) continue;
+
+      const int demand_ref = proto->demands(i);
+      const int64_t demand_max = context_->MaxOf(demand_ref);
+      if (demand_max == 0) {
+        num_zero_demand_removed++;
+        continue;
+      }
+      if (context_->IsFixed(demand_ref)) {
+        num_fixed_demands++;
+      }
+
+      if (context_->SizeMax(proto->intervals(i)) == 0) {
+        // Size 0 intervals cannot contribute to a cumulative.
+        num_zero_size_removed++;
+        continue;
+      }
+
+      proto->set_intervals(new_size, proto->intervals(i));
+      proto->set_demands(new_size, proto->demands(i));
+      new_size++;
     }
-    if (context_->IsFixed(demand_ref)) {
-      num_fixed_demands++;
+
+    if (new_size < proto->intervals_size()) {
+      changed = true;
+      proto->mutable_intervals()->Truncate(new_size);
+      proto->mutable_demands()->Truncate(new_size);
     }
 
-    ct->mutable_cumulative()->set_intervals(new_size, proto.intervals(i));
-    ct->mutable_cumulative()->set_demands(new_size, proto.demands(i));
-    new_size++;
+    if (num_zero_demand_removed > 0) {
+      context_->UpdateRuleStats(
+          "cumulative: removed intervals with no demands");
+    }
+    if (num_zero_size_removed > 0) {
+      context_->UpdateRuleStats(
+          "cumulative: removed intervals with a size of zero");
+    }
   }
 
-  if (new_size < proto.intervals_size()) {
-    changed = true;
-    ct->mutable_cumulative()->mutable_intervals()->Truncate(new_size);
-    ct->mutable_cumulative()->mutable_demands()->Truncate(new_size);
+  // Split constraints in disjoint sets.
+  //
+  // TODO(user): This can be improved:
+  // If we detect bridge nodes in the graph of overlapping components, we
+  // can split the graph around the bridge and add the bridge node to both
+  // side. Note that if it we take into account precedences between intervals,
+  // we can detect more bridges.
+  if (proto->intervals_size() > 1) {
+    std::vector<IndexedInterval> indexed_intervals;
+    for (int i = 0; i < proto->intervals().size(); ++i) {
+      const int index = proto->intervals(i);
+      indexed_intervals.push_back({i, IntegerValue(context_->StartMin(index)),
+                                   IntegerValue(context_->EndMax(index))});
+    }
+    std::vector<std::vector<int>> components;
+    GetOverlappingIntervalComponents(&indexed_intervals, &components);
+
+    if (components.size() > 1) {
+      for (const std::vector<int>& component : components) {
+        CumulativeConstraintProto* new_cumulative =
+            context_->working_model->add_constraints()->mutable_cumulative();
+        for (const int i : component) {
+          new_cumulative->add_intervals(proto->intervals(i));
+          new_cumulative->add_demands(proto->demands(i));
+        }
+        new_cumulative->set_capacity(proto->capacity());
+      }
+      context_->UpdateNewConstraintsVariableUsage();
+      context_->UpdateRuleStats("cumulative: split into disjoint components");
+      return RemoveConstraint(ct);
+    }
   }
 
-  if (num_zero_demand_removed > 0) {
-    context_->UpdateRuleStats("cumulative: removed intervals with no demands");
+  // TODO(user): move the algorithmic part of what we do below in a separate
+  // function to unit test it more properly.
+  {
+    // Build max load profiles.
+    std::map<int64_t, int64_t> time_to_demand_deltas;
+    const int64_t capacity_min = context_->MinOf(proto->capacity());
+    for (int i = 0; i < proto->intervals_size(); ++i) {
+      const int interval_index = proto->intervals(i);
+      const int64_t demand_max = context_->MaxOf(proto->demands(i));
+      time_to_demand_deltas[context_->StartMin(interval_index)] += demand_max;
+      time_to_demand_deltas[context_->EndMax(interval_index)] -= demand_max;
+    }
+
+    // We construct the profile which correspond to a set of [time, next_time)
+    // to max_profile height. And for each time in our discrete set of times
+    // (all the start_min and end_max) we count for how often the height was
+    // above the capacity before this time.
+    //
+    // This rely on the iteration in sorted order.
+    int num_possible_overloads = 0;
+    int64_t current_load = 0;
+    absl::flat_hash_map<int64_t, int64_t> num_possible_overloads_before;
+    for (const auto& it : time_to_demand_deltas) {
+      num_possible_overloads_before[it.first] = num_possible_overloads;
+      current_load += it.second;
+      if (current_load > capacity_min) {
+        ++num_possible_overloads;
+      }
+    }
+    CHECK_EQ(current_load, 0);
+
+    // No possible overload with the min capacity.
+    if (num_possible_overloads == 0) {
+      context_->UpdateRuleStats(
+          "cumulative: max profile is always under the min capacity");
+      return RemoveConstraint(ct);
+    }
+
+    // An interval that does not intersect with the potential_overload_domains
+    // cannot contribute to a conflict. We can safely remove them.
+    //
+    // This is an extension of the presolve rule from
+    // "Presolving techniques and linear relaxations for cumulative scheduling"
+    // PhD dissertation by Stefan Heinz, ZIB.
+    int new_size = 0;
+    for (int i = 0; i < proto->intervals_size(); ++i) {
+      const int index = proto->intervals(i);
+      const int64_t start_min = context_->StartMin(index);
+      const int64_t end_max = context_->EndMax(index);
+      DCHECK_LT(start_min, end_max);
+
+      // Note that by construction, both point are in the map. The formula
+      // counts exactly for how many times in [start_min, end_max), we have a
+      // point in our discrete set of time that exceeded the capacity. Because
+      // we included all the relevant points, this works.
+      const int num_diff = num_possible_overloads_before.at(end_max) -
+                           num_possible_overloads_before.at(start_min);
+      if (num_diff == 0) continue;
+
+      proto->set_intervals(new_size, proto->intervals(i));
+      proto->set_demands(new_size, proto->demands(i));
+      new_size++;
+    }
+
+    if (new_size < proto->intervals_size()) {
+      changed = true;
+      proto->mutable_intervals()->Truncate(new_size);
+      proto->mutable_demands()->Truncate(new_size);
+      context_->UpdateRuleStats(
+          "cumulative: remove never conflicting intervals.");
+    }
   }
 
-  if (new_size == 0) {
+  if (proto->intervals().empty()) {
     context_->UpdateRuleStats("cumulative: no intervals");
     return RemoveConstraint(ct);
   }
@@ -3318,11 +3433,11 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   {
     int64_t max_of_performed_demand_mins = 0;
     int64_t sum_of_max_demands = 0;
-    for (int i = 0; i < proto.intervals_size(); ++i) {
+    for (int i = 0; i < proto->intervals_size(); ++i) {
       const ConstraintProto& interval_ct =
-          context_->working_model->constraints(proto.intervals(i));
+          context_->working_model->constraints(proto->intervals(i));
 
-      const int demand_ref = proto.demands(i);
+      const int demand_ref = proto->demands(i);
       sum_of_max_demands += context_->MaxOf(demand_ref);
 
       if (interval_ct.enforcement_literal().empty()) {
@@ -3331,7 +3446,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       }
     }
 
-    const int capacity_ref = proto.capacity();
+    const int capacity_ref = proto->capacity();
     if (max_of_performed_demand_mins > context_->MinOf(capacity_ref)) {
       context_->UpdateRuleStats("cumulative: propagate min capacity.");
       if (!context_->IntersectDomainWith(
@@ -3352,7 +3467,8 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     }
   }
 
-  if (num_fixed_demands == new_size && context_->IsFixed(proto.capacity())) {
+  if (num_fixed_demands == proto->intervals_size() &&
+      context_->IsFixed(proto->capacity())) {
     int64_t gcd = 0;
     for (int i = 0; i < ct->cumulative().demands_size(); ++i) {
       const int64_t demand = context_->MinOf(ct->cumulative().demands(i));
@@ -3363,22 +3479,20 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       changed = true;
       for (int i = 0; i < ct->cumulative().demands_size(); ++i) {
         const int64_t demand = context_->MinOf(ct->cumulative().demands(i));
-        ct->mutable_cumulative()->set_demands(
-            i, context_->GetOrCreateConstantVar(demand / gcd));
+        proto->set_demands(i, context_->GetOrCreateConstantVar(demand / gcd));
       }
       context_->UpdateRuleStats(
           "cumulative: divide demands and capacity by gcd");
 
-      const int64_t old_capacity = context_->MinOf(proto.capacity());
-      ct->mutable_cumulative()->set_capacity(
-          context_->GetOrCreateConstantVar(old_capacity / gcd));
+      const int64_t old_capacity = context_->MinOf(proto->capacity());
+      proto->set_capacity(context_->GetOrCreateConstantVar(old_capacity / gcd));
     }
   }
 
   if (HasEnforcementLiteral(*ct)) return changed;
 
-  const int num_intervals = proto.intervals_size();
-  const int capacity_ref = proto.capacity();
+  const int num_intervals = proto->intervals_size();
+  const int capacity_ref = proto->capacity();
   const int64_t capacity_max = context_->MaxOf(capacity_ref);
 
   bool with_start_view = false;
@@ -3389,15 +3503,15 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
 
   bool has_optional_interval = false;
   for (int i = 0; i < num_intervals; ++i) {
-    const int index = proto.intervals(i);
+    const int index = proto->intervals(i);
     // TODO(user): adapt in the presence of optional intervals.
     if (context_->ConstraintIsOptional(index)) has_optional_interval = true;
     const ConstraintProto& ct =
-        context_->working_model->constraints(proto.intervals(i));
+        context_->working_model->constraints(proto->intervals(i));
     const IntervalConstraintProto& interval = ct.interval();
     if (interval.has_start_view()) with_start_view = true;
     start_refs[i] = interval.start();
-    const int demand_ref = proto.demands(i);
+    const int demand_ref = proto->demands(i);
     if (context_->SizeMin(index) == 1 && context_->SizeMax(index) == 1) {
       num_duration_one++;
     }
@@ -3454,14 +3568,14 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
 
       // Before we remove the cumulative, add constraints to enforce that the
       // capacity is greater than the demand of any performed intervals.
-      for (int i = 0; i < proto.demands_size(); ++i) {
-        const int demand_ref = proto.demands(i);
+      for (int i = 0; i < proto->demands_size(); ++i) {
+        const int demand_ref = proto->demands(i);
         const int64_t demand_max = context_->MaxOf(demand_ref);
         if (demand_max > context_->MinOf(capacity_ref)) {
           ConstraintProto* capacity_gt =
               context_->working_model->add_constraints();
           for (const int literal :
-               context_->working_model->constraints(proto.intervals(i))
+               context_->working_model->constraints(proto->intervals(i))
                    .enforcement_literal()) {
             capacity_gt->add_enforcement_literal(literal);
           }
@@ -3478,7 +3592,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
 
       ConstraintProto* new_ct = context_->working_model->add_constraints();
       auto* arg = new_ct->mutable_no_overlap();
-      for (const int interval : proto.intervals()) {
+      for (const int interval : proto->intervals()) {
         arg->add_intervals(interval);
       }
       context_->UpdateNewConstraintsVariableUsage();
@@ -3890,12 +4004,10 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
                     : std::abs(mutable_reservoir.demands(0));
   int num_positives = 0;
   int num_negatives = 0;
-  int64_t sum_of_demands = 0;
   int64_t max_sum_of_positive_demands = 0;
   int64_t min_sum_of_negative_demands = 0;
   for (int i = 0; i < num_events; ++i) {
     const int64_t demand = mutable_reservoir.demands(i);
-    sum_of_demands += demand;
     gcd = MathUtil::GCD64(gcd, std::abs(demand));
     if (demand > 0) {
       num_positives++;
