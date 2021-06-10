@@ -199,8 +199,8 @@ void BasisFactorization::Clear() {
   rank_one_factorization_.Clear();
   storage_.Reset(compact_matrix_.num_rows());
   right_storage_.Reset(compact_matrix_.num_rows());
-  left_pool_mapping_.assign(compact_matrix_.num_cols(), kInvalidCol);
-  right_pool_mapping_.assign(compact_matrix_.num_cols(), kInvalidCol);
+  left_pool_mapping_.clear();
+  right_pool_mapping_.clear();
 }
 
 Status BasisFactorization::Initialize() {
@@ -244,9 +244,13 @@ Status BasisFactorization::ComputeFactorization() {
 //    right_update_vector - U.column(leaving_column), left_update_vector)
 Status BasisFactorization::MiddleProductFormUpdate(
     ColIndex entering_col, RowIndex leaving_variable_row) {
-  const ColIndex right_index = right_pool_mapping_[entering_col];
+  const ColIndex right_index = entering_col < right_pool_mapping_.size()
+                                   ? right_pool_mapping_[entering_col]
+                                   : kInvalidCol;
   const ColIndex left_index =
-      left_pool_mapping_[RowToColIndex(leaving_variable_row)];
+      RowToColIndex(leaving_variable_row) < left_pool_mapping_.size()
+          ? left_pool_mapping_[RowToColIndex(leaving_variable_row)]
+          : kInvalidCol;
   if (right_index == kInvalidCol || left_index == kInvalidCol) {
     LOG(INFO) << "One update vector is missing!!!";
     return ForceRefactorization();
@@ -398,6 +402,9 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j,
   // since we do a left solve for a unit row using an upper triangular matrix,
   // all positions in front of the unit will be zero (modulo the column
   // permutation).
+  if (j >= left_pool_mapping_.size()) {
+    left_pool_mapping_.resize(j + 1, kInvalidCol);
+  }
   if (left_pool_mapping_[j] == kInvalidCol) {
     const ColIndex start = lu_factorization_.LeftSolveUForUnitRow(j, y);
     if (y->non_zeros.empty()) {
@@ -463,9 +470,6 @@ void BasisFactorization::RightSolveForProblemColumn(ColIndex col,
   lu_factorization_.RightSolveLForColumnView(compact_matrix_.column(col), d);
   rank_one_factorization_.RightSolveWithNonZeros(d);
   if (col >= right_pool_mapping_.size()) {
-    // This is needed because when we do an incremental solve with only new
-    // columns, we still reuse the current factorization without calling
-    // Refactorize() which would have resized this vector.
     right_pool_mapping_.resize(col + 1, kInvalidCol);
   }
   if (d->non_zeros.empty()) {

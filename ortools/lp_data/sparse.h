@@ -29,6 +29,7 @@
 #ifndef OR_TOOLS_LP_DATA_SPARSE_H_
 #define OR_TOOLS_LP_DATA_SPARSE_H_
 
+#include <cstdint>
 #include <string>
 
 #include "ortools/base/integral_types.h"
