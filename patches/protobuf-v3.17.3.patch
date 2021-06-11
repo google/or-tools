@@ -1,33 +1,23 @@
 diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
-index 5c3b6e451..9834a16d4 100644
+index 5c3b6e451..ad8e671aa 100644
 --- a/cmake/CMakeLists.txt
 +++ b/cmake/CMakeLists.txt
-@@ -16,6 +16,16 @@ if(POLICY CMP0048)
+@@ -15,6 +15,14 @@ endif ()
+ if(POLICY CMP0048)
    cmake_policy(SET CMP0048 NEW)
  endif()
- 
 +# find_package() uses <PackageName>_ROOT variables.
 +if(POLICY CMP0074)
 +	cmake_policy(SET CMP0074 NEW)
 +endif()
-+
 +# option() honors normal variables.
 +if(POLICY CMP0077)
 +	cmake_policy(SET CMP0077 NEW)
 +endif()
-+
+ 
  # Project
  project(protobuf C CXX)
- 
-@@ -45,6 +55,7 @@ option(protobuf_BUILD_CONFORMANCE "Build conformance tests" OFF)
- option(protobuf_BUILD_EXAMPLES "Build examples" OFF)
- option(protobuf_BUILD_PROTOC_BINARIES "Build libprotoc and protoc compiler" ON)
- option(protobuf_BUILD_LIBPROTOC "Build libprotoc" OFF)
-+option(protobuf_BUILD_EXPORT "Build export to use build directory" ON)
- option(protobuf_DISABLE_RTTI "Remove runtime type information in the binaries" OFF)
- if (BUILD_SHARED_LIBS)
-   set(protobuf_BUILD_SHARED_LIBS_DEFAULT ON)
-@@ -53,7 +64,7 @@ else (BUILD_SHARED_LIBS)
+@@ -53,7 +61,7 @@ else (BUILD_SHARED_LIBS)
  endif (BUILD_SHARED_LIBS)
  option(protobuf_BUILD_SHARED_LIBS "Build Shared Libraries" ${protobuf_BUILD_SHARED_LIBS_DEFAULT})
  include(CMakeDependentOption)
@@ -36,7 +26,7 @@ index 5c3b6e451..9834a16d4 100644
    "NOT protobuf_BUILD_SHARED_LIBS" OFF)
  set(protobuf_WITH_ZLIB_DEFAULT ON)
  option(protobuf_WITH_ZLIB "Build with zlib support" ${protobuf_WITH_ZLIB_DEFAULT})
-@@ -129,24 +140,16 @@ endif (CMAKE_USE_PTHREADS_INIT)
+@@ -129,24 +137,16 @@ endif (CMAKE_USE_PTHREADS_INIT)
  
  set(_protobuf_FIND_ZLIB)
  if (protobuf_WITH_ZLIB)
@@ -71,7 +61,7 @@ index 5c3b6e451..9834a16d4 100644
  endif (protobuf_WITH_ZLIB)
  
  if (HAVE_ZLIB)
-@@ -236,7 +239,6 @@ endif (MSVC)
+@@ -236,7 +236,6 @@ endif (MSVC)
  get_filename_component(protobuf_source_dir ${protobuf_SOURCE_DIR} PATH)
  
  include_directories(
@@ -80,10 +70,10 @@ index 5c3b6e451..9834a16d4 100644
    ${protobuf_source_dir}/src)
  
 diff --git a/cmake/install.cmake b/cmake/install.cmake
-index 9dd6e7710..e99c89940 100644
+index ef5bb1306..c136c74db 100644
 --- a/cmake/install.cmake
 +++ b/cmake/install.cmake
-@@ -124,17 +124,19 @@ configure_file(protobuf-options.cmake
+@@ -126,17 +126,19 @@ configure_file(protobuf-options.cmake
  
  # Allows the build directory to be used as a find directory.
  
@@ -99,44 +89,18 @@ index 9dd6e7710..e99c89940 100644
 -  )
 -endif (protobuf_BUILD_PROTOC_BINARIES)
 +if(protobuf_BUILD_EXPORT)
-+  if (protobuf_BUILD_PROTOC_BINARIES)
++  if(protobuf_BUILD_PROTOC_BINARIES)
 +    export(TARGETS libprotobuf-lite libprotobuf libprotoc protoc
 +      NAMESPACE protobuf::
 +      FILE ${CMAKE_INSTALL_CMAKEDIR}/protobuf-targets.cmake
 +    )
-+  else (protobuf_BUILD_PROTOC_BINARIES)
++  else()
 +    export(TARGETS libprotobuf-lite libprotobuf
 +      NAMESPACE protobuf::
 +      FILE ${CMAKE_INSTALL_CMAKEDIR}/protobuf-targets.cmake
 +    )
-+  endif (protobuf_BUILD_PROTOC_BINARIES)
++  endif()
 +endif()
  
  install(EXPORT protobuf-targets
    DESTINATION "${CMAKE_INSTALL_CMAKEDIR}"
-diff --git a/src/google/protobuf/io/coded_stream.h b/src/google/protobuf/io/coded_stream.h
-index df8c4499a..dfbe26b38 100644
---- a/src/google/protobuf/io/coded_stream.h
-+++ b/src/google/protobuf/io/coded_stream.h
-@@ -131,7 +131,7 @@
- #pragma runtime_checks("c", off)
- #endif
- #else
--#ifdef __APPLE__
-+#if defined(__APPLE__) || defined(__FreeBSD__)
- #include <machine/endian.h>  // __BYTE_ORDER
- #else
- #include <endian.h>  // __BYTE_ORDER
-diff --git a/src/google/protobuf/stubs/port.h b/src/google/protobuf/stubs/port.h
-index b7aab404c..0870b4693 100644
---- a/src/google/protobuf/stubs/port.h
-+++ b/src/google/protobuf/stubs/port.h
-@@ -57,7 +57,7 @@
- #pragma runtime_checks("c", off)
- #endif
- #else
--#ifdef __APPLE__
-+#if defined(__APPLE__) || defined(__FreeBSD__)
- #include <machine/endian.h>  // __BYTE_ORDER
- #else
- #include <endian.h>  // __BYTE_ORDER
