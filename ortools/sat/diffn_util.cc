@@ -335,21 +335,21 @@ absl::Span<int> FilterBoxesThatAreTooLarge(
   return boxes.subspan(0, new_size);
 }
 
+std::ostream& operator<<(std::ostream& out, const IndexedInterval& interval) {
+  return out << "[" << interval.start << ".." << interval.end << " (#"
+             << interval.index << ")]";
+}
+
 void ConstructOverlappingSets(bool already_sorted,
                               std::vector<IndexedInterval>* intervals,
                               std::vector<std::vector<int>>* result) {
   result->clear();
   if (already_sorted) {
-    DCHECK(
-        std::is_sorted(intervals->begin(), intervals->end(),
-                       [](const IndexedInterval& a, const IndexedInterval& b) {
-                         return a.start < b.start;
-                       }));
+    DCHECK(std::is_sorted(intervals->begin(), intervals->end(),
+                          IndexedInterval::ComparatorByStart()));
   } else {
     std::sort(intervals->begin(), intervals->end(),
-              [](const IndexedInterval& a, const IndexedInterval& b) {
-                return a.start < b.start;
-              });
+              IndexedInterval::ComparatorByStart());
   }
   IntegerValue min_end_in_set = kMaxIntegerValue;
   intervals->push_back({-1, kMaxIntegerValue, kMaxIntegerValue});  // Sentinel.
@@ -389,31 +389,85 @@ void ConstructOverlappingSets(bool already_sorted,
   }
 }
 
-void GetOverlappingIntervalComponents(std::vector<IndexedInterval>* intervals,
-                                      std::vector<std::vector<int>>* result) {
-  result->clear();
+void GetOverlappingIntervalComponents(
+    std::vector<IndexedInterval>* intervals,
+    std::vector<std::vector<int>>* components) {
+  components->clear();
   if (intervals->empty()) return;
   if (intervals->size() == 1) {
-    result->push_back({intervals->front().index});
+    components->push_back({intervals->front().index});
     return;
   }
 
+  // For correctness, ComparatorByStart is enough, but in unit tests we want to
+  // verify this function against another implementation, and fully defined
+  // sorting with tie-breaking makes that much easier.
+  // If that becomes a performance bottleneck:
+  // - One may want to sort the list outside of this function, and simply
+  //   have this function DCHECK that it's sorted by start.
+  // - One may use std::stable_sort() with ComparatorByStart().
   std::sort(intervals->begin(), intervals->end(),
-            [](const IndexedInterval& a, const IndexedInterval& b) {
-              return a.start < b.start;
-            });
+            IndexedInterval::ComparatorByStartThenEndThenIndex());
 
   IntegerValue end_max_so_far = (*intervals)[0].end;
-  result->push_back({(*intervals)[0].index});
+  components->push_back({(*intervals)[0].index});
   for (int i = 1; i < intervals->size(); ++i) {
     const IndexedInterval& interval = (*intervals)[i];
     if (interval.start >= end_max_so_far) {
-      result->push_back({interval.index});
+      components->push_back({interval.index});
     } else {
-      result->back().push_back(interval.index);
+      components->back().push_back(interval.index);
     }
     end_max_so_far = std::max(end_max_so_far, interval.end);
   }
+}
+
+std::vector<int> GetIntervalArticulationPoints(
+    std::vector<IndexedInterval>* intervals) {
+  std::vector<int> articulation_points;
+  if (intervals->size() < 3) return articulation_points;  // Empty.
+  if (DEBUG_MODE) {
+    for (const IndexedInterval& interval : *intervals) {
+      DCHECK_LT(interval.start, interval.end);
+    }
+  }
+
+  std::sort(intervals->begin(), intervals->end(),
+            IndexedInterval::ComparatorByStart());
+
+  IntegerValue end_max_so_far = (*intervals)[0].end;
+  int index_of_max = 0;
+  IntegerValue prev_end_max = kMinIntegerValue;  // Initialized as a sentinel.
+  for (int i = 1; i < intervals->size(); ++i) {
+    const IndexedInterval& interval = (*intervals)[i];
+    if (interval.start >= end_max_so_far) {
+      // New connected component.
+      end_max_so_far = interval.end;
+      index_of_max = i;
+      prev_end_max = kMinIntegerValue;
+      continue;
+    }
+    // Still the same connected component. Was the previous "max" an
+    // articulation point ?
+    if (prev_end_max != kMinIntegerValue && interval.start >= prev_end_max) {
+      // We might be re-inserting the same articulation point: guard against it.
+      if (articulation_points.empty() ||
+          articulation_points.back() != index_of_max) {
+        articulation_points.push_back(index_of_max);
+      }
+    }
+    // Update the max end.
+    if (interval.end > end_max_so_far) {
+      prev_end_max = end_max_so_far;
+      end_max_so_far = interval.end;
+      index_of_max = i;
+    } else if (interval.end > prev_end_max) {
+      prev_end_max = interval.end;
+    }
+  }
+  // Convert articulation point indices to IndexedInterval.index.
+  for (int& index : articulation_points) index = (*intervals)[index].index;
+  return articulation_points;
 }
 
 }  // namespace sat

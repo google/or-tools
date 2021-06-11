@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <deque>
+#include <limits>
 #include <vector>
 
 #include "ortools/sat/cp_model.pb.h"
@@ -108,7 +109,15 @@ class PresolveContext {
   int64_t SizeMax(int ct_ref) const;
   int64_t EndMin(int ct_ref) const;
   int64_t EndMax(int ct_ref) const;
+  ABSL_MUST_USE_RESULT bool SetStartMin(int ct_ref, int64_t value);
+  ABSL_MUST_USE_RESULT bool SetEndMax(int ct_ref, int64_t value);
   std::string IntervalDebugString(int ct_ref) const;
+
+  // Setters for affine.
+  bool SetAffineMin(const LinearExpressionProto& affine, int64_t value);
+  bool SetAffineMax(const LinearExpressionProto& affine, int64_t value);
+  bool SetScaledVarMin(int ref, int64_t coeff, int64_t value);
+  bool SetScaledVarMax(int ref, int64_t coeff, int64_t value);
 
   // Helpers to query the current domain of a linear expression.
   // This doesn't check for integer overflow, but our linear expression

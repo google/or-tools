@@ -104,6 +104,32 @@ absl::Span<int> FilterBoxesThatAreTooLarge(
     const std::vector<Rectangle>& cached_rectangles,
     const std::vector<IntegerValue>& energies, absl::Span<int> boxes);
 
+struct IndexedInterval {
+  int index;
+  IntegerValue start;
+  IntegerValue end;
+
+  bool operator==(const IndexedInterval& rhs) const {
+    return std::tie(start, end, index) ==
+           std::tie(rhs.start, rhs.end, rhs.index);
+  }
+
+  // NOTE(user): We would like to use TUPLE_DEFINE_STRUCT, but sadly it doesn't
+  // support //buildenv/target:non_prod.
+  struct ComparatorByStartThenEndThenIndex {
+    bool operator()(const IndexedInterval& a, const IndexedInterval& b) const {
+      return std::tie(a.start, a.end, a.index) <
+             std::tie(b.start, b.end, b.index);
+    }
+  };
+  struct ComparatorByStart {
+    bool operator()(const IndexedInterval& a, const IndexedInterval& b) const {
+      return a.start < b.start;
+    }
+  };
+};
+std::ostream& operator<<(std::ostream& out, const IndexedInterval& interval);
+
 // Given n fixed intervals, returns the subsets of intervals that overlap during
 // at least one time unit. Note that we only return "maximal" subset and filter
 // subset strictly included in another.
@@ -111,19 +137,24 @@ absl::Span<int> FilterBoxesThatAreTooLarge(
 // All Intervals must have a positive size.
 //
 // The algo is in O(n log n) + O(result_size) which is usually O(n^2).
-struct IndexedInterval {
-  int index;
-  IntegerValue start;
-  IntegerValue end;
-};
 void ConstructOverlappingSets(bool already_sorted,
                               std::vector<IndexedInterval>* intervals,
                               std::vector<std::vector<int>>* result);
 
 // Given n intervals, returns the set of connected components (using the overlap
-// relation between 2 intervals).
-void GetOverlappingIntervalComponents(std::vector<IndexedInterval>* intervals,
-                                      std::vector<std::vector<int>>* result);
+// relation between 2 intervals). Components are sorted by their start, and
+// inside a component, the intervals are also sorted by start.
+// `intervals` is only sorted (by start), and not modified otherwise.
+void GetOverlappingIntervalComponents(
+    std::vector<IndexedInterval>* intervals,
+    std::vector<std::vector<int>>* components);
+
+// Similar to GetOverlappingIntervalComponents(), but returns the indices of
+// all intervals whose removal would create one more connected component in the
+// interval graph. Those are sorted by start. See:
+// https://en.wikipedia.org/wiki/Glossary_of_graph_theory#articulation_point.
+std::vector<int> GetIntervalArticulationPoints(
+    std::vector<IndexedInterval>* intervals);
 
 }  // namespace sat
 }  // namespace operations_research

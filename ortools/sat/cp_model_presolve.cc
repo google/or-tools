@@ -55,6 +55,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/simplification.h"
 #include "ortools/sat/var_domination.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -3058,6 +3059,7 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
   }
 
   std::vector<int> constant_intervals;
+  std::vector<int> variable_intervals;
   int64_t size_min_of_non_constant_intervals =
       std::numeric_limits<int64_t>::max();
   for (int i = 0; i < proto->intervals_size(); ++i) {
@@ -3065,12 +3067,14 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
     if (context_->IntervalIsConstant(interval_index)) {
       constant_intervals.push_back(interval_index);
     } else {
+      variable_intervals.push_back(interval_index);
       size_min_of_non_constant_intervals =
           std::min(size_min_of_non_constant_intervals,
                    context_->SizeMin(interval_index));
     }
   }
 
+  std::vector<int64_t> flat_fixed_interval_bounds;
   if (!constant_intervals.empty()) {
     // Sort constant_intervals by start min.
     std::sort(constant_intervals.begin(), constant_intervals.end(),
@@ -3098,7 +3102,7 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
 
     // If two constant intervals are separated by a gap smaller that the min
     // size of all non-constant intervals, then we can merge them.
-    for (int i = 0; i + 1 < constant_intervals.size(); ++i) {
+    for (int i = 0; i < constant_intervals.size(); ++i) {
       const int start = i;
       while (i + 1 < constant_intervals.size() &&
              context_->StartMin(constant_intervals[i + 1]) -
@@ -3106,7 +3110,13 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
                  size_min_of_non_constant_intervals) {
         i++;
       }
-      if (i == start) continue;
+      if (i == start) {
+        flat_fixed_interval_bounds.push_back(
+            context_->StartMin(constant_intervals[i]));
+        flat_fixed_interval_bounds.push_back(
+            context_->EndMax(constant_intervals[i]) - 1);
+        continue;
+      }
       for (int j = start; j <= i; ++j) {
         intervals_to_remove.insert(constant_intervals[j]);
       }
@@ -3118,6 +3128,8 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
       new_interval->mutable_start_view()->set_offset(new_start);
       new_interval->mutable_size_view()->set_offset(new_end - new_start);
       new_interval->mutable_end_view()->set_offset(new_end);
+      flat_fixed_interval_bounds.push_back(new_start);
+      flat_fixed_interval_bounds.push_back(new_end - 1);
     }
 
     // Cleanup the original proto.
@@ -3139,6 +3151,77 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
       constant_intervals.clear();
       changed = true;
       context_->UpdateNewConstraintsVariableUsage();
+    }
+  }
+
+  // Shave bounds from variable intervals.
+  if (!flat_fixed_interval_bounds.empty()) {
+    const Domain free_space =
+        Domain::FromFlatIntervals(flat_fixed_interval_bounds).Complement();
+    for (const int index : variable_intervals) {
+      const int64_t start_min = context_->StartMin(index);
+      const int64_t end_max = context_->EndMax(index);
+      const int64_t size_min = context_->SizeMin(index);
+      const Domain intersection =
+          free_space.IntersectionWith({start_min, end_max - 1});
+
+      const std::vector<ClosedInterval> possible_intervals =
+          intersection.intervals();
+      const int num_possible_intervals = possible_intervals.size();
+      int first_valid_interval = 0;
+      while (first_valid_interval < num_possible_intervals &&
+             possible_intervals[first_valid_interval].end -
+                     possible_intervals[first_valid_interval].start + 1 <
+                 size_min) {
+        first_valid_interval++;
+      }
+
+      if (first_valid_interval == num_possible_intervals) {
+        if (context_->ConstraintIsOptional(index)) {
+          CHECK_EQ(context_->working_model->constraints(index)
+                       .enforcement_literal()
+                       .size(),
+                   1);
+          if (!context_->SetLiteralToFalse(
+                  context_->working_model->constraints(index)
+                      .enforcement_literal(0))) {
+            return true;
+          }
+        } else {
+          return context_->NotifyThatModelIsUnsat(
+              "no_overlap: cannot fit interval");
+        }
+        continue;
+      }
+
+      // the rest of the propagation requires the interval to be performed.
+      if (context_->ConstraintIsOptional(index)) continue;
+
+      int last_valid_interval = num_possible_intervals - 1;
+      while (last_valid_interval >= 0 &&
+             possible_intervals[last_valid_interval].end -
+                     possible_intervals[last_valid_interval].start + 1 <
+                 size_min) {
+        last_valid_interval--;
+      }
+
+      const int64_t new_start_min =
+          possible_intervals[first_valid_interval].start;
+      const int64_t new_end_max =
+          possible_intervals[last_valid_interval].end + 1;
+
+      if (new_start_min > start_min) {
+        if (!context_->SetStartMin(index, new_start_min)) {
+          return true;
+        }
+        context_->UpdateRuleStats("no_overlap: push interval");
+      }
+      if (new_end_max < end_max) {
+        if (!context_->SetEndMax(index, new_end_max)) {
+          return true;
+        }
+        context_->UpdateRuleStats("no_overlap: push interval");
+      }
     }
   }
 

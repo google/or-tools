@@ -19,6 +19,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
@@ -228,6 +229,80 @@ int64_t PresolveContext::SizeMax(int ct_ref) const {
       working_model->constraints(ct_ref).interval();
   if (interval.has_size_view()) return MaxOf(interval.size_view());
   return MaxOf(interval.size());
+}
+
+bool PresolveContext::SetStartMin(int ct_ref, int64_t value) {
+  DCHECK(!ConstraintIsOptional(ct_ref));
+  const IntervalConstraintProto& interval =
+      working_model->constraints(ct_ref).interval();
+  if (interval.has_start_view()) {
+    return SetAffineMin(interval.start_view(), value);
+  }
+  return IntersectDomainWith(
+      interval.start(), {value, std::numeric_limits<int64_t>::max()}, nullptr);
+}
+
+bool PresolveContext::SetEndMax(int ct_ref, int64_t value) {
+  DCHECK(!ConstraintIsOptional(ct_ref));
+  const IntervalConstraintProto& interval =
+      working_model->constraints(ct_ref).interval();
+  if (interval.has_start_view()) {
+    return SetAffineMax(interval.end_view(), value);
+  }
+  return IntersectDomainWith(
+      interval.end(), {std::numeric_limits<int64_t>::min(), value}, nullptr);
+}
+
+bool PresolveContext::SetAffineMin(const LinearExpressionProto& affine,
+                                   int64_t value) {
+  if (affine.vars().empty()) {
+    if (value > affine.offset()) {
+      return NotifyThatModelIsUnsat("affine: inconsistent bounds");
+    } else {
+      return true;
+    }
+  }
+
+  CHECK_EQ(affine.vars_size(), 1);
+  return SetScaledVarMin(affine.vars(0), affine.coeffs(0),
+                         value - affine.offset());
+}
+
+bool PresolveContext::SetAffineMax(const LinearExpressionProto& affine,
+                                   int64_t value) {
+  if (affine.vars().empty()) {
+    if (value < affine.offset()) {
+      return NotifyThatModelIsUnsat("affine: inconsistent bounds");
+    } else {
+      return true;
+    }
+  }
+
+  CHECK_EQ(affine.vars_size(), 1);
+  return SetScaledVarMax(affine.vars(0), affine.coeffs(0),
+                         value - affine.offset());
+}
+
+bool PresolveContext::SetScaledVarMin(int ref, int64_t coeff, int64_t value) {
+  if (coeff < 0) return SetScaledVarMax(ref, -coeff, -value);
+  if (value >= 0) {
+    return IntersectDomainWith(ref, {(value + coeff - 1) / coeff,
+                                     std::numeric_limits<int64_t>::max()});
+  } else {
+    return IntersectDomainWith(
+        ref, {value / coeff, std::numeric_limits<int64_t>::max()});
+  }
+}
+
+bool PresolveContext::SetScaledVarMax(int ref, int64_t coeff, int64_t value) {
+  if (coeff < 0) return SetScaledVarMin(ref, -coeff, -value);
+  if (value >= 0) {
+    return IntersectDomainWith(
+        ref, {std::numeric_limits<int64_t>::min(), value / coeff});
+  } else {
+    return IntersectDomainWith(ref, {std::numeric_limits<int64_t>::min(),
+                                     (value - coeff + 1) / coeff});
+  }
 }
 
 // Important: To be sure a variable can be removed, we need it to not be a
