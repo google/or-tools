@@ -66,8 +66,8 @@ if(BUILD_absl)
   FetchContent_Declare(
     absl
     GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
-    GIT_TAG "20210324.1"
-    PATCH_COMMAND git apply "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20210324.1.patch")
+    GIT_TAG "20210324.2"
+    PATCH_COMMAND git apply "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20210324.2.patch")
   FetchContent_MakeAvailable(absl)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
