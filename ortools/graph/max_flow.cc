@@ -985,6 +985,11 @@ FlowModel GenericMaxFlow<Graph>::CreateFlowModel() {
 //
 // TODO(user): moves this code out of a .cc file and include it at the end of
 // the header so it can work with any graph implementation ?
+template<> const FlowQuantity GenericMaxFlow<StarGraph>::kMaxFlowQuantity = std::numeric_limits<FlowQuantity>::max();
+template<> const FlowQuantity GenericMaxFlow<::util::ReverseArcListGraph<>>::kMaxFlowQuantity = std::numeric_limits<FlowQuantity>::max();
+template<> const FlowQuantity GenericMaxFlow<::util::ReverseArcStaticGraph<>>::kMaxFlowQuantity = std::numeric_limits<FlowQuantity>::max();
+template<> const FlowQuantity GenericMaxFlow<::util::ReverseArcMixedGraph<>>::kMaxFlowQuantity = std::numeric_limits<FlowQuantity>::max();
+
 template class GenericMaxFlow<StarGraph>;
 template class GenericMaxFlow<::util::ReverseArcListGraph<>>;
 template class GenericMaxFlow<::util::ReverseArcStaticGraph<>>;
