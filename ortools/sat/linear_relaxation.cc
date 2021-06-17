@@ -13,6 +13,7 @@
 
 #include "ortools/sat/linear_relaxation.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <vector>
@@ -28,6 +29,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/scheduling_constraints.h"
 
 namespace operations_research {

@@ -19,6 +19,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -2022,10 +2023,10 @@ void AddIntegerVariableFromIntervals(SchedulingConstraintHelper* helper,
 
 std::function<bool(const absl::StrongVector<IntegerVariable, double>&,
                    LinearConstraintManager*)>
-GenerateCumulativeCut(const std::string& cut_name,
-                      SchedulingConstraintHelper* helper,
-                      const std::vector<IntegerVariable>& demands,
-                      AffineExpression capacity, Model* model) {
+GenerateCumulativeEnergyCut(const std::string& cut_name,
+                            SchedulingConstraintHelper* helper,
+                            const std::vector<IntegerVariable>& demands,
+                            AffineExpression capacity, Model* model) {
   Trail* trail = model->GetOrCreate<Trail>();
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
@@ -2082,6 +2083,8 @@ GenerateCumulativeCut(const std::string& cut_name,
       int end_index_of_max_violation = -1;
       double max_relative_violation = 1.01;
       IntegerValue span_of_max_violation(0);
+      std::vector<int> lifted_intervals_of_max_violation;
+      std::vector<IntegerValue> lifted_min_overlaps_of_max_violation;
 
       // Accumulate intervals and check for potential cuts.
       double energy_lp = 0.0;
@@ -2092,6 +2095,9 @@ GenerateCumulativeCut(const std::string& cut_name,
       // increasing end max.
       std::vector<int> residual_tasks(active_intervals.begin() + i1,
                                       active_intervals.end());
+      // Keep track of intervals not included in the potential cut.
+      std::set<int> intervals_not_visited(active_intervals.begin(),
+                                          active_intervals.end());
       std::sort(
           residual_tasks.begin(), residual_tasks.end(),
           [&](int a, int b) { return helper->EndMax(a) < helper->EndMax(b); });
@@ -2101,6 +2107,7 @@ GenerateCumulativeCut(const std::string& cut_name,
       // below.
       for (int i2 = 0; i2 < residual_tasks.size(); ++i2) {
         const int t = residual_tasks[i2];
+        intervals_not_visited.erase(t);
         if (helper->IsPresent(t)) {
           if (demand_is_fixed(t)) {
             if (helper->SizeIsFixed(t)) {
@@ -2128,13 +2135,73 @@ GenerateCumulativeCut(const std::string& cut_name,
         min_of_starts = std::min(min_of_starts, helper->StartMin(t));
         max_of_ends = std::max(max_of_ends, helper->EndMax(t));
 
+        // Dominance rule. If the next interval also fits in
+        // [min_of_starts, max_of_ends], the cut will be stronger with the
+        // next interval.
+        if (i2 + 1 < residual_tasks.size() &&
+            helper->StartMin(residual_tasks[i2 + 1]) >= min_of_starts &&
+            helper->EndMax(residual_tasks[i2 + 1]) <= max_of_ends) {
+          continue;
+        }
+
+        // Compute forced contributions from intervals not included in
+        // [min_of_starts..max_of_ends].
+        //
+        // TODO(user): We could precompute possible intervals and store them
+        // by start_max, end_min to reduce the complexity.
+        std::vector<int> lifted_intervals;
+        std::vector<IntegerValue> lifted_min_overlap;
+        double forced_contrib_lp = 0.0;
+        for (const int t : intervals_not_visited) {
+          // It should not happen because of the 2 dominance rules above.
+          if (helper->StartMin(t) >= min_of_starts &&
+              helper->EndMax(t) <= max_of_ends) {
+            continue;
+          }
+
+          // Compute the minimum overlap of this interval with the time window
+          // [min_of_starts..max_of_ends].
+          //
+          // Note: this is different from the mandatory part of an interval.
+          const IntegerValue max_overlap =
+              std::min(max_of_ends - min_of_starts, helper->SizeMin(t));
+          const IntegerValue min_overlap_left =
+              std::min(max_overlap, helper->EndMin(t) - min_of_starts);
+          const IntegerValue min_overlap_right =
+              std::min(max_overlap, max_of_ends - helper->StartMax(t));
+          const IntegerValue min_overlap =
+              std::min(min_overlap_left, min_overlap_right);
+
+          if (min_overlap <= 0) continue;
+
+          lifted_intervals.push_back(t);
+          lifted_min_overlap.push_back(min_overlap);
+
+          if (helper->IsPresent(t)) {
+            if (demand_is_fixed(t)) {
+              forced_contrib_lp += ToDouble(min_overlap * demand_min(t));
+            } else {
+              DCHECK(!demands.empty());
+              forced_contrib_lp +=
+                  lp_values[demands[t]] * ToDouble(min_overlap);
+            }
+          } else {
+            forced_contrib_lp += GetLiteralLpValue(helper->PresenceLiteral(t),
+                                                   lp_values, encoder) *
+                                 ToDouble(min_overlap * demand_min(t));
+          }
+        }
+
         // Compute the violation of the potential cut.
         const double relative_violation =
-            energy_lp / ToDouble((max_of_ends - min_of_starts) * capacity_max);
+            (energy_lp + forced_contrib_lp) /
+            ToDouble((max_of_ends - min_of_starts) * capacity_max);
         if (relative_violation > max_relative_violation) {
           end_index_of_max_violation = i2;
           max_relative_violation = relative_violation;
           span_of_max_violation = max_of_ends - min_of_starts;
+          lifted_intervals_of_max_violation = lifted_intervals;
+          lifted_min_overlaps_of_max_violation = lifted_min_overlap;
         }
       }
 
@@ -2143,6 +2210,7 @@ GenerateCumulativeCut(const std::string& cut_name,
       // A maximal violated cut has been found.
       bool cut_generated = true;
       bool has_opt_cuts = false;
+      bool lifted = false;
       bool has_quadratic_cuts = false;
 
       LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
@@ -2190,12 +2258,36 @@ GenerateCumulativeCut(const std::string& cut_name,
         }
       }
 
+      for (int i2 = 0; i2 < lifted_intervals_of_max_violation.size(); ++i2) {
+        const int t = lifted_intervals_of_max_violation[i2];
+        const IntegerValue min_overlap =
+            lifted_min_overlaps_of_max_violation[i2];
+        lifted = true;
+
+        if (helper->IsPresent(t)) {
+          if (demand_is_fixed(t)) {
+            cut.AddConstant(min_overlap * demand_min(t));
+          } else {
+            DCHECK(!demands.empty());
+            cut.AddTerm(demands[t], min_overlap);
+          }
+        } else {
+          has_opt_cuts = true;
+          if (!cut.AddLiteralTerm(helper->PresenceLiteral(t),
+                                  min_overlap * demand_min(t))) {
+            cut_generated = false;
+            break;
+          }
+        }
+      }
+
       if (cut_generated) {
         std::string full_name = cut_name;
         if (has_opt_cuts) full_name.append("_opt");
         if (has_quadratic_cuts) full_name.append("_quad");
+        if (lifted) full_name.append("_lifted");
 
-        manager->AddCut(cut.Build(), cut_name, lp_values);
+        manager->AddCut(cut.Build(), full_name, lp_values);
       }
     }
     return true;
@@ -2216,7 +2308,10 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
   result.vars.push_back(capacity);
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
 
-  result.generate_cuts = GenerateCumulativeCut(
+  // TODO(user): Do not create the cut generator if the capacity is fixed,
+  // all demands are fixed, and the intervals are always performed with a fixed
+  // size.
+  result.generate_cuts = GenerateCumulativeEnergyCut(
       "CumulativeEnergy", helper, demands, AffineExpression(capacity), model);
   return result;
 }
@@ -2346,7 +2441,10 @@ CutGenerator CreateNoOverlapEnergyCutGenerator(
 
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
 
-  result.generate_cuts = GenerateCumulativeCut(
+  // TODO(user): Do not create the cut generator if all intervals are
+  // performed with a fixed size as it will not propagate more than
+  // the overload checker.
+  result.generate_cuts = GenerateCumulativeEnergyCut(
       "NoOverlapEnergy", helper,
       /*demands=*/{},
       /*capacity=*/AffineExpression(IntegerValue(1)), model);
@@ -2422,9 +2520,19 @@ struct CtEvent {
   AffineExpression end;
   IntegerValue start_min;
   IntegerValue size_min;
+  IntegerValue demand_min;
   double lp_end;
   IntegerValue y_min;
   IntegerValue y_max;
+  bool lifted;
+  std::string DebugString() const {
+    return absl::StrCat("CtEvent(end = ", end.DebugString(),
+                        ", start_min = ", start_min.value(),
+                        ", size_min = ", size_min.value(),
+                        ", demand_min = ", demand_min.value(),
+                        ", lp_end = ", lp_end, ", y_min = ", y_min.value(),
+                        ", y_max = ", y_max.value(), ", lifted = ", lifted);
+  }
 };
 
 // We generate the cut from the Smith's rule from:
@@ -2457,8 +2565,26 @@ void GenerateCompletionTimeCut(
       continue;
     }
 
-    const double sequence_start_min = ToDouble(events[start].start_min);
+    const IntegerValue sequence_start_min = events[start].start_min;
     std::vector<CtEvent> residual_tasks(events.begin() + start, events.end());
+
+    // We look at event that start before sequence_start_min, but are forced to
+    // cross this time point. In that case, we replace this event by a truncated
+    // event starting at sequence_start_min.
+    //
+    // Note: using the real size_min, and not the energy_min from the cumulative
+    //       will result in a stronger cut.
+    for (int before = 0; before < start; ++before) {
+      if (events[before].start_min + events[before].size_min >
+          sequence_start_min) {
+        CtEvent event = events[before];  // Copy.
+        event.lifted = true;
+        event.size_min = event.size_min + event.start_min - sequence_start_min;
+        event.start_min = sequence_start_min;
+        residual_tasks.push_back(event);
+      }
+    }
+
     std::sort(residual_tasks.begin(), residual_tasks.end(),
               [](const CtEvent& e1, const CtEvent& e2) {
                 return e1.lp_end < e2.lp_end;
@@ -2476,21 +2602,22 @@ void GenerateCompletionTimeCut(
     IntegerValue y_max = kMinIntegerValue;
 
     for (int i = 0; i < residual_tasks.size(); ++i) {
-      DCHECK_GE(residual_tasks[i].start_min, sequence_start_min);
-      const IntegerValue duration = residual_tasks[i].size_min;
-      sum_duration += duration;
-      sum_square_duration += duration * duration;
-      unscaled_lp_contrib += residual_tasks[i].lp_end * ToDouble(duration);
-      current_start_min =
-          std::min(current_start_min, residual_tasks[i].start_min);
-      y_min = std::min(y_min, residual_tasks[i].y_min);
-      y_max = std::max(y_max, residual_tasks[i].y_max);
+      const CtEvent& event = residual_tasks[i];
+      DCHECK_GE(event.start_min, sequence_start_min);
+      const IntegerValue energy = event.size_min * event.demand_min;
+      sum_duration += energy;
+      sum_square_duration += energy * energy;
+      unscaled_lp_contrib += event.lp_end * ToDouble(energy);
+      current_start_min = std::min(current_start_min, event.start_min);
+      y_min = std::min(y_min, event.y_min);
+      y_max = std::max(y_max, event.y_max);
 
       const IntegerValue size_divisor = y_max - y_min;
 
       // We compute the cuts with all the sizes actually equal to
-      //     (size / size_divisor), but to keep the computation in the integer
-      // domain, we multiply by size_divisor where needed instead.
+      //     size_min * demand_min / size_divisor
+      // but to keep the computation in the integer domain, we multiply by
+      // size_divisor where needed instead.
       const IntegerValue min_contrib =
           (sum_duration * sum_duration + sum_square_duration) / 2 +
           current_start_min * sum_duration * size_divisor;
@@ -2507,11 +2634,16 @@ void GenerateCompletionTimeCut(
     }
     if (best_end != -1) {
       LinearConstraintBuilder cut(model, best_min_contrib, kMaxIntegerValue);
+      bool is_lifted = false;
       for (int i = 0; i <= best_end; ++i) {
-        cut.AddTerm(residual_tasks[i].end,
-                    residual_tasks[i].size_min * best_size_divisor);
+        const CtEvent& event = residual_tasks[i];
+        is_lifted |= event.lifted;
+        cut.AddTerm(event.end,
+                    event.size_min * event.demand_min * best_size_divisor);
       }
-      top_n_cuts.AddCut(cut.Build(), cut_name, lp_values);
+      std::string full_name = cut_name;
+      if (is_lifted) full_name.append("_lifted");
+      top_n_cuts.AddCut(cut.Build(), full_name, lp_values);
     }
   }
   top_n_cuts.TransferToManager(lp_values, manager);
@@ -2544,14 +2676,15 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
             if (size_min > 0) {
               const AffineExpression end_expr = helper->Ends()[index];
               events.push_back({end_expr, helper->StartMin(index), size_min,
-                                end_expr.LpValue(lp_values), IntegerValue(0),
-                                IntegerValue(1)});
+                                /*demand_min=*/IntegerValue(1),
+                                end_expr.LpValue(lp_values),
+                                /*y_min=*/IntegerValue(0),
+                                /*y_max=*/IntegerValue(1), false});
             }
           }
           GenerateCompletionTimeCut(cut_name, lp_values, std::move(events),
                                     model, manager);
         };
-
         if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
         generate_cuts("NoOverlapCompletionTime");
         if (!helper->SynchronizeAndSetTimeDirection(false)) return false;
@@ -2596,15 +2729,16 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
                 integer_trail->LowerBound(demands[index]);
             if (area_min > 0) {
               const AffineExpression end_expr = helper->Ends()[index];
-              events.push_back({end_expr, helper->StartMin(index), area_min,
+              events.push_back({end_expr, helper->StartMin(index),
+                                helper->SizeMin(index),
+                                integer_trail->LowerBound(demands[index]),
                                 end_expr.LpValue(lp_values), IntegerValue(0),
-                                capacity_max});
+                                capacity_max, false});
             }
           }
           GenerateCompletionTimeCut(cut_name, lp_values, std::move(events),
                                     model, manager);
         };
-
         if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
         generate_cuts("CumulativeCompletionTime");
         if (!helper->SynchronizeAndSetTimeDirection(false)) return false;
@@ -2680,10 +2814,10 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
             for (const int box : boxes) {
               const AffineExpression x_end_expr = x_helper->Ends()[box];
               events.push_back({x_end_expr, x_helper->ShiftedStartMin(box),
-                                cached_areas[box],
+                                x_helper->SizeMin(box), y_helper->SizeMin(box),
                                 x_end_expr.LpValue(lp_values),
                                 y_helper->ShiftedStartMin(box),
-                                y_helper->ShiftedEndMax(box)});
+                                y_helper->ShiftedEndMax(box), false});
             }
 
             GenerateCompletionTimeCut(cut_name, lp_values, std::move(events),

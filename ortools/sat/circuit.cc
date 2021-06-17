@@ -224,6 +224,35 @@ bool CircuitPropagator::Propagate() {
       if (start_node == n) break;
     }
 
+    // TODO(user): we can fail early in more case, like no more possible path
+    // to any of the mandatory node.
+    if (options_.multiple_subcircuit_through_zero) {
+      // Any cycle must contain zero.
+      if (start_node == end_node && !in_current_path_[0]) {
+        FillReasonForPath(start_node, trail_->MutableConflict());
+        return false;
+      }
+
+      // An incomplete path cannot be closed except if one of the end-points
+      // is zero.
+      if (start_node != end_node && start_node != 0 && end_node != 0) {
+        const auto it = graph_.find({end_node, start_node});
+        if (it == graph_.end()) continue;
+        const Literal literal = it->second;
+        if (assignment_.LiteralIsFalse(literal)) continue;
+
+        std::vector<Literal>* reason = trail_->GetEmptyVectorToStoreReason();
+        FillReasonForPath(start_node, reason);
+        if (!trail_->EnqueueWithStoredReason(literal.Negated())) {
+          return false;
+        }
+      }
+
+      // None of the other propagation below are valid in case of multiple
+      // circuits.
+      continue;
+    }
+
     // Check if we miss any node that must be in the circuit. Note that the ones
     // for which self_arcs_[i] is kFalseLiteralIndex are first. This is good as
     // it will produce shorter reason. Otherwise we prefer the first that was
@@ -271,7 +300,6 @@ bool CircuitPropagator::Propagate() {
     // If we have a cycle, we can propagate all the other nodes to point to
     // themselves. Otherwise there is nothing else to do.
     if (start_node != end_node) continue;
-    if (options_.multiple_subcircuit_through_zero) continue;
     BooleanVariable variable_with_same_reason = kNoBooleanVariable;
     for (int node = 0; node < num_nodes_; ++node) {
       if (in_current_path_[node]) continue;

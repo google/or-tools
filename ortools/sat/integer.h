@@ -241,6 +241,16 @@ struct AffineExpression {
     return ToDouble(coeff) * lp_values[var] + ToDouble(constant);
   }
 
+  const std::string DebugString() const {
+    if (var == kNoIntegerVariable) return absl::StrCat(constant.value());
+    if (constant == 0) {
+      return absl::StrCat("(", coeff.value(), " * X", var.value(), ")");
+    } else {
+      return absl::StrCat("(", coeff.value(), " * X", var.value(), " + ",
+                          constant.value(), ")");
+    }
+  }
+
   // The coefficient MUST be positive. Use NegationOf(var) if needed.
   IntegerVariable var = kNoIntegerVariable;  // kNoIntegerVariable for constant.
   IntegerValue coeff = IntegerValue(0);      // Zero for constant.

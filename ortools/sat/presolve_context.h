@@ -16,7 +16,6 @@
 
 #include <cstdint>
 #include <deque>
-#include <limits>
 #include <vector>
 
 #include "ortools/sat/cp_model.pb.h"
@@ -109,21 +108,16 @@ class PresolveContext {
   int64_t SizeMax(int ct_ref) const;
   int64_t EndMin(int ct_ref) const;
   int64_t EndMax(int ct_ref) const;
-  ABSL_MUST_USE_RESULT bool SetStartMin(int ct_ref, int64_t value);
-  ABSL_MUST_USE_RESULT bool SetEndMax(int ct_ref, int64_t value);
   std::string IntervalDebugString(int ct_ref) const;
-
-  // Setters for affine.
-  bool SetAffineMin(const LinearExpressionProto& affine, int64_t value);
-  bool SetAffineMax(const LinearExpressionProto& affine, int64_t value);
-  bool SetScaledVarMin(int ref, int64_t coeff, int64_t value);
-  bool SetScaledVarMax(int ref, int64_t coeff, int64_t value);
 
   // Helpers to query the current domain of a linear expression.
   // This doesn't check for integer overflow, but our linear expression
   // should be such that this cannot happen (tested at validation).
   int64_t MinOf(const LinearExpressionProto& expr) const;
   int64_t MaxOf(const LinearExpressionProto& expr) const;
+
+  // Return a super-set of the domain of the linear expression.
+  Domain DomainSuperSetOf(const LinearExpressionProto& expr) const;
 
   // This function takes a positive variable reference.
   bool DomainOfVarIsIncludedIn(int var, const Domain& domain) {
@@ -159,6 +153,13 @@ class PresolveContext {
   // Returns false if the 'lit' doesn't have the desired value in the domain.
   ABSL_MUST_USE_RESULT bool SetLiteralToFalse(int lit);
   ABSL_MUST_USE_RESULT bool SetLiteralToTrue(int lit);
+
+  // Same as IntersectDomainWith() but take a linear expression as input.
+  // If this expression if of size > 1, this does nothing for now, so it will
+  // only propagates for constant and affine expression.
+  ABSL_MUST_USE_RESULT bool IntersectDomainWith(
+      const LinearExpressionProto& expr, const Domain& domain,
+      bool* domain_modified = nullptr);
 
   // This function always return false. It is just a way to make a little bit
   // more sure that we abort right away when infeasibility is detected.
