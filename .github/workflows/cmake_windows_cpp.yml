@@ -1,4 +1,4 @@
-name: C++ Windows CI
+name: CMake Windows C++
 
 on: [push, pull_request]
 

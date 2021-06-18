@@ -1,4 +1,4 @@
-name: .Net Windows CI
+name: CMake Windows .Net
 
 on: [push, pull_request]
 
