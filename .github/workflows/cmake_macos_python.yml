@@ -1,4 +1,4 @@
-name: Python MacOS CI
+name: CMake MacOS Python
 
 on: [push, pull_request]
 

@@ -1,4 +1,4 @@
-name: .Net MacOS CI
+name: CMake MacOS .Net
 
 on: [push, pull_request]
 

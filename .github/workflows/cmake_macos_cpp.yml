@@ -1,4 +1,4 @@
-name: C++ MacOS CI
+name: CMake MacOS C++
 
 on: [push, pull_request]
 
