@@ -34,7 +34,7 @@ cc_library(
 #        ":gscip_cc_proto",
 #        ":gscip_parameters",
 #        "@com_google_absl//absl/time",
-#        "@gtest//:main",
+#        "@com_google_googletest//:gtest_main",
 #    ],
 #)
 
@@ -85,7 +85,7 @@ cc_library(
 #    deps = [
 #        ":gscip",
 #        ":gscip_parameters",
-#        "@gtest//:main",
+#        "@com_google_googletest//:gtest_main",
 #    ],
 #)
 

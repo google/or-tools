@@ -44,11 +44,10 @@ git_repository(
     remote = "https://github.com/abseil/abseil-cpp.git",
 )
 
-http_archive(
-    name = "gtest",
-    build_file = "//bazel:gtest.BUILD",
-    strip_prefix = "googletest-release-1.8.0/googletest",
-    url = "https://github.com/google/googletest/archive/release-1.8.0.zip",
+git_repository(
+    name = "com_google_googletest",
+    commit = "703bd9c", # release-1.10.0
+    remote = "https://github.com/google/googletest.git",
 )
 
 http_archive(
