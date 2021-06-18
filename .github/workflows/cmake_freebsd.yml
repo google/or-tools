@@ -1,4 +1,4 @@
-name: Vagrant CMake
+name: CMake FreeBSD
 
 on: [push, pull_request]
 
