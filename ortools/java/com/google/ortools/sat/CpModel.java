@@ -243,13 +243,13 @@ public final class CpModel {
   }
 
   /** Adds {@code left != right}. */
-  public Constraint addDifferent(IntVar left, IntVar right) {
+  public Constraint addDifferent(LinearExpr left, LinearExpr right) {
     return addLinearExpressionInDomain(new Difference(left, right),
         Domain.fromFlatIntervals(new long[] {Long.MIN_VALUE, -1, 1, Long.MAX_VALUE}));
   }
 
   /** Adds {@code left + offset != right}. */
-  public Constraint addDifferentWithOffset(IntVar left, IntVar right, long offset) {
+  public Constraint addDifferentWithOffset(LinearExpr left, LinearExpr right, long offset) {
     return addLinearExpressionInDomain(new Difference(left, right),
         Domain.fromFlatIntervals(
             new long[] {Long.MIN_VALUE, -offset - 1, -offset + 1, Long.MAX_VALUE}));
