@@ -1,4 +1,4 @@
-name: Glop CI
+name: CMake Glop
 
 on: [push, pull_request]
 
