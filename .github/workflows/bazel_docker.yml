@@ -1,4 +1,4 @@
-name: Docker Bazel
+name: Bazel Docker
 
 on: [push, pull_request]
 

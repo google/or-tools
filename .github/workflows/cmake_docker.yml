@@ -1,4 +1,4 @@
-name: Docker CMake
+name: CMake Docker
 
 on: [push, pull_request]
 

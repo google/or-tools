@@ -1,4 +1,4 @@
-name: Java MacOS CI
+name: CMake MacOS Java
 
 on: [push, pull_request]
 

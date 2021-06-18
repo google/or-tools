@@ -1,4 +1,4 @@
-name: clang-format Check
+name: Check Format
 
 on: [push, pull_request]
 

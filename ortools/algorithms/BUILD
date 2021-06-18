@@ -23,7 +23,7 @@ cc_test(
         "//ortools/base:map_util",
         "//ortools/base:random",
         "@com_google_absl//absl/strings",
-        "@gtest//:main",
+        "@com_google_googletest//:gtest_main",
     ],
 )
 
