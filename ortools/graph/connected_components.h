@@ -218,7 +218,7 @@ class ConnectedComponentsFinder {
   // already connected.
   bool AddEdge(T node1, T node2) {
     return delegate_.AddEdge(LookupOrInsertNode<false>(node1),
-                      LookupOrInsertNode<false>(node2));
+                             LookupOrInsertNode<false>(node2));
   }
 
   // Returns true iff both nodes are in the same connected component.

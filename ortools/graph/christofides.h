@@ -15,7 +15,13 @@
 // Salesman Problen using the Christofides algorithm (c.f.
 // https://en.wikipedia.org/wiki/Christofides_algorithm).
 // Note that the algorithm guarantees finding a solution within 3/2 of the
-// optimum. Its complexity is O(n^2 * log(n)) where n is the number of nodes.
+// optimum when using minimum weight perfect matching in the matching phase.
+// The complexity of the algorithm is dominated by the complexity of the
+// matching algorithm: O(n^2 * log(n)) if minimal matching is used, or at least
+// O(n^3) or O(nmlog(n)) otherwise, depending on the implementation of the
+// perfect matching algorithm used, where n is the number of nodes and m is the
+// number of edges of the subgraph induced by odd-degree nodes of the minimum
+// spanning tree.
 
 #ifndef OR_TOOLS_GRAPH_CHRISTOFIDES_H_
 #define OR_TOOLS_GRAPH_CHRISTOFIDES_H_
