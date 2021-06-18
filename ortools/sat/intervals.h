@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <string>
 #include <vector>
 
 #include "absl/types/span.h"
@@ -267,6 +268,11 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   bool IsPresent(int t) const;
   bool IsAbsent(int t) const;
 
+  // Return the minimum overlap of interval i with the time window [start..end].
+  //
+  // Note: this is different from the mandatory part of an interval.
+  IntegerValue GetMinOverlap(int t, IntegerValue start, IntegerValue end) const;
+
   // Returns a string with the current task bounds.
   std::string TaskDebugString(int t) const;
 
@@ -318,7 +324,7 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   // depending on whether or not the start_min/end_max are optional variables
   // whose presence implies the interval presence.
   ABSL_MUST_USE_RESULT bool IncreaseStartMin(int t, IntegerValue new_start_min);
-  ABSL_MUST_USE_RESULT bool DecreaseEndMax(int t, IntegerValue new_start_max);
+  ABSL_MUST_USE_RESULT bool DecreaseEndMax(int t, IntegerValue new_end_max);
   ABSL_MUST_USE_RESULT bool PushTaskAbsence(int t);
   ABSL_MUST_USE_RESULT bool PushTaskPresence(int t);
   ABSL_MUST_USE_RESULT bool PushIntegerLiteral(IntegerLiteral lit);

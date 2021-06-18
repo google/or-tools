@@ -2082,9 +2082,9 @@ GenerateCumulativeEnergyCut(const std::string& cut_name,
       // scanning the residual tasks.
       int end_index_of_max_violation = -1;
       double max_relative_violation = 1.01;
-      IntegerValue span_of_max_violation(0);
+      IntegerValue start_of_max_violation(0);
+      IntegerValue end_of_max_violation(0);
       std::vector<int> lifted_intervals_of_max_violation;
-      std::vector<IntegerValue> lifted_min_overlaps_of_max_violation;
 
       // Accumulate intervals and check for potential cuts.
       double energy_lp = 0.0;
@@ -2096,6 +2096,7 @@ GenerateCumulativeEnergyCut(const std::string& cut_name,
       std::vector<int> residual_tasks(active_intervals.begin() + i1,
                                       active_intervals.end());
       // Keep track of intervals not included in the potential cut.
+      // TODO(user): remove ?
       std::set<int> intervals_not_visited(active_intervals.begin(),
                                           active_intervals.end());
       std::sort(
@@ -2159,23 +2160,12 @@ GenerateCumulativeEnergyCut(const std::string& cut_name,
             continue;
           }
 
-          // Compute the minimum overlap of this interval with the time window
-          // [min_of_starts..max_of_ends].
-          //
-          // Note: this is different from the mandatory part of an interval.
-          const IntegerValue max_overlap =
-              std::min(max_of_ends - min_of_starts, helper->SizeMin(t));
-          const IntegerValue min_overlap_left =
-              std::min(max_overlap, helper->EndMin(t) - min_of_starts);
-          const IntegerValue min_overlap_right =
-              std::min(max_overlap, max_of_ends - helper->StartMax(t));
           const IntegerValue min_overlap =
-              std::min(min_overlap_left, min_overlap_right);
+              helper->GetMinOverlap(t, min_of_starts, max_of_ends);
 
           if (min_overlap <= 0) continue;
 
           lifted_intervals.push_back(t);
-          lifted_min_overlap.push_back(min_overlap);
 
           if (helper->IsPresent(t)) {
             if (demand_is_fixed(t)) {
@@ -2199,9 +2189,9 @@ GenerateCumulativeEnergyCut(const std::string& cut_name,
         if (relative_violation > max_relative_violation) {
           end_index_of_max_violation = i2;
           max_relative_violation = relative_violation;
-          span_of_max_violation = max_of_ends - min_of_starts;
+          start_of_max_violation = min_of_starts;
+          end_of_max_violation = max_of_ends;
           lifted_intervals_of_max_violation = lifted_intervals;
-          lifted_min_overlaps_of_max_violation = lifted_min_overlap;
         }
       }
 
@@ -2216,7 +2206,7 @@ GenerateCumulativeEnergyCut(const std::string& cut_name,
       LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
 
       // Build the cut.
-      cut.AddTerm(capacity, -span_of_max_violation);
+      cut.AddTerm(capacity, start_of_max_violation - end_of_max_violation);
       for (int i2 = 0; i2 <= end_index_of_max_violation; ++i2) {
         const int t = residual_tasks[i2];
         if (helper->IsPresent(t)) {
@@ -2260,8 +2250,8 @@ GenerateCumulativeEnergyCut(const std::string& cut_name,
 
       for (int i2 = 0; i2 < lifted_intervals_of_max_violation.size(); ++i2) {
         const int t = lifted_intervals_of_max_violation[i2];
-        const IntegerValue min_overlap =
-            lifted_min_overlaps_of_max_violation[i2];
+        const IntegerValue min_overlap = helper->GetMinOverlap(
+            t, start_of_max_violation, end_of_max_violation);
         lifted = true;
 
         if (helper->IsPresent(t)) {
@@ -2516,22 +2506,37 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
   return result;
 }
 
+// Stores the event for a box along the two axis x and y.
+//   For a no_overlap constraint, y is always of size 1 between 0 and 1.
+//   For a cumulative constraint, y is the demand that must be between 0 and
+//       capacity_max.
+//   For a no_overlap_2d constraint, y the other dimension of the box.
 struct CtEvent {
-  AffineExpression end;
-  IntegerValue start_min;
-  IntegerValue size_min;
-  IntegerValue demand_min;
-  double lp_end;
-  IntegerValue y_min;
-  IntegerValue y_max;
+  // The end of the x interval.
+  AffineExpression x_end;
+  // The start min of the x interval.
+  IntegerValue x_start_min;
+  // The size min of the x interval.
+  IntegerValue x_size_min;
+  // The lp value of the end of the x interval.
+  double x_lp_end;
+  // The start min of the y interval.
+  IntegerValue y_start_min;
+  // The size min of the y interval.
+  IntegerValue y_size_min;
+  // The end max of the y interval.
+  IntegerValue y_end_max;
+  // Indicates if the cut is lifted, that is if it includes tasks that are
+  // not strictly contained in the current time window.
   bool lifted;
   std::string DebugString() const {
-    return absl::StrCat("CtEvent(end = ", end.DebugString(),
-                        ", start_min = ", start_min.value(),
-                        ", size_min = ", size_min.value(),
-                        ", demand_min = ", demand_min.value(),
-                        ", lp_end = ", lp_end, ", y_min = ", y_min.value(),
-                        ", y_max = ", y_max.value(), ", lifted = ", lifted);
+    return absl::StrCat(
+        "CtEvent(x_end = ", x_end.DebugString(),
+        ", x_start_min = ", x_start_min.value(),
+        ", x_size_min = ", x_size_min.value(), ", x_lp_end = ", x_lp_end,
+        ", y_start_min = ", y_start_min.value(),
+        ", y_size_min = ", y_size_min.value(),
+        ", y_end_max = ", y_end_max.value(), ", lifted = ", lifted);
   }
 };
 
@@ -2550,44 +2555,45 @@ struct CtEvent {
 void GenerateCompletionTimeCut(
     const std::string& cut_name,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
-    std::vector<CtEvent> events, Model* model,
+    std::vector<CtEvent> events, bool use_lifting, Model* model,
     LinearConstraintManager* manager) {
   TopNCuts top_n_cuts(15);
 
   // Sort by start min to bucketize by start_min.
   std::sort(events.begin(), events.end(),
             [](const CtEvent& e1, const CtEvent& e2) {
-              return e1.start_min < e2.start_min;
+              return e1.x_start_min < e2.x_start_min;
             });
   for (int start = 0; start + 1 < events.size(); ++start) {
     // Skip to the next start_min value.
-    if (start > 0 && events[start].start_min == events[start - 1].start_min) {
+    if (start > 0 &&
+        events[start].x_start_min == events[start - 1].x_start_min) {
       continue;
     }
 
-    const IntegerValue sequence_start_min = events[start].start_min;
+    const IntegerValue sequence_start_min = events[start].x_start_min;
     std::vector<CtEvent> residual_tasks(events.begin() + start, events.end());
 
     // We look at event that start before sequence_start_min, but are forced to
     // cross this time point. In that case, we replace this event by a truncated
     // event starting at sequence_start_min.
-    //
-    // Note: using the real size_min, and not the energy_min from the cumulative
-    //       will result in a stronger cut.
-    for (int before = 0; before < start; ++before) {
-      if (events[before].start_min + events[before].size_min >
-          sequence_start_min) {
-        CtEvent event = events[before];  // Copy.
-        event.lifted = true;
-        event.size_min = event.size_min + event.start_min - sequence_start_min;
-        event.start_min = sequence_start_min;
-        residual_tasks.push_back(event);
+    if (use_lifting) {
+      for (int before = 0; before < start; ++before) {
+        if (events[before].x_start_min + events[before].x_size_min >
+            sequence_start_min) {
+          CtEvent event = events[before];  // Copy.
+          event.lifted = true;
+          event.x_size_min =
+              event.x_size_min + event.x_start_min - sequence_start_min;
+          event.x_start_min = sequence_start_min;
+          residual_tasks.push_back(event);
+        }
       }
     }
 
     std::sort(residual_tasks.begin(), residual_tasks.end(),
               [](const CtEvent& e1, const CtEvent& e2) {
-                return e1.lp_end < e2.lp_end;
+                return e1.x_lp_end < e2.x_lp_end;
               });
 
     int best_end = -1;
@@ -2598,21 +2604,21 @@ void GenerateCompletionTimeCut(
     IntegerValue best_size_divisor(0);
     double unscaled_lp_contrib = 0;
     IntegerValue current_start_min(kMaxIntegerValue);
-    IntegerValue y_min = kMaxIntegerValue;
-    IntegerValue y_max = kMinIntegerValue;
+    IntegerValue y_start_min = kMaxIntegerValue;
+    IntegerValue y_end_max = kMinIntegerValue;
 
     for (int i = 0; i < residual_tasks.size(); ++i) {
       const CtEvent& event = residual_tasks[i];
-      DCHECK_GE(event.start_min, sequence_start_min);
-      const IntegerValue energy = event.size_min * event.demand_min;
+      DCHECK_GE(event.x_start_min, sequence_start_min);
+      const IntegerValue energy = event.x_size_min * event.y_size_min;
       sum_duration += energy;
       sum_square_duration += energy * energy;
-      unscaled_lp_contrib += event.lp_end * ToDouble(energy);
-      current_start_min = std::min(current_start_min, event.start_min);
-      y_min = std::min(y_min, event.y_min);
-      y_max = std::max(y_max, event.y_max);
+      unscaled_lp_contrib += event.x_lp_end * ToDouble(energy);
+      current_start_min = std::min(current_start_min, event.x_start_min);
+      y_start_min = std::min(y_start_min, event.y_start_min);
+      y_end_max = std::max(y_end_max, event.y_end_max);
 
-      const IntegerValue size_divisor = y_max - y_min;
+      const IntegerValue size_divisor = y_end_max - y_start_min;
 
       // We compute the cuts with all the sizes actually equal to
       //     size_min * demand_min / size_divisor
@@ -2638,8 +2644,8 @@ void GenerateCompletionTimeCut(
       for (int i = 0; i <= best_end; ++i) {
         const CtEvent& event = residual_tasks[i];
         is_lifted |= event.lifted;
-        cut.AddTerm(event.end,
-                    event.size_min * event.demand_min * best_size_divisor);
+        cut.AddTerm(event.x_end,
+                    event.x_size_min * event.y_size_min * best_size_divisor);
       }
       std::string full_name = cut_name;
       if (is_lifted) full_name.append("_lifted");
@@ -2676,14 +2682,15 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
             if (size_min > 0) {
               const AffineExpression end_expr = helper->Ends()[index];
               events.push_back({end_expr, helper->StartMin(index), size_min,
-                                /*demand_min=*/IntegerValue(1),
                                 end_expr.LpValue(lp_values),
-                                /*y_min=*/IntegerValue(0),
-                                /*y_max=*/IntegerValue(1), false});
+                                /*y_start_min=*/IntegerValue(0),
+                                /*y_size_min=*/IntegerValue(1),
+                                /*y_end_max=*/IntegerValue(1),
+                                /*lifted=*/false});
             }
           }
           GenerateCompletionTimeCut(cut_name, lp_values, std::move(events),
-                                    model, manager);
+                                    /*use_lifting=*/false, model, manager);
         };
         if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
         generate_cuts("NoOverlapCompletionTime");
@@ -2724,20 +2731,18 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
           std::vector<CtEvent> events;
           for (int index = 0; index < helper->NumTasks(); ++index) {
             if (!helper->IsPresent(index)) continue;
-            const IntegerValue area_min =
-                helper->SizeMin(index) *
-                integer_trail->LowerBound(demands[index]);
-            if (area_min > 0) {
+            if (helper->SizeMin(index) > 0 &&
+                integer_trail->LowerBound(demands[index]) > 0) {
               const AffineExpression end_expr = helper->Ends()[index];
-              events.push_back({end_expr, helper->StartMin(index),
-                                helper->SizeMin(index),
-                                integer_trail->LowerBound(demands[index]),
-                                end_expr.LpValue(lp_values), IntegerValue(0),
-                                capacity_max, false});
+              events.push_back(
+                  {end_expr, helper->StartMin(index), helper->SizeMin(index),
+                   end_expr.LpValue(lp_values), /*y_start_min=*/IntegerValue(0),
+                   /*y_size_min=*/integer_trail->LowerBound(demands[index]),
+                   /*y_end_max=*/capacity_max, /*lifted=*/false});
             }
           }
           GenerateCompletionTimeCut(cut_name, lp_values, std::move(events),
-                                    model, manager);
+                                    /*use_lifting=*/true, model, manager);
         };
         if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
         generate_cuts("CumulativeCompletionTime");
@@ -2813,15 +2818,15 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
 
             for (const int box : boxes) {
               const AffineExpression x_end_expr = x_helper->Ends()[box];
-              events.push_back({x_end_expr, x_helper->ShiftedStartMin(box),
-                                x_helper->SizeMin(box), y_helper->SizeMin(box),
-                                x_end_expr.LpValue(lp_values),
-                                y_helper->ShiftedStartMin(box),
-                                y_helper->ShiftedEndMax(box), false});
+              events.push_back(
+                  {x_end_expr, x_helper->ShiftedStartMin(box),
+                   x_helper->SizeMin(box), x_end_expr.LpValue(lp_values),
+                   y_helper->ShiftedStartMin(box), y_helper->SizeMin(box),
+                   y_helper->ShiftedEndMax(box), /*lifted=*/false});
             }
 
             GenerateCompletionTimeCut(cut_name, lp_values, std::move(events),
-                                      model, manager);
+                                      /*use_lifting=*/true, model, manager);
           };
 
           if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;

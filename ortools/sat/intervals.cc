@@ -13,7 +13,9 @@
 
 #include "ortools/sat/intervals.h"
 
+#include <algorithm>
 #include <memory>
+#include <string>
 
 #include "ortools/sat/integer.h"
 #include "ortools/util/sort.h"
@@ -540,6 +542,13 @@ std::string SchedulingConstraintHelper::TaskDebugString(int t) const {
                       " min_size=", SizeMin(t).value(), " start=[",
                       StartMin(t).value(), ",", StartMax(t).value(), "]",
                       " end=[", EndMin(t).value(), ",", EndMax(t).value(), "]");
+}
+
+IntegerValue SchedulingConstraintHelper::GetMinOverlap(int t,
+                                                       IntegerValue start,
+                                                       IntegerValue end) const {
+  return std::min(std::min(end - start, SizeMin(t)),
+                  std::min(EndMin(t) - start, end - StartMax(t)));
 }
 
 }  // namespace sat
