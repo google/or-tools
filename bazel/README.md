@@ -1,8 +1,17 @@
 # OR-Tools Bazel Build Instructions
-[![Status][docker_svg]][docker_link]
+[![Docker][docker_svg]][docker_link]
+[![Linux][linux_svg]][linux_link]
+[![MacOS][macos_svg]][macos_link]
+[![Windows][windows_svg]][windows_link]
 
-[docker_svg]: https://github.com/google/or-tools/workflows/Docker%20Bazel/badge.svg?branch=master
-[docker_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Docker+Bazel"
+[docker_svg]: https://github.com/google/or-tools/actions/workflows/bazel_docker.yml/badge.svg?branch=master
+[docker_link]: https://github.com/google/or-tools/actions/workflows/bazel_docker.yml
+[linux_svg]: https://github.com/google/or-tools/actions/workflows/bazel_linux.yml/badge.svg?branch=master
+[linux_link]: https://github.com/google/or-tools/actions/workflows/bazel_linux.yml
+[macos_svg]: https://github.com/google/or-tools/actions/workflows/bazel_macos.yml/badge.svg?branch=master
+[macos_link]: https://github.com/google/or-tools/actions/workflows/bazel_macos.yml
+[windows_svg]: https://github.com/google/or-tools/actions/workflows/bazel_windows.yml/badge.svg?branch=master
+[windows_link]: https://github.com/google/or-tools/actions/workflows/bazel_windows.yml
 
 ## Introduction
 <nav for="bazel"> |
