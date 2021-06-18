@@ -1,4 +1,4 @@
-name: Docker Make
+name: Make Docker
 
 on: [push, pull_request]
 
