@@ -1,0 +1,23 @@
+name: Bazel Windows
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # min hours day(month) month day(week)
+    - cron: '0 0 7,22 * *'
+
+jobs:
+  # Building using the github runner environement directly.
+  bazel:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Bazel
+        run: |
+          choco install bazel
+          bazel --version
+      - name: Build
+        run: bazel build --cxxopt="-std:c++17" //...:all
+      - name: Test
+        run: bazel test --cxxopt="-std:c++17" //...:all
