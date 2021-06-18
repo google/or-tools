@@ -1,4 +1,4 @@
-name: .Net Linux CI
+name: CMake Linux .Net
 
 on: [push, pull_request]
 

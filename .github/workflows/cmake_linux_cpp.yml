@@ -1,4 +1,4 @@
-name: Java Linux CI
+name: CMake Linux C++
 
 on: [push, pull_request]
 
@@ -10,14 +10,8 @@ jobs:
     - uses: actions/checkout@v2
     - name: Check cmake
       run: cmake --version
-    - name: Swig install
-      run: sudo apt install -y swig
-    - name: Check swig
-      run: swig -version
-    - name: Check java
-      run: java -version
     - name: Configure
-      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_JAVA=ON -DSKIP_GPG=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON
     - name: Build
       run: cmake --build build --config Release --target all -v
     - name: Test

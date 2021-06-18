@@ -1,4 +1,4 @@
-name: SCIP Disabled
+name: CMake Linux C++ SCIP OFF
 
 on: [push, pull_request]
 

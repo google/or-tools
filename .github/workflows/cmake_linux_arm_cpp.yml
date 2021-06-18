@@ -1,4 +1,4 @@
-name: ARM
+name: CMake Linux ARM C++
 
 on: [push, pull_request]
 
