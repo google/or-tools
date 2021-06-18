@@ -28,6 +28,8 @@
 namespace operations_research {
 
 using ::google::protobuf::TextFormat;
+using google::protobuf::util::JsonParseOptions;
+using google::protobuf::util::JsonStringToMessage;
 
 absl::StatusOr<std::string> ReadFileToString(absl::string_view filename) {
   std::string contents;
@@ -83,9 +85,11 @@ bool ReadFileToProto(absl::string_view filename,
     VLOG(1) << "ReadFileToProto(): input is a text proto";
     return true;
   }
-  if (google::protobuf::util::JsonStringToMessage(
-          data, proto, google::protobuf::util::JsonParseOptions())
-          .ok()) {
+  if (JsonStringToMessage(data, proto, JsonParseOptions()).ok()) {
+    // NOTE(user): We protect against the JSON proto3 parser being very lenient
+    // and easily accepting any JSON as a valid JSON for our proto: if the
+    // parsed proto's size is too small compared to the JSON, we probably parsed
+    // a JSON that wasn't representing a valid proto.
     constexpr int kMaxJsonToBinaryShrinkFactor = 30;
     if (proto->ByteSizeLong() < data.size() / kMaxJsonToBinaryShrinkFactor) {
       VLOG(1) << "ReadFileToProto(): input is probably JSON, but probably not"

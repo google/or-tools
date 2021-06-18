@@ -235,7 +235,7 @@ void ComputeScalingErrors(const std::vector<double>& input,
 // all zero then the result is 1. Note that round(fabs()) is the same as
 // fabs(round()) since the numbers are rounded away from zero.
 int64_t ComputeGcdOfRoundedDoubles(const std::vector<double>& x,
-                                 double scaling_factor);
+                                   double scaling_factor);
 
 // Returns alpha * x + (1 - alpha) * y.
 template <typename FloatType>
