@@ -1,4 +1,4 @@
-name: CMake Glop
+name: CMake Glop C++
 
 on: [push, pull_request]
 
