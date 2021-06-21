@@ -629,7 +629,7 @@ ifeq ($(PLATFORM),LINUX)
 		GMP=false \
 		ZIMPL=false \
 		READLINE=false \
-		TPI=none \
+		TPI=tny \
 		LPS=none \
 		USRCFLAGS="-fPIC" \
 		USRCXXFLAGS="-fPIC" \
@@ -667,14 +667,12 @@ ifeq ($(PLATFORM),LINUX)
 SCIP_LNK = \
 $(UNIX_SCIP_DIR)/lib/libscip.a \
 $(UNIX_SCIP_DIR)/lib/libnlpi.cppad.a \
-$(UNIX_SCIP_DIR)/lib/liblpinone.a \
-$(UNIX_SCIP_DIR)/lib/libtpinone-7.0.1.linux.x86_64.gnu.opt.a
+$(UNIX_SCIP_DIR)/lib/libtpitny-7.0.1.linux.x86_64.gnu.opt.a
 endif
 ifeq ($(PLATFORM),MACOSX)
 SCIP_LNK = \
 $(UNIX_SCIP_DIR)/lib/libscip.a \
 $(UNIX_SCIP_DIR)/lib/libnlpi.cppad.a \
-$(UNIX_SCIP_DIR)/lib/liblpinone.a \
 $(UNIX_SCIP_DIR)/lib/libtpitny-7.0.1.darwin.x86_64.gnu.opt.a
 endif
 
