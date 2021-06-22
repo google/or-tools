@@ -14,6 +14,7 @@
 #include "ortools/graph/max_flow.h"
 
 #include <algorithm>
+#include <string>
 
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
@@ -981,14 +982,25 @@ FlowModel GenericMaxFlow<Graph>::CreateFlowModel() {
   return model;
 }
 
-// Explicit instanciations that can be used by a client.
+// Explicit instantiations that can be used by a client.
 //
 // TODO(user): moves this code out of a .cc file and include it at the end of
 // the header so it can work with any graph implementation ?
-template<> const FlowQuantity GenericMaxFlow<StarGraph>::kMaxFlowQuantity = std::numeric_limits<FlowQuantity>::max();
-template<> const FlowQuantity GenericMaxFlow<::util::ReverseArcListGraph<>>::kMaxFlowQuantity = std::numeric_limits<FlowQuantity>::max();
-template<> const FlowQuantity GenericMaxFlow<::util::ReverseArcStaticGraph<>>::kMaxFlowQuantity = std::numeric_limits<FlowQuantity>::max();
-template<> const FlowQuantity GenericMaxFlow<::util::ReverseArcMixedGraph<>>::kMaxFlowQuantity = std::numeric_limits<FlowQuantity>::max();
+template <>
+const FlowQuantity GenericMaxFlow<StarGraph>::kMaxFlowQuantity =
+    std::numeric_limits<FlowQuantity>::max();
+template <>
+const FlowQuantity
+    GenericMaxFlow<::util::ReverseArcListGraph<>>::kMaxFlowQuantity =
+        std::numeric_limits<FlowQuantity>::max();
+template <>
+const FlowQuantity
+    GenericMaxFlow<::util::ReverseArcStaticGraph<>>::kMaxFlowQuantity =
+        std::numeric_limits<FlowQuantity>::max();
+template <>
+const FlowQuantity
+    GenericMaxFlow<::util::ReverseArcMixedGraph<>>::kMaxFlowQuantity =
+        std::numeric_limits<FlowQuantity>::max();
 
 template class GenericMaxFlow<StarGraph>;
 template class GenericMaxFlow<::util::ReverseArcListGraph<>>;
