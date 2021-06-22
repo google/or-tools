@@ -1088,6 +1088,22 @@ class ScipMPCallbackContext : public MPCallbackContext {
     LOG(FATAL) << "SuggestSolution() not currently supported for SCIP.";
   }
 
+  double GetRelativeMipGap() override {
+      SCIP* scip = scip_context_->scip();
+      SCIP_SET* set = scip->set;
+
+      return SCIPcomputeGap(set->num_epsilon, set->num_infinity, SCIPgetPrimalbound(scip), SCIPgetDualbound(scip));
+  }
+
+  bool HasValidMipSolution() override {
+      SCIP* scip = scip_context_->scip();
+      return SCIPgetBestSol(scip) != 0;
+  }
+
+  bool IsNewSolution() {
+      return HasValidMipSolution() && scip_context_->IsNewSolution();
+  }
+
   int64_t NumExploredNodes() override {
     // scip_context_->NumNodesProcessed() returns:
     //   0 before the root node is solved, e.g. if a heuristic finds a solution.

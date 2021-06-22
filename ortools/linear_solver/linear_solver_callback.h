@@ -133,6 +133,12 @@ class MPCallbackContext {
   //
   // Call only when the event is kMipSolution or kMipNode.
   virtual int64_t NumExploredNodes() = 0;
+  
+  virtual double GetRelativeMipGap() { return 0; }
+
+  virtual bool HasValidMipSolution() { return false; }
+
+  virtual bool IsNewSolution() { return false; }
 };
 
 // Extend this class with model specific logic, and register through
