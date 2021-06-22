@@ -38,9 +38,12 @@
 %{
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/linear_solver/linear_solver_callback.h"
+#include "ortools/linear_solver/linear_solver_swig_helper.h"
 #include "ortools/linear_solver/model_exporter.h"
 %}
 
+%module(directors="1") operations_research_linear
 
 // We need to forward-declare the proto here, so that the PROTO_* macros
 // involving them work correctly. The order matters very much: this declaration
@@ -49,6 +52,7 @@ namespace operations_research {
 class MPModelProto;
 class MPModelRequest;
 class MPSolutionResponse;
+class MPCallback;
 }  // namespace operations_research
 
 // Allow partial C# classes. That way, we can put our C# code extension in C#
@@ -82,6 +86,8 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 %rename (Constraint) operations_research::MPConstraint;
 %rename (Objective) operations_research::MPObjective;
 %rename (SolverParameters) operations_research::MPSolverParameters;
+%rename (SolverCallbackContext) operations_research::MPCallbackContext;
+%rename (SolverSolutionCallbackEvent) operations_research::MPCallbackEvent;
 
 // Expose the MPSolver::OptimizationProblemType enum.
 %unignore operations_research::MPSolver::OptimizationProblemType;
@@ -132,6 +138,7 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 %unignore operations_research::MPSolver::Solve;
 %unignore operations_research::MPSolver::VerifySolution;
 %unignore operations_research::MPSolver::Reset;
+%unignore operations_research::MPSolver::SupportsCallbacks;
 %rename (SetTimeLimit) operations_research::MPSolver::set_time_limit;
 
 // Expose some of the more advanced MPSolver API.
@@ -170,6 +177,8 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
     const std::vector<operations_research::MPVariable*>&,
     const std::vector<double>&);
 %unignore operations_research::MPSolver::SetNumThreads;
+%unignore operations_research::MPSolver::SetCallback;
+%csmethodmodifiers operations_research::MPSolver::SetCallback "internal";
 %extend operations_research::MPSolver {
   std::string ExportModelAsLpFormat(bool obfuscated) {
     operations_research::MPModelExportOptions options;
@@ -302,7 +311,64 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 %unignore operations_research::MPSolverParameters::SCALING_OFF;  // no test
 %unignore operations_research::MPSolverParameters::SCALING_ON;  // no test
 
+// Callback API
+
+// Expose callback event type enum
+%unignore operations_research::MPCallbackEvent::kUnknown;
+%rename (Unknown) operations_research::MPCallbackEvent::kUnknown;
+%unignore operations_research::MPCallbackEvent::kPolling;
+%rename (Polling) operations_research::MPCallbackEvent::kPolling;
+%unignore operations_research::MPCallbackEvent::kPresolve;
+%rename (Presolve) operations_research::MPCallbackEvent::kPresolve;
+%unignore operations_research::MPCallbackEvent::kSimplex;
+%rename (Simplex) operations_research::MPCallbackEvent::kSimplex;
+%unignore operations_research::MPCallbackEvent::kMip;
+%rename (Mip) operations_research::MPCallbackEvent::kMip;
+%unignore operations_research::MPCallbackEvent::kMipSolution;
+%rename (MipSolution) operations_research::MPCallbackEvent::kMipSolution;
+%unignore operations_research::MPCallbackEvent::kMipNode;
+%rename (MipNode) operations_research::MPCallbackEvent::kMipNode;
+%unignore operations_research::MPCallbackEvent::kBarrier;
+%rename (Barrier) operations_research::MPCallbackEvent::kBarrier;
+%unignore operations_research::MPCallbackEvent::kMessage;
+%rename (Message) operations_research::MPCallbackEvent::kMessage;
+%unignore operations_research::MPCallbackEvent::kMultiObj;
+%rename (MultiObj) operations_research::MPCallbackEvent::kMultiObj;
+
+// MPCallbackContext
+%unignore operations_research::MPCallbackContext::MPCallbackContext;
+%unignore operations_research::MPCallbackContext::~MPCallbackContext;
+%rename (GetEventType) operations_research::MPCallbackContext::Event;
+%unignore operations_research::MPCallbackContext::CanQueryVariableValues;
+%unignore operations_research::MPCallbackContext::VariableValue;
+%unignore operations_research::MPCallbackContext::NumExploredNodes;
+
+%unignore operations_research::MPCallback;
+
+%feature("director") operations_research::LinearSolutionCallback;
+%unignore operations_research::LinearSolutionCallback;
+%unignore operations_research::LinearSolutionCallback::LinearSolutionCallback;
+%unignore operations_research::LinearSolutionCallback::~LinearSolutionCallback;
+%unignore operations_research::LinearSolutionCallback::VariableValue;
+%feature("nodirector") operations_research::LinearSolutionCallback::VariableValue;
+%unignore operations_research::LinearSolutionCallback::CanQueryVariableValues;
+%feature("nodirector") operations_research::LinearSolutionCallback::CanQueryVariableValues;
+%unignore operations_research::LinearSolutionCallback::Event;
+%feature("nodirector") operations_research::LinearSolutionCallback::Event;
+%rename (GetEventType) operations_research::LinearSolutionCallback::Event;
+%unignore operations_research::LinearSolutionCallback::NumExploredNodes;
+%feature("nodirector") operations_research::LinearSolutionCallback::NumExploredNodes;
+%unignore operations_research::LinearSolutionCallback::GetRelativeMipGap;
+%feature("nodirector") operations_research::LinearSolutionCallback::GetRelativeMipGap;
+%unignore operations_research::LinearSolutionCallback::HasValidMipSolution;
+%feature("nodirector") operations_research::LinearSolutionCallback::HasValidMipSolution;
+%unignore operations_research::LinearSolutionCallback::IsNewSolution;
+%feature("nodirector") operations_research::LinearSolutionCallback::IsNewSolution;
+%unignore operations_research::LinearSolutionCallback::OnSolutionCallback;
+
 %include "ortools/linear_solver/linear_solver.h"
+%include "ortools/linear_solver/linear_solver_callback.h"
+%include "ortools/linear_solver/linear_solver_swig_helper.h"
 %include "ortools/linear_solver/model_exporter.h"
 
 %unignoreall
