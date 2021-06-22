@@ -634,7 +634,6 @@ ifeq ($(PLATFORM),LINUX)
 		USRCFLAGS="-fPIC" \
 		USRCXXFLAGS="-fPIC" \
 		USRCPPFLAGS="-fPIC" \
-		PARASCIP=false \
 		INSTALLDIR="$(OR_TOOLS_TOP)/dependencies/install"
 endif
 ifeq ($(PLATFORM),MACOSX)
