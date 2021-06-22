@@ -3625,6 +3625,7 @@ LP_DEPS = \
  $(SRC_DIR)/ortools/linear_solver/glop_utils.h \
  $(SRC_DIR)/ortools/linear_solver/gurobi_proto_solver.h \
  $(SRC_DIR)/ortools/linear_solver/linear_expr.h \
+ $(SRC_DIR)/ortools/linear_solver/linear_solver_swig_helper.h \
  $(SRC_DIR)/ortools/linear_solver/linear_solver_callback.h \
  $(SRC_DIR)/ortools/linear_solver/linear_solver.h \
  $(SRC_DIR)/ortools/linear_solver/model_exporter.h \
@@ -3863,6 +3864,7 @@ objs/linear_solver/linear_solver.$O: \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
  ortools/linear_solver/linear_solver_callback.h \
+ ortools/linear_solver/linear_solver_swig_helper.h \
  ortools/port/proto_utils.h ortools/base/accurate_sum.h \
  ortools/base/map_util.h ortools/base/status_macros.h \
  ortools/base/status_builder.h ortools/base/stl_util.h \
