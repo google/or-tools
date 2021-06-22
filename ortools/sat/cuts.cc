@@ -2079,7 +2079,7 @@ GenerateCumulativeEnergyCut(const std::string& cut_name,
       }
 
       // For each start time, we will keep the most violated cut generated while
-      // scanning the residual tasks.
+      // scanning the residual intervals.
       int end_index_of_max_violation = -1;
       double max_relative_violation = 1.01;
       IntegerValue start_of_max_violation(0);
@@ -2093,21 +2093,21 @@ GenerateCumulativeEnergyCut(const std::string& cut_name,
 
       // We sort all tasks (start_min(task) >= start_min(start_index) by
       // increasing end max.
-      std::vector<int> residual_tasks(active_intervals.begin() + i1,
-                                      active_intervals.end());
+      std::vector<int> residual_intervals(active_intervals.begin() + i1,
+                                          active_intervals.end());
       // Keep track of intervals not included in the potential cut.
       // TODO(user): remove ?
       std::set<int> intervals_not_visited(active_intervals.begin(),
                                           active_intervals.end());
       std::sort(
-          residual_tasks.begin(), residual_tasks.end(),
+          residual_intervals.begin(), residual_intervals.end(),
           [&](int a, int b) { return helper->EndMax(a) < helper->EndMax(b); });
 
       // Let's process residual tasks and evaluate the cut violation of the cut
       // at each step. We follow the same structure as the cut creation code
       // below.
-      for (int i2 = 0; i2 < residual_tasks.size(); ++i2) {
-        const int t = residual_tasks[i2];
+      for (int i2 = 0; i2 < residual_intervals.size(); ++i2) {
+        const int t = residual_intervals[i2];
         intervals_not_visited.erase(t);
         if (helper->IsPresent(t)) {
           if (demand_is_fixed(t)) {
@@ -2139,9 +2139,9 @@ GenerateCumulativeEnergyCut(const std::string& cut_name,
         // Dominance rule. If the next interval also fits in
         // [min_of_starts, max_of_ends], the cut will be stronger with the
         // next interval.
-        if (i2 + 1 < residual_tasks.size() &&
-            helper->StartMin(residual_tasks[i2 + 1]) >= min_of_starts &&
-            helper->EndMax(residual_tasks[i2 + 1]) <= max_of_ends) {
+        if (i2 + 1 < residual_intervals.size() &&
+            helper->StartMin(residual_intervals[i2 + 1]) >= min_of_starts &&
+            helper->EndMax(residual_intervals[i2 + 1]) <= max_of_ends) {
           continue;
         }
 
@@ -2208,7 +2208,7 @@ GenerateCumulativeEnergyCut(const std::string& cut_name,
       // Build the cut.
       cut.AddTerm(capacity, start_of_max_violation - end_of_max_violation);
       for (int i2 = 0; i2 <= end_index_of_max_violation; ++i2) {
-        const int t = residual_tasks[i2];
+        const int t = residual_intervals[i2];
         if (helper->IsPresent(t)) {
           if (demand_is_fixed(t)) {
             if (helper->SizeIsFixed(t)) {
@@ -2373,7 +2373,6 @@ CutGenerator CreateCumulativeOverlappingCutGenerator(
                     }
                     return i.time < j.time;
                   });
-
         std::vector<Event> cut_events;
         bool added_positive_event = false;
         for (const Event& e : events) {
@@ -2418,6 +2417,84 @@ CutGenerator CreateCumulativeOverlappingCutGenerator(
         }
         return true;
       };
+  return result;
+}
+
+CutGenerator CreateCumulativePrecedenceCutGenerator(
+    const std::vector<IntervalVariable>& intervals, IntegerVariable capacity,
+    const std::vector<IntegerVariable>& demands, Model* model) {
+  CutGenerator result;
+
+  SchedulingConstraintHelper* helper =
+      new SchedulingConstraintHelper(intervals, model);
+  model->TakeOwnership(helper);
+
+  result.vars = demands;
+  result.vars.push_back(capacity);
+  AddIntegerVariableFromIntervals(helper, model, &result.vars);
+
+  Trail* trail = model->GetOrCreate<Trail>();
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+
+  result.generate_cuts =
+      [trail, integer_trail, helper, demands, capacity, model](
+          const absl::StrongVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
+        if (trail->CurrentDecisionLevel() > 0) return true;
+
+        // TODO(user): We can do much better in term of complexity:
+        // Sort all tasks by min start time, loop other them 1 by 1,
+        // start scanning their successors and stop when the start time of the
+        // successor is >= duration min of the task.
+
+        // TODO(user): each time we go back to level zero, we will generate
+        // the same cuts over and over again. It is okay because AddCut() will
+        // not add duplicate cuts, but it might not be the most efficient way.
+        const IntegerValue capacity_max = integer_trail->UpperBound(capacity);
+        for (int index1 = 0; index1 < helper->NumTasks(); ++index1) {
+          if (!helper->IsPresent(index1)) continue;
+          const IntegerValue demand1_min =
+              integer_trail->LowerBound(demands[index1]);
+          for (int index2 = index1 + 1; index2 < helper->NumTasks(); ++index2) {
+            if (!helper->IsPresent(index2)) continue;
+            const IntegerValue demand2_min =
+                integer_trail->LowerBound(demands[index2]);
+
+            // Encode only the interesting pairs.
+            if (demand1_min + demand2_min <= capacity_max ||
+                helper->EndMax(index1) <= helper->StartMin(index2) ||
+                helper->EndMax(index2) <= helper->StartMin(index1)) {
+              continue;
+            }
+
+            const bool interval_1_can_precede_2 =
+                helper->EndMin(index1) <= helper->StartMax(index2);
+            const bool interval_2_can_precede_1 =
+                helper->EndMin(index2) <= helper->StartMax(index1);
+
+            if (interval_1_can_precede_2 && !interval_2_can_precede_1 &&
+                helper->Ends()[index1].LpValue(lp_values) >=
+                    helper->Starts()[index2].LpValue(lp_values)) {
+              // interval1.end <= interval2.start
+              LinearConstraintBuilder cut(model, kMinIntegerValue,
+                                          IntegerValue(0));
+              cut.AddTerm(helper->Ends()[index1], IntegerValue(1));
+              cut.AddTerm(helper->Starts()[index2], IntegerValue(-1));
+            } else if (interval_2_can_precede_1 && !interval_1_can_precede_2 &&
+                       helper->Ends()[index2].LpValue(lp_values) >=
+                           helper->Starts()[index1].LpValue(lp_values)) {
+              // interval2.end <= interval1.start
+              LinearConstraintBuilder cut(model, kMinIntegerValue,
+                                          IntegerValue(0));
+              cut.AddTerm(helper->Ends()[index2], IntegerValue(1));
+              cut.AddTerm(helper->Starts()[index1], IntegerValue(-1));
+              manager->AddCut(cut.Build(), "CumulativePrecedence", lp_values);
+            }
+          }
+        }
+        return true;
+      };
+
   return result;
 }
 
@@ -2483,14 +2560,18 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
             const bool interval_2_can_precede_1 =
                 helper->EndMin(index2) <= helper->StartMax(index1);
 
-            if (interval_1_can_precede_2 && !interval_2_can_precede_1) {
+            if (interval_1_can_precede_2 && !interval_2_can_precede_1 &&
+                helper->Ends()[index1].LpValue(lp_values) >=
+                    helper->Starts()[index2].LpValue(lp_values)) {
               // interval1.end <= interval2.start
               LinearConstraintBuilder cut(model, kMinIntegerValue,
                                           IntegerValue(0));
               cut.AddTerm(helper->Ends()[index1], IntegerValue(1));
               cut.AddTerm(helper->Starts()[index2], IntegerValue(-1));
               manager->AddCut(cut.Build(), "NoOverlapPrecedence", lp_values);
-            } else if (interval_2_can_precede_1 && !interval_1_can_precede_2) {
+            } else if (interval_2_can_precede_1 && !interval_1_can_precede_2 &&
+                       helper->Ends()[index2].LpValue(lp_values) >=
+                           helper->Starts()[index1].LpValue(lp_values)) {
               // interval2.end <= interval1.start
               LinearConstraintBuilder cut(model, kMinIntegerValue,
                                           IntegerValue(0));

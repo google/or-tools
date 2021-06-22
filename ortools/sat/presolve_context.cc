@@ -32,7 +32,7 @@ int SavedVariable::Get(PresolveContext* context) const {
   return context->GetVariableRepresentative(ref_);
 }
 
-void PresolveContext::ClearStats() { stats_by_rule_name.clear(); }
+void PresolveContext::ClearStats() { stats_by_rule_name_.clear(); }
 
 int PresolveContext::NewIntVar(const Domain& domain) {
   IntegerVariableProto* const var = working_model->add_variables();
@@ -256,6 +256,12 @@ bool PresolveContext::VariableIsNotRepresentativeOfEquivalenceClass(
   return true;
 }
 
+bool PresolveContext::VariableIsRemovable(int ref) const {
+  const int var = PositiveRef(ref);
+  return VariableIsNotRepresentativeOfEquivalenceClass(var) &&
+         !keep_all_feasible_solutions;
+}
+
 // Tricky: If this variable is equivalent to another one (but not the
 // representative) and appear in just one constraint, then this constraint must
 // be the affine defining one. And in this case the code using this function
@@ -263,19 +269,16 @@ bool PresolveContext::VariableIsNotRepresentativeOfEquivalenceClass(
 bool PresolveContext::VariableIsUniqueAndRemovable(int ref) const {
   if (!ConstraintVariableGraphIsUpToDate()) return false;
   const int var = PositiveRef(ref);
-  return var_to_constraints_[var].size() == 1 &&
-         VariableIsNotRepresentativeOfEquivalenceClass(var) &&
-         !keep_all_feasible_solutions;
+  return var_to_constraints_[var].size() == 1 && VariableIsRemovable(var);
 }
 
 // Tricky: Same remark as for VariableIsUniqueAndRemovable().
 bool PresolveContext::VariableWithCostIsUniqueAndRemovable(int ref) const {
   if (!ConstraintVariableGraphIsUpToDate()) return false;
   const int var = PositiveRef(ref);
-  return !keep_all_feasible_solutions &&
+  return VariableIsRemovable(var) &&
          var_to_constraints_[var].contains(kObjectiveConstraint) &&
-         var_to_constraints_[var].size() == 2 &&
-         VariableIsNotRepresentativeOfEquivalenceClass(var);
+         var_to_constraints_[var].size() == 2;
 }
 
 // Here, even if the variable is equivalent to others, if its affine defining
@@ -423,7 +426,7 @@ void PresolveContext::UpdateRuleStats(const std::string& name, int num_times) {
   // We only count if we are going to display it.
   if (logger_->LoggingIsEnabled()) {
     VLOG(1) << num_presolve_operations << " : " << name;
-    stats_by_rule_name[name] += num_times;
+    stats_by_rule_name_[name] += num_times;
   }
   num_presolve_operations += num_times;
 }
@@ -847,6 +850,7 @@ bool PresolveContext::GetAbsRelation(int target_ref, int* ref) {
     return false;
   }
   *ref = candidate;
+  CHECK(!VariableWasRemoved(*ref));
   return true;
 }
 
@@ -1213,6 +1217,7 @@ bool PresolveContext::StoreLiteralImpliesVarNEqValue(int literal, int var,
 
 bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
                                           int* literal) {
+  CHECK(!VariableWasRemoved(ref));
   if (!RemapEncodingMaps()) return false;
   if (!CanonicalizeEncoding(&ref, &value)) return false;
   const absl::flat_hash_map<int64_t, SavedLiteral>& var_map = encoding_[ref];
@@ -1227,6 +1232,12 @@ bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
 }
 
 int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
+  // TODO(user): Remove this precondition. For now it is needed because
+  // we might remove encoding literal without updating the encoding map.
+  // This is related to RemapEncodingMaps() which is currently disabled.
+  CHECK(!ModelIsExpanded());
+
+  CHECK(!VariableWasRemoved(ref));
   if (!RemapEncodingMaps()) return GetOrCreateConstantVar(0);
   if (!CanonicalizeEncoding(&ref, &value)) return GetOrCreateConstantVar(0);
 
@@ -1618,6 +1629,25 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(int time_i, int time_j,
 
 void PresolveContext::ClearPrecedenceCache() {
   reified_precedences_cache_.clear();
+}
+
+void PresolveContext::LogInfo() {
+  SOLVER_LOG(logger_, "");
+  SOLVER_LOG(logger_, "Presolve summary:");
+  SOLVER_LOG(logger_, "  - ", NumAffineRelations(),
+             " affine relations were detected.");
+  SOLVER_LOG(logger_, "  - ", NumEquivRelations(),
+             " variable equivalence relations were detected.");
+  std::map<std::string, int> sorted_rules(stats_by_rule_name_.begin(),
+                                          stats_by_rule_name_.end());
+  for (const auto& entry : sorted_rules) {
+    if (entry.second == 1) {
+      SOLVER_LOG(logger_, "  - rule '", entry.first, "' was applied 1 time.");
+    } else {
+      SOLVER_LOG(logger_, "  - rule '", entry.first, "' was applied ",
+                 entry.second, " times.");
+    }
+  }
 }
 
 }  // namespace sat

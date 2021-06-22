@@ -1408,8 +1408,11 @@ void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
 
 void ExpandCpModel(PresolveContext* context) {
   if (context->params().disable_constraint_expansion()) return;
-
   if (context->ModelIsUnsat()) return;
+
+  // None of the function here need to be run twice. This is because we never
+  // create constraint that need to be expanded during presolve.
+  if (context->ModelIsExpanded()) return;
 
   // Make sure all domains are initialized.
   context->InitializeNewDomains();
@@ -1496,6 +1499,8 @@ void ExpandCpModel(PresolveContext* context) {
     FillDomainInProto(context->DomainOf(i),
                       context->working_model->mutable_variables(i));
   }
+
+  context->NotifyThatModelIsExpanded();
 }
 
 }  // namespace sat

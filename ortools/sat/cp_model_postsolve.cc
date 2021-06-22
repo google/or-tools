@@ -79,6 +79,29 @@ void PostsolveExactlyOne(const ConstraintProto& ct,
   }
 }
 
+// For now we set the first unset enforcement literal to false.
+// There must be one.
+void SetEnforcementLiteralToFalse(const ConstraintProto& ct,
+                                  std::vector<Domain>* domains) {
+  CHECK(!ct.enforcement_literal().empty());
+  bool has_free_enforcement_literal = false;
+  for (const int enf : ct.enforcement_literal()) {
+    if ((*domains)[PositiveRef(enf)].IsFixed()) continue;
+    has_free_enforcement_literal = true;
+    if (RefIsPositive(enf)) {
+      (*domains)[enf] = Domain(0);
+    } else {
+      (*domains)[PositiveRef(enf)] = Domain(1);
+    }
+    break;
+  }
+  if (!has_free_enforcement_literal) {
+    LOG(FATAL)
+        << "Unsatisfied linear constraint with no free enforcement literal: "
+        << ct.ShortDebugString();
+  }
+}
+
 // Here we simply assign all non-fixed variable to a feasible value. Which
 // should always exists by construction.
 void PostsolveLinear(const ConstraintProto& ct,
@@ -100,7 +123,13 @@ void PostsolveLinear(const ConstraintProto& ct,
       free_coeffs.push_back(coeff);
     }
   }
-  if (free_vars.empty()) return;
+  if (free_vars.empty()) {
+    const Domain rhs = ReadDomainFromProto(ct.linear());
+    if (!rhs.Contains(fixed_activity)) {
+      SetEnforcementLiteralToFalse(ct, domains);
+    }
+    return;
+  }
 
   // Fast track for the most common case.
   const Domain initial_rhs = ReadDomainFromProto(ct.linear());
@@ -109,6 +138,10 @@ void PostsolveLinear(const ConstraintProto& ct,
     const Domain domain = initial_rhs.AdditionWith(Domain(-fixed_activity))
                               .InverseMultiplicationBy(free_coeffs[0])
                               .IntersectionWith((*domains)[var]);
+    if (domain.IsEmpty()) {
+      SetEnforcementLiteralToFalse(ct, domains);
+      return;
+    }
     const int64_t value = prefer_lower_value[var] ? domain.Min() : domain.Max();
     (*domains)[var] = Domain(value);
     return;
@@ -302,16 +335,20 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
   for (int i = num_constraints - 1; i >= 0; i--) {
     const ConstraintProto& ct = mapping_proto.constraints(i);
 
-    // We should only encounter assigned enforcement literal.
-    bool enforced = true;
-    for (const int ref : ct.enforcement_literal()) {
-      if (domains[PositiveRef(ref)].FixedValue() ==
-          (RefIsPositive(ref) ? 0 : 1)) {
-        enforced = false;
+    // We ignore constraint with an enforcement literal set to false. If the
+    // enforcement is still unclear, we still process this constraint.
+    bool constraint_can_be_ignored = false;
+    for (const int enf : ct.enforcement_literal()) {
+      const int var = PositiveRef(enf);
+      const bool is_false =
+          domains[var].IsFixed() &&
+          RefIsPositive(enf) == (domains[var].FixedValue() == 0);
+      if (is_false) {
+        constraint_can_be_ignored = true;
         break;
       }
     }
-    if (!enforced) continue;
+    if (constraint_can_be_ignored) continue;
 
     switch (ct.constraint_case()) {
       case ConstraintProto::kBoolOr:

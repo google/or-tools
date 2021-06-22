@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_SAT_CUTS_H_
 #define OR_TOOLS_SAT_CUTS_H_
 
+#include <functional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -514,6 +516,12 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
     const std::vector<IntervalVariable>& intervals,
     const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
     Model* model);
+
+// For a given set of intervals in a cumulative constraint, we detect violated
+// mandatory precedences and create a cut for these.
+CutGenerator CreateCumulativePrecedenceCutGenerator(
+    const std::vector<IntervalVariable>& intervals, IntegerVariable capacity,
+    const std::vector<IntegerVariable>& demands, Model* model);
 
 // Completion time cuts for the no_overlap_2d constraint. It actually generates
 // the completion time cumulative cuts in both axis.

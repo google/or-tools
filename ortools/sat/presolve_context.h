@@ -124,6 +124,10 @@ class PresolveContext {
     return domains[var].IsIncludedIn(domain);
   }
 
+  // Returns true if a presolve transformation is allowed to remove this
+  // variable.
+  bool VariableIsRemovable(int ref) const;
+
   // Returns true if this ref only appear in one constraint.
   bool VariableIsUniqueAndRemovable(int ref) const;
 
@@ -372,6 +376,12 @@ class PresolveContext {
     }
   }
 
+  // The "expansion" phase should be done once and allow to transform complex
+  // constraints into basic ones (see cp_model_expand.h). Some presolve rules
+  // need to know if the expansion was ran before beeing applied.
+  bool ModelIsExpanded() const { return model_is_expanded_; }
+  void NotifyThatModelIsExpanded() { model_is_expanded_ = true; }
+
   // The following helper adds the following constraint:
   //    result <=> (time_i <= time_j && active_i is true && active_j is true)
   // and returns the (cached) literal result.
@@ -384,6 +394,9 @@ class PresolveContext {
 
   // Clear the precedence cache.
   void ClearPrecedenceCache();
+
+  // Logs stats to the logger.
+  void LogInfo();
 
   SolverLogger* logger() const { return logger_; }
   const SatParameters& params() const { return params_; }
@@ -410,9 +423,6 @@ class PresolveContext {
   // if the client wants to enumerate all solutions or wants correct tightened
   // bounds in the response.
   bool keep_all_feasible_solutions = false;
-
-  // Just used to display statistics on the presolve rules that were used.
-  absl::flat_hash_map<std::string, int> stats_by_rule_name;
 
   // Number of "rules" applied. This should be equal to the sum of all numbers
   // in stats_by_rule_name. This is used to decide if we should do one more pass
@@ -551,6 +561,11 @@ class PresolveContext {
   // phase, and is cleared afterwards.
   absl::flat_hash_map<std::tuple<int, int, int, int>, int>
       reified_precedences_cache_;
+
+  // Just used to display statistics on the presolve rules that were used.
+  absl::flat_hash_map<std::string, int> stats_by_rule_name_;
+
+  bool model_is_expanded_ = false;
 };
 
 }  // namespace sat

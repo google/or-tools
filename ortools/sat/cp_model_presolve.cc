@@ -1473,11 +1473,16 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
     return RemoveConstraint(ct);
   }
 
+  // Detect encoding.
   if (HasEnforcementLiteral(*ct)) {
     if (ct->enforcement_literal_size() != 1 || ct->linear().vars_size() != 1 ||
         (ct->linear().coeffs(0) != 1 && ct->linear().coeffs(0) == -1)) {
       return false;
     }
+
+    // Currently, we only use encoding during expansion, so when it is done,
+    // there is no need to updates the maps.
+    if (context_->ModelIsExpanded()) return false;
 
     const int literal = ct->enforcement_literal(0);
     const LinearConstraintProto& linear = ct->linear();
@@ -2040,8 +2045,13 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   const int64_t threshold = lower_bounded ? ub_threshold : lb_threshold;
 
   // Do we only extract Booleans?
+  //
+  // Note that for now the default is false, and also there are problem calling
+  // GetOrCreateVarValueEncoding() after expansion because we might have removed
+  // the variable used in the encoding.
   const bool only_booleans =
-      !context_->params().presolve_extract_integer_enforcement();
+      !context_->params().presolve_extract_integer_enforcement() ||
+      context_->ModelIsExpanded();
 
   // To avoid a quadratic loop, we will rewrite the linear expression at the
   // same time as we extract enforcement literals.
@@ -2219,7 +2229,8 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
       ct->mutable_bool_and()->add_literals(
           copy.coeffs(i) > 0 ? NegatedRef(copy.vars(i)) : copy.vars(i));
     }
-    return PresolveBoolAnd(ct);
+    PresolveBoolAnd(ct);
+    return true;
   } else if (max_sum - min_coeff < rhs_domain.Min()) {
     // All Boolean are true if the reified literal is true.
     context_->UpdateRuleStats("linear: positive reified and");
@@ -2229,7 +2240,8 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
       ct->mutable_bool_and()->add_literals(
           copy.coeffs(i) > 0 ? copy.vars(i) : NegatedRef(copy.vars(i)));
     }
-    return PresolveBoolAnd(ct);
+    PresolveBoolAnd(ct);
+    return true;
   } else if (min_sum + min_coeff >= rhs_domain.Min() &&
              rhs_domain.front().end >= max_sum) {
     // At least one Boolean is true.
@@ -2240,7 +2252,8 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
       ct->mutable_bool_or()->add_literals(
           copy.coeffs(i) > 0 ? copy.vars(i) : NegatedRef(copy.vars(i)));
     }
-    return PresolveBoolOr(ct);
+    PresolveBoolOr(ct);
+    return true;
   } else if (max_sum - min_coeff <= rhs_domain.Max() &&
              rhs_domain.back().start <= min_sum) {
     // At least one Boolean is false.
@@ -2251,7 +2264,8 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
       ct->mutable_bool_or()->add_literals(
           copy.coeffs(i) > 0 ? NegatedRef(copy.vars(i)) : copy.vars(i));
     }
-    return PresolveBoolOr(ct);
+    PresolveBoolOr(ct);
+    return true;
   } else if (!HasEnforcementLiteral(*ct) &&
              min_sum + max_coeff <= rhs_domain.Max() &&
              min_sum + 2 * min_coeff > rhs_domain.Max() &&
@@ -5140,18 +5154,196 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
   CHECK(context_->ConstraintVariableGraphIsUpToDate());
   if (context_->ModelIsUnsat()) return;
   if (context_->IsFixed(var)) return;
+  if (context_->VariableWasRemoved(var)) return;
   if (context_->VariableIsNotUsedAnymore(var)) return;
 
   const AffineRelation::Relation r = context_->GetAffineRelation(var);
   if (r.representative != var) return;
 
-  if (context_->VariableIsOnlyUsedInEncoding(var)) {
-    // TODO(user): We can remove such variable and its constraints by:
-    // - Adding proper constraints on the enforcement literals. Simple case is
-    //   exactly one (or at most one) in case of a full (or partial) encoding.
-    // - Moving all the old constraints to the mapping model.
-    // - Updating the search heuristics/hint properly.
-    context_->UpdateRuleStats("TODO variables: only used in encoding.");
+  // TODO(user): We can still remove the variable even if we want to keep
+  // all feasible solutions for the cases when we have a full encoding.
+  //
+  // TODO(user): In fixed search, we disable this rule because we don't update
+  // the search strategy, but for some strategy we could.
+  //
+  // TODO(user): The hint might get lost if the encoding was created during
+  // the presolve.
+  if (context_->VariableIsRemovable(var) &&
+      context_->VariableIsOnlyUsedInEncoding(var) &&
+      context_->params().search_branching() != SatParameters::FIXED_SEARCH) {
+    // Detect the full encoding case without extra constraint.
+    // This is the simplest to deal with as we can just add an exactly one
+    // constraint and remove all the linear1.
+    std::vector<int> literals;
+    std::vector<int> equality_constraints;
+    std::vector<int> other_constraints;
+    absl::flat_hash_map<int, int> value_to_equal_literal;
+    absl::flat_hash_map<int, int> value_to_not_equal_literal;
+    bool abort = false;
+    for (const int c : context_->VarToConstraints(var)) {
+      const ConstraintProto& ct = context_->working_model->constraints(c);
+      CHECK_EQ(ct.constraint_case(), ConstraintProto::kLinear);
+      CHECK_EQ(ct.linear().vars().size(), 1);
+      int64_t coeff = ct.linear().coeffs(0);
+      if (std::abs(coeff) != 1 || ct.enforcement_literal().size() != 1) {
+        abort = true;
+        break;
+      }
+      if (!RefIsPositive(ct.linear().vars(0))) coeff *= 1;
+      const Domain rhs =
+          ReadDomainFromProto(ct.linear()).InverseMultiplicationBy(coeff);
+
+      if (rhs.IsFixed()) {
+        const int64_t value = rhs.FixedValue();
+        if (value_to_equal_literal.contains(value)) {
+          abort = true;
+          break;
+        }
+        equality_constraints.push_back(c);
+        literals.push_back(ct.enforcement_literal(0));
+        value_to_equal_literal[value] = ct.enforcement_literal(0);
+      } else {
+        const Domain complement =
+            context_->DomainOf(var).IntersectionWith(rhs.Complement());
+        if (complement.IsEmpty()) {
+          // TODO(user): This should be dealt with elsewhere.
+          abort = true;
+          break;
+        }
+        if (complement.IsFixed()) {
+          const int64_t value = complement.FixedValue();
+          if (value_to_not_equal_literal.contains(value)) {
+            abort = true;
+            break;
+          }
+          other_constraints.push_back(c);
+          value_to_not_equal_literal[value] = ct.enforcement_literal(0);
+        } else {
+          abort = true;
+        }
+      }
+    }
+
+    // For a full encoding, we don't need all the not equal constraint to be
+    // present.
+    if (value_to_equal_literal.size() != context_->DomainOf(var).Size()) {
+      abort = true;
+    } else {
+      for (const ClosedInterval interval : context_->DomainOf(var)) {
+        for (int64_t value = interval.start; value <= interval.end; ++value) {
+          if (!value_to_equal_literal.contains(value)) {
+            abort = true;
+            break;
+          }
+          if (value_to_not_equal_literal.contains(value) &&
+              value_to_equal_literal[value] !=
+                  NegatedRef(value_to_not_equal_literal[value])) {
+            abort = true;
+            break;
+          }
+        }
+        if (abort) break;
+      }
+    }
+    if (abort) {
+      context_->UpdateRuleStats("TODO variables: only used in encoding.");
+    } else {
+      context_->UpdateRuleStats("variables: only used as full encoding.");
+
+      // Move the encoding constraints to the mapping model. Note that only the
+      // equality constraint are needed. In fact if we add the other ones, our
+      // current limited postsolve code will not work.
+      for (const int c : equality_constraints) {
+        *context_->mapping_model->add_constraints() =
+            context_->working_model->constraints(c);
+        context_->working_model->mutable_constraints(c)->Clear();
+        context_->UpdateConstraintVariableUsage(c);
+      }
+      for (const int c : other_constraints) {
+        context_->working_model->mutable_constraints(c)->Clear();
+        context_->UpdateConstraintVariableUsage(c);
+      }
+
+      // This must be done after we removed all the constraint containing var.
+      ConstraintProto* new_ct = context_->working_model->add_constraints();
+      std::sort(literals.begin(), literals.end());  // For determinism.
+      for (const int literal : literals) {
+        new_ct->mutable_exactly_one()->add_literals(literal);
+      }
+
+      // In some cases there is duplicate literal, and we want to make sure
+      // this is presolved.
+      PresolveExactlyOne(new_ct);
+
+      context_->UpdateNewConstraintsVariableUsage();
+      context_->MarkVariableAsRemoved(var);
+      return;
+    }
+  }
+
+  // Special case: if a literal l appear in exactly two constraints:
+  // - l => var in domain1
+  // - not(l) => var in domain2
+  // then we know that domain(var) is included in domain1 U domain2,
+  // and that the literal l can be removed (and determined at postsolve).
+  //
+  // TODO(user): This could be generalized further to linear of size > 1 if for
+  // example the terms are the same.
+  //
+  // We wait for the model expansion to take place in order to avoid removing
+  // encoding that will later be re-created during expansion.
+  if (context_->ModelIsExpanded() && context_->CanBeUsedAsLiteral(var) &&
+      context_->VariableIsRemovable(var) &&
+      context_->VarToConstraints(var).size() == 2) {
+    bool abort = false;
+    int ct_var = -1;
+    Domain union_of_domain;
+    int num_positive = 0;
+    std::vector<int> constraint_indices_to_remove;
+    for (const int c : context_->VarToConstraints(var)) {
+      if (c <= 0) {
+        abort = true;
+        continue;
+      }
+      constraint_indices_to_remove.push_back(c);
+      const ConstraintProto& ct = context_->working_model->constraints(c);
+      if (ct.enforcement_literal().size() != 1 ||
+          PositiveRef(ct.enforcement_literal(0)) != var ||
+          ct.constraint_case() != ConstraintProto::kLinear ||
+          ct.linear().vars().size() != 1) {
+        abort = true;
+        break;
+      }
+      if (ct.enforcement_literal(0) == var) ++num_positive;
+      if (ct_var != -1 && PositiveRef(ct.linear().vars(0)) != ct_var) {
+        abort = true;
+        break;
+      }
+      ct_var = PositiveRef(ct.linear().vars(0));
+      union_of_domain = union_of_domain.UnionWith(
+          ReadDomainFromProto(ct.linear())
+              .InverseMultiplicationBy(RefIsPositive(ct.linear().vars(0))
+                                           ? ct.linear().coeffs(0)
+                                           : -ct.linear().coeffs(0)));
+    }
+    if (!abort && num_positive == 1) {
+      if (!context_->IntersectDomainWith(ct_var, union_of_domain)) {
+        return;
+      }
+      context_->UpdateRuleStats("variables: removable enforcement literal");
+      for (const int c : constraint_indices_to_remove) {
+        *context_->mapping_model->add_constraints() =
+            context_->working_model->constraints(c);
+        context_->mapping_model
+            ->mutable_constraints(
+                context_->mapping_model->constraints().size() - 1)
+            ->set_name("here");
+        context_->working_model->mutable_constraints(c)->Clear();
+        context_->UpdateConstraintVariableUsage(c);
+      }
+      context_->MarkVariableAsRemoved(var);
+      return;
+    }
   }
 
   // Only process discrete domain.
@@ -5496,26 +5688,6 @@ void CpModelPresolver::PresolveToFixPoint() {
   }
 
   context_->deductions.MarkProcessingAsDoneForNow();
-}
-
-void LogInfoFromContext(const PresolveContext* context) {
-  SolverLogger* logger = context->logger();
-  SOLVER_LOG(logger, "");
-  SOLVER_LOG(logger, "Presolve summary:");
-  SOLVER_LOG(logger, "  - ", context->NumAffineRelations(),
-             " affine relations were detected.");
-  SOLVER_LOG(logger, "  - ", context->NumEquivRelations(),
-             " variable equivalence relations were detected.");
-  std::map<std::string, int> sorted_rules(context->stats_by_rule_name.begin(),
-                                          context->stats_by_rule_name.end());
-  for (const auto& entry : sorted_rules) {
-    if (entry.second == 1) {
-      SOLVER_LOG(logger, "  - rule '", entry.first, "' was applied 1 time.");
-    } else {
-      SOLVER_LOG(logger, "  - rule '", entry.first, "' was applied ",
-                 entry.second, " times.");
-    }
-  }
 }
 
 ModelCopy::ModelCopy(PresolveContext* context) : context_(context) {}
@@ -5881,7 +6053,7 @@ bool CpModelPresolver::Presolve() {
   if (!context_->params().cp_model_presolve()) {
     context_->UpdateNewConstraintsVariableUsage();
     ExpandCpModel(context_);
-    if (logger_->LoggingIsEnabled()) LogInfoFromContext(context_);
+    if (logger_->LoggingIsEnabled()) context_->LogInfo();
     return true;
   }
 
@@ -6045,7 +6217,7 @@ bool CpModelPresolver::Presolve() {
   }
 
   if (context_->ModelIsUnsat()) {
-    if (logger_->LoggingIsEnabled()) LogInfoFromContext(context_);
+    if (logger_->LoggingIsEnabled()) context_->LogInfo();
 
     // Set presolved_model to the simplest UNSAT problem (empty clause).
     context_->working_model->Clear();
@@ -6148,7 +6320,7 @@ bool CpModelPresolver::Presolve() {
   }
 
   // Stats and checks.
-  if (logger_->LoggingIsEnabled()) LogInfoFromContext(context_);
+  if (logger_->LoggingIsEnabled()) context_->LogInfo();
 
   // One possible error that is difficult to avoid here: because of our
   // objective expansion, we might detect a possible overflow...

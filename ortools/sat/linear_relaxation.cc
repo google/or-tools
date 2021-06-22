@@ -1103,11 +1103,12 @@ void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
   if (HasEnforcementLiteral(ct)) return;
   auto* mapping = m->GetOrCreate<CpModelMapping>();
 
-  std::vector<IntegerVariable> demands =
+  const std::vector<IntegerVariable> demands =
       mapping->Integers(ct.cumulative().demands());
-  std::vector<IntervalVariable> intervals =
+  const std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.cumulative().intervals());
   const IntegerVariable capacity = mapping->Integer(ct.cumulative().capacity());
+
   relaxation->cut_generators.push_back(
       CreateCumulativeOverlappingCutGenerator(intervals, capacity, demands, m));
   relaxation->cut_generators.push_back(
@@ -1115,6 +1116,8 @@ void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
   relaxation->cut_generators.push_back(
       CreateCumulativeCompletionTimeCutGenerator(intervals, capacity, demands,
                                                  m));
+  relaxation->cut_generators.push_back(
+      CreateCumulativePrecedenceCutGenerator(intervals, capacity, demands, m));
 }
 
 void AddNoOverlapCutGenerator(const ConstraintProto& ct, Model* m,

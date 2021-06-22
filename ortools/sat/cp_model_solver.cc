@@ -1610,7 +1610,8 @@ void PostsolveResponseWithFullSolver(
   const CpSolverResponse postsolve_response =
       postsolve_model.GetOrCreate<SharedResponseManager>()->GetResponse();
   CHECK(postsolve_response.status() == CpSolverStatus::FEASIBLE ||
-        postsolve_response.status() == CpSolverStatus::OPTIMAL);
+        postsolve_response.status() == CpSolverStatus::OPTIMAL)
+      << response->solution_info();
 
   // We only copy the solution from the postsolve_response to the response.
   response->clear_solution();
