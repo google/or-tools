@@ -86,7 +86,7 @@ if(BUILD_SCIP)
   set(ZIMPL OFF)
   set(IPOPT OFF)
 
-  set(TPI "none" CACHE STRING "Scip param")
+  set(TPI "tny" CACHE STRING "Scip param")
   set(EXPRINT "none" CACHE STRING "Scip param")
   set(LPS "none" CACHE STRING "Scip param")
   set(SYM "none" CACHE STRING "Scip param")
