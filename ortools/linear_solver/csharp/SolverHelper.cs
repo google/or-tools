@@ -224,11 +224,11 @@ namespace Google.OrTools.LinearSolver
             Objective().SetMaximization();
             Objective().SetCoefficient(var, 1.0);
         }
-		
-		public void SetCallback(LinearSolutionCallback callback)
-		{
-			SetCallback((MPCallback)callback);
-		}
+
+        public void SetCallback(LinearSolutionCallback callback)
+        {
+            SetCallback((MPCallback)callback);
+        }
     }
 
 } // namespace Google.OrTools.LinearSolver
