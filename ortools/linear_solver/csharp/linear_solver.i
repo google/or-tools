@@ -314,25 +314,15 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 // Callback API
 
 // Expose callback event type enum
-%unignore operations_research::MPCallbackEvent::kUnknown;
 %rename (Unknown) operations_research::MPCallbackEvent::kUnknown;
-%unignore operations_research::MPCallbackEvent::kPolling;
 %rename (Polling) operations_research::MPCallbackEvent::kPolling;
-%unignore operations_research::MPCallbackEvent::kPresolve;
 %rename (Presolve) operations_research::MPCallbackEvent::kPresolve;
-%unignore operations_research::MPCallbackEvent::kSimplex;
 %rename (Simplex) operations_research::MPCallbackEvent::kSimplex;
-%unignore operations_research::MPCallbackEvent::kMip;
 %rename (Mip) operations_research::MPCallbackEvent::kMip;
-%unignore operations_research::MPCallbackEvent::kMipSolution;
 %rename (MipSolution) operations_research::MPCallbackEvent::kMipSolution;
-%unignore operations_research::MPCallbackEvent::kMipNode;
 %rename (MipNode) operations_research::MPCallbackEvent::kMipNode;
-%unignore operations_research::MPCallbackEvent::kBarrier;
 %rename (Barrier) operations_research::MPCallbackEvent::kBarrier;
-%unignore operations_research::MPCallbackEvent::kMessage;
 %rename (Message) operations_research::MPCallbackEvent::kMessage;
-%unignore operations_research::MPCallbackEvent::kMultiObj;
 %rename (MultiObj) operations_research::MPCallbackEvent::kMultiObj;
 
 // MPCallbackContext
@@ -353,9 +343,8 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 %feature("nodirector") operations_research::LinearSolutionCallback::VariableValue;
 %unignore operations_research::LinearSolutionCallback::CanQueryVariableValues;
 %feature("nodirector") operations_research::LinearSolutionCallback::CanQueryVariableValues;
-%unignore operations_research::LinearSolutionCallback::Event;
-%feature("nodirector") operations_research::LinearSolutionCallback::Event;
 %rename (GetEventType) operations_research::LinearSolutionCallback::Event;
+%feature("nodirector") operations_research::LinearSolutionCallback::Event;
 %unignore operations_research::LinearSolutionCallback::NumExploredNodes;
 %feature("nodirector") operations_research::LinearSolutionCallback::NumExploredNodes;
 %unignore operations_research::LinearSolutionCallback::GetRelativeMipGap;
