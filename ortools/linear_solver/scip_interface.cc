@@ -1100,7 +1100,7 @@ class ScipMPCallbackContext : public MPCallbackContext {
       return SCIPgetBestSol(scip) != 0;
   }
 
-  bool IsNewSolution() {
+  bool IsNewSolution() override {
       return HasValidMipSolution() && scip_context_->IsNewSolution();
   }
 
