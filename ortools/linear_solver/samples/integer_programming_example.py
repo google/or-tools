@@ -64,6 +64,7 @@ def IntegerProgrammingExample():
 
     # Solve the problem and print the solution.
     # [START print_solution]
+    solver.SetNumThreads(8)
     solver.Solve()
     # Print the objective value of the solution.
     print('Maximum objective function value = %d' % solver.Objective().Value())
