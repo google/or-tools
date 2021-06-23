@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// See go/mpsolver-callbacks for documentation on how to use this file.
-
 #ifndef OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_CALLBACK_H_
 #define OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_CALLBACK_H_
 
