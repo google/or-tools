@@ -633,6 +633,8 @@ ifeq ($(PLATFORM),LINUX)
 		USRCXXFLAGS="-fPIC" \
 		USRCPPFLAGS="-fPIC" \
 		INSTALLDIR="$(OR_TOOLS_TOP)/dependencies/install"
+	ar d "$(OR_TOOLS_TOP)"/dependencies/install/lib/liblpinone-7.0.1.linux.x86_64.gnu.opt.a lpi_none.o
+	ar s "$(OR_TOOLS_TOP)"/dependencies/install/lib/liblpinone-7.0.1.linux.x86_64.gnu.opt.a
 endif
 ifeq ($(PLATFORM),MACOSX)
 	cd $(SCIP_SRCDIR) && \
@@ -646,8 +648,9 @@ ifeq ($(PLATFORM),MACOSX)
 		USRCXXFLAGS="$(MAC_VERSION)" \
 		USRCPPFLAGS="$(MAC_VERSION)" \
 		INSTALLDIR="$(OR_TOOLS_TOP)/dependencies/install"
+	ar d "$(OR_TOOLS_TOP)"/dependencies/install/lib/liblpinone-7.0.1.darwin.x86_64.gnu.opt.a lpi_none.o
+	ar s "$(OR_TOOLS_TOP)"/dependencies/install/lib/liblpinone-7.0.1.darwin.x86_64.gnu.opt.a
 endif
-	ar d "$(OR_TOOLS_TOP)"/dependencies/install/lib/liblpinone.a lpi_none.o
 
 $(SCIP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(SCIP_SRCDIR)
@@ -662,15 +665,17 @@ SCIP_INC = -I$(UNIX_SCIP_DIR)/include -DUSE_SCIP -DNO_CONFIG_HEADER
 SCIP_SWIG = $(SCIP_INC)
 ifeq ($(PLATFORM),LINUX)
 SCIP_LNK = \
-$(UNIX_SCIP_DIR)/lib/libscip.a \
-$(UNIX_SCIP_DIR)/lib/libnlpi.cppad.a \
-$(UNIX_SCIP_DIR)/lib/libtpitny-7.0.1.linux.x86_64.gnu.opt.a
+$(UNIX_SCIP_DIR)/lib/libscip-7.0.1.linux.x86_64.gnu.opt.a \
+$(UNIX_SCIP_DIR)/lib/libnlpi.cppad-7.0.1.linux.x86_64.gnu.opt.a \
+$(UNIX_SCIP_DIR)/lib/libtpitny-7.0.1.linux.x86_64.gnu.opt.a \
+$(UNIX_SCIP_DIR)/lib/liblpinone-7.0.1.linux.x86_64.gnu.opt.a
 endif
 ifeq ($(PLATFORM),MACOSX)
 SCIP_LNK = \
-$(UNIX_SCIP_DIR)/lib/libscip.a \
-$(UNIX_SCIP_DIR)/lib/libnlpi.cppad.a \
-$(UNIX_SCIP_DIR)/lib/libtpitny-7.0.1.darwin.x86_64.gnu.opt.a
+$(UNIX_SCIP_DIR)/lib/libscip-7.0.1.darwin.x86_64.gnu.opt.a \
+$(UNIX_SCIP_DIR)/lib/libnlpi.cppad-7.0.1.darwin.x86_64.gnu.opt.a \
+$(UNIX_SCIP_DIR)/lib/libtpitny-7.0.1.darwin.x86_64.gnu.opt.a \
+$(UNIX_SCIP_DIR)/lib/liblpinone-7.0.1.darwin.x86_64.gnu.opt.a
 endif
 
 DEPENDENCIES_INC += $(SCIP_INC)
