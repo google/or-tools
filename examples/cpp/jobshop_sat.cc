@@ -269,8 +269,8 @@ void AddAlternativeTaskDurationRelaxation(
       const Task& task = job.tasks(t);
       const int num_alternatives = task.machine_size();
 
-      int64_t min_duration = kint64max;
-      int64_t max_duration = kint64min;
+      int64_t min_duration = std::numeric_limits<int64_t>::max();
+      int64_t max_duration = std::numeric_limits<int64_t>::min();
       for (const int64_t duration : task.duration()) {
         min_duration = std::min(min_duration, duration);
         max_duration = std::max(max_duration, duration);
