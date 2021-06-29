@@ -908,14 +908,18 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
   // is no "before that variable" relationship). Ex: If a variable is after two
   // intervals that cannot be both before a fixed one, we could propagate more.
   index_to_end_vars_.clear();
+  int new_size = 0;
   for (const auto task_time : window_) {
     const int task = task_time.task_index;
     const AffineExpression& end_exp = helper_->Ends()[task];
 
     // TODO(user): Handle generic affine relation?
     if (end_exp.var == kNoIntegerVariable || end_exp.coeff != 1) continue;
+
+    window_[new_size++] = task_time;
     index_to_end_vars_.push_back(end_exp.var);
   }
+  window_.resize(new_size);
   precedences_->ComputePrecedences(index_to_end_vars_, &before_);
 
   const int size = before_.size();
@@ -927,6 +931,7 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
     const int initial_i = i;
     IntegerValue min_offset = kMaxIntegerValue;
     for (; i < size && before_[i].var == var; ++i) {
+      // Because we resized the window, the index is valid.
       const TaskTime task_time = window_[before_[i].index];
 
       // We have var >= end_exp.var + offset, so

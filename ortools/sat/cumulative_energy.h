@@ -42,11 +42,14 @@ void AddCumulativeEnergyConstraint(std::vector<AffineExpression> energies,
 
 // Creates a CumulativeEnergyConstraint where the energy of each interval is
 // the product of the demands times its size.
+//
+// TODO(user): This is not ideal if both size and demands are variable.
 void AddCumulativeOverloadChecker(const std::vector<AffineExpression>& demands,
                                   AffineExpression capacity,
                                   SchedulingConstraintHelper* helper,
                                   Model* model);
 
+// Implementation of AddCumulativeEnergyConstraint().
 class CumulativeEnergyConstraint : public PropagatorInterface {
  public:
   CumulativeEnergyConstraint(std::vector<AffineExpression> energies,
@@ -69,6 +72,38 @@ class CumulativeEnergyConstraint : public PropagatorInterface {
   // Start event characteristics, by nondecreasing start time.
   std::vector<TaskTime> start_event_task_time_;
   std::vector<bool> start_event_is_present_;
+};
+
+// Given that the "tasks" are part of a cumulative constraint, this adds a
+// constraint that propagate the fact that: var >= max(end of substasks) +
+// offset.
+//
+// TODO(user): I am not sure this is the best way, but it does at least push
+// the level zero bound on the large cumulative instances.
+class CumulativeIsAfterSubsetConstraint : public PropagatorInterface {
+ public:
+  CumulativeIsAfterSubsetConstraint(IntegerVariable var, IntegerValue offset,
+                                    AffineExpression capacity,
+                                    const std::vector<AffineExpression> demands,
+                                    const std::vector<int> subtasks,
+                                    IntegerTrail* integer_trail,
+                                    SchedulingConstraintHelper* helper);
+
+  bool Propagate() final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
+
+ private:
+  const IntegerVariable var_to_push_;
+  const IntegerValue offset_;
+  const AffineExpression capacity_;
+  const std::vector<AffineExpression> demands_;
+  const std::vector<int> subtasks_;
+
+  // Computed at construction time, this is const.
+  std::vector<bool> is_in_subtasks_;
+
+  IntegerTrail* integer_trail_;
+  SchedulingConstraintHelper* helper_;
 };
 
 }  // namespace sat

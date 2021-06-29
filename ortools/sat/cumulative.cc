@@ -124,6 +124,65 @@ std::function<void(Model*)> Cumulative(
       model->TakeOwnership(helper);
     }
 
+    // For each variables that is after a subset of task ends (i.e. like a
+    // makespan objective), we detect it and add a special constraint to
+    // propagate it.
+    //
+    // TODO(user): Models that include the makespan as a special interval might
+    // be better, but then not everyone does that. In particular this code
+    // allows to have decent lower bound on the large cumulative minizinc
+    // instances.
+    //
+    // TODO(user): this require the precedence constraints to be already loaded,
+    // and there is no guarantee of that currently. Find a more robust way.
+    //
+    // TODO(user): There is a bit of code duplication with the disjunctive
+    // precedence propagator. Abstract more?
+    {
+      std::vector<IntegerVariable> index_to_end_vars;
+      std::vector<int> index_to_task;
+      std::vector<PrecedencesPropagator::IntegerPrecedences> before;
+      index_to_end_vars.clear();
+      for (int t = 0; t < helper->NumTasks(); ++t) {
+        const AffineExpression& end_exp = helper->Ends()[t];
+
+        // TODO(user): Handle generic affine relation?
+        if (end_exp.var == kNoIntegerVariable || end_exp.coeff != 1) continue;
+        index_to_end_vars.push_back(end_exp.var);
+        index_to_task.push_back(t);
+      }
+      model->GetOrCreate<PrecedencesPropagator>()->ComputePrecedences(
+          index_to_end_vars, &before);
+      const int size = before.size();
+      for (int i = 0; i < size;) {
+        const IntegerVariable var = before[i].var;
+        DCHECK_NE(var, kNoIntegerVariable);
+
+        IntegerValue min_offset = kMaxIntegerValue;
+        std::vector<int> subtasks;
+        for (; i < size && before[i].var == var; ++i) {
+          const int t = index_to_task[before[i].index];
+          subtasks.push_back(t);
+
+          // We have var >= end_exp.var + offset, so
+          // var >= (end_exp.var + end_exp.cte) + (offset - end_exp.cte)
+          // var >= task end + new_offset.
+          const AffineExpression& end_exp = helper->Ends()[t];
+          min_offset =
+              std::min(min_offset, before[i].offset - end_exp.constant);
+        }
+
+        if (subtasks.size() > 1) {
+          CumulativeIsAfterSubsetConstraint* constraint =
+              new CumulativeIsAfterSubsetConstraint(var, min_offset, capacity,
+                                                    demands, subtasks,
+                                                    integer_trail, helper);
+          constraint->RegisterWith(watcher);
+          model->TakeOwnership(constraint);
+        }
+      }
+    }
+
     // Propagator responsible for applying Timetabling filtering rule. It
     // increases the minimum of the start variables, decrease the maximum of the
     // end variables, and increase the minimum of the capacity variable.

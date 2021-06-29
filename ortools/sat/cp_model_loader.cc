@@ -1370,6 +1370,11 @@ void LoadIntMinConstraint(const ConstraintProto& ct, Model* m) {
 }
 
 void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m) {
+  if (ct.lin_max().exprs().empty()) {
+    m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+    return;
+  }
+
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   const LinearExpression max = mapping->GetExprFromProto(ct.lin_max().target());
   std::vector<LinearExpression> negated_exprs;
