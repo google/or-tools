@@ -306,8 +306,77 @@ void ExpandIntProdWithOneAcrossZero(int a_ref, int b_ref, int product_ref,
   lin->add_domain(0);
 }
 
+void ExpandPositiveIntProdWithTwoAcrossZero(int a_ref, int b_ref,
+                                            int product_ref,
+                                            PresolveContext* context) {
+  const int terms_are_positive = context->NewBoolVar();
+
+  const int64_t max_of_a = context->MaxOf(a_ref);
+  const int64_t max_of_b = context->MaxOf(b_ref);
+  const Domain positive_vars_domain({0, max_of_a * max_of_b});
+  int both_positive_product_ref = std::numeric_limits<int>::min();
+  if (!positive_vars_domain.IntersectionWith(context->DomainOf(product_ref))
+           .IsEmpty()) {
+    const int pos_a_ref = context->NewIntVar({0, max_of_a});
+    AddXEqualYOrXEqualZero(terms_are_positive, pos_a_ref, a_ref, context);
+    const int pos_b_ref = context->NewIntVar({0, max_of_b});
+    AddXEqualYOrXEqualZero(terms_are_positive, pos_b_ref, b_ref, context);
+
+    both_positive_product_ref = context->NewIntVar(positive_vars_domain);
+    IntegerArgumentProto* pos_product =
+        context->working_model->add_constraints()->mutable_int_prod();
+    pos_product->set_target(both_positive_product_ref);
+    pos_product->add_vars(pos_a_ref);
+    pos_product->add_vars(pos_b_ref);
+  }
+
+  const int64_t min_of_a = context->MinOf(a_ref);
+  const int64_t min_of_b = context->MinOf(b_ref);
+  const Domain negative_vars_domain({0, min_of_a * min_of_b});
+  int both_negative_product_ref = std::numeric_limits<int>::min();
+  if (!negative_vars_domain.IntersectionWith(context->DomainOf(product_ref))
+           .IsEmpty()) {
+    const int neg_a_ref = context->NewIntVar({min_of_a, 0});
+    AddXEqualYOrXEqualZero(NegatedRef(terms_are_positive), neg_a_ref, a_ref,
+                           context);
+    const int neg_b_ref = context->NewIntVar({min_of_b, 0});
+    AddXEqualYOrXEqualZero(NegatedRef(terms_are_positive), neg_b_ref, b_ref,
+                           context);
+    both_negative_product_ref = context->NewIntVar(negative_vars_domain);
+    IntegerArgumentProto* neg_product =
+        context->working_model->add_constraints()->mutable_int_prod();
+    neg_product->set_target(both_negative_product_ref);
+    neg_product->add_vars(neg_a_ref);
+    neg_product->add_vars(neg_b_ref);
+  }
+
+  // Link back to the original product.
+  LinearConstraintProto* lin =
+      context->working_model->add_constraints()->mutable_linear();
+  lin->add_vars(product_ref);
+  lin->add_coeffs(-1);
+  if (both_positive_product_ref != std::numeric_limits<int>::min()) {
+    lin->add_vars(both_positive_product_ref);
+    lin->add_coeffs(1);
+  }
+  if (both_negative_product_ref != std::numeric_limits<int>::min()) {
+    lin->add_vars(both_negative_product_ref);
+    lin->add_coeffs(1);
+  }
+  lin->add_domain(0);
+  lin->add_domain(0);
+}
+
 void ExpandIntProdWithTwoAcrossZero(int a_ref, int b_ref, int product_ref,
                                     PresolveContext* context) {
+  if (context->MinOf(product_ref) >= 0) {
+    ExpandPositiveIntProdWithTwoAcrossZero(a_ref, b_ref, product_ref, context);
+    return;
+  } else if (context->MaxOf(product_ref) <= 0) {
+    ExpandPositiveIntProdWithTwoAcrossZero(a_ref, NegatedRef(b_ref),
+                                           NegatedRef(product_ref), context);
+    return;
+  }
   // Split a_ref domain in two, controlled by a new literal.
   const int a_is_positive = context->NewBoolVar();
   context->AddImplyInDomain(a_is_positive, a_ref,
