@@ -21,7 +21,9 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <random>
 #include <set>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -160,6 +162,20 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   std::map<std::string, int> num_reif_constraints_by_name;
   std::map<std::string, int> name_to_num_literals;
   std::map<std::string, int> name_to_num_terms;
+
+  int no_overlap_2d_num_rectangles = 0;
+  int no_overlap_2d_num_optional_rectangles = 0;
+  int no_overlap_2d_num_variable_areas = 0;
+
+  int cumulative_num_intervals = 0;
+  int cumulative_num_optional_intervals = 0;
+  int cumulative_num_variable_sizes = 0;
+  int cumulative_num_variable_demands = 0;
+
+  int no_overlap_num_intervals = 0;
+  int no_overlap_num_optional_intervals = 0;
+  int no_overlap_num_variable_sizes = 0;
+
   for (const ConstraintProto& ct : model_proto.constraints()) {
     std::string name = ConstraintCaseName(ct.constraint_case());
 
@@ -177,6 +193,31 @@ std::string CpModelStats(const CpModelProto& model_proto) {
       num_reif_constraints_by_name[name]++;
     }
 
+    auto variable_is_fixed = [&model_proto](int ref) {
+      const IntegerVariableProto& proto =
+          model_proto.variables(PositiveRef(ref));
+      return proto.domain_size() == 2 && proto.domain(0) == proto.domain(1);
+    };
+
+    auto interval_has_fixed_size = [&model_proto, &variable_is_fixed](int c) {
+      const IntervalConstraintProto& proto =
+          model_proto.constraints(c).interval();
+      if (proto.has_size_view()) {
+        for (const int ref : proto.size_view().vars()) {
+          if (!variable_is_fixed(ref)) {
+            return false;
+          }
+        }
+        return true;
+      } else {
+        return variable_is_fixed(proto.size());
+      }
+    };
+
+    auto constraint_is_optional = [&model_proto](int i) {
+      return !model_proto.constraints(i).enforcement_literal().empty();
+    };
+
     // For pure Boolean constraints, we also display the total number of literal
     // involved as this gives a good idea of the problem size.
     if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr) {
@@ -190,6 +231,51 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     } else if (ct.constraint_case() ==
                ConstraintProto::ConstraintCase::kExactlyOne) {
       name_to_num_literals[name] += ct.exactly_one().literals().size();
+    } else if (ct.constraint_case() ==
+               ConstraintProto::ConstraintCase::kNoOverlap2D) {
+      const int num_boxes = ct.no_overlap_2d().x_intervals_size();
+      no_overlap_2d_num_rectangles += num_boxes;
+      for (int i = 0; i < num_boxes; ++i) {
+        const int x_interval = ct.no_overlap_2d().x_intervals(i);
+        const int y_interval = ct.no_overlap_2d().y_intervals(i);
+        if (constraint_is_optional(x_interval) ||
+            constraint_is_optional(y_interval)) {
+          no_overlap_2d_num_optional_rectangles++;
+        }
+        if (!interval_has_fixed_size(x_interval) ||
+            !interval_has_fixed_size(y_interval)) {
+          no_overlap_2d_num_variable_areas++;
+        }
+      }
+    } else if (ct.constraint_case() ==
+               ConstraintProto::ConstraintCase::kNoOverlap) {
+      const int num_intervals = ct.no_overlap().intervals_size();
+      no_overlap_num_intervals += num_intervals;
+      for (int i = 0; i < num_intervals; ++i) {
+        const int interval = ct.no_overlap().intervals(i);
+        if (constraint_is_optional(interval)) {
+          no_overlap_num_optional_intervals++;
+        }
+        if (!interval_has_fixed_size(interval)) {
+          no_overlap_num_variable_sizes++;
+        }
+      }
+    } else if (ct.constraint_case() ==
+               ConstraintProto::ConstraintCase::kCumulative) {
+      const int num_intervals = ct.cumulative().intervals_size();
+      cumulative_num_intervals += num_intervals;
+      for (int i = 0; i < num_intervals; ++i) {
+        const int interval = ct.cumulative().intervals(i);
+        if (constraint_is_optional(interval)) {
+          cumulative_num_optional_intervals++;
+        }
+        if (!interval_has_fixed_size(interval)) {
+          cumulative_num_variable_sizes++;
+        }
+        if (!variable_is_fixed(ct.cumulative().demands(i))) {
+          cumulative_num_variable_demands++;
+        }
+      }
     }
 
     if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear &&
@@ -282,6 +368,47 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     if (gtl::ContainsKey(name_to_num_terms, name)) {
       absl::StrAppend(&constraints.back(),
                       " (#terms: ", name_to_num_terms[name], ")");
+    }
+    if (name == "kNoOverlap2D") {
+      absl::StrAppend(&constraints.back(),
+                      " (#rectangles: ", no_overlap_2d_num_rectangles);
+      if (no_overlap_2d_num_optional_rectangles > 0) {
+        absl::StrAppend(&constraints.back(),
+                        ", #optional: ", no_overlap_2d_num_optional_rectangles);
+      }
+      if (no_overlap_2d_num_variable_areas > 0) {
+        absl::StrAppend(&constraints.back(), ", #variable_areas: ",
+                        no_overlap_2d_num_variable_areas);
+      }
+      absl::StrAppend(&constraints.back(), ")");
+    } else if (name == "kCumulative") {
+      absl::StrAppend(&constraints.back(),
+                      " (#intervals: ", cumulative_num_intervals);
+      if (cumulative_num_optional_intervals > 0) {
+        absl::StrAppend(&constraints.back(),
+                        ", #optional: ", cumulative_num_optional_intervals);
+      }
+      if (cumulative_num_variable_sizes > 0) {
+        absl::StrAppend(&constraints.back(),
+                        ", #variable_sizes: ", cumulative_num_variable_sizes);
+      }
+      if (cumulative_num_variable_demands > 0) {
+        absl::StrAppend(&constraints.back(), ", #variable_demands: ",
+                        cumulative_num_variable_demands);
+      }
+      absl::StrAppend(&constraints.back(), ")");
+    } else if (name == "kNoOverlap") {
+      absl::StrAppend(&constraints.back(),
+                      " (#intervals: ", no_overlap_num_intervals);
+      if (no_overlap_num_optional_intervals > 0) {
+        absl::StrAppend(&constraints.back(),
+                        ", #optional: ", no_overlap_num_optional_intervals);
+      }
+      if (no_overlap_num_variable_sizes > 0) {
+        absl::StrAppend(&constraints.back(),
+                        ", #variable_sizes: ", no_overlap_num_variable_sizes);
+      }
+      absl::StrAppend(&constraints.back(), ")");
     }
   }
   std::sort(constraints.begin(), constraints.end());

@@ -155,6 +155,18 @@ Domain PresolveContext::DomainSuperSetOf(
   return result;
 }
 
+bool PresolveContext::ExpressionIsAffineBoolean(
+    const LinearExpressionProto& expr) const {
+  if (expr.vars().size() != 1) return false;
+  return CanBeUsedAsLiteral(expr.vars(0));
+}
+
+int PresolveContext::LiteralForExpressionMax(
+    const LinearExpressionProto& expr) const {
+  const int ref = expr.vars(0);
+  return RefIsPositive(ref) == (expr.coeffs(0) > 0) ? ref : NegatedRef(ref);
+}
+
 // Note that we only support converted intervals.
 bool PresolveContext::IntervalIsConstant(int ct_ref) const {
   const ConstraintProto& proto = working_model->constraints(ct_ref);

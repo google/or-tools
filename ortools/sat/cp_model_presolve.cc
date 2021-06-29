@@ -663,12 +663,20 @@ bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
     context_->UpdateNewConstraintsVariableUsage();
     return RemoveConstraint(ct);
   }
+
+  // TODO(user): Just port all the presolve above to the lin max presolve, so
+  // we can just convert it and not do anything else.
+  if (ct->constraint_case() == ConstraintProto::kIntMax) {
+    const bool convert_result = ConvertIntMax(ct);
+    return modified || convert_result;
+  }
+
   return modified;
 }
 
+// Convert to lin_max and presolve lin_max.
 bool CpModelPresolver::PresolveLinMin(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
-  // Convert to lin_max and presolve lin_max.
   const auto copy = ct->lin_min();
   SetToNegatedLinearExpression(copy.target(),
                                ct->mutable_lin_max()->mutable_target());
@@ -679,12 +687,28 @@ bool CpModelPresolver::PresolveLinMin(ConstraintProto* ct) {
   return PresolveLinMax(ct);
 }
 
+// We convert it to a "linear" max which allows to replace affine relation and
+// remove the need to keep them in the model.
+//
+// TODO(user): Move to expand. We also need to convert all the int_max presolve
+// (like the absolute value) that we don't have yet in the lin_max format.
+bool CpModelPresolver::ConvertIntMax(ConstraintProto* ct) {
+  if (context_->ModelIsUnsat()) return false;
+  const auto copy = ct->int_max();
+  ct->mutable_lin_max()->mutable_target()->add_vars(copy.target());
+  ct->mutable_lin_max()->mutable_target()->add_coeffs(1);
+  for (const int ref : copy.vars()) {
+    LinearExpressionProto* expr = ct->mutable_lin_max()->add_exprs();
+    expr->add_vars(ref);
+    expr->add_coeffs(1);
+  }
+  context_->UpdateRuleStats("int_max: converted to lin_max");
+  return PresolveLinMax(ct);
+}
+
+// TODO(user): Add all the missing presolve from PresolveIntMax().
 bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
-  if (ct->lin_max().exprs().empty()) {
-    context_->UpdateRuleStats("lin_max: no exprs");
-    return MarkConstraintAsFalse(ct);
-  }
 
   // Canonicalize all involved expression.
   //
@@ -696,34 +720,225 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
     changed |= CanonicalizeLinearExpression(*ct, &exp);
   }
 
-  // TODO(user): Remove duplicate expressions. This might be expensive.
+  // Compute the infered min/max of the target.
+  // Update target domain (if it is not a complex expression).
+  const LinearExpressionProto& target = ct->lin_max().target();
+  {
+    int64_t infered_min = context_->MinOf(target);
+    int64_t infered_max = std::numeric_limits<int64_t>::min();
+    for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+      infered_min = std::max(infered_min, context_->MinOf(expr));
+      infered_max = std::max(infered_max, context_->MaxOf(expr));
+    }
 
-  // Pass 1, Compute the infered min of the target.
-  int64_t infered_min = context_->MinOf(ct->lin_max().target());
-  for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
-    // TODO(user): Check if the expressions contain target.
-
-    // TODO(user): Check if the negated expression is already present and
-    // reduce inferred domain if so.
-
-    infered_min = std::max(infered_min, context_->MinOf(expr));
-  }
-
-  // Pass 2, Filter the expressions which are smaller than inferred min.
-  int new_size = 0;
-  for (int i = 0; i < ct->lin_max().exprs_size(); ++i) {
-    const LinearExpressionProto& expr = ct->lin_max().exprs(i);
-    if (context_->MaxOf(expr) >= infered_min) {
-      *ct->mutable_lin_max()->mutable_exprs(new_size) = expr;
-      new_size++;
+    if (target.vars().empty()) {
+      if (!Domain(infered_min, infered_max).Contains(target.offset())) {
+        context_->UpdateRuleStats("lin_max: infeasible");
+        return MarkConstraintAsFalse(ct);
+      }
+    }
+    if (!HasEnforcementLiteral(*ct) && target.vars().size() <= 1) {  // Affine
+      Domain rhs_domain;
+      for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+        rhs_domain = rhs_domain.UnionWith(
+            context_->DomainSuperSetOf(expr).IntersectionWith(
+                {infered_min, infered_max}));
+      }
+      bool reduced = false;
+      if (!context_->IntersectDomainWith(target, rhs_domain, &reduced)) {
+        return true;
+      }
+      if (reduced) {
+        context_->UpdateRuleStats("lin_max: target domain reduced");
+      }
     }
   }
 
-  if (new_size < ct->lin_max().exprs_size()) {
-    context_->UpdateRuleStats("lin_max: Removed exprs");
-    ct->mutable_lin_max()->mutable_exprs()->DeleteSubrange(
-        new_size, ct->lin_max().exprs_size() - new_size);
-    return true;
+  // Filter the expressions which are smaller than target_min.
+  const int64_t target_min = context_->MinOf(target);
+  const int64_t target_max = context_->MaxOf(target);
+  {
+    int new_size = 0;
+    for (int i = 0; i < ct->lin_max().exprs_size(); ++i) {
+      const LinearExpressionProto& expr = ct->lin_max().exprs(i);
+      if (context_->MaxOf(expr) < target_min) continue;
+      *ct->mutable_lin_max()->mutable_exprs(new_size) = expr;
+      new_size++;
+    }
+    if (new_size < ct->lin_max().exprs_size()) {
+      context_->UpdateRuleStats("lin_max: removed exprs");
+      ct->mutable_lin_max()->mutable_exprs()->DeleteSubrange(
+          new_size, ct->lin_max().exprs_size() - new_size);
+      changed = true;
+    }
+  }
+
+  if (ct->lin_max().exprs().empty()) {
+    context_->UpdateRuleStats("lin_max: no exprs");
+    return MarkConstraintAsFalse(ct);
+  }
+
+  if (ct->lin_max().exprs().size() == 1) {
+    // Convert to an equality. Note that we create a new constraint otherwise it
+    // might not be processed again.
+    context_->UpdateRuleStats("lin_max: converted to equality");
+    ConstraintProto* new_ct = context_->working_model->add_constraints();
+    *new_ct = *ct;  // copy name and potential reification.
+    auto* arg = new_ct->mutable_linear();
+    const LinearExpressionProto& a = ct->lin_max().target();
+    const LinearExpressionProto& b = ct->lin_max().exprs(0);
+    for (int i = 0; i < a.vars().size(); ++i) {
+      arg->add_vars(a.vars(i));
+      arg->add_coeffs(a.coeffs(i));
+    }
+    for (int i = 0; i < b.vars().size(); ++i) {
+      arg->add_vars(b.vars(i));
+      arg->add_coeffs(-b.coeffs(i));
+    }
+    arg->add_domain(b.offset() - a.offset());
+    arg->add_domain(b.offset() - a.offset());
+    context_->UpdateNewConstraintsVariableUsage();
+    return RemoveConstraint(ct);
+  }
+
+  // Cut everything above the max if possible.
+  // If one of the linear expression has many term and is above the max, we
+  // abort early since none of the other rule can be applied.
+  {
+    bool abort = false;
+    for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+      const int64_t value_min = context_->MinOf(expr);
+      bool modified = false;
+      if (!context_->IntersectDomainWith(expr, Domain(value_min, target_max),
+                                         &modified)) {
+        return true;
+      }
+      if (modified) {
+        context_->UpdateRuleStats("lin_max: reduced expression domain.");
+      }
+      const int64_t value_max = context_->MaxOf(expr);
+      if (value_max > target_max) {
+        context_->UpdateRuleStats("TODO lin_max: linear expression above max.");
+        abort = true;
+      }
+    }
+    if (abort) return changed;
+  }
+
+  // Deal with fixed target case.
+  if (target_min == target_max) {
+    bool all_booleans = true;
+    std::vector<int> literals;
+    const int64_t fixed_target = target_min;
+    for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+      const int64_t value_min = context_->MinOf(expr);
+      const int64_t value_max = context_->MaxOf(expr);
+      CHECK_LE(value_max, fixed_target) << "Presolved above";
+      if (value_max < fixed_target) continue;
+
+      if (value_min == value_max && value_max == fixed_target) {
+        context_->UpdateRuleStats("lin_max: always satisfied");
+        return RemoveConstraint(ct);
+      }
+      if (context_->ExpressionIsAffineBoolean(expr)) {
+        CHECK_EQ(value_max, fixed_target);
+        literals.push_back(context_->LiteralForExpressionMax(expr));
+      } else {
+        all_booleans = false;
+      }
+    }
+    if (all_booleans) {
+      if (literals.empty()) {
+        return MarkConstraintAsFalse(ct);
+      }
+
+      // At least one true;
+      context_->UpdateRuleStats("lin_max: fixed target and all booleans");
+      for (const int lit : literals) {
+        ct->mutable_bool_or()->add_literals(lit);
+      }
+      return true;
+    }
+    return changed;
+  }
+
+  // If everything is Boolean and affine, do not use a lin max!
+  if (context_->ExpressionIsAffineBoolean(target)) {
+    const int target_ref = context_->LiteralForExpressionMax(target);
+
+    bool abort = false;
+
+    bool min_is_reachable = false;
+    std::vector<int> min_literals;
+    std::vector<int> literals_above_min;
+    std::vector<int> max_literals;
+
+    for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+      const int64_t value_min = context_->MinOf(expr);
+      const int64_t value_max = context_->MaxOf(expr);
+
+      // This shouldn't happen, but it document the fact.
+      if (value_min > target_min) {
+        context_->UpdateRuleStats("lin_max: fix target");
+        if (!context_->SetLiteralToTrue(target_ref)) return true;
+        abort = true;
+        break;
+      }
+
+      // expr is fixed.
+      if (value_min == value_max) {
+        if (value_min == target_min) min_is_reachable = true;
+        continue;
+      }
+
+      if (!context_->ExpressionIsAffineBoolean(expr)) {
+        abort = true;
+        break;
+      }
+
+      const int ref = context_->LiteralForExpressionMax(expr);
+      CHECK_LE(value_min, target_min);
+      if (value_min == target_min) {
+        min_literals.push_back(NegatedRef(ref));
+      }
+
+      CHECK_LE(value_max, target_max);
+      if (value_max == target_max) {
+        max_literals.push_back(ref);
+        literals_above_min.push_back(ref);
+      } else if (value_max > target_min) {
+        literals_above_min.push_back(ref);
+      } else if (value_max == target_min) {
+        min_literals.push_back(ref);
+      }
+    }
+    if (!abort) {
+      context_->UpdateRuleStats("lin_max: all Booleans.");
+
+      // target_ref => at_least_one(max_literals);
+      ConstraintProto* clause = context_->working_model->add_constraints();
+      clause->add_enforcement_literal(target_ref);
+      for (const int lit : max_literals) {
+        clause->mutable_bool_or()->add_literals(lit);
+      }
+
+      // not(target_ref) => not(lit) for lit in literals_above_min
+      for (const int lit : literals_above_min) {
+        context_->AddImplication(lit, target_ref);
+      }
+
+      if (!min_is_reachable) {
+        // not(target_ref) => at_least_one(min_literals).
+        ConstraintProto* clause = context_->working_model->add_constraints();
+        clause->add_enforcement_literal(NegatedRef(target_ref));
+        for (const int lit : min_literals) {
+          clause->mutable_bool_or()->add_literals(lit);
+        }
+      }
+
+      context_->UpdateNewConstraintsVariableUsage();
+      return RemoveConstraint(ct);
+    }
   }
 
   return changed;
@@ -3314,6 +3529,9 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
 
       proto->set_intervals(new_size, proto->intervals(i));
       proto->set_demands(new_size, proto->demands(i));
+      if (!proto->energies().empty()) {
+        *proto->mutable_energies(new_size) = proto->energies(i);
+      }
       new_size++;
     }
 
@@ -3321,6 +3539,11 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       changed = true;
       proto->mutable_intervals()->Truncate(new_size);
       proto->mutable_demands()->Truncate(new_size);
+      if (!proto->energies().empty()) {
+        proto->mutable_energies()->erase(
+            proto->mutable_energies()->begin() + new_size,
+            proto->mutable_energies()->end());
+      }
     }
 
     if (num_zero_demand_removed > 0) {
@@ -3501,6 +3724,12 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       const int64_t old_capacity = context_->MinOf(proto->capacity());
       proto->set_capacity(context_->GetOrCreateConstantVar(old_capacity / gcd));
     }
+  }
+
+  // Canonicalize energy linear expressions.
+  for (LinearExpressionProto& exp :
+       *(ct->mutable_cumulative()->mutable_energies())) {
+    changed |= CanonicalizeLinearExpression(*ct, &exp);
   }
 
   if (HasEnforcementLiteral(*ct)) return changed;

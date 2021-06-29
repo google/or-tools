@@ -453,6 +453,8 @@ class _ScalProd(LinearExpr):
             output += ' + {}'.format(self.__constant)
         elif self.__constant < 0:
             output += ' - {}'.format(-self.__constant)
+        if output is None:
+            output = '0'
         return output
 
     def __repr__(self):
@@ -1504,12 +1506,44 @@ class CpModel(object):
     Returns:
       An instance of the `Constraint` class.
     """
+        return self.AddCumulativeWithEnergy(intervals, demands, [], capacity)
+
+    def AddCumulativeWithEnergy(self, intervals, demands, energies, capacity):
+        """Adds Cumulative(intervals, demands, energies, capacity).
+
+    This constraint enforces that:
+
+        for all t:
+          sum(demands[i]
+            if (start(intervals[t]) <= t < end(intervals[t])) and
+            (t is present)) <= capacity
+
+    The constraint assumes that:
+
+        for all t:
+          energies[t] == size(intervals[t]) * demands[t]
+
+    Args:
+      intervals: The list of intervals.
+      demands: The list of demands for each interval. Each demand must be >= 0.
+        Each demand can be an integer value, or an integer variable.
+      energies: The list of linear expressions representing the energy of each
+        task. This information is optional, and if given must be compatible
+         with the demand and the size of each task (energy = size * demand).
+      capacity: The maximum capacity of the cumulative constraint. It must be a
+        positive integer value or variable.
+
+    Returns:
+      An instance of the `Constraint` class.
+    """
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.cumulative.intervals.extend(
             [self.GetIntervalIndex(x) for x in intervals])
         model_ct.cumulative.demands.extend(
             [self.GetOrMakeIndex(x) for x in demands])
+        for e in energies:
+            model_ct.cumulative.energies.append(self.ParseLinearExpression(e))
         model_ct.cumulative.capacity = self.GetOrMakeIndex(capacity)
         return ct
 
@@ -1617,6 +1651,23 @@ class CpModel(object):
             return self.__model.variables[var_index]
         else:
             return self.__model.variables[-var_index - 1]
+
+    def ParseLinearExpression(self, linear_expr):
+        """Returns a LinearExpressionProto built from a LinearExpr instance."""
+        result = cp_model_pb2.LinearExpressionProto()
+        if isinstance(linear_expr, numbers.Integral):
+            result.offset = linear_expr
+            return result
+
+        coeffs_map, constant = linear_expr.GetVarValueMap()
+        result.offset = constant
+        for t in coeffs_map.items():
+            if not isinstance(t[0], IntVar):
+                raise TypeError('Wrong argument' + str(t))
+            cp_model_helper.AssertIsInt64(t[1])
+            result.vars.append(t[0].Index())
+            result.coeffs.append(t[1])
+        return result
 
     def _SetObjective(self, obj, minimize):
         """Sets the objective of the model."""

@@ -161,6 +161,7 @@ message NoOverlap2DConstraintProto {
   repeated int32 x_intervals = 1;
   repeated int32 y_intervals = 2;  // Same size as x_intervals.
   bool boxes_with_null_area_can_overlap = 3;
+  // TODO(user): Add optional areas as repeated LinearExpressionProto.
 }
 
 // The sum of the demands of the intervals at each interval point cannot exceed
@@ -173,6 +174,14 @@ message CumulativeConstraintProto {
   int32 capacity = 1;
   repeated int32 intervals = 2;
   repeated int32 demands = 3;  // Same size as intervals.
+
+  // EXPERIMENTAL: This optional field adds a redundant and more precise
+  // representation of the energy of a task (instead of the traditional demand *
+  // duration. This is only used by the linear relaxation, and it is only useful
+  // if both demand and durations are variable, and if the additional linear
+  // equation if more precise than the linear relaxation (McCormick equation) of
+  // the product demand * duration.
+  repeated LinearExpressionProto energies = 4;
 }
 
 // Maintain a reservoir level within bounds. The water level starts at 0, and at
@@ -237,7 +246,7 @@ message RoutesConstraintProto {
   repeated int32 heads = 2;
   repeated int32 literals = 3;
 
-  // Experimental. The demands for each node, and the maximum capacity for each
+  // EXPERIMENTAL. The demands for each node, and the maximum capacity for each
   // route. Note that this is currently only used for the LP relaxation and one
   // need to add the corresponding constraint to enforce this outside of the LP.
   //
@@ -548,7 +557,7 @@ message DenseMatrixProto {
   repeated int32 entries = 3;
 }
 
-// Experimental. For now, this is meant to be used by the solver and not filled
+// EXPERIMENTAL. For now, this is meant to be used by the solver and not filled
 // by clients.
 //
 // Hold symmetry information about the set of feasible solutions. If we permute

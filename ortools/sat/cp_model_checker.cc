@@ -550,6 +550,13 @@ std::string ValidateCpModel(const CpModelProto& model) {
               "intervals_size() != demands_size() in constraint #", c, " : ",
               ProtobufShortDebugString(ct));
         }
+        if (ct.cumulative().energies_size() != 0 &&
+            ct.cumulative().energies_size() !=
+                ct.cumulative().intervals_size()) {
+          return absl::StrCat(
+              "energies_size() != intervals_size() in constraint #", c, " : ",
+              ProtobufShortDebugString(ct));
+        }
         break;
       case ConstraintProto::ConstraintCase::kInverse:
         if (ct.inverse().f_direct().size() != ct.inverse().f_inverse().size()) {
@@ -876,6 +883,17 @@ class ConstraintChecker {
         for (int64_t t = start; t < start + duration; ++t) {
           usage[t] += demand;
           if (usage[t] > capacity) return false;
+        }
+        if (!ct.cumulative().energies().empty()) {
+          const LinearExpressionProto& energy_expr =
+              ct.cumulative().energies(i);
+          int64_t energy = energy_expr.offset();
+          for (int j = 0; j < energy_expr.vars_size(); ++j) {
+            energy += Value(energy_expr.vars(j)) * energy_expr.coeffs(j);
+          }
+          if (duration * demand != energy) {
+            return false;
+          }
         }
       }
     }

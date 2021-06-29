@@ -119,6 +119,11 @@ class PresolveContext {
   // Return a super-set of the domain of the linear expression.
   Domain DomainSuperSetOf(const LinearExpressionProto& expr) const;
 
+  // Returns true iff the expr is of the for a * literal + b.
+  // The other function can be used to get the liteal that achieve MaxOf().
+  bool ExpressionIsAffineBoolean(const LinearExpressionProto& expr) const;
+  int LiteralForExpressionMax(const LinearExpressionProto& expr) const;
+
   // This function takes a positive variable reference.
   bool DomainOfVarIsIncludedIn(int var, const Domain& domain) {
     return domains[var].IsIncludedIn(domain);

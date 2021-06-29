@@ -110,6 +110,7 @@ class CpModelPresolver {
   bool PresolveIntProd(ConstraintProto* ct);
   bool PresolveIntMin(ConstraintProto* ct);
   bool PresolveIntMax(ConstraintProto* ct);
+  bool ConvertIntMax(ConstraintProto* ct);
   bool PresolveLinMin(ConstraintProto* ct);
   bool PresolveLinMax(ConstraintProto* ct);
   bool PresolveIntAbs(ConstraintProto* ct);

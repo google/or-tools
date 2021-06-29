@@ -14,8 +14,10 @@
 #include "ortools/sat/cp_model_utils.h"
 
 #include <cstdint>
+#include <functional>
 
 #include "ortools/base/stl_util.h"
+#include "ortools/sat/cp_model.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -146,6 +148,9 @@ IndexReferences GetReferencesUsedByConstraint(const ConstraintProto& ct) {
     case ConstraintProto::ConstraintCase::kCumulative:
       output.variables.push_back(ct.cumulative().capacity());
       AddIndices(ct.cumulative().demands(), &output.variables);
+      for (const LinearExpressionProto& lin : ct.cumulative().energies()) {
+        AddIndices(lin.vars(), &output.variables);
+      }
       break;
     case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
       break;
@@ -329,6 +334,12 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
     case ConstraintProto::ConstraintCase::kCumulative:
       APPLY_TO_SINGULAR_FIELD(cumulative, capacity);
       APPLY_TO_REPEATED_FIELD(cumulative, demands);
+      for (int i = 0; i < ct->cumulative().energies_size(); ++i) {
+        for (int& r :
+             *ct->mutable_cumulative()->mutable_energies(i)->mutable_vars()) {
+          f(&r);
+        }
+      }
       break;
     case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
       break;

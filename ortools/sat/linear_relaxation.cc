@@ -627,6 +627,7 @@ void AppendIntervalRelaxation(const ConstraintProto& ct, Model* model,
 // TODO(user): Use affine demand.
 void AddCumulativeRelaxation(const std::vector<IntervalVariable>& intervals,
                              const std::vector<IntegerVariable>& demands,
+                             const std::vector<LinearExpression>& energies,
                              IntegerValue capacity_upper_bound, Model* model,
                              LinearRelaxation* relaxation) {
   // TODO(user): Keep a map intervals -> helper, or ct_index->helper to avoid
@@ -695,6 +696,14 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable>& intervals,
         lc.AddTerm(demands[i], helper->SizeMin(i));
       } else if (demand_is_fixed) {
         lc.AddTerm(helper->Sizes()[i], demand_lower_bound);
+      } else if (!energies.empty()) {
+        // We prefer the energy additional info instead of the McCormick
+        // relaxation.
+        const LinearExpression& energy = energies[i];
+        lc.AddConstant(energy.offset);
+        for (int j = 0; j < energy.vars.size(); ++j) {
+          lc.AddTerm(energy.vars[j], energy.coeffs[j]);
+        }
       } else {  // demand and size are not fixed.
         DCHECK(!demands.empty());
         // We use McCormick equation.
@@ -731,8 +740,17 @@ void AppendCumulativeRelaxation(const CpModelProto& model_proto,
   const IntegerValue capacity_upper_bound =
       model->GetOrCreate<IntegerTrail>()->UpperBound(
           mapping->Integer(ct.cumulative().capacity()));
-  AddCumulativeRelaxation(intervals, demands, capacity_upper_bound, model,
-                          relaxation);
+  std::vector<LinearExpression> energies;
+  energies.reserve(ct.cumulative().energies_size());
+  for (int i = 0; i < ct.cumulative().energies_size(); ++i) {
+    // Note: Cut generator requires all expressions to contain only positive
+    // vars.
+    energies.push_back(PositiveVarExpr(
+        mapping->GetExprFromProto(ct.cumulative().energies(i))));
+  }
+
+  AddCumulativeRelaxation(intervals, demands, energies, capacity_upper_bound,
+                          model, relaxation);
 }
 
 void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
@@ -744,7 +762,7 @@ void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.no_overlap().intervals());
-  AddCumulativeRelaxation(intervals, /*demands=*/{},
+  AddCumulativeRelaxation(intervals, /*demands=*/{}, /*energies=*/{},
                           /*capacity_upper_bound=*/IntegerValue(1), model,
                           relaxation);
 }
@@ -1108,14 +1126,22 @@ void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
   const std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.cumulative().intervals());
   const IntegerVariable capacity = mapping->Integer(ct.cumulative().capacity());
+  std::vector<LinearExpression> energies;
+  energies.reserve(ct.cumulative().energies_size());
+  for (int i = 0; i < ct.cumulative().energies_size(); ++i) {
+    // Note: Cut generator requires all expressions to contain only positive
+    // vars.
+    energies.push_back(PositiveVarExpr(
+        mapping->GetExprFromProto(ct.cumulative().energies(i))));
+  }
 
   relaxation->cut_generators.push_back(
       CreateCumulativeOverlappingCutGenerator(intervals, capacity, demands, m));
-  relaxation->cut_generators.push_back(
-      CreateCumulativeEnergyCutGenerator(intervals, capacity, demands, m));
+  relaxation->cut_generators.push_back(CreateCumulativeEnergyCutGenerator(
+      intervals, capacity, demands, energies, m));
   relaxation->cut_generators.push_back(
       CreateCumulativeCompletionTimeCutGenerator(intervals, capacity, demands,
-                                                 m));
+                                                 energies, m));
   relaxation->cut_generators.push_back(
       CreateCumulativePrecedenceCutGenerator(intervals, capacity, demands, m));
 }
@@ -1144,6 +1170,7 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
       mapping->Intervals(ct.no_overlap_2d().x_intervals());
   std::vector<IntervalVariable> y_intervals =
       mapping->Intervals(ct.no_overlap_2d().y_intervals());
+  // TODO(user): Add energy cuts if intervals have variable sizes.
   relaxation->cut_generators.push_back(
       CreateNoOverlap2dCompletionTimeCutGenerator(x_intervals, y_intervals, m));
 }
@@ -1157,6 +1184,7 @@ void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   if (ct.lin_max().target().vars_size() != 1) return;
   if (ct.lin_max().target().coeffs(0) != 1) return;
+  if (ct.lin_max().target().offset() != 0) return;
 
   const IntegerVariable target =
       mapping->Integer(ct.lin_max().target().vars(0));

@@ -697,7 +697,7 @@ inline std::function<void(Model*)> IsEqualToMinOf(
 
     IntegerVariable min_var;
     if (min_expr.vars.size() == 1 &&
-        std::abs(min_expr.coeffs[0].value()) == 1) {
+        std::abs(min_expr.coeffs[0].value()) == 1 && min_expr.offset == 0) {
       if (min_expr.coeffs[0].value() == 1) {
         min_var = min_expr.vars[0];
       } else {
