@@ -108,6 +108,12 @@ ABSL_FLAG(bool, cp_model_dump_lns, false,
           "lns models proto in text format to "
           "'FLAGS_cp_model_dump_prefix'lns_xxx.pbtxt.");
 
+ABSL_FLAG(
+    bool, cp_model_dump_problematic_lns, false,
+    "DEBUG ONLY. Similar to --cp_model_dump_lns, but only dump fragment for "
+    "which we got an issue while validating the postsolved solution. This "
+    "allows to debug presolve issues without dumping all the models.");
+
 ABSL_FLAG(bool, cp_model_dump_response, false,
           "DEBUG ONLY. If true, the final response of each solve will be "
           "dumped to 'FLAGS_cp_model_dump_prefix'response.pbtxt");
@@ -2412,6 +2418,10 @@ class LnsSolver : public SubSolver {
         *lns_fragment.mutable_solution_hint() =
             neighborhood.delta.solution_hint();
       }
+      CpModelProto debug_copy;
+      if (absl::GetFlag(FLAGS_cp_model_dump_problematic_lns)) {
+        debug_copy = lns_fragment;
+      }
       if (absl::GetFlag(FLAGS_cp_model_dump_lns)) {
         // TODO(user): export the delta too if needed.
         const std::string lns_name =
@@ -2424,7 +2434,7 @@ class LnsSolver : public SubSolver {
       std::vector<int> postsolve_mapping;
       PresolveCpModel(context.get(), &postsolve_mapping);
 
-      // Release the context
+      // Release the context.
       context.reset(nullptr);
       neighborhood.delta.Clear();
 
@@ -2515,12 +2525,16 @@ class LnsSolver : public SubSolver {
               std::vector<int64_t>(local_response.solution().begin(),
                                    local_response.solution().end()));
           if (!feasible) {
-            const std::string name =
-                absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
-                             lns_fragment.name(), ".pbtxt");
-            LOG(INFO) << "Dumping problematic LNS model to '" << name << "'.";
-            CHECK_OK(file::SetTextProto(name, lns_fragment, file::Defaults()));
-            LOG(FATAL) << "Infeasible LNS solution! " << solution_info;
+            if (absl::GetFlag(FLAGS_cp_model_dump_problematic_lns)) {
+              const std::string name =
+                  absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
+                               debug_copy.name(), ".pbtxt");
+              LOG(INFO) << "Dumping problematic LNS model to '" << name << "'.";
+              CHECK_OK(file::SetTextProto(name, debug_copy, file::Defaults()));
+            }
+            LOG(FATAL) << "Infeasible LNS solution! " << solution_info
+                       << " solved with params "
+                       << local_params.ShortDebugString();
           }
         }
 
