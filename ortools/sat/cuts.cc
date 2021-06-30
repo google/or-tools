@@ -2125,12 +2125,7 @@ GenerateCumulativeEnergyCuts(const std::string& cut_name,
             DCHECK(!demands.empty());
             energy_lp += lp_values[demands[t]] * ToDouble(helper->SizeMin(t));
           } else if (!energies.empty()) {
-            const LinearExpression& energy = energies[t];
-            energy_lp += ToDouble(energy.offset);
-            for (int j = 0; j < energy.vars.size(); ++j) {
-              energy_lp +=
-                  lp_values[energy.vars[j]] * ToDouble(energy.coeffs[j]);
-            }
+            energy_lp += energies[t].LpValue(lp_values);
           } else {  // demand and size are not fixed.
             DCHECK(!demands.empty());
             energy_lp +=
@@ -2235,11 +2230,7 @@ GenerateCumulativeEnergyCuts(const std::string& cut_name,
             cut.AddTerm(demands[t], helper->SizeMin(t));
           } else if (!energies.empty()) {
             // We favor the energy info instead of the McCormick relaxation.
-            const LinearExpression& energy = energies[t];
-            cut.AddConstant(energy.offset);
-            for (int j = 0; j < energy.vars.size(); ++j) {
-              cut.AddTerm(energy.vars[j], energy.coeffs[j]);
-            }
+            cut.AddLinearExpression(energies[t]);
             use_energy = true;
           } else {  // demand and size are not fixed.
             DCHECK(!demands.empty());
@@ -2326,6 +2317,7 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
     result.vars.insert(result.vars.end(), energy.vars.begin(),
                        energy.vars.end());
   }
+  gtl::STLSortAndRemoveDuplicates(&result.vars);
 
   // TODO(user): Do not create the cut generator if the capacity is fixed,
   // all demands are fixed, and the intervals are always performed with a fixed
@@ -2471,14 +2463,13 @@ CutGenerator CreateCumulativeOverlappingCutGenerator(
   return result;
 }
 
+// Cached Information about one interval.
 struct PrecedenceEvent {
   IntegerValue start_min;
   IntegerValue start_max;
-  double start_lp;
   AffineExpression start;
   IntegerValue end_min;
   IntegerValue end_max;
-  double end_lp;
   AffineExpression end;
   IntegerValue demand_min;
 };
@@ -2497,12 +2488,12 @@ void GeneratePrecedenceCuts(
                      (e1.start_min == e2.start_min && e1.end_max < e2.end_max);
             });
 
-  const double epsilon = 1e-4;
+  const double tolerance = 1e-4;
 
-  for (int index1 = 0; index1 + 1 < num_events; ++index1) {
-    const PrecedenceEvent& e1 = events[index1];
-    for (int index2 = index1 + 1; index2 < num_events; ++index2) {
-      const PrecedenceEvent& e2 = events[index2];
+  for (int i = 0; i + 1 < num_events; ++i) {
+    const PrecedenceEvent& e1 = events[i];
+    for (int j = i + 1; j < num_events; ++j) {
+      const PrecedenceEvent& e2 = events[j];
       if (e2.start_min >= e1.end_max) break;  // Break out of the index2 loop.
 
       // Encode only the interesting pairs.
@@ -2512,13 +2503,15 @@ void GeneratePrecedenceCuts(
       const bool interval_2_can_precede_1 = e2.end_min <= e1.start_max;
 
       if (interval_1_can_precede_2 && !interval_2_can_precede_1 &&
-          e1.end_lp >= e2.start_lp + epsilon) {
+          e1.end.LpValue(lp_values) >=
+              e2.start.LpValue(lp_values) + tolerance) {
         // interval1.end <= interval2.start
         LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
         cut.AddTerm(e1.end, IntegerValue(1));
         cut.AddTerm(e2.start, IntegerValue(-1));
       } else if (interval_2_can_precede_1 && !interval_1_can_precede_2 &&
-                 e2.end_lp >= e1.start_lp + epsilon) {
+                 e2.end.LpValue(lp_values) >=
+                     e1.start.LpValue(lp_values) + tolerance) {
         // interval2.end <= interval1.start
         LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
         cut.AddTerm(e2.end, IntegerValue(1));
@@ -2555,12 +2548,15 @@ CutGenerator CreateCumulativePrecedenceCutGenerator(
         std::vector<PrecedenceEvent> events;
         for (int t = 0; t < helper->NumTasks(); ++t) {
           if (!helper->IsPresent(t)) continue;
-          events.push_back(
-              {helper->StartMin(t), helper->StartMax(t),
-               helper->Starts()[t].LpValue(lp_values), helper->Starts()[t],
-               helper->EndMin(t), helper->EndMax(t),
-               helper->Ends()[t].LpValue(lp_values), helper->Ends()[t],
-               integer_trail->LowerBound(demands[t])});
+          PrecedenceEvent event;
+          event.start_min = helper->StartMin(t);
+          event.start_max = helper->StartMax(t);
+          event.start = helper->Starts()[t];
+          event.end_min = helper->EndMin(t);
+          event.end_max = helper->EndMax(t);
+          event.end = helper->Ends()[t];
+          event.demand_min = integer_trail->LowerBound(demands[t]);
+          events.push_back(event);
         }
         GeneratePrecedenceCuts("CumulativePrecedence", lp_values,
                                std::move(events), capacity_max, model, manager);
@@ -2590,12 +2586,15 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
         std::vector<PrecedenceEvent> events;
         for (int t = 0; t < helper->NumTasks(); ++t) {
           if (!helper->IsPresent(t)) continue;
-          events.push_back({helper->StartMin(t), helper->StartMax(t),
-                            helper->Starts()[t].LpValue(lp_values),
-                            helper->Starts()[t], helper->EndMin(t),
-                            helper->EndMax(t),
-                            helper->Ends()[t].LpValue(lp_values),
-                            helper->Ends()[t], IntegerValue(1)});
+          PrecedenceEvent event;
+          event.start_min = helper->StartMin(t);
+          event.start_max = helper->StartMax(t);
+          event.start = helper->Starts()[t];
+          event.end_min = helper->EndMin(t);
+          event.end_max = helper->EndMax(t);
+          event.end = helper->Ends()[t];
+          event.demand_min = IntegerValue(1);
+          events.push_back(event);
         }
         GeneratePrecedenceCuts("NoOverlapPrecedence", lp_values,
                                std::move(events), IntegerValue(1), model,
@@ -2612,14 +2611,14 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
 //       capacity_max.
 //   For a no_overlap_2d constraint, y the other dimension of the box.
 struct CtEvent {
-  // The end of the x interval.
-  AffineExpression x_end;
-
   // The start min of the x interval.
   IntegerValue x_start_min;
 
   // The size min of the x interval.
   IntegerValue x_size_min;
+
+  // The end of the x interval.
+  AffineExpression x_end;
 
   // The lp value of the end of the x interval.
   double x_lp_end;
@@ -2627,19 +2626,23 @@ struct CtEvent {
   // The start min of the y interval.
   IntegerValue y_start_min;
 
+  // The size min of the y interval.
+  IntegerValue y_size_min;
+
   // The end max of the y interval.
   IntegerValue y_end_max;
 
-  // The min energy of the task.
+  // The min energy of the task (this is always larger or equal to x_size_min *
+  // y_size_min).
   IntegerValue energy_min;
 
   // Indicates if the events used the optional energy information from the
   // model.
-  bool use_energy;
+  bool use_energy = false;
 
   // Indicates if the cut is lifted, that is if it includes tasks that are not
   // strictly contained in the current time window.
-  bool lifted;
+  bool lifted = false;
 
   std::string DebugString() const {
     return absl::StrCat("CtEvent(x_end = ", x_end.DebugString(),
@@ -2647,6 +2650,7 @@ struct CtEvent {
                         ", x_size_min = ", x_size_min.value(),
                         ", x_lp_end = ", x_lp_end,
                         ", y_start_min = ", y_start_min.value(),
+                        ", y_size_min = ", y_size_min.value(),
                         ", y_end_max = ", y_end_max.value(),
                         ", energy_min = ", energy_min.value(),
                         ", use_energy = ", use_energy, ", lifted = ", lifted);
@@ -2698,12 +2702,18 @@ void GenerateCompletionTimeCuts(
             sequence_start_min) {
           CtEvent event = events[before];  // Copy.
           event.lifted = true;
-          const IntegerValue old_x_size_min = event.x_size_min;
-          const IntegerValue new_x_size_min =
+          event.x_size_min =
               event.x_size_min + event.x_start_min - sequence_start_min;
-          event.x_size_min = new_x_size_min;
           event.x_start_min = sequence_start_min;
-          event.energy_min = event.energy_min * new_x_size_min / old_x_size_min;
+          // We cannot rescale the energy min correctly.
+          // Let's take the example of a box of size 2 * 20 that overlaps
+          // sequence start min by 1, and that can rotate by 90 degrees.
+          // The energy min is 40, size min is 2, size_max is 20.
+          // The lifted energy is 2 * 1, not 40 / 2.
+          // Therefore, we fallback to the x_size_min * y_size_min energy
+          // approximation.
+          event.energy_min = event.y_size_min * event.x_size_min;
+          event.use_energy = false;
           residual_tasks.push_back(event);
         }
       }
@@ -2801,12 +2811,16 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
             const IntegerValue size_min = helper->SizeMin(index);
             if (size_min > 0) {
               const AffineExpression end_expr = helper->Ends()[index];
-              events.push_back({end_expr, helper->StartMin(index), size_min,
-                                end_expr.LpValue(lp_values),
-                                /*y_start_min=*/IntegerValue(0),
-                                /*y_end_max=*/IntegerValue(1),
-                                /*energy_min=*/size_min, /*use_energy=*/false,
-                                /*lifted=*/false});
+              CtEvent event;
+              event.x_start_min = helper->StartMin(index);
+              event.x_size_min = size_min;
+              event.x_end = end_expr;
+              event.x_lp_end = end_expr.LpValue(lp_values);
+              event.y_start_min = IntegerValue(0);
+              event.y_size_min = IntegerValue(1);
+              event.y_end_max = IntegerValue(1);
+              event.energy_min = size_min;
+              events.push_back(event);
             }
           }
           GenerateCompletionTimeCuts(cut_name, lp_values, std::move(events),
@@ -2854,34 +2868,29 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
             if (helper->SizeMin(index) > 0 &&
                 integer_trail->LowerBound(demands[index]) > 0) {
               const AffineExpression end_expr = helper->Ends()[index];
-              IntegerValue energy_min(0);
-              bool use_energy = false;
-              if (!energies.empty()) {
-                const LinearExpression& expr = energies[index];
-                energy_min += expr.offset;
-                for (int e_index = 0; e_index < expr.vars.size(); ++e_index) {
-                  const IntegerValue coeff = expr.coeffs[e_index];
-                  const IntegerVariable var = expr.vars[e_index];
-                  if (coeff > 0) {
-                    energy_min += integer_trail->LowerBound(var) * coeff;
-                  } else if (coeff < 0) {
-                    energy_min += integer_trail->UpperBound(var) * coeff;
-                  }
-                }
-              }
+              IntegerValue energy_min =
+                  energies.empty()
+                      ? IntegerValue(0)
+                      : LinExprLowerBound(energies[index], *integer_trail);
+
               const IntegerValue size_min = helper->SizeMin(index);
               const IntegerValue demand_min =
                   integer_trail->LowerBound(demands[index]);
+              CtEvent event;
+              event.x_start_min = helper->StartMin(index);
+              event.x_size_min = size_min;
+              event.x_end = end_expr;
+              event.x_lp_end = end_expr.LpValue(lp_values);
+              event.y_start_min = IntegerValue(0);
+              event.y_size_min = demand_min;
+              event.y_end_max = IntegerValue(capacity_max);
               if (energy_min > size_min * demand_min) {
-                use_energy = true;
+                event.energy_min = energy_min;
+                event.use_energy = true;
               } else {
-                energy_min = size_min * demand_min;
+                event.energy_min = size_min * demand_min;
               }
-              events.push_back({end_expr, helper->StartMin(index), size_min,
-                                end_expr.LpValue(lp_values),
-                                /*y_start_min=*/IntegerValue(0),
-                                /*y_end_max=*/capacity_max, energy_min,
-                                use_energy, /*lifted=*/false});
+              events.push_back(event);
             }
           }
           GenerateCompletionTimeCuts(cut_name, lp_values, std::move(events),
@@ -2913,75 +2922,82 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
 
   Trail* trail = model->GetOrCreate<Trail>();
 
-  result.generate_cuts = [trail, x_helper, y_helper, model](
-                             const absl::StrongVector<IntegerVariable, double>&
-                                 lp_values,
-                             LinearConstraintManager* manager) {
-    if (trail->CurrentDecisionLevel() > 0) return true;
+  result.generate_cuts =
+      [trail, x_helper, y_helper, model](
+          const absl::StrongVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
+        if (trail->CurrentDecisionLevel() > 0) return true;
 
-    if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
-    if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
+        if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
+        if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
 
-    const int num_boxes = x_helper->NumTasks();
-    std::vector<int> active_boxes;
-    std::vector<IntegerValue> cached_areas(num_boxes);
-    std::vector<Rectangle> cached_rectangles(num_boxes);
-    for (int box = 0; box < num_boxes; ++box) {
-      cached_areas[box] = x_helper->SizeMin(box) * y_helper->SizeMin(box);
-      if (cached_areas[box] == 0) continue;
-      if (!y_helper->IsPresent(box) || !y_helper->IsPresent(box)) continue;
+        const int num_boxes = x_helper->NumTasks();
+        std::vector<int> active_boxes;
+        std::vector<IntegerValue> cached_areas(num_boxes);
+        std::vector<Rectangle> cached_rectangles(num_boxes);
+        for (int box = 0; box < num_boxes; ++box) {
+          cached_areas[box] = x_helper->SizeMin(box) * y_helper->SizeMin(box);
+          if (cached_areas[box] == 0) continue;
+          if (!y_helper->IsPresent(box) || !y_helper->IsPresent(box)) continue;
 
-      // TODO(user): It might be possible/better to use some shifted value
-      // here, but for now this code is not in the hot spot, so better be
-      // defensive and only do connected components on really disjoint
-      // boxes.
-      Rectangle& rectangle = cached_rectangles[box];
-      rectangle.x_min = x_helper->StartMin(box);
-      rectangle.x_max = x_helper->EndMax(box);
-      rectangle.y_min = y_helper->StartMin(box);
-      rectangle.y_max = y_helper->EndMax(box);
+          // TODO(user): It might be possible/better to use some shifted value
+          // here, but for now this code is not in the hot spot, so better be
+          // defensive and only do connected components on really disjoint
+          // boxes.
+          Rectangle& rectangle = cached_rectangles[box];
+          rectangle.x_min = x_helper->StartMin(box);
+          rectangle.x_max = x_helper->EndMax(box);
+          rectangle.y_min = y_helper->StartMin(box);
+          rectangle.y_max = y_helper->EndMax(box);
 
-      active_boxes.push_back(box);
-    }
-
-    if (active_boxes.size() <= 1) return true;
-
-    std::vector<absl::Span<int>> components = GetOverlappingRectangleComponents(
-        cached_rectangles, absl::MakeSpan(active_boxes));
-    for (absl::Span<int> boxes : components) {
-      if (boxes.size() <= 1) continue;
-
-      auto generate_cuts = [&lp_values, model, manager, &boxes, &cached_areas](
-                               const std::string& cut_name,
-                               SchedulingConstraintHelper* x_helper,
-                               SchedulingConstraintHelper* y_helper) {
-        std::vector<CtEvent> events;
-
-        for (const int box : boxes) {
-          const AffineExpression x_end_expr = x_helper->Ends()[box];
-          events.push_back(
-              {x_end_expr, x_helper->ShiftedStartMin(box),
-               x_helper->SizeMin(box), x_end_expr.LpValue(lp_values),
-               y_helper->ShiftedStartMin(box), y_helper->ShiftedEndMax(box),
-               /*energy_min=*/x_helper->SizeMin(box) * y_helper->SizeMin(box),
-               /*use_energy=*/false, /*lifted=*/false});
+          active_boxes.push_back(box);
         }
 
-        GenerateCompletionTimeCuts(cut_name, lp_values, std::move(events),
-                                   /*use_lifting=*/true, model, manager);
-      };
+        if (active_boxes.size() <= 1) return true;
 
-      if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
-      if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
-      generate_cuts("NoOverlap2dXCompletionTime", x_helper, y_helper);
-      generate_cuts("NoOverlap2dYCompletionTime", y_helper, x_helper);
-      if (!x_helper->SynchronizeAndSetTimeDirection(false)) return false;
-      if (!y_helper->SynchronizeAndSetTimeDirection(false)) return false;
-      generate_cuts("NoOverlap2dXCompletionTimeMirror", x_helper, y_helper);
-      generate_cuts("NoOverlap2dYCompletionTimeMirror", y_helper, x_helper);
-    }
-    return true;
-  };
+        std::vector<absl::Span<int>> components =
+            GetOverlappingRectangleComponents(cached_rectangles,
+                                              absl::MakeSpan(active_boxes));
+        for (absl::Span<int> boxes : components) {
+          if (boxes.size() <= 1) continue;
+
+          auto generate_cuts = [&lp_values, model, manager, &boxes,
+                                &cached_areas](
+                                   const std::string& cut_name,
+                                   SchedulingConstraintHelper* x_helper,
+                                   SchedulingConstraintHelper* y_helper) {
+            std::vector<CtEvent> events;
+
+            for (const int box : boxes) {
+              const AffineExpression x_end_expr = x_helper->Ends()[box];
+              CtEvent event;
+              event.x_start_min = x_helper->ShiftedStartMin(box);
+              event.x_size_min = x_helper->SizeMin(box);
+              event.x_end = x_end_expr;
+              event.x_lp_end = x_end_expr.LpValue(lp_values);
+              event.y_start_min = y_helper->ShiftedStartMin(box);
+              event.y_size_min = y_helper->SizeMin(box);
+              event.y_end_max = y_helper->ShiftedEndMax(box);
+              event.energy_min =
+                  x_helper->SizeMin(box) * y_helper->SizeMin(box);
+              events.push_back(event);
+            }
+
+            GenerateCompletionTimeCuts(cut_name, lp_values, std::move(events),
+                                       /*use_lifting=*/true, model, manager);
+          };
+
+          if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
+          if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
+          generate_cuts("NoOverlap2dXCompletionTime", x_helper, y_helper);
+          generate_cuts("NoOverlap2dYCompletionTime", y_helper, x_helper);
+          if (!x_helper->SynchronizeAndSetTimeDirection(false)) return false;
+          if (!y_helper->SynchronizeAndSetTimeDirection(false)) return false;
+          generate_cuts("NoOverlap2dXCompletionTimeMirror", x_helper, y_helper);
+          generate_cuts("NoOverlap2dYCompletionTimeMirror", y_helper, x_helper);
+        }
+        return true;
+      };
   return result;
 }
 

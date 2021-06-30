@@ -47,6 +47,20 @@ void LinearConstraintBuilder::AddTerm(AffineExpression expr,
   if (ub_ < kMaxIntegerValue) ub_ -= coeff * expr.constant;
 }
 
+void LinearConstraintBuilder::AddLinearExpression(
+    const LinearExpression& expr) {
+  for (int i = 0; i < expr.vars.size(); ++i) {
+    // We must use positive variables.
+    if (VariableIsPositive(expr.vars[i])) {
+      terms_.push_back({expr.vars[i], expr.coeffs[i]});
+    } else {
+      terms_.push_back({NegationOf(expr.vars[i]), -expr.coeffs[i]});
+    }
+  }
+  if (lb_ > kMinIntegerValue) lb_ -= expr.offset;
+  if (ub_ < kMaxIntegerValue) ub_ -= expr.offset;
+}
+
 void LinearConstraintBuilder::AddConstant(IntegerValue value) {
   if (lb_ > kMinIntegerValue) lb_ -= value;
   if (ub_ < kMaxIntegerValue) ub_ -= value;
@@ -235,6 +249,15 @@ void MakeAllVariablesPositive(LinearConstraint* constraint) {
       constraint->vars[i] = NegationOf(var);
     }
   }
+}
+
+double LinearExpression::LpValue(
+    const absl::StrongVector<IntegerVariable, double>& lp_values) const {
+  double result = ToDouble(offset);
+  for (int i = 0; i < vars.size(); ++i) {
+    result += ToDouble(coeffs[i]) * lp_values[vars[i]];
+  }
+  return result;
 }
 
 // TODO(user): it would be better if LinearConstraint natively supported

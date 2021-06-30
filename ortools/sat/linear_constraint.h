@@ -82,6 +82,48 @@ struct LinearConstraint {
   }
 };
 
+// Helper struct to model linear expression for lin_min/lin_max constraints. The
+// canonical expression should only contain positive coefficients.
+struct LinearExpression {
+  std::vector<IntegerVariable> vars;
+  std::vector<IntegerValue> coeffs;
+  IntegerValue offset = IntegerValue(0);
+  // Return the evaluation of the linear expression using the values from
+  // lp_values.
+  double LpValue(
+      const absl::StrongVector<IntegerVariable, double>& lp_values) const;
+};
+
+// Returns the same expression in the canonical form (all positive
+// coefficients).
+LinearExpression CanonicalizeExpr(const LinearExpression& expr);
+
+// Returns lower bound of linear expression using variable bounds of the
+// variables in expression. Assumes Canonical expression (all positive
+// coefficients).
+IntegerValue LinExprLowerBound(const LinearExpression& expr,
+                               const IntegerTrail& integer_trail);
+
+// Returns upper bound of linear expression using variable bounds of the
+// variables in expression. Assumes Canonical expression (all positive
+// coefficients).
+IntegerValue LinExprUpperBound(const LinearExpression& expr,
+                               const IntegerTrail& integer_trail);
+
+// Preserves canonicality.
+LinearExpression NegationOf(const LinearExpression& expr);
+
+// Returns the same expression with positive variables.
+LinearExpression PositiveVarExpr(const LinearExpression& expr);
+
+// Returns the coefficient of the variable in the expression. Works in linear
+// time.
+// Note: GetCoefficient(NegationOf(var, expr)) == -GetCoefficient(var, expr).
+IntegerValue GetCoefficient(const IntegerVariable var,
+                            const LinearExpression& expr);
+IntegerValue GetCoefficientOfPositiveVar(const IntegerVariable var,
+                                         const LinearExpression& expr);
+
 // Allow to build a LinearConstraint while making sure there is no duplicate
 // variables. Note that we do not simplify literal/variable that are currently
 // fixed here.
@@ -97,6 +139,7 @@ class LinearConstraintBuilder {
   // Adds var * coeff to the constraint.
   void AddTerm(IntegerVariable var, IntegerValue coeff);
   void AddTerm(AffineExpression expr, IntegerValue coeff);
+  void AddLinearExpression(const LinearExpression& expr);
 
   // Add value as a constant term to the linear equation.
   void AddConstant(IntegerValue value);
@@ -168,44 +211,6 @@ void CanonicalizeConstraint(LinearConstraint* ct);
 
 // Returns false if duplicate variables are found in ct.
 bool NoDuplicateVariable(const LinearConstraint& ct);
-
-// Helper struct to model linear expression for lin_min/lin_max constraints. The
-// canonical expression should only contain positive coefficients.
-struct LinearExpression {
-  std::vector<IntegerVariable> vars;
-  std::vector<IntegerValue> coeffs;
-  IntegerValue offset = IntegerValue(0);
-};
-
-// Returns the same expression in the canonical form (all positive
-// coefficients).
-LinearExpression CanonicalizeExpr(const LinearExpression& expr);
-
-// Returns lower bound of linear expression using variable bounds of the
-// variables in expression. Assumes Canonical expression (all positive
-// coefficients).
-IntegerValue LinExprLowerBound(const LinearExpression& expr,
-                               const IntegerTrail& integer_trail);
-
-// Returns upper bound of linear expression using variable bounds of the
-// variables in expression. Assumes Canonical expression (all positive
-// coefficients).
-IntegerValue LinExprUpperBound(const LinearExpression& expr,
-                               const IntegerTrail& integer_trail);
-
-// Preserves canonicality.
-LinearExpression NegationOf(const LinearExpression& expr);
-
-// Returns the same expression with positive variables.
-LinearExpression PositiveVarExpr(const LinearExpression& expr);
-
-// Returns the coefficient of the variable in the expression. Works in linear
-// time.
-// Note: GetCoefficient(NegationOf(var, expr)) == -GetCoefficient(var, expr).
-IntegerValue GetCoefficient(const IntegerVariable var,
-                            const LinearExpression& expr);
-IntegerValue GetCoefficientOfPositiveVar(const IntegerVariable var,
-                                         const LinearExpression& expr);
 
 }  // namespace sat
 }  // namespace operations_research

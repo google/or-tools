@@ -699,11 +699,7 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable>& intervals,
       } else if (!energies.empty()) {
         // We prefer the energy additional info instead of the McCormick
         // relaxation.
-        const LinearExpression& energy = energies[i];
-        lc.AddConstant(energy.offset);
-        for (int j = 0; j < energy.vars.size(); ++j) {
-          lc.AddTerm(energy.vars[j], energy.coeffs[j]);
-        }
+        lc.AddLinearExpression(energies[i]);
       } else {  // demand and size are not fixed.
         DCHECK(!demands.empty());
         // We use McCormick equation.
@@ -745,8 +741,7 @@ void AppendCumulativeRelaxation(const CpModelProto& model_proto,
   for (int i = 0; i < ct.cumulative().energies_size(); ++i) {
     // Note: Cut generator requires all expressions to contain only positive
     // vars.
-    energies.push_back(PositiveVarExpr(
-        mapping->GetExprFromProto(ct.cumulative().energies(i))));
+    energies.push_back(mapping->GetExprFromProto(ct.cumulative().energies(i)));
   }
 
   AddCumulativeRelaxation(intervals, demands, energies, capacity_upper_bound,
@@ -1131,8 +1126,7 @@ void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
   for (int i = 0; i < ct.cumulative().energies_size(); ++i) {
     // Note: Cut generator requires all expressions to contain only positive
     // vars.
-    energies.push_back(PositiveVarExpr(
-        mapping->GetExprFromProto(ct.cumulative().energies(i))));
+    energies.push_back(mapping->GetExprFromProto(ct.cumulative().energies(i)));
   }
 
   relaxation->cut_generators.push_back(
@@ -1170,7 +1164,8 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
       mapping->Intervals(ct.no_overlap_2d().x_intervals());
   std::vector<IntervalVariable> y_intervals =
       mapping->Intervals(ct.no_overlap_2d().y_intervals());
-  // TODO(user): Add energy cuts if intervals have variable sizes.
+  // TODO(user): We can add CumulativeEnergyCuts for no_overlap_2d if boxes
+  // do not have a fixed size.
   relaxation->cut_generators.push_back(
       CreateNoOverlap2dCompletionTimeCutGenerator(x_intervals, y_intervals, m));
 }
