@@ -3903,6 +3903,13 @@ bool CpModelPresolver::PresolveCircuit(ConstraintProto* ct) {
     outgoing_arcs[tail].push_back(ref);
   }
 
+  // All the node must have some incoming and outgoing arcs.
+  for (int i = 0; i < num_nodes; ++i) {
+    if (incoming_arcs[i].empty() || outgoing_arcs[i].empty()) {
+      return MarkConstraintAsFalse(ct);
+    }
+  }
+
   // Note that it is important to reach the fixed point here:
   // One arc at true, then all other arc at false. This is because we rely
   // on this in case the circuit is fully specified below.
@@ -3988,9 +3995,6 @@ bool CpModelPresolver::PresolveCircuit(ConstraintProto* ct) {
   // outgoing degree of zero once we remove false arcs then the constraint is
   // infeasible!
   for (int i = 0; i < num_nodes; ++i) {
-    // Skip initially ignored node.
-    if (incoming_arcs[i].empty() && outgoing_arcs[i].empty()) continue;
-
     if (new_in_degree[i] == 0 || new_out_degree[i] == 0) {
       return context_->NotifyThatModelIsUnsat();
     }
@@ -4007,12 +4011,20 @@ bool CpModelPresolver::PresolveCircuit(ConstraintProto* ct) {
     if (current == circuit_start) {
       // We have a sub-circuit! mark all other arc false except self-loop not in
       // circuit.
+      std::vector<bool> has_self_arc(num_nodes, false);
       for (int i = 0; i < num_arcs; ++i) {
         if (visited[proto.tails(i)]) continue;
         if (proto.tails(i) == proto.heads(i)) {
+          has_self_arc[proto.tails(i)] = true;
           if (!context_->SetLiteralToTrue(proto.literals(i))) return true;
         } else {
           if (!context_->SetLiteralToFalse(proto.literals(i))) return true;
+        }
+      }
+      for (int n = 0; n < num_nodes; ++n) {
+        if (!visited[n] && !has_self_arc[n]) {
+          // We have a subircuit, but it doesn't cover all the mandatory nodes.
+          return MarkConstraintAsFalse(ct);
         }
       }
       context_->UpdateRuleStats("circuit: fully specified.");

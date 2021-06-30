@@ -960,7 +960,10 @@ class ConstraintChecker {
       nodes.insert(tail);
       nodes.insert(head);
       if (LiteralIsFalse(ct.circuit().literals(i))) continue;
-      if (nexts.contains(tail)) return false;  // Duplicate.
+      if (nexts.contains(tail)) {
+        VLOG(1) << "Node with two outgoing arcs";
+        return false;  // Duplicate.
+      }
       nexts[tail] = head;
     }
 
@@ -968,8 +971,11 @@ class ConstraintChecker {
     int in_cycle;
     int cycle_size = 0;
     for (const int node : nodes) {
-      if (!nexts.contains(node)) return false;  // No next.
-      if (nexts[node] == node) continue;        // skip self-loop.
+      if (!nexts.contains(node)) {
+        VLOG(1) << "Node with no next: " << node;
+        return false;  // No next.
+      }
+      if (nexts[node] == node) continue;  // skip self-loop.
       in_cycle = node;
       ++cycle_size;
     }
@@ -985,8 +991,14 @@ class ConstraintChecker {
       visited.insert(current);
       current = nexts[current];
     }
-    if (current != in_cycle) return false;  // Rho shape.
-    return num_visited == cycle_size;       // Another cycle somewhere if false.
+    if (current != in_cycle) {
+      VLOG(1) << "Rho shape";
+      return false;  // Rho shape.
+    }
+    if (num_visited != cycle_size) {
+      VLOG(1) << "More than one cycle";
+    }
+    return num_visited == cycle_size;  // Another cycle somewhere if false.
   }
 
   bool RoutesConstraintIsFeasible(const ConstraintProto& ct) {

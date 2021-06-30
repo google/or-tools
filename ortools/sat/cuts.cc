@@ -2021,13 +2021,15 @@ void AddIntegerVariableFromIntervals(SchedulingConstraintHelper* helper,
   gtl::STLSortAndRemoveDuplicates(vars);
 }
 
+// TODO(user): Move scheduling cuts in scheduling_cuts.{cc|h}.
+
 std::function<bool(const absl::StrongVector<IntegerVariable, double>&,
                    LinearConstraintManager*)>
-GenerateCumulativeEnergyCut(const std::string& cut_name,
-                            SchedulingConstraintHelper* helper,
-                            const std::vector<IntegerVariable>& demands,
-                            const std::vector<LinearExpression>& energies,
-                            AffineExpression capacity, Model* model) {
+GenerateCumulativeEnergyCuts(const std::string& cut_name,
+                             SchedulingConstraintHelper* helper,
+                             const std::vector<IntegerVariable>& demands,
+                             const std::vector<LinearExpression>& energies,
+                             AffineExpression capacity, Model* model) {
   Trail* trail = model->GetOrCreate<Trail>();
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
@@ -2137,6 +2139,8 @@ GenerateCumulativeEnergyCut(const std::string& cut_name,
             energy_lp -= ToDouble(demand_min(t) * helper->SizeMin(t));
           }
         } else {
+          // TODO(user): Use the energy min if better than size_min *
+          // demand_min, here and when building the cut.
           energy_lp += GetLiteralLpValue(helper->PresenceLiteral(t), lp_values,
                                          encoder) *
                        ToDouble(helper->SizeMin(t) * demand_min(t));
@@ -2254,8 +2258,8 @@ GenerateCumulativeEnergyCut(const std::string& cut_name,
             has_quadratic_cuts = true;
           }
         } else {
-          // TODO(user): Support constant energy with non constant demand and
-          // size.
+          // TODO(user): use the offset of the energy expression if better
+          // than size_min * demand_min.
           has_opt_cuts = true;
           if (!helper->SizeIsFixed(t) || !demand_is_fixed(t)) {
             has_quadratic_cuts = true;
@@ -2327,8 +2331,28 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
   // all demands are fixed, and the intervals are always performed with a fixed
   // size.
   result.generate_cuts =
-      GenerateCumulativeEnergyCut("CumulativeEnergy", helper, demands, energies,
-                                  AffineExpression(capacity), model);
+      GenerateCumulativeEnergyCuts("CumulativeEnergy", helper, demands,
+                                   energies, AffineExpression(capacity), model);
+  return result;
+}
+
+CutGenerator CreateNoOverlapEnergyCutGenerator(
+    const std::vector<IntervalVariable>& intervals, Model* model) {
+  CutGenerator result;
+
+  SchedulingConstraintHelper* helper =
+      new SchedulingConstraintHelper(intervals, model);
+  model->TakeOwnership(helper);
+
+  AddIntegerVariableFromIntervals(helper, model, &result.vars);
+
+  // TODO(user): Do not create the cut generator if all intervals are
+  // performed with a fixed size as it will not propagate more than
+  // the overload checker.
+  result.generate_cuts = GenerateCumulativeEnergyCuts(
+      "NoOverlapEnergy", helper,
+      /*demands=*/{}, /*energies=*/{},
+      /*capacity=*/AffineExpression(IntegerValue(1)), model);
   return result;
 }
 
@@ -2427,7 +2451,7 @@ CutGenerator CreateCumulativeOverlappingCutGenerator(
             if (cut_generated) {
               // Violation of the cut is checked by AddCut so we don't check
               // it here.
-              manager->AddCut(cut.Build(), "Cumulative", lp_values);
+              manager->AddCut(cut.Build(), "CumulativeTimeTable", lp_values);
             }
           }
           // Remove the event.
@@ -2445,6 +2469,64 @@ CutGenerator CreateCumulativeOverlappingCutGenerator(
         return true;
       };
   return result;
+}
+
+struct PrecedenceEvent {
+  IntegerValue start_min;
+  IntegerValue start_max;
+  double start_lp;
+  AffineExpression start;
+  IntegerValue end_min;
+  IntegerValue end_max;
+  double end_lp;
+  AffineExpression end;
+  IntegerValue demand_min;
+};
+
+void GeneratePrecedenceCuts(
+    const std::string& cut_name,
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    std::vector<PrecedenceEvent> events, IntegerValue capacity_max,
+    Model* model, LinearConstraintManager* manager) {
+  const int num_events = events.size();
+  if (num_events <= 1) return;
+
+  std::sort(events.begin(), events.end(),
+            [](const PrecedenceEvent& e1, const PrecedenceEvent& e2) {
+              return e1.start_min < e2.start_min ||
+                     (e1.start_min == e2.start_min && e1.end_max < e2.end_max);
+            });
+
+  const double epsilon = 1e-4;
+
+  for (int index1 = 0; index1 + 1 < num_events; ++index1) {
+    const PrecedenceEvent& e1 = events[index1];
+    for (int index2 = index1 + 1; index2 < num_events; ++index2) {
+      const PrecedenceEvent& e2 = events[index2];
+      if (e2.start_min >= e1.end_max) break;  // Break out of the index2 loop.
+
+      // Encode only the interesting pairs.
+      if (e1.demand_min + e2.demand_min <= capacity_max) continue;
+
+      const bool interval_1_can_precede_2 = e1.end_min <= e2.start_max;
+      const bool interval_2_can_precede_1 = e2.end_min <= e1.start_max;
+
+      if (interval_1_can_precede_2 && !interval_2_can_precede_1 &&
+          e1.end_lp >= e2.start_lp + epsilon) {
+        // interval1.end <= interval2.start
+        LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
+        cut.AddTerm(e1.end, IntegerValue(1));
+        cut.AddTerm(e2.start, IntegerValue(-1));
+      } else if (interval_2_can_precede_1 && !interval_1_can_precede_2 &&
+                 e2.end_lp >= e1.start_lp + epsilon) {
+        // interval2.end <= interval1.start
+        LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
+        cut.AddTerm(e2.end, IntegerValue(1));
+        cut.AddTerm(e1.start, IntegerValue(-1));
+        manager->AddCut(cut.Build(), cut_name, lp_values);
+      }
+    }
+  }
 }
 
 CutGenerator CreateCumulativePrecedenceCutGenerator(
@@ -2469,79 +2551,21 @@ CutGenerator CreateCumulativePrecedenceCutGenerator(
           LinearConstraintManager* manager) {
         if (trail->CurrentDecisionLevel() > 0) return true;
 
-        // TODO(user): We can do much better in term of complexity:
-        // Sort all tasks by min start time, loop other them 1 by 1,
-        // start scanning their successors and stop when the start time of the
-        // successor is >= duration min of the task.
-
-        // TODO(user): each time we go back to level zero, we will generate
-        // the same cuts over and over again. It is okay because AddCut() will
-        // not add duplicate cuts, but it might not be the most efficient way.
         const IntegerValue capacity_max = integer_trail->UpperBound(capacity);
-        for (int index1 = 0; index1 < helper->NumTasks(); ++index1) {
-          if (!helper->IsPresent(index1)) continue;
-          const IntegerValue demand1_min =
-              integer_trail->LowerBound(demands[index1]);
-          for (int index2 = index1 + 1; index2 < helper->NumTasks(); ++index2) {
-            if (!helper->IsPresent(index2)) continue;
-            const IntegerValue demand2_min =
-                integer_trail->LowerBound(demands[index2]);
-
-            // Encode only the interesting pairs.
-            if (demand1_min + demand2_min <= capacity_max ||
-                helper->EndMax(index1) <= helper->StartMin(index2) ||
-                helper->EndMax(index2) <= helper->StartMin(index1)) {
-              continue;
-            }
-
-            const bool interval_1_can_precede_2 =
-                helper->EndMin(index1) <= helper->StartMax(index2);
-            const bool interval_2_can_precede_1 =
-                helper->EndMin(index2) <= helper->StartMax(index1);
-
-            if (interval_1_can_precede_2 && !interval_2_can_precede_1 &&
-                helper->Ends()[index1].LpValue(lp_values) >=
-                    helper->Starts()[index2].LpValue(lp_values)) {
-              // interval1.end <= interval2.start
-              LinearConstraintBuilder cut(model, kMinIntegerValue,
-                                          IntegerValue(0));
-              cut.AddTerm(helper->Ends()[index1], IntegerValue(1));
-              cut.AddTerm(helper->Starts()[index2], IntegerValue(-1));
-            } else if (interval_2_can_precede_1 && !interval_1_can_precede_2 &&
-                       helper->Ends()[index2].LpValue(lp_values) >=
-                           helper->Starts()[index1].LpValue(lp_values)) {
-              // interval2.end <= interval1.start
-              LinearConstraintBuilder cut(model, kMinIntegerValue,
-                                          IntegerValue(0));
-              cut.AddTerm(helper->Ends()[index2], IntegerValue(1));
-              cut.AddTerm(helper->Starts()[index1], IntegerValue(-1));
-              manager->AddCut(cut.Build(), "CumulativePrecedence", lp_values);
-            }
-          }
+        std::vector<PrecedenceEvent> events;
+        for (int t = 0; t < helper->NumTasks(); ++t) {
+          if (!helper->IsPresent(t)) continue;
+          events.push_back(
+              {helper->StartMin(t), helper->StartMax(t),
+               helper->Starts()[t].LpValue(lp_values), helper->Starts()[t],
+               helper->EndMin(t), helper->EndMax(t),
+               helper->Ends()[t].LpValue(lp_values), helper->Ends()[t],
+               integer_trail->LowerBound(demands[t])});
         }
+        GeneratePrecedenceCuts("CumulativePrecedence", lp_values,
+                               std::move(events), capacity_max, model, manager);
         return true;
       };
-
-  return result;
-}
-
-CutGenerator CreateNoOverlapEnergyCutGenerator(
-    const std::vector<IntervalVariable>& intervals, Model* model) {
-  CutGenerator result;
-
-  SchedulingConstraintHelper* helper =
-      new SchedulingConstraintHelper(intervals, model);
-  model->TakeOwnership(helper);
-
-  AddIntegerVariableFromIntervals(helper, model, &result.vars);
-
-  // TODO(user): Do not create the cut generator if all intervals are
-  // performed with a fixed size as it will not propagate more than
-  // the overload checker.
-  result.generate_cuts = GenerateCumulativeEnergyCut(
-      "NoOverlapEnergy", helper,
-      /*demands=*/{}, /*energies=*/{},
-      /*capacity=*/AffineExpression(IntegerValue(1)), model);
   return result;
 }
 
@@ -2563,51 +2587,19 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
           LinearConstraintManager* manager) {
         if (trail->CurrentDecisionLevel() > 0) return true;
 
-        // TODO(user): We can do much better in term of complexity:
-        // Sort all tasks by min start time, loop other them 1 by 1,
-        // start scanning their successors and stop when the start time of the
-        // successor is >= duration min of the task.
-
-        // TODO(user): each time we go back to level zero, we will generate
-        // the same cuts over and over again. It is okay because AddCut() will
-        // not add duplicate cuts, but it might not be the most efficient way.
-        for (int index1 = 0; index1 < helper->NumTasks(); ++index1) {
-          if (!helper->IsPresent(index1)) continue;
-          for (int index2 = index1 + 1; index2 < helper->NumTasks(); ++index2) {
-            if (!helper->IsPresent(index2)) continue;
-
-            // Encode only the interesting pairs.
-            if (helper->EndMax(index1) <= helper->StartMin(index2) ||
-                helper->EndMax(index2) <= helper->StartMin(index1)) {
-              continue;
-            }
-
-            const bool interval_1_can_precede_2 =
-                helper->EndMin(index1) <= helper->StartMax(index2);
-            const bool interval_2_can_precede_1 =
-                helper->EndMin(index2) <= helper->StartMax(index1);
-
-            if (interval_1_can_precede_2 && !interval_2_can_precede_1 &&
-                helper->Ends()[index1].LpValue(lp_values) >=
-                    helper->Starts()[index2].LpValue(lp_values)) {
-              // interval1.end <= interval2.start
-              LinearConstraintBuilder cut(model, kMinIntegerValue,
-                                          IntegerValue(0));
-              cut.AddTerm(helper->Ends()[index1], IntegerValue(1));
-              cut.AddTerm(helper->Starts()[index2], IntegerValue(-1));
-              manager->AddCut(cut.Build(), "NoOverlapPrecedence", lp_values);
-            } else if (interval_2_can_precede_1 && !interval_1_can_precede_2 &&
-                       helper->Ends()[index2].LpValue(lp_values) >=
-                           helper->Starts()[index1].LpValue(lp_values)) {
-              // interval2.end <= interval1.start
-              LinearConstraintBuilder cut(model, kMinIntegerValue,
-                                          IntegerValue(0));
-              cut.AddTerm(helper->Ends()[index2], IntegerValue(1));
-              cut.AddTerm(helper->Starts()[index1], IntegerValue(-1));
-              manager->AddCut(cut.Build(), "NoOverlapPrecedence", lp_values);
-            }
-          }
+        std::vector<PrecedenceEvent> events;
+        for (int t = 0; t < helper->NumTasks(); ++t) {
+          if (!helper->IsPresent(t)) continue;
+          events.push_back({helper->StartMin(t), helper->StartMax(t),
+                            helper->Starts()[t].LpValue(lp_values),
+                            helper->Starts()[t], helper->EndMin(t),
+                            helper->EndMax(t),
+                            helper->Ends()[t].LpValue(lp_values),
+                            helper->Ends()[t], IntegerValue(1)});
         }
+        GeneratePrecedenceCuts("NoOverlapPrecedence", lp_values,
+                               std::move(events), IntegerValue(1), model,
+                               manager);
         return true;
       };
 
@@ -2646,8 +2638,7 @@ struct CtEvent {
   bool use_energy;
 
   // Indicates if the cut is lifted, that is if it includes tasks that are not
-  // strictly contained in the current
-  // time window.
+  // strictly contained in the current time window.
   bool lifted;
 
   std::string DebugString() const {
@@ -2674,7 +2665,7 @@ struct CtEvent {
 //
 // A second difference is that we look at a set of intervals starting
 // after a given start_min, sorted by relative (end_lp - start_min).
-void GenerateCompletionTimeCut(
+void GenerateCompletionTimeCuts(
     const std::string& cut_name,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
     std::vector<CtEvent> events, bool use_lifting, Model* model,
@@ -2696,9 +2687,11 @@ void GenerateCompletionTimeCut(
     const IntegerValue sequence_start_min = events[start].x_start_min;
     std::vector<CtEvent> residual_tasks(events.begin() + start, events.end());
 
-    // We look at event that start before sequence_start_min, but are forced to
-    // cross this time point. In that case, we replace this event by a truncated
-    // event starting at sequence_start_min.
+    // We look at event that start before sequence_start_min, but are forced
+    // to cross this time point. In that case, we replace this event by a
+    // truncated event starting at sequence_start_min. To do this, we reduce
+    // the size_min, align the start_min with the sequence_start_min, and
+    // scale the energy down accordingly.
     if (use_lifting) {
       for (int before = 0; before < start; ++before) {
         if (events[before].x_start_min + events[before].x_size_min >
@@ -2816,8 +2809,8 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
                                 /*lifted=*/false});
             }
           }
-          GenerateCompletionTimeCut(cut_name, lp_values, std::move(events),
-                                    /*use_lifting=*/false, model, manager);
+          GenerateCompletionTimeCuts(cut_name, lp_values, std::move(events),
+                                     /*use_lifting=*/false, model, manager);
         };
         if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
         generate_cuts("NoOverlapCompletionTime");
@@ -2876,23 +2869,23 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
                   }
                 }
               }
-              const IntegerValue x_size_min = helper->SizeMin(index);
-              const IntegerValue y_size_min =
+              const IntegerValue size_min = helper->SizeMin(index);
+              const IntegerValue demand_min =
                   integer_trail->LowerBound(demands[index]);
-              if (energy_min > x_size_min * y_size_min) {
+              if (energy_min > size_min * demand_min) {
                 use_energy = true;
               } else {
-                energy_min = x_size_min * y_size_min;
+                energy_min = size_min * demand_min;
               }
-              events.push_back({end_expr, helper->StartMin(index), x_size_min,
+              events.push_back({end_expr, helper->StartMin(index), size_min,
                                 end_expr.LpValue(lp_values),
                                 /*y_start_min=*/IntegerValue(0),
                                 /*y_end_max=*/capacity_max, energy_min,
                                 use_energy, /*lifted=*/false});
             }
           }
-          GenerateCompletionTimeCut(cut_name, lp_values, std::move(events),
-                                    /*use_lifting=*/true, model, manager);
+          GenerateCompletionTimeCuts(cut_name, lp_values, std::move(events),
+                                     /*use_lifting=*/true, model, manager);
         };
         if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
         generate_cuts("CumulativeCompletionTime");
@@ -2974,8 +2967,8 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
                /*use_energy=*/false, /*lifted=*/false});
         }
 
-        GenerateCompletionTimeCut(cut_name, lp_values, std::move(events),
-                                  /*use_lifting=*/true, model, manager);
+        GenerateCompletionTimeCuts(cut_name, lp_values, std::move(events),
+                                   /*use_lifting=*/true, model, manager);
       };
 
       if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
