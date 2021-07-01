@@ -60,7 +60,7 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
 // as follows:
 //   sum(demands of always present intervals)
 //   + sum(presence_literal * min_of_demand) <= capacity.
-CutGenerator CreateCumulativeOverlappingCutGenerator(
+CutGenerator CreateCumulativeTimeTableCutGenerator(
     const std::vector<IntervalVariable>& intervals,
     const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
     Model* model);

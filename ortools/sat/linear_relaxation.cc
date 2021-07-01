@@ -1132,7 +1132,7 @@ void AddCumulativeCutGenerator(const ConstraintProto& ct, Model* m,
   }
 
   relaxation->cut_generators.push_back(
-      CreateCumulativeOverlappingCutGenerator(intervals, capacity, demands, m));
+      CreateCumulativeTimeTableCutGenerator(intervals, capacity, demands, m));
   relaxation->cut_generators.push_back(CreateCumulativeEnergyCutGenerator(
       intervals, capacity, demands, energies, m));
   relaxation->cut_generators.push_back(

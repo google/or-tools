@@ -5190,7 +5190,8 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
   }
 }
 
-// We deal with all the all 3 x 3 possible types of inclusion.
+// This is called with constraint c1 whose literals are included in the literals
+// of c2.
 //
 // Returns false iff the model is UNSAT.
 bool CpModelPresolver::ProcessSetPPCSubset(
@@ -5255,6 +5256,56 @@ bool CpModelPresolver::ProcessSetPPCSubset(
     return true;
   }
 
+  if (ct1->constraint_case() == ConstraintProto::kExactlyOne &&
+      ct2->constraint_case() == ConstraintProto::kLinear) {
+    // If we have an exactly one in a linear, we can shift the coefficients of
+    // all these variables by any constant value. For now, since we only deal
+    // with positive coefficient, we shift by the min.
+    //
+    // TODO(user): It might be more interesting to maximize the number of terms
+    // that are shifted to zero to reduce the constraint size.
+    absl::flat_hash_set<int> literals(ct1->exactly_one().literals().begin(),
+                                      ct1->exactly_one().literals().end());
+    int64_t min_coeff = std::numeric_limits<int64_t>::max();
+    int num_matches = 0;
+    for (int i = 0; i < ct2->linear().vars().size(); ++i) {
+      const int var = ct2->linear().vars(i);
+      if (literals.contains(var)) {
+        ++num_matches;
+        min_coeff = std::min(min_coeff, std::abs(ct2->linear().coeffs(i)));
+      }
+    }
+
+    // If a linear constraint contains more than one at most one, after
+    // processing one, we might no longer have an inclusion.
+    if (num_matches != literals.size()) return true;
+
+    // TODO(user): It would be cool to propagate other variable domains with
+    // the knowledge that the partial sum in is [min_coeff, max_coeff]. I am
+    // a bit relunctant to duplicate the code for that here.
+    int new_size = 0;
+    for (int i = 0; i < ct2->linear().vars().size(); ++i) {
+      const int var = ct2->linear().vars(i);
+      int64_t coeff = ct2->linear().coeffs(i);
+      if (literals.contains(var)) {
+        CHECK_GE(coeff, 0);
+        if (coeff == min_coeff) continue;  // delete term.
+        coeff -= min_coeff;
+      }
+      ct2->mutable_linear()->set_vars(new_size, var);
+      ct2->mutable_linear()->set_coeffs(new_size, coeff);
+      ++new_size;
+    }
+
+    ct2->mutable_linear()->mutable_vars()->Truncate(new_size);
+    ct2->mutable_linear()->mutable_coeffs()->Truncate(new_size);
+    FillDomainInProto(
+        ReadDomainFromProto(ct2->linear()).AdditionWith(Domain(-min_coeff)),
+        ct2->mutable_linear());
+    context_->UpdateConstraintVariableUsage(original_constraint_index[c2]);
+    context_->UpdateRuleStats("setppc: reduced linear coefficients.");
+  }
+
   // We can't deduce anything in the last remaining case:
   // ct1->constraint_case() == ConstraintProto::kAtMostOne &&
   // ct2->constraint_case() == ConstraintProto::kBoolOr
@@ -5290,11 +5341,13 @@ bool CpModelPresolver::ProcessSetPPC() {
   // Fill the initial constraint <-> literal graph, compute signatures and
   // initialize other containers defined above.
   int num_setppc_constraints = 0;
+  std::vector<int> temp_literals;
+  if (context_->ModelIsUnsat()) return false;
   for (int c = 0; c < num_constraints; ++c) {
     ConstraintProto* ct = context_->working_model->mutable_constraints(c);
-    if (ct->constraint_case() == ConstraintProto::ConstraintCase::kBoolOr ||
-        ct->constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne ||
-        ct->constraint_case() == ConstraintProto::ConstraintCase::kExactlyOne) {
+    if (ct->constraint_case() == ConstraintProto::kBoolOr ||
+        ct->constraint_case() == ConstraintProto::kAtMostOne ||
+        ct->constraint_case() == ConstraintProto::kExactlyOne) {
       // Because TransformIntoMaxCliques() can detect literal equivalence
       // relation, we make sure the constraints are presolved before being
       // inspected.
@@ -5302,28 +5355,53 @@ bool CpModelPresolver::ProcessSetPPC() {
         context_->UpdateConstraintVariableUsage(c);
       }
       if (context_->ModelIsUnsat()) return false;
-    }
-    if (ct->constraint_case() == ConstraintProto::ConstraintCase::kBoolOr ||
-        ct->constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne ||
-        ct->constraint_case() == ConstraintProto::ConstraintCase::kExactlyOne) {
       constraint_literals.push_back(GetLiteralsFromSetPPCConstraint(*ct));
+    } else if (ct->constraint_case() == ConstraintProto::kLinear) {
+      // We also want to test inclusion with the pseudo-Boolean part of
+      // linear constraints of size at least 3. Exactly one of size two are
+      // equivalent literals, and we already deal with this case.
+      //
+      // TODO(user): This is not ideal as we currently only process exactly one
+      // included into linear, and we add overhead by detecting all the other
+      // cases that we ignore later. That said, we could just propagate a bit
+      // more the domain if we know at_least_one or at_most_one between literals
+      // in a linear constraint.
+      const int size = ct->linear().vars().size();
+      if (size <= 2) continue;
 
-      uint64_t signature = 0;
-      for (const int literal : constraint_literals.back()) {
-        const int positive_literal = PositiveRef(literal);
-        signature |= (int64_t{1} << (positive_literal % 64));
-        DCHECK_GE(positive_literal, 0);
-        if (positive_literal >= literals_to_constraints.size()) {
-          literals_to_constraints.resize(positive_literal + 1);
-        }
-        literals_to_constraints[positive_literal].push_back(
-            num_setppc_constraints);
+      // TODO(user): We only deal with every literal having a positive coeff
+      // here. We should probably do the same with all negative. We can also
+      // consider NegatedRef(var).
+      temp_literals.clear();
+      for (int i = 0; i < size; ++i) {
+        const int var = ct->linear().vars(i);
+        const int64_t coeff = ct->linear().coeffs(i);
+        if (!context_->CanBeUsedAsLiteral(var)) continue;
+        if (!RefIsPositive(var)) continue;
+        if (coeff < 0) continue;
+        temp_literals.push_back(var);
       }
-      signatures.push_back(signature);
-      removed.push_back(false);
-      original_constraint_index.push_back(c);
-      num_setppc_constraints++;
+      if (temp_literals.size() <= 2) continue;
+      constraint_literals.push_back(temp_literals);
+    } else {
+      continue;
     }
+
+    uint64_t signature = 0;
+    for (const int literal : constraint_literals.back()) {
+      const int positive_literal = PositiveRef(literal);
+      signature |= (int64_t{1} << (positive_literal % 64));
+      DCHECK_GE(positive_literal, 0);
+      if (positive_literal >= literals_to_constraints.size()) {
+        literals_to_constraints.resize(positive_literal + 1);
+      }
+      literals_to_constraints[positive_literal].push_back(
+          num_setppc_constraints);
+    }
+    signatures.push_back(signature);
+    removed.push_back(false);
+    original_constraint_index.push_back(c);
+    num_setppc_constraints++;
   }
   VLOG(1) << "#setppc constraints: " << num_setppc_constraints;
 

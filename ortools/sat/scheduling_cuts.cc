@@ -418,7 +418,7 @@ CutGenerator CreateNoOverlapEnergyCutGenerator(
   return result;
 }
 
-CutGenerator CreateCumulativeOverlappingCutGenerator(
+CutGenerator CreateCumulativeTimeTableCutGenerator(
     const std::vector<IntervalVariable>& intervals,
     const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
     Model* model) {
