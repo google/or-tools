@@ -24,6 +24,7 @@
 #include "ortools/sat/circuit.h"  // for ReindexArcs.
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
+#include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/linear_constraint.h"
@@ -31,6 +32,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/scheduling_constraints.h"
+#include "ortools/sat/scheduling_cuts.h"
 
 namespace operations_research {
 namespace sat {

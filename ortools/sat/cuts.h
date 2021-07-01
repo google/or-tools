@@ -23,7 +23,6 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
-#include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
@@ -475,82 +474,6 @@ CutGenerator CreateAllDifferentCutGenerator(
 CutGenerator CreateLinMaxCutGenerator(
     const IntegerVariable target, const std::vector<LinearExpression>& exprs,
     const std::vector<IntegerVariable>& z_vars, Model* model);
-
-// For a given set of intervals and demands, we compute the maximum energy of
-// each task and make sure it is less than the span of the intervals * its
-// capacity.
-//
-// If an interval is optional, it contributes
-//    min_demand * min_size * presence_literal
-// amount of total energy.
-//
-// If an interval is performed, it contributes either min_demand * size or
-// demand * min_size. We choose the most violated formulation.
-//
-// The maximum energy is capacity * span of intervals at level 0.
-CutGenerator CreateCumulativeEnergyCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
-    const std::vector<LinearExpression>& energies, Model* model);
-
-// For a given set of intervals and demands, we first compute the mandatory part
-// of the interval as [start_max , end_min]. We use this to calculate mandatory
-// demands for each start_max time points for eligible intervals.
-// Since the sum of these mandatory demands must be smaller or equal to the
-// capacity, we create a cut representing that.
-//
-// If an interval is optional, it contributes min_demand * presence_literal
-// amount of demand to the mandatory demands sum. So the final cut is generated
-// as follows:
-//   sum(demands of always present intervals)
-//   + sum(presence_literal * min_of_demand) <= capacity.
-CutGenerator CreateCumulativeOverlappingCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
-    Model* model);
-
-// Completion time cuts for the cumulative constraint. It is a simple relaxation
-// where we replace a cumulative task with demand k and duration d by a
-// no_overlap task with duration d * k / capacity_max.
-CutGenerator CreateCumulativeCompletionTimeCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
-    const std::vector<LinearExpression>& energies, Model* model);
-
-// For a given set of intervals in a cumulative constraint, we detect violated
-// mandatory precedences and create a cut for these.
-CutGenerator CreateCumulativePrecedenceCutGenerator(
-    const std::vector<IntervalVariable>& intervals, IntegerVariable capacity,
-    const std::vector<IntegerVariable>& demands, Model* model);
-
-// Completion time cuts for the no_overlap_2d constraint. It actually generates
-// the completion time cumulative cuts in both axis.
-CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
-    const std::vector<IntervalVariable>& x_intervals,
-    const std::vector<IntervalVariable>& y_intervals, Model* model);
-
-// For a given set of intervals, we first compute the min and max of all
-// intervals. Then we create a cut that indicates that all intervals must fit
-// in that span.
-//
-// If an interval is optional, it contributes min_size * presence_literal
-// amount of demand to the mandatory demands sum. So the final cut is generated
-// as follows:
-//   sum(sizes of always present intervals)
-//   + sum(presence_literal * min_of_size) <= span of all intervals.
-CutGenerator CreateNoOverlapEnergyCutGenerator(
-    const std::vector<IntervalVariable>& intervals, Model* model);
-
-// For a given set of intervals in a no_overlap constraint, we detect violated
-// mandatory precedences and create a cut for these.
-CutGenerator CreateNoOverlapPrecedenceCutGenerator(
-    const std::vector<IntervalVariable>& intervals, Model* model);
-
-// For a given set of intervals in a no_overlap constraint, we detect violated
-// area based cuts from Queyranne 93 [see note in the code] and create a cut for
-// these.
-CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
-    const std::vector<IntervalVariable>& intervals, Model* model);
 
 // Extracts the variables that have a Literal view from base variables and
 // create a generator that will returns constraint of the form "at_most_one"

@@ -956,6 +956,7 @@ cc_library(
         ":linear_programming_constraint",
         ":model",
         ":scheduling_constraints",
+        ":scheduling_cuts",
         "//ortools/base",
         "//ortools/base:iterator_adaptors",
         "@com_google_absl//absl/container:flat_hash_set",
@@ -1038,6 +1039,27 @@ cc_library(
         "//ortools/algorithms:knapsack_solver_for_cuts",
         "//ortools/base",
         "//ortools/base:int_type",
+        "//ortools/util:time_limit",
+    ],
+)
+
+cc_library(
+    name = "scheduling_cuts",
+    srcs = ["scheduling_cuts.cc"],
+    hdrs = ["scheduling_cuts.h"],
+    deps = [
+        ":cuts",
+        ":diffn_util",
+        ":integer",
+        ":intervals",
+        ":linear_constraint",
+        ":linear_constraint_manager",
+        ":model",
+        ":sat_base",
+        ":util",
+        "//ortools/base",
+        "//ortools/base:int_type",
+        "//ortools/base:stl_util",
         "//ortools/util:time_limit",
     ],
 )
