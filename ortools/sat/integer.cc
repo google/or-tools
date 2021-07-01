@@ -35,6 +35,33 @@ std::vector<IntegerVariable> NegationOf(
   return result;
 }
 
+IntegerValue AffineExpression::Min(IntegerTrail* integer_trail) const {
+  IntegerValue result = constant;
+  if (var != kNoIntegerVariable) {
+    if (coeff > 0)
+      result += coeff * integer_trail->LowerBound(var);
+    else
+      result += coeff * integer_trail->UpperBound(var);
+  }
+  return result;
+}
+
+IntegerValue AffineExpression::Max(IntegerTrail* integer_trail) const {
+  IntegerValue result = constant;
+  if (var != kNoIntegerVariable) {
+    if (coeff > 0)
+      result += coeff * integer_trail->UpperBound(var);
+    else
+      result += coeff * integer_trail->LowerBound(var);
+  }
+  return result;
+}
+
+bool AffineExpression::IsFixed(IntegerTrail* integer_trail) const {
+  if (var == kNoIntegerVariable || coeff == 0) return true;
+  return integer_trail->IsFixed(var);
+}
+
 void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
   if (VariableIsFullyEncoded(var)) return;
 

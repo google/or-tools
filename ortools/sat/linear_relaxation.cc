@@ -694,25 +694,15 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable>& intervals,
     const bool demand_is_fixed =
         demands.empty() || integer_trail->IsFixed(demands[i]);
     if (!helper->IsOptional(i)) {
-      if (helper->SizeIsFixed(i) && !demands.empty()) {
-        lc.AddTerm(demands[i], helper->SizeMin(i));
-      } else if (demand_is_fixed) {
+      if (demand_is_fixed) {
         lc.AddTerm(helper->Sizes()[i], demand_lower_bound);
-      } else if (!energies.empty()) {
+      } else if (!helper->SizeIsFixed(i) && !energies.empty()) {
         // We prefer the energy additional info instead of the McCormick
         // relaxation.
         lc.AddLinearExpression(energies[i]);
-      } else {  // demand and size are not fixed.
-        DCHECK(!demands.empty());
-        // We use McCormick equation.
-        // demand * size = (demand_min + delta_d) * (size_min + delta_s) =
-        //     demand_min * size_min + delta_d * size_min +
-        //     delta_s * demand_min + delta_s * delta_d
-        // which is >= (by ignoring the quatratic term)
-        //     demand_min * size + size_min * demand - demand_min * size_min
-        lc.AddTerm(helper->Sizes()[i], demand_lower_bound);
-        lc.AddTerm(demands[i], helper->SizeMin(i));
-        lc.AddConstant(-helper->SizeMin(i) * demand_lower_bound);
+      } else {
+        lc.AddQuadraticLowerBound(helper->Sizes()[i], demands[i],
+                                  integer_trail);
       }
     } else {
       if (!lc.AddLiteralTerm(helper->PresenceLiteral(i),

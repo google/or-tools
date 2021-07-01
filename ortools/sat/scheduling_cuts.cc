@@ -290,33 +290,18 @@ GenerateCumulativeEnergyCuts(const std::string& cut_name,
         const int t = residual_intervals[i2];
         if (helper->IsPresent(t)) {
           if (demand_is_fixed(t)) {
-            if (helper->SizeIsFixed(t)) {
-              cut.AddConstant(helper->SizeMin(t) * demand_min(t));
-            } else {
-              cut.AddTerm(helper->Sizes()[t], demand_min(t));
-            }
-          } else if (helper->SizeIsFixed(t)) {
-            DCHECK(!demands.empty());
-            cut.AddTerm(demands[t], helper->SizeMin(t));
-          } else if (!energies.empty()) {
+            cut.AddTerm(helper->Sizes()[t], demand_min(t));
+          } else if (!helper->SizeIsFixed(t) && !energies.empty()) {
             // We favor the energy info instead of the McCormick relaxation.
             cut.AddLinearExpression(energies[t]);
             use_energy = true;
-          } else {  // demand and size are not fixed.
-            DCHECK(!demands.empty());
-            // We use McCormick equation.
-            // demand * size = (demand_min + delta_d) * (min_size +
-            // delta_s) =
-            //     demand_min * min_size + delta_d * min_size +
-            //     delta_s * demand_min + delta_s * delta_d
-            // which is >= (by ignoring the quatratic term)
-            //     demand_min * size + min_size * demand - demand_min *
-            //     min_size
-            cut.AddTerm(helper->Sizes()[t], demand_min(t));
-            cut.AddTerm(demands[t], helper->SizeMin(t));
-            // Substract the energy counted twice.
-            cut.AddConstant(-helper->SizeMin(t) * demand_min(t));
-            has_quadratic_cuts = true;
+          } else {
+            // This will add linear term if the size is fixed.
+            cut.AddQuadraticLowerBound(helper->Sizes()[t], demands[t],
+                                       integer_trail);
+            if (!helper->SizeIsFixed(t)) {
+              has_quadratic_cuts = true;
+            }
           }
         } else {
           // TODO(user): use the offset of the energy expression if better

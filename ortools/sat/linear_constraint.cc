@@ -23,6 +23,7 @@ namespace operations_research {
 namespace sat {
 
 void LinearConstraintBuilder::AddTerm(IntegerVariable var, IntegerValue coeff) {
+  if (coeff == 0) return;
   // We can either add var or NegationOf(var), and we always choose the
   // positive one.
   if (VariableIsPositive(var)) {
@@ -34,6 +35,7 @@ void LinearConstraintBuilder::AddTerm(IntegerVariable var, IntegerValue coeff) {
 
 void LinearConstraintBuilder::AddTerm(AffineExpression expr,
                                       IntegerValue coeff) {
+  if (coeff == 0) return;
   // We can either add var or NegationOf(var), and we always choose the
   // positive one.
   if (expr.var != kNoIntegerVariable) {
@@ -59,6 +61,23 @@ void LinearConstraintBuilder::AddLinearExpression(
   }
   if (lb_ > kMinIntegerValue) lb_ -= expr.offset;
   if (ub_ < kMaxIntegerValue) ub_ -= expr.offset;
+}
+
+void LinearConstraintBuilder::AddQuadraticLowerBound(
+    AffineExpression left, AffineExpression right,
+    IntegerTrail* integer_trail) {
+  if (left.IsFixed(integer_trail)) {
+    AddTerm(right, left.Min(integer_trail));
+  } else if (right.IsFixed(integer_trail)) {
+    AddTerm(left, right.Min(integer_trail));
+  } else {
+    const IntegerValue left_min = left.Min(integer_trail);
+    const IntegerValue right_min = right.Min(integer_trail);
+    AddTerm(left, right_min);
+    AddTerm(right, left_min);
+    // Substract the energy counted twice.
+    AddConstant(-left_min * right_min);
+  }
 }
 
 void LinearConstraintBuilder::AddConstant(IntegerValue value) {

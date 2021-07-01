@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <limits>
 #include <map>
+#include <string>
 
 #include "absl/container/flat_hash_map.h"
 #include "ortools/base/hash.h"
@@ -1268,8 +1269,12 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   for (int i = 0; i < num_vars; ++i) {
     domain_sizes.push_back(values_per_var[i].size());
   }
+  const int num_tuples_before_compression = tuples.size();
   CompressTuples(domain_sizes, any_value, &tuples);
   const int num_compressed_tuples = tuples.size();
+  if (num_compressed_tuples < num_tuples_before_compression) {
+    context->UpdateRuleStats("table: compress tuples");
+  }
 
   if (num_compressed_tuples == 1) {
     // Domains are propagated. We can remove the constraint.

@@ -141,6 +141,21 @@ class LinearConstraintBuilder {
   void AddTerm(AffineExpression expr, IntegerValue coeff);
   void AddLinearExpression(const LinearExpression& expr);
 
+  // Add an under linearization of the product of two affine expressions.
+  // If at least one of them is fixed, then we add the exact product (which is
+  // linear). Otherwise, we use McCormick relaxation:
+  //     left * right = (left_min + delta_left) * (right_min + delta_right) =
+  //         left_min * right_min + delta_left * right_min +
+  //          delta_right * left_min + delta_left * delta_right
+  //     which is >= (by ignoring the quatratic term)
+  //         right_min * left + left_min * right - right_min * left_min
+  //
+  // TODO(user): We could use (max - delta) instead of (min + delta) for each
+  // expression instead. This would depend on the LP value of the left and
+  // right.
+  void AddQuadraticLowerBound(AffineExpression left, AffineExpression right,
+                              IntegerTrail* integer_trail);
+
   // Add value as a constant term to the linear equation.
   void AddConstant(IntegerValue value);
 

@@ -201,6 +201,7 @@ inline std::ostream& operator<<(std::ostream& os, IntegerLiteral i_lit) {
 }
 
 using InlinedIntegerLiteralVector = absl::InlinedVector<IntegerLiteral, 2>;
+class IntegerTrail;
 
 // Represents [coeff * variable + constant] or just a [constant].
 //
@@ -233,6 +234,11 @@ struct AffineExpression {
   bool operator==(AffineExpression o) const {
     return var == o.var && coeff == o.coeff && constant == o.constant;
   }
+
+  // Getters on the bounds of the affine expression.
+  IntegerValue Min(IntegerTrail* integer_trail) const;
+  IntegerValue Max(IntegerTrail* integer_trail) const;
+  bool IsFixed(IntegerTrail* integer_trail) const;
 
   // Returns the affine expression value under a given LP solution.
   double LpValue(
