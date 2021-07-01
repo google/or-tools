@@ -678,11 +678,15 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
 
     auto* level_zero_callbacks = model_->GetOrCreate<LevelZeroCallbackHelper>();
     for (const auto& cb : level_zero_callbacks->callbacks) {
-      if (!cb()) return false;
+      if (!cb()) {
+        sat_solver_->NotifyThatModelIsUnsat();
+        return false;
+      }
     }
 
     if (model_->GetOrCreate<SatParameters>()->use_sat_inprocessing() &&
         !model_->GetOrCreate<Inprocessing>()->InprocessingRound()) {
+      sat_solver_->NotifyThatModelIsUnsat();
       return false;
     }
   }
@@ -918,7 +922,10 @@ SatSolver::Status ResetAndSolveIntegerProblem(
   if (!solver->ResetToLevelZero()) return solver->UnsatStatus();
   auto* level_zero_callbacks = model->GetOrCreate<LevelZeroCallbackHelper>();
   for (const auto& cb : level_zero_callbacks->callbacks) {
-    if (!cb()) return SatSolver::INFEASIBLE;
+    if (!cb()) {
+      solver->NotifyThatModelIsUnsat();
+      return solver->UnsatStatus();
+    }
   }
 
   // Add the assumptions if any and solve.
@@ -973,7 +980,10 @@ SatSolver::Status ContinuousProbing(
     auto SyncBounds = [solver, &level_zero_callbacks]() {
       if (!solver->ResetToLevelZero()) return false;
       for (const auto& cb : level_zero_callbacks->callbacks) {
-        if (!cb()) return false;
+        if (!cb()) {
+          solver->NotifyThatModelIsUnsat();
+          return false;
+        }
       }
       return true;
     };
