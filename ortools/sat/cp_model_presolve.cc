@@ -5488,7 +5488,7 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
   // TODO(user): The hint might get lost if the encoding was created during
   // the presolve.
   if (context_->VariableIsRemovable(var) &&
-      context_->VariableIsOnlyUsedInEncoding(var) &&
+      context_->VariableIsOnlyUsedInEncodingAndMaybeInObjective(var) &&
       context_->params().search_branching() != SatParameters::FIXED_SEARCH) {
     // Detect the full encoding case without extra constraint.
     // This is the simplest to deal with as we can just add an exactly one
@@ -5500,6 +5500,7 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
     absl::flat_hash_map<int, int> value_to_not_equal_literal;
     bool abort = false;
     for (const int c : context_->VarToConstraints(var)) {
+      if (c < 0) continue;
       const ConstraintProto& ct = context_->working_model->constraints(c);
       CHECK_EQ(ct.constraint_case(), ConstraintProto::kLinear);
       CHECK_EQ(ct.linear().vars().size(), 1);
@@ -5567,7 +5568,56 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
     if (abort) {
       context_->UpdateRuleStats("TODO variables: only used in encoding.");
     } else {
-      context_->UpdateRuleStats("variables: only used as full encoding.");
+      // Update the objective if needed. Note that this operation can fail if
+      // the new expression result in potential overflow.
+      if (context_->VarToConstraints(var).contains(kObjectiveConstraint)) {
+        ConstraintProto encoding_ct;
+        LinearConstraintProto* linear = encoding_ct.mutable_linear();
+        const int64_t coeff_in_equality = -1;
+        linear->add_vars(var);
+        linear->add_coeffs(coeff_in_equality);
+
+        std::vector<int64_t> all_values;
+        for (const auto entry : value_to_equal_literal) {
+          all_values.push_back(entry.first);
+        }
+        std::sort(all_values.begin(), all_values.end());
+
+        // We substract the min_value from all coefficients.
+        // This should reduce the objective size and helps with the bounds.
+        //
+        // TODO(user): If the objective coefficient is negative, then we
+        // should rather substract the max.
+        CHECK(!all_values.empty());
+        const int64_t min_value = all_values[0];
+        linear->add_domain(-min_value);
+        linear->add_domain(-min_value);
+        for (const int64_t value : all_values) {
+          if (value == min_value) continue;
+          const int enf = value_to_equal_literal.at(value);
+          const int64_t coeff = value - min_value;
+          if (RefIsPositive(enf)) {
+            linear->add_vars(enf);
+            linear->add_coeffs(coeff);
+          } else {
+            // (1 - var) * coeff;
+            linear->set_domain(0, encoding_ct.linear().domain(0) - coeff);
+            linear->set_domain(1, encoding_ct.linear().domain(1) - coeff);
+            linear->add_vars(PositiveRef(enf));
+            linear->add_coeffs(-coeff);
+          }
+        }
+        if (!context_->SubstituteVariableInObjective(var, coeff_in_equality,
+                                                     encoding_ct)) {
+          context_->UpdateRuleStats(
+              "TODO variables: only used in objective and in full encoding");
+          return;
+        }
+        context_->UpdateRuleStats(
+            "variables: only used in objective and in full encoding");
+      } else {
+        context_->UpdateRuleStats("variables: only used in full encoding");
+      }
 
       // Move the encoding constraints to the mapping model. Note that only the
       // equality constraint are needed. In fact if we add the other ones, our

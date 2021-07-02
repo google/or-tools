@@ -152,7 +152,7 @@ class PresolveContext {
   // constraints of the form lit => var in domain. When this is the case, then
   // we can usually remove this variable and replace these constraints with
   // the proper constraints on the enforcement literals.
-  bool VariableIsOnlyUsedInEncoding(int ref) const;
+  bool VariableIsOnlyUsedInEncodingAndMaybeInObjective(int ref) const;
 
   // Returns false if the new domain is empty. Sets 'domain_modified' (if
   // provided) to true iff the domain is modified otherwise does not change it.

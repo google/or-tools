@@ -325,10 +325,13 @@ bool PresolveContext::VariableWasRemoved(int ref) const {
   return true;
 }
 
-bool PresolveContext::VariableIsOnlyUsedInEncoding(int ref) const {
+bool PresolveContext::VariableIsOnlyUsedInEncodingAndMaybeInObjective(
+    int ref) const {
   if (!ConstraintVariableGraphIsUpToDate()) return false;
   const int var = PositiveRef(ref);
-  return var_to_num_linear1_[var] == var_to_constraints_[var].size();
+  return var_to_num_linear1_[var] == var_to_constraints_[var].size() ||
+         (var_to_constraints_[var].contains(kObjectiveConstraint) &&
+          var_to_num_linear1_[var] + 1 == var_to_constraints_[var].size());
 }
 
 Domain PresolveContext::DomainOf(int ref) const {
