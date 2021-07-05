@@ -37,7 +37,7 @@ cc_library(
         "-DSCIP_WITH_ZLIB",
         "-DWITH_SCIPDEF",
         "-DSCIP_ROUNDING_FE",
-        "-DTPI_TNYC",  # src/tpi/tpi_type_tny.h
+        "-DTPI_TNYC",  # src/tpi/type_tpi_tnycthrd.h
         "-DSYM=bliss",
         # Compile in thead-safe mode (required since we use TPI_TNYC). Note,
         # one does not technically need to add this, as SCIP code always
