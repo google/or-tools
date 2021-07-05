@@ -171,7 +171,8 @@ std::string CpModelStats(const CpModelProto& model_proto) {
 
   int no_overlap_2d_num_rectangles = 0;
   int no_overlap_2d_num_optional_rectangles = 0;
-  int no_overlap_2d_num_variable_areas = 0;
+  int no_overlap_2d_num_linear_areas = 0;
+  int no_overlap_2d_num_quadratic_areas = 0;
 
   int cumulative_num_intervals = 0;
   int cumulative_num_optional_intervals = 0;
@@ -248,9 +249,12 @@ std::string CpModelStats(const CpModelProto& model_proto) {
             constraint_is_optional(y_interval)) {
           no_overlap_2d_num_optional_rectangles++;
         }
-        if (!interval_has_fixed_size(x_interval) ||
-            !interval_has_fixed_size(y_interval)) {
-          no_overlap_2d_num_variable_areas++;
+        const int num_fixed = interval_has_fixed_size(x_interval) +
+                              interval_has_fixed_size(y_interval);
+        if (num_fixed == 0) {
+          no_overlap_2d_num_quadratic_areas++;
+        } else if (num_fixed == 1) {
+          no_overlap_2d_num_linear_areas++;
         }
       }
     } else if (ct.constraint_case() ==
@@ -382,9 +386,13 @@ std::string CpModelStats(const CpModelProto& model_proto) {
         absl::StrAppend(&constraints.back(),
                         ", #optional: ", no_overlap_2d_num_optional_rectangles);
       }
-      if (no_overlap_2d_num_variable_areas > 0) {
-        absl::StrAppend(&constraints.back(), ", #variable_areas: ",
-                        no_overlap_2d_num_variable_areas);
+      if (no_overlap_2d_num_linear_areas > 0) {
+        absl::StrAppend(&constraints.back(),
+                        ", #linear_areas: ", no_overlap_2d_num_linear_areas);
+      }
+      if (no_overlap_2d_num_quadratic_areas > 0) {
+        absl::StrAppend(&constraints.back(), ", #quadratic_areas: ",
+                        no_overlap_2d_num_quadratic_areas);
       }
       absl::StrAppend(&constraints.back(), ")");
     } else if (name == "kCumulative") {
