@@ -20,7 +20,7 @@ if(UNIX AND NOT APPLE)
 endif()
 
 # Setup Dotnet
-find_program (DOTNET_EXECUTABLE NAMES dotnet)
+find_program(DOTNET_EXECUTABLE NAMES dotnet)
 if(NOT DOTNET_EXECUTABLE)
   message(FATAL_ERROR "Check for dotnet Program: not found")
 else()
