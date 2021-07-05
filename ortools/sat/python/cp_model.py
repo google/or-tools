@@ -1528,8 +1528,8 @@ class CpModel(object):
       demands: The list of demands for each interval. Each demand must be >= 0.
         Each demand can be an integer value, or an integer variable.
       energies: The list of linear expressions representing the energy of each
-        task. This information is optional, and if given must be compatible
-         with the demand and the size of each task (energy = size * demand).
+        task. This information is optional, and if given must be compatible with
+        the demand and the size of each task (energy = size * demand).
       capacity: The maximum capacity of the cumulative constraint. It must be a
         positive integer value or variable.
 
