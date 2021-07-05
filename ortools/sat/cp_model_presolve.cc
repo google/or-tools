@@ -2894,96 +2894,129 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
     return RemoveConstraint(ct);
   }
 
-  // Filter the unreachable tuples.
-  //
-  // TODO(user): this is not supper efficient. Optimize if needed.
-  const int num_vars = ct->table().vars_size();
-  const int num_tuples = ct->table().values_size() / num_vars;
-  std::vector<int64_t> tuple(num_vars);
-  std::vector<std::vector<int64_t>> new_tuples;
-  new_tuples.reserve(num_tuples);
-  std::vector<absl::flat_hash_set<int64_t>> new_domains(num_vars);
+  const int initial_num_vars = ct->table().vars_size();
+  bool changed = true;
+
+  // Query existing affine relations.
   std::vector<AffineRelation::Relation> affine_relations;
-
-  absl::flat_hash_set<int> visited;
-  for (const int ref : ct->table().vars()) {
-    if (visited.contains(PositiveRef(ref))) {
-      context_->UpdateRuleStats("TODO table: duplicate variables");
-    } else {
-      visited.insert(PositiveRef(ref));
-    }
-  }
-
-  bool modified_variables = false;
-  for (int v = 0; v < num_vars; ++v) {
-    const int ref = ct->table().vars(v);
-    AffineRelation::Relation r = context_->GetAffineRelation(ref);
-    affine_relations.push_back(r);
-    if (r.representative != ref) {
-      modified_variables = true;
-    }
-  }
-
-  for (int i = 0; i < num_tuples; ++i) {
-    bool delete_row = false;
-    std::string tmp;
-    for (int j = 0; j < num_vars; ++j) {
-      const int ref = ct->table().vars(j);
-      int64_t v = ct->table().values(i * num_vars + j);
-      const AffineRelation::Relation& r = affine_relations[j];
+  {
+    for (int v = 0; v < initial_num_vars; ++v) {
+      const int ref = ct->table().vars(v);
+      AffineRelation::Relation r = context_->GetAffineRelation(ref);
+      affine_relations.push_back(r);
       if (r.representative != ref) {
-        const int64_t inverse_value = (v - r.offset) / r.coeff;
-        if (inverse_value * r.coeff + r.offset != v) {
-          // Bad rounding.
+        changed = true;
+        ct->mutable_table()->set_vars(v, r.representative);
+        context_->UpdateRuleStats(
+            "table: replace variable by canonical affine one");
+      }
+    }
+  }
+
+  // Check for duplicate occurrences of variables.
+  // If the ith index is -1, then the variable is not a duplicate of a smaller
+  // index variable. It if is != from -1, then the values stored is the new
+  // index of the first occurrence of the variable.
+  std::vector<int> old_index_of_duplicate_to_new_index_of_first_occurrence(
+      initial_num_vars, -1);
+  // If == -1, then the variable is a duplicate of a smaller index variable.
+  std::vector<int> old_index_to_new_index(initial_num_vars, -1);
+  int num_vars = 0;
+  {
+    absl::flat_hash_map<int, int> first_visit;
+    for (int p = 0; p < initial_num_vars; ++p) {
+      const int ref = ct->table().vars(p);
+      const int var = PositiveRef(ref);
+      const auto& it = first_visit.find(var);
+      if (it != first_visit.end()) {
+        const int previous = it->second;
+        old_index_of_duplicate_to_new_index_of_first_occurrence[p] = previous;
+        context_->UpdateRuleStats("table: duplicate variables");
+        changed = true;
+      } else {
+        ct->mutable_table()->set_vars(num_vars, ref);
+        first_visit[var] = num_vars;
+        old_index_to_new_index[p] = num_vars;
+        num_vars++;
+      }
+    }
+
+    if (num_vars < initial_num_vars) {
+      ct->mutable_table()->mutable_vars()->Truncate(num_vars);
+    }
+  }
+
+  // Check each tuple for validity w.r.t. affine relations, variable domains,
+  // and consistency with duplicate variables. Reduce the size of the tuple in
+  // case of duplicate variables.
+  std::vector<std::vector<int64_t>> new_tuples;
+  const int initial_num_tuples = ct->table().values_size() / initial_num_vars;
+  std::vector<absl::flat_hash_set<int64_t>> new_domains(num_vars);
+
+  {
+    std::vector<int64_t> tuple(num_vars);
+    new_tuples.reserve(initial_num_tuples);
+
+    for (int i = 0; i < initial_num_tuples; ++i) {
+      bool delete_row = false;
+      std::string tmp;
+      for (int j = 0; j < initial_num_vars; ++j) {
+        const int64_t tuple_value =
+            ct->table().values(i * initial_num_vars + j);
+        // Affine relations are defined on the initial variables.
+        const AffineRelation::Relation& r = affine_relations[j];
+        const int64_t value = (tuple_value - r.offset) / r.coeff;
+        if (value * r.coeff + r.offset != tuple_value) {
+          // Value not reachable by affine relation.
           delete_row = true;
           break;
         }
-        v = inverse_value;
+        const int mapped_position = old_index_to_new_index[j];
+        if (mapped_position == -1) {  // The current variable is duplicate.
+          const int new_index_of_first_occurrence =
+              old_index_of_duplicate_to_new_index_of_first_occurrence[j];
+          if (value != tuple[new_index_of_first_occurrence]) {
+            delete_row = true;
+            break;
+          }
+        } else {
+          const int ref = ct->table().vars(mapped_position);
+          if (!context_->DomainContains(ref, value)) {
+            delete_row = true;
+            break;
+          }
+          tuple[mapped_position] = value;
+        }
       }
-      tuple[j] = v;
-      if (!context_->DomainContains(r.representative, v)) {
-        delete_row = true;
-        break;
+      if (delete_row) {
+        changed = true;
+        continue;
+      }
+      new_tuples.push_back(tuple);
+      for (int j = 0; j < num_vars; ++j) {
+        new_domains[j].insert(tuple[j]);
       }
     }
-    if (delete_row) continue;
-    new_tuples.push_back(tuple);
-    for (int j = 0; j < num_vars; ++j) {
-      const int64_t v = tuple[j];
-      new_domains[j].insert(v);
+    gtl::STLSortAndRemoveDuplicates(&new_tuples);
+    if (new_tuples.size() < initial_num_tuples) {
+      context_->UpdateRuleStats("table: removed rows");
     }
   }
-  gtl::STLSortAndRemoveDuplicates(&new_tuples);
 
   // Update the list of tuples if needed.
-  if (new_tuples.size() < num_tuples || modified_variables) {
+  if (changed) {
     ct->mutable_table()->clear_values();
     for (const std::vector<int64_t>& t : new_tuples) {
       for (const int64_t v : t) {
         ct->mutable_table()->add_values(v);
       }
     }
-    if (new_tuples.size() < num_tuples) {
-      context_->UpdateRuleStats("table: removed rows");
-    }
-  }
-
-  if (modified_variables) {
-    for (int j = 0; j < num_vars; ++j) {
-      const AffineRelation::Relation& r = affine_relations[j];
-      if (r.representative != ct->table().vars(j)) {
-        ct->mutable_table()->set_vars(j, r.representative);
-      }
-    }
-    context_->UpdateRuleStats(
-        "table: replace variable by canonical affine one");
   }
 
   // Nothing more to do for negated tables.
-  if (ct->table().negated()) return modified_variables;
+  if (ct->table().negated()) return changed;
 
   // Filter the variable domains.
-  bool changed = false;
   for (int j = 0; j < num_vars; ++j) {
     const int ref = ct->table().vars(j);
     if (!context_->IntersectDomainWith(
@@ -3044,7 +3077,7 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
     }
     context_->UpdateRuleStats("table: negated");
   }
-  return modified_variables;
+  return changed;
 }
 
 bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
