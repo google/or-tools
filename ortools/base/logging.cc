@@ -1140,10 +1140,10 @@ void LogMessage::Init(const char* file, int line, LogSeverity severity,
   data_->send_method_ = send_method;
   data_->sink_ = NULL;
   data_->outvec_ = NULL;
-  double now = ToUDate(absl::Now());
-  data_->timestamp_ = static_cast<time_t>(now);
+  timespec now_ts = absl::ToTimespec(absl::Now());
+  data_->timestamp_ = now_ts.tv_sec;
   localtime_r(&data_->timestamp_, &data_->tm_time_);
-  int usecs = static_cast<int>((now - data_->timestamp_) * 1000000);
+  int usecs = now_ts.tv_nsec / 1000;
 
   data_->num_chars_to_log_ = 0;
   data_->num_chars_to_syslog_ = 0;
