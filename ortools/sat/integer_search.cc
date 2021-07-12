@@ -696,7 +696,7 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
 LiteralIndex IntegerSearchHelper::GetDecision(
     std::function<BooleanOrIntegerLiteral()> f) {
   LiteralIndex decision = kNoLiteralIndex;
-  while (true) {
+  while (!time_limit_->LimitReached()) {
     BooleanOrIntegerLiteral new_decision;
     if (integer_trail_->InPropagationLoop()) {
       const IntegerVariable var =
