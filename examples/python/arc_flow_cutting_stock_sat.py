@@ -25,7 +25,7 @@ PARSER = argparse.ArgumentParser()
 PARSER.add_argument(
     '--solver', default='sat', help='Method used to solve: sat, mip.')
 PARSER.add_argument(
-    '--output_proto',
+    '--output_proto_file',
     default='',
     help='Output file to write the cp_model proto to.')
 
@@ -105,7 +105,7 @@ def create_state_graph(items, max_capacity):
     return states, transitions
 
 
-def solve_cutting_stock_with_arc_flow_and_sat(output_proto):
+def solve_cutting_stock_with_arc_flow_and_sat(output_proto_file):
     """Solve the cutting stock with arc-flow and the CP-SAT solver."""
     items = regroup_and_count(DESIRED_LENGTHS)
     print('Items:', items)
@@ -172,8 +172,8 @@ def solve_cutting_stock_with_arc_flow_and_sat(output_proto):
             for i in range(len(objective_vars))))
 
     # Output model proto to file.
-    if output_proto:
-        output_file = open(output_proto, 'w')
+    if output_proto_file:
+        output_file = open(output_proto_file, 'w')
         output_file.write(str(model.Proto()))
         output_file.close()
 
@@ -265,7 +265,7 @@ def solve_cutting_stock_with_arc_flow_and_mip():
 def main(args):
     """Main function"""
     if args.solver == 'sat':
-        solve_cutting_stock_with_arc_flow_and_sat(args.output_proto)
+        solve_cutting_stock_with_arc_flow_and_sat(args.output_proto_file)
     else:  # 'mip'
         solve_cutting_stock_with_arc_flow_and_mip()
 

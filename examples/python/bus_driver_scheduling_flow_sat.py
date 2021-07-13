@@ -32,7 +32,7 @@ PARSER = argparse.ArgumentParser()
 PARSER.add_argument(
     '--instance', default=1, type=int, help='Instance number (1..3).')
 PARSER.add_argument(
-    '--output_proto',
+    '--output_proto_file',
     default="",
     help='Output file to write the cp_model'
     'proto to.')

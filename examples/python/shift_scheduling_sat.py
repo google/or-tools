@@ -21,7 +21,7 @@ from google.protobuf import text_format
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string('output_proto', '',
+flags.DEFINE_string('output_proto_file', '',
                     'Output file to write the cp_model proto to.')
 flags.DEFINE_string('params', 'max_time_in_seconds:10.0',
                     'Sat solver parameters.')
@@ -184,7 +184,7 @@ def add_soft_sum_constraint(model, works, hard_min, soft_min, min_cost,
     return cost_variables, cost_coefficients
 
 
-def solve_shift_scheduling(params, output_proto):
+def solve_shift_scheduling(params, output_proto_file):
     """Solves the shift scheduling problem."""
     # Data
     num_employees = 8
@@ -369,9 +369,9 @@ def solve_shift_scheduling(params, output_proto):
         sum(obj_int_vars[i] * obj_int_coeffs[i]
             for i in range(len(obj_int_vars))))
 
-    if output_proto:
-        print('Writing proto to %s' % output_proto)
-        with open(output_proto, 'w') as text_file:
+    if output_proto_file:
+        print('Writing proto to %s' % output_proto_file)
+        with open(output_proto_file, 'w') as text_file:
             text_file.write(str(model))
 
     # Solve the model.
@@ -419,7 +419,7 @@ def solve_shift_scheduling(params, output_proto):
 
 
 def main(_):
-    solve_shift_scheduling(FLAGS.params, FLAGS.output_proto)
+    solve_shift_scheduling(FLAGS.params, FLAGS.output_proto_file)
 
 
 if __name__ == '__main__':

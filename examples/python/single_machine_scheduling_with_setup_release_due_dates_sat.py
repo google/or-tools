@@ -21,7 +21,7 @@ from ortools.sat.python import cp_model
 # Command line arguments.
 PARSER = argparse.ArgumentParser()
 PARSER.add_argument(
-    '--output_proto',
+    '--output_proto_file',
     default='',
     help='Output file to write the cp_model'
     'proto to.')
@@ -53,7 +53,7 @@ def main(args):
     """Solves a complex single machine jobshop scheduling problem."""
 
     parameters = args.params
-    output_proto = args.output_proto
+    output_proto_file = args.output_proto_file
 
     #----------------------------------------------------------------------------
     # Data.
@@ -251,9 +251,9 @@ def main(args):
 
     #----------------------------------------------------------------------------
     # Write problem to file.
-    if output_proto:
-        print('Writing proto to %s' % output_proto)
-        with open(output_proto, 'w') as text_file:
+    if output_proto_file:
+        print('Writing proto to %s' % output_proto_file)
+        with open(output_proto_file, 'w') as text_file:
             text_file.write(str(model))
 
     #----------------------------------------------------------------------------
