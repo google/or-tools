@@ -32,10 +32,14 @@
 #include <xmmintrin.h>
 #endif
 
+#include <stdlib.h>
+
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <vector>
 
+#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 
 #if defined(_MSC_VER)
@@ -242,6 +246,19 @@ template <typename FloatType>
 inline FloatType Interpolate(FloatType x, FloatType y, FloatType alpha) {
   return alpha * x + (1 - alpha) * y;
 }
+
+// This is a fast implementation of the C99 function ilogb for normalized
+// doubles with the caveat that it returns -1023 for zero, and 1024 for infinity
+// an NaNs.
+int fast_ilogb(const double value);
+
+// This is a fast implementation of the C99 function scalbn, with the caveat
+// that it works on normalized numbers and if the result underflows, overflows,
+// or is applied to a NaN or an +-infinity, the result is undefined behavior.
+// Note that the version of the function that takes a reference, modifies the
+// given value.
+double fast_scalbn(const double value, const int exponent);
+void fast_scalbn_inplace(double& mutable_value, const int exponent);
 
 }  // namespace operations_research
 

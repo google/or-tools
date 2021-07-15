@@ -13,8 +13,19 @@
 
 #include "ortools/util/fp_utils.h"
 
-#include <cmath>
+#include <limits.h>
+#include <stdint.h>
 
+#include <algorithm>
+#include <cmath>
+#include <limits>
+#include <utility>
+#include <vector>
+
+#include "absl/base/casts.h"
+#include "absl/base/internal/endian.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
 #include "ortools/util/bitset.h"
 
 namespace operations_research {
@@ -206,6 +217,35 @@ int64_t ComputeGcdOfRoundedDoubles(const std::vector<double>& x,
   }
   DCHECK_GE(gcd, 0);
   return gcd > 0 ? gcd : 1;
+}
+
+int fast_ilogb(double value) {
+  static_assert(CHAR_BIT == 8);
+  static_assert(sizeof(double) == 8);
+  // Get little-endian bit-representation of the floating point value.
+  const uint64_t bit_rep =
+      absl::little_endian::FromHost64(absl::bit_cast<uint64_t>(value));
+  return static_cast<int>((bit_rep >> 52) & 0x7FF) - 1023;
+}
+
+void fast_scalbn_inplace(double& mutable_value, int exponent) {
+  mutable_value = fast_scalbn(mutable_value, exponent);
+}
+
+double fast_scalbn(double value, int exponent) {
+  if (value == 0.0) return 0.0;
+  uint64_t bit_rep =
+      absl::little_endian::FromHost64(absl::bit_cast<uint64_t>(value));
+  // Binary representation is: (sign-bit)(11 exponent bits)(52 mantissa bits)
+  constexpr uint64_t kExponentMask(0x7FF0000000000000);
+  // This addition relies on the fact that signed numbers are written in
+  // two-s complement, and is correct as long as the sum does not
+  // overflow/underflow the result.
+  const uint64_t value_exponent =
+      (bit_rep + (static_cast<uint64_t>(exponent) << 52)) & kExponentMask;
+  bit_rep &= ~kExponentMask;
+  bit_rep |= value_exponent;
+  return absl::bit_cast<double>(absl::little_endian::ToHost64(bit_rep));
 }
 
 }  // namespace operations_research
