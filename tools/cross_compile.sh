@@ -94,6 +94,25 @@ function clean_build() {
   mkdir -p "${BUILD_DIR}"
 }
 
+function expand_wasm_config() {
+  local -r EMSDK_VERSION=2.0.14
+  local -r EMSDK_URL=https://github.com/emscripten-core/emsdk/archive/${EMSDK_VERSION}.tar.gz 
+  local -r EMSDK_RELATIVE_DIR="emsdk-${EMSDK_VERSION}"
+  local -r EMSDK="${ARCHIVE_DIR}/${EMSDK_RELATIVE_DIR}"
+  if [ ! -d "${EMSDK}" ]; then
+    echo "Fetching emscripten"
+    unpack "${EMSDK_URL}" "${EMSDK_RELATIVE_DIR}"
+    echo "Installing Emscripten ..."
+    ${EMSDK}/emsdk install ${EMSDK_VERSION}
+
+    echo "Activating Emscripten ..."
+    ${EMSDK}/emsdk activate ${EMSDK_VERSION}
+  fi
+
+  declare -r TOOLCHAIN_FILE=${EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
+  CMAKE_ADDITIONAL_ARGS+=( -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN_FILE}" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF)
+}
+
 function expand_linaro_config() {
   #ref: https://releases.linaro.org/components/toolchain/binaries/
   local -r LINARO_VERSION=7.5-2019.12
@@ -250,7 +269,7 @@ DESCRIPTION
 
 \tYou MUST define the following variables before running this script:
 \t* PROJECT: glop or-tools
-\t* TARGET: x86_64 aarch64-linux-gnu aarch64_be-linux-gnu mips64 mips64el
+\t* TARGET: x86_64 aarch64-linux-gnu aarch64_be-linux-gnu mips64 mips64el wasm32
 
 OPTIONS
 \t-h --help: show this help text
@@ -321,6 +340,9 @@ function main() {
     mips64el)
       expand_codescape_config
       declare -r QEMU_ARCH=mips64el ;;
+    wasm32)
+      expand_wasm_config
+      declare -r QEMU_ARCH=DISABLED ;;
     *)
       >&2 echo "Unknown TARGET '${TARGET}'..."
       exit 1 ;;
