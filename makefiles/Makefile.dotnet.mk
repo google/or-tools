@@ -148,6 +148,7 @@ $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc: \
  $(SRC_DIR)/ortools/linear_solver/csharp/linear_solver.i \
  $(SRC_DIR)/ortools/base/base.i \
  $(SRC_DIR)/ortools/util/csharp/proto.i \
+ $(SRC_DIR)/ortools/linear_solver/linear_solver_swig_helper.h \
  $(GLOP_DEPS) \
  $(LP_DEPS) \
  | $(GEN_DIR)/ortools/linear_solver

@@ -101,6 +101,8 @@ class ScipConstraintHandlerContext {
   // TODO(user): maybe this can be abstracted away.
   bool is_pseudo_solution() const { return is_pseudo_solution_; }
 
+  bool IsNewSolution() const { return solution_ != SCIPgetBestSol(scip_); }
+
  private:
   SCIP* scip_;
   SCIP_SOL* solution_;

@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// See go/mpsolver-callbacks for documentation on how to use this file.
-
 #ifndef OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_CALLBACK_H_
 #define OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_CALLBACK_H_
 
@@ -133,6 +131,12 @@ class MPCallbackContext {
   //
   // Call only when the event is kMipSolution or kMipNode.
   virtual int64_t NumExploredNodes() = 0;
+  
+  virtual double GetRelativeMipGap() { return 0; }
+
+  virtual bool HasValidMipSolution() { return false; }
+
+  virtual bool IsNewSolution() { return false; }
 };
 
 // Extend this class with model specific logic, and register through
