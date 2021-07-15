@@ -364,6 +364,7 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
 
       // Information to select best.
       int index = 0;
+      int task;
       IntegerValue size_min = kMaxIntegerValue;
       IntegerValue time = kMaxIntegerValue;
     };
@@ -404,14 +405,22 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
             !integer_trail->IsFixed(helper->Ends()[t])) {
           const IntegerValue time =
               std::max(helper->StartMin(t), first_free_spot);
+
+          // For variable size, we compute the min size once the start is fixed
+          // to time. This is needed to never pick the "artificial" makespan
+          // interval at the end in priority compared to intervals that still
+          // need to be scheduled.
+          const IntegerValue size_min =
+              std::max(helper->SizeMin(t), helper->EndMin(t) - time);
           if (time < best.time ||
-              (time == best.time && helper->SizeMin(t) < best.size_min)) {
+              (time == best.time && size_min < best.size_min)) {
             best.presence = helper->IsOptional(t)
                                 ? helper->PresenceLiteral(t).Index()
                                 : kNoLiteralIndex;
             best.start = helper->Starts()[t];
             best.end = helper->Ends()[t];
-            best.size_min = helper->SizeMin(t);
+            best.size_min = size_min;
+            best.task = t;
             best.index = index;
             best.time = time;
           }
@@ -421,7 +430,9 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
     }
     if (best.time == kMaxIntegerValue) return BooleanOrIntegerLiteral();
 
-    VLOG(1) << "========= Schedule on " << best.index << " @ " << best.time;
+    VLOG(1) << "========= Schedule on " << best.index << " @" << best.time
+            << " (" << repo->no_overlaps[best.index]->TaskDebugString(best.task)
+            << ")";
 
     // Use the next_decision_override to fix in turn all the variables from
     // the selected interval.
