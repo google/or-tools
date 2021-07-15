@@ -443,6 +443,11 @@ bool CpModelPresolver::PresolveAtMostOrExactlyOne(ConstraintProto* ct) {
     context_->tmp_literals.push_back(literal);
   }
 
+  if (!is_at_most_one && !transform_to_at_most_one &&
+      context_->ExploitExactlyOneInObjective(context_->tmp_literals)) {
+    context_->UpdateRuleStats("exactly_one: simplified objective");
+  }
+
   if (transform_to_at_most_one) {
     CHECK(changed);
     ct->Clear();
@@ -2879,7 +2884,7 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
   if (unique_target && !context_->IsFixed(target_ref)) {
     context_->UpdateRuleStats("TODO element: target not used elsewhere");
   }
-  if (unique_index) {
+  if (unique_index && !context_->IsFixed(index_ref)) {
     context_->UpdateRuleStats("TODO element: index not used elsewhere");
   }
 
@@ -5945,6 +5950,11 @@ void CpModelPresolver::PresolveToFixPoint() {
       }
     }
 
+    // This is needed to remove variable with a different representative from
+    // the objective. This allows to remove them completely in the loop below.
+    if (context_->ModelIsUnsat()) return;
+    if (!context_->CanonicalizeObjective()) return;
+
     // We also make sure all affine relations are propagated and any not
     // yet canonicalized domain is.
     //
@@ -5966,6 +5976,7 @@ void CpModelPresolver::PresolveToFixPoint() {
     // not enter an infinite loop, we call each (var, constraint) pair at most
     // once.
     const int num_vars = context_->working_model->variables_size();
+    in_queue.resize(context_->working_model->constraints_size(), false);
     for (int v = 0; v < num_vars; ++v) {
       const auto& constraints = context_->VarToConstraints(v);
       if (constraints.size() != 1) continue;

@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <deque>
+#include <string>
 #include <vector>
 
 #include "ortools/sat/cp_model.pb.h"
@@ -313,6 +314,15 @@ class PresolveContext {
   void ReadObjectiveFromProto();
   ABSL_MUST_USE_RESULT bool CanonicalizeObjective();
   void WriteObjectiveToProto() const;
+
+  // Checks if the given exactly_one is included in the objective, and simplify
+  // the objective by adding a constant value to all the exactly one terms.
+  bool ExploitExactlyOneInObjective(absl::Span<const int> exactly_one);
+
+  // Allows to manipulate the objective coefficients.
+  void RemoveVariableFromObjective(int var);
+  void AddToObjective(int var, int64_t value);
+  void AddToObjectiveOffset(int64_t value);
 
   // Given a variable defined by the given inequality that also appear in the
   // objective, remove it from the objective by transferring its cost to other

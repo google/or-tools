@@ -133,6 +133,17 @@ struct VarValue {
   int64_t value;
 };
 
+namespace {
+
+bool ModelContainsNoOverlaps(const CpModelProto& cp_model_proto) {
+  for (const ConstraintProto& ct : cp_model_proto.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kNoOverlap) return true;
+  }
+  return false;
+}
+
+}  // namespace
+
 const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
     const std::vector<DecisionStrategyProto>& strategies, Model* model) {
   const auto& view = *model->GetOrCreate<CpModelView>();
@@ -280,12 +291,28 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
     const CpModelProto& cp_model_proto,
     const std::vector<IntegerVariable>& variable_mapping,
     IntegerVariable objective_var, Model* model) {
-  // Default strategy is to instantiate the IntegerVariable in order.
-  std::function<BooleanOrIntegerLiteral()> default_search_strategy = nullptr;
-  const bool instantiate_all_variables =
-      model->GetOrCreate<SatParameters>()->instantiate_all_variables();
+  std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics;
 
-  if (instantiate_all_variables) {
+  // We start by the user specified heuristic.
+  {
+    std::vector<DecisionStrategyProto> strategies;
+    for (const DecisionStrategyProto& proto :
+         cp_model_proto.search_strategy()) {
+      strategies.push_back(proto);
+    }
+    heuristics.push_back(ConstructSearchStrategyInternal(strategies, model));
+  }
+
+  // If there are some scheduling constraint, we complete with a custom
+  // "scheduling" strategy.
+  //
+  // TODO(user): also deal with cumulative.
+  if (ModelContainsNoOverlaps(cp_model_proto)) {
+    heuristics.push_back(SchedulingSearchHeuristic(model));
+  }
+
+  // If needed, we finish by instantiating anything left.
+  if (model->GetOrCreate<SatParameters>()->instantiate_all_variables()) {
     std::vector<IntegerVariable> decisions;
     for (const IntegerVariable var : variable_mapping) {
       if (var == kNoIntegerVariable) continue;
@@ -297,20 +324,10 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
         decisions.push_back(var);
       }
     }
-    default_search_strategy =
-        FirstUnassignedVarAtItsMinHeuristic(decisions, model);
+    heuristics.push_back(FirstUnassignedVarAtItsMinHeuristic(decisions, model));
   }
 
-  std::vector<DecisionStrategyProto> strategies;
-  for (const DecisionStrategyProto& proto : cp_model_proto.search_strategy()) {
-    strategies.push_back(proto);
-  }
-  if (instantiate_all_variables) {
-    return SequentialSearch({ConstructSearchStrategyInternal(strategies, model),
-                             default_search_strategy});
-  } else {
-    return ConstructSearchStrategyInternal(strategies, model);
-  }
+  return SequentialSearch(heuristics);
 }
 
 std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(

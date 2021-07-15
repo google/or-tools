@@ -13,8 +13,10 @@
 
 #include "ortools/sat/presolve_context.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <string>
 
 #include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
@@ -1477,6 +1479,28 @@ bool PresolveContext::CanonicalizeObjective() {
   return true;
 }
 
+void PresolveContext::RemoveVariableFromObjective(int var) {
+  objective_map_.erase(var);
+  var_to_constraints_[var].erase(kObjectiveConstraint);
+}
+
+void PresolveContext::AddToObjective(int var, int64_t value) {
+  int64_t& map_ref = objective_map_[var];
+  map_ref += value;
+  if (map_ref == 0) {
+    objective_map_.erase(var);
+    var_to_constraints_[var].erase(kObjectiveConstraint);
+  } else {
+    var_to_constraints_[var].insert(kObjectiveConstraint);
+  }
+}
+
+void PresolveContext::AddToObjectiveOffset(int64_t value) {
+  // Tricky: The objective domain is without the offset, so we need to shift it.
+  objective_offset_ += static_cast<double>(value);
+  objective_domain_ = objective_domain_.AdditionWith(Domain(-value));
+}
+
 bool PresolveContext::SubstituteVariableInObjective(
     int var_in_equality, int64_t coeff_in_equality,
     const ConstraintProto& equality, std::vector<int>* new_vars_in_objective) {
@@ -1557,6 +1581,55 @@ bool PresolveContext::SubstituteVariableInObjective(
   if (objective_domain_.IsEmpty()) {
     return NotifyThatModelIsUnsat();
   }
+  return true;
+}
+
+bool PresolveContext::ExploitExactlyOneInObjective(
+    absl::Span<const int> exactly_one) {
+  int64_t min_coeff = std::numeric_limits<int64_t>::max();
+  for (const int ref : exactly_one) {
+    const auto it = objective_map_.find(PositiveRef(ref));
+    if (it == objective_map_.end()) return false;
+
+    const int64_t coeff = it->second;
+    if (RefIsPositive(ref)) {
+      min_coeff = std::min(min_coeff, coeff);
+    } else {
+      // Objective = coeff * var = coeff * (1 - ref);
+      min_coeff = std::min(min_coeff, -coeff);
+    }
+  }
+
+  int64_t offset = min_coeff;
+  for (const int ref : exactly_one) {
+    const int var = PositiveRef(ref);
+    int64_t& map_ref = objective_map_.at(var);
+    if (RefIsPositive(ref)) {
+      map_ref -= min_coeff;
+      if (map_ref == 0) {
+        objective_map_.erase(var);
+        var_to_constraints_[var].erase(kObjectiveConstraint);
+      }
+    } else {
+      // Term = coeff * (1 - X) = coeff  - coeff * X;
+      // So -coeff -> -coeff  -min_coeff
+      // And Term = coeff + min_coeff - min_coeff - (coeff + min_coeff) * X
+      //          = (coeff + min_coeff) * (1 - X) - min_coeff;
+      map_ref += min_coeff;
+      if (map_ref == 0) {
+        objective_map_.erase(var);
+        var_to_constraints_[var].erase(kObjectiveConstraint);
+      }
+      offset -= min_coeff;
+    }
+  }
+
+  // Note that the domain never include the offset, so we need to update it.
+  if (offset != 0) {
+    objective_offset_ += offset;
+    objective_domain_ = objective_domain_.AdditionWith(Domain(-offset));
+  }
+
   return true;
 }
 
