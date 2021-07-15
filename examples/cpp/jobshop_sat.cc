@@ -100,7 +100,6 @@ int64_t ComputeHorizon(const JsspInputProblem& problem) {
   }
   return std::min(max_latest_end,
                   sum_of_durations + sum_of_transitions + max_earliest_start);
-  // TODO(user): Uses transitions.
 }
 
 // A job is a sequence of tasks. For each task, we store the main interval, as
@@ -352,17 +351,25 @@ void CreateMachines(
   }
 
   // Add transition times if needed.
+  //
+  // TODO(user): If there is just a few non-zero transition, there is probably
+  // a better way than this quadratic blowup.
+  int64_t num_non_zero_transitions = 0;
   for (int m = 0; m < num_machines; ++m) {
     if (problem.machines(m).has_transition_time_matrix()) {
       const int num_intervals = machine_to_tasks[m].size();
       const TransitionTimeMatrix& transitions =
           problem.machines(m).transition_time_matrix();
 
-      // Create circuit constraint on a machine.
-      // Node 0 and num_intervals + 1 are source and sink.
+      // Create circuit constraint on a machine. Node 0 is both the source and
+      // sink, i.e, the first and last job.
       CircuitConstraint circuit = cp_model.AddCircuitConstraint();
       for (int i = 0; i < num_intervals; ++i) {
         const int job_i = machine_to_tasks[m][i].job;
+
+        // TODO(user): simplify the code!
+        CHECK_EQ(i, job_i);
+
         // Source to nodes.
         circuit.AddArc(0, i + 1, cp_model.NewBoolVar());
         // Node to sink.
@@ -372,14 +379,19 @@ void CreateMachines(
           if (i == j) {
             circuit.AddArc(i + 1, i + 1, Not(machine_to_tasks[m][i].presence));
           } else {
-            const int job_j = machine_to_tasks[m][i].job;
+            const int job_j = machine_to_tasks[m][j].job;
+
+            // TODO(user): simplify the code!
+            CHECK_EQ(j, job_j);
             const int64_t transition =
                 transitions.transition_time(job_i * num_jobs + job_j);
             const BoolVar lit = cp_model.NewBoolVar();
             const IntVar start = machine_to_tasks[m][j].start;
             const IntVar end = machine_to_tasks[m][i].end;
             circuit.AddArc(i + 1, j + 1, lit);
+
             // Push the new start with an extra transition.
+            if (transition != 0) ++num_non_zero_transitions;
             cp_model
                 .AddLessOrEqual(LinearExpr(end).AddConstant(transition), start)
                 .OnlyEnforceIf(lit);
@@ -387,6 +399,9 @@ void CreateMachines(
         }
       }
     }
+  }
+  if (num_non_zero_transitions > 0) {
+    LOG(INFO) << "Num non-zeros transition delay: " << num_non_zero_transitions;
   }
 }
 
@@ -657,15 +672,7 @@ void Solve(const JsspInputProblem& problem) {
                   makespan, cp_model);
 
   // Decision strategy.
-  std::vector<IntVar> all_task_starts;
-  for (const std::vector<JobTaskData>& job : job_to_tasks) {
-    for (const JobTaskData& task : job) {
-      all_task_starts.push_back(task.start);
-    }
-  }
-  cp_model.AddDecisionStrategy(all_task_starts,
-                               DecisionStrategyProto::CHOOSE_LOWEST_MIN,
-                               DecisionStrategyProto::SELECT_MIN_VALUE);
+  // CP-SAT now has a default strategy for scheduling problem that works best.
 
   // Display problem statistics.
   int num_tasks = 0;
@@ -736,10 +743,15 @@ void Solve(const JsspInputProblem& problem) {
     }
   }
 
+  // Note that this the objective is a variable of the model, there is actually
+  // no strong guarantee that in an intermediate solution, it is packed to its
+  // minimum possible value. We do observe this from time to time. The DCHECK is
+  // mainly to warn when this happen.
+  //
   // TODO(user): Support alternative cost in check.
   const double tolerance = 1e-6;
-  CHECK_GE(response.objective_value(), final_cost - tolerance);
-  CHECK_LE(response.objective_value(), final_cost + tolerance);
+  DCHECK_GE(response.objective_value(), final_cost - tolerance);
+  DCHECK_LE(response.objective_value(), final_cost + tolerance);
 }
 
 }  // namespace sat
