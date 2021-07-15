@@ -664,6 +664,7 @@ cc_library(
     hdrs = ["integer_search.h"],
     deps = [
         ":cp_model_mapping",
+        ":disjunctive",
         ":integer",
         ":linear_programming_constraint",
         ":probing",

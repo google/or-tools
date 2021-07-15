@@ -346,6 +346,133 @@ std::function<BooleanOrIntegerLiteral()> PseudoCost(Model* model) {
   };
 }
 
+// A simple heuristic for scheduling with no overlaps.
+//
+// TODO(user): Extend to cumulative constraint.
+std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
+    Model* model) {
+  auto* repo = model->GetOrCreate<ModelNoOverlapHelperRepository>();
+  auto* heuristic = model->GetOrCreate<SearchHeuristics>();
+  auto* trail = model->GetOrCreate<Trail>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  return [repo, heuristic, trail, integer_trail]() {
+    struct ToSchedule {
+      // Variable to fix.
+      LiteralIndex presence = kNoLiteralIndex;
+      AffineExpression start;
+      AffineExpression end;
+
+      // Information to select best.
+      int index = 0;
+      IntegerValue size_min = kMaxIntegerValue;
+      IntegerValue time = kMaxIntegerValue;
+    };
+    ToSchedule best;
+
+    int index = 0;
+    for (SchedulingConstraintHelper* helper : repo->no_overlaps) {
+      if (!helper->SynchronizeAndSetTimeDirection(true)) {
+        return BooleanOrIntegerLiteral();
+      }
+
+      // The heuristic idea is to find the interval that can be scheduled first,
+      // and fully schedule it. Note however than for optional interval,
+      // depending on the model, one cannot use the current start min to decide
+      // this since it might not be propagated.
+      //
+      // For now, we assume that this heuristic was used before, so the max
+      // of the fixed interval is used as the earliest start time.
+      //
+      // TODO(user): we should also precompute fixed precedences and only fix
+      // interval that have all their predecessors fixed.
+      //
+      // TODO(user): We could actually compute the earliest possible start of
+      // each task. This is best in the presence of fixed interval from the
+      // start or during a non-fixed search to be smarter about the next integer
+      // variable to instantiate.
+      IntegerValue first_free_spot = kMinIntegerValue;
+      for (int t = 0; t < helper->NumTasks(); ++t) {
+        if (!helper->IsPresent(t)) continue;
+        if (!integer_trail->IsFixed(helper->Starts()[t])) continue;
+        if (!integer_trail->IsFixed(helper->Ends()[t])) continue;
+        first_free_spot = std::max(first_free_spot, helper->EndMin(t));
+      }
+      for (int t = 0; t < helper->NumTasks(); ++t) {
+        if (helper->IsAbsent(t)) continue;
+        if (!helper->IsPresent(t) ||
+            !integer_trail->IsFixed(helper->Starts()[t]) ||
+            !integer_trail->IsFixed(helper->Ends()[t])) {
+          const IntegerValue time =
+              std::max(helper->StartMin(t), first_free_spot);
+          if (time < best.time ||
+              (time == best.time && helper->SizeMin(t) < best.size_min)) {
+            best.presence = helper->IsOptional(t)
+                                ? helper->PresenceLiteral(t).Index()
+                                : kNoLiteralIndex;
+            best.start = helper->Starts()[t];
+            best.end = helper->Ends()[t];
+            best.size_min = helper->SizeMin(t);
+            best.index = index;
+            best.time = time;
+          }
+        }
+      }
+      ++index;
+    }
+    if (best.time == kMaxIntegerValue) return BooleanOrIntegerLiteral();
+
+    VLOG(1) << "========= Schedule on " << best.index << " @ " << best.time;
+
+    // Use the next_decision_override to fix in turn all the variables from
+    // the selected interval.
+    int num_times = 0;
+    heuristic->next_decision_override = [trail, integer_trail, best,
+                                         num_times]() mutable {
+      if (++num_times > 10) {
+        // We have been trying to fix this interval for a while. Do we miss
+        // some propagation? In any case, try to see if the heuristic above
+        // would select something else.
+        VLOG(1) << "Skipping ... ";
+        return BooleanOrIntegerLiteral();
+      }
+
+      // First make sure the interval is present.
+      if (best.presence != kNoLiteralIndex) {
+        if (!trail->Assignment().LiteralIsAssigned(Literal(best.presence))) {
+          VLOG(1) << "assign " << best.presence;
+          return BooleanOrIntegerLiteral(best.presence);
+        }
+        if (trail->Assignment().LiteralIsFalse(Literal(best.presence))) {
+          VLOG(1) << "unperformed.";
+          return BooleanOrIntegerLiteral();
+        }
+      }
+
+      // We assume that start_min is propagated by now.
+      if (!integer_trail->IsFixed(best.start)) {
+        const IntegerValue start_min = integer_trail->LowerBound(best.start);
+        VLOG(1) << "start == " << start_min;
+        return BooleanOrIntegerLiteral(best.start.LowerOrEqual(start_min));
+      }
+
+      // We assume that end_min is propagated by now.
+      if (!integer_trail->IsFixed(best.end)) {
+        const IntegerValue end_min = integer_trail->LowerBound(best.end);
+        VLOG(1) << "end == " << end_min;
+        return BooleanOrIntegerLiteral(best.end.LowerOrEqual(end_min));
+      }
+
+      // Everything is fixed, dettach the override.
+      VLOG(1) << "Fixed on " << best.index << " @["
+              << integer_trail->LowerBound(best.start) << ", "
+              << integer_trail->LowerBound(best.end) << "]";
+      return BooleanOrIntegerLiteral();
+    };
+
+    return heuristic->next_decision_override();
+  };
+}
+
 std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
     Model* model) {
   SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
@@ -694,7 +821,7 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
 }
 
 LiteralIndex IntegerSearchHelper::GetDecision(
-    std::function<BooleanOrIntegerLiteral()> f) {
+    const std::function<BooleanOrIntegerLiteral()>& f) {
   LiteralIndex decision = kNoLiteralIndex;
   while (!time_limit_->LimitReached()) {
     BooleanOrIntegerLiteral new_decision;
@@ -834,8 +961,18 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
 
     LiteralIndex decision = kNoLiteralIndex;
     while (true) {
-      decision = helper->GetDecision(
-          heuristics.decision_policies[heuristics.policy_index]);
+      if (heuristics.next_decision_override != nullptr) {
+        // Note that to properly count the num_times, we do not want to move
+        // this function, but actually call that copy.
+        decision = helper->GetDecision(heuristics.next_decision_override);
+        if (decision == kNoLiteralIndex) {
+          heuristics.next_decision_override = nullptr;
+        }
+      }
+      if (decision == kNoLiteralIndex) {
+        decision = helper->GetDecision(
+            heuristics.decision_policies[heuristics.policy_index]);
+      }
 
       // Probing?
       //

@@ -25,6 +25,7 @@
 
 #include <vector>
 
+#include "ortools/sat/disjunctive.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/pseudo_costs.h"
@@ -73,6 +74,11 @@ struct SearchHeuristics {
   // These are used by ConfigureSearchHeuristics() to fill the policies above.
   std::function<BooleanOrIntegerLiteral()> fixed_search = nullptr;
   std::function<BooleanOrIntegerLiteral()> hint_search = nullptr;
+
+  // Some search strategy need to take more than one decision at once. They can
+  // set this function that will be called on the next decision. It will be
+  // automatically deleted the first time it returns an empty decision.
+  std::function<BooleanOrIntegerLiteral()> next_decision_override = nullptr;
 };
 
 // Given a base "fixed_search" function that should mainly control in which
@@ -199,6 +205,11 @@ std::function<BooleanOrIntegerLiteral()> SatSolverHeuristic(Model* model);
 // for branching.
 std::function<BooleanOrIntegerLiteral()> PseudoCost(Model* model);
 
+// Simple scheduling heuristic that looks at all the no-overlap constraints
+// and try to assign and perform the intervals that can be scheduled first.
+std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
+    Model* model);
+
 // Returns true if the number of variables in the linearized part represent
 // a large enough proportion of all the problem variables.
 bool LinearizedPartIsLarge(Model* model);
@@ -233,7 +244,8 @@ class IntegerSearchHelper {
   bool BeforeTakingDecision();
 
   // Calls the decision heuristics and extract a non-fixed literal.
-  LiteralIndex GetDecision(std::function<BooleanOrIntegerLiteral()> f);
+  // Note that we do not want to copy the function here.
+  LiteralIndex GetDecision(const std::function<BooleanOrIntegerLiteral()>& f);
 
   // Tries to take the current decision, this might backjump.
   // Returns false if the model is UNSAT.
