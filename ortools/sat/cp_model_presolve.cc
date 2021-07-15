@@ -5708,7 +5708,7 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
     int num_positive = 0;
     std::vector<int> constraint_indices_to_remove;
     for (const int c : context_->VarToConstraints(var)) {
-      if (c <= 0) {
+      if (c < 0) {
         abort = true;
         continue;
       }
