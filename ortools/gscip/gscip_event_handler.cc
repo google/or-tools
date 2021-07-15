@@ -13,8 +13,10 @@
 
 #include "ortools/gscip/gscip_event_handler.h"
 
+#include <string>
+#include <vector>
+
 #include "absl/status/status.h"
-#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/gscip/gscip.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
@@ -36,13 +38,12 @@ static SCIP_DECL_EVENTEXEC(EventExec) {
   CHECK_NE(eventhdlr, nullptr);
   CHECK_NE(event, nullptr);
 
-  SCIP_EVENTHDLRDATA* event_handler_data = SCIPeventhdlrGetData(eventhdlr);
+  SCIP_EVENTHDLRDATA* const event_handler_data =
+      SCIPeventhdlrGetData(eventhdlr);
   CHECK_NE(event_handler_data, nullptr);
-  operations_research::GScipEventHandler* handler = event_handler_data->handler;
-  handler->Execute(operations_research::GScipEventHandlerContext(
-      event_handler_data->gscip, SCIPeventGetType(event)));
 
-  return SCIP_OKAY;
+  return event_handler_data->handler->Execute(
+      {event_handler_data->gscip, SCIPeventGetType(event)});
 }
 
 static SCIP_DECL_EVENTINIT(EventInit) {
@@ -50,15 +51,25 @@ static SCIP_DECL_EVENTINIT(EventInit) {
   CHECK_NE(scip, nullptr);
   CHECK_NE(eventhdlr, nullptr);
 
-  SCIP_EVENTHDLRDATA* event_handler_data = SCIPeventhdlrGetData(eventhdlr);
+  SCIP_EVENTHDLRDATA* const event_handler_data =
+      SCIPeventhdlrGetData(eventhdlr);
   CHECK_NE(event_handler_data, nullptr);
-  operations_research::GScipEventHandler* handler = event_handler_data->handler;
-  for (const SCIP_EVENTTYPE event_type :
-       handler->description().events_to_catch_from_start) {
-    SCIP_CALL(SCIPcatchEvent(scip, event_type, eventhdlr, nullptr, nullptr));
-  }
 
-  return SCIP_OKAY;
+  return event_handler_data->handler->Init(event_handler_data->gscip);
+}
+
+static SCIP_DECL_EVENTEXIT(EventExit) {
+  VLOG(3) << "EventExit";
+  CHECK_NE(scip, nullptr);
+  CHECK_NE(eventhdlr, nullptr);
+
+  SCIP_EVENTHDLRDATA* const event_handler_data =
+      SCIPeventhdlrGetData(eventhdlr);
+  CHECK_NE(event_handler_data, nullptr);
+
+  SCIP_CALL(DropAllEvents(*event_handler_data->handler));
+
+  return event_handler_data->handler->Exit(event_handler_data->gscip);
 }
 
 static SCIP_DECL_EVENTFREE(EventFree) {
@@ -66,30 +77,65 @@ static SCIP_DECL_EVENTFREE(EventFree) {
   CHECK_NE(scip, nullptr);
   CHECK_NE(eventhdlr, nullptr);
 
-  SCIP_EVENTHDLRDATA* event_handler_data = SCIPeventhdlrGetData(eventhdlr);
+  SCIP_EVENTHDLRDATA* const event_handler_data =
+      SCIPeventhdlrGetData(eventhdlr);
   CHECK_NE(event_handler_data, nullptr);
+
   delete event_handler_data;
   SCIPeventhdlrSetData(eventhdlr, nullptr);
+
   return SCIP_OKAY;
 }
 
 namespace operations_research {
 
-void RegisterGScipEventHandler(GScip* scip, GScipEventHandler* handler) {
+void GScipEventHandler::Register(GScip* const gscip) {
+  CHECK_EQ(gscip_, nullptr) << "Already registered.";
+  CHECK_EQ(event_handler_, nullptr);
+
+  gscip_ = gscip;
+
   // event_handler_data is freed in EventFree.
-  SCIP_EVENTHDLRDATA* event_handler_data = new SCIP_EVENTHDLRDATA;
-  event_handler_data->gscip = scip;
-  event_handler_data->handler = handler;
-  SCIP_EVENTHDLR* event_handler = nullptr;
+  SCIP_EVENTHDLRDATA* const event_handler_data = new SCIP_EVENTHDLRDATA;
+  event_handler_data->gscip = gscip;
+  event_handler_data->handler = this;
+
   CHECK_OK(SCIP_TO_STATUS(SCIPincludeEventhdlrBasic(
-      scip->scip(), &event_handler, handler->description().name.c_str(),
-      handler->description().description.c_str(), EventExec,
-      event_handler_data)));
-  CHECK_NE(event_handler, nullptr);
+      gscip->scip(), &event_handler_, description_.name.c_str(),
+      description_.description.c_str(), EventExec, event_handler_data)));
+  CHECK_NE(event_handler_, nullptr);
+
   CHECK_OK(SCIP_TO_STATUS(
-      SCIPsetEventhdlrInit(scip->scip(), event_handler, EventInit)));
+      SCIPsetEventhdlrInit(gscip->scip(), event_handler_, EventInit)));
   CHECK_OK(SCIP_TO_STATUS(
-      SCIPsetEventhdlrFree(scip->scip(), event_handler, EventFree)));
+      SCIPsetEventhdlrExit(gscip->scip(), event_handler_, EventExit)));
+  CHECK_OK(SCIP_TO_STATUS(
+      SCIPsetEventhdlrFree(gscip->scip(), event_handler_, EventFree)));
+}
+
+SCIP_RETCODE GScipEventHandler::CatchEvent(const SCIP_EVENTTYPE event_type) {
+  int filter_pos = -1;
+
+  SCIP_CALL(SCIPcatchEvent(gscip_->scip(), event_type, event_handler_,
+                           /*eventdata=*/nullptr, &filter_pos));
+  CHECK_GE(filter_pos, 0);
+
+  caught_events_.emplace_back(event_type, filter_pos);
+
+  return SCIP_OKAY;
+}
+
+SCIP_RETCODE DropAllEvents(GScipEventHandler& handler) {
+  for (const GScipEventHandler::CaughtEvent& caught_event :
+       handler.caught_events_) {
+    SCIP_CALL(SCIPdropEvent(handler.gscip_->scip(), caught_event.event_type,
+                            handler.event_handler_,
+                            /*eventdata=*/nullptr, caught_event.filter_pos));
+  }
+
+  handler.caught_events_.clear();
+
+  return SCIP_OKAY;
 }
 
 }  // namespace operations_research

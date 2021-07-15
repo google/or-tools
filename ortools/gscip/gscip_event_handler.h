@@ -35,16 +35,6 @@ struct GScipEventHandlerDescription {
 
   // See CONSHDLR_DESC in SCIP documentation above.
   std::string description;
-
-  // These are "general" events to be added via SCIPcatchEvent in the EVENTINIT
-  // callback, not "Var" or "Row" events. See scip/type_event.h for the list of
-  // possible events.
-  std::vector<SCIP_EVENTTYPE> events_to_catch_from_start;
-
-  // TODO(user,user): Support Var and Row events.
-
-  // TODO(user,user): Support registering events in the EVENTINITSOL
-  // callback, which would cause them to be trapped only after presolve.
 };
 
 // Passed by value. This is a lightweight interface to the callback context and
@@ -66,28 +56,137 @@ class GScipEventHandlerContext {
   // queried within an event handler.
 
  private:
-  GScip* gscip_;
-  SCIP_EVENTTYPE event_type_;
+  GScip* const gscip_;
+  const SCIP_EVENTTYPE event_type_;
 };
 
-// Inherit from this to implement the callback.
+// Inherit from this to implement the callback and override Init() to call
+// CatchEvent() for the events you want to listen to.
+//
+// Usage:
+//
+//   class MyHandler : public GScipEventHandler {
+//    public:
+//     MyHandler()
+//       : GScipEventHandler({
+//           .name =  "my handler", .description = "something"}) {}
+//
+//     SCIP_RETCODE Init(GScip* const gscip) override {
+//       SCIP_CALL(CatchEvent(SCIP_EVENTTYPE_SOLFOUND));
+//       return SCIP_OKAY;
+//     }
+//
+//     SCIP_RETCODE Execute(const GScipEventHandlerContext context) override {
+//       ...
+//       return SCIP_OKAY;
+//     }
+//   };
+//
+//   std::unique_ptr<GScip> gscip = ...;
+//
+//   MyHandler handler;
+//   handler.Register(gscip.get());
+//
 class GScipEventHandler {
  public:
   explicit GScipEventHandler(const GScipEventHandlerDescription& description)
       : description_(description) {}
-  virtual ~GScipEventHandler() {}
-  const GScipEventHandlerDescription& description() const {
-    return description_;
+
+  virtual ~GScipEventHandler() = default;
+
+  // Registers this event handler to the given GScip.
+  //
+  // This function CHECKs that this handler has not been previously registered.
+  //
+  // The given GScip won't own this handler but will keep a pointer to it that
+  // will be used during the solve.
+  void Register(GScip* gscip);
+
+  // Initialization of the event handler. Called after the problem was
+  // transformed.
+  //
+  // The implementation should use the CatchEvent() method to register to global
+  // events.
+  //
+  // Return SCIP_OKAY, or use SCIP_CALL macro to wraps SCIP calls to properly
+  // propagate errors.
+  virtual SCIP_RETCODE Init(GScip* gscip) { return SCIP_OKAY; }
+
+  // Called when a caught event is emitted.
+  //
+  // Return SCIP_OKAY, or use SCIP_CALL macro to wraps SCIP calls to properly
+  // propagate errors.
+  virtual SCIP_RETCODE Execute(GScipEventHandlerContext context) {
+    return SCIP_OKAY;
   }
 
-  virtual void Execute(GScipEventHandlerContext context) = 0;
+  // Deinitialization of the event handler.
+  //
+  // Called before the transformed problem is freed and after all the events
+  // specified in CatchEvent() have been dropped (thus there is no need to
+  // implement this function to drop these events since this would have already
+  // been done).
+  //
+  // Return SCIP_OKAY, or use SCIP_CALL macro to wraps SCIP calls to properly
+  // propagate errors.
+  virtual SCIP_RETCODE Exit(GScip* gscip) { return SCIP_OKAY; }
+
+ protected:
+  // Catches a global event (i.e. not a variable or row depedent one) based on
+  // the input event_type mask.
+  //
+  // This method must only be called after the problem is transformed; typically
+  // it is called in the Init() virtual method.
+  //
+  // Caught events will be automatically dropped when the handler will be called
+  // on EXIT (before calling the corresponding Exit() member function).
+  //
+  // See scip/type_event.h for the list of possible events. This function
+  // corresponds to SCIPcatchEvent().
+  //
+  // TODO(user,user): Support Var and Row events.
+  //
+  // TODO(user,user): Support registering events in the EVENTINITSOL
+  // callback, which would cause them to be trapped only after presolve.
+  SCIP_RETCODE CatchEvent(SCIP_EVENTTYPE event_type);
 
  private:
-  GScipEventHandlerDescription description_;
-};
+  struct CaughtEvent {
+    CaughtEvent(const SCIP_EVENTTYPE event_type, const int filter_pos)
+        : event_type(event_type), filter_pos(filter_pos) {}
 
-// Handler is not owned but held.
-void RegisterGScipEventHandler(GScip* scip, GScipEventHandler* handler);
+    // The event_type mask for this catch.
+    SCIP_EVENTTYPE event_type;
+
+    // The key used by SCIP to identify this catch with SCIPdropEvent(). Using
+    // this key prevents SCIP from having to do a look up to find the catch and
+    // helps when there are duplicates.
+    //
+    // It is the index of the data associated to the catch in the array SCIP
+    // uses as storage (this index is stable, even after other catch added
+    // previously are removed, since SCIP maintains a free-list of removed items
+    // instead of renumbering all elements).
+    int filter_pos;
+  };
+
+  // Calls SCIPdropEvent() for all events in caught_events_ and clear this
+  // collection.
+  //
+  // This is not a member function since it needs to be visible to the SCIP Exit
+  // callback function.
+  friend SCIP_RETCODE DropAllEvents(GScipEventHandler& handler);
+
+  const GScipEventHandlerDescription description_;
+
+  // Pointer to GScip set by Register();
+  GScip* gscip_ = nullptr;
+
+  // Pointer to the event handler registered on SCIP.
+  SCIP_EVENTHDLR* event_handler_ = nullptr;
+
+  // Caught events via CatchEvent().
+  std::vector<CaughtEvent> caught_events_;
+};
 
 }  // namespace operations_research
 

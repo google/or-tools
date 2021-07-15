@@ -38,12 +38,21 @@ using GScipMessageHandler =
 
 namespace internal {
 
+// Functor that releases the input message handler if not nullptr. It is used as
+// the deleter for the MessageHandlerPtr unique_ptr.
+//
+// It is a wrapper around SCIPmessagehdlrRelease.
+struct ReleaseSCIPMessageHandler {
+  void operator()(SCIP_MESSAGEHDLR* handler) const;
+};
+
 // A unique_ptr that releases a SCIP message handler when destroyed.
 //
-// Use CaptureMessageHandlerPtr() to create values of this type, capturing their
-// input.
+// Use CaptureMessageHandlerPtr() to create to capture an existing message
+// handler and creates this automatic pointer that will released it on
+// destruction.
 using MessageHandlerPtr =
-    std::unique_ptr<SCIP_MESSAGEHDLR, void (*)(SCIP_MESSAGEHDLR*)>;
+    std::unique_ptr<SCIP_MESSAGEHDLR, ReleaseSCIPMessageHandler>;
 
 // Captures the input handler and returns a unique pointer that will release it
 // when destroyed.

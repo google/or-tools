@@ -785,8 +785,8 @@ absl::StatusOr<GScipResult> GScip::Solve(
   // handler.
   using internal::CaptureMessageHandlerPtr;
   using internal::MessageHandlerPtr;
-  MessageHandlerPtr previous_handler = CaptureMessageHandlerPtr(nullptr);
-  MessageHandlerPtr new_handler = CaptureMessageHandlerPtr(nullptr);
+  MessageHandlerPtr previous_handler;
+  MessageHandlerPtr new_handler;
   if (message_handler != nullptr) {
     previous_handler = CaptureMessageHandlerPtr(SCIPgetMessagehdlr(scip_));
     ASSIGN_OR_RETURN(new_handler,

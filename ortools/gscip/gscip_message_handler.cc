@@ -104,25 +104,19 @@ void SCIPMessageHandlerWarning(SCIP_MESSAGEHDLR* const handler, FILE*,
                             message);
 }
 
-// Release the input message handler.
-//
-// This function is a wrapper around SCIPmessagehdlrRelease which, in addition
-// to releasing the handler, also resets the pointer to it, thus has a pointer
-// on pointer argument. We can't use that as a deleter for a unique_ptr as in
-// MessageHandlerPtr since we need a function that a pointer argument.
-void ReleaseSCIPMessageHandler(SCIP_MESSAGEHDLR* handler) {
+}  // namespace
+
+void ReleaseSCIPMessageHandler::operator()(SCIP_MESSAGEHDLR* handler) const {
   if (handler != nullptr) {
     CHECK_EQ(SCIPmessagehdlrRelease(&handler), SCIP_OKAY);
   }
 }
 
-}  // namespace
-
 MessageHandlerPtr CaptureMessageHandlerPtr(SCIP_MESSAGEHDLR* const handler) {
   if (handler != nullptr) {
     SCIPmessagehdlrCapture(handler);
   }
-  return {handler, ReleaseSCIPMessageHandler};
+  return MessageHandlerPtr(handler);
 }
 
 absl::StatusOr<MessageHandlerPtr> MakeSCIPMessageHandler(
@@ -146,7 +140,7 @@ absl::StatusOr<MessageHandlerPtr> MakeSCIPMessageHandler(
   // the unique_ptr since the ownership has been transferred to SCIP.
   data.release();
 
-  return MessageHandlerPtr{message_handler, ReleaseSCIPMessageHandler};
+  return MessageHandlerPtr(message_handler);
 }
 
 ScopedSCIPMessageHandlerDisabler::ScopedSCIPMessageHandlerDisabler(
