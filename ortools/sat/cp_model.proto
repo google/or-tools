@@ -740,6 +740,10 @@ message CpSolverResponse {
   // changing your model to minimize the number of assumptions at false, but
   // this is likely an harder problem to solve.
   //
+  // Important: Currently, this is minimized only in single-thread and if the
+  // problem is not an optimization problem, otherwise, it will always include
+  // all the assumptions.
+  //
   // TODO(user): Allows for returning multiple core at once.
   repeated int32 sufficient_assumptions_for_infeasibility = 23;
 

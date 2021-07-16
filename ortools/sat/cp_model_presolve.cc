@@ -6425,6 +6425,7 @@ CpModelPresolver::CpModelPresolver(PresolveContext* context,
       context_->params().keep_all_feasible_solutions_in_presolve() ||
       context_->params().enumerate_all_solutions() ||
       context_->params().fill_tightened_domains_in_response() ||
+      !context_->working_model->assumptions().empty() ||
       !context_->params().cp_model_presolve();
 
   // We copy the search strategy to the mapping_model.
