@@ -100,7 +100,18 @@ test it on public CI and support can be broken.**
 
 There are several options that can be passed to CMake to modify how the code is built.<br>
 For all of these options and parameters you have to use `-D<Parameter_name>=<value>`.<br>
-Following a list of available options, for the full list run:
+
+For example, to generate build files including dependencies in a new subdirectory called 'build', run:
+```sh
+cmake -DBUILD_DEPS:BOOL=ON -H. -Bbuild
+```
+and then build with:
+```sh
+cd build
+cmake --build .
+```
+
+Following is a list of available options, for the full list run:
 
 ```sh
 cmake -S. -Bbuild -LH
