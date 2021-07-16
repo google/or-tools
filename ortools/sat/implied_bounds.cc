@@ -42,9 +42,10 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
     return;
   }
 
-  // We skip any IntegerLiteral refering to a variable with only two consecutive
-  // possible values. This is because, once shifted this will already be a
-  // variable in [0, 1] so we shouldn't gain much by substituing it.
+  // We skip any IntegerLiteral referring to a variable with only two
+  // consecutive possible values. This is because, once shifted this will
+  // already be a variable in [0, 1] so we shouldn't gain much by substituing
+  // it.
   if (integer_trail_->LevelZeroLowerBound(var) + 1 >=
       integer_trail_->LevelZeroUpperBound(var)) {
     return;
