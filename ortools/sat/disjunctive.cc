@@ -655,29 +655,19 @@ bool DisjunctiveDetectablePrecedences::Propagate() {
   // start_max >= end_min, so wouldn't be in detectable precedence.
   task_by_increasing_end_min_.clear();
   IntegerValue window_end = kMinIntegerValue;
-  for (const TaskTime task_time : helper_->TaskByIncreasingShiftedStartMin()) {
+  for (const TaskTime task_time : helper_->TaskByIncreasingStartMin()) {
     const int task = task_time.task_index;
     if (helper_->IsAbsent(task)) continue;
 
-    const IntegerValue shifted_smin = task_time.time;
+    // Note that the helper returns value assuming the task is present.
+    const IntegerValue start_min = helper_->StartMin(task);
     const IntegerValue size_min = helper_->SizeMin(task);
+    const IntegerValue end_min = helper_->EndMin(task);
+    DCHECK_GE(end_min, start_min + size_min);
 
-    // Tricky: Because we use the up to date version of size_min (that might
-    // have increased in one of the PropagateSubwindow() call) and the cached
-    // shifted_smin which didn't change, we cannot do shifted_smin +
-    // size_min which might be higher than the actual end_min_if_present.
-    // So we use the updated value instead.
-    //
-    // Note that we have the same problem below when window_end might be higher
-    // that it is actually, but that is fine since we will just decompose less.
-    const IntegerValue end_min_if_present =
-        std::max(helper_->EndMin(task), helper_->StartMin(task) + size_min);
-
-    // Note that we use the real StartMin() here, as this is the one we will
-    // push.
-    if (helper_->StartMin(task) < window_end) {
-      task_by_increasing_end_min_.push_back({task, end_min_if_present});
-      window_end = std::max(window_end, shifted_smin) + size_min;
+    if (start_min < window_end) {
+      task_by_increasing_end_min_.push_back({task, end_min});
+      window_end = std::max(window_end, start_min) + size_min;
       continue;
     }
 
@@ -688,8 +678,8 @@ bool DisjunctiveDetectablePrecedences::Propagate() {
 
     // Start of the next window.
     task_by_increasing_end_min_.clear();
-    task_by_increasing_end_min_.push_back({task, end_min_if_present});
-    window_end = end_min_if_present;
+    task_by_increasing_end_min_.push_back({task, end_min});
+    window_end = end_min;
   }
 
   if (task_by_increasing_end_min_.size() > 1 && !PropagateSubwindow()) {
