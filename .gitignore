@@ -57,12 +57,9 @@ bazel-*
 tools/docker/export
 
 # IDE stuff
-CMakeLists.txt.user
 *.userprefs
-*build*/*
 .idea/*
 .idea/
-build/
 cache/
 **/.vscode/*
 .DS_Store
@@ -87,3 +84,11 @@ examples/contrib/obj
 examples/dotnet/bin
 examples/dotnet/obj
 
+# cmake code gen (assumes -Bbuild)
+.cmake/
+CMakeCache.txt
+CMakeFiles
+CMakeLists.txt.user
+DartConfiguration.tcl
+*build*/*
+build/
