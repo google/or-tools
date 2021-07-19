@@ -57,6 +57,7 @@ bazel-*
 tools/docker/export
 
 # IDE stuff
+CMakeLists.txt.user
 *.userprefs
 .idea/*
 .idea/
@@ -88,7 +89,6 @@ examples/dotnet/obj
 .cmake/
 CMakeCache.txt
 CMakeFiles
-CMakeLists.txt.user
 DartConfiguration.tcl
 *build*/*
 build/
