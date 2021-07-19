@@ -103,12 +103,11 @@ For all of these options and parameters you have to use `-D<Parameter_name>=<val
 
 For example, to generate build files including dependencies in a new subdirectory called 'build', run:
 ```sh
-cmake -DBUILD_DEPS:BOOL=ON -H. -Bbuild
+cmake -S. -Bbuild  -DBUILD_DEPS:BOOL=ON
 ```
 and then build with:
 ```sh
-cd build
-cmake --build .
+cmake --build build
 ```
 
 Following is a list of available options, for the full list run:
