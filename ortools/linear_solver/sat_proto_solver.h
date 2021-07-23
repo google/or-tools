@@ -14,9 +14,12 @@
 #ifndef OR_TOOLS_LINEAR_SOLVER_SAT_PROTO_SOLVER_H_
 #define OR_TOOLS_LINEAR_SOLVER_SAT_PROTO_SOLVER_H_
 
+#include <functional>
+
 #include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/logging.h"
 
 namespace operations_research {
 
@@ -27,8 +30,16 @@ namespace operations_research {
 // If you need to change the solver parameters, please use the
 // EncodeSatParametersAsString() function below to set the request's
 // solver_specific_parameters field.
+//
+// The optional logging_callback will be called when the SAT parameter
+// log_search_progress is set to true. Passing a callback will disable the
+// default logging to INFO. Note though that by default the SAT parameter
+// log_to_stdout is true so even with a callback, the logs will appear on stdout
+// too unless log_to_stdout is set to false. The enable_internal_solver_output
+// in the request will act as the SAT parameter log_search_progress.
 absl::StatusOr<MPSolutionResponse> SatSolveProto(
-    MPModelRequest request, std::atomic<bool>* interrupt_solve = nullptr);
+    MPModelRequest request, std::atomic<bool>* interrupt_solve = nullptr,
+    std::function<void(const std::string&)> logging_callback = nullptr);
 
 // Returns a string that should be used in MPModelRequest's
 // solver_specific_parameters field to encode the SAT parameters.

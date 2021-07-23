@@ -66,7 +66,8 @@ MPSolverResponseStatus ToMPSolverResponseStatus(sat::CpSolverStatus status,
 }  // namespace
 
 absl::StatusOr<MPSolutionResponse> SatSolveProto(
-    MPModelRequest request, std::atomic<bool>* interrupt_solve) {
+    MPModelRequest request, std::atomic<bool>* interrupt_solve,
+    std::function<void(const std::string&)> logging_callback) {
   // By default, we use 8 threads as it allows to try a good set of orthogonal
   // parameters. This can be overridden by the user.
   sat::SatParameters params;
@@ -101,6 +102,9 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   // calling SolveCpModel() and call a common config function from here or from
   // inside Solve()?
   SolverLogger logger;
+  if (logging_callback != nullptr) {
+    logger.AddInfoLoggingCallback(logging_callback);
+  }
   logger.EnableLogging(params.log_search_progress());
   logger.SetLogToStdOut(params.log_to_stdout());
 
