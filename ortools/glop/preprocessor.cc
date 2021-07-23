@@ -123,8 +123,6 @@ bool MainLpPreprocessor::Run(LinearProgram* lp) {
   // The scaling is controled by use_scaling, not use_preprocessing.
   RUN_PREPROCESSOR(ScalingPreprocessor);
 
-  // This one must always run. It is needed by the revised simplex code.
-  RUN_PREPROCESSOR(AddSlackVariablesPreprocessor);
   return !preprocessors_.empty();
 }
 

@@ -138,10 +138,6 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&function_stats_);
   DCHECK(lp.IsCleanedUp());
   GLOP_RETURN_ERROR_IF_NULL(time_limit);
-  if (!lp.IsInEquationForm()) {
-    return Status(Status::ERROR_INVALID_PROBLEM,
-                  "The problem is not in the equations form.");
-  }
   Cleanup update_deterministic_time_on_return(
       [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
 
@@ -806,28 +802,30 @@ void RevisedSimplex::UseSingletonColumnInInitialBasis(RowToColMapping* basis) {
 }
 
 bool RevisedSimplex::InitializeMatrixAndTestIfUnchanged(
-    const LinearProgram& lp, bool* only_change_is_new_rows,
-    bool* only_change_is_new_cols, ColIndex* num_new_cols) {
+    const LinearProgram& lp, bool lp_is_in_equation_form,
+    bool* only_change_is_new_rows, bool* only_change_is_new_cols,
+    ColIndex* num_new_cols) {
   SCOPED_TIME_STAT(&function_stats_);
   DCHECK(only_change_is_new_rows != nullptr);
   DCHECK(only_change_is_new_cols != nullptr);
   DCHECK(num_new_cols != nullptr);
-  DCHECK_NE(kInvalidCol, lp.GetFirstSlackVariable());
   DCHECK_EQ(num_cols_, compact_matrix_.num_cols());
   DCHECK_EQ(num_rows_, compact_matrix_.num_rows());
 
-  DCHECK_EQ(lp.num_variables(),
-            lp.GetFirstSlackVariable() + RowToColIndex(lp.num_constraints()));
-  DCHECK(IsRightMostSquareMatrixIdentity(lp.GetSparseMatrix()));
+  // This works whether the lp is in equation form (with slack) or not.
   const bool old_part_of_matrix_is_unchanged =
       AreFirstColumnsAndRowsExactlyEquals(
           num_rows_, first_slack_col_, lp.GetSparseMatrix(), compact_matrix_);
+
+  // This is the only adaptation we need for the test below.
+  const ColIndex lp_first_slack =
+      lp_is_in_equation_form ? lp.GetFirstSlackVariable() : lp.num_variables();
 
   // Test if the matrix is unchanged, and if yes, just returns true. Note that
   // this doesn't check the columns corresponding to the slack variables,
   // because they were checked by lp.IsInEquationForm() when Solve() was called.
   if (old_part_of_matrix_is_unchanged && lp.num_constraints() == num_rows_ &&
-      lp.num_variables() == num_cols_) {
+      lp_first_slack == first_slack_col_) {
     return true;
   }
 
@@ -835,38 +833,45 @@ bool RevisedSimplex::InitializeMatrixAndTestIfUnchanged(
   // new rows (i.e new constraints).
   *only_change_is_new_rows = old_part_of_matrix_is_unchanged &&
                              lp.num_constraints() > num_rows_ &&
-                             lp.GetFirstSlackVariable() == first_slack_col_;
+                             lp_first_slack == first_slack_col_;
 
   // Check if the new matrix can be derived from the old one just by adding
   // new columns (i.e new variables).
   *only_change_is_new_cols = old_part_of_matrix_is_unchanged &&
                              lp.num_constraints() == num_rows_ &&
-                             lp.GetFirstSlackVariable() > first_slack_col_;
-  *num_new_cols =
-      *only_change_is_new_cols ? lp.num_variables() - num_cols_ : ColIndex(0);
+                             lp_first_slack > first_slack_col_;
+  *num_new_cols = *only_change_is_new_cols ? lp_first_slack - first_slack_col_
+                                           : ColIndex(0);
 
   // Initialize first_slack_.
-  first_slack_col_ = lp.GetFirstSlackVariable();
+  first_slack_col_ = lp_first_slack;
 
   // Initialize the new dimensions.
   num_rows_ = lp.num_constraints();
-  num_cols_ = lp.num_variables();
+  num_cols_ = lp_first_slack + RowToColIndex(lp.num_constraints());
 
   // Populate compact_matrix_ and transposed_matrix_ if needed. Note that we
   // already added all the slack variables at this point, so matrix_ will not
   // change anymore.
-  // TODO(user): This can be sped up by removing the MatrixView.
-  compact_matrix_.PopulateFromMatrixView(MatrixView(lp.GetSparseMatrix()));
+  if (lp_is_in_equation_form) {
+    // TODO(user): This can be sped up by removing the MatrixView, but then
+    // this path will likely go away.
+    compact_matrix_.PopulateFromMatrixView(MatrixView(lp.GetSparseMatrix()));
+  } else {
+    compact_matrix_.PopulateFromSparseMatrixAndAddSlacks(lp.GetSparseMatrix());
+  }
   if (parameters_.use_transposed_matrix()) {
     transposed_matrix_.PopulateFromTranspose(compact_matrix_);
   }
   return false;
 }
 
+// Preconditions: This should only be called if there are only new variable
+// in the lp.
 bool RevisedSimplex::OldBoundsAreUnchangedAndNewVariablesHaveOneBoundAtZero(
-    const LinearProgram& lp, ColIndex num_new_cols) {
+    const LinearProgram& lp, bool lp_is_in_equation_form,
+    ColIndex num_new_cols) {
   SCOPED_TIME_STAT(&function_stats_);
-  DCHECK_EQ(lp.num_variables(), num_cols_);
   DCHECK_LE(num_new_cols, first_slack_col_);
   const ColIndex first_new_col(first_slack_col_ - num_new_cols);
 
@@ -879,6 +884,7 @@ bool RevisedSimplex::OldBoundsAreUnchangedAndNewVariablesHaveOneBoundAtZero(
       return false;
     }
   }
+
   // Check that each new variable has a bound of zero.
   for (ColIndex col(first_new_col); col < first_slack_col_; ++col) {
     if (lp.variable_lower_bounds()[col] != 0.0 &&
@@ -886,11 +892,25 @@ bool RevisedSimplex::OldBoundsAreUnchangedAndNewVariablesHaveOneBoundAtZero(
       return false;
     }
   }
+
   // Check that the slack bounds are unchanged.
-  for (ColIndex col(first_slack_col_); col < num_cols_; ++col) {
-    if (lower_bounds[col - num_new_cols] != lp.variable_lower_bounds()[col] ||
-        upper_bounds[col - num_new_cols] != lp.variable_upper_bounds()[col]) {
-      return false;
+  if (lp_is_in_equation_form) {
+    for (ColIndex col(first_slack_col_); col < num_cols_; ++col) {
+      if (lower_bounds[col - num_new_cols] != lp.variable_lower_bounds()[col] ||
+          upper_bounds[col - num_new_cols] != lp.variable_upper_bounds()[col]) {
+        return false;
+      }
+    }
+  } else {
+    DCHECK_EQ(num_rows_, lp.num_constraints());
+    for (RowIndex row(0); row < num_rows_; ++row) {
+      const ColIndex col = first_slack_col_ + RowToColIndex(row);
+      if (lower_bounds[col - num_new_cols] !=
+              -lp.constraint_upper_bounds()[row] ||
+          upper_bounds[col - num_new_cols] !=
+              -lp.constraint_lower_bounds()[row]) {
+        return false;
+      }
     }
   }
   return true;
@@ -902,31 +922,40 @@ bool RevisedSimplex::InitializeObjectiveAndTestIfUnchanged(
 
   bool objective_is_unchanged = true;
   objective_.resize(num_cols_, 0.0);
-  DCHECK_EQ(num_cols_, lp.num_variables());
+
+  // This function work whether the lp is in equation form (with slack) or
+  // without, since the objective of the slacks are always zero.
+  DCHECK_GE(num_cols_, lp.num_variables());
+  for (ColIndex col(lp.num_variables()); col < num_cols_; ++col) {
+    if (objective_[col] != 0.0) {
+      objective_is_unchanged = false;
+      objective_[col] = 0.0;
+    }
+  }
+
   if (lp.IsMaximizationProblem()) {
     // Note that we use the minimization version of the objective internally.
     for (ColIndex col(0); col < lp.num_variables(); ++col) {
       const Fractional coeff = -lp.objective_coefficients()[col];
       if (objective_[col] != coeff) {
         objective_is_unchanged = false;
+        objective_[col] = coeff;
       }
-      objective_[col] = coeff;
     }
     objective_offset_ = -lp.objective_offset();
     objective_scaling_factor_ = -lp.objective_scaling_factor();
   } else {
     for (ColIndex col(0); col < lp.num_variables(); ++col) {
-      if (objective_[col] != lp.objective_coefficients()[col]) {
+      const Fractional coeff = lp.objective_coefficients()[col];
+      if (objective_[col] != coeff) {
         objective_is_unchanged = false;
-        break;
+        objective_[col] = coeff;
       }
-    }
-    if (!objective_is_unchanged) {
-      objective_ = lp.objective_coefficients();
     }
     objective_offset_ = lp.objective_offset();
     objective_scaling_factor_ = lp.objective_scaling_factor();
   }
+
   return objective_is_unchanged;
 }
 
@@ -1176,6 +1205,14 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
   parameters_ = initial_parameters_;
   PropagateParameters();
 
+  // We accept both kind of input.
+  //
+  // TODO(user): Ideally there should be no need to ever put the slack in the
+  // LinearProgram. That take extra memory (one big SparseColumn per slack) and
+  // just add visible overhead in incremental solve when one wants to add/remove
+  // constraints. But for historical reason, we handle both for now.
+  const bool lp_is_in_equation_form = lp.IsInEquationForm();
+
   // Calling InitializeMatrixAndTestIfUnchanged() first is important because
   // this is where num_rows_ and num_cols_ are computed.
   //
@@ -1188,13 +1225,15 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
   bool only_new_bounds = false;
   if (solution_state_.IsEmpty() || !notify_that_matrix_is_unchanged_) {
     matrix_is_unchanged = InitializeMatrixAndTestIfUnchanged(
-        lp, &only_change_is_new_rows, &only_change_is_new_cols, &num_new_cols);
+        lp, lp_is_in_equation_form, &only_change_is_new_rows,
+        &only_change_is_new_cols, &num_new_cols);
     only_new_bounds = only_change_is_new_cols && num_new_cols > 0 &&
                       OldBoundsAreUnchangedAndNewVariablesHaveOneBoundAtZero(
-                          lp, num_new_cols);
+                          lp, lp_is_in_equation_form, num_new_cols);
   } else if (DEBUG_MODE) {
     CHECK(InitializeMatrixAndTestIfUnchanged(
-        lp, &only_change_is_new_rows, &only_change_is_new_cols, &num_new_cols));
+        lp, lp_is_in_equation_form, &only_change_is_new_rows,
+        &only_change_is_new_cols, &num_new_cols));
   }
   notify_that_matrix_is_unchanged_ = false;
 
@@ -1202,8 +1241,12 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
   const bool objective_is_unchanged = InitializeObjectiveAndTestIfUnchanged(lp);
 
   const bool bounds_are_unchanged =
-      variables_info_.LoadBoundsAndReturnTrueIfUnchanged(
-          lp.variable_lower_bounds(), lp.variable_upper_bounds());
+      lp_is_in_equation_form
+          ? variables_info_.LoadBoundsAndReturnTrueIfUnchanged(
+                lp.variable_lower_bounds(), lp.variable_upper_bounds())
+          : variables_info_.LoadBoundsAndReturnTrueIfUnchanged(
+                lp.variable_lower_bounds(), lp.variable_upper_bounds(),
+                lp.constraint_lower_bounds(), lp.constraint_upper_bounds());
 
   // If parameters_.allow_simplex_algorithm_change() is true and we already have
   // a primal (resp. dual) feasible solution, then we use the primal (resp.

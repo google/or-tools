@@ -581,8 +581,9 @@ void LPSolver::RunRevisedSimplexIfNeeded(ProblemSolution* solution,
     num_revised_simplex_iterations_ = revised_simplex_->GetNumberOfIterations();
     solution->status = revised_simplex_->GetProblemStatus();
 
-    const ColIndex num_cols = revised_simplex_->GetProblemNumCols();
-    DCHECK_EQ(solution->primal_values.size(), num_cols);
+    // Make sure we do not copy the slacks added by revised_simplex_.
+    const ColIndex num_cols = solution->primal_values.size();
+    DCHECK_LE(num_cols, revised_simplex_->GetProblemNumCols());
     for (ColIndex col(0); col < num_cols; ++col) {
       solution->primal_values[col] = revised_simplex_->GetVariableValue(col);
       solution->variable_statuses[col] =

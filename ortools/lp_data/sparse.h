@@ -301,6 +301,10 @@ class CompactSparseMatrix {
   // each column is preserved.
   void PopulateFromMatrixView(const MatrixView& input);
 
+  // Creates a CompactSparseMatrix by copying the input and adding an identity
+  // matrix to the left of it.
+  void PopulateFromSparseMatrixAndAddSlacks(const SparseMatrix& input);
+
   // Creates a CompactSparseMatrix from the transpose of the given
   // CompactSparseMatrix. Note that the entries in each columns will be ordered
   // by row indices.

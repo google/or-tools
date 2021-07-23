@@ -39,6 +39,47 @@ bool VariablesInfo::LoadBoundsAndReturnTrueIfUnchanged(
   return false;
 }
 
+bool VariablesInfo::LoadBoundsAndReturnTrueIfUnchanged(
+    const DenseRow& variable_lower_bounds,
+    const DenseRow& variable_upper_bounds,
+    const DenseColumn& constraint_lower_bounds,
+    const DenseColumn& constraint_upper_bounds) {
+  const ColIndex num_cols = matrix_.num_cols();
+  const ColIndex num_variables = variable_upper_bounds.size();
+  const RowIndex num_rows = constraint_lower_bounds.size();
+
+  bool is_unchanged = (num_cols == lower_bounds_.size());
+  DCHECK_EQ(num_cols, num_variables + RowToColIndex(num_rows));
+  lower_bounds_.resize(num_cols, 0.0);
+  upper_bounds_.resize(num_cols, 0.0);
+  variable_type_.resize(num_cols, VariableType::FIXED_VARIABLE);
+
+  // Copy bounds of the variables.
+  for (ColIndex col(0); col < num_variables; ++col) {
+    if (lower_bounds_[col] != variable_lower_bounds[col] ||
+        upper_bounds_[col] != variable_upper_bounds[col]) {
+      lower_bounds_[col] = variable_lower_bounds[col];
+      upper_bounds_[col] = variable_upper_bounds[col];
+      is_unchanged = false;
+      variable_type_[col] = ComputeVariableType(col);
+    }
+  }
+
+  // Copy bounds of the slack.
+  for (RowIndex row(0); row < num_rows; ++row) {
+    const ColIndex col = num_variables + RowToColIndex(row);
+    if (lower_bounds_[col] != -constraint_upper_bounds[row] ||
+        upper_bounds_[col] != -constraint_lower_bounds[row]) {
+      lower_bounds_[col] = -constraint_upper_bounds[row];
+      upper_bounds_[col] = -constraint_lower_bounds[row];
+      is_unchanged = false;
+      variable_type_[col] = ComputeVariableType(col);
+    }
+  }
+
+  return is_unchanged;
+}
+
 void VariablesInfo::ResetStatusInfo() {
   const ColIndex num_cols = matrix_.num_cols();
   DCHECK_EQ(num_cols, lower_bounds_.size());

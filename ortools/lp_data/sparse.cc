@@ -453,6 +453,33 @@ void CompactSparseMatrix::PopulateFromMatrixView(const MatrixView& input) {
   starts_[input.num_cols()] = index;
 }
 
+void CompactSparseMatrix::PopulateFromSparseMatrixAndAddSlacks(
+    const SparseMatrix& input) {
+  num_cols_ = input.num_cols() + RowToColIndex(input.num_rows());
+  num_rows_ = input.num_rows();
+  const EntryIndex num_entries =
+      input.num_entries() + EntryIndex(num_rows_.value());
+  starts_.assign(num_cols_ + 1, EntryIndex(0));
+  coefficients_.assign(num_entries, 0.0);
+  rows_.assign(num_entries, RowIndex(0));
+  EntryIndex index(0);
+  for (ColIndex col(0); col < input.num_cols(); ++col) {
+    starts_[col] = index;
+    for (const SparseColumn::Entry e : input.column(col)) {
+      coefficients_[index] = e.coefficient();
+      rows_[index] = e.row();
+      ++index;
+    }
+  }
+  for (RowIndex row(0); row < num_rows_; ++row) {
+    starts_[input.num_cols() + RowToColIndex(row)] = index;
+    coefficients_[index] = 1.0;
+    rows_[index] = row;
+    ++index;
+  }
+  starts_[num_cols_] = index;
+}
+
 void CompactSparseMatrix::PopulateFromTranspose(
     const CompactSparseMatrix& input) {
   num_cols_ = RowToColIndex(input.num_rows());

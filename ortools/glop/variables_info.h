@@ -66,6 +66,13 @@ class VariablesInfo {
   bool LoadBoundsAndReturnTrueIfUnchanged(const DenseRow& new_lower_bounds,
                                           const DenseRow& new_upper_bounds);
 
+  // Same for an LP not in equation form.
+  bool LoadBoundsAndReturnTrueIfUnchanged(
+      const DenseRow& variable_lower_bounds,
+      const DenseRow& variable_upper_bounds,
+      const DenseColumn& constraint_lower_bounds,
+      const DenseColumn& constraint_upper_bounds);
+
   // Initializes the status according to the given BasisState. Incompatible
   // statuses will be corrected, and we transfrom the state correctly if new
   // columns / rows were added. Note however that one will need to update the

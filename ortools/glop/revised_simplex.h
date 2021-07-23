@@ -131,11 +131,13 @@ class RevisedSimplex {
 
   // Solves the given linear program.
   //
-  // Expects that the linear program is in the equations form Ax = 0 created by
-  // LinearProgram::AddSlackVariablesForAllRows, i.e. the rightmost square
-  // submatrix of A is an identity matrix, all its columns have been marked as
-  // slack variables, and the bounds of all constraints have been set to [0, 0].
-  // Returns ERROR_INVALID_PROBLEM, if these assumptions are violated.
+  // We accept two forms of LinearProgram:
+  // - The lp can be in the equations form Ax = 0 created by
+  //   LinearProgram::AddSlackVariablesForAllRows(), i.e. the rightmost square
+  //   submatrix of A is an identity matrix, all its columns have been marked as
+  //   slack variables, and the bounds of all constraints have been set to 0.
+  // - If not, we will convert it internally while copying it to the internal
+  //   structure used.
   //
   // By default, the algorithm tries to exploit the computation done during the
   // last Solve() call. It will analyze the difference of the new linear program
@@ -323,6 +325,7 @@ class RevisedSimplex {
   // have been added, in which case also sets num_new_cols to the number of
   // new columns.
   bool InitializeMatrixAndTestIfUnchanged(const LinearProgram& lp,
+                                          bool lp_is_in_equation_form,
                                           bool* only_change_is_new_rows,
                                           bool* only_change_is_new_cols,
                                           ColIndex* num_new_cols);
@@ -330,7 +333,8 @@ class RevisedSimplex {
   // Checks if the only change to the bounds is the addition of new columns,
   // and that the new columns have at least one bound equal to zero.
   bool OldBoundsAreUnchangedAndNewVariablesHaveOneBoundAtZero(
-      const LinearProgram& lp, ColIndex num_new_cols);
+      const LinearProgram& lp, bool lp_is_in_equation_form,
+      ColIndex num_new_cols);
 
   // Initializes objective-related internal data. Returns true if unchanged.
   bool InitializeObjectiveAndTestIfUnchanged(const LinearProgram& lp);
