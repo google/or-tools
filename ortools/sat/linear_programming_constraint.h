@@ -96,6 +96,8 @@ class ScatteredIntegerVector {
     return dense_vector_[col];
   }
 
+  const bool IsSparse() const { return is_sparse_; }
+
  private:
   // If is_sparse is true we maintain the non_zeros positions and bool vector
   // of dense_vector_. Otherwise we don't. Note that we automatically switch

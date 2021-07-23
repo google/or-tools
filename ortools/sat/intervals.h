@@ -553,7 +553,7 @@ inline void SchedulingConstraintHelper::AddSizeMinReason(
 inline void SchedulingConstraintHelper::AddSizeMaxReason(
     int t, IntegerValue upper_bound) {
   AddOtherReason(t);
-  CHECK(!IsAbsent(t));
+  DCHECK(!IsAbsent(t));
   AddGenericReason(sizes_[t], upper_bound, ends_[t], minus_starts_[t]);
 }
 

@@ -517,16 +517,13 @@ bool LinMinPropagator::PropagateLinearUpperBound(
 bool LinMinPropagator::Propagate() {
   if (exprs_.empty()) return true;
 
-  expr_lbs_.clear();
-
   // Count the number of interval that are possible candidate for the min.
   // Only the intervals for which lb > current_min_ub cannot.
-  const IntegerLiteral min_ub_literal =
-      integer_trail_->UpperBoundAsLiteral(min_var_);
   const IntegerValue current_min_ub = integer_trail_->UpperBound(min_var_);
   int num_intervals_that_can_be_min = 0;
   int last_possible_min_interval = 0;
 
+  expr_lbs_.clear();
   IntegerValue min_of_linear_expression_lb = kMaxIntegerValue;
   for (int i = 0; i < exprs_.size(); ++i) {
     const IntegerValue lb = LinExprLowerBound(exprs_[i], *integer_trail_);
@@ -545,17 +542,12 @@ bool LinMinPropagator::Propagate() {
   if (min_of_linear_expression_lb > current_min_ub) {
     min_of_linear_expression_lb = current_min_ub + 1;
   }
-
-  // Early experiments seems to show that the code if faster without relaxing
-  // the linear reason. But that might change in the future.
-  const bool use_slack = false;
   if (min_of_linear_expression_lb > integer_trail_->LowerBound(min_var_)) {
     std::vector<IntegerLiteral> local_reason;
     for (int i = 0; i < exprs_.size(); ++i) {
       const IntegerValue slack = expr_lbs_[i] - min_of_linear_expression_lb;
-      integer_trail_->AppendRelaxedLinearReason(
-          (use_slack ? slack : IntegerValue(0)), exprs_[i].coeffs,
-          exprs_[i].vars, &local_reason);
+      integer_trail_->AppendRelaxedLinearReason(slack, exprs_[i].coeffs,
+                                                exprs_[i].vars, &local_reason);
     }
     if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(
                                      min_var_, min_of_linear_expression_lb),
@@ -579,13 +571,14 @@ bool LinMinPropagator::Propagate() {
 
         // The reason is that all the other interval start after current_min_ub.
         // And that min_ub has its current value.
-        integer_reason_for_unique_candidate_.push_back(min_ub_literal);
+        integer_reason_for_unique_candidate_.push_back(
+            integer_trail_->UpperBoundAsLiteral(min_var_));
         for (int i = 0; i < exprs_.size(); ++i) {
           if (i == last_possible_min_interval) continue;
           const IntegerValue slack = expr_lbs_[i] - (current_min_ub + 1);
           integer_trail_->AppendRelaxedLinearReason(
-              (use_slack ? slack : IntegerValue(0)), exprs_[i].coeffs,
-              exprs_[i].vars, &integer_reason_for_unique_candidate_);
+              slack, exprs_[i].coeffs, exprs_[i].vars,
+              &integer_reason_for_unique_candidate_);
         }
         rev_unique_candidate_ = 1;
       }
@@ -692,19 +685,23 @@ void PositiveProductPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
 
 namespace {
 
-// TODO(user): Find better implementation?
+// TODO(user): Find better implementation? In pratice passing via double is
+// almost always correct, but the CapProd() might be a bit slow. However this
+// is only called when we do propagate something.
 IntegerValue FloorSquareRoot(IntegerValue a) {
-  IntegerValue result(static_cast<int64_t>(std::floor(std::sqrt(ToDouble(a)))));
-  while (result * result > a) --result;
-  while ((result + 1) * (result + 1) <= a) ++result;
+  IntegerValue result(static_cast<int64_t>(
+      std::floor(std::sqrt(static_cast<double>(a.value())))));
+  while (CapProd(result.value(), result.value()) > a) --result;
+  while (CapProd(result.value() + 1, result.value() + 1) <= a) ++result;
   return result;
 }
 
 // TODO(user): Find better implementation?
 IntegerValue CeilSquareRoot(IntegerValue a) {
-  IntegerValue result(static_cast<int64_t>(std::ceil(std::sqrt(ToDouble(a)))));
-  while (result * result < a) ++result;
-  while ((result - 1) * (result - 1) >= a) --result;
+  IntegerValue result(static_cast<int64_t>(
+      std::ceil(std::sqrt(static_cast<double>(a.value())))));
+  while (CapProd(result.value(), result.value()) < a) ++result;
+  while ((result.value() - 1) * (result.value() - 1) >= a) --result;
   return result;
 }
 
@@ -749,9 +746,12 @@ bool SquarePropagator::Propagate() {
     }
   } else if (max_x_square > max_s) {
     const IntegerValue new_max = FloorSquareRoot(max_s);
-    if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(x_, new_max), {},
-                                 {IntegerLiteral::LowerOrEqual(
-                                     s_, (new_max + 1) * (new_max + 1) - 1)})) {
+    if (!integer_trail_->Enqueue(
+            IntegerLiteral::LowerOrEqual(x_, new_max), {},
+            {IntegerLiteral::LowerOrEqual(
+                s_, IntegerValue(
+                        CapProd(new_max.value() + 1, new_max.value() + 1)) -
+                        1)})) {
       return false;
     }
   }

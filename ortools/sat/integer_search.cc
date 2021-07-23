@@ -348,7 +348,11 @@ std::function<BooleanOrIntegerLiteral()> PseudoCost(Model* model) {
 
 // A simple heuristic for scheduling with no overlaps.
 //
-// TODO(user): Extend to cumulative constraint.
+// TODO(user): Extend to cumulative constraint. A better design is probably
+// just to collect for each interval, the start_min that was pushed during the
+// last propagation if that interval was present. In case of optional interval,
+// we cannot "commit" the push, but we still do it, so if we record in the
+// interval repository that value, that should be enough for a good heuristic.
 std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
     Model* model) {
   auto* repo = model->GetOrCreate<ModelNoOverlapHelperRepository>();
@@ -403,8 +407,16 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
         if (!helper->IsPresent(t) ||
             !integer_trail->IsFixed(helper->Starts()[t]) ||
             !integer_trail->IsFixed(helper->Ends()[t])) {
-          const IntegerValue time =
-              std::max(helper->StartMin(t), first_free_spot);
+          IntegerValue time;
+          if (helper->IsPresent(t)) {
+            // If t is present, we asssume its start min was propagated
+            // correctly.
+            time = helper->StartMin(t);
+          } else {
+            // Otherwise we use "first_free_spot" even though it is not perfect
+            // in case not everything was fixed by this heuristic there.
+            time = std::max(helper->StartMin(t), first_free_spot);
+          }
 
           // For variable size, we compute the min size once the start is fixed
           // to time. This is needed to never pick the "artificial" makespan
@@ -439,7 +451,7 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
     int num_times = 0;
     heuristic->next_decision_override = [trail, integer_trail, best,
                                          num_times]() mutable {
-      if (++num_times > 10) {
+      if (++num_times > 5) {
         // We have been trying to fix this interval for a while. Do we miss
         // some propagation? In any case, try to see if the heuristic above
         // would select something else.

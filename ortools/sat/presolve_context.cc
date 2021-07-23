@@ -376,7 +376,7 @@ ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
   }
   modified_domains.Set(var);
   if (domains[var].IsEmpty()) {
-    is_unsat = true;
+    is_unsat_ = true;
     return false;
   }
 
@@ -474,7 +474,7 @@ void PresolveContext::AddVariableUsage(int c) {
 }
 
 void PresolveContext::UpdateConstraintVariableUsage(int c) {
-  if (is_unsat) return;
+  if (is_unsat_) return;
   DCHECK_EQ(constraint_to_vars_.size(), working_model->constraints_size());
   const ConstraintProto& ct = working_model->constraints(c);
 
@@ -512,7 +512,7 @@ bool PresolveContext::ConstraintVariableGraphIsUpToDate() const {
 }
 
 void PresolveContext::UpdateNewConstraintsVariableUsage() {
-  if (is_unsat) return;
+  if (is_unsat_) return;
   const int old_size = constraint_to_vars_.size();
   const int new_size = working_model->constraints_size();
   CHECK_LE(old_size, new_size);
@@ -527,7 +527,7 @@ void PresolveContext::UpdateNewConstraintsVariableUsage() {
 
 // TODO(user): Also test var_to_constraints_ !!
 bool PresolveContext::ConstraintVariableUsageIsConsistent() {
-  if (is_unsat) return true;  // We do not care in this case.
+  if (is_unsat_) return true;  // We do not care in this case.
   if (constraint_to_vars_.size() != working_model->constraints_size()) {
     LOG(INFO) << "Wrong constraint_to_vars size!";
     return false;
@@ -612,22 +612,27 @@ bool PresolveContext::AddRelation(int x, int y, int64_t c, int64_t o,
   return repo->TryAdd(x, y, c, o, allow_rep_x, allow_rep_y);
 }
 
+// Note that we just add the relation to the var_equiv_relations_, not to the
+// affine one. This is enough, and should prevent overflow in the affine
+// relation class: if we keep chaining variable fixed to zero, the coefficient
+// in the relation can overflow. For instance if x = 200 y and z = 200 t,
+// nothing prevent us if all end up being zero, to say y = z, which will result
+// in x = 200^2 t. If we make a few bad choices like this, then we can have an
+// overflow.
 void PresolveContext::ExploitFixedDomain(int var) {
-  CHECK(RefIsPositive(var));
-  CHECK(IsFixed(var));
+  DCHECK(RefIsPositive(var));
+  DCHECK(IsFixed(var));
   const int64_t min = MinOf(var);
   if (gtl::ContainsKey(constant_to_ref_, min)) {
     const int rep = constant_to_ref_[min].Get(this);
     if (RefIsPositive(rep)) {
       if (rep != var) {
-        AddRelation(var, rep, 1, 0, &affine_relations_);
         AddRelation(var, rep, 1, 0, &var_equiv_relations_);
       }
     } else {
       if (PositiveRef(rep) == var) {
         CHECK_EQ(min, 0);
       } else {
-        AddRelation(var, PositiveRef(rep), -1, 0, &affine_relations_);
         AddRelation(var, PositiveRef(rep), -1, 0, &var_equiv_relations_);
       }
     }
@@ -698,7 +703,7 @@ void PresolveContext::RemoveVariableFromAffineRelation(int var) {
 bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
                                           int64_t offset) {
   CHECK_NE(coeff, 0);
-  if (is_unsat) return false;
+  if (is_unsat_) return false;
 
   // TODO(user): I am not 100% sure why, but sometimes the representative is
   // fixed but that is not propagated to ref_x or ref_y and this causes issues.
@@ -708,7 +713,7 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
   if (IsFixed(ref_x)) {
     const int64_t lhs = DomainOf(ref_x).Min() - offset;
     if (lhs % std::abs(coeff) != 0) {
-      is_unsat = true;
+      is_unsat_ = true;
       return true;
     }
     static_cast<void>(IntersectDomainWith(ref_y, Domain(lhs / coeff)));
@@ -736,11 +741,11 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
     const int64_t a = coeff * ry.coeff - rx.coeff;
     const int64_t b = coeff * ry.offset + offset - rx.offset;
     if (a == 0) {
-      if (b != 0) is_unsat = true;
+      if (b != 0) is_unsat_ = true;
       return true;
     }
     if (b % a != 0) {
-      is_unsat = true;
+      is_unsat_ = true;
       return true;
     }
     UpdateRuleStats("affine: unique solution");
@@ -812,7 +817,7 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
 }
 
 void PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
-  if (is_unsat) return;
+  if (is_unsat_) return;
 
   CHECK(!VariableWasRemoved(ref_a));
   CHECK(!VariableWasRemoved(ref_b));
@@ -823,7 +828,7 @@ void PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
 
   if (ref_a == ref_b) return;
   if (ref_a == NegatedRef(ref_b)) {
-    is_unsat = true;
+    is_unsat_ = true;
     return;
   }
   const int var_a = PositiveRef(ref_a);
@@ -938,7 +943,7 @@ void PresolveContext::InitializeNewDomains() {
   for (int i = domains.size(); i < working_model->variables_size(); ++i) {
     domains.emplace_back(ReadDomainFromProto(working_model->variables(i)));
     if (domains.back().IsEmpty()) {
-      is_unsat = true;
+      is_unsat_ = true;
       return;
     }
     if (IsFixed(i)) ExploitFixedDomain(i);
@@ -983,7 +988,7 @@ bool PresolveContext::RemapEncodingMaps() {
         ++num_remapping;
         InsertVarValueEncodingInternal(lit, r.representative, rep_value,
                                        /*add_constraints=*/false);
-        if (is_unsat) return false;
+        if (is_unsat_) return false;
       }
       encoding_.erase(var);
     }
@@ -1000,7 +1005,7 @@ bool PresolveContext::RemapEncodingMaps() {
           InsertHalfVarValueEncoding(GetLiteralRepresentative(literal),
                                      r.representative, rep_value,
                                      /*imply_eq=*/true);
-          if (is_unsat) return false;
+          if (is_unsat_) return false;
         }
       }
       eq_half_encoding_.erase(var);
@@ -1018,7 +1023,7 @@ bool PresolveContext::RemapEncodingMaps() {
           InsertHalfVarValueEncoding(GetLiteralRepresentative(literal),
                                      r.representative, rep_value,
                                      /*imply_eq=*/false);
-          if (is_unsat) return false;
+          if (is_unsat_) return false;
         }
       }
       neq_half_encoding_.erase(var);
@@ -1030,7 +1035,7 @@ bool PresolveContext::RemapEncodingMaps() {
     }
   }
   encoding_remap_queue_.clear();
-  return !is_unsat;
+  return !is_unsat_;
 }
 
 void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
@@ -1039,7 +1044,7 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
   const int64_t var_min = MinOf(var);
   const int64_t var_max = MaxOf(var);
 
-  if (is_unsat) return;
+  if (is_unsat_) return;
 
   absl::flat_hash_map<int64_t, SavedLiteral>& var_map = encoding_[var];
 
@@ -1072,7 +1077,7 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
     if (min_literal != NegatedRef(max_literal)) {
       UpdateRuleStats("variables with 2 values: merge encoding literals");
       StoreBooleanEqualityRelation(min_literal, NegatedRef(max_literal));
-      if (is_unsat) return;
+      if (is_unsat_) return;
     }
     min_literal = GetLiteralRepresentative(min_literal);
     max_literal = GetLiteralRepresentative(max_literal);
@@ -1170,7 +1175,7 @@ void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
 
 bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
                                                  int64_t value, bool imply_eq) {
-  if (is_unsat) return false;
+  if (is_unsat_) return false;
   CHECK(RefIsPositive(var));
 
   // Creates the linking sets on demand.

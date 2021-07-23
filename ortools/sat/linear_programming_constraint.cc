@@ -92,7 +92,7 @@ bool ScatteredIntegerVector::AddLinearExpressionMultiple(
         return false;
       }
     }
-    if (static_cast<double>(non_zeros_.size()) < threshold) {
+    if (static_cast<double>(non_zeros_.size()) > threshold) {
       is_sparse_ = false;
     }
   } else {
@@ -360,7 +360,6 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   }
 
   lp_data_.NotifyThatColumnsAreClean();
-  lp_data_.AddSlackVariablesWhereNecessary(false);
   VLOG(1) << "LP relaxation: " << lp_data_.GetDimensionString() << ". "
           << constraint_manager_.AllConstraints().size()
           << " Managed constraints.";

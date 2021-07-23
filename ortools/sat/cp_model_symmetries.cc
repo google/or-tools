@@ -220,7 +220,10 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 
     switch (constraint.constraint_case()) {
       case ConstraintProto::CONSTRAINT_NOT_SET:
-        break;
+        // TODO(user): We continue for the corner case of a constraint not set
+        // with enforcement literal. We should probably clear this constraint
+        // before reaching here.
+        continue;
       case ConstraintProto::kLinear: {
         // TODO(user): We can use the same trick as for the implications to
         // encode relations of the form coeff * var_a <= coeff * var_b without

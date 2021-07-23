@@ -201,6 +201,12 @@ std::string ValidateLinearExpression(const CpModelProto& model,
 
 std::string ValidateIntervalConstraint(const CpModelProto& model,
                                        const ConstraintProto& ct) {
+  if (ct.enforcement_literal().size() > 1) {
+    return absl::StrCat(
+        "Interval with more than one enforcement literals are currently not "
+        "supported: ",
+        ProtobufShortDebugString(ct));
+  }
   const IntervalConstraintProto& arg = ct.interval();
   int num_view = 0;
   if (arg.has_start_view()) {

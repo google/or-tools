@@ -177,11 +177,11 @@ class PresolveContext {
       const std::string& message = "") {
     // TODO(user): Report any explanation for the client in a nicer way?
     VLOG(1) << "INFEASIBLE: '" << message << "'";
-    DCHECK(!is_unsat);
-    is_unsat = true;
+    DCHECK(!is_unsat_);
+    is_unsat_ = true;
     return false;
   }
-  bool ModelIsUnsat() const { return is_unsat; }
+  bool ModelIsUnsat() const { return is_unsat_; }
 
   // Stores a description of a rule that was just applied to have a summary of
   // what the presolve did at the end.
@@ -500,7 +500,7 @@ class PresolveContext {
   ModelRandomGenerator* random_;
 
   // Initially false, and set to true on the first inconsistency.
-  bool is_unsat = false;
+  bool is_unsat_ = false;
 
   // The current domain of each variables.
   std::vector<Domain> domains;

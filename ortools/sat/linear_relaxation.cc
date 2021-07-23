@@ -25,6 +25,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cuts.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/linear_constraint.h"
@@ -395,6 +396,47 @@ void AppendExactlyOneRelaxation(const ConstraintProto& ct, Model* model,
   }
 }
 
+std::vector<Literal> CreateAlternativeLiteralsWithView(
+    int num_literals, Model* model, LinearRelaxation* relaxation) {
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+
+  if (num_literals == 1) {
+    // This is not supposed to happen, but it is easy enough to cover, just
+    // in case. We might however want to use encoder->GetTrueLiteral().
+    const IntegerVariable var = model->Add(NewIntegerVariable(1, 1));
+    const Literal lit =
+        encoder->GetOrCreateLiteralAssociatedToEquality(var, IntegerValue(1));
+    return {lit};
+  }
+
+  if (num_literals == 2) {
+    const IntegerVariable var = model->Add(NewIntegerVariable(0, 1));
+    const Literal lit =
+        encoder->GetOrCreateLiteralAssociatedToEquality(var, IntegerValue(1));
+
+    // TODO(user): We shouldn't need to create this view ideally. Even better,
+    // we should be able to handle Literal natively in the linear relaxation,
+    // but that is a lot of work.
+    const IntegerVariable var2 = model->Add(NewIntegerVariable(0, 1));
+    encoder->AssociateToIntegerEqualValue(lit.Negated(), var2, IntegerValue(1));
+
+    return {lit, lit.Negated()};
+  }
+
+  std::vector<Literal> literals;
+  LinearConstraintBuilder lc_builder(model, IntegerValue(1), IntegerValue(1));
+  for (int i = 0; i < num_literals; ++i) {
+    const IntegerVariable var = model->Add(NewIntegerVariable(0, 1));
+    const Literal lit =
+        encoder->GetOrCreateLiteralAssociatedToEquality(var, IntegerValue(1));
+    literals.push_back(lit);
+    CHECK(lc_builder.AddLiteralTerm(lit, IntegerValue(1)));
+  }
+  model->Add(ExactlyOneConstraint(literals));
+  relaxation->linear_constraints.push_back(lc_builder.Build());
+  return literals;
+}
+
 namespace {
 // Adds linearization of int max constraints. This can also be used to linearize
 // int min with negated variables.
@@ -416,61 +458,28 @@ void AppendMaxRelaxationHelper(IntegerVariable target,
 
   // Part 2: Encode upper bound on X.
   if (!encode_other_direction) return;
-  GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
-  // For size = 2, we do this with 1 less variable.
-  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-  if (vars.size() == 2) {
-    IntegerVariable y = model->Add(NewIntegerVariable(0, 1));
-    const Literal y_lit =
-        encoder->GetOrCreateLiteralAssociatedToEquality(y, IntegerValue(1));
-    AppendEnforcedUpperBound(y_lit, target, vars[0], model, relaxation);
 
-    // TODO(user,user): It makes more sense to use ConditionalLowerOrEqual()
-    // here, but that degrades perf on the road*.fzn problem. Understand why.
-    IntegerSumLE* upper_bound1 = new IntegerSumLE(
-        {y_lit}, {target, vars[0]}, {IntegerValue(1), IntegerValue(-1)},
-        IntegerValue(0), model);
-    upper_bound1->RegisterWith(watcher);
-    model->TakeOwnership(upper_bound1);
-    AppendEnforcedUpperBound(y_lit.Negated(), target, vars[1], model,
-                             relaxation);
-    IntegerSumLE* upper_bound2 = new IntegerSumLE(
-        {y_lit.Negated()}, {target, vars[1]},
-        {IntegerValue(1), IntegerValue(-1)}, IntegerValue(0), model);
-    upper_bound2->RegisterWith(watcher);
-    model->TakeOwnership(upper_bound2);
-    return;
-  }
-  // For each X_i, we encode y_i => X <= X_i. And at least one of the y_i is
+  // For each X_i, we encode l_i => X <= X_i. And at least one of the l_i is
   // true. Note that the correct y_i will be chosen because of the first part in
   // linearlization (X >= X_i).
-  // TODO(user,user): Only lower bound is needed, experiment.
-  LinearConstraintBuilder lc_exactly_one(model, IntegerValue(1),
-                                         IntegerValue(1));
-  std::vector<Literal> exactly_one_literals;
-  exactly_one_literals.reserve(vars.size());
-  for (const IntegerVariable var : vars) {
-    if (target == var) continue;
-    // y => X <= X_i.
-    // <=> max_term_value * y + X - X_i <= max_term_value.
-    // where max_tern_value is X_ub - X_i_lb.
-    IntegerVariable y = model->Add(NewIntegerVariable(0, 1));
-    const Literal y_lit =
-        encoder->GetOrCreateLiteralAssociatedToEquality(y, IntegerValue(1));
-
-    AppendEnforcedUpperBound(y_lit, target, var, model, relaxation);
+  GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
+  std::vector<Literal> literals =
+      CreateAlternativeLiteralsWithView(vars.size(), model, relaxation);
+  for (int i = 0; i < vars.size(); ++i) {
+    // TODO(user,user): Only lower bound is needed, experiment.
+    //
+    // TODO(user,user): It makes more sense to use ConditionalLowerOrEqual()
+    // here since only the lower bounding is needed, but that degrades perf on
+    // the road*.fzn problem. Understand why.
+    AppendEnforcedUpperBound(literals[i], target, vars[i], model, relaxation);
     IntegerSumLE* upper_bound_constraint = new IntegerSumLE(
-        {y_lit}, {target, var}, {IntegerValue(1), IntegerValue(-1)},
+        {literals[i]}, {target, vars[i]}, {IntegerValue(1), IntegerValue(-1)},
         IntegerValue(0), model);
     upper_bound_constraint->RegisterWith(watcher);
     model->TakeOwnership(upper_bound_constraint);
-    exactly_one_literals.push_back(y_lit);
-
-    CHECK(lc_exactly_one.AddLiteralTerm(y_lit, IntegerValue(1)));
   }
-  model->Add(ExactlyOneConstraint(exactly_one_literals));
-  relaxation->linear_constraints.push_back(lc_exactly_one.Build());
 }
+
 }  // namespace
 
 void AppendIntMaxRelaxation(const ConstraintProto& ct,
@@ -754,59 +763,52 @@ void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
                           relaxation);
 }
 
-std::vector<IntegerVariable> AppendLinMaxRelaxation(
-    IntegerVariable target, const std::vector<LinearExpression>& exprs,
-    Model* model, LinearRelaxation* relaxation) {
-  // We want to linearize X = max(exprs[1], exprs[2], ..., exprs[d]).
-  // Part 1: Encode X >= max(exprs[1], exprs[2], ..., exprs[d])
-  for (const LinearExpression& expr : exprs) {
-    LinearConstraintBuilder lc(model, kMinIntegerValue, -expr.offset);
-    for (int i = 0; i < expr.vars.size(); ++i) {
-      lc.AddTerm(expr.vars[i], expr.coeffs[i]);
-    }
-    lc.AddTerm(target, IntegerValue(-1));
+void AppendLinMaxRelaxationPart1(const ConstraintProto& ct, Model* model,
+                                 LinearRelaxation* relaxation) {
+  auto* mapping = model->GetOrCreate<CpModelMapping>();
+
+  // We want to linearize target = max(exprs[1], exprs[2], ..., exprs[d]).
+  // Part 1: Encode target >= max(exprs[1], exprs[2], ..., exprs[d])
+  const LinearExpression negated_target =
+      NegationOf(mapping->GetExprFromProto(ct.lin_max().target()));
+  for (int i = 0; i < ct.lin_max().exprs_size(); ++i) {
+    const LinearExpression expr =
+        mapping->GetExprFromProto(ct.lin_max().exprs(i));
+    LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
+    lc.AddLinearExpression(negated_target);
+    lc.AddLinearExpression(expr);
     relaxation->linear_constraints.push_back(lc.Build());
   }
+}
 
-  // Part 2: Encode upper bound on X.
-
-  // Add linking constraint to the CP solver
-  // sum zi = 1 and for all i, zi => max = expr_i.
+// Part 2: Encode upper bound on X.
+//
+// Add linking constraint to the CP solver
+// sum zi = 1 and for all i, zi => max = expr_i.
+void AppendLinMaxRelaxationPart2(
+    IntegerVariable target, const std::vector<Literal>& alternative_literals,
+    const std::vector<LinearExpression>& exprs, Model* model,
+    LinearRelaxation* relaxation) {
   const int num_exprs = exprs.size();
-  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
   GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
 
-  // TODO(user,user): For the case where num_exprs = 2, Create only one z
-  // var.
-  std::vector<IntegerVariable> z_vars;
-  std::vector<Literal> z_lits;
-  z_vars.reserve(num_exprs);
-  z_lits.reserve(num_exprs);
-  LinearConstraintBuilder lc_exactly_one(model, IntegerValue(1),
-                                         IntegerValue(1));
-  std::vector<Literal> exactly_one_literals;
+  // First add the CP constraints.
   for (int i = 0; i < num_exprs; ++i) {
-    IntegerVariable z = model->Add(NewIntegerVariable(0, 1));
-    z_vars.push_back(z);
-    const Literal z_lit =
-        encoder->GetOrCreateLiteralAssociatedToEquality(z, IntegerValue(1));
-    z_lits.push_back(z_lit);
     LinearExpression local_expr;
     local_expr.vars = NegationOf(exprs[i].vars);
     local_expr.vars.push_back(target);
     local_expr.coeffs = exprs[i].coeffs;
     local_expr.coeffs.push_back(IntegerValue(1));
-    IntegerSumLE* upper_bound = new IntegerSumLE(
-        {z_lit}, local_expr.vars, local_expr.coeffs, exprs[i].offset, model);
+    IntegerSumLE* upper_bound =
+        new IntegerSumLE({alternative_literals[i]}, local_expr.vars,
+                         local_expr.coeffs, exprs[i].offset, model);
     upper_bound->RegisterWith(watcher);
     model->TakeOwnership(upper_bound);
-
-    CHECK(lc_exactly_one.AddLiteralTerm(z_lit, IntegerValue(1)));
   }
-  model->Add(ExactlyOneConstraint(z_lits));
 
   // For the relaxation, we use different constraints with a stronger linear
   // relaxation as explained in the .h
+  //
   // TODO(user,user): Consider passing the x_vars to this method instead of
   // computing it here.
   std::vector<IntegerVariable> x_vars;
@@ -814,6 +816,7 @@ std::vector<IntegerVariable> AppendLinMaxRelaxation(
     x_vars.insert(x_vars.end(), exprs[i].vars.begin(), exprs[i].vars.end());
   }
   gtl::STLSortAndRemoveDuplicates(&x_vars);
+
   // All expressions should only contain positive variables.
   DCHECK(std::all_of(x_vars.begin(), x_vars.end(), [](IntegerVariable var) {
     return VariableIsPositive(var);
@@ -842,14 +845,11 @@ std::vector<IntegerVariable> AppendLinMaxRelaxation(
       lc.AddTerm(exprs[i].vars[j], -exprs[i].coeffs[j]);
     }
     for (int j = 0; j < num_exprs; ++j) {
-      CHECK(lc.AddLiteralTerm(z_lits[j],
+      CHECK(lc.AddLiteralTerm(alternative_literals[j],
                               -exprs[j].offset - sum_of_max_corner_diff[i][j]));
     }
     relaxation->linear_constraints.push_back(lc.Build());
   }
-
-  relaxation->linear_constraints.push_back(lc_exactly_one.Build());
-  return z_vars;
 }
 
 void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
@@ -955,6 +955,10 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       AppendIntMaxRelaxation(ct,
                              /*encode_other_direction=*/linearization_level > 1,
                              model, relaxation);
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kLinMax: {
+      AppendLinMaxRelaxationPart1(ct, model, relaxation);
       break;
     }
     case ConstraintProto::ConstraintCase::kIntMin: {
@@ -1184,12 +1188,22 @@ void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
         PositiveVarExpr(mapping->GetExprFromProto(ct.lin_max().exprs(i))));
   }
 
-  // FIXME: Add lin max relaxation at level 1.
+  const std::vector<Literal> alternative_literals =
+      CreateAlternativeLiteralsWithView(exprs.size(), m, relaxation);
+
+  // TODO(user): Move this out of here.
+  //
   // Add initial big-M linear relaxation.
   // z_vars[i] == 1 <=> target = exprs[i].
-  const std::vector<IntegerVariable> z_vars =
-      AppendLinMaxRelaxation(target, exprs, m, relaxation);
+  AppendLinMaxRelaxationPart2(target, alternative_literals, exprs, m,
+                              relaxation);
 
+  std::vector<IntegerVariable> z_vars;
+  auto* encoder = m->GetOrCreate<IntegerEncoder>();
+  for (const Literal lit : alternative_literals) {
+    z_vars.push_back(encoder->GetLiteralView(lit));
+    CHECK_NE(z_vars.back(), kNoIntegerVariable);
+  }
   relaxation->cut_generators.push_back(
       CreateLinMaxCutGenerator(target, exprs, z_vars, m));
 }
@@ -1249,6 +1263,66 @@ void TryToAddCutGenerators(const ConstraintProto& ct, int linearization_level,
   }
 }
 
+// If we have an exactly one between literals l_i, and each l_i => var ==
+// value_i, then we can add a strong linear relaxation: var = sum l_i * value_i.
+//
+// This codes detect this and add the corresponding linear equations.
+void AppendElementEncodingRelaxation(const CpModelProto& model_proto, Model* m,
+                                     LinearRelaxation* relaxation) {
+  auto* implied_bounds = m->GetOrCreate<ImpliedBounds>();
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+
+  for (const ConstraintProto& ct : model_proto.constraints()) {
+    if (ct.constraint_case() != ConstraintProto::ConstraintCase::kExactlyOne) {
+      continue;
+    }
+
+    // Project the implied values onto each integer variable.
+    absl::flat_hash_map<IntegerVariable,
+                        std::vector<std::pair<Literal, IntegerValue>>>
+        var_to_literal_value_list;
+    for (const int l : ct.exactly_one().literals()) {
+      const Literal literal = mapping->Literal(l);
+      for (const auto& var_value : implied_bounds->GetImpliedValues(literal)) {
+        var_to_literal_value_list[var_value.first].push_back(
+            std::make_pair(literal, var_value.second));
+      }
+    }
+
+    // Search for variable fully covered by the literals of the exactly_one.
+    for (const auto& var_encoding : var_to_literal_value_list) {
+      if (var_encoding.second.size() < ct.exactly_one().literals_size()) {
+        continue;
+      }
+
+      // We only want to deal with the case with duplicate values, because
+      // otherwise, the target will be fully encoded, and this is already
+      // covered by another function.
+      IntegerValue min_value = kMaxIntegerValue;
+      {
+        absl::flat_hash_set<IntegerValue> values;
+        for (const auto& literal_value : var_encoding.second) {
+          min_value = std::min(min_value, literal_value.second);
+          values.insert(literal_value.second);
+        }
+        if (values.size() == ct.exactly_one().literals_size()) continue;
+      }
+
+      LinearConstraintBuilder linear_encoding(m, -min_value, -min_value);
+      linear_encoding.AddTerm(var_encoding.first, IntegerValue(-1));
+      for (const auto& literal_value : var_encoding.second) {
+        const IntegerValue delta_min = literal_value.second - min_value;
+        if (delta_min != 0) {
+          if (!linear_encoding.AddLiteralTerm(literal_value.first, delta_min)) {
+            return;
+          }
+        }
+      }
+      relaxation->linear_constraints.push_back(linear_encoding.Build());
+    }
+  }
+}
+
 void ComputeLinearRelaxation(const CpModelProto& model_proto,
                              int linearization_level, Model* m,
                              LinearRelaxation* relaxation) {
@@ -1265,7 +1339,7 @@ void ComputeLinearRelaxation(const CpModelProto& model_proto,
     TryToAddCutGenerators(ct, linearization_level, m, relaxation);
   }
 
-  // Linearize the encoding of variable that are fully encoded in the proto.
+  // Linearize the encoding of variable that are fully encoded.
   int num_full_encoding_relaxations = 0;
   int num_partial_encoding_relaxations = 0;
   for (int i = 0; i < model_proto.variables_size(); ++i) {
@@ -1300,6 +1374,12 @@ void ComputeLinearRelaxation(const CpModelProto& model_proto,
     if (relaxation->linear_constraints.size() > old) {
       ++num_partial_encoding_relaxations;
     }
+  }
+
+  // TODO(user): This is really similar to the AppendFullEncodingRelaxation()
+  // above. Investigate if we can merge the code.
+  if (linearization_level >= 2) {
+    AppendElementEncodingRelaxation(model_proto, m, relaxation);
   }
 
   if (!m->GetOrCreate<SatSolver>()->FinishPropagation()) return;

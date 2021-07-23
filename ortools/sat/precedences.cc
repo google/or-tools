@@ -919,6 +919,24 @@ int PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraints(Model* model) {
       num_added_constraints += AddGreaterThanAtLeastOneOfConstraintsFromClause(
           clause->AsSpan(), model);
     }
+
+    // It is common that there is only two alternatives to push a variable.
+    // In this case, our presolve most likely made sure that the two are
+    // controlled by a single Boolean. This allows to detect this and add the
+    // appropriate greater than at least one of.
+    const int num_booleans = solver->NumVariables();
+    if (num_booleans < 1e6) {
+      for (int i = 0; i < num_booleans; ++i) {
+        if (time_limit->LimitReached()) return num_added_constraints;
+        if (solver->IsModelUnsat()) return num_added_constraints;
+        num_added_constraints +=
+            AddGreaterThanAtLeastOneOfConstraintsFromClause(
+                {Literal(BooleanVariable(i), true),
+                 Literal(BooleanVariable(i), false)},
+                model);
+      }
+    }
+
   } else {
     num_added_constraints +=
         AddGreaterThanAtLeastOneOfConstraintsWithClauseAutoDetection(model);

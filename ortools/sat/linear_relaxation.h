@@ -70,6 +70,12 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
                                                 const Model& model,
                                                 LinearRelaxation* relaxation);
 
+// Returns a vector of new literals in exactly one relationship.
+// In addition, this create an IntegerView for all these literals and also add
+// the exactly one to the LinearRelaxation.
+std::vector<Literal> CreateAlternativeLiteralsWithView(
+    int num_literals, Model* model, LinearRelaxation* relaxation);
+
 // Adds linearization of int max constraints. Returns a vector of z vars such
 // that: z_vars[l] == 1 <=> target = exprs[l].
 //
@@ -89,9 +95,12 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
 // Reference: "Strong mixed-integer programming formulations for trained neural
 // networks" by Ross Anderson et. (https://arxiv.org/pdf/1811.01988.pdf).
 // TODO(user): Support linear expression as target.
-std::vector<IntegerVariable> AppendLinMaxRelaxation(
-    IntegerVariable target, const std::vector<LinearExpression>& exprs,
-    Model* model, LinearRelaxation* relaxation);
+void AppendLinMaxRelaxationPart1(const ConstraintProto& ct, Model* model,
+                                 LinearRelaxation* relaxation);
+void AppendLinMaxRelaxationPart2(
+    IntegerVariable target, const std::vector<Literal>& alternative_literals,
+    const std::vector<LinearExpression>& exprs, Model* model,
+    LinearRelaxation* relaxation);
 
 void AppendBoolOrRelaxation(const ConstraintProto& ct, Model* model,
                             LinearRelaxation* relaxation);

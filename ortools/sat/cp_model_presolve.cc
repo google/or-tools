@@ -923,6 +923,7 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
       // target_ref => at_least_one(max_literals);
       ConstraintProto* clause = context_->working_model->add_constraints();
       clause->add_enforcement_literal(target_ref);
+      clause->mutable_bool_or();
       for (const int lit : max_literals) {
         clause->mutable_bool_or()->add_literals(lit);
       }
@@ -936,6 +937,7 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
         // not(target_ref) => at_least_one(min_literals).
         ConstraintProto* clause = context_->working_model->add_constraints();
         clause->add_enforcement_literal(NegatedRef(target_ref));
+        clause->mutable_bool_or();
         for (const int lit : min_literals) {
           clause->mutable_bool_or()->add_literals(lit);
         }
@@ -5160,6 +5162,20 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
     case ConstraintProto::ConstraintCase::kIntDiv:
       return PresolveIntDiv(ct);
     case ConstraintProto::ConstraintCase::kLinear: {
+      // In the presence of affine relation, it is possible that the sign of a
+      // variable change during canonicalization, and a variable that could
+      // freely move in one direction can no longer do so. So we make sure we
+      // always remove c from all the maps before re-inserting it in
+      // PropagateDomainsInLinear().
+      //
+      // TODO(user): The move in only one direction code is redundant with the
+      // dual bound strengthening code. So maybe we don't need both. Especially
+      // since the implementation here is a bit hacky.
+      for (const int ref : ct->linear().vars()) {
+        const int var = PositiveRef(ref);
+        context_->var_to_lb_only_constraints[var].erase(c);
+        context_->var_to_ub_only_constraints[var].erase(c);
+      }
       if (CanonicalizeLinear(ct)) {
         context_->UpdateConstraintVariableUsage(c);
       }
@@ -6425,6 +6441,7 @@ CpModelPresolver::CpModelPresolver(PresolveContext* context,
       context_->params().keep_all_feasible_solutions_in_presolve() ||
       context_->params().enumerate_all_solutions() ||
       context_->params().fill_tightened_domains_in_response() ||
+      !context_->working_model->assumptions().empty() ||
       !context_->params().cp_model_presolve();
 
   // We copy the search strategy to the mapping_model.

@@ -13,6 +13,7 @@
 
 #include "ortools/sat/cp_model_expand.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <map>
@@ -556,125 +557,129 @@ void ExpandInverse(ConstraintProto* ct, PresolveContext* context) {
   context->UpdateRuleStats("inverse: expanded");
 }
 
-void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
+// A[V] == V means for all i, V == i => A_i == i
+void ExpandElementWithTargetEqualIndex(ConstraintProto* ct,
+                                       PresolveContext* context) {
+  const ElementConstraintProto& element = ct->element();
+  DCHECK_EQ(element.index(), element.target());
+
+  const int index_ref = element.index();
+  std::vector<int64_t> valid_indices;
+  for (const ClosedInterval& interval : context->DomainOf(index_ref)) {
+    for (int64_t v = interval.start; v <= interval.end; ++v) {
+      if (!context->DomainContains(element.vars(v), v)) continue;
+      valid_indices.push_back(v);
+    }
+  }
+  if (valid_indices.size() < context->DomainOf(index_ref).Size()) {
+    if (!context->IntersectDomainWith(index_ref,
+                                      Domain::FromValues(valid_indices))) {
+      VLOG(1) << "No compatible variable domains in "
+                 "ExpandElementWithTargetEqualIndex()";
+      return (void)context->NotifyThatModelIsUnsat();
+    }
+    context->UpdateRuleStats("element: reduced index domain");
+  }
+
+  for (const ClosedInterval& interval : context->DomainOf(index_ref)) {
+    for (int64_t v = interval.start; v <= interval.end; ++v) {
+      const int var = element.vars(v);
+      if (context->MinOf(var) == v && context->MaxOf(var) == v) continue;
+      context->AddImplyInDomain(
+          context->GetOrCreateVarValueEncoding(index_ref, v), var, Domain(v));
+    }
+  }
+  context->UpdateRuleStats(
+      "element: expanded with special case target = index");
+  ct->Clear();
+}
+
+// Special case if the array of the element is filled with constant values.
+void ExpandConstantArrayElement(ConstraintProto* ct, PresolveContext* context) {
   const ElementConstraintProto& element = ct->element();
   const int index_ref = element.index();
   const int target_ref = element.target();
-  const int size = element.vars_size();
 
-  if (!context->IntersectDomainWith(index_ref, Domain(0, size - 1))) {
-    VLOG(1) << "Empty domain for the index variable in ExpandElement()";
-    return (void)context->NotifyThatModelIsUnsat();
-  }
-
-  bool all_constants = true;
-  absl::flat_hash_map<int64_t, int> constant_var_values_usage;
-  std::vector<int64_t> constant_var_values;
-  std::vector<int64_t> invalid_indices;
-  Domain index_domain = context->DomainOf(index_ref);
-  Domain target_domain = context->DomainOf(target_ref);
-  for (const ClosedInterval& interval : index_domain) {
-    for (int64_t v = interval.start; v <= interval.end; ++v) {
-      const int var = element.vars(v);
-      const Domain var_domain = context->DomainOf(var);
-      if (var_domain.IntersectionWith(target_domain).IsEmpty()) {
-        invalid_indices.push_back(v);
-        continue;
-      }
-      if (var_domain.Min() != var_domain.Max()) {
-        all_constants = false;
-        break;
-      }
-
-      const int64_t value = var_domain.Min();
-      if (constant_var_values_usage[value]++ == 0) {
-        constant_var_values.push_back(value);
-      }
-    }
-  }
-
-  if (!invalid_indices.empty() && target_ref != index_ref) {
-    if (!context->IntersectDomainWith(
-            index_ref, Domain::FromValues(invalid_indices).Complement())) {
-      VLOG(1) << "No compatible variable domains in ExpandElement()";
-      return (void)context->NotifyThatModelIsUnsat();
-    }
-
-    // Re-read the domain.
-    index_domain = context->DomainOf(index_ref);
-  }
+  // Index and target domain have been reduced before calling this function.
+  const Domain index_domain = context->DomainOf(index_ref);
+  const Domain target_domain = context->DomainOf(target_ref);
 
   // This BoolOrs implements the deduction that if all index literals pointing
-  // to the same values in the constant array are false, then this value is no
+  // to the same value in the constant array are false, then this value is no
   // no longer valid for the target variable. They are created only for values
   // that have multiples literals supporting them.
   // Order is not important.
   absl::flat_hash_map<int64_t, BoolArgumentProto*> supports;
-  if (all_constants && target_ref != index_ref) {
-    if (!context->IntersectDomainWith(
-            target_ref, Domain::FromValues(constant_var_values))) {
-      VLOG(1) << "Empty domain for the target variable in ExpandElement()";
-      return;
-    }
-
-    target_domain = context->DomainOf(target_ref);
-    if (target_domain.Size() == 1) {
-      context->UpdateRuleStats("element: one value array");
-      ct->Clear();
-      return;
-    }
-
-    for (const ClosedInterval& interval : target_domain) {
+  {
+    absl::flat_hash_map<int64_t, int> constant_var_values_usage;
+    for (const ClosedInterval& interval : index_domain) {
       for (int64_t v = interval.start; v <= interval.end; ++v) {
-        const int usage = gtl::FindOrDie(constant_var_values_usage, v);
-        if (usage > 1) {
-          const int lit = context->GetOrCreateVarValueEncoding(target_ref, v);
+        DCHECK(context->IsFixed(element.vars(v)));
+        const int64_t value = context->MinOf(element.vars(v));
+        if (++constant_var_values_usage[value] == 2) {
+          // First time we cross > 1.
           BoolArgumentProto* const support =
               context->working_model->add_constraints()->mutable_bool_or();
-          supports[v] = support;
-          support->add_literals(NegatedRef(lit));
+          const int target_literal =
+              context->GetOrCreateVarValueEncoding(target_ref, value);
+          support->add_literals(NegatedRef(target_literal));
+          supports[value] = support;
         }
       }
     }
   }
 
-  // While this is not stricly needed since all value in the index will be
-  // covered, it allows to easily detect this fact in the presolve.
-  auto* bool_or = context->working_model->add_constraints()->mutable_bool_or();
+  {
+    // While this is not stricly needed since all value in the index will be
+    // covered, it allows to easily detect this fact in the presolve.
+    auto* exactly_one =
+        context->working_model->add_constraints()->mutable_exactly_one();
+    for (const ClosedInterval& interval : index_domain) {
+      for (int64_t v = interval.start; v <= interval.end; ++v) {
+        const int index_literal =
+            context->GetOrCreateVarValueEncoding(index_ref, v);
+        exactly_one->add_literals(index_literal);
+
+        const int64_t value = context->MinOf(element.vars(v));
+        const auto& it = supports.find(value);
+        if (it != supports.end()) {
+          // The encoding literal for 'value' of the target_ref has been
+          // created before.
+          const int target_literal =
+              context->GetOrCreateVarValueEncoding(target_ref, value);
+          context->AddImplication(index_literal, target_literal);
+          it->second->add_literals(index_literal);
+        } else {
+          // Try to reuse the literal of the index.
+          context->InsertVarValueEncoding(index_literal, target_ref, value);
+        }
+      }
+    }
+  }
+
+  context->UpdateRuleStats("element: expanded value element");
+  ct->Clear();
+}
+
+// General element when the array contains non fixed variables.
+void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context) {
+  const ElementConstraintProto& element = ct->element();
+  const int index_ref = element.index();
+  const int target_ref = element.target();
+  const Domain index_domain = context->DomainOf(index_ref);
+
+  BoolArgumentProto* bool_or =
+      context->working_model->add_constraints()->mutable_bool_or();
 
   for (const ClosedInterval& interval : index_domain) {
     for (int64_t v = interval.start; v <= interval.end; ++v) {
       const int var = element.vars(v);
-      const int index_lit = context->GetOrCreateVarValueEncoding(index_ref, v);
       const Domain var_domain = context->DomainOf(var);
-
+      const int index_lit = context->GetOrCreateVarValueEncoding(index_ref, v);
       bool_or->add_literals(index_lit);
 
-      if (target_ref == index_ref) {
-        // This adds extra code. But this information is really important,
-        // and hard to retrieve once lost.
-        context->AddImplyInDomain(index_lit, var, Domain(v));
-      } else if (target_domain.Size() == 1) {
-        // TODO(user): If we know all variables are different, then this
-        // becomes an equivalence.
-        context->AddImplyInDomain(index_lit, var, target_domain);
-      } else if (var_domain.Size() == 1) {
-        if (all_constants) {
-          const int64_t value = var_domain.Min();
-          if (constant_var_values_usage[value] > 1) {
-            // The encoding literal for 'value' of the target_ref has been
-            // created before.
-            const int target_lit =
-                context->GetOrCreateVarValueEncoding(target_ref, value);
-            context->AddImplication(index_lit, target_lit);
-            gtl::FindOrDie(supports, value)->add_literals(index_lit);
-          } else {
-            // Try to reuse the literal of the index.
-            context->InsertVarValueEncoding(index_lit, target_ref, value);
-          }
-        } else {
-          context->AddImplyInDomain(index_lit, target_ref, var_domain);
-        }
+      if (var_domain.IsFixed()) {
+        context->AddImplyInDomain(index_lit, target_ref, var_domain);
       } else {
         ConstraintProto* const ct = context->working_model->add_constraints();
         ct->add_enforcement_literal(index_lit);
@@ -688,63 +693,77 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
     }
   }
 
-  if (all_constants) {
-    const int64_t var_min = target_domain.Min();
-
-    // Scan all values to find the one with the most literals attached.
-    int64_t most_frequent_value = std::numeric_limits<int64_t>::max();
-    int usage = -1;
-    for (const auto it : constant_var_values_usage) {
-      if (it.second > usage ||
-          (it.second == usage && it.first < most_frequent_value)) {
-        usage = it.second;
-        most_frequent_value = it.first;
-      }
-    }
-
-    // Add a linear constraint. This helps the linear relaxation.
-    //
-    // We try to minimize the size of the linear constraint (if the gain is
-    // meaningful compared to using the min that has the advantage that all
-    // coefficients are positive).
-    // TODO(user): Benchmark if using base is always beneficial.
-    // TODO(user): Try not to create this if max_usage == 1.
-    const int64_t base =
-        usage > 2 && usage > size / 10 ? most_frequent_value : var_min;
-    if (base != var_min) {
-      VLOG(3) << "expand element: choose " << base << " with usage " << usage
-              << " over " << var_min << " among " << size << " values.";
-    }
-
-    LinearConstraintProto* const linear =
-        context->working_model->add_constraints()->mutable_linear();
-    int64_t rhs = -base;
-    linear->add_vars(target_ref);
-    linear->add_coeffs(-1);
-    for (const ClosedInterval& interval : index_domain) {
-      for (int64_t v = interval.start; v <= interval.end; ++v) {
-        const int ref = element.vars(v);
-        const int index_lit =
-            context->GetOrCreateVarValueEncoding(index_ref, v);
-        const int64_t delta = context->DomainOf(ref).Min() - base;
-        if (RefIsPositive(index_lit)) {
-          linear->add_vars(index_lit);
-          linear->add_coeffs(delta);
-        } else {
-          linear->add_vars(NegatedRef(index_lit));
-          linear->add_coeffs(-delta);
-          rhs -= delta;
-        }
-      }
-    }
-    linear->add_domain(rhs);
-    linear->add_domain(rhs);
-
-    context->UpdateRuleStats("element: expanded value element");
-  } else {
-    context->UpdateRuleStats("element: expanded");
-  }
+  context->UpdateRuleStats("element: expanded");
   ct->Clear();
+}
+
+void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
+  const ElementConstraintProto& element = ct->element();
+
+  const int index_ref = element.index();
+  const int target_ref = element.target();
+  const int size = element.vars_size();
+
+  // Reduce the domain of the index to be compatible with the array of
+  // variables. Note that the element constraint is 0 based.
+  if (!context->IntersectDomainWith(index_ref, Domain(0, size - 1))) {
+    VLOG(1) << "Empty domain for the index variable in ExpandElement()";
+    return (void)context->NotifyThatModelIsUnsat();
+  }
+
+  // Special case when index = target.
+  if (index_ref == target_ref) {
+    ExpandElementWithTargetEqualIndex(ct, context);
+    return;
+  }
+
+  // Reduces the domain of the index and the target.
+  bool all_constants = true;
+  std::vector<int64_t> valid_indices;
+  const Domain index_domain = context->DomainOf(index_ref);
+  const Domain target_domain = context->DomainOf(target_ref);
+  Domain reached_domain;
+  for (const ClosedInterval& interval : index_domain) {
+    for (int64_t v = interval.start; v <= interval.end; ++v) {
+      const Domain var_domain = context->DomainOf(element.vars(v));
+      if (var_domain.IntersectionWith(target_domain).IsEmpty()) continue;
+
+      valid_indices.push_back(v);
+      reached_domain = reached_domain.UnionWith(var_domain);
+      if (var_domain.Min() != var_domain.Max()) {
+        all_constants = false;
+      }
+    }
+  }
+
+  if (valid_indices.size() < index_domain.Size()) {
+    if (!context->IntersectDomainWith(index_ref,
+                                      Domain::FromValues(valid_indices))) {
+      VLOG(1) << "No compatible variable domains in ExpandElement()";
+      return (void)context->NotifyThatModelIsUnsat();
+    }
+
+    context->UpdateRuleStats("element: reduced index domain");
+  }
+
+  // We know the target_domain is not empty as this would have triggered the
+  // above check.
+  bool target_domain_changed = false;
+  if (!context->IntersectDomainWith(target_ref, reached_domain,
+                                    &target_domain_changed)) {
+    return (void)context->NotifyThatModelIsUnsat();
+  }
+
+  if (target_domain_changed) {
+    context->UpdateRuleStats("element: reduced target domain");
+  }
+
+  if (all_constants) {
+    ExpandConstantArrayElement(ct, context);
+    return;
+  }
+
+  ExpandVariableElement(ct, context);
 }
 
 // Adds clauses so that literals[i] true <=> encoding[value[i]] true.
@@ -1049,7 +1068,7 @@ void ExpandLinMin(ConstraintProto* ct, PresolveContext* context) {
 }
 
 // Add the implications and clauses to link one variable of a table to the
-// literals controling if the tuples are possible or not. The parallel vectors
+// literals controlling if the tuples are possible or not. The parallel vectors
 // (tuple_literals, values) contains all valid projected tuples. The
 // tuples_with_any vector provides a list of tuple_literals that will support
 // any value.
@@ -1112,8 +1131,8 @@ void AddSizeTwoTable(
   CHECK_EQ(vars.size(), 2);
   const int left_var = vars[0];
   const int right_var = vars[1];
-  if (context->DomainOf(left_var).Size() == 1 ||
-      context->DomainOf(right_var).Size() == 1) {
+  if (context->DomainOf(left_var).IsFixed() ||
+      context->DomainOf(right_var).IsFixed()) {
     // A table constraint with at most one variable not fixed is trivially
     // enforced after domain reduction.
     return;
@@ -1226,7 +1245,7 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
         vars[var_index],
         Domain::FromValues({values_per_var[var_index].begin(),
                             values_per_var[var_index].end()})));
-    if (context->DomainOf(vars[var_index]).Size() == 1) {
+    if (context->DomainOf(vars[var_index]).IsFixed()) {
       num_fixed_variables++;
     }
   }
@@ -1334,39 +1353,13 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   // Create one Boolean variable per tuple to indicate if it can still be
   // selected or not. Note that we don't enforce exactly one tuple to be
   // selected as this is costly.
-  //
-  // TODO(user): Investigate adding the at_most_one if the number of tuples
-  // is small.
-  // TODO(user): Investigate it we could recover a linear constraint:
-  //       var = sum(tuple_literals[i] * values[i])
-  //   It could be done here or along the deductions grouping.
   std::vector<int> tuple_literals(num_compressed_tuples);
-  BoolArgumentProto* at_least_one_tuple =
-      context->working_model->add_constraints()->mutable_bool_or();
-
-  // If we want to enumerate all solutions, we should not add new variables that
-  // can take more than one value for a given feasible solution, otherwise we
-  // will have a lot more solution than needed.
-  //
-  // TODO(user): Alternatively, we could mark those variable so that their
-  // value do not count when excluding solution, but we do not have a
-  // mecanism for that yet. It might not be easy to track them down when we
-  // replace them with equivalent variable too.
-  //
-  // TODO(user): We use keep_all_feasible_solutions as a proxy for enumerate
-  // all solution, but the concept are slightly different though.
-  BoolArgumentProto* at_most_one_tuple = nullptr;
-  if (context->keep_all_feasible_solutions) {
-    at_most_one_tuple =
-        context->working_model->add_constraints()->mutable_at_most_one();
-  }
+  BoolArgumentProto* exactly_one =
+      context->working_model->add_constraints()->mutable_exactly_one();
 
   for (int var_index = 0; var_index < num_compressed_tuples; ++var_index) {
     tuple_literals[var_index] = context->NewBoolVar();
-    at_least_one_tuple->add_literals(tuple_literals[var_index]);
-    if (at_most_one_tuple != nullptr) {
-      at_most_one_tuple->add_literals(tuple_literals[var_index]);
-    }
+    exactly_one->add_literals(tuple_literals[var_index]);
   }
 
   std::vector<int> active_tuple_literals;
@@ -1429,7 +1422,7 @@ void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
       for (const int ref : proto.vars()) {
         if (!context->DomainContains(ref, v)) continue;
         possible_refs.push_back(ref);
-        if (context->DomainOf(ref).Size() == 1) {
+        if (context->DomainOf(ref).IsFixed()) {
           fixed_variable_count++;
         }
       }
@@ -1440,7 +1433,7 @@ void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
       } else if (fixed_variable_count == 1) {
         // Remove values from other domains.
         for (const int ref : possible_refs) {
-          if (context->DomainOf(ref).Size() == 1) continue;
+          if (context->DomainOf(ref).IsFixed()) continue;
           if (!context->IntersectDomainWith(ref, Domain(v).Complement())) {
             VLOG(1) << "Empty domain for a variable in ExpandAllDiff()";
             return;

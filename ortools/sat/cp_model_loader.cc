@@ -411,15 +411,28 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
                                 IntegerLiteral::GreaterOrEqual(
                                     mapping->Integer(var),
                                     IntegerValue(domain_if_enforced.Min()))});
-        implied_bounds->Add(enforcement_literal, inequalities.back().i_lit);
       } else if (domain_if_enforced.Min() <= domain.Min() &&
                  domain_if_enforced.Max() < domain.Max()) {
         inequalities.push_back({&ct, enforcement_literal,
                                 IntegerLiteral::LowerOrEqual(
                                     mapping->Integer(var),
                                     IntegerValue(domain_if_enforced.Max()))});
-        implied_bounds->Add(enforcement_literal, inequalities.back().i_lit);
       }
+    }
+
+    // Detect implied bounds. The test is less strict than the above
+    // test.
+    if (domain_if_enforced.Min() > domain.Min()) {
+      implied_bounds->Add(
+          enforcement_literal,
+          IntegerLiteral::GreaterOrEqual(
+              mapping->Integer(var), IntegerValue(domain_if_enforced.Min())));
+    }
+    if (domain_if_enforced.Max() < domain.Max()) {
+      implied_bounds->Add(
+          enforcement_literal,
+          IntegerLiteral::LowerOrEqual(mapping->Integer(var),
+                                       IntegerValue(domain_if_enforced.Max())));
     }
 
     // Detect enforcement_literal => (var == value or var != value).
