@@ -30,7 +30,7 @@ CLP_TAG = 1.17.4
 OSI_TAG = 0.108.6
 COINUTILS_TAG = 2.11.4
 PATCHELF_TAG = 0.10
-SCIP_TAG = 7.0.1
+SCIP_TAG = master
 
 # Main target.
 .PHONY: third_party # Build OR-Tools Prerequisite
@@ -206,8 +206,9 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 .PHONY: install_protobuf
 install_protobuf: dependencies/install/lib/libprotobuf.a
 
-dependencies/install/lib/libprotobuf.a: dependencies/sources/protobuf-$(PROTOBUF_TAG) | dependencies/install
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && \
+PROTOBUF_SRCDIR = dependencies/sources/protobuf-$(PROTOBUF_TAG)
+dependencies/install/lib/libprotobuf.a: $(PROTOBUF_SRCDIR) | dependencies/install
+	cd $(PROTOBUF_SRCDIR) && \
   $(SET_COMPILER) $(CMAKE) -Hcmake -Bbuild_cmake \
     -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
     -DCMAKE_BUILD_TYPE=Release \
@@ -221,14 +222,13 @@ dependencies/install/lib/libprotobuf.a: dependencies/sources/protobuf-$(PROTOBUF
     -Dprotobuf_BUILD_EXAMPLES=OFF \
     -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
     -DCMAKE_INSTALL_PREFIX=../../install && \
-  $(CMAKE) --build build_cmake --config Release -v -- -j 4 && \
+  $(CMAKE) --build build_cmake --config Release -v -- -j4 && \
   $(CMAKE) --build build_cmake --config Release --target install
 
-dependencies/sources/protobuf-$(PROTOBUF_TAG): patches/protobuf-$(PROTOBUF_TAG).patch | dependencies/sources
-	-$(DELREC) dependencies/sources/protobuf-$(PROTOBUF_TAG)
-	git clone --quiet -b $(PROTOBUF_TAG) https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG)
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && \
-    git apply "$(OR_TOOLS_TOP)/patches/protobuf-$(PROTOBUF_TAG).patch"
+$(PROTOBUF_SRCDIR): patches/protobuf-$(PROTOBUF_TAG).patch | dependencies/sources
+	-$(DELREC) $(PROTOBUF_SRCDIR)
+	git clone --quiet -b $(PROTOBUF_TAG) https://github.com/google/protobuf.git $(PROTOBUF_SRCDIR)
+	cd $(PROTOBUF_SRCDIR) && git apply "$(OR_TOOLS_TOP)/patches/protobuf-$(PROTOBUF_TAG).patch"
 
 # This is needed to find protocol buffers.
 PROTOBUF_INC = -I$(UNIX_PROTOBUF_DIR)/include
@@ -620,7 +620,7 @@ else
 install_scip: dependencies/install/lib/libscip.a $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
 SCIP_SRCDIR = dependencies/sources/scip-$(SCIP_TAG)
-dependencies/install/lib/libscip.a: $(SCIP_SRCDIR)
+dependencies/install/lib/libscip.a: $(SCIP_SRCDIR) | dependencies/install
 	cd $(SCIP_SRCDIR) && \
 	$(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
     -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
@@ -649,12 +649,12 @@ dependencies/install/lib/libscip.a: $(SCIP_SRCDIR)
 
 $(SCIP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(SCIP_SRCDIR)
-	tar xvzf dependencies/archives/scip-$(SCIP_TAG).tgz -C dependencies/sources
-	cd dependencies/sources/scip-$(SCIP_TAG) && git apply --ignore-whitespace ../../../patches/scip-$(SCIP_TAG).patch
+	git clone --quiet -b $(SCIP_TAG) https://github.com/scipopt/scip.git $(SCIP_SRCDIR)
+#	cd $(SCIP_SRCDIR) && git apply --ignore-whitespace "$(OR_TOOLS_TOP)/patches/scip-$(SCIP_TAG).patch"
 
 
 $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc: $(SCIP_SRCDIR) | $(GEN_DIR)/ortools/linear_solver
-	$(COPY) dependencies/sources/scip-$(SCIP_TAG)/src/lpi/lpi_glop.cpp $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
+	$(COPY) $(SCIP_SRCDIR)/src/lpi/lpi_glop.cpp $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
 SCIP_INC = -I$(UNIX_SCIP_DIR)/include -DUSE_SCIP -DNO_CONFIG_HEADER
 SCIP_SWIG = $(SCIP_INC)
