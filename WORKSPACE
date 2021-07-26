@@ -1,7 +1,7 @@
 workspace(name = "com_google_ortools")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 
 http_archive(
     name = "zlib",
@@ -68,10 +68,10 @@ http_archive(
     #url = "http://www.tcs.hut.fi/Software/bliss/bliss-0.73.zip",
 )
 
-http_archive(
+new_git_repository(
     name = "scip",
     build_file = "//bazel:scip.BUILD",
     patches = ["//bazel:scip.patch"],
-    sha256 = "033bf240298d3a1c92e8ddb7b452190e0af15df2dad7d24d0572f10ae8eec5aa",
-    url = "https://github.com/google/or-tools/releases/download/v7.7/scip-7.0.1.tgz",
+    commit = "6acb7222e1b871041445bee75fc05bd1bcaed089", # master from Jul 19, 2021
+    remote = "https://github.com/scipopt/scip.git",
 )
