@@ -1,7 +1,7 @@
 FROM ortools/cmake:ubuntu_swig AS env
 ENV PATH=/root/.local/bin:$PATH
 RUN apt-get update -qq \
-&& apt-get install -yq python3-dev python3-pip python3-venv \
+&& DEBIAN_FRONTEND=noninteractive apt-get install -yq python3-dev python3-pip python3-venv \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
