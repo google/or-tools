@@ -51,16 +51,21 @@ void LinearConstraintBuilder::AddTerm(AffineExpression expr,
 
 void LinearConstraintBuilder::AddLinearExpression(
     const LinearExpression& expr) {
+  AddLinearExpression(expr, IntegerValue(1));
+}
+
+void LinearConstraintBuilder::AddLinearExpression(const LinearExpression& expr,
+                                                  IntegerValue coeff) {
   for (int i = 0; i < expr.vars.size(); ++i) {
     // We must use positive variables.
     if (VariableIsPositive(expr.vars[i])) {
-      terms_.push_back({expr.vars[i], expr.coeffs[i]});
+      terms_.push_back({expr.vars[i], expr.coeffs[i] * coeff});
     } else {
-      terms_.push_back({NegationOf(expr.vars[i]), -expr.coeffs[i]});
+      terms_.push_back({NegationOf(expr.vars[i]), -expr.coeffs[i] * coeff});
     }
   }
-  if (lb_ > kMinIntegerValue) lb_ -= expr.offset;
-  if (ub_ < kMaxIntegerValue) ub_ -= expr.offset;
+  if (lb_ > kMinIntegerValue) lb_ -= expr.offset * coeff;
+  if (ub_ < kMaxIntegerValue) ub_ -= expr.offset * coeff;
 }
 
 void LinearConstraintBuilder::AddQuadraticLowerBound(
@@ -275,6 +280,20 @@ double LinearExpression::LpValue(
   double result = ToDouble(offset);
   for (int i = 0; i < vars.size(); ++i) {
     result += ToDouble(coeffs[i]) * lp_values[vars[i]];
+  }
+  return result;
+}
+
+std::string LinearExpression::DebugString() const {
+  std::string result;
+  for (int i = 0; i < vars.size(); ++i) {
+    const IntegerValue coeff =
+        VariableIsPositive(vars[i]) ? coeffs[i] : -coeffs[i];
+    absl::StrAppend(&result, i > 0 ? " " : "", coeff.value(), "*X",
+                    vars[i].value() / 2);
+  }
+  if (offset != 0) {
+    absl::StrAppend(&result, " + ", offset.value());
   }
   return result;
 }

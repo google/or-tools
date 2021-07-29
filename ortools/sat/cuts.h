@@ -475,6 +475,20 @@ CutGenerator CreateLinMaxCutGenerator(
     const IntegerVariable target, const std::vector<LinearExpression>& exprs,
     const std::vector<IntegerVariable>& z_vars, Model* model);
 
+// Helper for the affine max constraint.
+LinearConstraint BuildMaxAffineUpConstraint(
+    const LinearExpression& target, IntegerVariable var,
+    const std::vector<std::pair<IntegerValue, IntegerValue>>& affines,
+    Model* model);
+
+// By definition, the Max of affine functions is convex. The linear polytope is
+// bounded by all affine functions on the bottom, and by a single hyperplane
+// that join the two points at the extreme of the var domain, and their y-values
+// of the max of the affine functions.
+CutGenerator CreateMaxAffineCutGenerator(
+    LinearExpression target, IntegerVariable var,
+    std::vector<std::pair<IntegerValue, IntegerValue>> affines, Model* model);
+
 // Extracts the variables that have a Literal view from base variables and
 // create a generator that will returns constraint of the form "at_most_one"
 // between such literals.

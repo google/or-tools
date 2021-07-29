@@ -2906,11 +2906,15 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
 
   // Query existing affine relations.
   std::vector<AffineRelation::Relation> affine_relations;
+  std::vector<int64_t> old_var_lb;
+  std::vector<int64_t> old_var_ub;
   {
     for (int v = 0; v < initial_num_vars; ++v) {
       const int ref = ct->table().vars(v);
       AffineRelation::Relation r = context_->GetAffineRelation(ref);
       affine_relations.push_back(r);
+      old_var_lb.push_back(context_->MinOf(ref));
+      old_var_ub.push_back(context_->MaxOf(ref));
       if (r.representative != ref) {
         changed = true;
         ct->mutable_table()->set_vars(v, r.representative);
@@ -2963,17 +2967,23 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
   {
     std::vector<int64_t> tuple(num_vars);
     new_tuples.reserve(initial_num_tuples);
-
     for (int i = 0; i < initial_num_tuples; ++i) {
       bool delete_row = false;
       std::string tmp;
       for (int j = 0; j < initial_num_vars; ++j) {
-        const int64_t tuple_value =
-            ct->table().values(i * initial_num_vars + j);
+        const int64_t old_value = ct->table().values(i * initial_num_vars + j);
+
+        // Corner case to avoid overflow, assuming the domain where already
+        // propagated between a variable and its affine representative.
+        if (old_value < old_var_lb[j] || old_value > old_var_ub[j]) {
+          delete_row = true;
+          break;
+        }
+
         // Affine relations are defined on the initial variables.
         const AffineRelation::Relation& r = affine_relations[j];
-        const int64_t value = (tuple_value - r.offset) / r.coeff;
-        if (value * r.coeff + r.offset != tuple_value) {
+        const int64_t value = (old_value - r.offset) / r.coeff;
+        if (value * r.coeff + r.offset != old_value) {
           // Value not reachable by affine relation.
           delete_row = true;
           break;

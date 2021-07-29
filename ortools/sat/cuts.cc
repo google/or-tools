@@ -1986,6 +1986,68 @@ CutGenerator CreateLinMaxCutGenerator(
   return result;
 }
 
+namespace {
+
+IntegerValue EvaluateMaxAffine(
+    const std::vector<std::pair<IntegerValue, IntegerValue>>& affines,
+    IntegerValue x) {
+  IntegerValue y = kMinIntegerValue;
+  for (const auto& p : affines) {
+    y = std::max(y, x * p.first + p.second);
+  }
+  return y;
+}
+
+}  // namespace
+
+LinearConstraint BuildMaxAffineUpConstraint(
+    const LinearExpression& target, IntegerVariable var,
+    const std::vector<std::pair<IntegerValue, IntegerValue>>& affines,
+    Model* model) {
+  CHECK(VariableIsPositive(var));
+
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  const IntegerValue x_min = integer_trail->LevelZeroLowerBound(var);
+  const IntegerValue x_max = integer_trail->LevelZeroUpperBound(var);
+
+  const IntegerValue y_at_min = EvaluateMaxAffine(affines, x_min);
+  const IntegerValue y_at_max = EvaluateMaxAffine(affines, x_max);
+
+  const IntegerValue delta_x = x_max - x_min;
+  const IntegerValue delta_y = y_at_max - y_at_min;
+
+  // target <= y_at_min + (delta_y / delta_x) * (var - x_min)
+  // delta_x * target <= delta_x * y_at_min + delta_y * (var - x_min)
+  // -delta_y * var + delta_x * target <= delta_x * y_at_min - delta_y * x_min
+  const IntegerValue rhs = delta_x * y_at_min - delta_y * x_min;
+  LinearConstraintBuilder lc(model, kMinIntegerValue, rhs);
+  lc.AddLinearExpression(target, delta_x);
+  lc.AddTerm(var, -delta_y);
+
+  return lc.Build();
+}
+
+CutGenerator CreateMaxAffineCutGenerator(
+    LinearExpression target, IntegerVariable var,
+    std::vector<std::pair<IntegerValue, IntegerValue>> affines, Model* model) {
+  CutGenerator result;
+  result.vars = target.vars;
+  result.vars.push_back(var);
+  gtl::STLSortAndRemoveDuplicates(&result.vars);
+
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  result.generate_cuts =
+      [target, var, affines, integer_trail, model](
+          const absl::StrongVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
+        if (integer_trail->IsFixed(var)) return true;
+        manager->AddCut(BuildMaxAffineUpConstraint(target, var, affines, model),
+                        "MaxAffine", lp_values);
+        return true;
+      };
+  return result;
+}
+
 CutGenerator CreateCliqueCutGenerator(
     const std::vector<IntegerVariable>& base_variables, Model* model) {
   // Filter base_variables to only keep the one with a literal view, and

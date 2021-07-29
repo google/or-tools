@@ -189,6 +189,9 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
 void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
                            LinearRelaxation* relaxation);
 
+void AppendMaxAffineRelaxation(const ConstraintProto& ct, Model* model,
+                               LinearRelaxation* relaxation);
+
 // Scan the model and add cut generators.
 void TryToAddCutGenerators(const ConstraintProto& ct, int linearization_level,
                            Model* m, LinearRelaxation* relaxation);

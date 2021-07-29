@@ -92,6 +92,7 @@ struct LinearExpression {
   // lp_values.
   double LpValue(
       const absl::StrongVector<IntegerVariable, double>& lp_values) const;
+  std::string DebugString() const;
 };
 
 // Returns the same expression in the canonical form (all positive
@@ -140,6 +141,7 @@ class LinearConstraintBuilder {
   void AddTerm(IntegerVariable var, IntegerValue coeff);
   void AddTerm(AffineExpression expr, IntegerValue coeff);
   void AddLinearExpression(const LinearExpression& expr);
+  void AddLinearExpression(const LinearExpression& expr, IntegerValue coeff);
 
   // Add an under linearization of the product of two affine expressions.
   // If at least one of them is fixed, then we add the exact product (which is

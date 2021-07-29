@@ -113,6 +113,50 @@ std::pair<IntegerValue, IntegerValue> GetMinAndMaxNotEncoded(
   return {min, max};
 }
 
+bool LinMaxContainsOnlyOneVarInExpressions(const ConstraintProto& ct) {
+  CHECK_EQ(ct.constraint_case(), ConstraintProto::ConstraintCase::kLinMax);
+  int current_var = std::numeric_limits<int>::min();
+  for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
+    if (expr.vars().empty()) continue;
+    if (expr.vars().size() > 1) return false;
+    const int var = PositiveRef(expr.vars(0));
+    if (current_var == std::numeric_limits<int>::min()) {
+      current_var = var;
+    } else if (var != current_var) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void CollectAffineExpression(
+    const ConstraintProto& ct, CpModelMapping* mapping, IntegerVariable* var,
+    std::vector<std::pair<IntegerValue, IntegerValue>>* affines) {
+  CHECK_EQ(ct.constraint_case(), ConstraintProto::ConstraintCase::kLinMax);
+  *var = kNoIntegerVariable;
+  affines->clear();
+  for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
+    if (expr.vars().empty()) {
+      affines->push_back({IntegerValue(0), IntegerValue(expr.offset())});
+    } else {
+      CHECK_EQ(expr.vars().size(), 1);
+      const IntegerVariable affine_var = mapping->Integer(expr.vars(0));
+      if (*var == kNoIntegerVariable) {
+        *var = PositiveVariable(affine_var);
+      }
+      if (VariableIsPositive(affine_var)) {
+        CHECK_EQ(affine_var, *var);
+        affines->push_back(
+            {IntegerValue(expr.coeffs(0)), IntegerValue(expr.offset())});
+      } else {
+        CHECK_EQ(NegationOf(affine_var), *var);
+        affines->push_back(
+            {IntegerValue(-expr.coeffs(0)), IntegerValue(expr.offset())});
+      }
+    }
+  }
+}
+
 }  // namespace
 
 void AppendPartialEncodingRelaxation(IntegerVariable var, const Model& model,
@@ -781,6 +825,44 @@ void AppendLinMaxRelaxationPart1(const ConstraintProto& ct, Model* model,
   }
 }
 
+void AppendMaxAffineRelaxation(const ConstraintProto& ct, Model* model,
+                               LinearRelaxation* relaxation) {
+  IntegerVariable var;
+  std::vector<std::pair<IntegerValue, IntegerValue>> affines;
+  auto* mapping = model->GetOrCreate<CpModelMapping>();
+  CollectAffineExpression(ct, mapping, &var, &affines);
+  if (var == kNoIntegerVariable ||
+      model->GetOrCreate<IntegerTrail>()->IsFixed(var)) {
+    return;
+  }
+
+  CHECK(VariableIsPositive(var));
+  const LinearExpression target_expr =
+      PositiveVarExpr(mapping->GetExprFromProto(ct.lin_max().target()));
+  for (const auto& p : affines) {
+    LinearConstraintBuilder gt(model, p.second, kMaxIntegerValue);
+    gt.AddLinearExpression(target_expr);
+    gt.AddTerm(var, -p.first);
+    relaxation->linear_constraints.push_back(gt.Build());
+  }
+  relaxation->linear_constraints.push_back(
+      BuildMaxAffineUpConstraint(target_expr, var, affines, model));
+}
+
+void AddMaxAffineCutGenerator(const ConstraintProto& ct, Model* model,
+                              LinearRelaxation* relaxation) {
+  IntegerVariable var;
+  std::vector<std::pair<IntegerValue, IntegerValue>> affines;
+  auto* mapping = model->GetOrCreate<CpModelMapping>();
+  CollectAffineExpression(ct, mapping, &var, &affines);
+  if (var == kNoIntegerVariable) return;
+  CHECK_EQ(1, ct.lin_max().target().vars_size());
+  const LinearExpression target_expr =
+      PositiveVarExpr(mapping->GetExprFromProto(ct.lin_max().target()));
+  relaxation->cut_generators.push_back(
+      CreateMaxAffineCutGenerator(target_expr, var, affines, model));
+}
+
 // Part 2: Encode upper bound on X.
 //
 // Add linking constraint to the CP solver
@@ -958,7 +1040,11 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       break;
     }
     case ConstraintProto::ConstraintCase::kLinMax: {
-      AppendLinMaxRelaxationPart1(ct, model, relaxation);
+      if (LinMaxContainsOnlyOneVarInExpressions(ct)) {
+        AppendMaxAffineRelaxation(ct, model, relaxation);
+      } else {
+        AppendLinMaxRelaxationPart1(ct, model, relaxation);
+      }
       break;
     }
     case ConstraintProto::ConstraintCase::kIntMin: {
@@ -1254,7 +1340,11 @@ void TryToAddCutGenerators(const ConstraintProto& ct, int linearization_level,
     }
     case ConstraintProto::ConstraintCase::kLinMax: {
       if (linearization_level > 1) {
-        AddLinMaxCutGenerator(ct, m, relaxation);
+        if (LinMaxContainsOnlyOneVarInExpressions(ct)) {
+          AddMaxAffineCutGenerator(ct, m, relaxation);
+        } else {
+          AddLinMaxCutGenerator(ct, m, relaxation);
+        }
       }
       break;
     }
