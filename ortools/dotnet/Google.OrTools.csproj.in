@@ -1,16 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
+    <TargetFrameworks>netstandard2.1;netstandard2.0</TargetFrameworks>
     <RuntimeIdentifiers>win-x64;osx-x64;linux-x64</RuntimeIdentifiers>
-    <AssemblyName>Google.OrTools</AssemblyName>
+    <AssemblyName>@DOTNET_PROJECT@</AssemblyName>
     <Version>@PROJECT_VERSION@</Version>
 
     <!-- Nuget Properties -->
     <Description>.NET wrapper for the Operations Research Tools project</Description>
 
     <!-- Pack Option -->
-    <Title>Google.OrTools v@PROJECT_VERSION@</Title>
-    <PackageId>Google.OrTools</PackageId>
+    <Title>@DOTNET_PROJECT@ v@PROJECT_VERSION@</Title>
+    <PackageId>@DOTNET_PROJECT@</PackageId>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 
@@ -77,18 +78,18 @@
   <!-- Validate at least one runtime package has been generated -->
   <Target Name="ValidateRuntimePack" BeforeTargets="GenerateNuspec">
     <ItemGroup>
-      <RuntimeLinux Include="@DOTNET_PACKAGES_DIR@/Google.OrTools.runtime.linux-x64.*.nupkg"/>
-      <RuntimeOsx Include="@DOTNET_PACKAGES_DIR@/Google.OrTools.runtime.osx-x64.*.nupkg"/>
-      <RuntimeWin Include="@DOTNET_PACKAGES_DIR@/Google.OrTools.runtime.win-x64.*.nupkg"/>
+      <RuntimeLinux Include="@DOTNET_PACKAGES_DIR@/@DOTNET_PROJECT@.runtime.linux-x64.*.nupkg"/>
+      <RuntimeOsx Include="@DOTNET_PACKAGES_DIR@/@DOTNET_PROJECT@.runtime.osx-x64.*.nupkg"/>
+      <RuntimeWin Include="@DOTNET_PACKAGES_DIR@/@DOTNET_PROJECT@.runtime.win-x64.*.nupkg"/>
     </ItemGroup>
-    <Message Importance="high" Text="Package Google.OrTools.runtime.linux-x64: found" Condition="Exists('@(RuntimeLinux)')"/>
+    <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.linux-x64: found" Condition="Exists('@(RuntimeLinux)')"/>
     <Message Importance="high" Text="-------  $(OS)  "/>
-    <Message Importance="high" Text="Package Google.OrTools.runtime.linux-x64: not found" Condition="!Exists('@(RuntimeLinux)')"/>
-    <Message Importance="high" Text="Package Google.OrTools.runtime.osx-x64: found" Condition="Exists('@(RuntimeOsx)')"/>
-    <Message Importance="high" Text="Package Google.OrTools.runtime.osx-x64: not found" Condition="!Exists('@(RuntimeOsx)')"/>
-    <Message Importance="high" Text="Package Google.OrTools.runtime.win-x64: found" Condition="Exists('@(RuntimeWin)')"/>
-    <Message Importance="high" Text="Package Google.OrTools.runtime.win-x64: not found" Condition="!Exists('@(RuntimeWin)')"/>
-    <Error Text="You must locally 'dotnet pack' at least one Google.OrTools.runtime.{rid} Project." Condition="!Exists('@(RuntimeLinux)') AND !Exists('@(RuntimeOsx)') AND !Exists('@(RuntimeWin)')"/>
+    <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.linux-x64: not found" Condition="!Exists('@(RuntimeLinux)')"/>
+    <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.osx-x64: found" Condition="Exists('@(RuntimeOsx)')"/>
+    <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.osx-x64: not found" Condition="!Exists('@(RuntimeOsx)')"/>
+    <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.win-x64: found" Condition="Exists('@(RuntimeWin)')"/>
+    <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.win-x64: not found" Condition="!Exists('@(RuntimeWin)')"/>
+    <Error Text="You must locally 'dotnet pack' at least one @DOTNET_PROJECT@.runtime.{rid} Project." Condition="!Exists('@(RuntimeLinux)') AND !Exists('@(RuntimeOsx)') AND !Exists('@(RuntimeWin)')"/>
   </Target>
 
   <!-- Copy all .proto file(s) -->
@@ -150,11 +151,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RuntimeLinux Include="@DOTNET_PACKAGES_DIR@/Google.OrTools.runtime.linux-x64.*.nupkg"/>
-    <RuntimeOsx Include="@DOTNET_PACKAGES_DIR@/Google.OrTools.runtime.osx-x64.*.nupkg"/>
-    <RuntimeWin Include="@DOTNET_PACKAGES_DIR@/Google.OrTools.runtime.win-x64.*.nupkg"/>
-    <PackageReference Include="Google.OrTools.runtime.linux-x64" Version="@PROJECT_VERSION@" Condition="Exists('@(RuntimeLinux)')"/>
-    <PackageReference Include="Google.OrTools.runtime.osx-x64"   Version="@PROJECT_VERSION@" Condition="Exists('@(RuntimeOsx)')"  />
-    <PackageReference Include="Google.OrTools.runtime.win-x64"   Version="@PROJECT_VERSION@" Condition="Exists('@(RuntimeWin)')"  />
+    <RuntimeLinux Include="@DOTNET_PACKAGES_DIR@/@DOTNET_PROJECT@.runtime.linux-x64.*.nupkg"/>
+    <RuntimeOsx Include="@DOTNET_PACKAGES_DIR@/@DOTNET_PROJECT@.runtime.osx-x64.*.nupkg"/>
+    <RuntimeWin Include="@DOTNET_PACKAGES_DIR@/@DOTNET_PROJECT@.runtime.win-x64.*.nupkg"/>
+    <PackageReference Include="@DOTNET_PROJECT@.runtime.linux-x64" Version="@PROJECT_VERSION@" Condition="Exists('@(RuntimeLinux)')"/>
+    <PackageReference Include="@DOTNET_PROJECT@.runtime.osx-x64"   Version="@PROJECT_VERSION@" Condition="Exists('@(RuntimeOsx)')"  />
+    <PackageReference Include="@DOTNET_PROJECT@.runtime.win-x64"   Version="@PROJECT_VERSION@" Condition="Exists('@(RuntimeWin)')"  />
   </ItemGroup>
 </Project>
+

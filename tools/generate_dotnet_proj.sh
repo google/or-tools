@@ -9,7 +9,7 @@ declare -r FILE_PROJ="${FILE}proj";
 # shellcheck disable=SC2155
 declare -r SRC=$(basename "$FILE")
 # shellcheck disable=SC2155
-declare -r PACKAGES_PATH=$(realpath --relative-to="${FILE%/*}" packages)
+declare -r PACKAGES_PATH=$(realpath --relative-to="${FILE%/*}" temp_dotnet/packages)
 if [[ $FILE == *.cs ]] ; then
   declare -r LANG_VERSION="<LangVersion>7.3</LangVersion>"
   declare -r OR_TOOLS_PKG="Google.OrTools"

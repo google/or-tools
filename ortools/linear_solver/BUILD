@@ -135,7 +135,7 @@ cc_library(
 
 copy_file(
     name = "lpi_glop",
-    src = "@scip//:scip-7.0.1/src/lpi/lpi_glop.cpp",
+    src = "@scip//:src/lpi/lpi_glop.cpp",
     out = "lpi_glop.cpp",
 )
 

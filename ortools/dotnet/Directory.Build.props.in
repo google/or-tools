@@ -9,7 +9,7 @@
       <NeutralLanguage>en-US</NeutralLanguage>
       <Authors>Laurent Perron</Authors>
       <Company>Google LLC</Company>
-      <Copyright>Copyright 2019 Google LLC</Copyright>
+      <Copyright>Copyright 2019-2021 Google LLC</Copyright>
 
        <!-- Pack Option -->
        <PackageTags>native;math;LinearSolver;LinearProgramming;ConstraintSolver;ConstraintProgramming</PackageTags>
