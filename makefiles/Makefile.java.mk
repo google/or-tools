@@ -711,7 +711,8 @@ test_java_linear_solver_samples: \
  rjava_MipVarArray \
  rjava_MultipleKnapsackMip \
  rjava_SimpleLpProgram \
- rjava_SimpleMipProgram
+ rjava_SimpleMipProgram \
+ rjava_StiglerDiet
 
 .PHONY: test_java_sat_samples # Build and Run all Java SAT Samples (located in ortools/sat/samples)
 test_java_sat_samples: \

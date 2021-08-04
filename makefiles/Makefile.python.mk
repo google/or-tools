@@ -632,7 +632,8 @@ test_python_linear_solver_samples: \
  rpy_mip_var_array \
  rpy_multiple_knapsack_mip \
  rpy_simple_lp_program \
- rpy_simple_mip_program
+ rpy_simple_mip_program \
+ rpy_stigler_diet
 
 .PHONY: test_python_sat_samples # Run all Python Sat Samples (located in ortools/sat/samples)
 test_python_sat_samples: \
@@ -666,8 +667,6 @@ check_python_pimpl: \
  test_python_graph_samples \
  test_python_linear_solver_samples \
  test_python_sat_samples \
- \
- rpy_stigler_diet
 # rpy_rabbits_pheasants_cp \
 # rpy_cryptarithmetic_cp \
 # rpy_cryptarithmetic_sat \
@@ -802,7 +801,7 @@ test_python_contrib: \
  rpy_stable_marriage \
  rpy_steel_lns \
  rpy_steel \
- rpy_stigler \
+ rpy_stigler_contrib \
  rpy_strimko2 \
  rpy_subset_sum \
  rpy_survo_puzzle \
@@ -850,7 +849,6 @@ test_python_python: \
  rpy_shift_scheduling_sat \
  rpy_single_machine_scheduling_with_setup_release_due_dates_sat \
  rpy_steel_mill_slab_sat \
- rpy_stigler_diet \
  rpy_sudoku_sat \
  rpy_tasks_and_workers_assignment_sat \
  rpy_transit_time \
