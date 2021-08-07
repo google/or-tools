@@ -419,7 +419,8 @@ test_cc_linear_solver_samples: \
  rcc_mip_var_array \
  rcc_multiple_knapsack_mip \
  rcc_simple_lp_program \
- rcc_simple_mip_program
+ rcc_simple_mip_program \
+ rcc_stigler_diet
 
 .PHONY: test_cc_constraint_solver_samples # Build and Run all C++ CP Samples (located in ortools/constraint_solver/samples)
 test_cc_constraint_solver_samples: \
@@ -480,7 +481,6 @@ check_cc_pimpl: \
  test_cc_sat_samples \
  \
  rcc_linear_programming \
- rcc_stigler_diet \
  rcc_constraint_programming_cp \
  rcc_integer_programming \
  rcc_knapsack \

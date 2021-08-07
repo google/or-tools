@@ -624,6 +624,7 @@ test_dotnet_linear_solver_samples:
 	$(MAKE) run SOURCE=ortools/linear_solver/samples/MultipleKnapsackMip.cs
 	$(MAKE) run SOURCE=ortools/linear_solver/samples/SimpleLpProgram.cs
 	$(MAKE) run SOURCE=ortools/linear_solver/samples/SimpleMipProgram.cs
+	$(MAKE) run SOURCE=ortools/linear_solver/samples/StiglerDiet.cs
 
 .PHONY: test_dotnet_sat_samples # Build and Run all .Net SAT Samples (located in ortools/sat/samples)
 test_dotnet_sat_samples:

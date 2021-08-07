@@ -1,3 +1,4 @@
+// Copyright 2010-2021 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -9,42 +10,48 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+// [START program]
+// The Stigler diet problem.
+// [START import]
+#include <array>
+#include <utility> // std::pair
+#include <vector>
+#include <string>
 
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
-#include "ortools/linear_solver/linear_solver.pb.h"
+// [END import]
 
 namespace operations_research {
-void RunStiglerDietExample() {
+void StiglerDiet() {
+  // [START data_model]
   // Nutrient minimums.
-  std::vector<std::pair<std::string, double> > nutrients = {
+  const std::vector<std::pair<std::string, double>> nutrients = {
       {"Calories (kcal)", 3.0},
       {"Protein (g)", 70.0},
       {"Calcium (g)", 0.8},
       {"Iron (mg)", 12.0},
       {"Vitamin A (kIU)", 5.0},
-      {"Thiamine (Vitamin B1) (mg)", 1.8},
-      {"Riboflavin (Vitamin B2) (mg)", 2.7},
+      {"Vitamin B1 (mg)", 1.8},
+      {"Vitamin B2 (mg)", 2.7},
       {"Niacin (mg)", 18.0},
-      {"Ascorbic Acid (Vitamin C) (mg)", 75.0}};
+      {"Vitamin C (mg)", 75.0}
+  };
 
   struct Commodity {
-    // Commodity name
-    std::string name;
-    // Unit
-    std::string unit;
-    // 1939 price per unit (cents)
-    double price;
-    // Calories (kcal)
-    // Protein (g)
-    // Calcium (g)
-    // Iron (mg)
-    // Vitamin A (kIU)
-    // Vitamin B1 (mg)
-    // Vitamin B2 (mg)
-    // Niacin (mg)
-    // Vitamin C (mg)
-    std::vector<double> nutrients;
+    std::string name; //!< Commodity name
+    std::string unit; //!< Unit
+    double price; //!< 1939 price per unit (cents)
+    //! Calories (kcal),
+    //! Protein (g),
+    //! Calcium (g),
+    //! Iron (mg),
+    //! Vitamin A (kIU),
+    //! Vitamin B1 (mg),
+    //! Vitamin B2 (mg),
+    //! Niacin (mg),
+    //! Vitamin C (mg)
+    std::array<double, 9> nutrients;
   };
 
   std::vector<Commodity> data = {
@@ -223,38 +230,50 @@ void RunStiglerDietExample() {
       {"Strawberry Preserves",
        "1 lb.",
        20.5,
-       {6.4, 11, 0.4, 7, 0.2, 0.2, 0.4, 3, 0}}};
+       {6.4, 11, 0.4, 7, 0.2, 0.2, 0.4, 3, 0}}
+  };
+  // [END data_model]
 
-  // Instantiate the solver
-  MPSolver solver("StiglerDietExample", MPSolver::GLOP_LINEAR_PROGRAMMING);
+  // [START solver]
+  // Create the linear solver with the GLOP backend.
+  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("GLOP"));
+  // [END solver]
 
-  // Declare an array to hold our nutritional data.
-  std::vector<MPVariable*> food;
-
-  // Objective: minimize the sum of (price-normalized) foods.
-  MPObjective* const objective = solver.MutableObjective();
-  const double infinity = solver.infinity();
+  // [START variables]
+  std::vector<MPVariable*> foods;
+  const double infinity = solver->infinity();
   for (const Commodity& commodity : data) {
-    food.push_back(solver.MakeNumVar(0.0, infinity, commodity.name));
-    objective->SetCoefficient(food.back(), 1);
+    foods.push_back(solver->MakeNumVar(0.0, infinity, commodity.name));
   }
-  objective->SetMinimization();
+  LOG(INFO) << "Number of variables = " << solver->NumVariables();
+  // [END variables]
 
+  // [START constraints]
   // Create the constraints, one per nutrient.
   std::vector<MPConstraint*> constraints;
   for (std::size_t i = 0; i < nutrients.size(); ++i) {
     constraints.push_back(
-        solver.MakeRowConstraint(nutrients[i].second, infinity));
+        solver->MakeRowConstraint(nutrients[i].second, infinity));
     for (std::size_t j = 0; j < data.size(); ++j) {
-      constraints.back()->SetCoefficient(food[j], data[j].nutrients[i]);
+      constraints.back()->SetCoefficient(foods[j], data[j].nutrients[i]);
     }
   }
+  LOG(INFO) << "Number of constraints = " << solver->NumConstraints();
+  // [END constraints]
 
-  LOG(INFO) << "Number of variables = " << solver.NumVariables();
-  LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
+  // [START objective]
+  MPObjective* const objective = solver->MutableObjective();
+  for (size_t i=0; i < data.size(); ++i) {
+    objective->SetCoefficient(foods[i], 1);
+  }
+  objective->SetMinimization();
+  // [END objective]
 
-  // Solve!
-  const MPSolver::ResultStatus result_status = solver.Solve();
+  // [START solve]
+  const MPSolver::ResultStatus result_status = solver->Solve();
+  // [END solve]
+
+  // [START print_solution]
   // Check that the problem has an optimal solution.
   if (result_status != MPSolver::OPTIMAL) {
     LOG(INFO) << "The problem does not have an optimal solution!";
@@ -262,39 +281,44 @@ void RunStiglerDietExample() {
       LOG(INFO) << "A potentially suboptimal solution was found";
     } else {
       LOG(INFO) << "The solver could not solve the problem.";
+      return;
     }
-    return;
   }
 
   std::vector<double> nutrients_result(nutrients.size());
   LOG(INFO) << "";
   LOG(INFO) << "Annual Foods:";
   for (std::size_t i = 0; i < data.size(); ++i) {
-    if (food[i]->solution_value() > 0.0) {
-      LOG(INFO) << data[i].name << ": $" << 365. * food[i]->solution_value();
-    }
-    for (std::size_t j = 0; j < nutrients.size(); ++j) {
-      nutrients_result[j] += data[i].nutrients[j] * food[i]->solution_value();
+    if (foods[i]->solution_value() > 0.0) {
+      LOG(INFO) << data[i].name << ": $" << std::to_string(365. * foods[i]->solution_value());
+      for (std::size_t j = 0; j < nutrients.size(); ++j) {
+        nutrients_result[j] += data[i].nutrients[j] * foods[i]->solution_value();
+      }
     }
   }
   LOG(INFO) << "";
-  LOG(INFO) << "Optimal annual price: $" << 365. * objective->Value();
+  LOG(INFO) << "Optimal annual price: $" << std::to_string(365. * objective->Value());
   LOG(INFO) << "";
   LOG(INFO) << "Nutrients per day:";
   for (std::size_t i = 0; i < nutrients.size(); ++i) {
-    LOG(INFO) << nutrients[i].first << ": " << nutrients_result[i] << " (min "
-              << nutrients[i].second << ")";
+    LOG(INFO) << nutrients[i].first << ": " << std::to_string(nutrients_result[i]) << " (min "
+              << std::to_string(nutrients[i].second) << ")";
   }
+  // [END print_solution]
+
+  // [START advanced]
   LOG(INFO) << "";
   LOG(INFO) << "Advanced usage:";
-  LOG(INFO) << "Problem solved in " << solver.wall_time() << " milliseconds";
-  LOG(INFO) << "Problem solved in " << solver.iterations() << " iterations";
+  LOG(INFO) << "Problem solved in " << solver->wall_time() << " milliseconds";
+  LOG(INFO) << "Problem solved in " << solver->iterations() << " iterations";
+  // [END advanced]
 }
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   absl::SetFlag(&FLAGS_logtostderr, 1);
-  operations_research::RunStiglerDietExample();
+  operations_research::StiglerDiet();
   return EXIT_SUCCESS;
 }
+// [END program]

@@ -17,3 +17,5 @@ code_sample_cc(name = "multiple_knapsack_mip")
 code_sample_cc(name = "simple_lp_program")
 
 code_sample_cc(name = "simple_mip_program")
+
+code_sample_cc(name = "stigler_diet")
