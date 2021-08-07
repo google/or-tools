@@ -551,9 +551,11 @@ ifeq ($(SOURCE_SUFFIX),.py) # Those rules will be used if SOURCE contains a .py 
 .PHONY: build # Build a Python program.
 build: $(SOURCE) $(PYTHON_OR_TOOLS_LIBS) ;
 
+EXTRA_PYTHON_PATH=:$(shell dirname "$(SOURCE)")
+
 .PHONY: run # Run a Python program.
 run: build
-	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(SOURCE_PATH) $(ARGS)
+	$(SET_PYTHONPATH)$(EXTRA_PYTHON_PATH) "$(PYTHON_EXECUTABLE)" $(SOURCE_PATH) $(ARGS)
 endif
 
 ###############################
