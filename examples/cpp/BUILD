@@ -485,15 +485,6 @@ cc_binary(
 )
 
 cc_binary(
-    name = "stigler_diet",
-    srcs = ["stigler_diet.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/linear_solver",
-    ],
-)
-
-cc_binary(
     name = "strawberry_fields_with_column_generation",
     srcs = ["strawberry_fields_with_column_generation.cc"],
     deps = [
