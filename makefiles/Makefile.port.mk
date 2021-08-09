@@ -118,7 +118,7 @@ ifeq ($(SYSTEM),unix)
     else
       JAVA_HOME ?= $(shell /usr/libexec/java_home)
     endif
-    MAC_MIN_VERSION = 10.9
+    MAC_MIN_VERSION = 10.14
   endif # ($(OS),Darwin)
 endif # ($(SYSTEM),unix)
 
