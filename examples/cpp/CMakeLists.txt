@@ -43,7 +43,6 @@ foreach(EXECUTABLE IN ITEMS
   slitherlink_sat
   solve
   sports_scheduling_sat
-  stigler_diet
   strawberry_fields_with_column_generation
   uncapacitated_facility_location
   variable_intervals_sat
