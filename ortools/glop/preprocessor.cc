@@ -17,6 +17,7 @@
 #include <limits>
 
 #include "absl/strings/str_format.h"
+#include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/glop/status.h"
@@ -177,6 +178,13 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
 }
 
 void MainLpPreprocessor::RecoverSolution(ProblemSolution* solution) const {
+  SCOPED_INSTRUCTION_COUNT(time_limit_);
+  for (const auto& p : gtl::reversed_view(preprocessors_)) {
+    p->RecoverSolution(solution);
+  }
+}
+
+void MainLpPreprocessor::DestructiveRecoverSolution(ProblemSolution* solution) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   while (!preprocessors_.empty()) {
     preprocessors_.back()->RecoverSolution(solution);

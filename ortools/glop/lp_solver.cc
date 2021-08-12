@@ -217,7 +217,7 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
     RunRevisedSimplexIfNeeded(&solution, time_limit);
   }
 
-  if (postsolve_is_needed) preprocessor.RecoverSolution(&solution);
+  if (postsolve_is_needed) preprocessor.DestructiveRecoverSolution(&solution);
   const ProblemStatus status = LoadAndVerifySolution(lp, solution);
 
   // LOG some statistics that can be parsed by our benchmark script.

@@ -110,6 +110,10 @@ class MainLpPreprocessor : public Preprocessor {
 
   bool Run(LinearProgram* lp) final;
   void RecoverSolution(ProblemSolution* solution) const override;
+  // Like RecoverSolution but destroys data structures as it goes to reduce peak
+  // RAM use. After calling this the MainLpPreprocessor object may no longer be
+  // used.
+  void DestructiveRecoverSolution(ProblemSolution* solution);
 
  private:
   // Runs the given preprocessor and push it on preprocessors_ for the postsolve
@@ -119,11 +123,7 @@ class MainLpPreprocessor : public Preprocessor {
                             LinearProgram* lp);
 
   // Stack of preprocessors currently applied to the lp that needs postsolve.
-  //
-  // TODO(user): This is mutable so that the preprocessor can be freed as soon
-  // as their RecoverSolution() is called. Make RecoverSolution() non-const or
-  // remove this optimization?
-  mutable std::vector<std::unique_ptr<Preprocessor>> preprocessors_;
+  std::vector<std::unique_ptr<Preprocessor>> preprocessors_;
 
   // Initial dimension of the lp given to Run(), for displaying purpose.
   EntryIndex initial_num_entries_;

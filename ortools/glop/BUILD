@@ -326,6 +326,7 @@ cc_library(
         ":revised_simplex",
         ":status",
         "//ortools/base",
+        "//ortools/base:iterator_adaptors",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_data_utils",
