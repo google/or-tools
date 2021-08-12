@@ -44,13 +44,16 @@ Proto ReadFileToProtoOrDie(absl::string_view filename) {
   return proto;
 }
 
-enum class ProtoWriteFormat { kProtoText, kProtoBinary, kJson };
+// Specifies how the proto should be formatted when writing it to a file.
+// kCanonicalJson applies Proto3 to JSON encoding conventions and converts field
+// names to lower camel-case.
+enum class ProtoWriteFormat { kProtoText, kProtoBinary, kJson, kCanonicalJson };
 
 // Writes a proto to a file. Supports the following formats: binary, text, JSON,
 // all of those optionally gzipped. Returns false on failure.
 // If 'proto_write_format' is kProtoBinary, ".bin" is appended to file_name. If
-// 'proto_write_format' is kJson, ".json" is appended to file_name. If 'gzipped'
-// is true, ".gz" is appended to file_name.
+// 'proto_write_format' is kJson or kCanonicalJson, ".json" is appended to
+// file_name. If 'gzipped' is true, ".gz" is appended to file_name.
 bool WriteProtoToFile(absl::string_view filename,
                       const google::protobuf::Message& proto,
                       ProtoWriteFormat proto_write_format, bool gzipped = false,
