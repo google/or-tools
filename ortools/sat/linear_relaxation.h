@@ -189,6 +189,7 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
 void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
                            LinearRelaxation* relaxation);
 
+// Note: This only work if all affine expressions share the same variable.
 void AppendMaxAffineRelaxation(const ConstraintProto& ct, Model* model,
                                LinearRelaxation* relaxation);
 

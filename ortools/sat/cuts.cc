@@ -93,8 +93,8 @@ bool SolutionSatisfiesConstraint(
     const absl::StrongVector<IntegerVariable, double>& lp_values) {
   const double activity = ComputeActivity(constraint, lp_values);
   const double tolerance = 1e-6;
-  return (activity <= constraint.ub.value() + tolerance &&
-          activity >= constraint.lb.value() - tolerance)
+  return (activity <= ToDouble(constraint.ub) + tolerance &&
+          activity >= ToDouble(constraint.lb) - tolerance)
              ? true
              : false;
 }
@@ -216,8 +216,8 @@ bool LiftKnapsackCut(
   std::vector<double> lifting_profits;
   std::vector<double> lifting_weights;
   for (int i = 0; i < cut->vars.size(); ++i) {
-    lifting_profits.push_back(cut->coeffs[i].value());
-    lifting_weights.push_back(cut_vars_original_coefficients[i].value());
+    lifting_profits.push_back(ToDouble(cut->coeffs[i]));
+    lifting_weights.push_back(ToDouble(cut_vars_original_coefficients[i]));
   }
 
   // Lift the cut.
@@ -231,7 +231,7 @@ bool LiftKnapsackCut(
     const IntegerValue lifting_capacity = constraint.ub - entry.first;
     if (lifting_capacity <= IntegerValue(0)) continue;
     knapsack_solver.Init(lifting_profits, lifting_weights,
-                         lifting_capacity.value());
+                         ToDouble(lifting_capacity));
     knapsack_solver.set_node_limit(100);
     // NOTE: Since all profits and weights are integer, solution of
     // knapsack is also integer.
@@ -239,13 +239,14 @@ bool LiftKnapsackCut(
     knapsack_solver.Solve(time_limit, &is_solution_optimal);
     const double knapsack_upper_bound =
         std::round(knapsack_solver.GetUpperBound());
-    const IntegerValue cut_coeff = cut->ub - knapsack_upper_bound;
+    const IntegerValue cut_coeff =
+        cut->ub - static_cast<int64_t>(knapsack_upper_bound);
     if (cut_coeff > IntegerValue(0)) {
       is_lifted = true;
       cut->vars.push_back(var);
       cut->coeffs.push_back(cut_coeff);
-      lifting_profits.push_back(cut_coeff.value());
-      lifting_weights.push_back(var_original_coeff.value());
+      lifting_profits.push_back(ToDouble(cut_coeff));
+      lifting_weights.push_back(ToDouble(var_original_coeff));
     }
   }
   return is_lifted;
@@ -261,7 +262,7 @@ LinearConstraint GetPreprocessedLinearConstraint(
     const IntegerVariable var = constraint.vars[i];
     const IntegerValue var_ub = integer_trail.LevelZeroUpperBound(var);
     const IntegerValue coeff = constraint.coeffs[i];
-    if (var_ub.value() - lp_values[var] <= 1.0 - kMinCutViolation) {
+    if (ToDouble(var_ub) - lp_values[var] <= 1.0 - kMinCutViolation) {
       constraint_with_left_vars.vars.push_back(var);
       constraint_with_left_vars.coeffs.push_back(coeff);
     } else {
@@ -298,7 +299,7 @@ bool CanBeFilteredUsingCutLowerBound(
   std::vector<double> variable_upper_bound_distances;
   for (const IntegerVariable var : preprocessed_constraint.vars) {
     const IntegerValue var_ub = integer_trail.LevelZeroUpperBound(var);
-    variable_upper_bound_distances.push_back(var_ub.value() - lp_values[var]);
+    variable_upper_bound_distances.push_back(ToDouble(var_ub) - lp_values[var]);
   }
   // Compute the min cover size.
   const int smallest_cover_size =
@@ -342,7 +343,7 @@ bool CanBeFilteredUsingKnapsackUpperBound(
     const absl::StrongVector<IntegerVariable, double>& lp_values,
     const IntegerTrail& integer_trail) {
   std::vector<KnapsackItem> items;
-  double capacity = -constraint.ub.value() - 1.0;
+  double capacity = -ToDouble(constraint.ub) - 1.0;
   double sum_variable_profit = 0;
   for (int i = 0; i < constraint.vars.size(); ++i) {
     const IntegerVariable var = constraint.vars[i];
@@ -350,10 +351,10 @@ bool CanBeFilteredUsingKnapsackUpperBound(
     const IntegerValue var_lb = integer_trail.LevelZeroLowerBound(var);
     const IntegerValue coeff = constraint.coeffs[i];
     KnapsackItem item;
-    item.profit = var_ub.value() - lp_values[var];
-    item.weight = (coeff * (var_ub - var_lb)).value();
+    item.profit = ToDouble(var_ub) - lp_values[var];
+    item.weight = ToDouble(coeff * (var_ub - var_lb));
     items.push_back(item);
-    capacity += (coeff * var_ub).value();
+    capacity += ToDouble(coeff * var_ub);
     sum_variable_profit += item.profit;
   }
 
@@ -514,7 +515,7 @@ CutGenerator CreateKnapsackCoverCutGenerator(
       std::vector<double> weights;
       weights.reserve(preprocessed_constraint.vars.size());
 
-      double capacity = -preprocessed_constraint.ub.value() - 1.0;
+      double capacity = -ToDouble(preprocessed_constraint.ub) - 1.0;
 
       // Compute and store the sum of variable profits. This is the constant
       // part of the objective of the problem we are trying to solve. Hence
@@ -526,7 +527,7 @@ CutGenerator CreateKnapsackCoverCutGenerator(
       // instance.
       for (int i = 0; i < preprocessed_constraint.vars.size(); ++i) {
         const IntegerVariable var = preprocessed_constraint.vars[i];
-        const double coefficient = preprocessed_constraint.coeffs[i].value();
+        const double coefficient = ToDouble(preprocessed_constraint.coeffs[i]);
         const double var_ub = ToDouble(integer_trail->LevelZeroUpperBound(var));
         const double var_lb = ToDouble(integer_trail->LevelZeroLowerBound(var));
         const double variable_profit = var_ub - lp_values[var];
@@ -1902,7 +1903,7 @@ double ComputeContribution(
   const LinearExpression& target_expr = exprs[target_index];
   const double xi_value = lp_values[xi_var];
   const IntegerValue wt_i = GetCoefficientOfPositiveVar(xi_var, target_expr);
-  double contrib = wt_i.value() * xi_value;
+  double contrib = ToDouble(wt_i) * xi_value;
   for (int expr_index = 0; expr_index < exprs.size(); ++expr_index) {
     if (expr_index == target_index) continue;
     const LinearExpression& max_expr = exprs[expr_index];
@@ -1910,7 +1911,7 @@ double ComputeContribution(
     const IntegerValue corner_value = MaxCornerDifference(
         xi_var, wt_i, GetCoefficientOfPositiveVar(xi_var, max_expr),
         integer_trail);
-    contrib += corner_value.value() * z_max_value;
+    contrib += ToDouble(corner_value) * z_max_value;
   }
   return contrib;
 }
@@ -1967,7 +1968,7 @@ CutGenerator CreateLinMaxCutGenerator(
           if (coeff != IntegerValue(0)) {
             cut.AddTerm(xi_var, coeff);
           }
-          violation -= coeff.value() * lp_values[xi_var];
+          violation -= ToDouble(coeff) * lp_values[xi_var];
         }
         for (int expr_index = 0; expr_index < num_exprs; ++expr_index) {
           const IntegerVariable z_var = z_vars[expr_index];
@@ -1976,7 +1977,7 @@ CutGenerator CreateLinMaxCutGenerator(
           if (z_coeff != IntegerValue(0)) {
             cut.AddTerm(z_var, z_coeff);
           }
-          violation -= z_coeff.value() * lp_values[z_var];
+          violation -= ToDouble(z_coeff) * lp_values[z_var];
         }
         if (violation > 1e-2) {
           manager->AddCut(cut.Build(), "LinMax", lp_values);
@@ -2000,12 +2001,11 @@ IntegerValue EvaluateMaxAffine(
 
 }  // namespace
 
+// TODO(user): Be careful to not create the cut in case of integer overflow.
 LinearConstraint BuildMaxAffineUpConstraint(
     const LinearExpression& target, IntegerVariable var,
     const std::vector<std::pair<IntegerValue, IntegerValue>>& affines,
     Model* model) {
-  CHECK(VariableIsPositive(var));
-
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   const IntegerValue x_min = integer_trail->LevelZeroLowerBound(var);
   const IntegerValue x_max = integer_trail->LevelZeroUpperBound(var);

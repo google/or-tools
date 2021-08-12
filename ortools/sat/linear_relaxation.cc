@@ -115,12 +115,12 @@ std::pair<IntegerValue, IntegerValue> GetMinAndMaxNotEncoded(
 
 bool LinMaxContainsOnlyOneVarInExpressions(const ConstraintProto& ct) {
   CHECK_EQ(ct.constraint_case(), ConstraintProto::ConstraintCase::kLinMax);
-  int current_var = std::numeric_limits<int>::min();
+  int current_var = -1;
   for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
     if (expr.vars().empty()) continue;
     if (expr.vars().size() > 1) return false;
     const int var = PositiveRef(expr.vars(0));
-    if (current_var == std::numeric_limits<int>::min()) {
+    if (current_var == -1) {
       current_var = var;
     } else if (var != current_var) {
       return false;
@@ -129,9 +129,15 @@ bool LinMaxContainsOnlyOneVarInExpressions(const ConstraintProto& ct) {
   return true;
 }
 
-void CollectAffineExpression(
+// Collect all the affines expressions in a LinMax constraint.
+// It checks that these are indeed affine expressions, and that they all share
+// the same variable.
+// It returns the shared variable, as well as a vector of pairs
+// (coefficient, offset) when each affine is coefficient * shared_var + offset.
+void CollectAffineExpressionWithSingleVariable(
     const ConstraintProto& ct, CpModelMapping* mapping, IntegerVariable* var,
     std::vector<std::pair<IntegerValue, IntegerValue>>* affines) {
+  DCHECK(LinMaxContainsOnlyOneVarInExpressions(ct));
   CHECK_EQ(ct.constraint_case(), ConstraintProto::ConstraintCase::kLinMax);
   *var = kNoIntegerVariable;
   affines->clear();
@@ -825,12 +831,16 @@ void AppendLinMaxRelaxationPart1(const ConstraintProto& ct, Model* model,
   }
 }
 
+// TODO(user): experiment with:
+//   1) remove this code
+//   2) keep this code
+//   3) remove this code and create the cut generator at level 1.
 void AppendMaxAffineRelaxation(const ConstraintProto& ct, Model* model,
                                LinearRelaxation* relaxation) {
   IntegerVariable var;
   std::vector<std::pair<IntegerValue, IntegerValue>> affines;
   auto* mapping = model->GetOrCreate<CpModelMapping>();
-  CollectAffineExpression(ct, mapping, &var, &affines);
+  CollectAffineExpressionWithSingleVariable(ct, mapping, &var, &affines);
   if (var == kNoIntegerVariable ||
       model->GetOrCreate<IntegerTrail>()->IsFixed(var)) {
     return;
@@ -839,12 +849,6 @@ void AppendMaxAffineRelaxation(const ConstraintProto& ct, Model* model,
   CHECK(VariableIsPositive(var));
   const LinearExpression target_expr =
       PositiveVarExpr(mapping->GetExprFromProto(ct.lin_max().target()));
-  for (const auto& p : affines) {
-    LinearConstraintBuilder gt(model, p.second, kMaxIntegerValue);
-    gt.AddLinearExpression(target_expr);
-    gt.AddTerm(var, -p.first);
-    relaxation->linear_constraints.push_back(gt.Build());
-  }
   relaxation->linear_constraints.push_back(
       BuildMaxAffineUpConstraint(target_expr, var, affines, model));
 }
@@ -854,8 +858,12 @@ void AddMaxAffineCutGenerator(const ConstraintProto& ct, Model* model,
   IntegerVariable var;
   std::vector<std::pair<IntegerValue, IntegerValue>> affines;
   auto* mapping = model->GetOrCreate<CpModelMapping>();
-  CollectAffineExpression(ct, mapping, &var, &affines);
-  if (var == kNoIntegerVariable) return;
+  CollectAffineExpressionWithSingleVariable(ct, mapping, &var, &affines);
+  if (var == kNoIntegerVariable ||
+      model->GetOrCreate<IntegerTrail>()->IsFixed(var)) {
+    return;
+  }
+
   CHECK_EQ(1, ct.lin_max().target().vars_size());
   const LinearExpression target_expr =
       PositiveVarExpr(mapping->GetExprFromProto(ct.lin_max().target()));
@@ -1040,10 +1048,9 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       break;
     }
     case ConstraintProto::ConstraintCase::kLinMax: {
+      AppendLinMaxRelaxationPart1(ct, model, relaxation);
       if (LinMaxContainsOnlyOneVarInExpressions(ct)) {
         AppendMaxAffineRelaxation(ct, model, relaxation);
-      } else {
-        AppendLinMaxRelaxationPart1(ct, model, relaxation);
       }
       break;
     }

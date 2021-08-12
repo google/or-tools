@@ -773,9 +773,9 @@ class BinaryImplicationGraph : public SatPropagator {
   int64_t num_implications_ = 0;
 
   // Internal representation of at_most_one constraints. Each entry point to the
-  // start of a constraint in the buffer. Contraints are terminated by
+  // start of a constraint in the buffer. Constraints are terminated by
   // kNoLiteral. When LiteralIndex is true, then all entry in the at most one
-  // constraint must be false except the one refering to LiteralIndex.
+  // constraint must be false except the one referring to LiteralIndex.
   //
   // TODO(user): We could be more cache efficient by combining this with
   // implications_ in some way. Do some propagation speed benchmark.

@@ -287,10 +287,8 @@ double LinearExpression::LpValue(
 std::string LinearExpression::DebugString() const {
   std::string result;
   for (int i = 0; i < vars.size(); ++i) {
-    const IntegerValue coeff =
-        VariableIsPositive(vars[i]) ? coeffs[i] : -coeffs[i];
-    absl::StrAppend(&result, i > 0 ? " " : "", coeff.value(), "*X",
-                    vars[i].value() / 2);
+    absl::StrAppend(&result, i > 0 ? " " : "",
+                    IntegerTermDebugString(vars[i], coeffs[i]));
   }
   if (offset != 0) {
     absl::StrAppend(&result, " + ", offset.value());

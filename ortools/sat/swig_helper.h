@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_SWIG_HELPER_H_
 
 #include <atomic>
+#include <cstdint>
 
 #include "absl/strings/match.h"
 #include "ortools/base/file.h"

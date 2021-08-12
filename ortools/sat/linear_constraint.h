@@ -62,10 +62,8 @@ struct LinearConstraint {
       absl::StrAppend(&result, lb.value(), " <= ");
     }
     for (int i = 0; i < vars.size(); ++i) {
-      const IntegerValue coeff =
-          VariableIsPositive(vars[i]) ? coeffs[i] : -coeffs[i];
-      absl::StrAppend(&result, i > 0 ? " " : "", coeff.value(), "*X",
-                      vars[i].value() / 2);
+      absl::StrAppend(&result, i > 0 ? " " : "",
+                      IntegerTermDebugString(vars[i], coeffs[i]));
     }
     if (ub.value() < kMaxIntegerValue) {
       absl::StrAppend(&result, " <= ", ub.value());
@@ -88,10 +86,12 @@ struct LinearExpression {
   std::vector<IntegerVariable> vars;
   std::vector<IntegerValue> coeffs;
   IntegerValue offset = IntegerValue(0);
+
   // Return the evaluation of the linear expression using the values from
   // lp_values.
   double LpValue(
       const absl::StrongVector<IntegerVariable, double>& lp_values) const;
+
   std::string DebugString() const;
 };
 

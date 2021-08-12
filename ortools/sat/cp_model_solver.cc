@@ -524,7 +524,7 @@ void FillSolutionInResponse(const CpModelProto& model_proto, const Model& model,
     for (int i = 0; i < model_proto.variables_size(); ++i) {
       if (mapping->IsBoolean(i)) {
         if (assignment.VariableIsAssigned(mapping->Literal(i).Variable())) {
-          const int value = model.Get(Value(mapping->Literal(i)));
+          const int64_t value = model.Get(Value(mapping->Literal(i)));
           response->add_solution_lower_bounds(value);
           response->add_solution_upper_bounds(value);
         } else {
@@ -2324,7 +2324,7 @@ class LnsSolver : public SubSolver {
       // and on the parameters_.random_seed() so that changing the later will
       // change the LNS behavior.
       const int32_t low = static_cast<int32_t>(task_id);
-      const int32_t high = task_id >> 32;
+      const int32_t high = static_cast<int32_t>(task_id >> 32);
       std::seed_seq seed{low, high, parameters_.random_seed()};
       random_engine_t random(seed);
 
@@ -2369,9 +2369,10 @@ class LnsSolver : public SubSolver {
 
       data.neighborhood_id = neighborhood.id;
 
+      const int64_t num_calls = std::max(int64_t{1}, generator_->num_calls());
       const double fully_solved_proportion =
           static_cast<double>(generator_->num_fully_solved_calls()) /
-          std::max(int64_t{1}, generator_->num_calls());
+          static_cast<double>(num_calls);
       std::string source_info = name();
       if (!neighborhood.source_info.empty()) {
         absl::StrAppend(&source_info, "_", neighborhood.source_info);
@@ -2572,7 +2573,7 @@ class LnsSolver : public SubSolver {
       generator_->AddSolveData(data);
 
       // The total number of call when this was called is the same as task_id.
-      const int total_num_calls = task_id;
+      const int64_t total_num_calls = task_id;
       VLOG(2) << name() << ": [difficulty: " << data.difficulty
               << ", id: " << task_id
               << ", deterministic_time: " << data.deterministic_time << " / "

@@ -146,6 +146,12 @@ inline PositiveOnlyIndex GetPositiveOnlyIndex(IntegerVariable var) {
   return PositiveOnlyIndex(var.value() / 2);
 }
 
+inline std::string IntegerTermDebugString(IntegerVariable var,
+                                          IntegerValue coeff) {
+  coeff = VariableIsPositive(var) ? coeff : -coeff;
+  return absl::StrCat(coeff.value(), "*X", var.value() / 2);
+}
+
 // Returns the vector of the negated variables.
 std::vector<IntegerVariable> NegationOf(
     const std::vector<IntegerVariable>& vars);
