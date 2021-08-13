@@ -1,15 +1,17 @@
-FROM debian:10 AS env
+# ref: https://hub.docker.com/_/ubuntu
+FROM ubuntu:18.04 AS env
 
 #############
 ##  SETUP  ##
 #############
-RUN apt-get update -qq \
-&& apt-get install -qq \
+RUN apt update -qq \
+&& apt install -yq \
  git pkg-config wget make autoconf libtool zlib1g-dev gawk g++ curl subversion \
- swig lsb-release \
-&& apt-get clean \
+ lsb-release \
+&& apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENTRYPOINT ["/bin/bash", "-c"]
+CMD ["/usr/bin/bash"]
 
 # Install CMake 3.21.1
 RUN wget "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
@@ -17,23 +19,27 @@ RUN wget "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
 && ./cmake-3.21.1-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
 && rm cmake-3.21.1-linux-x86_64.sh
 
-# Java Install
+# Swig Install
 RUN apt-get update -qq \
-&& apt-get install -qq default-jdk maven \
+&& apt-get install -yq swig \
+&& apt-get clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Java install (openjdk-11)
+RUN apt-get update -qq \
+&& apt-get install -yq default-jdk maven \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENV JAVA_HOME=/usr/lib/jvm/default-java
 
 # Dotnet Install
-# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-debian10
+# see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu#1804-
 RUN apt-get update -qq \
-&& apt-get install -qq gpg apt-transport-https \
-&& wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.asc.gpg \
-&& mv microsoft.asc.gpg /etc/apt/trusted.gpg.d/ \
-&& wget -q https://packages.microsoft.com/config/debian/10/prod.list \
-&& mv prod.list /etc/apt/sources.list.d/microsoft-prod.list \
+&& apt-get install -yq apt-transport-https \
+&& wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb \
+&& dpkg -i packages-microsoft-prod.deb \
 && apt-get update -qq \
-&& apt-get install -qq dotnet-sdk-3.1 \
+&& apt-get install -yq dotnet-sdk-3.1 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Trigger first run experience by running arbitrary cmd

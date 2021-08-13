@@ -1,40 +1,41 @@
-# Create a virtual environment with all tools installed
-# ref: https://hub.docker.com/_/ubuntu
-FROM ubuntu:20.10 AS env
+# ref: https://hub.docker.com/_/debian
+FROM debian:11 AS env
 
 #############
 ##  SETUP  ##
 #############
-RUN apt update -qq \
-&& DEBIAN_FRONTEND=noninteractive apt install -yq \
- git pkg-config wget make cmake autoconf libtool zlib1g-dev gawk g++ curl subversion \
- lsb-release \
-&& apt clean \
-&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-ENTRYPOINT ["/usr/bin/bash", "-c"]
-
-# Swig Install
 RUN apt-get update -qq \
-&& apt-get install -yq swig \
+&& apt-get install -qq \
+ git pkg-config wget make autoconf libtool zlib1g-dev gawk g++ curl subversion \
+ swig lsb-release \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+ENTRYPOINT ["/bin/bash", "-c"]
+CMD ["/usr/bin/bash"]
 
-# Java install (openjdk-11)
+# Install CMake 3.21.1
+RUN wget "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
+&& chmod a+x cmake-3.21.1-linux-x86_64.sh \
+&& ./cmake-3.21.1-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.21.1-linux-x86_64.sh
+
+# Java Install
 RUN apt-get update -qq \
-&& apt-get install -yq default-jdk maven \
+&& apt-get install -qq default-jdk maven \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENV JAVA_HOME=/usr/lib/jvm/default-java
 
 # Dotnet Install
-# see:
-# https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-ubuntu-2010
+# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-debian10
 RUN apt-get update -qq \
-&& apt-get install -yq apt-transport-https \
-&& wget -q https://packages.microsoft.com/config/ubuntu/20.10/packages-microsoft-prod.deb \
-&& dpkg -i packages-microsoft-prod.deb \
+&& apt-get install -qq gpg apt-transport-https \
+&& wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.asc.gpg \
+&& mv microsoft.asc.gpg /etc/apt/trusted.gpg.d/ \
+&& wget -q https://packages.microsoft.com/config/debian/10/prod.list \
+&& mv prod.list /etc/apt/sources.list.d/microsoft-prod.list \
 && apt-get update -qq \
-&& apt-get install -yq dotnet-sdk-3.1 \
+&& apt-get install -qq dotnet-sdk-3.1 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Trigger first run experience by running arbitrary cmd

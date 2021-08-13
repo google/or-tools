@@ -1,14 +1,17 @@
-FROM centos:8 AS env
+# ref: https://hub.docker.com/_/debian
+FROM debian:10 AS env
 
 #############
 ##  SETUP  ##
 #############
-RUN dnf -y update \
-&& dnf -y groupinstall 'Development Tools' \
-&& dnf -y install wget redhat-lsb-core pkgconfig autoconf libtool zlib-devel which \
-&& dnf clean all \
-&& rm -rf /var/cache/dnf
-ENTRYPOINT ["/usr/bin/bash", "-c"]
+RUN apt-get update -qq \
+&& apt-get install -qq \
+ git pkg-config wget make autoconf libtool zlib1g-dev gawk g++ curl subversion \
+ swig lsb-release \
+&& apt-get clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+ENTRYPOINT ["/bin/bash", "-c"]
+CMD ["/usr/bin/bash"]
 
 # Install CMake 3.21.1
 RUN wget "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
@@ -16,25 +19,25 @@ RUN wget "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
 && ./cmake-3.21.1-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
 && rm cmake-3.21.1-linux-x86_64.sh
 
-# Install Swig
-RUN dnf -y update \
-&& dnf -y install swig \
-&& dnf clean all \
-&& rm -rf /var/cache/dnf
+# Java Install
+RUN apt-get update -qq \
+&& apt-get install -qq default-jdk maven \
+&& apt-get clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+ENV JAVA_HOME=/usr/lib/jvm/default-java
 
-# Install Java 8 SDK
-RUN dnf -y update \
-&& dnf -y install java-1.8.0-openjdk  java-1.8.0-openjdk-devel maven \
-&& dnf clean all \
-&& rm -rf /var/cache/dnf
-ENV JAVA_HOME=/usr/lib/jvm/java
-
-# Install dotnet
-# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-centos8
-RUN dnf -y update \
-&& dnf -y install dotnet-sdk-3.1 \
-&& dnf clean all \
-&& rm -rf /var/cache/dnf
+# Dotnet Install
+# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-debian10
+RUN apt-get update -qq \
+&& apt-get install -qq gpg apt-transport-https \
+&& wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.asc.gpg \
+&& mv microsoft.asc.gpg /etc/apt/trusted.gpg.d/ \
+&& wget -q https://packages.microsoft.com/config/debian/10/prod.list \
+&& mv prod.list /etc/apt/sources.list.d/microsoft-prod.list \
+&& apt-get update -qq \
+&& apt-get install -qq dotnet-sdk-3.1 \
+&& apt-get clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 

@@ -1,3 +1,4 @@
+# ref: https://hub.docker.com/_/centos
 FROM centos:7 AS env
 
 #############
@@ -17,6 +18,7 @@ RUN yum -y update \
 && echo "source /opt/rh/devtoolset-9/enable" >> /etc/bashrc
 SHELL ["/bin/bash", "--login", "-c"]
 ENTRYPOINT ["/usr/bin/bash", "--login", "-c"]
+CMD ["/usr/bin/bash", "--login"]
 # RUN gcc --version
 
 # Install CMake 3.21.1

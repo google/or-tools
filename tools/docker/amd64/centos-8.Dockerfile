@@ -1,33 +1,47 @@
-FROM fedora:33 AS env
+# ref: https://hub.docker.com/_/centos
+FROM centos:8 AS env
 
 #############
 ##  SETUP  ##
 #############
 RUN dnf -y update \
-&& dnf -y install git \
- wget which redhat-lsb-core pkgconfig autoconf libtool zlib-devel \
-&& dnf -y groupinstall "Development Tools" \
-&& dnf -y install gcc-c++ cmake \
-&& dnf clean all
+&& dnf -y groupinstall 'Development Tools' \
+&& dnf -y install wget redhat-lsb-core pkgconfig autoconf libtool zlib-devel which \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 ENTRYPOINT ["/usr/bin/bash", "-c"]
+CMD ["/usr/bin/bash"]
 
+# Install CMake 3.21.1
+RUN wget "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
+&& chmod a+x cmake-3.21.1-linux-x86_64.sh \
+&& ./cmake-3.21.1-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.21.1-linux-x86_64.sh
+
+# Install Swig
 RUN dnf -y update \
 && dnf -y install swig \
-&& dnf clean all
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 
-# Java Install
+# Install Java 8 SDK
 RUN dnf -y update \
-&& dnf -y install java-11-openjdk java-11-openjdk-devel maven \
-&& dnf clean all
-ENV JAVA_HOME=/usr/lib/jvm/java-openjdk
+&& dnf -y install java-1.8.0-openjdk  java-1.8.0-openjdk-devel maven \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
+ENV JAVA_HOME=/usr/lib/jvm/java
 
-# .Net Install
-# see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-fedora
+# Install dotnet
+# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-centos8
 RUN dnf -y update \
 && dnf -y install dotnet-sdk-3.1 \
-&& dnf clean all
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
+
+ENV TZ=America/Los_Angeles
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 ################
 ##  OR-TOOLS  ##

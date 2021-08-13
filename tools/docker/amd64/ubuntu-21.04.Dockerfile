@@ -1,6 +1,7 @@
 # Create a virtual environment with all tools installed
+# Latest rolling aka 21.04
 # ref: https://hub.docker.com/_/ubuntu
-FROM ubuntu:20.04 AS env
+FROM ubuntu:21.04 AS env
 
 #############
 ##  SETUP  ##
@@ -12,6 +13,7 @@ RUN apt update -qq \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENTRYPOINT ["/usr/bin/bash", "-c"]
+CMD ["/usr/bin/bash"]
 
 # Swig Install
 RUN apt-get update -qq \
@@ -27,11 +29,10 @@ RUN apt-get update -qq \
 ENV JAVA_HOME=/usr/lib/jvm/default-java
 
 # Dotnet Install
-# see:
-# https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-ubuntu-2004
+# see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu#2104-
 RUN apt-get update -qq \
 && apt-get install -yq apt-transport-https \
-&& wget -q https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb \
+&& wget -q https://packages.microsoft.com/config/ubuntu/21.04/packages-microsoft-prod.deb \
 && dpkg -i packages-microsoft-prod.deb \
 && apt-get update -qq \
 && apt-get install -yq dotnet-sdk-3.1 \

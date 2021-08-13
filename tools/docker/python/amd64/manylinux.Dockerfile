@@ -1,4 +1,4 @@
-FROM quay.io/pypa/manylinux2010_x86_64:latest AS env
+FROM quay.io/pypa/manylinux2014_x86_64:latest AS env
 
 RUN yum -y update \
 && yum -y install \
@@ -19,6 +19,8 @@ RUN yum -y update \
  unzip zip \
 && yum clean all \
 && rm -rf /var/cache/yum
+ENTRYPOINT ["/usr/bin/bash", "-c"]
+CMD ["/usr/bin/bash"]
 
 # Install CMake 3.21.1
 RUN wget "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
