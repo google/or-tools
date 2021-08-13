@@ -1,3 +1,6 @@
+# Need a Centos 7 to avoid this:
+# https://github.com/google/or-tools/issues/2520#issuecomment-825119882
+# note: PEP 599 manylinux2014 is also based on Centos 7 which will reach End of Life (EOL) on June 30th, 2024
 FROM centos:7 AS env
 
 #############

@@ -7,7 +7,7 @@ function help() {
   local -r RESET="\e[0m"
   local -r help=$(cat << EOF
 ${BOLD}NAME${RESET}
-\t$NAME - Build delivery using an ${BOLD}Ubuntu 18.04 LTS docker image${RESET}.
+\t$NAME - Build delivery using an ${BOLD}Centos 7 docker image${RESET}.
 ${BOLD}SYNOPSIS${RESET}
 \t$NAME [-h|--help] [examples|dotnet|java|python|all|reset]
 ${BOLD}DESCRIPTION${RESET}
