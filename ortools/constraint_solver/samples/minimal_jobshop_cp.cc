@@ -69,7 +69,7 @@ void SolveJobShopExample() {
     }
   }
 
-  // Add conjunctive contraints.
+  // Add conjunctive constraints.
   for (int i = 0; i < jobs.size(); ++i) {
     for (int j = 0; j < jobs[i].size() - 1; ++j) {
       solver.AddConstraint(solver.MakeIntervalVarRelation(

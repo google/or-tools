@@ -74,7 +74,7 @@ class VariablesInfo {
       const DenseColumn& constraint_upper_bounds);
 
   // Initializes the status according to the given BasisState. Incompatible
-  // statuses will be corrected, and we transfrom the state correctly if new
+  // statuses will be corrected, and we transform the state correctly if new
   // columns / rows were added. Note however that one will need to update the
   // BasisState with deletions to preserve the status of unchanged columns.
   void InitializeFromBasisState(ColIndex first_slack, ColIndex num_new_cols,
@@ -131,7 +131,7 @@ class VariablesInfo {
   //   I.e. they cost in the dual infeasibility minimization problem is
   //   multiplied by 1000.
   //
-  // It then update the status to get an inital dual feasible solution, and
+  // It then update the status to get an initial dual feasible solution, and
   // then one just have to apply the phase II algo on this problem to try to
   // find a feasible solution to the original problem.
   //

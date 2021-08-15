@@ -319,7 +319,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Shortcut for an integer linear expression type.
   using LinearExpression = std::vector<std::pair<glop::ColIndex, IntegerValue>>;
 
-  // Converts a dense represenation of a linear constraint to a sparse one
+  // Converts a dense representation of a linear constraint to a sparse one
   // expressed in terms of IntegerVariable.
   void ConvertToLinearConstraint(
       const absl::StrongVector<glop::ColIndex, IntegerValue>& dense_vector,

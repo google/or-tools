@@ -1864,7 +1864,7 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
     //
     // TODO(user): The queue will not be emptied, but I am not sure the solver
     // will be left in an usable state. Fix if it become needed to resume
-    // the solve from the last time it was interupted.
+    // the solve from the last time it was interrupted.
     if (test_limit > 100) {
       test_limit = 0;
       if (time_limit_->LimitReached()) break;

@@ -1643,7 +1643,7 @@ class Solver {
                                 std::vector<int64_t> sinks,
                                 std::vector<IntVar*> status);
 #ifndef SWIG
-  /// Contraint enforcing, for each pair (i,j) in precedences, i to be before j
+  /// Constraint enforcing, for each pair (i,j) in precedences, i to be before j
   /// in paths defined by next variables.
   // TODO(user): This constraint does not make holes in variable domains;
   /// the implementation can easily be modified to do that; evaluate the impact

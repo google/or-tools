@@ -97,7 +97,7 @@ class DratProofHandler {
   // We need to keep track of the variable newly created.
   int variable_index_;
 
-  // Temporary vector used for sorting the outputed clauses.
+  // Temporary vector used for sorting the outputted clauses.
   std::vector<Literal> values_;
 
   // This mapping will be applied to all clause passed to AddClause() or

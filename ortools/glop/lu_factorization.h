@@ -113,7 +113,7 @@ class LuFactorization {
   void RightSolveLForScatteredColumn(const ScatteredColumn& b,
                                      ScatteredColumn* x) const;
 
-  // Specialized version of RightSolveLWithNonZeros() where x is originaly equal
+  // Specialized version of RightSolveLWithNonZeros() where x is originally equal
   // to 'a' permuted by row_perm_. Note that 'a' is only used for DCHECK.
   void RightSolveLWithPermutedInput(const DenseColumn& a,
                                     ScatteredColumn* x) const;

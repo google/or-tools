@@ -1005,7 +1005,7 @@ void TriangularMatrix::TransposeHyperSparseSolveWithReversedNonZerosInternal(
     const ColIndex row_as_col = RowToColIndex(row);
 
     // We do the loops this way so that the floating point operations are
-    // exactly the same as the ones perfomed by TransposeLowerSolveInternal().
+    // exactly the same as the ones performed by TransposeLowerSolveInternal().
     EntryIndex i = starts_[row_as_col + 1] - 1;
     const EntryIndex i_end = starts_[row_as_col];
     for (; i >= i_end; --i) {

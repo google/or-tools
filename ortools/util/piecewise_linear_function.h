@@ -163,7 +163,7 @@ class PiecewiseLinearFunction {
   // Builds an earliness-tardiness two-segment piecewise linear cost function.
   // The reference specifies the point where the cost is zero. Before the
   // reference, the cost increases with the earliness slope and after the
-  // referece, it increases with the tardiness slope. The absolute values of
+  // reference, it increases with the tardiness slope. The absolute values of
   // the slopes are given.
   static PiecewiseLinearFunction* CreateEarlyTardyFunction(
       int64_t reference, int64_t earliness_slope, int64_t tardiness_slope);

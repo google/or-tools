@@ -736,7 +736,7 @@ class BitQueue64 {
 
     // Note(user): I experimented with reversing the bit order in a bucket to
     // use LeastSignificantBitPosition64() and it is only slightly faster at the
-    // cost of a lower Set() speed. So I prefered this version.
+    // cost of a lower Set() speed. So I preferred this version.
     top_ = static_cast<int>(BitShift64(bucket_index) +
                             MostSignificantBitPosition64(bucket));
   }

@@ -69,7 +69,7 @@
 // dualized, we can have Z_LP <= Z_D because the resulting Lagrangian subproblem
 // needs to be solved as an MIP. For the particular data used in this example,
 // dualizing only the first resource constraint leads to Z_LP < Z_D, while
-// dualizing only the second resurce constraint leads to Z_LP = Z_D. In either
+// dualizing only the second resource constraint leads to Z_LP = Z_D. In either
 // case, solving the Lagrandual dual also provides an upper bound to Z.
 //
 // Usage: blaze build -c opt

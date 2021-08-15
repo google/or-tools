@@ -131,7 +131,7 @@ public class InitialRoutes
         distanceDimension.SetGlobalSpanCostCoefficient(100);
         // [END distance_constraint]
 
-        // Get inital solution from routes.
+        // Get initial solution from routes.
         // [START print_initial_solution]
         Assignment initialSolution = routing.ReadAssignmentFromRoutes(data.InitialRoutes, true);
         // Print initial solution on console.

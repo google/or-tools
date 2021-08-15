@@ -282,7 +282,7 @@ void PrecedencesPropagator::AddArc(
   if (head == tail) {
     // A self-arc is either plain SAT or plain UNSAT or it forces something on
     // the given offset_var or presence_literal_index. In any case it could be
-    // presolved in something more efficent.
+    // presolved in something more efficient.
     VLOG(1) << "Self arc! This could be presolved. "
             << "var:" << tail << " offset:" << offset
             << " offset_var:" << offset_var
@@ -338,7 +338,7 @@ void PrecedencesPropagator::AddArc(
     // Since we add a new arc, we will need to consider its tail during the next
     // propagation. Note that the size of modified_vars_ will be automatically
     // updated when new integer variables are created since we register it with
-    // IntegerTrail in this class contructor.
+    // IntegerTrail in this class constructor.
     //
     // TODO(user): Adding arcs and then calling Untrail() before Propagate()
     // will cause this mecanism to break. Find a more robust implementation.
@@ -622,7 +622,7 @@ void PrecedencesPropagator::AnalyzePositiveCycle(
 // minimize the number of integer_trail_->Enqueue() as much as possible.
 //
 // TODO(user): The current algorithm is quite efficient, but there is probably
-// still room for improvments.
+// still room for improvements.
 bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
   const int num_nodes = impacted_arcs_.size();
 

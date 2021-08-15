@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Solves a Linear Programing problem using the Revised Simplex algorithm
+// Solves a Linear Programming problem using the Revised Simplex algorithm
 // as described by G.B. Dantzig.
 // The general form is:
 // min c.x where c and x are n-vectors,

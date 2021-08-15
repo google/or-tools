@@ -121,7 +121,7 @@ bool MainLpPreprocessor::Run(LinearProgram* lp) {
     RUN_PREPROCESSOR(SingletonColumnSignPreprocessor);
   }
 
-  // The scaling is controled by use_scaling, not use_preprocessing.
+  // The scaling is controlled by use_scaling, not use_preprocessing.
   RUN_PREPROCESSOR(ScalingPreprocessor);
 
   return !preprocessors_.empty();
@@ -1451,7 +1451,7 @@ bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
   for (ColWithDegree col_with_degree : col_by_degree) {
     const ColIndex col = col_with_degree.col;
 
-    // If the variable is alreay free or fixed, we do nothing.
+    // If the variable is already free or fixed, we do nothing.
     const Fractional lower_bound = lp->variable_lower_bounds()[col];
     const Fractional upper_bound = lp->variable_upper_bounds()[col];
     if (!IsFinite(lower_bound) && !IsFinite(upper_bound)) {

@@ -1014,7 +1014,7 @@ message SatParameters {
   // specify continuous variable domain with the wanted precision.
   optional double mip_var_scaling = 125 [default = 1.0];
 
-  // If true, some continuous variable might be automatially scaled. For now,
+  // If true, some continuous variable might be automatically scaled. For now,
   // this is only the case where we detect that a variable is actually an
   // integer multiple of a constant. For instance, variables of the form k * 0.5
   // are quite frequent, and if we detect this, we will scale such variable

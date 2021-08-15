@@ -772,7 +772,7 @@ void BlossomGraph::Shrink(EdgeIndex e) {
           continue;
         }
 
-        // This is a new-internal edge that we didn't proccess yet.
+        // This is a new-internal edge that we didn't process yet.
         //
         // TODO(user): It would be nicer to not to have to read the memory of
         // the other node at all. It might be possible once we store the

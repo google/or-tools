@@ -811,7 +811,7 @@ class TriangularMatrix : private CompactSparseMatrix {
   // can prune it and remove it from the adjacency list of the current node.
   //
   // Note(user): I couldn't find any reference for this algorithm, even though
-  // I suspect I am not the first one to need someting similar.
+  // I suspect I am not the first one to need something similar.
   mutable DenseBooleanColumn marked_;
 
   // This is used to represent a pruned sub-matrix of the current matrix that

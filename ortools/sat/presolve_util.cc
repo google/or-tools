@@ -187,7 +187,7 @@ void SubstituteVariable(int var, int64_t var_coeff_in_definition,
   CHECK(RefIsPositive(var));
   CHECK_EQ(std::abs(var_coeff_in_definition), 1);
 
-  // Copy all the terms (except the one refering to var).
+  // Copy all the terms (except the one referring to var).
   std::vector<std::pair<int, int64_t>> terms;
   int64_t var_coeff = GetVarCoeffAndCopyOtherTerms(var, ct->linear(), &terms);
 

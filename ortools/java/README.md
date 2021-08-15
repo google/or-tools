@@ -93,7 +93,7 @@ So now, let's create the local `com.google.ortools:ortools-java.jar` maven
 package which will depend on our previous native package.
 
 Here some dev-note concerning this `POM.xml`.
-* Add runtime dependency on each native package(s) availabe:
+* Add runtime dependency on each native package(s) available:
   ```xml
   <dependency>
     <groupId>com.google.ortools</groupId>

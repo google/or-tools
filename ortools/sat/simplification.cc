@@ -381,7 +381,7 @@ void SatPresolver::PresolveWithBva() {
   }
 }
 
-// We use the same notation as in the article mentionned in the .h
+// We use the same notation as in the article mentioned in the .h
 void SatPresolver::SimpleBva(LiteralIndex l) {
   literal_to_p_size_.resize(literal_to_clauses_.size(), 0);
   DCHECK(std::all_of(literal_to_p_size_.begin(), literal_to_p_size_.end(),

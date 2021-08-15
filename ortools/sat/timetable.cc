@@ -378,7 +378,7 @@ bool TimeTablingPerTask::BuildProfile() {
   // Add a sentinel to simplify the algorithm.
   profile_.emplace_back(kMinIntegerValue, IntegerValue(0));
 
-  // Start and height of the currently built profile rectange.
+  // Start and height of the currently built profile rectangle.
   IntegerValue current_start = kMinIntegerValue;
   IntegerValue current_height = starting_profile_height_;
 

@@ -2,7 +2,7 @@
 
 This file describes how to use OR-Tools in Java with the binary archives.
 
-OR-Tools online documetation is
+OR-Tools online documentation is
 [here](https://developers.google.com/optimization)
 
 Full installation instructions are located

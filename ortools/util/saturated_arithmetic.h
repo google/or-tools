@@ -49,7 +49,7 @@ inline int64_t TwosComplementSubtraction(int64_t x, int64_t y) {
                                  static_cast<uint64_t>(y));
 }
 
-// Helper function that returns true if an overflow has occured in computing
+// Helper function that returns true if an overflow has occurred in computing
 // sum = x + y. sum is expected to be computed elsewhere.
 inline bool AddHadOverflow(int64_t x, int64_t y, int64_t sum) {
   // Overflow cannot occur if operands have different signs.
