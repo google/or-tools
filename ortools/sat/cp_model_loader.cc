@@ -696,7 +696,7 @@ void DetectOptionalVariables(const CpModelProto& model_proto, Model* m) {
   // of the constraints in which they appear.
   //
   // TODO(user): This deals with the simplest cases, but we could try to
-  // detect literals that implies all the constaints in which a variable
+  // detect literals that implies all the constraints in which a variable
   // appear to false. This can be done with a LCA computation in the tree of
   // Boolean implication (once the presolve remove cycles). Not sure if we can
   // properly exploit that afterwards though. Do some research!

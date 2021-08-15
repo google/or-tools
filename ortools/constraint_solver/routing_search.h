@@ -124,7 +124,7 @@ AutomaticFirstSolutionStrategy(bool has_pickup_deliveries,
 /// More details:
 /// Using local search filters to build a solution. The approach is pretty
 /// straight-forward: have a general assignment storing the current solution,
-/// build delta assigment representing possible extensions to the current
+/// build delta assignment representing possible extensions to the current
 /// solution and validate them with filters.
 /// The tricky bit comes from using the assignment and filter APIs in a way
 /// which avoids the lazy creation of internal hash_maps between variables
@@ -794,7 +794,7 @@ class ComparatorCheapestAdditionFilteredHeuristic
 /// Clarke & Wright's Savings heuristic. For each pair of nodes, the savings
 /// value is the difference between the cost of two routes visiting one node
 /// each and one route visiting both nodes. Routes are built sequentially, each
-/// route being initialized from the pair with the best avalaible savings value
+/// route being initialized from the pair with the best available savings value
 /// then extended by selecting the nodes with best savings on both ends of the
 /// partial route. Cost is based on the arc cost function of the routing model
 /// and cost classes are taken into account.

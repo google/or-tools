@@ -58,7 +58,7 @@ class ChristofidesPathSolver {
   };
   ChristofidesPathSolver(NodeIndex num_nodes, CostFunction costs);
 
-  // Sets the matching algorith to use. A minimum weight perfect matching
+  // Sets the matching algorithm to use. A minimum weight perfect matching
   // (MINIMUM_WEIGHT_MATCHING) guarantees the 3/2 upper bound to the optimal
   // solution. A minimal weight perfect matching (MINIMAL_WEIGHT_MATCHING)
   // finds a locally minimal weight matching which does not offer any bound

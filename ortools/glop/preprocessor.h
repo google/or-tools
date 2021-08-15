@@ -961,7 +961,7 @@ class DualizerPreprocessor : public Preprocessor {
 // Example:
 // - A variable with bound [1e10, infinity] will be shifted to [0, infinity].
 // - A variable with domain [-1e10, 1e10] will not be shifted. Note that
-//   compared to the first case, doing so here may introduce unecessary
+//   compared to the first case, doing so here may introduce unnecessary
 //   numerical errors if the variable value in the final solution is close to
 //   zero.
 //

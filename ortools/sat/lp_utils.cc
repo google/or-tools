@@ -479,7 +479,7 @@ std::vector<double> DetectImpliedIntegers(MPModelProto* mp_model,
 
 namespace {
 
-// We use a class to reuse the temporay memory.
+// We use a class to reuse the temporary memory.
 struct ConstraintScaler {
   // Scales an individual constraint.
   ConstraintProto* AddConstraint(const MPModelProto& mp_model,

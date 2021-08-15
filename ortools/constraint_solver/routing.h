@@ -1328,7 +1328,7 @@ class RoutingModel {
       const Assignment& solution_assignment, const RoutingDimension& dimension);
 #endif
   /// Returns the underlying constraint solver. Can be used to add extra
-  /// constraints and/or modify search algoithms.
+  /// constraints and/or modify search algorithms.
   Solver* solver() const { return solver_.get(); }
 
   /// Returns true if the search limit has been crossed.

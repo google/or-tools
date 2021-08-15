@@ -156,7 +156,7 @@ Here some dev-note concerning this `Google.OrTools.csproj`.
   ```xml
   <RestoreSources>{...}/packages;$(RestoreSources)</RestoreSources>
   ```
-* Add dependency (i.e. `PackageReference`) on each runtime package(s) availabe:
+* Add dependency (i.e. `PackageReference`) on each runtime package(s) available:
   ```xml
   <ItemGroup Condition="Exists('{...}/packages/Google.OrTools.runtime.linux-x64.1.0.0.nupkg')">
     <PackageReference Include="Google.OrTools.runtime.linux-x64" Version="1.0.0" />
@@ -202,7 +202,7 @@ provided you have generated the three architecture dependent `Google.OrTools.run
 ![Legend](doc/legend.svg)
 
 ### Building All runtime Google.OrTools Package 
-Like in the previous scenario, on each targeted OS Platform you can build the coresponding
+Like in the previous scenario, on each targeted OS Platform you can build the corresponding
 `Google.OrTools.runtime.{rid}.nupkg` package.
 
 Simply run on each platform

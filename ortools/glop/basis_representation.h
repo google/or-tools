@@ -210,7 +210,7 @@ class BasisFactorization {
                                      RowIndex leaving_variable_row,
                                      const ScatteredColumn& direction);
 
-  // Left solves the system y.B = rhs, where y initialy contains rhs.
+  // Left solves the system y.B = rhs, where y initially contains rhs.
   void LeftSolve(ScatteredRow* y) const;
 
   // Left solves the system y.B = e_j, where e_j has only 1 non-zero

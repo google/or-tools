@@ -230,7 +230,7 @@ class TimeDistribution : public DistributionStat {
   // Time distributions have a high priority to be displayed first.
   int Priority() const override { return 100; }
 
-  // Internaly the TimeDistribution stores CPU cycles (to do a bit less work
+  // Internally the TimeDistribution stores CPU cycles (to do a bit less work
   // on each StopTimerAndAddElapsedTime()). Use this function to convert
   // all the statistics of DistributionStat into seconds.
   static double CyclesToSeconds(double num_cycles);

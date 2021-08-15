@@ -42,7 +42,7 @@ public class AssignFirstUnboundToMin : NetDecisionBuilder
 public class CsRabbitsPheasants
 {
     /**
-     * Solves the rabbits + pheasants problem.  We are seing 20 heads
+     * Solves the rabbits + pheasants problem.  We are seeing 20 heads
      * and 56 legs. How many rabbits and how many pheasants are we thus
      * seeing?
      */

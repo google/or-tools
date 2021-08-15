@@ -1382,7 +1382,7 @@ void SatSolver::BumpClauseActivity(SatClause* clause) {
       // This one is similar to the one used by the Glucose SAT solver.
       //
       // TODO(user): why the +1? one reason may be that the LBD of a conflict
-      // decrease by 1 just afer the backjump...
+      // decrease by 1 just after the backjump...
       if (new_lbd + 1 < it->second.lbd) {
         it->second.protected_during_next_cleanup = true;
         it->second.lbd = new_lbd;

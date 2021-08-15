@@ -208,7 +208,7 @@ bool UseLinearRelaxationForSatAssignmentPreference(
 
 // Note(user): We prefer to start with a really low difficulty as this works
 // better for large problem, and for small ones, it will be really quickly
-// increased anyway. Maybe a better appproach is to start by relaxing something
+// increased anyway. Maybe a better approach is to start by relaxing something
 // like 10 variables instead of having a fixed percentage.
 BopAdaptiveLNSOptimizer::BopAdaptiveLNSOptimizer(
     const std::string& name, bool use_lp_to_guide_sat,
