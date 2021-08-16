@@ -1,13 +1,13 @@
-FROM minizinc/mznc2020
+FROM minizinc/mznc2021:latest
 
 ENV SRC_GIT_BRANCH master
+
+ENV TZ=America/Los_Angeles
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN apt-get update
 
 RUN apt-get -y install pkg-config git wget autoconf libtool zlib1g-dev gawk g++ curl cmake make lsb-release python-dev gfortran gcc-8
-
-ENV TZ=America/Los_Angeles
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 WORKDIR /root
 
@@ -31,7 +31,7 @@ RUN touch ortools/gen/ortools/linear_solver/lpi_glop.cc
 
 RUN make -j 4 third_party
 
-RUN make -j 2 cc fz
+RUN make -j 4 cc fz
 
 RUN ln -s /root/or-tools/bin/fz /entry_data/fzn-exec
 
