@@ -250,7 +250,7 @@ bool CheckBoolXor(const Constraint& ct,
 bool CheckCircuit(const Constraint& ct,
                   const std::function<int64_t(IntegerVariable*)>& evaluator) {
   const int size = Size(ct.arguments[0]);
-  int base = ct.arguments[1].Value();
+  const int base = ct.arguments[1].Value();
 
   absl::flat_hash_set<int64_t> visited;
   int64_t current = 0;

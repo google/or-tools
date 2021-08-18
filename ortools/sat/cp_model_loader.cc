@@ -1214,12 +1214,12 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     max_sum += std::max(term_a, term_b);
   }
 
+  const SatParameters& params = *m->GetOrCreate<SatParameters>();
   const IntegerValue domain_size_limit(
-      m->GetOrCreate<SatParameters>()
-          ->max_domain_size_when_encoding_eq_neq_constraints());
+      params.max_domain_size_when_encoding_eq_neq_constraints());
   if (ct.linear().vars_size() == 2 && !integer_trail->IsFixed(vars[0]) &&
-      !integer_trail->IsFixed(vars[1]) && max_domain_size < domain_size_limit) {
-    const SatParameters& params = *m->GetOrCreate<SatParameters>();
+      !integer_trail->IsFixed(vars[1]) &&
+      max_domain_size <= domain_size_limit) {
     auto* encoder = m->GetOrCreate<IntegerEncoder>();
     if (params.boolean_encoding_level() > 0 && ConstraintIsEq(ct.linear()) &&
         ct.linear().domain(0) != min_sum && ct.linear().domain(0) != max_sum &&
