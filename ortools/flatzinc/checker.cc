@@ -249,29 +249,17 @@ bool CheckBoolXor(const Constraint& ct,
 
 bool CheckCircuit(const Constraint& ct,
                   const std::function<int64_t(IntegerVariable*)>& evaluator) {
-  // There are two versions of the constraint. 0 based and 1 based.
-  // Let's try to detect which one we have.
   const int size = Size(ct.arguments[0]);
-  int shift = 0;
-  for (int i = 0; i < size; ++i) {
-    const int64_t next = EvalAt(ct.arguments[0], i, evaluator);
-    if (next == 0) {  // 0 based.
-      shift = 0;
-      break;
-    } else if (next == size) {  // 1 based.
-      shift = -1;
-      break;
-    }
-  }
+  int base = ct.arguments[1].Value();
 
   absl::flat_hash_set<int64_t> visited;
   int64_t current = 0;
-  for (int i = 0; i < Size(ct.arguments[0]); ++i) {
-    const int64_t next = EvalAt(ct.arguments[0], current, evaluator) + shift;
+  for (int i = 0; i < size; ++i) {
+    const int64_t next = EvalAt(ct.arguments[0], current, evaluator) - base;
     visited.insert(next);
     current = next;
   }
-  return visited.size() == Size(ct.arguments[0]);
+  return visited.size() == size;
 }
 
 int64_t ComputeCount(
@@ -1086,10 +1074,11 @@ bool CheckSubCircuit(
     const Constraint& ct,
     const std::function<int64_t(IntegerVariable*)>& evaluator) {
   absl::flat_hash_set<int64_t> visited;
+  const int base = ct.arguments[1].Value();
   // Find inactive nodes (pointing to themselves).
   int64_t current = -1;
   for (int i = 0; i < Size(ct.arguments[0]); ++i) {
-    const int64_t next = EvalAt(ct.arguments[0], i, evaluator) - 1;
+    const int64_t next = EvalAt(ct.arguments[0], i, evaluator) - base;
     if (next != i && current == -1) {
       current = next;
     } else if (next == i) {
@@ -1100,7 +1089,7 @@ bool CheckSubCircuit(
   // Try to find a path of length 'residual_size'.
   const int residual_size = Size(ct.arguments[0]) - visited.size();
   for (int i = 0; i < residual_size; ++i) {
-    const int64_t next = EvalAt(ct.arguments[0], current, evaluator) - 1;
+    const int64_t next = EvalAt(ct.arguments[0], current, evaluator) - base;
     visited.insert(next);
     if (next == current) {
       return false;
@@ -1187,7 +1176,7 @@ CallMap CreateCallMap() {
   m["bool_or"] = CheckBoolOr;
   m["bool_right_imp"] = CheckIntGe;
   m["bool_xor"] = CheckBoolXor;
-  m["fzn_circuit"] = CheckCircuit;
+  m["ortools_circuit"] = CheckCircuit;
   m["count_eq"] = CheckCountEq;
   m["count"] = CheckCountEq;
   m["count_geq"] = CheckCountGeq;
@@ -1274,7 +1263,7 @@ CallMap CreateCallMap() {
   m["set_in_reif"] = CheckSetInReif;
   m["sliding_sum"] = CheckSlidingSum;
   m["sort"] = CheckSort;
-  m["fzn_subcircuit"] = CheckSubCircuit;
+  m["ortools_subcircuit"] = CheckSubCircuit;
   m["symmetric_all_different"] = CheckSymmetricAllDifferent;
   m["ortools_table_bool"] = CheckTableInt;
   m["ortools_table_int"] = CheckTableInt;

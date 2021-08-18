@@ -556,29 +556,12 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
   } else if (fz_ct.type == "fzn_all_different_int") {
     auto* arg = ct->mutable_all_diff();
     for (const int var : LookupVars(fz_ct.arguments[0])) arg->add_vars(var);
-  } else if (fz_ct.type == "fzn_circuit" || fz_ct.type == "fzn_subcircuit") {
-    // Try to auto-detect if it is zero or one based.
-    bool found_zero = false;
-    bool found_size = false;
-    int64_t size = 0;
-    if (fz_ct.arguments[0].variables.empty() &&
-        !fz_ct.arguments[0].values.empty()) {
-      // Fully instantiated (sub)circuit constraints.
-      size = fz_ct.arguments[0].values.size();
-      for (const int64_t value : fz_ct.arguments[0].values) {
-        if (value == 0) found_zero = true;
-        if (value == size) found_size = true;
-      }
-    } else {
-      size = fz_ct.arguments[0].variables.size();
-      for (fz::IntegerVariable* const var : fz_ct.arguments[0].variables) {
-        if (var->domain.Min() == 0) found_zero = true;
-        if (var->domain.Max() == size) found_size = true;
-      }
-    }
+  } else if (fz_ct.type == "ortools_circuit" ||
+             fz_ct.type == "ortools_subcircuit") {
+    const int64_t min_index = fz_ct.arguments[1].Value();
+    const int size = std::max(fz_ct.arguments[0].values.size(),
+                              fz_ct.arguments[0].variables.size());
 
-    const bool is_one_based = !found_zero || found_size;
-    const int64_t min_index = is_one_based ? 1 : 0;
     const int64_t max_index = min_index + size - 1;
     // The arc-based mutable circuit.
     auto* circuit_arg = ct->mutable_circuit();
@@ -586,7 +569,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     // We fully encode all variables so we can use the literal based circuit.
     // TODO(user): avoid fully encoding more than once?
     int64_t index = min_index;
-    const bool is_circuit = (fz_ct.type == "fzn_circuit");
+    const bool is_circuit = (fz_ct.type == "ortools_circuit");
     for (const int var : LookupVars(fz_ct.arguments[0])) {
       Domain domain = ReadDomainFromProto(proto.variables(var));
 
@@ -1070,6 +1053,9 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   }
 
   m.parameters.set_log_search_progress(p.log_search_progress);
+
+  // Helps with challenge unit tests.
+  m.parameters.set_max_domain_size_when_encoding_eq_neq_constraints(32);
 
   if (p.use_free_search) {
     m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
