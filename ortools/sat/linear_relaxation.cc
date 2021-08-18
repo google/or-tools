@@ -129,6 +129,12 @@ bool LinMaxContainsOnlyOneVarInExpressions(const ConstraintProto& ct) {
   return true;
 }
 
+bool IntMaxIsIntAbs(const ConstraintProto& ct) {
+  CHECK_EQ(ct.constraint_case(), ConstraintProto::ConstraintCase::kIntMax);
+  if (ct.int_max().vars_size() != 2) return false;
+  return ct.int_max().vars(0) == NegatedRef(ct.int_max().vars(1));
+}
+
 // Collect all the affines expressions in a LinMax constraint.
 // It checks that these are indeed affine expressions, and that they all share
 // the same variable.
@@ -867,8 +873,29 @@ void AddMaxAffineCutGenerator(const ConstraintProto& ct, Model* model,
   CHECK_EQ(1, ct.lin_max().target().vars_size());
   const LinearExpression target_expr =
       PositiveVarExpr(mapping->GetExprFromProto(ct.lin_max().target()));
+  relaxation->cut_generators.push_back(CreateMaxAffineCutGenerator(
+      target_expr, var, affines, "AffineMax", model));
+}
+
+void AddIntAbsCutGenerator(const ConstraintProto& ct, Model* model,
+                           LinearRelaxation* relaxation) {
+  const std::vector<std::pair<IntegerValue, IntegerValue>> affines = {
+      {IntegerValue(1), IntegerValue(0)}, {IntegerValue(-1), IntegerValue(0)}};
+
+  auto* mapping = model->GetOrCreate<CpModelMapping>();
+  const IntegerVariable var =
+      PositiveVariable(mapping->Integer(ct.int_max().vars(0)));
+
+  if (var == kNoIntegerVariable ||
+      model->GetOrCreate<IntegerTrail>()->IsFixed(var)) {
+    return;
+  }
+
+  LinearExpression target_expr;
+  target_expr.vars.push_back(mapping->Integer(ct.int_max().target()));
+  target_expr.coeffs.push_back(IntegerValue(1));
   relaxation->cut_generators.push_back(
-      CreateMaxAffineCutGenerator(target_expr, var, affines, model));
+      CreateMaxAffineCutGenerator(target_expr, var, affines, "IntAbs", model));
 }
 
 // Part 2: Encode upper bound on X.
@@ -1042,9 +1069,9 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       break;
     }
     case ConstraintProto::ConstraintCase::kIntMax: {
-      AppendIntMaxRelaxation(ct,
-                             /*encode_other_direction=*/linearization_level > 1,
-                             model, relaxation);
+      const bool encode_other_direction =
+          IntMaxIsIntAbs(ct) ? false : linearization_level > 1;
+      AppendIntMaxRelaxation(ct, encode_other_direction, model, relaxation);
       break;
     }
     case ConstraintProto::ConstraintCase::kLinMax: {
@@ -1342,6 +1369,14 @@ void TryToAddCutGenerators(const ConstraintProto& ct, int linearization_level,
     case ConstraintProto::ConstraintCase::kNoOverlap2D: {
       if (linearization_level > 1) {
         AddNoOverlap2dCutGenerator(ct, m, relaxation);
+      }
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kIntMax: {
+      if (linearization_level > 1) {
+        if (IntMaxIsIntAbs(ct)) {
+          AddIntAbsCutGenerator(ct, m, relaxation);
+        }
       }
       break;
     }

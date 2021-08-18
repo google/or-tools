@@ -2492,8 +2492,13 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
   }
 
   // The clause we want to keep are at the end of the vector.
-  int num_kept_clauses = std::min(static_cast<int>(entries.size()),
-                                  parameters_->clause_cleanup_target());
+  int num_kept_clauses =
+      (parameters_->clause_cleanup_target() > 0)
+          ? std::min(static_cast<int>(entries.size()),
+                     parameters_->clause_cleanup_target())
+          : static_cast<int>(parameters_->clause_cleanup_ratio() *
+                             static_cast<double>(entries.size()));
+
   int num_deleted_clauses = entries.size() - num_kept_clauses;
 
   // Tricky: Because the order of the clauses_info iteration is NOT

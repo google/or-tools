@@ -2029,7 +2029,8 @@ LinearConstraint BuildMaxAffineUpConstraint(
 
 CutGenerator CreateMaxAffineCutGenerator(
     LinearExpression target, IntegerVariable var,
-    std::vector<std::pair<IntegerValue, IntegerValue>> affines, Model* model) {
+    std::vector<std::pair<IntegerValue, IntegerValue>> affines,
+    const std::string cut_name, Model* model) {
   CutGenerator result;
   result.vars = target.vars;
   result.vars.push_back(var);
@@ -2037,12 +2038,12 @@ CutGenerator CreateMaxAffineCutGenerator(
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   result.generate_cuts =
-      [target, var, affines, integer_trail, model](
+      [target, var, affines, cut_name, integer_trail, model](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         if (integer_trail->IsFixed(var)) return true;
         manager->AddCut(BuildMaxAffineUpConstraint(target, var, affines, model),
-                        "MaxAffine", lp_values);
+                        cut_name, lp_values);
         return true;
       };
   return result;
