@@ -466,7 +466,7 @@ absl::Status MPSReaderImpl::ProcessLine(const std::string& line,
   if (IsCommentOrBlank()) {
     return absl::OkStatus();  // Skip blank lines and comments.
   }
-  if (!free_form_ && line_.find('\t') != std::string::npos) {
+  if (!free_form_ && absl::StrContains(line_, '\t')) {
     return InvalidArgumentError("File contains tabs.");
   }
   std::string section;
