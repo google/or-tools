@@ -490,10 +490,6 @@ CutGenerator CreateMaxAffineCutGenerator(
     std::vector<std::pair<IntegerValue, IntegerValue>> affines,
     const std::string cut_name, Model* model);
 
-// Simplified version of the MaxAffine cut generator for target == abs(var).
-CutGenerator CreateIntAbsCutGenerator(IntegerVariable target,
-                                      IntegerVariable var, Model* model);
-
 // Extracts the variables that have a Literal view from base variables and
 // create a generator that will returns constraint of the form "at_most_one"
 // between such literals.

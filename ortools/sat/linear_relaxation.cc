@@ -130,8 +130,10 @@ bool LinMaxContainsOnlyOneVarInExpressions(const ConstraintProto& ct) {
 }
 
 bool IntMaxIsIntAbs(const ConstraintProto& ct) {
-  CHECK_EQ(ct.constraint_case(), ConstraintProto::ConstraintCase::kIntMax);
-  if (ct.int_max().vars_size() != 2) return false;
+  if (ct.constraint_case() != ConstraintProto::ConstraintCase::kIntMax ||
+      ct.int_max().vars_size() != 2) {
+    return false;
+  }
   return ct.int_max().vars(0) == NegatedRef(ct.int_max().vars(1));
 }
 
@@ -494,12 +496,10 @@ std::vector<Literal> CreateAlternativeLiteralsWithView(
 }
 
 namespace {
-// Adds linearization of int max constraints. This can also be used to linearize
-// int min with negated variables.
-void AppendMaxRelaxationHelper(IntegerVariable target,
-                               const std::vector<IntegerVariable>& vars,
-                               bool encode_other_direction, Model* model,
-                               LinearRelaxation* relaxation) {
+
+void AddIntMaxLowerRelaxation(IntegerVariable target,
+                              const std::vector<IntegerVariable>& vars,
+                              Model* model, LinearRelaxation* relaxation) {
   // Case X = max(X_1, X_2, ..., X_N)
   // Part 1: Encode X >= max(X_1, X_2, ..., X_N)
   for (const IntegerVariable var : vars) {
@@ -511,10 +511,27 @@ void AppendMaxRelaxationHelper(IntegerVariable target,
     lc.AddTerm(target, IntegerValue(-1));
     relaxation->linear_constraints.push_back(lc.Build());
   }
+}
 
-  // Part 2: Encode upper bound on X.
-  if (!encode_other_direction) return;
+void AddIntAbsUpperRelaxation(IntegerVariable target, IntegerVariable var,
+                              Model* model, LinearRelaxation* relaxation) {
+  if (var == kNoIntegerVariable ||
+      model->GetOrCreate<IntegerTrail>()->IsFixed(var)) {
+    return;
+  }
 
+  LinearExpression target_expr;
+  target_expr.vars.push_back(target);
+  target_expr.coeffs.push_back(IntegerValue(1));
+  const std::vector<std::pair<IntegerValue, IntegerValue>> affines = {
+      {IntegerValue(1), IntegerValue(0)}, {IntegerValue(-1), IntegerValue(0)}};
+  relaxation->linear_constraints.push_back(
+      BuildMaxAffineUpConstraint(target_expr, var, affines, model));
+}
+
+void AddIntMaxUpperRelaxation(IntegerVariable target,
+                              const std::vector<IntegerVariable>& vars,
+                              Model* model, LinearRelaxation* relaxation) {
   // For each X_i, we encode l_i => X <= X_i. And at least one of the l_i is
   // true. Note that the correct y_i will be chosen because of the first part in
   // linearlization (X >= X_i).
@@ -538,30 +555,25 @@ void AppendMaxRelaxationHelper(IntegerVariable target,
 
 }  // namespace
 
-void AppendIntMaxRelaxation(const ConstraintProto& ct,
-                            bool encode_other_direction, Model* model,
-                            LinearRelaxation* relaxation) {
+// Adds linearization of int max constraints. This can also be used to linearize
+// int min with negated variables.
+void AppendIntMaxRelaxation(const ConstraintProto& ct, int linearization_level,
+                            Model* model, LinearRelaxation* relaxation) {
   if (HasEnforcementLiteral(ct)) return;
 
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   const IntegerVariable target = mapping->Integer(ct.int_max().target());
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.int_max().vars());
-  AppendMaxRelaxationHelper(target, vars, encode_other_direction, model,
-                            relaxation);
-}
 
-void AppendIntMinRelaxation(const ConstraintProto& ct,
-                            bool encode_other_direction, Model* model,
-                            LinearRelaxation* relaxation) {
-  if (HasEnforcementLiteral(ct)) return;
-  auto* mapping = model->GetOrCreate<CpModelMapping>();
-  const IntegerVariable negative_target =
-      NegationOf(mapping->Integer(ct.int_min().target()));
-  const std::vector<IntegerVariable> negative_vars =
-      NegationOf(mapping->Integers(ct.int_min().vars()));
-  AppendMaxRelaxationHelper(negative_target, negative_vars,
-                            encode_other_direction, model, relaxation);
+  AddIntMaxLowerRelaxation(target, vars, model, relaxation);
+  if (IntMaxIsIntAbs(ct)) {
+    // TODO(user): consider support for int_abs encoded using int_min.
+    AddIntAbsUpperRelaxation(target, PositiveVariable(vars[0]), model,
+                             relaxation);
+  } else if (linearization_level > 1) {
+    AddIntMaxUpperRelaxation(target, vars, model, relaxation);
+  }
 }
 
 void AppendCircuitRelaxation(const ConstraintProto& ct, Model* model,
@@ -879,21 +891,16 @@ void AddMaxAffineCutGenerator(const ConstraintProto& ct, Model* model,
 
 void AddIntAbsCutGenerator(const ConstraintProto& ct, Model* model,
                            LinearRelaxation* relaxation) {
-  const std::vector<std::pair<IntegerValue, IntegerValue>> affines = {
-      {IntegerValue(1), IntegerValue(0)}, {IntegerValue(-1), IntegerValue(0)}};
-
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   const IntegerVariable var =
       PositiveVariable(mapping->Integer(ct.int_max().vars(0)));
 
-  if (var == kNoIntegerVariable ||
-      model->GetOrCreate<IntegerTrail>()->IsFixed(var)) {
-    return;
-  }
-
   LinearExpression target_expr;
   target_expr.vars.push_back(mapping->Integer(ct.int_max().target()));
   target_expr.coeffs.push_back(IntegerValue(1));
+  const std::vector<std::pair<IntegerValue, IntegerValue>> affines = {
+      {IntegerValue(1), IntegerValue(0)}, {IntegerValue(-1), IntegerValue(0)}};
+
   relaxation->cut_generators.push_back(
       CreateMaxAffineCutGenerator(target_expr, var, affines, "IntAbs", model));
 }
@@ -1069,9 +1076,7 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       break;
     }
     case ConstraintProto::ConstraintCase::kIntMax: {
-      const bool encode_other_direction =
-          IntMaxIsIntAbs(ct) ? false : linearization_level > 1;
-      AppendIntMaxRelaxation(ct, encode_other_direction, model, relaxation);
+      AppendIntMaxRelaxation(ct, linearization_level, model, relaxation);
       break;
     }
     case ConstraintProto::ConstraintCase::kLinMax: {
@@ -1079,12 +1084,6 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       if (LinMaxContainsOnlyOneVarInExpressions(ct)) {
         AppendMaxAffineRelaxation(ct, model, relaxation);
       }
-      break;
-    }
-    case ConstraintProto::ConstraintCase::kIntMin: {
-      AppendIntMinRelaxation(ct,
-                             /*encode_other_direction=*/linearization_level > 1,
-                             model, relaxation);
       break;
     }
     case ConstraintProto::ConstraintCase::kLinear: {
