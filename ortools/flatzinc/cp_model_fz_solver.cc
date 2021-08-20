@@ -1057,12 +1057,13 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   // Helps with challenge unit tests.
   m.parameters.set_max_domain_size_when_encoding_eq_neq_constraints(32);
 
-  // We don't support enumerating all solution in parallel for a SAT problem.
-  // But note that we do support it for an optimization problem since the
-  // meaning of p.all_solutions is not the same in this case.
+  // Computes the number of workers.
   int num_workers = 1;
   if (p.display_all_solutions && fz_model.objective() == nullptr) {
     if (p.number_of_threads > 1) {
+      // We don't support enumerating all solution in parallel for a SAT
+      // problem. But note that we do support it for an optimization problem
+      // since the meaning of p.all_solutions is not the same in this case.
       SOLVER_LOG(logger,
                  "Search for all solutions of a SAT problem in parallel is not "
                  "supported. Switching back to sequential search.");
@@ -1081,13 +1082,12 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   }
   m.parameters.set_num_search_workers(num_workers);
 
-  // Specify single thread specific search modes.
+  // Specifies single thread specific search modes.
   if (num_workers == 1) {
     if (p.use_free_search) {
       m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
       m.parameters.set_interleave_search(true);
       m.parameters.set_reduce_memory_usage_in_interleave_mode(true);
-
     } else {
       m.parameters.set_search_branching(SatParameters::FIXED_SEARCH);
       m.parameters.set_keep_all_feasible_solutions_in_presolve(true);
