@@ -1076,8 +1076,14 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   // meaning of p.all_solutions is not the same in this case.
   if (p.display_all_solutions && fz_model.objective() == nullptr) {
     m.parameters.set_num_search_workers(1);
+  } else if (p.number_of_threads <= 0) {
+    SOLVER_LOG(logger,
+               "The number of search workers, is not specified. For better "
+               "performances, please set the number of workers to 8, 16, or "
+               "more depending on the number of cores of your computer.");
+    m.parameters.set_num_search_workers(1);
   } else {
-    m.parameters.set_num_search_workers(std::max(1, p.number_of_threads));
+    m.parameters.set_num_search_workers(p.number_of_threads);
   }
 
   // The order is important, we want the flag parameters to overwrite anything
