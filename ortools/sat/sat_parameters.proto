@@ -626,9 +626,9 @@ message SatParameters {
 
   // When loading a*x + b*y ==/!= c when x and y are both fully encoded.
   // The solver may decide to replace the linear equation by a set of clauses.
-  // This is triggered if the max size of the domains of x and y are below the
+  // This is triggered if the sizes of the domains of x and y are below the
   // threshold.
-  optional int64 max_domain_size_when_encoding_eq_neq_constraints = 191
+  optional int32 max_domain_size_when_encoding_eq_neq_constraints = 191
       [default = 16];
 
   // The limit on the number of cuts in our cut pool. When this is reached we do
@@ -879,12 +879,13 @@ message SatParameters {
   optional bool stop_after_presolve = 149 [default = false];
 
   // Specify the number of parallel workers to use during search.
-  // A number <= 1 means no parallelism.
+  // A value of 0 means the solver will try to use all cores on the machine.
+  // A number of 1 means no parallelism.
   // As of 2020-04-10, if you're using SAT via MPSolver (to solve integer
   // programs) this field is overridden with a value of 8, if the field is not
   // set *explicitly*. Thus, always set this field explicitly or via
   // MPSolver::SetNumThreads().
-  optional int32 num_search_workers = 100 [default = 1];
+  optional int32 num_search_workers = 100 [default = 0];
 
   // Experimental. If this is true, then we interleave all our major search
   // strategy and distribute the work amongst num_search_workers.

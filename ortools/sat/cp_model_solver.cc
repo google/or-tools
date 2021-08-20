@@ -24,6 +24,7 @@
 #include <random>
 #include <set>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -2910,6 +2911,23 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Starting CP-SAT solver.");
+
+  // Initialize the number of workers if set to 0.
+  {
+    SatParameters* params = model->GetOrCreate<SatParameters>();
+    if (params->num_search_workers() == 0) {
+#if !defined(__PORTABLE_PLATFORM__)
+      // Sometimes, hardware_concurrency will return 0. So always default to 1.
+      const int num_cores =
+          std::max<int>(std::thread::hardware_concurrency(), 1);
+#else
+      const int num_cores = 1;
+#endif
+      SOLVER_LOG(logger, "Setting number of workers to ", num_cores);
+      params->set_num_search_workers(num_cores);
+    }
+  }
+
   SOLVER_LOG(logger, "Parameters: ", params.ShortDebugString());
   if (logger->LoggingIsEnabled() && params.use_absl_random()) {
     model->GetOrCreate<ModelRandomGenerator>()->LogSalt();

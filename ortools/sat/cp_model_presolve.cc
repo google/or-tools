@@ -3688,7 +3688,15 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       const int index = proto->intervals(i);
       const int64_t start_min = context_->StartMin(index);
       const int64_t end_max = context_->EndMax(index);
-      DCHECK_LT(start_min, end_max);
+
+      // In the cumulative, if start_min == end_max, the interval is of size
+      // zero and we can just ignore it. If the model is unsat or the interval
+      // must be absent (start_min > end_max), this should be dealt with at the
+      // interval constraint level and we can just remove it from here.
+      //
+      // Note that currently, the interpretation for interval of length zero is
+      // different for the no-overlap constraint.
+      if (start_min >= end_max) continue;
 
       // Note that by construction, both point are in the map. The formula
       // counts exactly for how many times in [start_min, end_max), we have a
