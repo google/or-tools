@@ -351,7 +351,7 @@ distclean: clean | export/archives
 ##########################
 ##  MINIZINC CHALLENGE  ##
 ##########################
-MZN_TAG=or-tools-minizinc-challenge:2021v2
+MZN_TAG=or-tools-minizinc-challenge:2021v3
 
 minizinc-challenge-image:
 	docker build -f minizinc-challenge.Dockerfile -t $(MZN_TAG) .
