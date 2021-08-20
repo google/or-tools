@@ -140,9 +140,9 @@ Status Markowitz::ComputeRowAndColumnPermutation(
   num_fp_operations_ += 10 * upper_.num_entries().value();
 
   stats_.pivots_without_fill_in_ratio.Add(
-      1.0 * stats_num_pivots_without_fill_in / end_index);
+      1.0 * stats_num_pivots_without_fill_in / num_rows.value());
   stats_.degree_two_pivot_columns.Add(1.0 * stats_degree_two_pivot_columns /
-                                      end_index);
+                                      num_rows.value());
   return Status::OK();
 }
 
@@ -218,7 +218,7 @@ void Markowitz::ExtractSingletonColumns(
     }
   }
   stats_.basis_singleton_column_ratio.Add(static_cast<double>(*index) /
-                                          num_cols.value());
+                                          basis_matrix.num_rows().value());
 }
 
 bool Markowitz::IsResidualSingletonColumn(const ColumnView& column,
@@ -250,8 +250,8 @@ void Markowitz::ExtractResidualSingletonColumns(
     upper_.AddTriangularColumn(column, row);
     ++(*index);
   }
-  stats_.basis_residual_singleton_column_ratio.Add(static_cast<double>(*index) /
-                                                   num_cols.value());
+  stats_.basis_residual_singleton_column_ratio.Add(
+      static_cast<double>(*index) / basis_matrix.num_rows().value());
 }
 
 const SparseColumn& Markowitz::ComputeColumn(const RowPermutation& row_perm,
@@ -817,12 +817,15 @@ void ColumnPriorityQueue::Reset(int max_degree, ColIndex num_cols) {
   col_degree_.assign(num_cols, 0);
   col_index_.assign(num_cols, -1);
   col_by_degree_.resize(max_degree + 1);
-  min_degree_ = num_cols.value();
+  min_degree_ = max_degree + 1;
 }
 
 void ColumnPriorityQueue::PushOrAdjust(ColIndex col, int32_t degree) {
   DCHECK_GE(degree, 0);
   DCHECK_LT(degree, col_by_degree_.size());
+  DCHECK_GE(col, 0);
+  DCHECK_LT(col, col_degree_.size());
+
   const int32_t old_degree = col_degree_[col];
   if (degree != old_degree) {
     const int32_t old_index = col_index_[col];
@@ -844,9 +847,12 @@ void ColumnPriorityQueue::PushOrAdjust(ColIndex col, int32_t degree) {
 }
 
 ColIndex ColumnPriorityQueue::Pop() {
-  while (col_by_degree_[min_degree_].empty()) {
-    min_degree_++;
+  DCHECK_GE(min_degree_, 0);
+  DCHECK_LE(min_degree_, col_by_degree_.size());
+  while (true) {
     if (min_degree_ == col_by_degree_.size()) return kInvalidCol;
+    if (!col_by_degree_[min_degree_].empty()) break;
+    min_degree_++;
   }
   const ColIndex col = col_by_degree_[min_degree_].back();
   col_by_degree_[min_degree_].pop_back();

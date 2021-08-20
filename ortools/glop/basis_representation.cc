@@ -210,6 +210,15 @@ Status BasisFactorization::Initialize() {
   return ComputeFactorization();
 }
 
+RowToColMapping BasisFactorization::ComputeInitialBasis(
+    const std::vector<ColIndex>& candidates) {
+  const RowToColMapping basis =
+      lu_factorization_.ComputeInitialBasis(compact_matrix_, candidates);
+  deterministic_time_ +=
+      lu_factorization_.DeterministicTimeOfLastFactorization();
+  return basis;
+}
+
 bool BasisFactorization::IsRefactorized() const { return num_updates_ == 0; }
 
 Status BasisFactorization::Refactorize() {

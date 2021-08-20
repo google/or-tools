@@ -107,9 +107,7 @@ void VariablesInfo::InitializeFromBasisState(ColIndex first_slack_col,
                                              const BasisState& state) {
   ResetStatusInfo();
 
-  RowIndex num_basic_variables(0);
   const ColIndex num_cols = lower_bounds_.size();
-  const RowIndex num_rows = ColToRowIndex(num_cols - first_slack_col);
   DCHECK_LE(num_new_cols, first_slack_col);
   const ColIndex first_new_col(first_slack_col - num_new_cols);
 
@@ -131,21 +129,12 @@ void VariablesInfo::InitializeFromBasisState(ColIndex first_slack_col,
     // Remove incompatibilities between the warm status and the current state.
     switch (status) {
       case VariableStatus::BASIC:
-        // Do not allow more than num_rows VariableStatus::BASIC variables.
-        if (num_basic_variables == num_rows) {
-          VLOG(1) << "Too many basic variables in the warm-start basis."
-                  << "Only keeping the first ones as VariableStatus::BASIC.";
-          UpdateToNonBasicStatus(col, DefaultVariableStatus(col));
-        } else {
-          ++num_basic_variables;
-
-          // Because we just called ResetStatusInfo(), we optimize the call to
-          // UpdateToNonBasicStatus(col) here. In an incremental setting with
-          // almost no work per call, the update of all the DenseBitRow are
-          // visible.
-          variable_status_[col] = VariableStatus::BASIC;
-          is_basic_.Set(col, true);
-        }
+        // Because we just called ResetStatusInfo(), we optimize the call to
+        // UpdateToNonBasicStatus(col) here. In an incremental setting with
+        // almost no work per call, the update of all the DenseBitRow are
+        // visible.
+        variable_status_[col] = VariableStatus::BASIC;
+        is_basic_.Set(col, true);
         break;
       case VariableStatus::AT_LOWER_BOUND:
         if (lower_bounds_[col] == upper_bounds_[col]) {
@@ -167,6 +156,19 @@ void VariablesInfo::InitializeFromBasisState(ColIndex first_slack_col,
         break;
       default:
         UpdateToNonBasicStatus(col, DefaultVariableStatus(col));
+    }
+  }
+}
+
+void VariablesInfo::CorrectBasicStatus(const RowToColMapping& basis) {
+  const ColIndex num_cols = lower_bounds_.size();
+  is_basic_.ClearAndResize(num_cols);
+  for (const ColIndex col : basis) {
+    UpdateToBasicStatus(col);
+  }
+  for (ColIndex col(0); col < num_cols; ++col) {
+    if (!is_basic_[col] && variable_status_[col] == VariableStatus::BASIC) {
+      UpdateToNonBasicStatus(col, DefaultVariableStatus(col));
     }
   }
 }

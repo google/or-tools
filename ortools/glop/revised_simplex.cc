@@ -68,6 +68,7 @@ class Cleanup {
     DCHECK_GT(num_cols_, col); \
   }
 
+// TODO(user): Remove this function.
 #define DCHECK_ROW_BOUNDS(row) \
   {                            \
     DCHECK_LE(0, row);         \
@@ -1353,32 +1354,51 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
   // reuse the variable statuses.
   const bool log_info = parameters_.log_search_progress() || VLOG_IS_ON(1);
   if (solve_from_scratch && !solution_state_.IsEmpty()) {
-    // If an external basis has been provided or if the matrix changed, we need
-    // to perform more work, e.g., factorize the proposed basis and validate it.
-    variables_info_.InitializeFromBasisState(first_slack_col_, ColIndex(0),
-                                             solution_state_);
-    basis_.assign(num_rows_, kInvalidCol);
-    RowIndex row(0);
-    for (ColIndex col : variables_info_.GetIsBasicBitRow()) {
-      basis_[row] = col;
-      ++row;
-    }
-
     basis_factorization_.Clear();
     reduced_costs_.ClearAndRemoveCostShifts();
     primal_edge_norms_.Clear();
     dual_edge_norms_.Clear();
     dual_pricing_vector_.clear();
 
-    // TODO(user): If the basis is incomplete, we could complete it with
-    // better slack variables than is done by InitializeFirstBasis() by
-    // using a partial LU decomposition (see markowitz.h).
-    if (InitializeFirstBasis(basis_).ok()) {
-      solve_from_scratch = false;
-    } else {
-      if (log_info) {
-        LOG(INFO) << "RevisedSimplex is not using the warm start "
-                     "basis because it is not factorizable.";
+    // If an external basis has been provided or if the matrix changed, we need
+    // to perform more work, e.g., factorize the proposed basis and validate it.
+    variables_info_.InitializeFromBasisState(first_slack_col_, ColIndex(0),
+                                             solution_state_);
+
+    // Use the set of basic columns as a "hint" to construct the first basis.
+    std::vector<ColIndex> candidates;
+    for (const ColIndex col : variables_info_.GetIsBasicBitRow()) {
+      candidates.push_back(col);
+    }
+
+    // Optimization: Try to factorize it right away if we have the correct
+    // number of element. Ideally the other path below would no require a
+    // "double" factorization effort, so this would not be needed.
+    if (candidates.size() == num_rows_) {
+      basis_.clear();
+      for (const ColIndex col : candidates) {
+        basis_.push_back(col);
+      }
+
+      // TODO(user): Depending on the error here, there is no point doing extra
+      // work below. This is the case when we fail because of a bad initial
+      // condition number for instance.
+      if (InitializeFirstBasis(basis_).ok()) {
+        solve_from_scratch = false;
+      }
+    }
+
+    if (solve_from_scratch) {
+      basis_ = basis_factorization_.ComputeInitialBasis(candidates);
+      variables_info_.CorrectBasicStatus(basis_);
+
+      if (InitializeFirstBasis(basis_).ok()) {
+        solve_from_scratch = false;
+      } else {
+        if (log_info) {
+          LOG(INFO) << "RevisedSimplex is not using the warm start "
+                       "basis because it is not factorizable.";
+        }
       }
     }
   }
@@ -3080,7 +3100,6 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
 }
 
 ColIndex RevisedSimplex::SlackColIndex(RowIndex row) const {
-  // TODO(user): Remove this function.
   DCHECK_ROW_BOUNDS(row);
   return first_slack_col_ + RowToColIndex(row);
 }

@@ -55,6 +55,13 @@ class LuFactorization {
   ABSL_MUST_USE_RESULT Status
   ComputeFactorization(const CompactSparseMatrixView& compact_matrix);
 
+  // Given a set of columns, find a maximum linearly independent subset that can
+  // be factorized in a stable way, and complete it into a square matrix using
+  // slack columns. The initial set can have less, more or the same number of
+  // columns as the number of rows.
+  RowToColMapping ComputeInitialBasis(const CompactSparseMatrix& matrix,
+                                      const std::vector<ColIndex>& candidates);
+
   // Returns the column permutation used by the LU factorization.
   const ColumnPermutation& GetColumnPermutation() const { return col_perm_; }
 

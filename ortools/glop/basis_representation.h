@@ -188,6 +188,18 @@ class BasisFactorization {
   // could not be factorized.
   ABSL_MUST_USE_RESULT Status Initialize();
 
+  // This mainly forward the call to LuFactorization::ComputeInitialBasis().
+  //
+  // Note that once this is called, one would need to call Initialize() to
+  // actually create the factorization. The only side effect of this is to
+  // update the deterministic time.
+  //
+  // TODO(user): This "double" factorization is a bit inefficient, and we should
+  // probably Initialize() right away the factorization with the new basis, but
+  // more code is needed for that. It is also not that easy also because we want
+  // to permute all the added slack first.
+  RowToColMapping ComputeInitialBasis(const std::vector<ColIndex>& candidates);
+
   // Return the number of rows in the basis.
   RowIndex GetNumberOfRows() const { return compact_matrix_.num_rows(); }
 

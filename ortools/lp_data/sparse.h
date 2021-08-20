@@ -477,14 +477,18 @@ class CompactSparseMatrixView {
  public:
   CompactSparseMatrixView(const CompactSparseMatrix* compact_matrix,
                           const RowToColMapping* basis)
-      : compact_matrix_(*compact_matrix), basis_(*basis) {}
+      : compact_matrix_(*compact_matrix),
+        columns_(basis->data(), basis->size().value()) {}
+  CompactSparseMatrixView(const CompactSparseMatrix* compact_matrix,
+                          const std::vector<ColIndex>* columns)
+      : compact_matrix_(*compact_matrix), columns_(*columns) {}
 
   // Same behavior as the SparseMatrix functions above.
   bool IsEmpty() const { return compact_matrix_.IsEmpty(); }
   RowIndex num_rows() const { return compact_matrix_.num_rows(); }
-  ColIndex num_cols() const { return RowToColIndex(basis_.size()); }
+  ColIndex num_cols() const { return ColIndex(columns_.size()); }
   const ColumnView column(ColIndex col) const {
-    return compact_matrix_.column(basis_[ColToRowIndex(col)]);
+    return compact_matrix_.column(columns_[col.value()]);
   }
   EntryIndex num_entries() const;
   Fractional ComputeOneNorm() const;
@@ -494,7 +498,7 @@ class CompactSparseMatrixView {
   // We require that the underlying CompactSparseMatrix and RowToColMapping
   // continue to own the (potentially large) data accessed via this view.
   const CompactSparseMatrix& compact_matrix_;
-  const RowToColMapping& basis_;
+  const absl::Span<const ColIndex> columns_;
 };
 
 // Specialization of a CompactSparseMatrix used for triangular matrices.

@@ -65,6 +65,33 @@ Status LuFactorization::ComputeFactorization(
   return Status::OK();
 }
 
+RowToColMapping LuFactorization::ComputeInitialBasis(
+    const CompactSparseMatrix& matrix,
+    const std::vector<ColIndex>& candidates) {
+  CompactSparseMatrixView view(&matrix, &candidates);
+  (void)markowitz_.ComputeRowAndColumnPermutation(view, &row_perm_, &col_perm_);
+
+  // Starts by the missing slacks.
+  RowToColMapping basis;
+  for (RowIndex row(0); row < matrix.num_rows(); ++row) {
+    if (row_perm_[row] == kInvalidRow) {
+      // Add the slack for this row.
+      basis.push_back(matrix.num_cols() +
+                      RowToColIndex(row - matrix.num_rows()));
+    }
+  }
+
+  // Then add the used candidate columns.
+  CHECK_EQ(col_perm_.size(), candidates.size());
+  for (int i = 0; i < col_perm_.size(); ++i) {
+    if (col_perm_[ColIndex(i)] != kInvalidCol) {
+      basis.push_back(candidates[i]);
+    }
+  }
+
+  return basis;
+}
+
 double LuFactorization::DeterministicTimeOfLastFactorization() const {
   return markowitz_.DeterministicTimeOfLastFactorization();
 }
