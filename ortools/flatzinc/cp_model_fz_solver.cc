@@ -1057,33 +1057,46 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   // Helps with challenge unit tests.
   m.parameters.set_max_domain_size_when_encoding_eq_neq_constraints(32);
 
-  if (p.use_free_search) {
-    m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-    if (p.number_of_threads <= 1) {
-      m.parameters.set_interleave_search(true);
-      m.parameters.set_reduce_memory_usage_in_interleave_mode(true);
-    }
-  } else {
-    m.parameters.set_search_branching(SatParameters::FIXED_SEARCH);
-    m.parameters.set_keep_all_feasible_solutions_in_presolve(true);
-  }
-  if (p.max_time_in_seconds > 0) {
-    m.parameters.set_max_time_in_seconds(p.max_time_in_seconds);
-  }
-
   // We don't support enumerating all solution in parallel for a SAT problem.
   // But note that we do support it for an optimization problem since the
   // meaning of p.all_solutions is not the same in this case.
+  int num_workers = 1;
   if (p.display_all_solutions && fz_model.objective() == nullptr) {
-    m.parameters.set_num_search_workers(1);
+    if (p.number_of_threads > 1) {
+      SOLVER_LOG(logger,
+                 "Search for all solutions of a SAT problem in parallel is not "
+                 "supported. Switching back to sequential search.");
+    }
   } else if (p.number_of_threads <= 0) {
+    // TODO(user): Supports setting the number of workers to 0, which will
+    //     then query the number of cores available. This is complex now as we
+    //     need to still support the expected behabior (no flags -> 1 thread
+    //     fixed search, -f -> 1 thread free search).
     SOLVER_LOG(logger,
                "The number of search workers, is not specified. For better "
                "performances, please set the number of workers to 8, 16, or "
                "more depending on the number of cores of your computer.");
-    m.parameters.set_num_search_workers(1);
   } else {
-    m.parameters.set_num_search_workers(p.number_of_threads);
+    num_workers = p.number_of_threads;
+  }
+  m.parameters.set_num_search_workers(num_workers);
+
+  // Specify single thread specific search modes.
+  if (num_workers == 1) {
+    if (p.use_free_search) {
+      m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+      m.parameters.set_interleave_search(true);
+      m.parameters.set_reduce_memory_usage_in_interleave_mode(true);
+
+    } else {
+      m.parameters.set_search_branching(SatParameters::FIXED_SEARCH);
+      m.parameters.set_keep_all_feasible_solutions_in_presolve(true);
+    }
+  }
+
+  // Time limit.
+  if (p.max_time_in_seconds > 0) {
+    m.parameters.set_max_time_in_seconds(p.max_time_in_seconds);
   }
 
   // The order is important, we want the flag parameters to overwrite anything
