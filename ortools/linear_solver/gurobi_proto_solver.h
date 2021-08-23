@@ -14,6 +14,9 @@
 #ifndef OR_TOOLS_LINEAR_SOLVER_GUROBI_PROTO_SOLVER_H_
 #define OR_TOOLS_LINEAR_SOLVER_GUROBI_PROTO_SOLVER_H_
 
+#include <string>
+
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ortools/gurobi/environment.h"
 #include "ortools/linear_solver/linear_solver.pb.h"

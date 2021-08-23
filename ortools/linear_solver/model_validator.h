@@ -24,7 +24,7 @@ namespace operations_research {
 /**
  * Returns an empty string iff the model is valid and not trivially infeasible.
  * Otherwise, returns a description of the first error or trivial infeasibility
- * encountered.
+ * variable or constraint bound encountered.
  *
  * abs_value_threshold is the (exclusive) limit for the abs value of constraint
  * coefficients, objective coefficients, etc. If unspecified, or 0, it defaults
@@ -34,8 +34,11 @@ namespace operations_research {
  * considerably simplified by this string-based, simple API. If clients
  * require it, we could add a formal error status enum.
  */
-std::string FindErrorInMPModelProto(const MPModelProto& model,
-                                    double abs_value_threshold = 0.0);
+std::string FindErrorInMPModelProto(
+    const MPModelProto& model, double abs_value_threshold = 0.0,
+    // If false, variable and constraint bounds like [lb=1.2, ub=0.7] yield an
+    // error, and also integer variable bounds like [0.7, 0.8].
+    bool accept_trivially_infeasible_bounds = false);
 
 /**
  * Like FindErrorInMPModelProto, but for a MPModelDeltaProto applied to a given
@@ -83,9 +86,9 @@ std::string FindFeasibilityErrorInSolutionHint(const MPModelProto& model,
 void MergeMPConstraintProtoExceptTerms(const MPConstraintProto& from,
                                        MPConstraintProto* to);
 
-// PUBLIC FOR TESTING ONLY.
 // Applies the given model_delta to "model". Assumes that
-// FindErrorInMPModelDeltaProto() found no error.
+// FindErrorInMPModelDeltaProto() found no error. For full error checking,
+// please use ExtractValidMPModelOrPopulateResponseStatus() instead.
 void ApplyVerifiedMPModelDelta(const MPModelDeltaProto& delta,
                                MPModelProto* model);
 

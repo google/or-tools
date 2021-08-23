@@ -28,7 +28,9 @@
 #include "absl/types/optional.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/base/timer.h"
 #include "ortools/gurobi/environment.h"
+#include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/util/lazy_mutable_copy.h"
@@ -335,7 +337,9 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
       obj_coeffs[v] = variable.objective_coefficient();
       lb[v] = variable.lower_bound();
       ub[v] = variable.upper_bound();
-      ctype[v] = variable.is_integer() ? GRB_INTEGER : GRB_CONTINUOUS;
+      ctype[v] = variable.is_integer() && SolverTypeIsMip(request.solver_type())
+                     ? GRB_INTEGER
+                     : GRB_CONTINUOUS;
       if (variable.is_integer()) has_integer_variables = true;
       if (!variable.name().empty()) varnames[v] = variable.name().c_str();
     }
@@ -467,7 +471,21 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
   }
 
   RETURN_IF_GUROBI_ERROR(GRBupdatemodel(gurobi_model));
+
+  const absl::Time time_before = absl::Now();
+  UserTimer user_timer;
+  user_timer.Start();
+
   RETURN_IF_GUROBI_ERROR(GRBoptimize(gurobi_model));
+
+  const absl::Duration solving_duration = absl::Now() - time_before;
+  user_timer.Stop();
+  VLOG(1) << "Finished solving in GurobiSolveProto(), walltime = "
+          << solving_duration << ", usertime = " << user_timer.GetDuration();
+  response.mutable_solve_info()->set_solve_wall_time_seconds(
+      absl::ToDoubleSeconds(solving_duration));
+  response.mutable_solve_info()->set_solve_user_time_seconds(
+      absl::ToDoubleSeconds(user_timer.GetDuration()));
 
   int optimization_status = 0;
   RETURN_IF_GUROBI_ERROR(
@@ -529,12 +547,15 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
     // NOTE, GurobiSolveProto() is exposed to external clients via MPSolver API,
     // which assumes the solution values of integer variables are rounded to
     // integer values.
-    for (int v = 0; v < variable_size; ++v) {
-      if (model.variable(v).is_integer()) {
-        (*response.mutable_variable_value())[v] =
-            std::round(response.variable_value(v));
-      }
-    }
+    auto round_values_of_integer_variables_fn =
+        [&](google::protobuf::RepeatedField<double>* values) {
+          for (int v = 0; v < variable_size; ++v) {
+            if (model.variable(v).is_integer()) {
+              (*values)[v] = std::round((*values)[v]);
+            }
+          }
+        };
+    round_values_of_integer_variables_fn(response.mutable_variable_value());
     if (!has_integer_variables && model.general_constraint_size() == 0) {
       response.mutable_dual_value()->Resize(model.constraint_size(), 0);
       RETURN_IF_GUROBI_ERROR(GRBgetdblattrarray(
@@ -542,9 +563,9 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
           response.mutable_dual_value()->mutable_data()));
     }
     const int additional_solutions = std::min(
-        solution_count,
-        std::min(request.populate_additional_solutions_up_to(), kint32max - 1) +
-            1);
+        solution_count, std::min(request.populate_additional_solutions_up_to(),
+                                 std::numeric_limits<int32_t>::max() - 1) +
+                            1);
     for (int i = 1; i < additional_solutions; ++i) {
       RETURN_IF_GUROBI_ERROR(
           GRBsetintparam(model_env, GRB_INT_PAR_SOLUTIONNUMBER, i));
@@ -557,6 +578,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
       RETURN_IF_GUROBI_ERROR(GRBgetdblattrarray(
           gurobi_model, GRB_DBL_ATTR_XN, 0, variable_size,
           solution->mutable_variable_value()->mutable_data()));
+      round_values_of_integer_variables_fn(solution->mutable_variable_value());
     }
   }
 #undef RETURN_IF_GUROBI_ERROR

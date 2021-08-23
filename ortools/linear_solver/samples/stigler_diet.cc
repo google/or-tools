@@ -10,14 +10,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // [START program]
 // The Stigler diet problem.
 // [START import]
 #include <array>
-#include <utility> // std::pair
-#include <vector>
 #include <string>
+#include <utility>  // std::pair
+#include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 // [END import]
@@ -27,21 +31,16 @@ void StiglerDiet() {
   // [START data_model]
   // Nutrient minimums.
   const std::vector<std::pair<std::string, double>> nutrients = {
-      {"Calories (kcal)", 3.0},
-      {"Protein (g)", 70.0},
-      {"Calcium (g)", 0.8},
-      {"Iron (mg)", 12.0},
-      {"Vitamin A (kIU)", 5.0},
-      {"Vitamin B1 (mg)", 1.8},
-      {"Vitamin B2 (mg)", 2.7},
-      {"Niacin (mg)", 18.0},
-      {"Vitamin C (mg)", 75.0}
-  };
+      {"Calories (kcal)", 3.0}, {"Protein (g)", 70.0},
+      {"Calcium (g)", 0.8},     {"Iron (mg)", 12.0},
+      {"Vitamin A (kIU)", 5.0}, {"Vitamin B1 (mg)", 1.8},
+      {"Vitamin B2 (mg)", 2.7}, {"Niacin (mg)", 18.0},
+      {"Vitamin C (mg)", 75.0}};
 
   struct Commodity {
-    std::string name; //!< Commodity name
-    std::string unit; //!< Unit
-    double price; //!< 1939 price per unit (cents)
+    std::string name;  //!< Commodity name
+    std::string unit;  //!< Unit
+    double price;      //!< 1939 price per unit (cents)
     //! Calories (kcal),
     //! Protein (g),
     //! Calcium (g),
@@ -230,8 +229,7 @@ void StiglerDiet() {
       {"Strawberry Preserves",
        "1 lb.",
        20.5,
-       {6.4, 11, 0.4, 7, 0.2, 0.2, 0.4, 3, 0}}
-  };
+       {6.4, 11, 0.4, 7, 0.2, 0.2, 0.4, 3, 0}}};
   // [END data_model]
 
   // [START solver]
@@ -263,7 +261,7 @@ void StiglerDiet() {
 
   // [START objective]
   MPObjective* const objective = solver->MutableObjective();
-  for (size_t i=0; i < data.size(); ++i) {
+  for (size_t i = 0; i < data.size(); ++i) {
     objective->SetCoefficient(foods[i], 1);
   }
   objective->SetMinimization();
@@ -290,18 +288,22 @@ void StiglerDiet() {
   LOG(INFO) << "Annual Foods:";
   for (std::size_t i = 0; i < data.size(); ++i) {
     if (foods[i]->solution_value() > 0.0) {
-      LOG(INFO) << data[i].name << ": $" << std::to_string(365. * foods[i]->solution_value());
+      LOG(INFO) << data[i].name << ": $"
+                << std::to_string(365. * foods[i]->solution_value());
       for (std::size_t j = 0; j < nutrients.size(); ++j) {
-        nutrients_result[j] += data[i].nutrients[j] * foods[i]->solution_value();
+        nutrients_result[j] +=
+            data[i].nutrients[j] * foods[i]->solution_value();
       }
     }
   }
   LOG(INFO) << "";
-  LOG(INFO) << "Optimal annual price: $" << std::to_string(365. * objective->Value());
+  LOG(INFO) << "Optimal annual price: $"
+            << std::to_string(365. * objective->Value());
   LOG(INFO) << "";
   LOG(INFO) << "Nutrients per day:";
   for (std::size_t i = 0; i < nutrients.size(); ++i) {
-    LOG(INFO) << nutrients[i].first << ": " << std::to_string(nutrients_result[i]) << " (min "
+    LOG(INFO) << nutrients[i].first << ": "
+              << std::to_string(nutrients_result[i]) << " (min "
               << std::to_string(nutrients[i].second) << ")";
   }
   // [END print_solution]
@@ -317,7 +319,8 @@ void StiglerDiet() {
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
-  absl::SetFlag(&FLAGS_logtostderr, 1);
+  absl::ParseCommandLine(argc, argv);
+  absl::SetFlag(&FLAGS_logtostderr, true);
   operations_research::StiglerDiet();
   return EXIT_SUCCESS;
 }

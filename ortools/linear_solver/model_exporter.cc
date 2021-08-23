@@ -21,6 +21,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
@@ -97,8 +98,8 @@ class MPModelProtoExporter {
   // returns a vector of 'prefix' + proto index (1-based).
   //
   // If it is false, this tries to keep the original names, but:
-  // - if the first character is forbidden, '_' is added at the beginning of
-  //   name.
+  // - if the first character is forbidden (or name is empty), '_' is added at
+  //   the beginning of name.
   // - all the other forbidden characters are replaced by '_'.
   // To avoid name conflicts, a '_' followed by an integer is appended to the
   // result.
@@ -274,19 +275,21 @@ std::string NameManager::MakeUniqueName(const std::string& name) {
   return result;
 }
 
+// NOTE: As a special case, an empty name is treated as started with a forbidden
+// character (\0).
 std::string MakeExportableName(const std::string& name,
                                const std::string& forbidden_first_chars,
                                const std::string& forbidden_chars,
                                bool* found_forbidden_char) {
   // Prepend with "_" all the names starting with a forbidden character.
   *found_forbidden_char =
-      forbidden_first_chars.find(name[0]) != std::string::npos;
+      name.empty() || absl::StrContains(forbidden_first_chars, name[0]);
   std::string exportable_name =
       *found_forbidden_char ? absl::StrCat("_", name) : name;
 
   // Replace all the other forbidden characters with "_".
   for (char& c : exportable_name) {
-    if (forbidden_chars.find(c) != std::string::npos) {
+    if (absl::StrContains(forbidden_chars, c)) {
       c = '_';
       *found_forbidden_char = true;
     }
@@ -387,7 +390,7 @@ bool MPModelProtoExporter::AppendConstraint(const MPConstraintProto& ct_proto,
       return false;
     }
     line_breaker.Append(term);
-    show_variable[var_index] = coeff != 0.0 || options.show_unused_variables;
+    show_variable[var_index] = coeff != 0.0 || show_variable[var_index] || options.show_unused_variables;
   }
 
   const double lb = ct_proto.lower_bound();
@@ -556,7 +559,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
       return false;
     }
     obj_line_breaker.Append(term);
-    show_variable[var_index] = coeff != 0.0 || options.show_unused_variables;
+    show_variable[var_index] = coeff != 0.0 || show_variable[var_index] || options.show_unused_variables;
   }
   // Linear Constraints
   absl::StrAppend(output, obj_line_breaker.GetOutput(), "\nSubject to\n");

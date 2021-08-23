@@ -30,9 +30,11 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
+#include "absl/time/time.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/base/timer.h"
 #include "ortools/gscip/legacy_scip_params.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
@@ -55,10 +57,9 @@
 ABSL_FLAG(std::string, scip_proto_solver_output_cip_file, "",
           "If given, saves the generated CIP file here. Useful for "
           "reporting bugs to SCIP.");
-
 namespace operations_research {
-
 namespace {
+
 // This function will create a new constraint if the indicator constraint has
 // both a lower bound and an upper bound.
 absl::Status AddIndicatorConstraint(const MPGeneralConstraintProto& gen_cst,
@@ -526,6 +527,7 @@ absl::Status AddSolutionHint(const MPModelProto& model, SCIP* scip,
 
   return absl::OkStatus();
 }
+
 }  // namespace
 
 // Returns "" iff the model seems valid for SCIP, else returns a human-readable
@@ -840,12 +842,27 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
         scip, absl::GetFlag(FLAGS_scip_proto_solver_output_cip_file).c_str(),
         nullptr, true);
   }
+  const absl::Time time_before = absl::Now();
+  UserTimer user_timer;
+  user_timer.Start();
+
   RETURN_IF_SCIP_ERROR(SCIPsolve(scip));
 
-  const int solution_count = std::min(
-      SCIPgetNSols(scip),
-      std::min(request.populate_additional_solutions_up_to(), kint32max - 1) +
-          1);
+  const absl::Duration solving_duration = absl::Now() - time_before;
+  user_timer.Stop();
+  VLOG(1) << "Finished solving in ScipSolveProto(), walltime = "
+          << solving_duration << ", usertime = " << user_timer.GetDuration();
+
+  response.mutable_solve_info()->set_solve_wall_time_seconds(
+      absl::ToDoubleSeconds(solving_duration));
+  response.mutable_solve_info()->set_solve_user_time_seconds(
+      absl::ToDoubleSeconds(user_timer.GetDuration()));
+
+  const int solution_count =
+      std::min(SCIPgetNSols(scip),
+               std::min(request.populate_additional_solutions_up_to(),
+                        std::numeric_limits<int32_t>::max() - 1) +
+                   1);
   if (solution_count > 0) {
     // can't make 'scip_solution' const, as SCIPxxx does not offer const
     // parameter functions.

@@ -47,11 +47,13 @@ bool IsNanOrAbsGreaterThanOrEqual(double value, double abs_value_threshold) {
 // must have "lower_bound" and "upper_bound" fields.
 template <typename BoundedElement>
 std::string FindErrorInBounds(const BoundedElement& element,
-                              double abs_value_threshold) {
+                              double abs_value_threshold,
+                              const bool accept_trivially_infeasible_bounds) {
   if (std::isnan(element.lower_bound()) || std::isnan(element.upper_bound()) ||
       element.lower_bound() >= abs_value_threshold ||
       element.upper_bound() <= -abs_value_threshold ||
-      element.lower_bound() > element.upper_bound()) {
+      (!accept_trivially_infeasible_bounds &&
+       element.lower_bound() > element.upper_bound())) {
     return absl::StrFormat("Infeasible bounds: [%f, %f]", element.lower_bound(),
                            element.upper_bound());
   }
@@ -59,13 +61,14 @@ std::string FindErrorInBounds(const BoundedElement& element,
 }
 
 // Internal method to detect errors in a single variable.
-std::string FindErrorInMPVariable(const MPVariableProto& variable,
-                                  double abs_value_threshold) {
-  const std::string bound_error =
-      FindErrorInBounds(variable, abs_value_threshold);
+std::string FindErrorInMPVariable(
+    const MPVariableProto& variable, double abs_value_threshold,
+    const bool accept_trivially_infeasible_bounds) {
+  const std::string bound_error = FindErrorInBounds(
+      variable, abs_value_threshold, accept_trivially_infeasible_bounds);
   if (!bound_error.empty()) return bound_error;
 
-  if (variable.is_integer() &&
+  if (!accept_trivially_infeasible_bounds && variable.is_integer() &&
       ceil(variable.lower_bound()) > floor(variable.upper_bound())) {
     return absl::StrCat(
         "Infeasible bounds for integer variable: [", (variable.lower_bound()),
@@ -102,11 +105,11 @@ std::string FindDuplicateVarIndex(const Iterable& var_indices,
 // Internal method to detect errors in a single constraint.
 // "var_mask" is a vector<bool> whose size is the number of variables in
 // the model, and it will be all set to false before and after the call.
-std::string FindErrorInMPConstraint(const MPConstraintProto& constraint,
-                                    std::vector<bool>* var_mask,
-                                    double abs_value_threshold) {
-  const std::string bound_error =
-      FindErrorInBounds(constraint, abs_value_threshold);
+std::string FindErrorInMPConstraint(
+    const MPConstraintProto& constraint, std::vector<bool>* var_mask,
+    double abs_value_threshold, const bool accept_trivially_infeasible_bounds) {
+  const std::string bound_error = FindErrorInBounds(
+      constraint, abs_value_threshold, accept_trivially_infeasible_bounds);
   if (!bound_error.empty()) return bound_error;
 
   // TODO(user): clarify explicitly, at least in a comment, whether we want
@@ -167,7 +170,8 @@ bool IsBoolean(const MPVariableProto& variable) {
 
 std::string FindErrorInMPIndicatorConstraint(
     const MPModelProto& model, const MPIndicatorConstraint& indicator,
-    std::vector<bool>* var_mask, double abs_value_threshold) {
+    std::vector<bool>* var_mask, double abs_value_threshold,
+    bool accept_trivially_infeasible_bounds) {
   if (!indicator.has_var_index()) {
     return "var_index is required.";
   }
@@ -184,7 +188,8 @@ std::string FindErrorInMPIndicatorConstraint(
   }
   const MPConstraintProto& constraint = indicator.constraint();
   std::string error =
-      FindErrorInMPConstraint(constraint, var_mask, abs_value_threshold);
+      FindErrorInMPConstraint(constraint, var_mask, abs_value_threshold,
+                              accept_trivially_infeasible_bounds);
   if (!error.empty()) {
     // Constraint protos can be huge, theoretically. So we guard against
     // that.
@@ -222,17 +227,18 @@ std::string FindErrorInMPSosConstraint(const MPModelProto& model,
   return "";
 }
 
-std::string FindErrorInMPQuadraticConstraint(const MPModelProto& model,
-                                             const MPQuadraticConstraint& qcst,
-                                             std::vector<bool>* var_mask,
-                                             double abs_value_threshold) {
+std::string FindErrorInMPQuadraticConstraint(
+    const MPModelProto& model, const MPQuadraticConstraint& qcst,
+    std::vector<bool>* var_mask, double abs_value_threshold,
+    bool accept_trivially_infeasible_bounds) {
   const int num_vars = model.variable_size();
 
   if (qcst.var_index_size() != qcst.coefficient_size()) {
     return "var_index_size() != coefficient_size()";
   }
 
-  const std::string bound_error = FindErrorInBounds(qcst, abs_value_threshold);
+  const std::string bound_error = FindErrorInBounds(
+      qcst, abs_value_threshold, accept_trivially_infeasible_bounds);
   if (!bound_error.empty()) return bound_error;
 
   for (int i = 0; i < qcst.var_index_size(); ++i) {
@@ -411,10 +417,12 @@ std::string FindErrorInSolutionHint(
   }
   return std::string();
 }
+
 }  // namespace
 
-std::string FindErrorInMPModelProto(const MPModelProto& model,
-                                    double abs_value_threshold) {
+std::string FindErrorInMPModelProto(
+    const MPModelProto& model, double abs_value_threshold,
+    const bool accept_trivially_infeasible_bounds) {
   // NOTE(user): Empty models are considered fine by this function, although
   // it is not clear whether MPSolver::Solve() will always respond in the same
   // way, depending on the solvers.
@@ -433,7 +441,8 @@ std::string FindErrorInMPModelProto(const MPModelProto& model,
   // Validate variables.
   std::string error;
   for (int i = 0; i < num_vars; ++i) {
-    error = FindErrorInMPVariable(model.variable(i), abs_value_threshold);
+    error = FindErrorInMPVariable(model.variable(i), abs_value_threshold,
+                                  accept_trivially_infeasible_bounds);
     if (!error.empty()) {
       return absl::StrCat("In variable #", i, ": ", error, ". Variable proto: ",
                           ProtobufShortDebugString(model.variable(i)));
@@ -445,7 +454,8 @@ std::string FindErrorInMPModelProto(const MPModelProto& model,
   for (int i = 0; i < num_cts; ++i) {
     const MPConstraintProto& constraint = model.constraint(i);
     error = FindErrorInMPConstraint(constraint, &variable_appears,
-                                    abs_value_threshold);
+                                    abs_value_threshold,
+                                    accept_trivially_infeasible_bounds);
     if (!error.empty()) {
       // Constraint protos can be huge, theoretically. So we guard against that.
       return absl::StrCat("In constraint #", i, ": ", error, ". ",
@@ -462,7 +472,7 @@ std::string FindErrorInMPModelProto(const MPModelProto& model,
       case MPGeneralConstraintProto::kIndicatorConstraint:
         error = FindErrorInMPIndicatorConstraint(
             model, gen_constraint.indicator_constraint(), &variable_appears,
-            abs_value_threshold);
+            abs_value_threshold, accept_trivially_infeasible_bounds);
         break;
 
       case MPGeneralConstraintProto::kSosConstraint:
@@ -474,7 +484,7 @@ std::string FindErrorInMPModelProto(const MPModelProto& model,
       case MPGeneralConstraintProto::kQuadraticConstraint:
         error = FindErrorInMPQuadraticConstraint(
             model, gen_constraint.quadratic_constraint(), &variable_appears,
-            abs_value_threshold);
+            abs_value_threshold, accept_trivially_infeasible_bounds);
         break;
 
       case MPGeneralConstraintProto::kAbsConstraint:
@@ -697,13 +707,17 @@ std::string FindErrorInMPModelDeltaProto(const MPModelDeltaProto& delta,
     } else if (var_index >= num_vars) {
       max_var_index = std::max(max_var_index, var_index);
       new_var_indices.insert(var_index);
-      error = FindErrorInMPVariable(var_override_proto, abs_value_threshold);
+      error =
+          FindErrorInMPVariable(var_override_proto, abs_value_threshold,
+                                /*accept_trivially_infeasible_bounds=*/false);
     } else {
       tmp_var_proto = model.variable(var_index);
       // NOTE(user): It is OK for the override proto to be empty, i.e. be a
       // non-override.
       tmp_var_proto.MergeFrom(var_override_proto);
-      error = FindErrorInMPVariable(tmp_var_proto, abs_value_threshold);
+      error =
+          FindErrorInMPVariable(tmp_var_proto, abs_value_threshold,
+                                /*accept_trivially_infeasible_bounds=*/false);
     }
     if (!error.empty()) {
       return absl::StrFormat(
@@ -738,8 +752,9 @@ std::string FindErrorInMPModelDeltaProto(const MPModelDeltaProto& delta,
     } else if (ct_index >= num_constraints) {
       max_ct_index = std::max(max_ct_index, ct_index);
       new_ct_indices.insert(ct_index);
-      error = FindErrorInMPConstraint(constraint_override_proto,
-                                      &variable_appears, abs_value_threshold);
+      error = FindErrorInMPConstraint(
+          constraint_override_proto, &variable_appears, abs_value_threshold,
+          /*accept_trivially_infeasible_bounds=*/false);
     } else {
       // NOTE(user): We don't need to do the merging of var_index/coefficient:
       // that part of the merged constraint will be valid iff the override is
@@ -752,8 +767,9 @@ std::string FindErrorInMPModelDeltaProto(const MPModelDeltaProto& delta,
       MergeMPConstraintProtoExceptTerms(model.constraint(ct_index),
                                         &tmp_constraint_proto);
       tmp_constraint_proto.MergeFrom(constraint_override_proto);
-      error = FindErrorInMPConstraint(tmp_constraint_proto, &variable_appears,
-                                      abs_value_threshold);
+      error = FindErrorInMPConstraint(
+          tmp_constraint_proto, &variable_appears, abs_value_threshold,
+          /*accept_trivially_infeasible_bounds=*/false);
     }
     if (!error.empty()) {
       return absl::StrFormat(

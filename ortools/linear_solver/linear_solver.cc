@@ -1621,12 +1621,14 @@ bool MPSolverResponseStatusIsRpcError(MPSolverResponseStatus status) {
     // Cases that should never happen with the linear solver server. We prefer
     // to consider those as "not RPC errors".
     case MPSOLVER_MODEL_IS_VALID:
+    case MPSOLVER_CANCELLED_BY_USER:
       return false;
     // Cases that yield an RPC error when they happen on the server.
     case MPSOLVER_MODEL_INVALID:
     case MPSOLVER_MODEL_INVALID_SOLUTION_HINT:
     case MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS:
     case MPSOLVER_SOLVER_TYPE_UNAVAILABLE:
+    case MPSOLVER_INCOMPATIBLE_OPTIONS:
       return true;
   }
   LOG(DFATAL)

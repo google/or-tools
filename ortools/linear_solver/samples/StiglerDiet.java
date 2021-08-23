@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // [START program]
 // The Stigler diet problem.
 package com.google.ortools.linearsolver.samples;
@@ -23,12 +24,13 @@ import java.util.ArrayList;
 import java.util.List;
 // [END import]
 
+/** Stigler diet example. */
 public final class StiglerDiet {
   public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // [START data_model]
     // Nutrient minimums.
-    List<Object[]> nutrients = new ArrayList<Object[]>();
+    List<Object[]> nutrients = new ArrayList<>();
     nutrients.add(new Object[] {"Calories (kcal)", 3.0});
     nutrients.add(new Object[] {"Protein (g)", 70.0});
     nutrients.add(new Object[] {"Calcium (g)", 0.8});
@@ -39,7 +41,7 @@ public final class StiglerDiet {
     nutrients.add(new Object[] {"Niacin (mg)", 18.0});
     nutrients.add(new Object[] {"Vitamin C (mg)", 75.0});
 
-    List<Object[]> data = new ArrayList<Object[]>();
+    List<Object[]> data = new ArrayList<>();
     data.add(new Object[] {"Wheat Flour (Enriched)", "10 lb.", 36,
         new double[] {44.7, 1411, 2, 365, 0, 55.4, 33.3, 441, 0}});
     data.add(new Object[] {
@@ -203,7 +205,7 @@ public final class StiglerDiet {
 
     // [START variables]
     double infinity = java.lang.Double.POSITIVE_INFINITY;
-    List<MPVariable> foods = new ArrayList<MPVariable>();
+    List<MPVariable> foods = new ArrayList<>();
     for (int i = 0; i < data.size(); ++i) {
       foods.add(solver.makeNumVar(0.0, infinity, (String) data.get(i)[0]));
     }
