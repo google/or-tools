@@ -2917,7 +2917,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 #if !defined(__PORTABLE_PLATFORM__)
     // Sometimes, hardware_concurrency will return 0. So always default to 1.
     const int num_cores =
-        params->enumerate_all_solutions()
+        params.enumerate_all_solutions()
             ? 1
             : std::max<int>(std::thread::hardware_concurrency(), 1);
 #else
