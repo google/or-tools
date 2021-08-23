@@ -141,8 +141,8 @@ class KnapsackSolver {
     /** Dynamic Programming approach for single dimension problems
      *
      * Limited to one dimension, this solver is based on a dynamic programming
-     * algorithm. The time complexity is O(capacity * number_of_items^2) and 
-     * the space complexity is O(capacity + number_of_items).
+     * algorithm. The time and space complexity is O(capacity *
+     * number_of_items).
      */
     KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER = 2,
 

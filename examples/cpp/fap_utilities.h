@@ -18,6 +18,7 @@
 #ifndef OR_TOOLS_EXAMPLES_FAP_UTILITIES_H_
 #define OR_TOOLS_EXAMPLES_FAP_UTILITIES_H_
 
+#include <cstdint>
 #include <map>
 #include <set>
 #include <vector>

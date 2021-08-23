@@ -40,73 +40,49 @@ void ParseFileByLines(const std::string& filename,
 // The FapVariable struct represents a radio link of the
 // frequency assignment problem.
 struct FapVariable {
-  FapVariable()
-      : domain_index(-1),
-        domain_size(0),
-        domain(),
-        degree(0),
-        initial_position(-1),
-        mobility_index(-1),
-        mobility_cost(-1),
-        hard(false) {}
-
-  ~FapVariable() {}
-
   // Fields:
   // the index of a subset of all available frequencies of the instance
-  int domain_index;
+  int domain_index = -1;
 
   // the number of the frequencies available for the link
-  int domain_size;
+  int domain_size = 0;
 
   // the link's domain, i.e. a finite set of frequencies that can be
   // assigned to this link
   std::vector<int> domain;
 
   // the number of constraints in which the link appears
-  int degree;
+  int degree = 0;
 
   // if positive, it means that the link has already been assigned a frequency
   // of that value
-  int initial_position;
+  int initial_position = -1;
 
   // the index of mobility cost
-  int mobility_index;
+  int mobility_index = -1;
 
   // the cost of modification of a link's pre-assigned value
-  int mobility_cost;
+  int mobility_cost = -1;
 
   // if true, it means that the link's pre-assigned position cannot be modified
-  bool hard;
+  bool hard = false;
 };
 
 // The FapConstraint struct represents a constraint between two
 // radio links of the frequency assignment problem.
 struct FapConstraint {
-  FapConstraint()
-      : variable1(-1),
-        variable2(-1),
-        impact(0),
-        type(""),
-        operation(""),
-        value(-1),
-        weight_index(-1),
-        weight_cost(-1),
-        hard(false) {}
-  ~FapConstraint() {}
-
   // Fields:
   // the index of the first variable appearing in the constraint
-  int variable1;
+  int variable1 = -1;
 
   // the index of the second variable appearing in the constraint
-  int variable2;
+  int variable2 = -1;
 
   // the importance of a constraint based on the degree of its variables,
   // the operator used in the constraint ("=" or ">") and whether it is a hard
   // or soft constraint and with what weight cost.
   // impact = (max_degree + min_degree + operator_impact + hardness_impact)
-  int impact;
+  int impact = 0;
 
   // the constraint type (D (difference), C (viscosity), F (fixed),P (prefix)
   // or L (far fields)) which is not used in practice
@@ -117,24 +93,21 @@ struct FapConstraint {
 
   // the constraint deviation: it defines the constant k12 mentioned in RLFAP
   // description
-  int value;
+  int value = -1;
 
   // the index of weight cost
-  int weight_index;
+  int weight_index = -1;
 
   // the cost of not satisfaction of the constraint
-  int weight_cost;
+  int weight_cost = -1;
 
   // if true, it means that the constraint must be satisfied
-  bool hard;
+  bool hard = false;
 };
 
 // The FapComponent struct represents an component of the RLFAP graph.
 // It models an independent sub-problem of the initial instance.
 struct FapComponent {
-  FapComponent() : variables(), constraints() {}
-  ~FapComponent() {}
-
   // Fields:
   // the variable set of the sub-problem, i.e. the vertices of the component
   std::map<int, FapVariable> variables;
@@ -225,9 +198,9 @@ class ParametersParser {
 
  private:
   const std::string filename_;
-  static const int constraint_coefficient_no_ = 4;
-  static const int variable_coefficient_no_ = 4;
-  static const int coefficient_no_ = 8;
+  static constexpr int constraint_coefficient_no_ = 4;
+  static constexpr int variable_coefficient_no_ = 4;
+  static constexpr int coefficient_no_ = 8;
   std::string objective_;
   std::vector<int> constraint_weights_;
   std::vector<int> variable_weights_;

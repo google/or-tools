@@ -925,8 +925,9 @@ void Knapsack64ItemsSolver::BuildBestSolution() {
 
 // ----- KnapsackDynamicProgrammingSolver -----
 // KnapsackDynamicProgrammingSolver solves the 0-1 knapsack problem
-// using dynamic programming. The time complexity is O(capacity *
-// number_of_items^2) and the space complexity is O(capacity + number_of_items).
+// using dynamic programming. This algorithm is pseudo-polynomial because it
+// depends on capacity, ie. the time and space complexity is
+// O(capacity * number_of_items).
 // The implemented algorithm is 'DP-3' in "Knapsack problems", Hans Kellerer,
 // Ulrich Pferschy and David Pisinger, Springer book (ISBN 978-3540402862).
 class KnapsackDynamicProgrammingSolver : public BaseKnapsackSolver {

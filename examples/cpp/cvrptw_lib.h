@@ -16,6 +16,7 @@
 #ifndef OR_TOOLS_EXAMPLES_CVRPTW_LIB_H_
 #define OR_TOOLS_EXAMPLES_CVRPTW_LIB_H_
 
+#include <cstdint>
 #include <memory>
 #include <set>
 
@@ -37,15 +38,17 @@ int32_t GetSeed(bool deterministic);
 class LocationContainer {
  public:
   LocationContainer(int64_t speed, bool use_deterministic_seed);
-  void AddLocation(int64_t x, int64_t y) { locations_.push_back(Location(x, y)); }
+  void AddLocation(int64_t x, int64_t y) {
+    locations_.push_back(Location(x, y));
+  }
   void AddRandomLocation(int64_t x_max, int64_t y_max);
   void AddRandomLocation(int64_t x_max, int64_t y_max, int duplicates);
   int64_t ManhattanDistance(RoutingIndexManager::NodeIndex from,
-                          RoutingIndexManager::NodeIndex to) const;
+                            RoutingIndexManager::NodeIndex to) const;
   int64_t NegManhattanDistance(RoutingIndexManager::NodeIndex from,
-                             RoutingIndexManager::NodeIndex to) const;
+                               RoutingIndexManager::NodeIndex to) const;
   int64_t ManhattanTime(RoutingIndexManager::NodeIndex from,
-                      RoutingIndexManager::NodeIndex to) const;
+                        RoutingIndexManager::NodeIndex to) const;
 
   bool SameLocation(RoutingIndexManager::NodeIndex node1,
                     RoutingIndexManager::NodeIndex node2) const;
@@ -78,7 +81,7 @@ class RandomDemand {
                bool use_deterministic_seed);
   void Initialize();
   int64_t Demand(RoutingIndexManager::NodeIndex from,
-               RoutingIndexManager::NodeIndex to) const;
+                 RoutingIndexManager::NodeIndex to) const;
 
  private:
   std::unique_ptr<int64_t[]> demand_;
@@ -90,32 +93,33 @@ class RandomDemand {
 // Service time (proportional to demand) + transition time callback.
 class ServiceTimePlusTransition {
  public:
-  ServiceTimePlusTransition(int64_t time_per_demand_unit,
-                            RoutingNodeEvaluator2 demand,
-                            RoutingNodeEvaluator2 transition_time);
+  ServiceTimePlusTransition(
+      int64_t time_per_demand_unit,
+      operations_research::RoutingNodeEvaluator2 demand,
+      operations_research::RoutingNodeEvaluator2 transition_time);
   int64_t Compute(RoutingIndexManager::NodeIndex from,
-                RoutingIndexManager::NodeIndex to) const;
+                  RoutingIndexManager::NodeIndex to) const;
 
  private:
   const int64_t time_per_demand_unit_;
-  RoutingNodeEvaluator2 demand_;
-  RoutingNodeEvaluator2 transition_time_;
+  operations_research::RoutingNodeEvaluator2 demand_;
+  operations_research::RoutingNodeEvaluator2 transition_time_;
 };
 
 // Stop service time + transition time callback.
 class StopServiceTimePlusTransition {
  public:
-  StopServiceTimePlusTransition(int64_t stop_time,
-                                const LocationContainer& location_container,
-                                RoutingNodeEvaluator2 transition_time);
+  StopServiceTimePlusTransition(
+      int64_t stop_time, const LocationContainer& location_container,
+      operations_research::RoutingNodeEvaluator2 transition_time);
   int64_t Compute(RoutingIndexManager::NodeIndex from,
-                RoutingIndexManager::NodeIndex to) const;
+                  RoutingIndexManager::NodeIndex to) const;
 
  private:
   const int64_t stop_time_;
   const LocationContainer& location_container_;
-  RoutingNodeEvaluator2 demand_;
-  RoutingNodeEvaluator2 transition_time_;
+  operations_research::RoutingNodeEvaluator2 demand_;
+  operations_research::RoutingNodeEvaluator2 transition_time_;
 };
 
 // Route plan displayer.
