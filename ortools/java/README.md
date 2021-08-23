@@ -50,10 +50,10 @@ runtime on which platform the code is currently running.
 
 ### Local Package
 
-The pipeline for `linux-x86-64` should be as follow:  
-note: The pipeline will be similar for `darwin-x86-64` and `win32-x86-64` architecture,
-don't hesitate to look at the CI log! ![Local Pipeline](doc/local_pipeline.svg)
-![Legend](doc/legend.svg)
+The pipeline for `linux-x86-64` should be as follow: \
+note: The pipeline will be similar for `darwin-x86-64` and `win32-x86-64`
+architecture, don't hesitate to look at the CI log!
+![Local Pipeline](doc/local_pipeline.svg) ![Legend](doc/legend.svg)
 
 #### Building local native Package
 
