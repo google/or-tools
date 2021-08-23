@@ -58,7 +58,7 @@ bool RoutingModel::IsMatchingModel() const {
   absl::flat_hash_set<int> disjunction_nodes;
   for (DisjunctionIndex i(0); i < GetNumberOfDisjunctions(); ++i) {
     if (GetDisjunctionMaxCardinality(i) > 1) return false;
-    for (int64_t node : GetDisjunctionIndices(i)) {
+    for (int64_t node : GetDisjunctionNodeIndices(i)) {
       if (!disjunction_nodes.insert(node).second) return false;
     }
   }
@@ -225,7 +225,7 @@ bool RoutingModel::SolveMatchingModel(
       disjunction_to_flow_nodes.back().push_back(num_flow_nodes);
       num_flow_nodes++;
     } else {
-      for (int n : GetDisjunctionIndices(disjunctions.back())) {
+      for (int n : GetDisjunctionNodeIndices(disjunctions.back())) {
         in_disjunction[n] = true;
         flow_to_non_pd[num_flow_nodes] = n;
         disjunction_to_flow_nodes.back().push_back(num_flow_nodes);

@@ -66,7 +66,8 @@ IntVarLocalSearchFilter* MakeCumulBoundsPropagatorFilter(
 
 /// Returns a filter checking global linear constraints and costs.
 IntVarLocalSearchFilter* MakeGlobalLPCumulFilter(
-    GlobalDimensionCumulOptimizer* optimizer, bool filter_objective_cost);
+    GlobalDimensionCumulOptimizer* optimizer,
+    GlobalDimensionCumulOptimizer* mp_optimizer, bool filter_objective_cost);
 
 /// Returns a filter checking the current solution using CP propagation.
 IntVarLocalSearchFilter* MakeCPFeasibilityFilter(RoutingModel* routing_model);

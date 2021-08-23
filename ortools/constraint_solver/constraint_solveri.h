@@ -3479,7 +3479,8 @@ LocalSearchFilter* MakePathStateFilter(Solver* solver,
 // - Synchronize() must be called before.
 // - Revert() must be called before.
 LocalSearchFilter* MakeUnaryDimensionFilter(
-    Solver* solver, std::unique_ptr<UnaryDimensionChecker> checker);
+    Solver* solver, std::unique_ptr<UnaryDimensionChecker> checker,
+    const std::string& dimension_name);
 
 #endif  // !defined(SWIG)
 

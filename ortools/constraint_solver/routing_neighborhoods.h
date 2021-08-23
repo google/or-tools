@@ -385,7 +385,7 @@ class FilteredHeuristicLocalSearchOperator : public IntVarLocalSearchOperator {
   // TODO(user): Remove the dependency from RoutingModel by storing an
   // IntVarFilteredHeuristic here instead and storing information on path
   // start/ends like PathOperator does (instead of relying on the model).
-  const RoutingModel& model_;
+  RoutingModel* const model_;
   /// Keeps track of removed nodes when making a neighbor.
   SparseBitset<> removed_nodes_;
 
@@ -393,7 +393,7 @@ class FilteredHeuristicLocalSearchOperator : public IntVarLocalSearchOperator {
   bool MakeOneNeighbor() override;
   bool MakeChangesAndInsertNodes();
 
-  int64_t VehicleVarIndex(int64_t node) const { return model_.Size() + node; }
+  int64_t VehicleVarIndex(int64_t node) const { return model_->Size() + node; }
 
   const std::unique_ptr<RoutingFilteredHeuristic> heuristic_;
   const bool consider_vehicle_vars_;
@@ -528,7 +528,7 @@ class FilteredHeuristicCloseNodesLNSOperator
   void RemoveNodeAndActiveSibling(int64_t node);
 
   bool IsActive(int64_t node) const {
-    DCHECK_LT(node, model_.Size());
+    DCHECK_LT(node, model_->Size());
     return Value(node) != node && !removed_nodes_[node];
   }
 
@@ -538,7 +538,7 @@ class FilteredHeuristicCloseNodesLNSOperator
     return changed_prevs_[node] ? new_prevs_[node] : InverseValue(node);
   }
   int64_t Next(int64_t node) const {
-    DCHECK(!model_.IsEnd(node));
+    DCHECK(!model_->IsEnd(node));
     return changed_nexts_[node] ? new_nexts_[node] : Value(node);
   }
 

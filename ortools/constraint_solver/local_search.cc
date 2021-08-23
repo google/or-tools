@@ -3182,9 +3182,11 @@ namespace {
 
 class UnaryDimensionFilter : public LocalSearchFilter {
  public:
-  std::string DebugString() const override { return "UnaryDimensionFilter"; }
-  explicit UnaryDimensionFilter(std::unique_ptr<UnaryDimensionChecker> checker)
-      : checker_(std::move(checker)) {}
+  std::string DebugString() const override { return name_; }
+  UnaryDimensionFilter(std::unique_ptr<UnaryDimensionChecker> checker,
+                       const std::string& dimension_name)
+      : checker_(std::move(checker)),
+        name_(absl::StrCat("UnaryDimensionFilter(", dimension_name, ")")) {}
 
   bool Accept(const Assignment* delta, const Assignment* deltadelta,
               int64_t objective_min, int64_t objective_max) override {
@@ -3198,13 +3200,16 @@ class UnaryDimensionFilter : public LocalSearchFilter {
 
  private:
   std::unique_ptr<UnaryDimensionChecker> checker_;
+  const std::string name_;
 };
 
 }  // namespace
 
 LocalSearchFilter* MakeUnaryDimensionFilter(
-    Solver* solver, std::unique_ptr<UnaryDimensionChecker> checker) {
-  UnaryDimensionFilter* filter = new UnaryDimensionFilter(std::move(checker));
+    Solver* solver, std::unique_ptr<UnaryDimensionChecker> checker,
+    const std::string& dimension_name) {
+  UnaryDimensionFilter* filter =
+      new UnaryDimensionFilter(std::move(checker), dimension_name);
   return solver->RevAlloc(filter);
 }
 

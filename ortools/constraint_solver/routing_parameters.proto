@@ -24,6 +24,7 @@ option csharp_namespace = "Google.OrTools.ConstraintSolver";
 import "google/protobuf/duration.proto";
 import "ortools/constraint_solver/routing_enums.proto";
 import "ortools/constraint_solver/solver_parameters.proto";
+import "ortools/sat/sat_parameters.proto";
 import "ortools/util/optional_boolean.proto";
 
 package operations_research;
@@ -34,7 +35,7 @@ package operations_research;
 // then the routing library will pick its preferred value for that parameter
 // automatically: this should be the case for most parameters.
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
-// Next ID: 47
+// Next ID: 49
 message RoutingSearchParameters {
   // First solution strategies, used as starting point of local search.
   FirstSolutionStrategy.Value first_solution_strategy = 1;
@@ -423,6 +424,14 @@ message RoutingSearchParameters {
   // remaining and will use the CP solution as a hint for the CP-SAT search.
   // As of 5/2019, only TSP models can be solved.
   OptionalBoolean use_cp_sat = 27;
+  // If true, use the CP-SAT solver to find a solution on generalized routing
+  // model. If use_cp is also true, the CP-SAT solver will be run after the CP
+  // solver if there is time remaining and will use the CP solution as a hint
+  // for the CP-SAT search.
+  OptionalBoolean use_generalized_cp_sat = 47;
+  // If use_cp_sat or use_generalized_cp_sat is true, contains the SAT algorithm
+  // parameters which will be used.
+  sat.SatParameters sat_parameters = 48;
   // Underlying solver to use in dimension scheduling, respectively for
   // continuous and mixed models.
   enum SchedulingSolver {

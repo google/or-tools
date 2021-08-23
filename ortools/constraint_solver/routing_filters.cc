@@ -212,7 +212,7 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
         const int inactive_nodes =
             current_inactive_nodes + disjunction_inactive_delta.second;
         const int max_inactive_cardinality =
-            routing_model_.GetDisjunctionIndices(disjunction_index).size() -
+            routing_model_.GetDisjunctionNodeIndices(disjunction_index).size() -
             routing_model_.GetDisjunctionMaxCardinality(disjunction_index);
         // Too many inactive nodes.
         if (inactive_nodes > max_inactive_cardinality) {
@@ -258,7 +258,7 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
       active_per_disjunction_[i] = 0;
       inactive_per_disjunction_[i] = 0;
       const std::vector<int64_t>& disjunction_indices =
-          routing_model_.GetDisjunctionIndices(i);
+          routing_model_.GetDisjunctionNodeIndices(i);
       for (const int64_t index : disjunction_indices) {
         const bool index_synced = IsVarSynced(index);
         if (index_synced) {
@@ -2199,7 +2199,7 @@ void AppendLightWeightDimensionFilters(
         std::move(demands), std::move(node_capacity));
     const auto kAccept = LocalSearchFilterManager::FilterEventType::kAccept;
     LocalSearchFilter* filter = MakeUnaryDimensionFilter(
-        dimension->model()->solver(), std::move(checker));
+        dimension->model()->solver(), std::move(checker), dimension->name());
     filters->push_back({filter, kAccept});
   }
 }
@@ -2275,6 +2275,7 @@ void AppendDimensionCumulFilters(
       DCHECK(model.GetMutableGlobalCumulOptimizer(dimension) != nullptr);
       filters->push_back({MakeGlobalLPCumulFilter(
                               model.GetMutableGlobalCumulOptimizer(dimension),
+                              model.GetMutableGlobalCumulMPOptimizer(dimension),
                               filter_objective_cost),
                           kAccept});
     } else if (use_cumul_bounds_propagator_filter[d]) {
@@ -2609,6 +2610,7 @@ class LPCumulFilter : public IntVarLocalSearchFilter {
  public:
   LPCumulFilter(const std::vector<IntVar*>& nexts,
                 GlobalDimensionCumulOptimizer* optimizer,
+                GlobalDimensionCumulOptimizer* mp_optimizer,
                 bool filter_objective_cost);
   bool Accept(const Assignment* delta, const Assignment* deltadelta,
               int64_t objective_min, int64_t objective_max) override;
@@ -2621,6 +2623,7 @@ class LPCumulFilter : public IntVarLocalSearchFilter {
 
  private:
   GlobalDimensionCumulOptimizer& optimizer_;
+  GlobalDimensionCumulOptimizer& mp_optimizer_;
   const bool filter_objective_cost_;
   int64_t synchronized_cost_without_transit_;
   int64_t delta_cost_without_transit_;
@@ -2630,9 +2633,11 @@ class LPCumulFilter : public IntVarLocalSearchFilter {
 
 LPCumulFilter::LPCumulFilter(const std::vector<IntVar*>& nexts,
                              GlobalDimensionCumulOptimizer* optimizer,
+                             GlobalDimensionCumulOptimizer* mp_optimizer,
                              bool filter_objective_cost)
     : IntVarLocalSearchFilter(nexts),
       optimizer_(*optimizer),
+      mp_optimizer_(*mp_optimizer),
       filter_objective_cost_(filter_objective_cost),
       synchronized_cost_without_transit_(-1),
       delta_cost_without_transit_(-1),
@@ -2662,12 +2667,30 @@ bool LPCumulFilter::Accept(const Assignment* delta,
   if (!filter_objective_cost_) {
     // No need to compute the cost of the LP, only verify its feasibility.
     delta_cost_without_transit_ = 0;
-    return optimizer_.IsFeasible(next_accessor);
+    const DimensionSchedulingStatus status =
+        optimizer_.ComputeCumuls(next_accessor, nullptr, nullptr);
+    if (status == DimensionSchedulingStatus::OPTIMAL) return true;
+    if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY &&
+        mp_optimizer_.ComputeCumuls(next_accessor, nullptr, nullptr) ==
+            DimensionSchedulingStatus::OPTIMAL) {
+      return true;
+    }
+    return false;
   }
 
-  if (!optimizer_.ComputeCumulCostWithoutFixedTransits(
-          next_accessor, &delta_cost_without_transit_)) {
-    // Infeasible.
+  const DimensionSchedulingStatus status =
+      optimizer_.ComputeCumulCostWithoutFixedTransits(
+          next_accessor, &delta_cost_without_transit_);
+  if (status == DimensionSchedulingStatus::INFEASIBLE) {
+    delta_cost_without_transit_ = std::numeric_limits<int64_t>::max();
+    return false;
+  }
+  if (delta_cost_without_transit_ > objective_max) return false;
+
+  if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY &&
+      mp_optimizer_.ComputeCumulCostWithoutFixedTransits(
+          next_accessor, &delta_cost_without_transit_) !=
+          DimensionSchedulingStatus::OPTIMAL) {
     delta_cost_without_transit_ = std::numeric_limits<int64_t>::max();
     return false;
   }
@@ -2682,14 +2705,25 @@ void LPCumulFilter::OnSynchronize(const Assignment* delta) {
   // TODO(user): Try to optimize this so the LP is not called when the last
   // computed delta cost corresponds to the solution being synchronized.
   const RoutingModel& model = *optimizer_.dimension()->model();
-  if (!optimizer_.ComputeCumulCostWithoutFixedTransits(
-          [this, &model](int64_t index) {
-            return IsVarSynced(index)     ? Value(index)
-                   : model.IsStart(index) ? model.End(model.VehicleIndex(index))
-                                          : index;
-          },
-          &synchronized_cost_without_transit_)) {
+  const auto& next_accessor = [this, &model](int64_t index) {
+    return IsVarSynced(index)     ? Value(index)
+           : model.IsStart(index) ? model.End(model.VehicleIndex(index))
+                                  : index;
+  };
+
+  const DimensionSchedulingStatus status =
+      optimizer_.ComputeCumulCostWithoutFixedTransits(
+          next_accessor, &synchronized_cost_without_transit_);
+  if (status == DimensionSchedulingStatus::INFEASIBLE) {
     // TODO(user): This should only happen if the LP solver times out.
+    // DCHECK the fail wasn't due to an infeasible model.
+    synchronized_cost_without_transit_ = 0;
+  }
+  if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY &&
+      mp_optimizer_.ComputeCumulCostWithoutFixedTransits(
+          next_accessor, &synchronized_cost_without_transit_) !=
+          DimensionSchedulingStatus::OPTIMAL) {
+    // TODO(user): This should only happen if the MP solver times out.
     // DCHECK the fail wasn't due to an infeasible model.
     synchronized_cost_without_transit_ = 0;
   }
@@ -2702,10 +2736,11 @@ int64_t LPCumulFilter::GetSynchronizedObjectiveValue() const {
 }  // namespace
 
 IntVarLocalSearchFilter* MakeGlobalLPCumulFilter(
-    GlobalDimensionCumulOptimizer* optimizer, bool filter_objective_cost) {
+    GlobalDimensionCumulOptimizer* optimizer,
+    GlobalDimensionCumulOptimizer* mp_optimizer, bool filter_objective_cost) {
   const RoutingModel& model = *optimizer->dimension()->model();
-  return model.solver()->RevAlloc(
-      new LPCumulFilter(model.Nexts(), optimizer, filter_objective_cost));
+  return model.solver()->RevAlloc(new LPCumulFilter(
+      model.Nexts(), optimizer, mp_optimizer, filter_objective_cost));
 }
 
 namespace {

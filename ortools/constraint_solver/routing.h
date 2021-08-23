@@ -176,6 +176,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/map_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -375,6 +376,75 @@ class RoutingModel {
     // clang-format on
   };
 
+  /// A ResourceGroup defines a set of available Resources with attributes on
+  /// one or multiple dimensions.
+  /// For every ResourceGroup in the model, each (used) vehicle in the solution
+  /// must be assigned to exactly 1 resource, and each resource can in turn be
+  /// assigned to at most 1 vehicle. This vehicle-to-resource assignment will
+  /// apply the corresponding Attributes to the dimensions affected by the
+  /// resource group.
+  /// NOTE: As of 2021/07, each ResourceGroup can only affect a single
+  /// RoutingDimension at a time, i.e. all Resources in a group must apply
+  /// attributes to the same single dimension.
+  class ResourceGroup {
+   public:
+    /// Attributes for a dimension.
+    class Attributes {
+     public:
+      Attributes();
+      Attributes(Domain start_domain, Domain end_domain);
+
+      const Domain& start_domain() const { return start_domain_; }
+      const Domain& end_domain() const { return end_domain_; }
+
+     private:
+      /// The following domains constrain the dimension start/end cumul of the
+      /// the vehicle assigned to this resource:
+      /// start_domain_.Min() <= cumul[Start(v)] <= start_domain_.Max()
+      Domain start_domain_;
+      /// end_domain_.Min() <= cumul[End(v)] <= end_domain_.Max()
+      Domain end_domain_;
+    };
+
+    /// A Resource sets attributes (costs/constraints) for a set of dimensions.
+    class Resource {
+     public:
+      const Attributes& GetDimensionAttributes(
+          const RoutingDimension* dimension) const;
+
+     private:
+      explicit Resource(const RoutingModel* model) : model_(model) {}
+
+      void SetDimensionAttributes(Attributes attributes,
+                                  const RoutingDimension* dimension);
+      const Attributes& GetDefaultAttributes() const;
+
+      const RoutingModel* const model_;
+      absl::flat_hash_map<DimensionIndex, Attributes> dimension_attributes_;
+
+      friend class ResourceGroup;
+    };
+
+    explicit ResourceGroup(const RoutingModel* model) : model_(model) {}
+
+    /// Add a Resource with the given attributes for the corresponding
+    /// dimension.
+    void AddResource(Attributes attributes, const RoutingDimension* dimension);
+
+    const std::vector<Resource>& GetResources() const { return resources_; }
+    const absl::flat_hash_set<DimensionIndex>& GetAffectedDimensionIndices()
+        const {
+      return affected_dimension_indices_;
+    }
+    int Size() const { return resources_.size(); }
+
+   private:
+    const RoutingModel* const model_;
+    std::vector<Resource> resources_;
+    /// All indices of dimensions affected by this resource group.
+    absl::flat_hash_set<DimensionIndex> affected_dimension_indices_;
+  };
+
   /// Constant used to express a hard constraint instead of a soft penalty.
   static const int64_t kNoPenalty;
 
@@ -563,6 +633,10 @@ class RoutingModel {
   GetGlobalDimensionCumulOptimizers() const {
     return global_dimension_optimizers_;
   }
+  const std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer> >&
+  GetGlobalDimensionCumulMPOptimizers() const {
+    return global_dimension_mp_optimizers_;
+  }
   const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >&
   GetLocalDimensionCumulOptimizers() const {
     return local_dimension_optimizers_;
@@ -576,6 +650,8 @@ class RoutingModel {
   /// Returns the global/local dimension cumul optimizer for a given dimension,
   /// or nullptr if there is none.
   GlobalDimensionCumulOptimizer* GetMutableGlobalCumulOptimizer(
+      const RoutingDimension& dimension) const;
+  GlobalDimensionCumulOptimizer* GetMutableGlobalCumulMPOptimizer(
       const RoutingDimension& dimension) const;
   LocalDimensionCumulOptimizer* GetMutableLocalCumulOptimizer(
       const RoutingDimension& dimension) const;
@@ -603,6 +679,19 @@ class RoutingModel {
   const std::string& GetPrimaryConstrainedDimension() const {
     return primary_constrained_dimension_;
   }
+
+  ResourceGroup* const AddResourceGroup();
+  // clang-format off
+  const std::vector<std::unique_ptr<ResourceGroup> >& GetResourceGroups()
+      const {
+    return resource_groups_;
+  }
+  // clang-format on
+  /// Returns the indices of resource groups for this dimension. This method can
+  /// only be called after the model has been closed.
+  const std::vector<int>& GetDimensionResourceGroupIndices(
+      const RoutingDimension* dimension) const;
+
   /// Adds a disjunction constraint on the indices: exactly 'max_cardinality' of
   /// the indices are active. Start and end indices of any vehicle cannot be
   /// part of a disjunction.
@@ -644,7 +733,7 @@ class RoutingModel {
 #if !defined(SWIGPYTHON)
   /// Returns the variable indices of the nodes in the disjunction of index
   /// 'index'.
-  const std::vector<int64_t>& GetDisjunctionIndices(
+  const std::vector<int64_t>& GetDisjunctionNodeIndices(
       DisjunctionIndex index) const {
     return disjunctions_[index].indices;
   }
@@ -875,9 +964,9 @@ class RoutingModel {
   }
 
   /// Get the "unperformed" penalty of a node. This is only well defined if the
-  /// node is only part of a single Disjunction involving only itself, and that
-  /// disjunction has a penalty. In all other cases, including forced active
-  /// nodes, this returns 0.
+  /// node is only part of a single Disjunction, and that disjunction has a
+  /// penalty. For forced active nodes returns max int64_t. In all other cases,
+  /// this returns 0.
   int64_t UnperformedPenalty(int64_t var_index) const;
   /// Same as above except that it returns default_value instead of 0 when
   /// penalty is not well defined (default value is passed as first argument to
@@ -1278,6 +1367,21 @@ class RoutingModel {
   VehicleClassIndex GetVehicleClassIndexOfVehicle(int64_t vehicle) const {
     DCHECK(closed_);
     return vehicle_class_index_of_vehicle_[vehicle];
+  }
+  /// Returns a vehicle of the given vehicle class, and -1 if there are no
+  /// vehicles for this class.
+  int GetVehicleOfClass(VehicleClassIndex vehicle_class) const {
+    DCHECK(closed_);
+    const RoutingModel::VehicleTypeContainer& vehicle_type_container =
+        GetVehicleTypeContainer();
+    if (vehicle_class.value() >= GetVehicleClassesCount() ||
+        vehicle_type_container.vehicles_per_vehicle_class[vehicle_class.value()]
+            .empty()) {
+      return -1;
+    }
+    return vehicle_type_container
+        .vehicles_per_vehicle_class[vehicle_class.value()]
+        .front();
   }
   /// Returns the number of different vehicle classes in the model.
   int GetVehicleClassesCount() const { return vehicle_classes_.size(); }
@@ -1744,12 +1848,23 @@ class RoutingModel {
   /// Dimensions
   absl::flat_hash_map<std::string, DimensionIndex> dimension_name_to_index_;
   absl::StrongVector<DimensionIndex, RoutingDimension*> dimensions_;
+  /// Resource Groups.
+  /// If resource_groups_ is not empty, then for each group of resources, each
+  /// (used) vehicle must be assigned to exactly 1 resource, and each resource
+  /// can in turn be assigned to at most 1 vehicle.
   // clang-format off
+  std::vector<std::unique_ptr<ResourceGroup> > resource_groups_;
+  /// Stores the set of resource groups related to each dimension.
+  absl::StrongVector<DimensionIndex, std::vector<int> >
+      dimension_resource_group_indices_;
+
   /// TODO(user): Define a new Dimension[Global|Local]OptimizerIndex type
   /// and use it to define ITIVectors and for the dimension to optimizer index
   /// mappings below.
   std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer> >
       global_dimension_optimizers_;
+  std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer> >
+      global_dimension_mp_optimizers_;
   absl::StrongVector<DimensionIndex, int> global_optimizer_index_;
   std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >
       local_dimension_optimizers_;
@@ -1941,6 +2056,7 @@ class RoutingModel {
 
   friend class RoutingDimension;
   friend class RoutingModelInspector;
+  friend class ResourceGroup::Resource;
 
   DISALLOW_COPY_AND_ASSIGN(RoutingModel);
 };
@@ -2458,6 +2574,16 @@ class RoutingDimension {
     return model_->TransitCallback(
         class_evaluators_[vehicle_to_class_[vehicle]]);
   }
+
+  /// Returns the callback evaluating the transit value between two node indices
+  /// for a given vehicle class.
+  const RoutingModel::TransitCallback2& class_transit_evaluator(
+      RoutingVehicleClassIndex vehicle_class) const {
+    const int vehicle = model_->GetVehicleOfClass(vehicle_class);
+    DCHECK_NE(vehicle, -1);
+    return transit_evaluator(vehicle);
+  }
+
   /// Returns the unary callback evaluating the transit value between two node
   /// indices for a given vehicle. If the corresponding callback is not unary,
   /// returns a null callback.
@@ -2683,6 +2809,14 @@ class RoutingDimension {
   int64_t GetSpanCostCoefficientForVehicle(int vehicle) const {
     return vehicle_span_cost_coefficients_[vehicle];
   }
+#ifndef SWIG
+  int64_t GetSpanCostCoefficientForVehicleClass(
+      RoutingVehicleClassIndex vehicle_class) const {
+    const int vehicle = model_->GetVehicleOfClass(vehicle_class);
+    DCHECK_NE(vehicle, -1);
+    return GetSpanCostCoefficientForVehicle(vehicle);
+  }
+#endif  // SWIG
 #ifndef SWIG
   const std::vector<int64_t>& vehicle_span_cost_coefficients() const {
     return vehicle_span_cost_coefficients_;

@@ -26,6 +26,7 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/optional_boolean.pb.h"
 
 namespace operations_research {
@@ -107,6 +108,8 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "use_depth_first_search: false "
       "use_cp: BOOL_TRUE "
       "use_cp_sat: BOOL_FALSE "
+      "use_generalized_cp_sat: BOOL_FALSE "
+      "sat_parameters { linearization_level: 2 num_search_workers: 1 } "
       "continuous_scheduling_solver: GLOP "
       "mixed_integer_scheduling_solver: CP_SAT "
       "optimization_step: 0.0 "
@@ -367,6 +370,17 @@ std::string FindErrorInRoutingSearchParameters(
           "Invalid value for "
           "multi_armed_bandit_compound_operator_exploration_coefficient: ",
           exploration_coefficient);
+    }
+  }
+
+  {
+    const sat::SatParameters& sat_parameters =
+        search_parameters.sat_parameters();
+    if (sat_parameters.enumerate_all_solutions() &&
+        (sat_parameters.num_search_workers() > 1 ||
+         sat_parameters.interleave_search())) {
+      return "sat_parameters.enumerate_all_solutions cannot be true in parallel"
+             " search";
     }
   }
 

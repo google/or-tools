@@ -334,7 +334,7 @@ bool DisjunctivePropagator::DistanceDuration(Tasks* tasks) {
     // Skip breaks that cannot be performed after start.
     int index_break_by_emax = tasks->num_chain_tasks;
     while (index_break_by_emax < num_tasks &&
-           tasks->end_max[index_break_by_emax] <= tasks->end_max[route_start]) {
+           tasks->end_max[index_break_by_emax] <= tasks->end_min[route_start]) {
       ++index_break_by_emax;
     }
     // Special case: no breaks after start.
