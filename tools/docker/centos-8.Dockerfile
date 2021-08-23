@@ -10,11 +10,11 @@ RUN dnf -y update \
 && rm -rf /var/cache/dnf
 ENTRYPOINT ["/usr/bin/bash", "-c"]
 
-# Install CMake 3.18.5
-RUN wget "https://cmake.org/files/v3.18/cmake-3.18.5-Linux-x86_64.sh" \
-&& chmod a+x cmake-3.18.5-Linux-x86_64.sh \
-&& ./cmake-3.18.5-Linux-x86_64.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.18.5-Linux-x86_64.sh
+# Install CMake 3.21.1
+RUN wget "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
+&& chmod a+x cmake-3.21.1-linux-x86_64.sh \
+&& ./cmake-3.21.1-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.21.1-linux-x86_64.sh
 
 # Install Swig
 RUN dnf -y update \
