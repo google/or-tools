@@ -413,7 +413,8 @@ namespace Google.OrTools.Tests
         }
 
         [Fact]
-        public void CaptureLog() {
+        public void CaptureLog()
+        {
             Console.WriteLine("CaptureLog test");
             CpModel model = new CpModel();
             IntVar v1 = model.NewIntVar(-10, 10, "v1");
