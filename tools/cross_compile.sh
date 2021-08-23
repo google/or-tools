@@ -222,12 +222,14 @@ function run_test() {
   set -x
   case ${PROJECT} in
     glop)
+      # shellcheck disable=SC2086
       ${RUN_CMD} bin/simple_glop_program ;;
     or-tools)
       for test_binary in \
         "${BUILD_DIR}"/bin/simple_* \
         "${BUILD_DIR}"/bin/*tsp* \
         "${BUILD_DIR}"/bin/*vrp*; do
+        # shellcheck disable=SC2086
         ${RUN_CMD} "${test_binary}"
       done
       ;;
@@ -280,6 +282,7 @@ function main() {
   assert_defined PROJECT
   assert_defined TARGET
 
+  # shellcheck disable=SC2155
   declare -r PROJECT_DIR="$(cd -P -- "$(dirname -- "$0")/.." && pwd -P)"
   declare -r ARCHIVE_DIR="${PROJECT_DIR}/build_cross/archives"
   declare -r BUILD_DIR="${PROJECT_DIR}/build_cross/${TARGET}"
