@@ -1,5 +1,7 @@
 # OR-Tools Makefile Build Instructions
-Dockers [Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu]x[C++, Python, Java, .Net]: [![Status][docker_svg]][docker_link]
+
+Dockers [Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu]x[C++,
+Python, Java, .Net]: [![Status][docker_svg]][docker_link]
 
 [docker_svg]: https://github.com/google/or-tools/actions/workflows/make_docker.yml/badge.svg?branch=master
 [docker_link]: https://github.com/google/or-tools/actions/workflows/make_docker.yml
