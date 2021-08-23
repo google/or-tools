@@ -380,7 +380,7 @@ public class ShiftSchedulingSat
     /// base name for penalty literals.</param> <returns>A tuple (costLiterals,
     /// costCoefficients) containing the different penalties created by the
     /// sequence constraint.</returns>
-    static(IntVar[] costLiterals, int[] costCoefficients)
+    static (IntVar[] costLiterals, int[] costCoefficients)
         AddSoftSequenceConstraint(CpModel model, IntVar[] works, int hardMin, int softMin, int minCost, int softMax,
                                   int hardMax, int maxCost, string prefix)
     {
@@ -473,7 +473,7 @@ public class ShiftSchedulingSat
     /// base name for penalty literals.</param> <returns>A tuple (costVariables,
     /// costCoefficients) containing the different penalties created by the
     /// sequence constraint.</returns>
-    static(IntVar[] costVariables, int[] costCoefficients)
+    static (IntVar[] costVariables, int[] costCoefficients)
         AddSoftSumConstraint(CpModel model, IntVar[] works, int hardMin, int softMin, int minCost, int softMax,
                              int hardMax, int maxCost, string prefix)
     {

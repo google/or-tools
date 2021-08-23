@@ -128,7 +128,7 @@ public class NetworkRoutingSat
         }
     }
 
-    private static(bool IsSet, string Value) getArgValue(string[] args, string arg)
+    private static (bool IsSet, string Value) getArgValue(string[] args, string arg)
     {
         string lookup = $"--{arg}=";
 
