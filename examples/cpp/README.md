@@ -1,5 +1,6 @@
 # C++ examples
-The following examples showcase how to use the different Operations Research libraries.
+The following examples showcase how to use the different Operations Research
+libraries.
 
 ## Examples list
 - Constraint Solver examples:
@@ -55,8 +56,8 @@ The following examples showcase how to use the different Operations Research lib
   - model_util.cc A utility to manipulate model files (.cp) dumped by the
     solver.
 
-# Execution
-Running the examples will involve building them, then running them.   
+## Execution
+Running the examples will involve building them, then running them.<br>
 You can run the following command from the **top** directory:
 ```shell
 make build SOURCE=examples/cpp/<example>.cc
