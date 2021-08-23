@@ -2890,7 +2890,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
 #if !defined(__PORTABLE_PLATFORM__)
   // Register SIGINT handler if requested by the parameters.
-  if (model->GetOrCreate<SatParameters>()->catch_sigint_signal()) {
+  if (params.catch_sigint_signal()) {
     model->GetOrCreate<SigintHandler>()->Register(
         [&shared_time_limit]() { shared_time_limit->Stop(); });
   }
@@ -2913,19 +2913,18 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   SOLVER_LOG(logger, "Starting CP-SAT solver.");
 
   // Initialize the number of workers if set to 0.
-  {
-    SatParameters* params = model->GetOrCreate<SatParameters>();
-    if (params->num_search_workers() == 0) {
+  if (params.num_search_workers() == 0) {
 #if !defined(__PORTABLE_PLATFORM__)
-      // Sometimes, hardware_concurrency will return 0. So always default to 1.
-      const int num_cores =
-          std::max<int>(std::thread::hardware_concurrency(), 1);
+    // Sometimes, hardware_concurrency will return 0. So always default to 1.
+    const int num_cores =
+        params->enumerate_all_solutions()
+            ? 1
+            : std::max<int>(std::thread::hardware_concurrency(), 1);
 #else
-      const int num_cores = 1;
+    const int num_cores = 1;
 #endif
-      SOLVER_LOG(logger, "Setting number of workers to ", num_cores);
-      params->set_num_search_workers(num_cores);
-    }
+    SOLVER_LOG(logger, "Setting number of workers to ", num_cores);
+    model->GetOrCreate<SatParameters>()->set_num_search_workers(num_cores);
   }
 
   SOLVER_LOG(logger, "Parameters: ", params.ShortDebugString());
