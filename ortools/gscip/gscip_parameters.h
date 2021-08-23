@@ -51,6 +51,14 @@ void GScipSetRandomSeed(GScipParameters* parameters, int random_seed);
 int GScipRandomSeed(const GScipParameters& parameters);
 bool GScipRandomSeedSet(const GScipParameters& parameters);
 
+// Sets the misc/catchctrlc property.
+void GScipSetCatchCtrlC(bool catch_ctrl_c, GScipParameters* parameters);
+// Returns the misc/catchctrlc property; true if not set (the default SCIP
+// behavior).
+bool GScipCatchCtrlC(const GScipParameters& parameters);
+// Returns true when the misc/catchctrlc property is set.
+bool GScipCatchCtrlCSet(const GScipParameters& parameters);
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_GSCIP_GSCIP_PARAMETERS_H_

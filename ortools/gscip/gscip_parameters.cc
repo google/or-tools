@@ -25,6 +25,7 @@ constexpr absl::string_view kLimitsTime = "limits/time";
 constexpr absl::string_view kParallelMaxNThreads = "parallel/maxnthreads";
 constexpr absl::string_view kDisplayVerbLevel = "display/verblevel";
 constexpr absl::string_view kRandomSeedParam = "randomization/randomseedshift";
+constexpr absl::string_view kCatchCtrlCParam = "misc/catchctrlc";
 }  // namespace
 
 void GScipSetTimeLimit(absl::Duration time_limit, GScipParameters* parameters) {
@@ -120,4 +121,22 @@ int GScipRandomSeed(const GScipParameters& parameters) {
 bool GScipRandomSeedSet(const GScipParameters& parameters) {
   return parameters.int_params().contains(std::string(kRandomSeedParam));
 }
+
+void GScipSetCatchCtrlC(const bool catch_ctrl_c,
+                        GScipParameters* const parameters) {
+  (*parameters->mutable_bool_params())[std::string(kCatchCtrlCParam)] =
+      catch_ctrl_c;
+}
+
+bool GScipCatchCtrlC(const GScipParameters& parameters) {
+  if (GScipCatchCtrlCSet(parameters)) {
+    return parameters.bool_params().at(std::string(kCatchCtrlCParam));
+  }
+  return true;
+}
+
+bool GScipCatchCtrlCSet(const GScipParameters& parameters) {
+  return parameters.bool_params().contains(std::string(kCatchCtrlCParam));
+}
+
 }  // namespace operations_research
