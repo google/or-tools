@@ -475,6 +475,19 @@ std::string ValidateSolutionHint(const CpModelProto& model) {
       return absl::StrCat("Invalid variable reference in solution hint: ", ref);
     }
   }
+
+  // Reject hint with duplicate variables has this is likely a user error.
+  absl::flat_hash_set<int> indices;
+  for (const int var : hint.vars()) {
+    const auto insert = indices.insert(PositiveRef(var));
+    if (!insert.second) {
+      return absl::StrCat(
+          "The solution hint contains duplicate variables like the variable "
+          "with index #",
+          PositiveRef(var));
+    }
+  }
+
   return "";
 }
 

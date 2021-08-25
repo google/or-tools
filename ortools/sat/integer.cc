@@ -1189,7 +1189,7 @@ bool IntegerTrail::InPropagationLoop() const {
   const int num_vars = vars_.size();
   return (!integer_search_levels_.empty() &&
           integer_trail_.size() - integer_search_levels_.back() >
-              std::max(10000, num_vars) &&
+              std::max(10000, 10 * num_vars) &&
           parameters_.search_branching() != SatParameters::FIXED_SEARCH);
 }
 

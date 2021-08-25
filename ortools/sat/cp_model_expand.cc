@@ -1407,9 +1407,15 @@ void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
         union_of_domains.UnionWith(context->DomainOf(proto.vars(i)));
   }
 
-  const bool is_permutation = proto.vars_size() == union_of_domains.Size();
+  const bool is_a_permutation = proto.vars_size() == union_of_domains.Size();
+  const bool should_be_expanded =
+      (proto.vars_size() * 2 > union_of_domains.Size()) ||
+      (union_of_domains.Size() <= 32);
 
-  if (!is_permutation && !expand_non_permutations) return;
+  if (!is_a_permutation && !should_be_expanded && !expand_non_permutations) {
+    return;
+  }
+
 
   // Collect all possible variables that can take each value, and add one linear
   // equation per value stating that this value can be assigned at most once, or
@@ -1443,7 +1449,7 @@ void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
 
       LinearConstraintProto* at_most_or_equal_one =
           context->working_model->add_constraints()->mutable_linear();
-      int lb = is_permutation ? 1 : 0;
+      int lb = is_a_permutation ? 1 : 0;
       int ub = 1;
       for (const int ref : possible_refs) {
         DCHECK(context->DomainContains(ref, v));
@@ -1463,7 +1469,7 @@ void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
       at_most_or_equal_one->add_domain(ub);
     }
   }
-  if (is_permutation) {
+  if (is_a_permutation) {
     context->UpdateRuleStats("alldiff: permutation expanded");
   } else {
     context->UpdateRuleStats("alldiff: expanded");

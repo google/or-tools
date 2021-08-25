@@ -6846,8 +6846,10 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
     }
   }
 
-  // Remap the solution hint.
+  // Remap the solution hint. Note that after remapping, we may have duplicate
+  // variable, so we only keep the first occurence.
   if (proto->has_solution_hint()) {
+    absl::flat_hash_set<int> used_vars;
     auto* mutable_hint = proto->mutable_solution_hint();
     int new_size = 0;
     for (int i = 0; i < mutable_hint->vars_size(); ++i) {
@@ -6862,6 +6864,7 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
 
       const int image = mapping[var];
       if (image >= 0) {
+        if (!used_vars.insert(image).second) continue;
         mutable_hint->set_vars(new_size, image);
         mutable_hint->set_values(new_size, value);
         ++new_size;

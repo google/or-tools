@@ -3046,6 +3046,58 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(model_proto,
                                                                context.get());
 
+  // Checks for hints early in case they are forced to be hard constraints.
+  if (params.fix_variables_to_their_hinted_value() &&
+      model_proto.has_solution_hint()) {
+    SOLVER_LOG(context->logger(),
+               "Fixing variables to their value in the solution hints.");
+    for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
+      const int var = model_proto.solution_hint().vars(i);
+      const int64_t value = model_proto.solution_hint().values(i);
+      if (!context->IntersectDomainWith(var, Domain(value))) {
+        const IntegerVariableProto& var_proto =
+            context->working_model->variables(var);
+        const std::string var_name = var_proto.name().empty()
+                                         ? absl::StrCat("var(", var, ")")
+                                         : var_proto.name();
+
+        const Domain var_domain = ReadDomainFromProto(var_proto);
+        SOLVER_LOG(context->logger(),
+                   "Hint found infeasible when assigning variable '", var_name,
+                   "' with domain", var_domain.ToString(), " the value ",
+                   value);
+        break;
+      }
+    }
+  }
+
+  // If the hint is complete, we can use the solution checker to do more
+  // validation.
+  if (model_proto.has_solution_hint() && !context->ModelIsUnsat()) {
+    // TODO(user): Add a parameter and change the code to make the solution
+    // checker more informative.
+    const absl::flat_hash_set<int> visited_vars(
+        model_proto.solution_hint().vars().begin(),
+        model_proto.solution_hint().vars().end());
+    if (visited_vars.size() == model_proto.variables_size()) {
+      std::vector<int64_t> solution(model_proto.variables_size(), 0);
+      for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
+        const int var = model_proto.solution_hint().vars(i);
+        const int64_t value = model_proto.solution_hint().values(i);
+        solution[var] = value;
+      }
+      if (SolutionIsFeasible(model_proto, solution)) {
+        SOLVER_LOG(context->logger(),
+                   "The solution hint is complete and is feasible.");
+
+      } else {
+        SOLVER_LOG(context->logger(),
+                   "The solution hint is complete, but it is infeasible! we "
+                   "will try to repair it.");
+      }
+    }
+  }
+
   if (params.num_search_workers() > 1 || model_proto.has_objective()) {
     // For the case where the assumptions are currently not supported, we just
     // assume they are fixed, and will always report all of them in the UNSAT
