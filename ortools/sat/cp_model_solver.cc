@@ -3076,15 +3076,16 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   if (model_proto.has_solution_hint() && !context->ModelIsUnsat()) {
     // TODO(user): Add a parameter and change the code to make the solution
     // checker more informative.
-    const absl::flat_hash_set<int> visited_vars(
-        model_proto.solution_hint().vars().begin(),
-        model_proto.solution_hint().vars().end());
+    absl::flat_hash_set<int> visited_vars;
+    for (const int ref : model_proto.solution_hint().vars()) {
+      visited_vars.insert(PositiveRef(ref));
+    }
     if (visited_vars.size() == model_proto.variables_size()) {
       std::vector<int64_t> solution(model_proto.variables_size(), 0);
       for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
-        const int var = model_proto.solution_hint().vars(i);
+        const int ref = model_proto.solution_hint().vars(i);
         const int64_t value = model_proto.solution_hint().values(i);
-        solution[var] = value;
+        solution[PositiveRef(ref)] = RefIsPositive(ref) ? value : -value;
       }
       if (SolutionIsFeasible(model_proto, solution)) {
         SOLVER_LOG(context->logger(),
