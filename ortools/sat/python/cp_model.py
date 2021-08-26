@@ -166,12 +166,25 @@ class LinearExpr(object):
     @classmethod
     def ScalProd(cls, expressions, coefficients):
         """Creates the expression sum(expressions[i] * coefficients[i])."""
-        return _ScalProd(expressions, coefficients)
+        if LinearExpr.IsEmptyOrAllNull(coefficients):
+            return 0
+        else:
+            return _ScalProd(expressions, coefficients)
 
     @classmethod
     def Term(cls, expression, coefficient):
         """Creates `expression * coefficient`."""
-        return expression * coefficient
+        if coefficient == 0:
+            return 0
+        else:
+            return expression * coefficient
+
+    @classmethod
+    def IsEmptyOrAllNull(cls, coefficients):
+        for c in coefficients:
+            if c != 0:
+                return False
+        return True
 
     def GetVarValueMap(self):
         """Scans the expression, and return a list of (var_coef_map, constant)."""
