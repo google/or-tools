@@ -3771,41 +3771,20 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       if (gcd == 1) break;
     }
     if (gcd > 1) {
-      bool compatible_with_energies = true;
-      for (const LinearExpressionProto& expr : ct->cumulative().energies()) {
-        if (expr.offset() % gcd != 0) {
-          compatible_with_energies = false;
-          break;
-        }
-        for (const int64_t coef : expr.coeffs()) {
-          if (coef % gcd != 0) {
-            compatible_with_energies = false;
-            break;
-          }
-        }
-        if (!compatible_with_energies) break;
+      changed = true;
+      for (int i = 0; i < ct->cumulative().demands_size(); ++i) {
+        const int64_t demand = context_->MinOf(ct->cumulative().demands(i));
+        proto->set_demands(i, context_->GetOrCreateConstantVar(demand / gcd));
       }
-      if (compatible_with_energies) {
-        changed = true;
-        for (int i = 0; i < ct->cumulative().demands_size(); ++i) {
-          const int64_t demand = context_->MinOf(ct->cumulative().demands(i));
-          proto->set_demands(i, context_->GetOrCreateConstantVar(demand / gcd));
-        }
 
-        for (LinearExpressionProto& expr :
-             *ct->mutable_cumulative()->mutable_energies()) {
-          expr.set_offset(expr.offset() / gcd);
-          for (int i = 0; i < expr.coeffs_size(); ++i) {
-            expr.set_coeffs(i, expr.coeffs(i) / gcd);
-          }
-        }
+      // In this case, since the demands are fixed, the energy is linear and we
+      // don't need any user provided formula.
+      ct->mutable_cumulative()->clear_energies();
 
-        const int64_t old_capacity = context_->MinOf(proto->capacity());
-        proto->set_capacity(
-            context_->GetOrCreateConstantVar(old_capacity / gcd));
-        context_->UpdateRuleStats(
-            "cumulative: divide demands and capacity by gcd");
-      }
+      const int64_t old_capacity = context_->MinOf(proto->capacity());
+      proto->set_capacity(context_->GetOrCreateConstantVar(old_capacity / gcd));
+      context_->UpdateRuleStats(
+          "cumulative: divide demands and capacity by gcd");
     }
   }
 
