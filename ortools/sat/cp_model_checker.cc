@@ -576,6 +576,14 @@ std::string ValidateCpModel(const CpModelProto& model) {
               "energies_size() != intervals_size() in constraint #", c, " : ",
               ProtobufShortDebugString(ct));
         }
+        for (const LinearExpressionProto& expr : ct.cumulative().energies()) {
+          if (expr.vars_size() != expr.coeffs_size()) {
+            return absl::StrCat(
+                "vars_size() != coeffs_size() in the energetic expressions of "
+                "constraint #",
+                c, " : ", ProtobufShortDebugString(ct));
+          }
+        }
         break;
       case ConstraintProto::ConstraintCase::kInverse:
         if (ct.inverse().f_direct().size() != ct.inverse().f_inverse().size()) {

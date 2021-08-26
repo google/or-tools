@@ -227,14 +227,14 @@ cc_library(
         ":linear_constraint",
         ":model",
         ":sat_base",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
         "//ortools/base",
         "//ortools/base:int_type",
         "//ortools/base:strong_vector",
         "//ortools/util:logging",
         "//ortools/util:sorted_interval_list",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
     ],
 )
 
@@ -334,8 +334,8 @@ cc_library(
         ":cp_model_cc_proto",
         ":cp_model_checker",
         ":cp_model_expand",
-        ":cp_model_mapping",
         ":cp_model_loader",
+        ":cp_model_mapping",
         ":cp_model_objective",
         ":cp_model_symmetries",
         ":cp_model_utils",
@@ -1213,8 +1213,8 @@ cc_library(
     deps = [
         ":integer",
         ":intervals",
-        "@com_google_absl//absl/strings:str_format",
         "//ortools/graph:connected_components",
+        "@com_google_absl//absl/strings:str_format",
     ],
 )
 

@@ -99,6 +99,9 @@ IndexReferences GetReferencesUsedByConstraint(const ConstraintProto& ct) {
     case ConstraintProto::ConstraintCase::kAllDiff:
       AddIndices(ct.all_diff().vars(), &output.variables);
       break;
+    case ConstraintProto::ConstraintCase::kDummyConstraint:
+      AddIndices(ct.dummy_constraint().vars(), &output.variables);
+      break;
     case ConstraintProto::ConstraintCase::kElement:
       output.variables.push_back(ct.element().index());
       output.variables.push_back(ct.element().target());
@@ -207,6 +210,8 @@ void ApplyToAllLiteralIndices(const std::function<void(int*)>& f,
       break;
     case ConstraintProto::ConstraintCase::kAllDiff:
       break;
+    case ConstraintProto::ConstraintCase::kDummyConstraint:
+      break;
     case ConstraintProto::ConstraintCase::kElement:
       break;
     case ConstraintProto::ConstraintCase::kCircuit:
@@ -287,6 +292,9 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
       break;
     case ConstraintProto::ConstraintCase::kAllDiff:
       APPLY_TO_REPEATED_FIELD(all_diff, vars);
+      break;
+    case ConstraintProto::ConstraintCase::kDummyConstraint:
+      APPLY_TO_REPEATED_FIELD(dummy_constraint, vars);
       break;
     case ConstraintProto::ConstraintCase::kElement:
       APPLY_TO_SINGULAR_FIELD(element, index);
@@ -377,6 +385,8 @@ void ApplyToAllIntervalIndices(const std::function<void(int*)>& f,
       break;
     case ConstraintProto::ConstraintCase::kAllDiff:
       break;
+    case ConstraintProto::ConstraintCase::kDummyConstraint:
+      break;
     case ConstraintProto::ConstraintCase::kElement:
       break;
     case ConstraintProto::ConstraintCase::kCircuit:
@@ -442,6 +452,8 @@ std::string ConstraintCaseName(
       return "kLinear";
     case ConstraintProto::ConstraintCase::kAllDiff:
       return "kAllDiff";
+    case ConstraintProto::ConstraintCase::kDummyConstraint:
+      return "kDummyConstraint";
     case ConstraintProto::ConstraintCase::kElement:
       return "kElement";
     case ConstraintProto::ConstraintCase::kCircuit:
@@ -514,6 +526,8 @@ std::vector<int> UsedIntervals(const ConstraintProto& ct) {
     case ConstraintProto::ConstraintCase::kLinear:
       break;
     case ConstraintProto::ConstraintCase::kAllDiff:
+      break;
+    case ConstraintProto::ConstraintCase::kDummyConstraint:
       break;
     case ConstraintProto::ConstraintCase::kElement:
       break;

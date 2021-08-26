@@ -1100,6 +1100,7 @@ WeightedRandomRelaxationNeighborhoodGenerator::
         num_removable_constraints_++;
         break;
       case ConstraintProto::CONSTRAINT_NOT_SET:
+      case ConstraintProto::kDummyConstraint:
       case ConstraintProto::kInterval:
         // Removing intervals is not easy because other constraint might require
         // them, so for now, we don't remove them.

@@ -299,7 +299,12 @@ message AutomatonConstraintProto {
   repeated int32 vars = 7;
 }
 
-// Next id: 30
+// A list of variables, without any semantics.
+message ListOfVariablesProto {
+  repeated int32 vars = 1;
+}
+
+// Next id: 31
 message ConstraintProto {
   // For debug/logging only. Can be empty.
   string name = 1;
@@ -457,6 +462,10 @@ message ConstraintProto {
     // of the demands of the intervals containing that point does not exceed
     // the capacity.
     CumulativeConstraintProto cumulative = 22;
+
+    // This constraint is not meant to be used and will be rejected by the
+    // solver. It is meant to mark variable when testing the presolve code.
+    ListOfVariablesProto dummy_constraint = 30;
   }
 }
 

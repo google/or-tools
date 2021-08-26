@@ -1408,14 +1408,13 @@ void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
   }
 
   const bool is_a_permutation = proto.vars_size() == union_of_domains.Size();
-  const bool should_be_expanded =
-      (proto.vars_size() * 2 > union_of_domains.Size()) ||
+  const bool has_small_domains =
+      (union_of_domains.Size() <= 2 * proto.vars_size()) ||
       (union_of_domains.Size() <= 32);
 
-  if (!is_a_permutation && !should_be_expanded && !expand_non_permutations) {
+  if (!is_a_permutation && !has_small_domains && !expand_non_permutations) {
     return;
   }
-
 
   // Collect all possible variables that can take each value, and add one linear
   // equation per value stating that this value can be assigned at most once, or
