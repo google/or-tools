@@ -80,9 +80,16 @@ class VariablesInfo {
   void InitializeFromBasisState(ColIndex first_slack, ColIndex num_new_cols,
                                 const BasisState& state);
 
-  // Reset to the default status any column not listed in the basis and make
-  // sure all the one listed are marked as basic.
-  void CorrectBasicStatus(const RowToColMapping& basis);
+  // Resets to the default status any column with a BASIC status not listed in
+  // the basis. Returns their number.
+  //
+  // If starting_values is provided, then instead of the default status, we
+  // will use the bounds closest to starting_values[col] for the BASIC variable
+  // not in the basic.
+  //
+  // Also makes sure all the column listed in basis are marked as basic.
+  int CorrectBasicStatus(const RowToColMapping& basis,
+                         const DenseRow& starting_values);
 
   // Sets all variables status to their lowest magnitude bounds. Note that there
   // will be no basic variable after this is called.

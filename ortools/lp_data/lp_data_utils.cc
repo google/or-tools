@@ -94,6 +94,29 @@ Fractional LpScalingHelper::VariableScalingFactor(ColIndex col) const {
   return scaler_.ColUnscalingFactor(col) * bound_scaling_factor_;
 }
 
+Fractional LpScalingHelper::ScaleVariableValue(ColIndex col,
+                                               Fractional value) const {
+  return value * scaler_.ColUnscalingFactor(col) * bound_scaling_factor_;
+}
+
+Fractional LpScalingHelper::ScaleReducedCost(ColIndex col,
+                                             Fractional value) const {
+  // The reduced cost move like the objective and the col scale.
+  return value / scaler_.ColUnscalingFactor(col) * objective_scaling_factor_;
+}
+
+Fractional LpScalingHelper::ScaleDualValue(RowIndex row,
+                                           Fractional value) const {
+  // The dual value move like the objective and the inverse of the row scale.
+  return value * (scaler_.RowUnscalingFactor(row) * objective_scaling_factor_);
+}
+
+Fractional LpScalingHelper::ScaleConstraintActivity(RowIndex row,
+                                                    Fractional value) const {
+  // The activity move with the row_scale and the bound_scaling_factor.
+  return value / scaler_.RowUnscalingFactor(row) * bound_scaling_factor_;
+}
+
 Fractional LpScalingHelper::UnscaleVariableValue(ColIndex col,
                                                  Fractional value) const {
   // Just the opposite of ScaleVariableValue().

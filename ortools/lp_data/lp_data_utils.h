@@ -57,9 +57,11 @@ class LpScalingHelper {
   // Clear all scaling coefficients.
   void Clear();
 
-  // A variable value in the original domain must be multiplied by this factor
-  // to be in the scaled domain.
-  Fractional VariableScalingFactor(ColIndex col) const;
+  // Transforms value from unscaled domain to the scaled one.
+  Fractional ScaleVariableValue(ColIndex col, Fractional value) const;
+  Fractional ScaleReducedCost(ColIndex col, Fractional value) const;
+  Fractional ScaleDualValue(RowIndex row, Fractional value) const;
+  Fractional ScaleConstraintActivity(RowIndex row, Fractional value) const;
 
   // Transforms corresponding value from the scaled domain to the original one.
   Fractional UnscaleVariableValue(ColIndex col, Fractional value) const;
@@ -75,6 +77,10 @@ class LpScalingHelper {
   // Unscale a col vector v such that B.c = matrix_column_col.
   void UnscaleColumnRightSolve(const RowToColMapping& basis, ColIndex col,
                                ScatteredColumn* right_inverse) const;
+
+  // A variable value in the original domain must be multiplied by this factor
+  // to be in the scaled domain.
+  Fractional VariableScalingFactor(ColIndex col) const;
 
   // Visible for testing. All objective coefficients of the original LP where
   // multiplied by this factor. Nothing else changed.

@@ -123,12 +123,18 @@ RevisedSimplex::RevisedSimplex()
 void RevisedSimplex::ClearStateForNextSolve() {
   SCOPED_TIME_STAT(&function_stats_);
   solution_state_.statuses.clear();
+  variable_starting_values_.clear();
 }
 
 void RevisedSimplex::LoadStateForNextSolve(const BasisState& state) {
   SCOPED_TIME_STAT(&function_stats_);
   solution_state_ = state;
   solution_state_has_been_set_externally_ = true;
+}
+
+void RevisedSimplex::SetStartingVariableValuesForNextSolve(
+    const DenseRow& values) {
+  variable_starting_values_ = values;
 }
 
 void RevisedSimplex::NotifyThatMatrixIsUnchangedForNextSolve() {
@@ -164,6 +170,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   // case we abort without resetting it, setting this allow us to still use the
   // previous state info, but we will double-check everything.
   solution_state_has_been_set_externally_ = true;
+  variable_starting_values_.clear();
 
   if (VLOG_IS_ON(1)) {
     ComputeNumberOfEmptyRows();
@@ -1370,6 +1377,11 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
     for (const ColIndex col : variables_info_.GetIsBasicBitRow()) {
       candidates.push_back(col);
     }
+    if (log_info) {
+      LOG(INFO) << "The warm-start state contains " << candidates.size()
+                << " candidates for the basis (num_rows = " << num_rows_
+                << ").";
+    }
 
     // Optimization: Try to factorize it right away if we have the correct
     // number of element. Ideally the other path below would no require a
@@ -1390,7 +1402,14 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
 
     if (solve_from_scratch) {
       basis_ = basis_factorization_.ComputeInitialBasis(candidates);
-      variables_info_.CorrectBasicStatus(basis_);
+      const int num_super_basic =
+          variables_info_.CorrectBasicStatus(basis_, variable_starting_values_);
+      if (log_info) {
+        LOG(INFO) << "The initial basis did not use " << num_super_basic
+                  << " BASIC columns from the initial state and used "
+                  << (num_rows_ - (candidates.size() - num_super_basic))
+                  << " slack variables that were not marked BASIC.";
+      }
 
       if (InitializeFirstBasis(basis_).ok()) {
         solve_from_scratch = false;

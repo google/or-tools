@@ -154,6 +154,11 @@ class RevisedSimplex {
   // Uses the given state as a warm-start for the next Solve() call.
   void LoadStateForNextSolve(const BasisState& state);
 
+  // Advanced usage. While constructing the initial basis, if this is called
+  // then we will use these values to decide the status of the BASIC variables
+  // that are not kept in the initial basis.
+  void SetStartingVariableValuesForNextSolve(const DenseRow& values);
+
   // Advanced usage. Tells the next Solve() that the matrix inside the linear
   // program will not change compared to the one used the last time Solve() was
   // called. This allows to bypass the somewhat costly check of comparing both
@@ -626,6 +631,9 @@ class RevisedSimplex {
   DenseRow solution_dual_ray_row_combination_;
   BasisState solution_state_;
   bool solution_state_has_been_set_externally_;
+
+  // If this is cleared, we assume they are none.
+  DenseRow variable_starting_values_;
 
   // Flag used by NotifyThatMatrixIsUnchangedForNextSolve() and changing
   // the behavior of Initialize().

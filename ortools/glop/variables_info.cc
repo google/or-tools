@@ -160,17 +160,34 @@ void VariablesInfo::InitializeFromBasisState(ColIndex first_slack_col,
   }
 }
 
-void VariablesInfo::CorrectBasicStatus(const RowToColMapping& basis) {
+int VariablesInfo::CorrectBasicStatus(const RowToColMapping& basis,
+                                      const DenseRow& starting_values) {
   const ColIndex num_cols = lower_bounds_.size();
   is_basic_.ClearAndResize(num_cols);
   for (const ColIndex col : basis) {
     UpdateToBasicStatus(col);
   }
+  int num_no_longer_in_basis = 0;
   for (ColIndex col(0); col < num_cols; ++col) {
     if (!is_basic_[col] && variable_status_[col] == VariableStatus::BASIC) {
-      UpdateToNonBasicStatus(col, DefaultVariableStatus(col));
+      ++num_no_longer_in_basis;
+      if (col < starting_values.size() &&
+          variable_type_[col] == VariableType::UPPER_AND_LOWER_BOUNDED) {
+        const Fractional diff_ub =
+            std::abs(upper_bounds_[col] - starting_values[col]);
+        const Fractional diff_lb =
+            std::abs(lower_bounds_[col] - starting_values[col]);
+        if (diff_lb < diff_ub) {
+          UpdateToNonBasicStatus(col, VariableStatus::AT_LOWER_BOUND);
+        } else {
+          UpdateToNonBasicStatus(col, VariableStatus::AT_UPPER_BOUND);
+        }
+      } else {
+        UpdateToNonBasicStatus(col, DefaultVariableStatus(col));
+      }
     }
   }
+  return num_no_longer_in_basis;
 }
 
 void VariablesInfo::InitializeToDefaultStatus() {
