@@ -205,6 +205,7 @@ proto_library(
     deps = [
         ":routing_enums_proto",
         ":solver_parameters_proto",
+        "//ortools/sat:sat_parameters_proto",
         "//ortools/util:optional_boolean_proto",
         "@com_google_protobuf//:duration_proto",
     ],
