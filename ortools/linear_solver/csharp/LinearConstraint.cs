@@ -81,7 +81,8 @@ namespace Google.OrTools.LinearSolver
 
         public override Constraint Extract(Solver solver)
         {
-            if (!equality_) {
+            if (!equality_)
+            {
                 throw new ArgumentException("Operator != not supported for LinearExpression");
             }
             Dictionary<Variable, double> coefficients = new Dictionary<Variable, double>();
