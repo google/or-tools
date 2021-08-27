@@ -56,7 +56,8 @@
 
 // Problem main flags.
 ABSL_FLAG(int, num_teams, 10, "Number of teams in the problem.");
-ABSL_FLAG(std::string, params, "", "Sat parameters.");
+ABSL_FLAG(std::string, params,
+          "log_search_progress:true,max_time_in_seconds:20", "Sat parameters.");
 ABSL_FLAG(int, model, 1, "1 = opponent model, 2 = fixture model");
 
 namespace operations_research {
@@ -183,9 +184,9 @@ void OpponentModel(int num_teams) {
         const int opponent = SolutionIntegerValue(response, opponents[t][d]);
         const bool home = SolutionBooleanValue(response, home_aways[t][d]);
         if (home) {
-          output += absl::StrCat(" %2d@", opponent);
+          absl::StrAppendFormat(&output, " %2d@", opponent);
         } else {
-          output += absl::StrCat(" %2d ", opponent);
+          absl::StrAppendFormat(&output, " %2d ", opponent);
         }
       }
       LOG(INFO) << output;
@@ -322,7 +323,7 @@ void FixtureModel(int num_teams) {
 
 static const char kUsage[] =
     "Usage: see flags.\nThis program runs a sports scheduling problem."
-    "There is no output besides the debug LOGs of the solver.";
+    "There is no output besides the LOGs of the solver.";
 
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
