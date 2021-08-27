@@ -347,9 +347,9 @@ $(JAVA_ORTOOLS_JAR): \
  $(GEN_DIR)/java/com/google/ortools/constraintsolver/RoutingParameters.java \
  $(GEN_DIR)/java/com/google/ortools/constraintsolver/RoutingEnums.java \
  $(GEN_DIR)/java/com/google/ortools/linearsolver/MPModelProto.java \
+ $(GEN_DIR)/java/com/google/ortools/sat/CpModelProto.java \
  $(GEN_DIR)/java/com/google/ortools/sat/SatParameters.java \
  $(GEN_DIR)/java/com/google/ortools/util/OptionalBoolean.java \
- $(GEN_DIR)/java/com/google/ortools/sat/CpModelProto.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/Loader.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/IntIntToLongFunction.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/JavaDecisionBuilder.java \
@@ -481,9 +481,9 @@ $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/timestamp: \
  $(GEN_DIR)/java/com/google/ortools/constraintsolver/RoutingParameters.java \
  $(GEN_DIR)/java/com/google/ortools/constraintsolver/RoutingEnums.java \
  $(GEN_DIR)/java/com/google/ortools/linearsolver/MPModelProto.java \
+ $(GEN_DIR)/java/com/google/ortools/sat/CpModelProto.java \
  $(GEN_DIR)/java/com/google/ortools/sat/SatParameters.java \
  $(GEN_DIR)/java/com/google/ortools/util/OptionalBoolean.java \
- $(GEN_DIR)/java/com/google/ortools/sat/CpModelProto.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/Loader.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/IntIntToLongFunction.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/JavaDecisionBuilder.java \

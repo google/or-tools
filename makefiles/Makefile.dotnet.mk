@@ -409,6 +409,7 @@ $(DOTNET_ORTOOLS_RUNTIME_NUPKG): \
  $(GEN_DIR)/ortools/constraint_solver/RoutingParameters.pb.cs \
  $(GEN_DIR)/ortools/constraint_solver/RoutingEnums.pb.cs \
  $(GEN_DIR)/ortools/sat/CpModel.pb.cs \
+ $(GEN_DIR)/ortools/sat/SatParameters.pb.cs \
  $(GEN_DIR)/ortools/util/OptionalBoolean.pb.cs \
  | $(DOTNET_ORTOOLS_SNK) $(DOTNET_PACKAGE_DIR)
 	"$(DOTNET_BIN)" build $(DOTNET_BUILD_ARGS) $(TEMP_DOTNET_DIR)$S$(DOTNET_ORTOOLS_RUNTIME_ASSEMBLY_NAME)$S$(DOTNET_ORTOOLS_RUNTIME_ASSEMBLY_NAME).csproj

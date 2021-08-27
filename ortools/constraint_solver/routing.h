@@ -376,6 +376,7 @@ class RoutingModel {
     // clang-format on
   };
 
+#ifndef SWIG
   /// A ResourceGroup defines a set of available Resources with attributes on
   /// one or multiple dimensions.
   /// For every ResourceGroup in the model, each (used) vehicle in the solution
@@ -444,6 +445,7 @@ class RoutingModel {
     /// All indices of dimensions affected by this resource group.
     absl::flat_hash_set<DimensionIndex> affected_dimension_indices_;
   };
+#endif  // SWIG
 
   /// Constant used to express a hard constraint instead of a soft penalty.
   static const int64_t kNoPenalty;
@@ -680,12 +682,14 @@ class RoutingModel {
     return primary_constrained_dimension_;
   }
 
+#ifndef SWIG
   ResourceGroup* const AddResourceGroup();
   // clang-format off
   const std::vector<std::unique_ptr<ResourceGroup> >& GetResourceGroups()
       const {
     return resource_groups_;
   }
+#endif  // SWIG
   // clang-format on
   /// Returns the indices of resource groups for this dimension. This method can
   /// only be called after the model has been closed.
