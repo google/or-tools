@@ -163,6 +163,7 @@ public class SatSolverTest {
 
   @Test
   public void testLogCapture() {
+    Loader.loadNativeLibraries();
     System.out.println("testLogCapture");
 
     // Creates the model.
@@ -176,11 +177,13 @@ public class SatSolverTest {
     model.addDifferent(x, y);
 
     // Creates a solver and solves the model.
-    CpSolver solver = new CpSolver();
+    final CpSolver solver = new CpSolver();
     StringBuilder logBuilder = new StringBuilder();
-    Consumer<String> appendToLog = (String message) -> logBuilder.append(message).append('\n');
+    Consumer<String> appendToLog = (String message) -> {
+      logBuilder.append(message).append('\n');
+    };
     solver.setLogCallback(appendToLog);
-    solver.getParameters().setLogToStdout(false).setLogSearchProgress(true);
+    solver.getParameters().setLogToStdout(false).setLogSearchProgress(true).setNumSearchWorkers(1);
     CpSolverStatus status = solver.solve(model);
 
     String log = logBuilder.toString();

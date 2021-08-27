@@ -68,6 +68,12 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 // processing to be passed to the std::function.
 //
 // TODO(user): cleanup java/functions.i and move the code there.
+
+%{
+#include <memory> // std::make_shared<GlobalRefGuard>
+%}
+
+
 %typemap(in) std::function<void(const std::string&)> %{
   jclass $input_object_class = jenv->GetObjectClass($input);
   if (nullptr == $input_object_class) return $null;
