@@ -129,9 +129,7 @@ class MPModelProtoExporter {
   // into two constraints, one for the left hand side (_lhs) and one for right
   // hand side (_rhs).
   bool AppendConstraint(const MPConstraintProto& ct_proto,
-                        const std::string& name,
-                        const MPModelExportOptions& options,
-                        LineBreaker& line_breaker,
+                        const std::string& name, LineBreaker& line_breaker,
                         std::vector<bool>& show_variable, std::string* output);
 
   // Clears "output" and writes a term to it, in "LP" format. Returns false on
@@ -378,7 +376,6 @@ std::string DoubleToString(double d) { return absl::StrCat((d)); }
 
 bool MPModelProtoExporter::AppendConstraint(const MPConstraintProto& ct_proto,
                                             const std::string& name,
-                                            const MPModelExportOptions& options,
                                             LineBreaker& line_breaker,
                                             std::vector<bool>& show_variable,
                                             std::string* output) {
@@ -390,7 +387,7 @@ bool MPModelProtoExporter::AppendConstraint(const MPConstraintProto& ct_proto,
       return false;
     }
     line_breaker.Append(term);
-    show_variable[var_index] = coeff != 0.0 || show_variable[var_index] || options.show_unused_variables;
+    show_variable[var_index] = coeff != 0.0 || show_variable[var_index];
   }
 
   const double lb = ct_proto.lower_bound();
@@ -559,7 +556,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
       return false;
     }
     obj_line_breaker.Append(term);
-    show_variable[var_index] = coeff != 0.0 || show_variable[var_index] || options.show_unused_variables;
+    show_variable[var_index] = coeff != 0.0 || show_variable[var_index];
   }
   // Linear Constraints
   absl::StrAppend(output, obj_line_breaker.GetOutput(), "\nSubject to\n");
@@ -571,7 +568,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
     // Account for the size of the constraint name + possibly "_rhs" +
     // the formatting characters here.
     line_breaker.Consume(kNumFormattingChars + name.size());
-    if (!AppendConstraint(ct_proto, name, options, line_breaker, show_variable,
+    if (!AppendConstraint(ct_proto, name, line_breaker, show_variable,
                           output)) {
       return false;
     }
@@ -599,8 +596,8 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
     line_breaker.Append(absl::StrFormat(
         "%s = %d -> ", exported_variable_names_[binary_var_index],
         binary_var_value));
-    if (!AppendConstraint(indicator_ct.constraint(), name, options,
-                          line_breaker, show_variable, output)) {
+    if (!AppendConstraint(indicator_ct.constraint(), name, line_breaker,
+                          show_variable, output)) {
       return false;
     }
   }
