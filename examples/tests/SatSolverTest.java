@@ -19,8 +19,9 @@ import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
 import com.google.ortools.util.Domain;
-import java.util.function.Consumer;
+import java.lang.Thread;
 import java.util.Random;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.Test;
 
@@ -180,10 +181,19 @@ public class SatSolverTest {
     final CpSolver solver = new CpSolver();
     StringBuilder logBuilder = new StringBuilder();
     Consumer<String> appendToLog = (String message) -> {
+      System.out.println(
+          "Current Thread Name:" + Thread.currentThread().getName()
+          + " Id:" + Thread.currentThread().getId()
+          + " msg:" + message
+          );
       logBuilder.append(message).append('\n');
     };
     solver.setLogCallback(appendToLog);
-    solver.getParameters().setLogToStdout(false).setLogSearchProgress(true).setNumSearchWorkers(1);
+    solver.getParameters()
+      .setLogToStdout(false)
+      .setLogSearchProgress(true)
+      //.setNumSearchWorkers(1)
+      ;
     CpSolverStatus status = solver.solve(model);
 
     String log = logBuilder.toString();
