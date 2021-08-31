@@ -23,15 +23,19 @@ import java.lang.Thread;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /** Tests the CP-SAT java interface. */
 public class SatSolverTest {
   private static final Logger logger = Logger.getLogger(SatSolverTest.class.getName());
+  @BeforeEach
+  public void setUp() {
+    Loader.loadNativeLibraries();
+  }
 
   @Test
   public void testDomainGetter() {
-    Loader.loadNativeLibraries();
     System.out.println("testDomainGetter");
     CpModel model = new CpModel();
 
@@ -47,7 +51,6 @@ public class SatSolverTest {
 
   @Test
   public void testCrashInPresolve() {
-    Loader.loadNativeLibraries();
     System.out.println("testCrashInPresolve");
     CpModel model = new CpModel();
 
@@ -83,7 +86,6 @@ public class SatSolverTest {
   private IntVar[] entitiesOne;
   @Test
   public void testCrashInSolveWithAllowedAssignment() {
-    Loader.loadNativeLibraries();
     System.out.println("testCrashInSolveWithAllowedAssignment");
     final CpModel model = new CpModel();
     final int numEntityOne = 50000;
@@ -113,7 +115,6 @@ public class SatSolverTest {
 
   @Test
   public void testCrashEquality() {
-    Loader.loadNativeLibraries();
     System.out.println("testCrashInSolveWithAllowedAssignment");
     final CpModel model = new CpModel();
 
@@ -164,7 +165,6 @@ public class SatSolverTest {
 
   @Test
   public void testLogCapture() {
-    Loader.loadNativeLibraries();
     System.out.println("testLogCapture");
 
     // Creates the model.

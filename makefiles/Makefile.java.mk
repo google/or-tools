@@ -751,9 +751,14 @@ check_java_pimpl: \
 
 .PHONY: test_java_tests # Build and Run all Java Tests (located in examples/tests)
 test_java_tests: \
+ rjava_KnapsackSolverTest \
+ rjava_FlowTest \
  rjava_LinearSolverTest \
  rjava_ConstraintSolverTest \
  rjava_RoutingSolverTest \
+ rjava_LinearExprTest \
+ rjava_CpModelTest \
+ rjava_CpSolverTest \
  rjava_SatSolverTest \
 
 .PHONY: test_java_contrib # Build and Run all Java Contrib (located in examples/contrib)

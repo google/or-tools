@@ -356,6 +356,7 @@ PROTO2_RETURN(
 // - loadSolutionFromProto;  // Use hand-written version.
 
 // Expose some of the more advanced MPSolver API.
+%rename (problemType) operations_research::MPSolver::ProblemType;  // no test
 %rename (supportsProblemType) operations_research::MPSolver::SupportsProblemType;  // no test
 %rename (setSolverSpecificParametersAsString)
     operations_research::MPSolver::SetSolverSpecificParametersAsString;  // no test

@@ -830,7 +830,7 @@ namespace Google.OrTools.Tests
             Assert.Equal(3, ct.count());
         }
 
-        // TODO(mizux): Improve search log tests; currently only tests coverage.
+        // TODO(user): Improve search log tests; currently only tests coverage.
         void RunSearchLog(in SearchMonitor searchlog)
         {
             searchlog.EnterSearch();
