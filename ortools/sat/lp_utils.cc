@@ -614,7 +614,11 @@ ConstraintProto* ConstraintScaler::AddConstraint(
     lb -= std::max(std::abs(lb), 1.0) * wanted_precision;
   }
   const Fractional scaled_lb = std::ceil(lb * scaling_factor);
-  if (lb == -kInfinity || scaled_lb <= std::numeric_limits<int64_t>::min()) {
+  if (lb == kInfinity || scaled_lb >= std::numeric_limits<int64_t>::max()) {
+    // Corner case: infeasible model.
+    arg->add_domain(std::numeric_limits<int64_t>::max());
+  } else if (lb == -kInfinity ||
+             scaled_lb <= std::numeric_limits<int64_t>::min()) {
     arg->add_domain(std::numeric_limits<int64_t>::min());
   } else {
     arg->add_domain(CeilRatio(IntegerValue(static_cast<int64_t>(scaled_lb)),
@@ -626,7 +630,11 @@ ConstraintProto* ConstraintScaler::AddConstraint(
     ub += std::max(std::abs(ub), 1.0) * wanted_precision;
   }
   const Fractional scaled_ub = std::floor(ub * scaling_factor);
-  if (ub == kInfinity || scaled_ub >= std::numeric_limits<int64_t>::max()) {
+  if (ub == -kInfinity || scaled_ub <= std::numeric_limits<int64_t>::min()) {
+    // Corner case: infeasible model.
+    arg->add_domain(std::numeric_limits<int64_t>::min());
+  } else if (ub == kInfinity ||
+             scaled_ub >= std::numeric_limits<int64_t>::max()) {
     arg->add_domain(std::numeric_limits<int64_t>::max());
   } else {
     arg->add_domain(FloorRatio(IntegerValue(static_cast<int64_t>(scaled_ub)),

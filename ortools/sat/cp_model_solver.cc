@@ -3049,8 +3049,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Checks for hints early in case they are forced to be hard constraints.
   if (params.fix_variables_to_their_hinted_value() &&
       model_proto.has_solution_hint()) {
-    SOLVER_LOG(context->logger(),
-               "Fixing variables to their value in the solution hints.");
+    SOLVER_LOG(context->logger(), "Fixing ",
+               model_proto.solution_hint().vars().size(),
+               " variables to their value in the solution hints.");
     for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
       const int var = model_proto.solution_hint().vars(i);
       const int64_t value = model_proto.solution_hint().values(i);
@@ -3076,11 +3077,10 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   if (model_proto.has_solution_hint() && !context->ModelIsUnsat()) {
     // TODO(user): Add a parameter and change the code to make the solution
     // checker more informative.
-    absl::flat_hash_set<int> visited_vars;
-    for (const int ref : model_proto.solution_hint().vars()) {
-      visited_vars.insert(PositiveRef(ref));
-    }
-    if (visited_vars.size() == model_proto.variables_size()) {
+    // After the model has been validated, we are sure there are do duplicate
+    // variables in the solution hint.
+    if (model_proto.solution_hint().vars().size() ==
+        model_proto.variables_size()) {
       std::vector<int64_t> solution(model_proto.variables_size(), 0);
       for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
         const int ref = model_proto.solution_hint().vars(i);

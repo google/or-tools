@@ -152,9 +152,10 @@ std::string ValidateArgumentReferencesInConstraint(const CpModelProto& model,
 
 template <class LinearExpressionProto>
 bool PossibleIntegerOverflow(const CpModelProto& model,
-                             const LinearExpressionProto& proto) {
-  int64_t sum_min = 0;
-  int64_t sum_max = 0;
+                             const LinearExpressionProto& proto,
+                             int64_t offset = 0) {
+  int64_t sum_min = -std::abs(offset);
+  int64_t sum_max = +std::abs(offset);
   for (int i = 0; i < proto.vars_size(); ++i) {
     const int ref = proto.vars(i);
     const auto& var_proto = model.variables(PositiveRef(ref));
@@ -192,67 +193,70 @@ std::string ValidateLinearExpression(const CpModelProto& model,
     return absl::StrCat("coeffs_size() != vars_size() in linear expression: ",
                         ProtobufShortDebugString(expr));
   }
-  if (PossibleIntegerOverflow(model, expr)) {
+  if (PossibleIntegerOverflow(model, expr, expr.offset())) {
     return absl::StrCat("Possible overflow in linear expression: ",
                         ProtobufShortDebugString(expr));
   }
   return "";
 }
 
-std::string ValidateIntervalConstraint(const CpModelProto& model,
-                                       const ConstraintProto& ct) {
-  if (ct.enforcement_literal().size() > 1) {
-    return absl::StrCat(
-        "Interval with more than one enforcement literals are currently not "
-        "supported: ",
-        ProtobufShortDebugString(ct));
-  }
-  const IntervalConstraintProto& arg = ct.interval();
-  int num_view = 0;
-  if (arg.has_start_view()) {
-    ++num_view;
-    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.start_view()));
-  }
-  if (arg.has_size_view()) {
-    ++num_view;
-    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.size_view()));
-  }
-  if (arg.has_end_view()) {
-    ++num_view;
-    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.end_view()));
-  }
-  if (num_view != 0 && num_view != 3) {
-    return absl::StrCat(
-        "Interval must use either the var or the view representation, but not "
-        "both: ",
-        ProtobufShortDebugString(ct));
-  }
-  if (num_view > 0) return "";
-  if (arg.size() < 0) {
-    const IntegerVariableProto& size_var_proto =
-        model.variables(NegatedRef(arg.size()));
-    if (size_var_proto.domain(size_var_proto.domain_size() - 1) > 0) {
-      return absl::StrCat(
-          "Negative value in interval size domain: ", ProtobufDebugString(ct),
-          "negation of size var: ", ProtobufDebugString(size_var_proto));
-    }
-  } else {
-    const IntegerVariableProto& size_var_proto = model.variables(arg.size());
-    if (size_var_proto.domain(0) < 0) {
-      return absl::StrCat(
-          "Negative value in interval size domain: ", ProtobufDebugString(ct),
-          "size var: ", ProtobufDebugString(size_var_proto));
-    }
-  }
-  return "";
-}
-
 std::string ValidateLinearConstraint(const CpModelProto& model,
                                      const ConstraintProto& ct) {
+  if (!DomainInProtoIsValid(ct.linear())) {
+    return absl::StrCat("Invalid domain in constraint : ",
+                        ProtobufShortDebugString(ct));
+  }
+  if (ct.linear().coeffs_size() != ct.linear().vars_size()) {
+    return absl::StrCat("coeffs_size() != vars_size() in constraint: ",
+                        ProtobufShortDebugString(ct));
+  }
   const LinearConstraintProto& arg = ct.linear();
   if (PossibleIntegerOverflow(model, arg)) {
     return "Possible integer overflow in constraint: " +
            ProtobufDebugString(ct);
+  }
+  return "";
+}
+
+std::string ValidateIntModConstraint(const CpModelProto& model,
+                                     const ConstraintProto& ct) {
+  if (ct.int_mod().vars().size() != 2) {
+    return absl::StrCat("An int_mod constraint should have exactly 2 terms: ",
+                        ProtobufShortDebugString(ct));
+  }
+  const int mod_var = ct.int_mod().vars(1);
+  const IntegerVariableProto& mod_proto = model.variables(PositiveRef(mod_var));
+  if ((RefIsPositive(mod_var) && mod_proto.domain(0) <= 0) ||
+      (!RefIsPositive(mod_var) &&
+       mod_proto.domain(mod_proto.domain_size() - 1) >= 0)) {
+    return absl::StrCat(
+        "An int_mod must have a strictly positive modulo argument: ",
+        ProtobufShortDebugString(ct));
+  }
+  return "";
+}
+
+std::string ValidateIntProdConstraint(const CpModelProto& model,
+                                      const ConstraintProto& ct) {
+  if (ct.int_prod().vars().size() != 2) {
+    return absl::StrCat("An int_prod constraint should have exactly 2 terms: ",
+                        ProtobufShortDebugString(ct));
+  }
+  return "";
+}
+
+std::string ValidateIntDivConstraint(const CpModelProto& model,
+                                     const ConstraintProto& ct) {
+  if (ct.int_div().vars().size() != 2) {
+    return absl::StrCat("An int_div constraint should have exactly 2 terms: ",
+                        ProtobufShortDebugString(ct));
+  }
+  const IntegerVariableProto& divisor_proto =
+      model.variables(PositiveRef(ct.int_div().vars(1)));
+  if (divisor_proto.domain(0) <= 0 &&
+      divisor_proto.domain(divisor_proto.domain_size() - 1) >= 0) {
+    return absl::StrCat("The divisor cannot span across zero in constraint: ",
+                        ProtobufShortDebugString(ct));
   }
   return "";
 }
@@ -270,14 +274,39 @@ std::string ValidateTableConstraint(const CpModelProto& model,
   return "";
 }
 
-std::string ValidateCircuitConstraint(const CpModelProto& model,
-                                      const ConstraintProto& ct) {
-  const int size = ct.circuit().tails().size();
-  if (ct.circuit().heads().size() != size ||
-      ct.circuit().literals().size() != size) {
-    return absl::StrCat("Wrong field sizes in circuit: ",
-                        ProtobufShortDebugString(ct));
+std::string ValidateAutomatonConstraint(const CpModelProto& model,
+                                        const ConstraintProto& ct) {
+  const int num_transistions = ct.automaton().transition_tail().size();
+  if (num_transistions != ct.automaton().transition_head().size() ||
+      num_transistions != ct.automaton().transition_label().size()) {
+    return absl::StrCat(
+        "The transitions repeated fields must have the same size: ",
+        ProtobufShortDebugString(ct));
   }
+  return "";
+}
+
+template <typename GraphProto>
+std::string ValidateGraphInput(const CpModelProto& model,
+                               const GraphProto& graph) {
+  const int size = graph.tails().size();
+  if (graph.heads().size() != size || graph.literals().size() != size) {
+    return absl::StrCat("Wrong field sizes in graph: ",
+                        ProtobufShortDebugString(graph));
+  }
+
+  // We currently disallow multiple self-loop on the same node.
+  absl::flat_hash_set<int> self_loops;
+  for (int i = 0; i < size; ++i) {
+    if (graph.heads(i) != graph.tails(i)) continue;
+    if (!self_loops.insert(graph.heads(i)).second) {
+      return absl::StrCat(
+          "Circuit/Route constraint contains multiple self-loop involving "
+          "node ",
+          graph.heads(i));
+    }
+  }
+
   return "";
 }
 
@@ -298,12 +327,132 @@ std::string ValidateRoutesConstraint(const CpModelProto& model,
         "All nodes in a route constraint must have incident arcs");
   }
 
-  const int size = ct.routes().tails().size();
-  if (ct.routes().heads().size() != size ||
-      ct.routes().literals().size() != size) {
-    return absl::StrCat("Wrong field sizes in routes: ",
+  return ValidateGraphInput(model, ct.routes());
+}
+
+std::string ValidateDomainIsPositive(const CpModelProto& model, int ref,
+                                     const std::string& ref_name) {
+  if (ref < 0) {
+    const IntegerVariableProto& var_proto = model.variables(NegatedRef(ref));
+    if (var_proto.domain(var_proto.domain_size() - 1) > 0) {
+      return absl::StrCat("Negative value in ", ref_name,
+                          " domain: negation of ",
+                          ProtobufDebugString(var_proto));
+    }
+  } else {
+    const IntegerVariableProto& var_proto = model.variables(ref);
+    if (var_proto.domain(0) < 0) {
+      return absl::StrCat("Negative value in ", ref_name,
+                          " domain: ", ProtobufDebugString(var_proto));
+    }
+  }
+  return "";
+}
+
+void AppendToOverflowValidator(const LinearExpressionProto& input,
+                               LinearExpressionProto* output) {
+  output->mutable_vars()->Add(input.vars().begin(), input.vars().end());
+  output->mutable_coeffs()->Add(input.coeffs().begin(), input.coeffs().end());
+
+  // We add the absolute value to be sure that future computation will not
+  // overflow depending on the order they are performed in.
+  output->set_offset(
+      CapAdd(std::abs(output->offset()), std::abs(input.offset())));
+}
+
+std::string ValidateIntervalConstraint(const CpModelProto& model,
+                                       const ConstraintProto& ct) {
+  if (ct.enforcement_literal().size() > 1) {
+    return absl::StrCat(
+        "Interval with more than one enforcement literals are currently not "
+        "supported: ",
+        ProtobufShortDebugString(ct));
+  }
+
+  LinearExpressionProto for_overflow_validation;
+
+  const IntervalConstraintProto& arg = ct.interval();
+  int num_view = 0;
+  if (arg.has_start_view()) {
+    ++num_view;
+    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.start_view()));
+    AppendToOverflowValidator(arg.start_view(), &for_overflow_validation);
+  } else {
+    for_overflow_validation.add_vars(arg.start());
+    for_overflow_validation.add_coeffs(1);
+  }
+  if (arg.has_size_view()) {
+    ++num_view;
+    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.size_view()));
+    AppendToOverflowValidator(arg.size_view(), &for_overflow_validation);
+  } else {
+    for_overflow_validation.add_vars(arg.size());
+    for_overflow_validation.add_coeffs(1);
+  }
+  if (arg.has_end_view()) {
+    ++num_view;
+    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.end_view()));
+    AppendToOverflowValidator(arg.end_view(), &for_overflow_validation);
+  } else {
+    for_overflow_validation.add_vars(arg.end());
+    for_overflow_validation.add_coeffs(1);
+  }
+
+  if (PossibleIntegerOverflow(model, for_overflow_validation,
+                              for_overflow_validation.offset())) {
+    return absl::StrCat("Possible overflow in interval: ",
+                        ProtobufShortDebugString(ct.interval()));
+  }
+
+  if (num_view != 0 && num_view != 3) {
+    return absl::StrCat(
+        "Interval must use either the var or the view representation, but not "
+        "both: ",
+        ProtobufShortDebugString(ct));
+  }
+  if (num_view > 0) return "";
+
+  // The interval is in the non-converted format (3 variables).
+  const std::string domain_error =
+      ValidateDomainIsPositive(model, arg.size(), "size");
+  if (!domain_error.empty()) {
+    return absl::StrCat(domain_error,
+                        " in constraint: ", ProtobufDebugString(ct));
+  }
+
+  return "";
+}
+
+std::string ValidateCumulativeConstraint(const CpModelProto& model,
+                                         const ConstraintProto& ct) {
+  if (ct.cumulative().intervals_size() != ct.cumulative().demands_size()) {
+    return absl::StrCat("intervals_size() != demands_size() in constraint: ",
                         ProtobufShortDebugString(ct));
   }
+
+  if (ct.cumulative().energies_size() != 0 &&
+      ct.cumulative().energies_size() != ct.cumulative().intervals_size()) {
+    return absl::StrCat("energies_size() != intervals_size() in constraint: ",
+                        ProtobufShortDebugString(ct));
+  }
+
+  for (const int demand_ref : ct.cumulative().demands()) {
+    const std::string domain_error =
+        ValidateDomainIsPositive(model, demand_ref, "demand");
+    if (!domain_error.empty()) {
+      return absl::StrCat(domain_error,
+                          " in constraint: ", ProtobufDebugString(ct));
+    }
+  }
+
+  for (const LinearExpressionProto& expr : ct.cumulative().energies()) {
+    const std::string error = ValidateLinearExpression(model, expr);
+    if (!error.empty()) {
+      return absl::StrCat(error, "in energy expression of constraint: ",
+                          ProtobufShortDebugString(ct));
+    }
+  }
+
   return "";
 }
 
@@ -314,18 +463,6 @@ std::string ValidateNoOverlap2DConstraint(const CpModelProto& model,
   if (size_x != size_y) {
     return absl::StrCat("The two lists of intervals must have the same size: ",
                         ProtobufShortDebugString(ct));
-  }
-  return "";
-}
-
-std::string ValidateAutomatonConstraint(const CpModelProto& model,
-                                        const ConstraintProto& ct) {
-  const int num_transistions = ct.automaton().transition_tail().size();
-  if (num_transistions != ct.automaton().transition_head().size() ||
-      num_transistions != ct.automaton().transition_label().size()) {
-    return absl::StrCat(
-        "The transitions repeated fields must have the same size: ",
-        ProtobufShortDebugString(ct));
   }
   return "";
 }
@@ -354,6 +491,11 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
 
   int64_t sum_abs = 0;
   for (const int64_t demand : ct.reservoir().demands()) {
+    // We test for min int64_t before the abs().
+    if (demand == std::numeric_limits<int64_t>::min()) {
+      return "Possible integer overflow in constraint: " +
+             ProtobufDebugString(ct);
+    }
     sum_abs = CapAdd(sum_abs, std::abs(demand));
     if (sum_abs == std::numeric_limits<int64_t>::max()) {
       return "Possible integer overflow in constraint: " +
@@ -367,32 +509,6 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
   if (ct.reservoir().demands_size() > 0 &&
       ct.reservoir().demands_size() != ct.reservoir().times_size()) {
     return "Wrong array length of demands variables";
-  }
-  return "";
-}
-
-std::string ValidateIntModConstraint(const CpModelProto& model,
-                                     const ConstraintProto& ct) {
-  if (ct.int_mod().vars().size() != 2) {
-    return absl::StrCat("An int_mod constraint should have exactly 2 terms: ",
-                        ProtobufShortDebugString(ct));
-  }
-  const int mod_var = ct.int_mod().vars(1);
-  const IntegerVariableProto& mod_proto = model.variables(PositiveRef(mod_var));
-  if ((RefIsPositive(mod_var) && mod_proto.domain(0) <= 0) ||
-      (!RefIsPositive(mod_var) && mod_proto.domain(0) >= 0)) {
-    return absl::StrCat(
-        "An int_mod must have a strictly positive modulo argument: ",
-        ProtobufShortDebugString(ct));
-  }
-  return "";
-}
-
-std::string ValidateIntDivConstraint(const CpModelProto& model,
-                                     const ConstraintProto& ct) {
-  if (ct.int_div().vars().size() != 2) {
-    return absl::StrCat("An int_div constraint should have exactly 2 terms: ",
-                        ProtobufShortDebugString(ct));
   }
   return "";
 }
@@ -509,15 +625,6 @@ std::string ValidateCpModel(const CpModelProto& model) {
     const ConstraintProto& ct = model.constraints(c);
     const ConstraintProto::ConstraintCase type = ct.constraint_case();
     switch (type) {
-      case ConstraintProto::ConstraintCase::kIntDiv:
-        RETURN_IF_NOT_EMPTY(ValidateIntDivConstraint(model, ct));
-        break;
-      case ConstraintProto::ConstraintCase::kIntMod:
-        RETURN_IF_NOT_EMPTY(ValidateIntModConstraint(model, ct));
-        break;
-      case ConstraintProto::ConstraintCase::kTable:
-        RETURN_IF_NOT_EMPTY(ValidateTableConstraint(model, ct));
-        break;
       case ConstraintProto::ConstraintCase::kBoolOr:
         support_enforcement = true;
         break;
@@ -526,64 +633,34 @@ std::string ValidateCpModel(const CpModelProto& model) {
         break;
       case ConstraintProto::ConstraintCase::kLinear:
         support_enforcement = true;
-        if (!DomainInProtoIsValid(ct.linear())) {
-          return absl::StrCat("Invalid domain in constraint #", c, " : ",
-                              ProtobufShortDebugString(ct));
-        }
-        if (ct.linear().coeffs_size() != ct.linear().vars_size()) {
-          return absl::StrCat("coeffs_size() != vars_size() in constraint #", c,
-                              " : ", ProtobufShortDebugString(ct));
-        }
         RETURN_IF_NOT_EMPTY(ValidateLinearConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kLinMax: {
-        const std::string target_error =
-            ValidateLinearExpression(model, ct.lin_max().target());
-        if (!target_error.empty()) return target_error;
+        RETURN_IF_NOT_EMPTY(
+            ValidateLinearExpression(model, ct.lin_max().target()));
         for (int i = 0; i < ct.lin_max().exprs_size(); ++i) {
-          const std::string expr_error =
-              ValidateLinearExpression(model, ct.lin_max().exprs(i));
-          if (!expr_error.empty()) return expr_error;
+          RETURN_IF_NOT_EMPTY(
+              ValidateLinearExpression(model, ct.lin_max().exprs(i)));
         }
         break;
       }
       case ConstraintProto::ConstraintCase::kLinMin: {
-        const std::string target_error =
-            ValidateLinearExpression(model, ct.lin_min().target());
-        if (!target_error.empty()) return target_error;
+        RETURN_IF_NOT_EMPTY(
+            ValidateLinearExpression(model, ct.lin_min().target()));
         for (int i = 0; i < ct.lin_min().exprs_size(); ++i) {
-          const std::string expr_error =
-              ValidateLinearExpression(model, ct.lin_min().exprs(i));
-          if (!expr_error.empty()) return expr_error;
+          RETURN_IF_NOT_EMPTY(
+              ValidateLinearExpression(model, ct.lin_min().exprs(i)));
         }
         break;
       }
-      case ConstraintProto::ConstraintCase::kInterval:
-        support_enforcement = true;
-        RETURN_IF_NOT_EMPTY(ValidateIntervalConstraint(model, ct));
+      case ConstraintProto::ConstraintCase::kIntProd:
+        RETURN_IF_NOT_EMPTY(ValidateIntProdConstraint(model, ct));
         break;
-      case ConstraintProto::ConstraintCase::kCumulative:
-        if (ct.cumulative().intervals_size() !=
-            ct.cumulative().demands_size()) {
-          return absl::StrCat(
-              "intervals_size() != demands_size() in constraint #", c, " : ",
-              ProtobufShortDebugString(ct));
-        }
-        if (ct.cumulative().energies_size() != 0 &&
-            ct.cumulative().energies_size() !=
-                ct.cumulative().intervals_size()) {
-          return absl::StrCat(
-              "energies_size() != intervals_size() in constraint #", c, " : ",
-              ProtobufShortDebugString(ct));
-        }
-        for (const LinearExpressionProto& expr : ct.cumulative().energies()) {
-          if (expr.vars_size() != expr.coeffs_size()) {
-            return absl::StrCat(
-                "vars_size() != coeffs_size() in the energetic expressions of "
-                "constraint #",
-                c, " : ", ProtobufShortDebugString(ct));
-          }
-        }
+      case ConstraintProto::ConstraintCase::kIntDiv:
+        RETURN_IF_NOT_EMPTY(ValidateIntDivConstraint(model, ct));
+        break;
+      case ConstraintProto::ConstraintCase::kIntMod:
+        RETURN_IF_NOT_EMPTY(ValidateIntModConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kInverse:
         if (ct.inverse().f_direct().size() != ct.inverse().f_inverse().size()) {
@@ -591,14 +668,24 @@ std::string ValidateCpModel(const CpModelProto& model) {
                               ProtobufShortDebugString(ct));
         }
         break;
+      case ConstraintProto::ConstraintCase::kTable:
+        RETURN_IF_NOT_EMPTY(ValidateTableConstraint(model, ct));
+        break;
       case ConstraintProto::ConstraintCase::kAutomaton:
         RETURN_IF_NOT_EMPTY(ValidateAutomatonConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kCircuit:
-        RETURN_IF_NOT_EMPTY(ValidateCircuitConstraint(model, ct));
+        RETURN_IF_NOT_EMPTY(ValidateGraphInput(model, ct.circuit()));
         break;
       case ConstraintProto::ConstraintCase::kRoutes:
         RETURN_IF_NOT_EMPTY(ValidateRoutesConstraint(model, ct));
+        break;
+      case ConstraintProto::ConstraintCase::kInterval:
+        support_enforcement = true;
+        RETURN_IF_NOT_EMPTY(ValidateIntervalConstraint(model, ct));
+        break;
+      case ConstraintProto::ConstraintCase::kCumulative:
+        RETURN_IF_NOT_EMPTY(ValidateCumulativeConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kNoOverlap2D:
         RETURN_IF_NOT_EMPTY(ValidateNoOverlap2DConstraint(model, ct));
@@ -606,6 +693,8 @@ std::string ValidateCpModel(const CpModelProto& model) {
       case ConstraintProto::ConstraintCase::kReservoir:
         RETURN_IF_NOT_EMPTY(ValidateReservoirConstraint(model, ct));
         break;
+      case ConstraintProto::ConstraintCase::kDummyConstraint:
+        return "The dummy constraint should never appear in a model.";
       default:
         break;
     }
@@ -928,6 +1017,7 @@ class ConstraintChecker {
   }
 
   bool ElementConstraintIsFeasible(const ConstraintProto& ct) {
+    if (ct.element().vars().empty()) return false;
     const int index = Value(ct.element().index());
     return Value(ct.element().vars(index)) == Value(ct.element().target());
   }

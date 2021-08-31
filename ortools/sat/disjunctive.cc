@@ -601,29 +601,31 @@ bool DisjunctiveOverloadChecker::PropagateSubwindow(
           current_end, &critical_event, &optional_event, &available_energy);
 
       const int optional_task = window_[optional_event].task_index;
-      const IntegerValue optional_size_min = helper_->SizeMin(optional_task);
-      const IntegerValue window_start = window_[critical_event].time;
-      const IntegerValue window_end =
-          current_end + optional_size_min - available_energy - 1;
-      for (int event = critical_event; event < window_size; event++) {
-        const IntegerValue energy_min = theta_tree_.EnergyMin(event);
-        if (energy_min > 0) {
-          const int task = window_[event].task_index;
-          helper_->AddPresenceReason(task);
-          helper_->AddEnergyAfterReason(task, energy_min, window_start);
-          helper_->AddEndMaxReason(task, window_end);
-        }
-      }
-
-      helper_->AddEnergyAfterReason(optional_task, optional_size_min,
-                                    window_start);
-      helper_->AddEndMaxReason(optional_task, window_end);
 
       // If tasks shares the same presence literal, it is possible that we
       // already pushed this task absence.
       if (!helper_->IsAbsent(optional_task)) {
+        const IntegerValue optional_size_min = helper_->SizeMin(optional_task);
+        const IntegerValue window_start = window_[critical_event].time;
+        const IntegerValue window_end =
+            current_end + optional_size_min - available_energy - 1;
+        for (int event = critical_event; event < window_size; event++) {
+          const IntegerValue energy_min = theta_tree_.EnergyMin(event);
+          if (energy_min > 0) {
+            const int task = window_[event].task_index;
+            helper_->AddPresenceReason(task);
+            helper_->AddEnergyAfterReason(task, energy_min, window_start);
+            helper_->AddEndMaxReason(task, window_end);
+          }
+        }
+
+        helper_->AddEnergyAfterReason(optional_task, optional_size_min,
+                                      window_start);
+        helper_->AddEndMaxReason(optional_task, window_end);
+
         if (!helper_->PushTaskAbsence(optional_task)) return false;
       }
+
       theta_tree_.RemoveEvent(optional_event);
     }
   }
@@ -1085,7 +1087,10 @@ bool DisjunctiveNotLast::PropagateSubwindow() {
   for (const auto task_time : task_by_increasing_end_max) {
     const int t = task_time.task_index;
     const IntegerValue end_max = task_time.time;
-    DCHECK(!helper_->IsAbsent(t));
+
+    // We filtered absent task before, but it is possible that as we push
+    // bounds of optional tasks, more task become absent.
+    if (helper_->IsAbsent(t)) continue;
 
     // task_set_ contains all the tasks that must start before the end-max of t.
     // These are the only candidates that have a chance to decrease the end-max

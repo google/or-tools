@@ -1041,8 +1041,8 @@ void AddFullEncodingFromSearchBranching(const CpModelProto& model_proto,
     if (strategy.domain_reduction_strategy() ==
         DecisionStrategyProto::SELECT_MEDIAN_VALUE) {
       for (const int ref : strategy.variables()) {
+        if (!mapping->IsInteger(ref)) return;
         const IntegerVariable variable = mapping->Integer(PositiveRef(ref));
-        if (variable == kNoIntegerVariable) return;
         if (!integer_trail->IsFixed(variable)) {
           m->Add(FullyEncodeVariable(variable));
         }

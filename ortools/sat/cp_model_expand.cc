@@ -35,6 +35,19 @@ namespace operations_research {
 namespace sat {
 namespace {
 
+void AddXEqualYOrXEqualZero(int x_eq_y, int x, int y,
+                            PresolveContext* context) {
+  ConstraintProto* equality = context->working_model->add_constraints();
+  equality->add_enforcement_literal(x_eq_y);
+  equality->mutable_linear()->add_vars(x);
+  equality->mutable_linear()->add_coeffs(1);
+  equality->mutable_linear()->add_vars(y);
+  equality->mutable_linear()->add_coeffs(-1);
+  equality->mutable_linear()->add_domain(0);
+  equality->mutable_linear()->add_domain(0);
+  context->AddImplyInDomain(NegatedRef(x_eq_y), x, {0, 0});
+}
+
 void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
   if (ct->reservoir().min_level() > ct->reservoir().max_level()) {
     VLOG(1) << "Empty level domain in reservoir constraint.";
@@ -134,12 +147,74 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
   context->UpdateRuleStats("reservoir: expanded");
 }
 
+// a_ref spans across 0, b_ref does not.
+void ExpandIntDivWithOneAcrossZero(int a_ref, int b_ref, int div_ref,
+                                   PresolveContext* context) {
+  DCHECK_LT(context->MinOf(a_ref), 0);
+  DCHECK_GT(context->MaxOf(a_ref), 0);
+  DCHECK_GT(context->MinOf(b_ref), 0);
+
+  // Split the domain of a in two, controlled by a new literal.
+  const int a_is_positive = context->NewBoolVar();
+  context->AddImplyInDomain(a_is_positive, a_ref,
+                            {0, std::numeric_limits<int64_t>::max()});
+  context->AddImplyInDomain(NegatedRef(a_is_positive), a_ref,
+                            {std::numeric_limits<int64_t>::min(), -1});
+  const int pos_a_ref = context->NewIntVar({0, context->MaxOf(a_ref)});
+  AddXEqualYOrXEqualZero(a_is_positive, pos_a_ref, a_ref, context);
+
+  const int neg_a_ref = context->NewIntVar({context->MinOf(a_ref), 0});
+  AddXEqualYOrXEqualZero(NegatedRef(a_is_positive), neg_a_ref, a_ref, context);
+
+  // Create div with the positive part of a_ref.
+  const int pos_a_div = context->NewIntVar({0, context->MaxOf(div_ref)});
+  IntegerArgumentProto* pos_div =
+      context->working_model->add_constraints()->mutable_int_div();
+  pos_div->set_target(pos_a_div);
+  pos_div->add_vars(pos_a_ref);
+  pos_div->add_vars(b_ref);
+
+  // Create div with the negative part of a_ref.
+  const int neg_a_div = context->NewIntVar({context->MinOf(div_ref), 0});
+  IntegerArgumentProto* neg_div =
+      context->working_model->add_constraints()->mutable_int_div();
+  neg_div->set_target(NegatedRef(neg_a_div));
+  neg_div->add_vars(NegatedRef(neg_a_ref));
+  neg_div->add_vars(b_ref);
+
+  // Link back to the original div.
+  LinearConstraintProto* lin =
+      context->working_model->add_constraints()->mutable_linear();
+  lin->add_vars(div_ref);
+  lin->add_coeffs(-1);
+  lin->add_vars(pos_a_div);
+  lin->add_coeffs(1);
+  lin->add_vars(neg_a_div);
+  lin->add_coeffs(1);
+  lin->add_domain(0);
+  lin->add_domain(0);
+}
+
 // This is not an "expansion" per say, but just a mandatory presolve step to
 // satisfy preconditions assumed by the rest of the code.
 void ExpandIntDiv(ConstraintProto* ct, PresolveContext* context) {
+  const int numerator = ct->int_div().vars(0);
   const int divisor = ct->int_div().vars(1);
+  const int target = ct->int_div().target();
   if (!context->IntersectDomainWith(divisor, Domain(0).Complement())) {
     return (void)context->NotifyThatModelIsUnsat();
+  }
+  DCHECK(context->MinOf(divisor) > 0 || context->MaxOf(divisor) < 0);
+  if (context->MinOf(numerator) < 0 && context->MaxOf(numerator) > 0) {
+    if (context->MinOf(divisor) > 0) {
+      ExpandIntDivWithOneAcrossZero(numerator, divisor, target, context);
+    } else {
+      ExpandIntDivWithOneAcrossZero(NegatedRef(numerator), NegatedRef(divisor),
+                                    target, context);
+    }
+    ct->Clear();
+    context->UpdateRuleStats(
+        "int_div: expanded division with numerator spanning across zero");
   }
 }
 
@@ -159,7 +234,8 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
   // Compute domains of var / mod_var.
   // TODO(user): implement Domain.ContinuousDivisionBy(domain).
   const int div_var =
-      context->NewIntVar(Domain(var_lb / mod_ub, var_ub / mod_lb));
+      context->NewIntVar(Domain(std::min(var_lb / mod_ub, var_lb / mod_lb),
+                                std::max(var_ub / mod_lb, var_ub / mod_ub)));
 
   auto add_enforcement_literal_if_needed = [&]() {
     if (ct->enforcement_literal_size() == 0) return;
@@ -169,7 +245,7 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
     last->add_enforcement_literal(literal);
   };
 
-  // div = var / mod.
+  // div_var = var / mod_var.
   IntegerArgumentProto* const div_proto =
       context->working_model->add_constraints()->mutable_int_div();
   div_proto->set_target(div_var);
@@ -193,9 +269,12 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
     add_enforcement_literal_if_needed();
   } else {
     // Create prod_var = div_var * mod.
-    const int prod_var = context->NewIntVar(
-        context->DomainOf(div_var).ContinuousMultiplicationBy(
-            context->DomainOf(mod_var)));
+    const Domain prod_domain =
+        context->DomainOf(div_var)
+            .ContinuousMultiplicationBy(context->DomainOf(mod_var))
+            .IntersectionWith(context->DomainOf(var).AdditionWith(
+                context->DomainOf(target_var).Negation()));
+    const int prod_var = context->NewIntVar(prod_domain);
     IntegerArgumentProto* const int_prod =
         context->working_model->add_constraints()->mutable_int_prod();
     int_prod->set_target(prod_var);
@@ -238,19 +317,6 @@ void ExpandIntProdWithBoolean(int bool_ref, int int_ref, int product_ref,
   zero->mutable_linear()->add_coeffs(1);
   zero->mutable_linear()->add_domain(0);
   zero->mutable_linear()->add_domain(0);
-}
-
-void AddXEqualYOrXEqualZero(int x_eq_y, int x, int y,
-                            PresolveContext* context) {
-  ConstraintProto* equality = context->working_model->add_constraints();
-  equality->add_enforcement_literal(x_eq_y);
-  equality->mutable_linear()->add_vars(x);
-  equality->mutable_linear()->add_coeffs(1);
-  equality->mutable_linear()->add_vars(y);
-  equality->mutable_linear()->add_coeffs(-1);
-  equality->mutable_linear()->add_domain(0);
-  equality->mutable_linear()->add_domain(0);
-  context->AddImplyInDomain(NegatedRef(x_eq_y), x, {0, 0});
 }
 
 // a_ref spans across 0, b_ref does not.
@@ -824,16 +890,16 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
     const int64_t initial_state = proto.starting_state();
     for (const int64_t final_state : proto.final_states()) {
       if (initial_state == final_state) {
-        context->UpdateRuleStats("automaton: empty constraint");
+        context->UpdateRuleStats("automaton: empty and trivially feasible");
         ct->Clear();
         return;
       }
     }
-    // The initial state is not in the final state. The model is unsat.
-    return (void)context->NotifyThatModelIsUnsat();
+    return (void)context->NotifyThatModelIsUnsat(
+        "automaton: empty with an initial state not in the final states.");
   } else if (proto.transition_label_size() == 0) {
-    // Not transitions. The constraint is infeasible.
-    return (void)context->NotifyThatModelIsUnsat();
+    return (void)context->NotifyThatModelIsUnsat(
+        "automaton: non-empty with no transition.");
   }
 
   const int n = proto.vars_size();
@@ -919,7 +985,8 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
       if (!context->IntersectDomainWith(vars[time],
                                         Domain(transition_values.front()),
                                         &tmp_removed_values)) {
-        return (void)context->NotifyThatModelIsUnsat();
+        VLOG(1) << "Infeasible automaton.";
+        return;
       }
       in_encoding.clear();
       continue;
@@ -951,7 +1018,8 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
       encoding.clear();
       if (!context->IntersectDomainWith(vars[time], Domain::FromValues(s),
                                         &removed_values)) {
-        return (void)context->NotifyThatModelIsUnsat();
+        VLOG(1) << "Infeasible automaton.";
+        return;
       }
 
       // Fully encode the variable.
@@ -1038,12 +1106,12 @@ void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
           context->GetOrCreateVarValueEncoding(table.vars(i), value);
       clause.push_back(NegatedRef(literal));
     }
-    if (!clause.empty()) {
-      BoolArgumentProto* bool_or =
-          context->working_model->add_constraints()->mutable_bool_or();
-      for (const int lit : clause) {
-        bool_or->add_literals(lit);
-      }
+
+    // Note: if the clause is empty, then the model is infeasible.
+    BoolArgumentProto* bool_or =
+        context->working_model->add_constraints()->mutable_bool_or();
+    for (const int lit : clause) {
+      bool_or->add_literals(lit);
     }
   }
   context->UpdateRuleStats("table: expanded negated constraint");
@@ -1492,8 +1560,7 @@ void ExpandCpModel(PresolveContext* context) {
   // Clear the precedence cache.
   context->ClearPrecedenceCache();
 
-  const int num_constraints = context->working_model->constraints_size();
-  for (int i = 0; i < num_constraints; ++i) {
+  for (int i = 0; i < context->working_model->constraints_size(); ++i) {
     ConstraintProto* const ct = context->working_model->mutable_constraints(i);
     bool skip = false;
     switch (ct->constraint_case()) {

@@ -1344,7 +1344,7 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
 
   IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
   result.generate_cuts =
-      [z, x, y, integer_trail](
+      [z, x, y, model, integer_trail](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         const int64_t x_lb = integer_trail->LevelZeroLowerBound(x).value();
@@ -1371,47 +1371,31 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
 
         // Cut -z + x_coeff * x + y_coeff* y <= rhs
         auto try_add_above_cut =
-            [manager, z_lp_value, x_lp_value, y_lp_value, x, y, z, &lp_values](
-                int64_t x_coeff, int64_t y_coeff, int64_t rhs) {
+            [manager, z_lp_value, x_lp_value, y_lp_value, x, y, z, model,
+             &lp_values](int64_t x_coeff, int64_t y_coeff, int64_t rhs) {
               if (-z_lp_value + x_lp_value * x_coeff + y_lp_value * y_coeff >=
                   rhs + kMinCutViolation) {
-                LinearConstraint cut;
-                cut.vars.push_back(z);
-                cut.coeffs.push_back(IntegerValue(-1));
-                if (x_coeff != 0) {
-                  cut.vars.push_back(x);
-                  cut.coeffs.push_back(IntegerValue(x_coeff));
-                }
-                if (y_coeff != 0) {
-                  cut.vars.push_back(y);
-                  cut.coeffs.push_back(IntegerValue(y_coeff));
-                }
-                cut.lb = kMinIntegerValue;
-                cut.ub = IntegerValue(rhs);
-                manager->AddCut(cut, "PositiveProduct", lp_values);
+                LinearConstraintBuilder cut(model, /*lb=*/kMinIntegerValue,
+                                            /*ub=*/IntegerValue(rhs));
+                cut.AddTerm(z, IntegerValue(-1));
+                if (x_coeff != 0) cut.AddTerm(x, IntegerValue(x_coeff));
+                if (y_coeff != 0) cut.AddTerm(y, IntegerValue(y_coeff));
+                manager->AddCut(cut.Build(), "PositiveProduct", lp_values);
               }
             };
 
         // Cut -z + x_coeff * x + y_coeff* y >= rhs
         auto try_add_below_cut =
-            [manager, z_lp_value, x_lp_value, y_lp_value, x, y, z, &lp_values](
-                int64_t x_coeff, int64_t y_coeff, int64_t rhs) {
+            [manager, z_lp_value, x_lp_value, y_lp_value, x, y, z, model,
+             &lp_values](int64_t x_coeff, int64_t y_coeff, int64_t rhs) {
               if (-z_lp_value + x_lp_value * x_coeff + y_lp_value * y_coeff <=
                   rhs - kMinCutViolation) {
-                LinearConstraint cut;
-                cut.vars.push_back(z);
-                cut.coeffs.push_back(IntegerValue(-1));
-                if (x_coeff != 0) {
-                  cut.vars.push_back(x);
-                  cut.coeffs.push_back(IntegerValue(x_coeff));
-                }
-                if (y_coeff != 0) {
-                  cut.vars.push_back(y);
-                  cut.coeffs.push_back(IntegerValue(y_coeff));
-                }
-                cut.lb = IntegerValue(rhs);
-                cut.ub = kMaxIntegerValue;
-                manager->AddCut(cut, "PositiveProduct", lp_values);
+                LinearConstraintBuilder cut(model, /*lb=*/IntegerValue(rhs),
+                                            /*ub=*/kMaxIntegerValue);
+                cut.AddTerm(z, IntegerValue(-1));
+                if (x_coeff != 0) cut.AddTerm(x, IntegerValue(x_coeff));
+                if (y_coeff != 0) cut.AddTerm(y, IntegerValue(y_coeff));
+                manager->AddCut(cut.Build(), "PositiveProduct", lp_values);
               }
             };
 

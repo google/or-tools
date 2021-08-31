@@ -1475,6 +1475,12 @@ bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct) {
       context_->ModelIsUnsat()) {
     return false;
   }
+
+  if (ct->linear().domain().empty()) {
+    context_->UpdateRuleStats("linear: no domain");
+    return MarkConstraintAsFalse(ct);
+  }
+
   int64_t offset = 0;
   const bool result =
       CanonicalizeLinearExpressionInternal(*ct, ct->mutable_linear(), &offset);
@@ -2686,6 +2692,11 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
 bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
 
+  if (ct->element().vars().empty()) {
+    context_->UpdateRuleStats("element: empty array");
+    return context_->NotifyThatModelIsUnsat();
+  }
+
   const int index_ref = ct->element().index();
   const int target_ref = ct->element().target();
 
@@ -2876,7 +2887,8 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
   const bool unique_target =
       context_->VariableIsUniqueAndRemovable(target_ref) ||
       context_->IsFixed(target_ref);
-  if (all_included_in_target_domain && unique_target) {
+  if (all_included_in_target_domain && unique_target &&
+      target_ref != index_ref) {
     context_->UpdateRuleStats("element: trivial index domain reduction");
     context_->MarkVariableAsRemoved(target_ref);
     *(context_->mapping_model->add_constraints()) = *ct;
@@ -3552,12 +3564,27 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   CumulativeConstraintProto* proto = ct->mutable_cumulative();
   bool changed = false;
   int num_fixed_demands = 0;
+  const int64_t capacity_max = context_->MaxOf(proto->capacity());
+
+  // Checks the capacity of the constraint.
+  {
+    bool domain_changed = false;
+    if (!context_->IntersectDomainWith(
+            proto->capacity(), Domain(0, capacity_max), &domain_changed)) {
+      return true;
+    }
+    if (domain_changed) {
+      context_->UpdateRuleStats("cumulative: trimmed negative capacity");
+    }
+  }
 
   {
-    // Filter absent intervals, or zero demands.
+    // Filter absent intervals, or zero demands, or demand incompatible with the
+    // capacity.
     int new_size = 0;
     int num_zero_demand_removed = 0;
     int num_zero_size_removed = 0;
+    int num_incompatible_demands = 0;
     for (int i = 0; i < proto->intervals_size(); ++i) {
       if (context_->ConstraintIsInactive(proto->intervals(i))) continue;
 
@@ -3575,6 +3602,22 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
         // Size 0 intervals cannot contribute to a cumulative.
         num_zero_size_removed++;
         continue;
+      }
+
+      if (context_->MinOf(demand_ref) > capacity_max) {
+        if (context_->ConstraintIsOptional(proto->intervals(i))) {
+          if (!MarkConstraintAsFalse(
+                  context_->working_model->mutable_constraints(
+                      proto->intervals(i)))) {
+            return true;
+          }
+          num_incompatible_demands++;
+          context_->UpdateConstraintVariableUsage(proto->intervals(i));
+          continue;
+        } else {  // Interval is performed.
+          return context_->NotifyThatModelIsUnsat(
+              "cumulative: performed demand exceeds capacity.");
+        }
       }
 
       proto->set_intervals(new_size, proto->intervals(i));
@@ -3603,6 +3646,28 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     if (num_zero_size_removed > 0) {
       context_->UpdateRuleStats(
           "cumulative: removed intervals with a size of zero");
+    }
+    if (num_incompatible_demands > 0) {
+      context_->UpdateRuleStats(
+          "cumulative: removed intervals demands greater than the capacity");
+    }
+  }
+
+  // Checks the compatibility of demands w.r.t. the capacity.
+  {
+    for (int i = 0; i < proto->demands_size(); ++i) {
+      const int interval = proto->intervals(i);
+      const int demand_ref = proto->demands(i);
+      if (context_->ConstraintIsOptional(interval)) continue;
+      bool domain_changed = false;
+      if (!context_->IntersectDomainWith(demand_ref, {0, capacity_max},
+                                         &domain_changed)) {
+        return true;
+      }
+      if (domain_changed) {
+        context_->UpdateRuleStats(
+            "cumulative: fit demand in [0..capacity_max]");
+      }
     }
   }
 
@@ -3639,8 +3704,8 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     }
   }
 
-  // TODO(user): move the algorithmic part of what we do below in a separate
-  // function to unit test it more properly.
+  // TODO(user): move the algorithmic part of what we do below in a
+  // separate function to unit test it more properly.
   {
     // Build max load profiles.
     std::map<int64_t, int64_t> time_to_demand_deltas;
@@ -3681,8 +3746,8 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     // cannot contribute to a conflict. We can safely remove them.
     //
     // This is an extension of the presolve rule from
-    // "Presolving techniques and linear relaxations for cumulative scheduling"
-    // PhD dissertation by Stefan Heinz, ZIB.
+    // "Presolving techniques and linear relaxations for cumulative
+    // scheduling" PhD dissertation by Stefan Heinz, ZIB.
     int new_size = 0;
     for (int i = 0; i < proto->intervals_size(); ++i) {
       const int index = proto->intervals(i);
@@ -3691,11 +3756,11 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
 
       // In the cumulative, if start_min == end_max, the interval is of size
       // zero and we can just ignore it. If the model is unsat or the interval
-      // must be absent (start_min > end_max), this should be dealt with at the
-      // interval constraint level and we can just remove it from here.
+      // must be absent (start_min > end_max), this should be dealt with at
+      // the interval constraint level and we can just remove it from here.
       //
-      // Note that currently, the interpretation for interval of length zero is
-      // different for the no-overlap constraint.
+      // Note that currently, the interpretation for interval of length zero
+      // is different for the no-overlap constraint.
       if (start_min >= end_max) continue;
 
       // Note that by construction, both point are in the map. The formula
@@ -3777,8 +3842,8 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
         proto->set_demands(i, context_->GetOrCreateConstantVar(demand / gcd));
       }
 
-      // In this case, since the demands are fixed, the energy is linear and we
-      // don't need any user provided formula.
+      // In this case, since the demands are fixed, the energy is linear and
+      // we don't need any user provided formula.
       ct->mutable_cumulative()->clear_energies();
 
       const int64_t old_capacity = context_->MinOf(proto->capacity());
@@ -3798,7 +3863,6 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
 
   const int num_intervals = proto->intervals_size();
   const int capacity_ref = proto->capacity();
-  const int64_t capacity_max = context_->MaxOf(capacity_ref);
 
   bool with_start_view = false;
   std::vector<int> start_refs(num_intervals, -1);
@@ -6477,9 +6541,7 @@ CpModelPresolver::CpModelPresolver(PresolveContext* context,
 
   // Initialize the objective.
   context_->ReadObjectiveFromProto();
-  if (!context_->CanonicalizeObjective()) {
-    (void)context_->NotifyThatModelIsUnsat();
-  }
+  (void)context_->CanonicalizeObjective();
 
   // Note that we delay the call to UpdateNewConstraintsVariableUsage() for
   // efficiency during LNS presolve.
