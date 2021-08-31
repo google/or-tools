@@ -75,22 +75,33 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 
 
 %typemap(in) std::function<void(const std::string&)> %{
+  JavaVM* jvm;
+  jenv->GetJavaVM(&jvm);
+
+  // $input will be deleted once this function return.
+  // So we create a JNI global reference to keep it alive.
+  jobject $input_object = jenv->NewGlobalRef($input);
+  // and we wrap it in a GlobalRefGuard object which will call the
+  // JNI global reference deleter to avoid leak at destruction.
+  auto $input_guard = std::make_shared<GlobalRefGuard>(jenv, $input_object);
+
   jclass $input_object_class = jenv->GetObjectClass($input);
   if (nullptr == $input_object_class) return $null;
-
-
   jmethodID $input_method_id = jenv->GetMethodID(
     $input_object_class, "accept", "(Ljava/lang/Object;)V");
   assert($input_method_id != nullptr);
-  // $input will be deleted once this function return.
-  jobject $input_object = jenv->NewGlobalRef($input);
 
-  // Global JNI reference deleter
-  auto $input_guard = std::make_shared<GlobalRefGuard>(jenv, $input_object);
-  $1 = [jenv, $input_object, $input_method_id, $input_guard](
+  // When the lambda will be destroyed, input_guard's destructor will be call.
+  $1 = [jvm, $input_object, $input_method_id, $input_guard](
       const std::string& message) -> void {
-    return jenv->CallVoidMethod($input_object, $input_method_id,
-                                (jenv)->NewStringUTF(message.c_str()));
+        JNIEnv *jenv = NULL;
+        JavaVMAttachArgs args;
+        args.version = JNI_VERSION_1_2;
+        args.name = NULL;
+        args.group = NULL;
+        jvm->AttachCurrentThread((void**)&jenv, &args);
+        jenv->CallVoidMethod($input_object, $input_method_id, (jenv)->NewStringUTF(message.c_str()));
+        jvm->DetachCurrentThread();
   };
 %}
 %typemap(jni) std::function<void(const std::string&)> "jobject" // Type used in the JNI C.
