@@ -263,6 +263,9 @@ bool CpModelPresolver::PresolveBoolOr(ConstraintProto* ct) {
   return changed;
 }
 
+// Note this constraint does not update the constraint graph. Therefore, it
+// assumes that the constraint being marked as false is the constraint being
+// presolved.
 ABSL_MUST_USE_RESULT bool CpModelPresolver::MarkConstraintAsFalse(
     ConstraintProto* ct) {
   if (HasEnforcementLiteral(*ct)) {
@@ -3606,13 +3609,14 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
 
       if (context_->MinOf(demand_ref) > capacity_max) {
         if (context_->ConstraintIsOptional(proto->intervals(i))) {
-          if (!MarkConstraintAsFalse(
-                  context_->working_model->mutable_constraints(
-                      proto->intervals(i)))) {
+          ConstraintProto* interval_ct =
+              context_->working_model->mutable_constraints(proto->intervals(i));
+          DCHECK_EQ(interval_ct->enforcement_literal_size(), 1);
+          const int literal = interval_ct->enforcement_literal(0);
+          if (!context_->SetLiteralToFalse(literal)) {
             return true;
           }
           num_incompatible_demands++;
-          context_->UpdateConstraintVariableUsage(proto->intervals(i));
           continue;
         } else {  // Interval is performed.
           return context_->NotifyThatModelIsUnsat(
