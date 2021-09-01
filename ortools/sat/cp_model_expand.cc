@@ -979,12 +979,9 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
 
     std::vector<int> tuple_literals;
     if (transition_values.size() == 1) {
-      bool tmp_removed_values = false;
       tuple_literals.push_back(context->GetOrCreateConstantVar(1));
-      CHECK_EQ(reachable_states[time + 1].size(), 1);
       if (!context->IntersectDomainWith(vars[time],
-                                        Domain(transition_values.front()),
-                                        &tmp_removed_values)) {
+                                        Domain(transition_values.front()))) {
         VLOG(1) << "Infeasible automaton.";
         return;
       }

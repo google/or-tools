@@ -91,7 +91,7 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
     $input_object_class, "accept", "(Ljava/lang/Object;)V");
   assert($input_method_id != nullptr);
 
-  // When the lambda will be destroyed, input_guard's destructor will be call.
+  // When the lambda will be destroyed, input_guard's destructor will be called.
   $1 = [jvm, $input_object, $input_method_id, $input_guard](
       const std::string& message) -> void {
         JNIEnv *jenv = NULL;

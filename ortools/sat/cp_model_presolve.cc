@@ -530,6 +530,7 @@ bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
   int64_t infered_min = std::numeric_limits<int64_t>::min();
   int64_t infered_max = std::numeric_limits<int64_t>::min();
   bool contains_target_ref = false;
+  bool contains_negated_target_ref = false;
   std::set<int> used_ref;
   int new_size = 0;
   for (const int ref : ct->int_max().vars()) {
@@ -538,6 +539,17 @@ bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
     if (gtl::ContainsKey(used_ref, NegatedRef(ref)) ||
         ref == NegatedRef(target_ref)) {
       infered_min = std::max(infered_min, int64_t{0});
+    }
+    if (ref == NegatedRef(target_ref)) {
+      // x must be non-negative.
+      // It can be positive if they are other terms, otherwise it must be zero.
+      // TODO(user): more presolve in this case?
+      contains_negated_target_ref = true;
+      context_->UpdateRuleStats("int_max: x = max(-x, ...)");
+      if (!context_->IntersectDomainWith(
+              target_ref, {0, std::numeric_limits<int64_t>::max()})) {
+        return false;
+      }
     }
     used_ref.insert(ref);
     ct->mutable_int_max()->set_vars(new_size++, ref);
@@ -548,6 +560,7 @@ bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
     context_->UpdateRuleStats("int_max: removed dup");
   }
   ct->mutable_int_max()->mutable_vars()->Truncate(new_size);
+
   if (contains_target_ref) {
     context_->UpdateRuleStats("int_max: x = max(x, ...)");
     for (const int ref : ct->int_max().vars()) {
@@ -584,7 +597,10 @@ bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
   // If the target is only used here and if
   // infered_domain ∩ [kint64min, target_ub] ⊂ target_domain
   // then the constraint is really max(...) <= target_ub and we can simplify it.
-  if (context_->VariableIsUniqueAndRemovable(target_ref)) {
+  //
+  // This is not as easy if x = max(-x, ...) so we skip this case.
+  if (context_->VariableIsUniqueAndRemovable(target_ref) &&
+      !contains_negated_target_ref) {
     const Domain& target_domain = context_->DomainOf(target_ref);
     if (infered_domain
             .IntersectionWith(Domain(std::numeric_limits<int64_t>::min(),

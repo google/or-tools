@@ -187,6 +187,51 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
   return false;
 }
 
+int64_t MinOfRef(const CpModelProto& model, int ref) {
+  const IntegerVariableProto& var_proto = model.variables(PositiveRef(ref));
+  if (RefIsPositive(ref)) {
+    return var_proto.domain(0);
+  } else {
+    return -var_proto.domain(var_proto.domain_size() - 1);
+  }
+}
+
+int64_t MaxOfRef(const CpModelProto& model, int ref) {
+  const IntegerVariableProto& var_proto = model.variables(PositiveRef(ref));
+  if (RefIsPositive(ref)) {
+    return var_proto.domain(var_proto.domain_size() - 1);
+  } else {
+    return -var_proto.domain(0);
+  }
+}
+
+template <class LinearExpressionProto>
+int64_t MaxOfExpression(const CpModelProto& model,
+                        const LinearExpressionProto& proto) {
+  int64_t sum_max = 0;
+  for (int i = 0; i < proto.vars_size(); ++i) {
+    const int ref = proto.vars(i);
+    const int64_t coeff = proto.coeffs(i);
+    sum_max =
+        CapAdd(sum_max, coeff >= 0 ? CapProd(MaxOfRef(model, ref), coeff)
+                                   : CapProd(MinOfRef(model, ref), coeff));
+  }
+
+  return sum_max;
+}
+
+int64_t IntervalSizeMax(const CpModelProto& model, int interval_index) {
+  DCHECK_EQ(ConstraintProto::ConstraintCase::kInterval,
+            model.constraints(interval_index).constraint_case());
+  const IntervalConstraintProto& proto =
+      model.constraints(interval_index).interval();
+  if (proto.has_size_view()) {
+    return MaxOfExpression(model, proto.size_view());
+  } else {
+    return MaxOfRef(model, proto.size());
+  }
+}
+
 std::string ValidateLinearExpression(const CpModelProto& model,
                                      const LinearExpressionProto& expr) {
   if (expr.coeffs_size() != expr.vars_size()) {
@@ -445,6 +490,17 @@ std::string ValidateCumulativeConstraint(const CpModelProto& model,
     }
   }
 
+  int64_t sum_max_demands = 0;
+  for (const int demand_ref : ct.cumulative().demands()) {
+    const int64_t demand_max = MaxOfRef(model, demand_ref);
+    DCHECK_GE(demand_max, 0);
+    sum_max_demands = CapAdd(sum_max_demands, demand_max);
+    if (sum_max_demands == std::numeric_limits<int64_t>::max()) {
+      return "The sum of max demands do not fit on an int64_t in constraint: " +
+             ProtobufDebugString(ct);
+    }
+  }
+
   for (const LinearExpressionProto& expr : ct.cumulative().energies()) {
     const std::string error = ValidateLinearExpression(model, expr);
     if (!error.empty()) {
@@ -463,6 +519,21 @@ std::string ValidateNoOverlap2DConstraint(const CpModelProto& model,
   if (size_x != size_y) {
     return absl::StrCat("The two lists of intervals must have the same size: ",
                         ProtobufShortDebugString(ct));
+  }
+
+  // Checks if the sum of max areas of each rectangle can overflow.
+  int64_t sum_max_areas = 0;
+  for (int i = 0; i < ct.no_overlap_2d().x_intervals().size(); ++i) {
+    const int64_t max_size_x =
+        IntervalSizeMax(model, ct.no_overlap_2d().x_intervals(i));
+    const int64_t max_size_y =
+        IntervalSizeMax(model, ct.no_overlap_2d().y_intervals(i));
+    sum_max_areas = CapAdd(sum_max_areas, CapProd(max_size_x, max_size_y));
+    if (sum_max_areas == std::numeric_limits<int64_t>::max()) {
+      return "Integer overflow when summing all areas in "
+             "constraint: " +
+             ProtobufDebugString(ct);
+    }
   }
   return "";
 }

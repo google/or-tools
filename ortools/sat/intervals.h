@@ -546,6 +546,7 @@ inline void SchedulingConstraintHelper::AddSizeMinReason(
     int t, IntegerValue lower_bound) {
   AddOtherReason(t);
   DCHECK(!IsAbsent(t));
+  if (lower_bound <= 0) return;
   AddGenericReason(sizes_[t].Negated(), -lower_bound, minus_ends_[t],
                    starts_[t]);
 }

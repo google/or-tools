@@ -190,6 +190,10 @@ void PostsolveLinear(const ConstraintProto& ct,
 
 // We assign any non fixed lhs variables to their minimum value. Then we assign
 // the target to the max. This should always be feasible.
+//
+// Note(user): Our heuristic is not feasible if x = max(-x, ...) but we made
+// sure we don't output such int_max here. Alternatively we could probably fix
+// the code here.
 void PostsolveIntMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
   int64_t m = std::numeric_limits<int64_t>::min();
   for (const int ref : ct.int_max().vars()) {

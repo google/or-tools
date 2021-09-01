@@ -151,12 +151,23 @@ bool SchedulingConstraintHelper::UpdateCachedValues(int t) {
 
   IntegerValue smin = integer_trail_->LowerBound(starts_[t]);
   IntegerValue smax = integer_trail_->UpperBound(starts_[t]);
-  IntegerValue dmin = integer_trail_->LowerBound(sizes_[t]);
-  IntegerValue dmax = integer_trail_->UpperBound(sizes_[t]);
   IntegerValue emin = integer_trail_->LowerBound(ends_[t]);
   IntegerValue emax = integer_trail_->UpperBound(ends_[t]);
 
+  // We take the max for the corner case where the size of an optional interval
+  // is used elsewhere and has a domain with negative value.
+  //
+  // TODO(user): maybe we should just disallow size with a negative domain, but
+  // is is harder to enforce if we have a linear expression for size.
+  IntegerValue dmin =
+      std::max(IntegerValue(0), integer_trail_->LowerBound(sizes_[t]));
+  IntegerValue dmax = integer_trail_->UpperBound(sizes_[t]);
+
   // Detect first if we have a conflict using the relation start + size = end.
+  if (dmax < 0) {
+    AddSizeMaxReason(t, dmax);
+    return PushTaskAbsence(t);
+  }
   if (smin + dmin - emax > 0) {
     ClearReason();
     AddStartMinReason(t, smin);
