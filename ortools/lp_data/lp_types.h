@@ -208,6 +208,9 @@ enum class VariableStatus : int8_t {
   AT_UPPER_BOUND,
   // Only possible status of an UNCONSTRAINED non-basic variable.
   // Its value should be zero.
+  //
+  // Note that during crossover, this status is relaxed, and any variable that
+  // can currently move in both directions can be marked as free.
   FREE,
 };
 

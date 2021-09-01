@@ -58,8 +58,17 @@ class VariableValues {
   // function and it is up to the client to call RecomputeBasicVariableValues().
   void SetNonBasicVariableValueFromStatus(ColIndex col);
 
-  // Calls SetNonBasicVariableValueFromStatus() on all non-basic variables.
-  void ResetAllNonBasicVariableValues();
+  // Calls SetNonBasicVariableValueFromStatus() on all non-basic variables. We
+  // accept any size for free_initial_values, for columns col that are valid
+  // indices, free_initial_values[col] will be used instead of 0.0 for a free
+  // column. If free_initial_values is empty, then we have the default behavior
+  // of starting at zero for all FREE variables.
+  //
+  // Note(user): It is okay to always use the same value to reset a FREE
+  // variable because as soon as a FREE variable value is modified, this
+  // variable shouldn't be FREE anymore. It will either move to a bound or enter
+  // the basis, these are the only options.
+  void ResetAllNonBasicVariableValues(const DenseRow& free_initial_values);
 
   // Recomputes the value of the basic variables from the non-basic ones knowing
   // that the linear program matrix A times the variable values vector must be

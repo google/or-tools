@@ -55,9 +55,8 @@ void VariableValues::SetNonBasicVariableValueFromStatus(ColIndex col) {
       variable_values_[col] = upper_bounds[col];
       break;
     case VariableStatus::FREE:
-      DCHECK_EQ(-kInfinity, lower_bounds[col]);
-      DCHECK_EQ(kInfinity, upper_bounds[col]);
-      variable_values_[col] = 0.0;
+      LOG(DFATAL) << "SetNonBasicVariableValueFromStatus() shouldn't "
+                  << "be called on a FREE variable.";
       break;
     case VariableStatus::BASIC:
       LOG(DFATAL) << "SetNonBasicVariableValueFromStatus() shouldn't "
@@ -68,7 +67,8 @@ void VariableValues::SetNonBasicVariableValueFromStatus(ColIndex col) {
   // get a compile-time error if a value is missing.
 }
 
-void VariableValues::ResetAllNonBasicVariableValues() {
+void VariableValues::ResetAllNonBasicVariableValues(
+    const DenseRow& free_initial_value) {
   const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
   const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
   const VariableStatusRow& statuses = variables_info_.GetStatusRow();
@@ -85,7 +85,8 @@ void VariableValues::ResetAllNonBasicVariableValues() {
         variable_values_[col] = upper_bounds[col];
         break;
       case VariableStatus::FREE:
-        variable_values_[col] = 0.0;
+        variable_values_[col] =
+            col < free_initial_value.size() ? free_initial_value[col] : 0.0;
         break;
       case VariableStatus::BASIC:
         break;

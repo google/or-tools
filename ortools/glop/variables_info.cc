@@ -160,8 +160,8 @@ void VariablesInfo::InitializeFromBasisState(ColIndex first_slack_col,
   }
 }
 
-int VariablesInfo::CorrectBasicStatus(const RowToColMapping& basis,
-                                      const DenseRow& starting_values) {
+int VariablesInfo::ChangeUnusedBasicVariablesToFree(
+    const RowToColMapping& basis) {
   const ColIndex num_cols = lower_bounds_.size();
   is_basic_.ClearAndResize(num_cols);
   for (const ColIndex col : basis) {
@@ -171,23 +171,40 @@ int VariablesInfo::CorrectBasicStatus(const RowToColMapping& basis,
   for (ColIndex col(0); col < num_cols; ++col) {
     if (!is_basic_[col] && variable_status_[col] == VariableStatus::BASIC) {
       ++num_no_longer_in_basis;
-      if (col < starting_values.size() &&
-          variable_type_[col] == VariableType::UPPER_AND_LOWER_BOUNDED) {
-        const Fractional diff_ub =
-            std::abs(upper_bounds_[col] - starting_values[col]);
-        const Fractional diff_lb =
-            std::abs(lower_bounds_[col] - starting_values[col]);
-        if (diff_lb < diff_ub) {
-          UpdateToNonBasicStatus(col, VariableStatus::AT_LOWER_BOUND);
-        } else {
-          UpdateToNonBasicStatus(col, VariableStatus::AT_UPPER_BOUND);
-        }
+      if (variable_type_[col] == VariableType::FIXED_VARIABLE) {
+        UpdateToNonBasicStatus(col, VariableStatus::FIXED_VALUE);
       } else {
-        UpdateToNonBasicStatus(col, DefaultVariableStatus(col));
+        UpdateToNonBasicStatus(col, VariableStatus::FREE);
       }
     }
   }
   return num_no_longer_in_basis;
+}
+
+int VariablesInfo::SnapFreeVariablesToBound(Fractional distance,
+                                            const DenseRow& starting_values) {
+  int num_changes = 0;
+  const ColIndex num_cols = lower_bounds_.size();
+  for (ColIndex col(0); col < num_cols; ++col) {
+    if (variable_status_[col] != VariableStatus::FREE) continue;
+    if (variable_type_[col] == VariableType::UNCONSTRAINED) continue;
+    const Fractional value =
+        col < starting_values.size() ? starting_values[col] : 0.0;
+    const Fractional diff_ub = upper_bounds_[col] - value;
+    const Fractional diff_lb = value - lower_bounds_[col];
+    if (diff_lb <= diff_ub) {
+      if (diff_lb <= distance) {
+        ++num_changes;
+        UpdateToNonBasicStatus(col, VariableStatus::AT_LOWER_BOUND);
+      }
+    } else {
+      if (diff_ub <= distance) {
+        ++num_changes;
+        UpdateToNonBasicStatus(col, VariableStatus::AT_UPPER_BOUND);
+      }
+    }
+  }
+  return num_changes;
 }
 
 void VariablesInfo::InitializeToDefaultStatus() {

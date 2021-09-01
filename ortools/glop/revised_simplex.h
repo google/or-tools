@@ -155,8 +155,8 @@ class RevisedSimplex {
   void LoadStateForNextSolve(const BasisState& state);
 
   // Advanced usage. While constructing the initial basis, if this is called
-  // then we will use these values to decide the status of the BASIC variables
-  // that are not kept in the initial basis.
+  // then we will use these values as the initial starting value for the FREE
+  // variables.
   void SetStartingVariableValuesForNextSolve(const DenseRow& values);
 
   // Advanced usage. Tells the next Solve() that the matrix inside the linear

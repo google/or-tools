@@ -80,16 +80,28 @@ class VariablesInfo {
   void InitializeFromBasisState(ColIndex first_slack, ColIndex num_new_cols,
                                 const BasisState& state);
 
-  // Resets to the default status any column with a BASIC status not listed in
-  // the basis. Returns their number.
+  // Changes to the FREE status any column with a BASIC status not listed in
+  // the basis. Returns their number. Also makes sure all the columns listed in
+  // basis are marked as basic. Note that if a variable is fixed, we set its
+  // status to FIXED_VALUE not FREE.
+  int ChangeUnusedBasicVariablesToFree(const RowToColMapping& basis);
+
+  // Loops over all the free variables, and if such a variable has bounds and
+  // its starting value is closer to its closest bound than the given distance,
+  // change the status to move this variable to that bound. Returns the number
+  // of changes. The variable for which starting_values is not provided are
+  // considered at zero.
   //
-  // If starting_values is provided, then instead of the default status, we
-  // will use the bounds closest to starting_values[col] for the BASIC variable
-  // not in the basic.
+  // This is mainly useful if non-zero starting values are provided. It allows
+  // to move all the variables close to their bounds at once instead of having
+  // to move them one by one with simplex pivots later. Of course, by doing that
+  // we usually introduce a small primal infeasibility that might need
+  // correction.
   //
-  // Also makes sure all the column listed in basis are marked as basic.
-  int CorrectBasicStatus(const RowToColMapping& basis,
-                         const DenseRow& starting_values);
+  // If one uses a large distance, then all such variables will start at their
+  // bound if they have one.
+  int SnapFreeVariablesToBound(Fractional distance,
+                               const DenseRow& starting_values);
 
   // Sets all variables status to their lowest magnitude bounds. Note that there
   // will be no basic variable after this is called.

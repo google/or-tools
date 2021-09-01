@@ -22,7 +22,7 @@ syntax = "proto2";
 
 package operations_research.glop;
 
-// next id = 64
+// next id = 65
 message GlopParameters {
 
   // Supported algorithms for scaling:
@@ -440,5 +440,23 @@ message GlopParameters {
   // messages can also be turned on by displaying logs at level 1 for the
   // relevant files.
   optional bool log_search_progress = 61 [default = false];
+
+  // If the starting basis contains FREE variable with bounds, we will move
+  // any such variable to their closer bounds if the distance is smaller than
+  // this parameter.
+  //
+  // The starting statuses can contains FREE variables with bounds, if a user
+  // set it like this externally. Also, any variable with an initial BASIC
+  // status that was not kept in the initial basis is marked as FREE before this
+  // step is applied.
+  //
+  // Note that by default a FREE variable is assumed to be zero unless a
+  // starting value was specified via SetStartingVariableValuesForNextSolve().
+  //
+  // TODO(user): Note that currently, at the end of the solve, some of these
+  // FREE variable with bounds and an interior point value might still be left
+  // in the final solution. We will need an extra step and parameter to clean
+  // that up if requested.
+  optional double crossover_bound_snapping_distance = 64 [default = inf];
 
 }

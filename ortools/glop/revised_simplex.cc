@@ -170,7 +170,6 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   // case we abort without resetting it, setting this allow us to still use the
   // previous state info, but we will double-check everything.
   solution_state_has_been_set_externally_ = true;
-  variable_starting_values_.clear();
 
   if (VLOG_IS_ON(1)) {
     ComputeNumberOfEmptyRows();
@@ -190,6 +189,13 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     LOG(INFO) << "The matrix has " << compact_matrix_.num_rows() << " rows, "
               << compact_matrix_.num_cols() << " columns, "
               << compact_matrix_.num_entries() << " entries.";
+
+    int num_free_variables = 0;
+    for (const VariableStatus status : variables_info_.GetStatusRow()) {
+      if (status == VariableStatus::FREE) ++num_free_variables;
+    }
+    LOG(INFO) << "Initial number of non-basic free variables: "
+              << num_free_variables;
   }
 
   // TODO(user): Avoid doing the first phase checks when we know from the
@@ -250,7 +256,8 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
         variables_info_.TransformToDualPhaseIProblem(
             reduced_costs_.GetDualFeasibilityTolerance(),
             reduced_costs_.GetReducedCosts());
-        variable_values_.ResetAllNonBasicVariableValues();
+        DenseRow zero;  // We want the FREE variables at zero here.
+        variable_values_.ResetAllNonBasicVariableValues(zero);
         variable_values_.RecomputeBasicVariableValues();
 
         // Optimize.
@@ -263,7 +270,8 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
         variables_info_.EndDualPhaseI(
             reduced_costs_.GetDualFeasibilityTolerance(),
             reduced_costs_.GetFullReducedCosts());
-        variable_values_.ResetAllNonBasicVariableValues();
+        variable_values_.ResetAllNonBasicVariableValues(
+            variable_starting_values_);
         variable_values_.RecomputeBasicVariableValues();
 
         // TODO(user): Note that if there was cost shifts, we just keep them
@@ -358,7 +366,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     //
     // Note(user): Currently, we never do both at the same time, so we could
     // be a bit faster here, but then this is quick anyway.
-    variable_values_.ResetAllNonBasicVariableValues();
+    variable_values_.ResetAllNonBasicVariableValues(variable_starting_values_);
     GLOP_RETURN_IF_ERROR(basis_factorization_.Refactorize());
     PermuteBasis();
     variable_values_.RecomputeBasicVariableValues();
@@ -514,6 +522,23 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   optimization_time_ = total_time_ - feasibility_time_;
   num_optimization_iterations_ = num_iterations_ - num_feasibility_iterations_;
 
+  // If some free (aka super-basic) variables are still left in the final
+  // solution, we display their number.
+  if (log_info) {
+    int num_super_basic = 0;
+    const VariableStatusRow& variable_statuses = variables_info_.GetStatusRow();
+    for (ColIndex col(0); col < num_cols_; ++col) {
+      if (variable_statuses[col] == VariableStatus::FREE) {
+        ++num_super_basic;
+      }
+    }
+    if (num_super_basic > 0) {
+      LOG(INFO) << "Num super-basic variables left in final solution: "
+                << num_super_basic;
+    }
+  }
+
+  variable_starting_values_.clear();
   DisplayAllStats();
   return Status::OK();
 }
@@ -1012,16 +1037,7 @@ Status RevisedSimplex::CreateInitialBasis() {
   // dual-feasible later by MakeBoxedVariableDualFeasible(), so it doesn't
   // really matter at which of their two finite bounds they start.
   variables_info_.InitializeToDefaultStatus();
-  variable_values_.ResetAllNonBasicVariableValues();
-
-  if (VLOG_IS_ON(1)) {
-    int num_free_variables = 0;
-    for (const VariableStatus status : variables_info_.GetStatusRow()) {
-      if (status == VariableStatus::FREE) ++num_free_variables;
-    }
-    VLOG(1) << "Number of free variables in the problem: "
-            << num_free_variables;
-  }
+  variable_values_.ResetAllNonBasicVariableValues(variable_starting_values_);
 
   // Start by using an all-slack basis.
   RowToColMapping basis(num_rows_, kInvalidCol);
@@ -1193,12 +1209,13 @@ Status RevisedSimplex::InitializeFirstBasis(const RowToColMapping& basis) {
   }
   DCHECK(BasisIsConsistent());
 
-  // TODO(user): Maybe return an error status if this is too high. Note however
-  // that if we want to do that, we need to reset variables_info_ to a
-  // consistent state.
-  variable_values_.ResetAllNonBasicVariableValues();
+  variable_values_.ResetAllNonBasicVariableValues(variable_starting_values_);
   variable_values_.RecomputeBasicVariableValues();
+
   if (VLOG_IS_ON(1)) {
+    // TODO(user): Maybe return an error status if this is too high. Note
+    // however that if we want to do that, we need to reset variables_info_ to a
+    // consistent state.
     const Fractional tolerance = parameters_.primal_feasibility_tolerance();
     if (variable_values_.ComputeMaximumPrimalResidual() > tolerance) {
       VLOG(1) << absl::StrCat(
@@ -1305,7 +1322,8 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
       } else if (only_change_is_new_cols && only_new_bounds) {
         variables_info_.InitializeFromBasisState(first_slack_col_, num_new_cols,
                                                  solution_state_);
-        variable_values_.ResetAllNonBasicVariableValues();
+        variable_values_.ResetAllNonBasicVariableValues(
+            variable_starting_values_);
 
         const ColIndex first_new_col(first_slack_col_ - num_new_cols);
         for (ColIndex& col_ref : basis_) {
@@ -1331,7 +1349,8 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
           if (!bounds_are_unchanged) {
             variables_info_.InitializeFromBasisState(
                 first_slack_col_, ColIndex(0), solution_state_);
-            variable_values_.ResetAllNonBasicVariableValues();
+            variable_values_.ResetAllNonBasicVariableValues(
+                variable_starting_values_);
             variable_values_.RecomputeBasicVariableValues();
           }
           solve_from_scratch = false;
@@ -1403,12 +1422,19 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
     if (solve_from_scratch) {
       basis_ = basis_factorization_.ComputeInitialBasis(candidates);
       const int num_super_basic =
-          variables_info_.CorrectBasicStatus(basis_, variable_starting_values_);
+          variables_info_.ChangeUnusedBasicVariablesToFree(basis_);
+      const int num_snapped = variables_info_.SnapFreeVariablesToBound(
+          parameters_.crossover_bound_snapping_distance(),
+          variable_starting_values_);
       if (log_info) {
         LOG(INFO) << "The initial basis did not use " << num_super_basic
                   << " BASIC columns from the initial state and used "
                   << (num_rows_ - (candidates.size() - num_super_basic))
                   << " slack variables that were not marked BASIC.";
+        if (num_snapped > 0) {
+          LOG(INFO) << num_snapped
+                    << " of the FREE variables where moved to their bound.";
+        }
       }
 
       if (InitializeFirstBasis(basis_).ok()) {
