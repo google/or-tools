@@ -17,7 +17,7 @@ The path must begin at the 'start' position, finish at the 'end' position,
 visit all boxes in order, and walk on each block in a 4x4x4 map exactly once.
 
 Admissible moves are one step in one of the 6 directions:
-  up, down, x+, x-, y+, y-
+  x+, x-, y+, y-, z+(up), z-(down)
 """
 from typing import Sequence
 
@@ -120,7 +120,7 @@ def escape_the_maze(params, output_proto):
 
     # Prints solution.
     if result == cp_model.OPTIMAL:
-        path = ['' for _ in range(counter)]
+        path = [''] * counter
         for x in range(size):
             for y in range(size):
                 for z in range(size):
@@ -129,11 +129,12 @@ def escape_the_maze(params, output_proto):
                     msg = f'({x}, {y}, {z})'
                     if position == start:
                         msg += ' [start]'
-                    if position == end:
+                    elif position == end:
                         msg += ' [end]'
-                    for b in range(len(boxes)):
-                        if position == boxes[b]:
-                            msg += f' [boxes {b}]'
+                    else:
+                        for b in range(len(boxes)):
+                            if position == boxes[b]:
+                                msg += f' [boxes {b}]'
                     path[rank] = msg
         print(path)
 

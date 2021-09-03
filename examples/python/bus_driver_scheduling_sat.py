@@ -33,7 +33,7 @@ from ortools.sat.python import cp_model
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string('output_proto_file', '',
+flags.DEFINE_string('output_proto', '',
                     'Output file to write the cp_model proto to.')
 flags.DEFINE_string('params', 'num_search_workers:8,log_search_progress:true',
                     'Sat solver parameters.')
@@ -1933,9 +1933,9 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
         model.Minimize(
             cp_model.LinearExpr.ScalProd(delay_literals, delay_weights))
 
-    if not minimize_drivers and FLAGS.output_proto_file:
-        print('Writing proto to %s' % FLAGS.output_proto_file)
-        with open(FLAGS.output_proto_file, 'w') as text_file:
+    if not minimize_drivers and FLAGS.output_proto:
+        print('Writing proto to %s' % FLAGS.output_proto)
+        with open(FLAGS.output_proto, 'w') as text_file:
             text_file.write(str(model))
 
     # Solve model.

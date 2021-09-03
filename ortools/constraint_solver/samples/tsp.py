@@ -15,7 +15,7 @@
 """Simple Travelling Salesman Problem.
 
 A description of the problem can be found here:
-http://en.wikipedia.org/wiki/Travelling_salesman_problem.
+http://en.wikipedia.org/wiki/Travelling_salesperson_problem.
 """
 
 # [START import]

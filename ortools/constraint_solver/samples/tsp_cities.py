@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # [START program]
-"""Simple travelling salesman problem between cities."""
+"""Simple Travelling Salesperson Problem (TSP) between cities."""
 
 # [START import]
 from ortools.constraint_solver import routing_enums_pb2

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2021 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,11 +14,10 @@
 """Simple unit tests for python/linear_solver.swig. Not exhaustive."""
 
 
-from google.protobuf import text_format
+import unittest
 from ortools.linear_solver import linear_solver_pb2
 from ortools.linear_solver import pywraplp
-import types
-import unittest
+from google.protobuf import text_format
 
 TEXT_MODEL = """
 variable {
@@ -42,6 +42,7 @@ constraint {
 
 
 class PyWrapLp(unittest.TestCase):
+
     def test_proto(self):
         input_proto = linear_solver_pb2.MPModelProto()
         text_format.Merge(TEXT_MODEL, input_proto)

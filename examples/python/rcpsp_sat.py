@@ -24,7 +24,7 @@ from ortools.sat.python import cp_model
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('input', '', 'Input file to parse and solve.')
-flags.DEFINE_string('output_proto_file', '',
+flags.DEFINE_string('output_proto', '',
                     'Output file to write the cp_model proto to.')
 flags.DEFINE_string('params', '', 'Sat solver parameters.')
 flags.DEFINE_bool('use_interval_makespan', True,
@@ -316,7 +316,7 @@ def SolveRcpsp(problem, proto_file, params):
 def main(_):
     rcpsp_parser = pywraprcpsp.RcpspParser()
     rcpsp_parser.ParseFile(FLAGS.input)
-    SolveRcpsp(rcpsp_parser.Problem(), FLAGS.output_proto_file, FLAGS.params)
+    SolveRcpsp(rcpsp_parser.Problem(), FLAGS.output_proto, FLAGS.params)
 
 
 if __name__ == '__main__':

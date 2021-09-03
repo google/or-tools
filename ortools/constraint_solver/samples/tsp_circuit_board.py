@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # [START program]
-"""Simple travelling salesman problem on a circuit board."""
+"""Simple Travelling Salesperson Problem (TSP) on a circuit board."""
 
 # [START import]
 import math
