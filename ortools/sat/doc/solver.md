@@ -3,6 +3,7 @@
 
 # Solving a CP-SAT model
 
+https://developers.google.com/optimization/
 
 <!--ts-->
    * [Solving a CP-SAT model](#solving-a-cp-sat-model)

@@ -3,6 +3,7 @@
 
 # Model manipulation
 
+https://developers.google.com/optimization/
 
 <!--ts-->
    * [Model manipulation](#model-manipulation)
@@ -23,6 +24,7 @@
 ## Introduction
 
 In all languages, the CpModel class is a thin wrapper around a
+[protocol buffer](http://developers.google.com/protocol-buffers/) object
 [cp_model.proto](../cp_model.proto).
 
 Some functionalities require using the cp_model protobuf directly. To write code

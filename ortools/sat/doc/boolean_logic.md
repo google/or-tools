@@ -3,6 +3,7 @@
 
 # Boolean logic recipes for the CP-SAT solver.
 
+https://developers.google.com/optimization/
 
 
 <!--ts-->

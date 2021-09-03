@@ -3,6 +3,7 @@
 
 # Integer arithmetic recipes for the CP-SAT solver.
 
+https://developers.google.com/optimization/
 
 <!--ts-->
    * [Integer arithmetic recipes for the CP-SAT solver.](#integer-arithmetic-recipes-for-the-cp-sat-solver)

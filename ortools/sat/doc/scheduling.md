@@ -3,6 +3,7 @@
 
 # Scheduling recipes for the CP-SAT solver.
 
+https://developers.google.com/optimization/
 
 <!--ts-->
    * [Scheduling recipes for the CP-SAT solver.](#scheduling-recipes-for-the-cp-sat-solver)

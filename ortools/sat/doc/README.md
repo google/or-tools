@@ -3,6 +3,7 @@
 
 # Using the CP-SAT solver
 
+https://developers.google.com/optimization/cp/cp_solver
 
 
 <!--ts-->
