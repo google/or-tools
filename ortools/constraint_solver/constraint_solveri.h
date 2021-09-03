@@ -1311,23 +1311,39 @@ class ChangeValue : public IntVarLocalSearchOperator {
 /// the services above (no direct manipulation of assignments).
 class PathOperator : public IntVarLocalSearchOperator {
  public:
+  /// Set of parameters used to configure how the neighnorhood is traversed.
+  struct IterationParameters {
+    /// Number of nodes needed to define a neighbor.
+    int number_of_base_nodes;
+    /// Skip paths which have been proven locally optimal. Note this might skip
+    /// neighbors when paths are not independent.
+    bool skip_locally_optimal_paths;
+    /// True if path ends should be considered when iterating over neighbors.
+    bool accept_path_end_base;
+    /// Callback returning an index such that if
+    /// c1 = start_empty_path_class(StartNode(p1)),
+    /// c2 = start_empty_path_class(StartNode(p2)),
+    /// p1 and p2 are path indices,
+    /// then if c1 == c2, p1 and p2 are equivalent if they are empty.
+    /// This is used to remove neighborhood symmetries on equivalent empty
+    /// paths; for instance if a node cannot be moved to an empty path, then all
+    /// moves moving the same node to equivalent empty paths will be skipped.
+    /// 'start_empty_path_class' can be nullptr in which case no symmetries will
+    /// be removed.
+    std::function<int(int64_t)> start_empty_path_class;
+  };
   /// Builds an instance of PathOperator from next and path variables.
-  /// 'number_of_base_nodes' is the number of nodes needed to define a
-  /// neighbor. 'start_empty_path_class' is a callback returning an index such
-  /// that if
-  /// c1 = start_empty_path_class(StartNode(p1)),
-  /// c2 = start_empty_path_class(StartNode(p2)),
-  /// p1 and p2 are path indices,
-  /// then if c1 == c2, p1 and p2 are equivalent if they are empty.
-  /// This is used to remove neighborhood symmetries on equivalent empty paths;
-  /// for instance if a node cannot be moved to an empty path, then all moves
-  /// moving the same node to equivalent empty paths will be skipped.
-  /// 'start_empty_path_class' can be nullptr in which case no symmetries will
-  /// be removed.
+  PathOperator(const std::vector<IntVar*>& next_vars,
+               const std::vector<IntVar*>& path_vars,
+               IterationParameters iteration_parameters);
   PathOperator(const std::vector<IntVar*>& next_vars,
                const std::vector<IntVar*>& path_vars, int number_of_base_nodes,
                bool skip_locally_optimal_paths, bool accept_path_end_base,
-               std::function<int(int64_t)> start_empty_path_class);
+               std::function<int(int64_t)> start_empty_path_class)
+      : PathOperator(
+            next_vars, path_vars,
+            {number_of_base_nodes, skip_locally_optimal_paths,
+             accept_path_end_base, std::move(start_empty_path_class)}) {}
   ~PathOperator() override {}
   virtual bool MakeNeighbor() = 0;
   void Reset() override;
@@ -1397,8 +1413,8 @@ class PathOperator : public IntVarLocalSearchOperator {
   const std::vector<int64_t>& path_starts() const { return path_starts_; }
   /// Returns the class of the path of the ith base node.
   int PathClass(int i) const {
-    return start_empty_path_class_ != nullptr
-               ? start_empty_path_class_(StartNode(i))
+    return iteration_parameters_.start_empty_path_class != nullptr
+               ? iteration_parameters_.start_empty_path_class(StartNode(i))
                : StartNode(i);
   }
 
@@ -1588,9 +1604,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   std::vector<bool> inactives_;
   bool just_started_;
   bool first_start_;
-  const bool accept_path_end_base_;
-  std::function<int(int64_t)> start_empty_path_class_;
-  bool skip_locally_optimal_paths_;
+  IterationParameters iteration_parameters_;
   bool optimal_paths_enabled_;
   std::vector<int> path_basis_;
   std::vector<bool> optimal_paths_;

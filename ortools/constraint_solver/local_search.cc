@@ -344,27 +344,22 @@ class DecrementValue : public ChangeValue {
 
 PathOperator::PathOperator(const std::vector<IntVar*>& next_vars,
                            const std::vector<IntVar*>& path_vars,
-                           int number_of_base_nodes,
-                           bool skip_locally_optimal_paths,
-                           bool accept_path_end_base,
-                           std::function<int(int64_t)> start_empty_path_class)
+                           IterationParameters iteration_parameters)
     : IntVarLocalSearchOperator(next_vars, true),
       number_of_nexts_(next_vars.size()),
       ignore_path_vars_(path_vars.empty()),
-      next_base_to_increment_(number_of_base_nodes),
-      base_nodes_(number_of_base_nodes),
-      base_alternatives_(number_of_base_nodes),
-      base_sibling_alternatives_(number_of_base_nodes),
-      end_nodes_(number_of_base_nodes),
-      base_paths_(number_of_base_nodes),
+      next_base_to_increment_(iteration_parameters.number_of_base_nodes),
+      base_nodes_(iteration_parameters.number_of_base_nodes),
+      base_alternatives_(iteration_parameters.number_of_base_nodes),
+      base_sibling_alternatives_(iteration_parameters.number_of_base_nodes),
+      end_nodes_(iteration_parameters.number_of_base_nodes),
+      base_paths_(iteration_parameters.number_of_base_nodes),
       just_started_(false),
       first_start_(true),
-      accept_path_end_base_(accept_path_end_base),
-      start_empty_path_class_(std::move(start_empty_path_class)),
-      skip_locally_optimal_paths_(skip_locally_optimal_paths),
+      iteration_parameters_(std::move(iteration_parameters)),
       optimal_paths_enabled_(false),
       alternative_index_(next_vars.size(), -1) {
-  DCHECK_GT(number_of_base_nodes, 0);
+  DCHECK_GT(iteration_parameters_.number_of_base_nodes, 0);
   if (!ignore_path_vars_) {
     AddVars(path_vars);
   }
@@ -377,7 +372,7 @@ PathOperator::PathOperator(const std::vector<IntVar*>& next_vars,
                                   ->solver()
                                   ->parameters()
                                   .skip_locally_optimal_paths())) {
-    skip_locally_optimal_paths_ = false;
+    iteration_parameters_.skip_locally_optimal_paths = false;
   }
 }
 
@@ -494,7 +489,7 @@ bool PathOperator::SwapActiveAndInactive(int64_t active, int64_t inactive) {
 }
 
 bool PathOperator::IncrementPosition() {
-  const int base_node_size = base_nodes_.size();
+  const int base_node_size = iteration_parameters_.number_of_base_nodes;
 
   if (!just_started_) {
     const int number_of_paths = path_starts_.size();
@@ -533,7 +528,9 @@ bool PathOperator::IncrementPosition() {
         base_alternatives_[i] = 0;
         base_sibling_alternatives_[i] = 0;
         base_nodes_[i] = OldNext(base_nodes_[i]);
-        if (accept_path_end_base_ || !IsPathEnd(base_nodes_[i])) break;
+        if (iteration_parameters_.accept_path_end_base ||
+            !IsPathEnd(base_nodes_[i]))
+          break;
       }
       base_alternatives_[i] = 0;
       base_sibling_alternatives_[i] = 0;
@@ -561,7 +558,8 @@ bool PathOperator::IncrementPosition() {
     // If all base nodes have been restarted, base nodes are moved to new paths.
     // First we mark the current paths as locally optimal if they have been
     // completely explored.
-    if (optimal_paths_enabled_ && skip_locally_optimal_paths_) {
+    if (optimal_paths_enabled_ &&
+        iteration_parameters_.skip_locally_optimal_paths) {
       if (path_basis_.size() > 1) {
         for (int i = 1; i < path_basis_.size(); ++i) {
           optimal_paths_[num_paths_ *
@@ -598,7 +596,7 @@ bool PathOperator::IncrementPosition() {
           base_nodes_[i] = path_starts_[0];
         }
       }
-      if (!skip_locally_optimal_paths_) return CheckEnds();
+      if (!iteration_parameters_.skip_locally_optimal_paths) return CheckEnds();
       // If the new paths have already been completely explored, we can
       // skip them from now on.
       if (path_basis_.size() > 1) {
@@ -648,7 +646,8 @@ void PathOperator::InitializePathStarts() {
     max_next = std::max(max_next, next);
   }
   // Update locally optimal paths.
-  if (optimal_paths_.empty() && skip_locally_optimal_paths_) {
+  if (optimal_paths_.empty() &&
+      iteration_parameters_.skip_locally_optimal_paths) {
     num_paths_ = 0;
     start_to_path_.clear();
     start_to_path_.resize(number_of_nexts_, -1);
@@ -660,7 +659,7 @@ void PathOperator::InitializePathStarts() {
     }
     optimal_paths_.resize(num_paths_ * num_paths_, false);
   }
-  if (skip_locally_optimal_paths_) {
+  if (iteration_parameters_.skip_locally_optimal_paths) {
     for (int i = 0; i < number_of_nexts_; ++i) {
       if (!has_prevs[i]) {
         int current = i;
@@ -686,9 +685,10 @@ void PathOperator::InitializePathStarts() {
   for (int i = 0; i < number_of_nexts_; ++i) {
     if (!has_prevs[i]) {
       if (use_empty_path_symmetry_breaker && IsPathEnd(OldNext(i))) {
-        if (start_empty_path_class_ != nullptr) {
-          if (empty_found[start_empty_path_class_(i)]) continue;
-          empty_found[start_empty_path_class_(i)] = true;
+        if (iteration_parameters_.start_empty_path_class != nullptr) {
+          if (empty_found[iteration_parameters_.start_empty_path_class(i)])
+            continue;
+          empty_found[iteration_parameters_.start_empty_path_class(i)] = true;
         }
       }
       new_path_starts.push_back(i);
@@ -708,7 +708,7 @@ void PathOperator::InitializePathStarts() {
       }
       node_paths[node] = i;
     }
-    for (int j = 0; j < base_nodes_.size(); ++j) {
+    for (int j = 0; j < iteration_parameters_.number_of_base_nodes; ++j) {
       // Always restart from first alternative.
       base_alternatives_[j] = 0;
       base_sibling_alternatives_[j] = 0;
@@ -737,7 +737,7 @@ void PathOperator::InitializePathStarts() {
       if (found) {
         new_index = index;
       }
-      for (int j = 0; j < base_nodes_.size(); ++j) {
+      for (int j = 0; j < iteration_parameters_.number_of_base_nodes; ++j) {
         if (base_paths_[j] == i && !gtl::ContainsKey(found_bases, j)) {
           found_bases.insert(j);
           base_paths_[j] = new_index;
@@ -767,13 +767,13 @@ void PathOperator::InitializeBaseNodes() {
   if (first_start_ || InitPosition()) {
     // Only do this once since the following starts will continue from the
     // preceding position
-    for (int i = 0; i < base_nodes_.size(); ++i) {
+    for (int i = 0; i < iteration_parameters_.number_of_base_nodes; ++i) {
       base_paths_[i] = 0;
       base_nodes_[i] = path_starts_[0];
     }
     first_start_ = false;
   }
-  for (int i = 0; i < base_nodes_.size(); ++i) {
+  for (int i = 0; i < iteration_parameters_.number_of_base_nodes; ++i) {
     // If base node has been made inactive, restart from path start.
     int64_t base_node = base_nodes_[i];
     if (RestartAtPathStartOnSynchronize() || IsInactive(base_node)) {
@@ -784,7 +784,7 @@ void PathOperator::InitializeBaseNodes() {
   }
   // Repair end_nodes_ in case some must be on the same path and are not anymore
   // (due to other operators moving these nodes).
-  for (int i = 1; i < base_nodes_.size(); ++i) {
+  for (int i = 1; i < iteration_parameters_.number_of_base_nodes; ++i) {
     if (OnSamePathAsPreviousBase(i) &&
         !OnSamePath(base_nodes_[i - 1], base_nodes_[i])) {
       const int64_t base_node = base_nodes_[i - 1];
@@ -793,7 +793,7 @@ void PathOperator::InitializeBaseNodes() {
       base_paths_[i] = base_paths_[i - 1];
     }
   }
-  for (int i = 0; i < base_nodes_.size(); ++i) {
+  for (int i = 0; i < iteration_parameters_.number_of_base_nodes; ++i) {
     base_alternatives_[i] = 0;
     base_sibling_alternatives_[i] = 0;
   }

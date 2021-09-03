@@ -1,5 +1,6 @@
 # Using the CP solver
 
+https://developers.google.com/optimization/cp/
 
 ## Documentation structure
 
