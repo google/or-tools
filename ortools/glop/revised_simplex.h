@@ -235,6 +235,44 @@ class RevisedSimplex {
   void SetIntegralityScale(ColIndex col, Fractional scale);
 
  private:
+  struct IterationStats : public StatsGroup {
+    IterationStats()
+        : StatsGroup("IterationStats"),
+          total("total", this),
+          normal("normal", this),
+          bound_flip("bound_flip", this),
+          refactorize("refactorize", this),
+          degenerate("degenerate", this),
+          num_dual_flips("num_dual_flips", this),
+          degenerate_run_size("degenerate_run_size", this) {}
+    TimeDistribution total;
+    TimeDistribution normal;
+    TimeDistribution bound_flip;
+    TimeDistribution refactorize;
+    TimeDistribution degenerate;
+    IntegerDistribution num_dual_flips;
+    IntegerDistribution degenerate_run_size;
+  };
+
+  struct RatioTestStats : public StatsGroup {
+    RatioTestStats()
+        : StatsGroup("RatioTestStats"),
+          bound_shift("bound_shift", this),
+          abs_used_pivot("abs_used_pivot", this),
+          abs_tested_pivot("abs_tested_pivot", this),
+          abs_skipped_pivot("abs_skipped_pivot", this),
+          direction_density("direction_density", this),
+          leaving_choices("leaving_choices", this),
+          num_perfect_ties("num_perfect_ties", this) {}
+    DoubleDistribution bound_shift;
+    DoubleDistribution abs_used_pivot;
+    DoubleDistribution abs_tested_pivot;
+    DoubleDistribution abs_skipped_pivot;
+    RatioDistribution direction_density;
+    IntegerDistribution leaving_choices;
+    IntegerDistribution num_perfect_ties;
+  };
+
   // Propagates parameters_ to all the other classes that need it.
   //
   // TODO(user): Maybe a better design is for them to have a reference to a
@@ -704,44 +742,8 @@ class RevisedSimplex {
   double last_deterministic_time_update_;
 
   // Statistics about the iterations done by Minimize().
-  struct IterationStats : public StatsGroup {
-    IterationStats()
-        : StatsGroup("IterationStats"),
-          total("total", this),
-          normal("normal", this),
-          bound_flip("bound_flip", this),
-          refactorize("refactorize", this),
-          degenerate("degenerate", this),
-          num_dual_flips("num_dual_flips", this),
-          degenerate_run_size("degenerate_run_size", this) {}
-    TimeDistribution total;
-    TimeDistribution normal;
-    TimeDistribution bound_flip;
-    TimeDistribution refactorize;
-    TimeDistribution degenerate;
-    IntegerDistribution num_dual_flips;
-    IntegerDistribution degenerate_run_size;
-  };
   IterationStats iteration_stats_;
 
-  struct RatioTestStats : public StatsGroup {
-    RatioTestStats()
-        : StatsGroup("RatioTestStats"),
-          bound_shift("bound_shift", this),
-          abs_used_pivot("abs_used_pivot", this),
-          abs_tested_pivot("abs_tested_pivot", this),
-          abs_skipped_pivot("abs_skipped_pivot", this),
-          direction_density("direction_density", this),
-          leaving_choices("leaving_choices", this),
-          num_perfect_ties("num_perfect_ties", this) {}
-    DoubleDistribution bound_shift;
-    DoubleDistribution abs_used_pivot;
-    DoubleDistribution abs_tested_pivot;
-    DoubleDistribution abs_skipped_pivot;
-    RatioDistribution direction_density;
-    IntegerDistribution leaving_choices;
-    IntegerDistribution num_perfect_ties;
-  };
   mutable RatioTestStats ratio_test_stats_;
 
   // Placeholder for all the function timing stats.
