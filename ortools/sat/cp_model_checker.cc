@@ -206,9 +206,24 @@ int64_t MaxOfRef(const CpModelProto& model, int ref) {
 }
 
 template <class LinearExpressionProto>
+int64_t MinOfExpression(const CpModelProto& model,
+                        const LinearExpressionProto& proto) {
+  int64_t sum_min = proto.offset();
+  for (int i = 0; i < proto.vars_size(); ++i) {
+    const int ref = proto.vars(i);
+    const int64_t coeff = proto.coeffs(i);
+    sum_min =
+        CapAdd(sum_min, coeff >= 0 ? CapProd(MinOfRef(model, ref), coeff)
+                                   : CapProd(MaxOfRef(model, ref), coeff));
+  }
+
+  return sum_min;
+}
+
+template <class LinearExpressionProto>
 int64_t MaxOfExpression(const CpModelProto& model,
                         const LinearExpressionProto& proto) {
-  int64_t sum_max = 0;
+  int64_t sum_max = proto.offset();
   for (int i = 0; i < proto.vars_size(); ++i) {
     const int ref = proto.vars(i);
     const int64_t coeff = proto.coeffs(i);
@@ -218,6 +233,18 @@ int64_t MaxOfExpression(const CpModelProto& model,
   }
 
   return sum_max;
+}
+
+int64_t IntervalSizeMin(const CpModelProto& model, int interval_index) {
+  DCHECK_EQ(ConstraintProto::ConstraintCase::kInterval,
+            model.constraints(interval_index).constraint_case());
+  const IntervalConstraintProto& proto =
+      model.constraints(interval_index).interval();
+  if (proto.has_size_view()) {
+    return MinOfExpression(model, proto.size_view());
+  } else {
+    return MinOfRef(model, proto.size());
+  }
 }
 
 int64_t IntervalSizeMax(const CpModelProto& model, int interval_index) {
@@ -230,6 +257,11 @@ int64_t IntervalSizeMax(const CpModelProto& model, int interval_index) {
   } else {
     return MaxOfRef(model, proto.size());
   }
+}
+
+Domain DomainOfRef(const CpModelProto& model, int ref) {
+  const Domain domain = ReadDomainFromProto(model.variables(PositiveRef(ref)));
+  return RefIsPositive(ref) ? domain : domain.Negation();
 }
 
 std::string ValidateLinearExpression(const CpModelProto& model,
@@ -501,11 +533,44 @@ std::string ValidateCumulativeConstraint(const CpModelProto& model,
     }
   }
 
-  for (const LinearExpressionProto& expr : ct.cumulative().energies()) {
+  int64_t sum_max_energies = 0;
+  for (int i = 0; i < ct.cumulative().intervals_size(); ++i) {
+    const int64_t demand_max = MaxOfRef(model, ct.cumulative().demands(i));
+    const int64_t size_max =
+        IntervalSizeMax(model, ct.cumulative().intervals(i));
+    sum_max_energies = CapAdd(sum_max_energies, CapProd(size_max, demand_max));
+    if (sum_max_energies == std::numeric_limits<int64_t>::max()) {
+      return "The sum of max energies (size * demand) do not fit on an int64_t "
+             "in constraint: " +
+             ProtobufDebugString(ct);
+    }
+  }
+
+  for (int i = 0; i < ct.cumulative().energies_size(); ++i) {
+    const LinearExpressionProto& expr = ct.cumulative().energies(i);
     const std::string error = ValidateLinearExpression(model, expr);
     if (!error.empty()) {
       return absl::StrCat(error, "in energy expression of constraint: ",
                           ProtobufShortDebugString(ct));
+    }
+
+    // The following check is quite loose, but it will catch gross mistakes like
+    // having an empty expression (= 0) with a non zero demand and non null
+    // interval.
+    const int interval = ct.cumulative().intervals(i);
+    const int64_t size_min = IntervalSizeMin(model, interval);
+    const int64_t size_max = IntervalSizeMax(model, interval);
+    const Domain product =
+        DomainOfRef(model, ct.cumulative().demands(i))
+            .ContinuousMultiplicationBy({size_min, size_max});
+    const int64_t energy_min = MinOfExpression(model, expr);
+    const int64_t energy_max = MaxOfExpression(model, expr);
+    if (product.IntersectionWith({energy_min, energy_max}).IsEmpty()) {
+      return absl::StrCat(
+          "The energy expression (with index ", i,
+          ") is not compatible with the product of the size of the interval, "
+          "and the demand in constraint: ",
+          ProtobufShortDebugString(ct));
     }
   }
 
@@ -631,6 +696,13 @@ std::string ValidateSearchStrategies(const CpModelProto& model) {
       if (!VariableReferenceIsValid(model, ref)) {
         return absl::StrCat("Invalid variable reference in strategy: ",
                             ProtobufShortDebugString(strategy));
+      }
+      if (drs == DecisionStrategyProto::SELECT_MEDIAN_VALUE &&
+          ReadDomainFromProto(model.variables(PositiveRef(ref))).Size() >
+              100000) {
+        return absl::StrCat("Variable #", PositiveRef(ref),
+                            " has a domain too large to be used in a"
+                            " SELECT_MEDIAN_VALUE value selection strategy");
       }
     }
     int previous_index = -1;

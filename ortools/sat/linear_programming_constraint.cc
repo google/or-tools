@@ -1688,6 +1688,9 @@ absl::int128 FloorRatio128(absl::int128 x, IntegerValue positive_div) {
 
 void LinearProgrammingConstraint::PreventOverflow(LinearConstraint* constraint,
                                                   int max_pow) {
+  // First, make all coefficient positive.
+  MakeAllCoefficientsPositive(constraint);
+
   // Compute the min/max possible partial sum. Note that we need to use the
   // level zero bounds here since we might use this cut after backtrack.
   double sum_min = std::min(0.0, ToDouble(-constraint->ub));
@@ -1696,12 +1699,12 @@ void LinearProgrammingConstraint::PreventOverflow(LinearConstraint* constraint,
   for (int i = 0; i < size; ++i) {
     const IntegerVariable var = constraint->vars[i];
     const double coeff = ToDouble(constraint->coeffs[i]);
-    const double prod1 =
-        coeff * ToDouble(integer_trail_->LevelZeroLowerBound(var));
-    const double prod2 =
-        coeff * ToDouble(integer_trail_->LevelZeroUpperBound(var));
-    sum_min += std::min(0.0, std::min(prod1, prod2));
-    sum_max += std::max(0.0, std::max(prod1, prod2));
+    sum_min +=
+        coeff *
+        std::min(0.0, ToDouble(integer_trail_->LevelZeroLowerBound(var)));
+    sum_max +=
+        coeff *
+        std::max(0.0, ToDouble(integer_trail_->LevelZeroUpperBound(var)));
   }
   const double max_value = std::max({sum_max, -sum_min, sum_max - sum_min});
 
@@ -2081,6 +2084,12 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
   PreventOverflow(&new_constraint);
   DCHECK(!PossibleOverflow(new_constraint));
   DCHECK(constraint_manager_.DebugCheckConstraint(new_constraint));
+
+  // Corner case where prevent overflow removed all terms.
+  if (new_constraint.vars.empty()) {
+    trail_->MutableConflict()->clear();
+    return new_constraint.ub >= 0;
+  }
 
   IntegerSumLE* cp_constraint =
       new IntegerSumLE({}, new_constraint.vars, new_constraint.coeffs,

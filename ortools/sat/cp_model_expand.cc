@@ -215,6 +215,11 @@ void ExpandIntDiv(ConstraintProto* ct, PresolveContext* context) {
     ct->Clear();
     context->UpdateRuleStats(
         "int_div: expanded division with numerator spanning across zero");
+  } else if (context->MaxOf(divisor) < 0) {
+    ct->mutable_int_div()->set_target(NegatedRef(target));
+    ct->mutable_int_div()->set_vars(1, NegatedRef(divisor));
+    context->UpdateRuleStats(
+        "int_div: inverse the sign of the target and the divisor");
   }
 }
 
@@ -642,7 +647,7 @@ void ExpandElementWithTargetEqualIndex(ConstraintProto* ct,
                                       Domain::FromValues(valid_indices))) {
       VLOG(1) << "No compatible variable domains in "
                  "ExpandElementWithTargetEqualIndex()";
-      return (void)context->NotifyThatModelIsUnsat();
+      return;
     }
     context->UpdateRuleStats("element: reduced index domain");
   }
@@ -774,7 +779,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
   // variables. Note that the element constraint is 0 based.
   if (!context->IntersectDomainWith(index_ref, Domain(0, size - 1))) {
     VLOG(1) << "Empty domain for the index variable in ExpandElement()";
-    return (void)context->NotifyThatModelIsUnsat();
+    return;
   }
 
   // Special case when index = target.
@@ -806,7 +811,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
     if (!context->IntersectDomainWith(index_ref,
                                       Domain::FromValues(valid_indices))) {
       VLOG(1) << "No compatible variable domains in ExpandElement()";
-      return (void)context->NotifyThatModelIsUnsat();
+      return;
     }
 
     context->UpdateRuleStats("element: reduced index domain");
@@ -817,7 +822,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
   bool target_domain_changed = false;
   if (!context->IntersectDomainWith(target_ref, reached_domain,
                                     &target_domain_changed)) {
-    return (void)context->NotifyThatModelIsUnsat();
+    return;
   }
 
   if (target_domain_changed) {

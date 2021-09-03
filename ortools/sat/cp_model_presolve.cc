@@ -439,6 +439,7 @@ bool CpModelPresolver::PresolveAtMostOrExactlyOne(ConstraintProto* ct) {
         transform_to_at_most_one = true;
         *(context_->mapping_model->add_constraints()) = *ct;
         context_->UpdateRuleStats("exactly_one: singleton");
+        context_->MarkVariableAsRemoved(PositiveRef(literal));
         continue;
       }
     }
@@ -1063,26 +1064,70 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
 
-  if (ct->int_prod().vars().empty()) {
-    if (!context_->IntersectDomainWith(ct->int_prod().target(), Domain(1))) {
-      return false;
-    }
-    context_->UpdateRuleStats("int_prod: empty_product");
-    return RemoveConstraint(ct);
-  }
-  bool changed = false;
-
+  // Remove constant variables.
   // Replace any affine relation without offset.
-  // TODO(user): Also remove constant rhs variables.
-  int64_t constant = 1;
+  int64_t constant_factor = 1;
+  int new_size = 0;
+  bool changed = false;
   for (int i = 0; i < ct->int_prod().vars().size(); ++i) {
     const int ref = ct->int_prod().vars(i);
+    if (context_->IsFixed(ref)) {
+      context_->UpdateRuleStats("int_prod: removed constant variable.");
+      changed = true;
+      constant_factor = CapProd(constant_factor, context_->MinOf(ref));
+      continue;
+    }
     const AffineRelation::Relation& r = context_->GetAffineRelation(ref);
     if (r.representative != ref && r.offset == 0) {
       changed = true;
-      ct->mutable_int_prod()->set_vars(i, r.representative);
-      constant *= r.coeff;
+      ct->mutable_int_prod()->set_vars(new_size++, r.representative);
+      constant_factor = CapProd(constant_factor, r.coeff);
+    } else {
+      ct->mutable_int_prod()->set_vars(new_size++, ref);
     }
+  }
+  ct->mutable_int_prod()->mutable_vars()->Truncate(new_size);
+
+  if (constant_factor == 0) {
+    context_->UpdateRuleStats("int_prod: multiplication by zero");
+    if (!context_->IntersectDomainWith(ct->int_prod().target(), Domain(0))) {
+      return false;
+    }
+    return RemoveConstraint(ct);
+  }
+
+  // In this case, the only possible value that fit in the domains is zero.
+  // We will check for UNSAT if zero is not achievable by the rhs below.
+  if (constant_factor == std::numeric_limits<int64_t>::min() ||
+      constant_factor == std::numeric_limits<int64_t>::max()) {
+    constant_factor = 1;
+    context_->UpdateRuleStats("int_prod: overflow if non zero");
+    if (!context_->IntersectDomainWith(ct->int_prod().target(), Domain(0))) {
+      return false;
+    }
+  }
+
+  if (ct->int_prod().vars().empty()) {
+    if (!context_->IntersectDomainWith(ct->int_prod().target(),
+                                       Domain(constant_factor))) {
+      return false;
+    }
+    context_->UpdateRuleStats("int_prod: constant product");
+    return RemoveConstraint(ct);
+  }
+
+  // Replace by linear!
+  if (ct->int_prod().vars().size() == 1) {
+    ConstraintProto* const lin = context_->working_model->add_constraints();
+    lin->mutable_linear()->add_vars(ct->int_prod().target());
+    lin->mutable_linear()->add_coeffs(1);
+    lin->mutable_linear()->add_vars(ct->int_prod().vars(0));
+    lin->mutable_linear()->add_coeffs(-constant_factor);
+    lin->mutable_linear()->add_domain(0);
+    lin->mutable_linear()->add_domain(0);
+    context_->UpdateNewConstraintsVariableUsage();
+    context_->UpdateRuleStats("int_prod: linearize product by constant.");
+    return RemoveConstraint(ct);
   }
 
   // TODO(user): Probably better to add a fixed variable to the product
@@ -1092,7 +1137,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
   // TODO(user): We might do that too early since the other presolve step below
   // might simplify the constraint in such a way that there is no need to create
   // a new variable!
-  if (constant != 1) {
+  if (constant_factor != 1) {
     context_->UpdateRuleStats("int_prod: extracted product by constant.");
 
     const int old_target = ct->int_prod().target();
@@ -1100,7 +1145,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
 
     IntegerVariableProto* var_proto = context_->working_model->add_variables();
     FillDomainInProto(
-        context_->DomainOf(old_target).InverseMultiplicationBy(constant),
+        context_->DomainOf(old_target).InverseMultiplicationBy(constant_factor),
         var_proto);
     context_->InitializeNewDomains();
     if (context_->ModelIsUnsat()) return false;
@@ -1109,12 +1154,13 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
     if (context_->IsFixed(new_target)) {
       // We need to fix old_target too.
       if (!context_->IntersectDomainWith(
-              old_target,
-              context_->DomainOf(new_target).MultiplicationBy(constant))) {
+              old_target, context_->DomainOf(new_target)
+                              .MultiplicationBy(constant_factor))) {
         return false;
       }
     } else {
-      if (!context_->StoreAffineRelation(old_target, new_target, constant, 0)) {
+      if (!context_->StoreAffineRelation(old_target, new_target,
+                                         constant_factor, 0)) {
         // We cannot store the affine relation because the old target seems
         // to already be in affine relation with another variable. This is rare
         // and we need to add a new constraint in that case.
@@ -1123,7 +1169,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
         lin->add_vars(old_target);
         lin->add_coeffs(1);
         lin->add_vars(new_target);
-        lin->add_coeffs(-constant);
+        lin->add_coeffs(-constant_factor);
         lin->add_domain(0);
         lin->add_domain(0);
         context_->UpdateNewConstraintsVariableUsage();
@@ -1149,38 +1195,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
     int a = ct->int_prod().vars(0);
     int b = ct->int_prod().vars(1);
     const int product = ct->int_prod().target();
-
-    if (context_->IsFixed(b)) std::swap(a, b);
-    if (context_->IsFixed(a)) {
-      const int64_t value_a = context_->MinOf(a);
-      if (value_a == 0) {  // Fix target to 0.
-        if (!context_->IntersectDomainWith(product, Domain(0, 0))) {
-          return false;
-        }
-        context_->UpdateRuleStats("int_prod: fix target to zero.");
-        return RemoveConstraint(ct);
-      } else if (b != product) {
-        ConstraintProto* const lin = context_->working_model->add_constraints();
-        lin->mutable_linear()->add_vars(b);
-        lin->mutable_linear()->add_coeffs(value_a);
-        lin->mutable_linear()->add_vars(product);
-        lin->mutable_linear()->add_coeffs(-1);
-        lin->mutable_linear()->add_domain(0);
-        lin->mutable_linear()->add_domain(0);
-        context_->UpdateNewConstraintsVariableUsage();
-        context_->UpdateRuleStats("int_prod: linearize product by constant.");
-        return RemoveConstraint(ct);
-      } else if (value_a != 1) {
-        if (!context_->IntersectDomainWith(product, Domain(0, 0))) {
-          return false;
-        }
-        context_->UpdateRuleStats("int_prod: fix variable to zero.");
-        return RemoveConstraint(ct);
-      } else {
-        context_->UpdateRuleStats("int_prod: remove identity.");
-        return RemoveConstraint(ct);
-      }
-    } else if (a == b && a == product) {  // x = x * x, only true for {0, 1}.
+    if (a == b && a == product) {  // x = x * x, only true for {0, 1}.
       if (!context_->IntersectDomainWith(product, Domain(0, 1))) {
         return false;
       }
@@ -2708,6 +2723,87 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
   return false;
 }
 
+// TODO(user): avoid code duplication between expand and presolve.
+bool CpModelPresolver::PresolveInverse(ConstraintProto* ct) {
+  const int size = ct->inverse().f_direct().size();
+  bool changed = false;
+
+  // Make sure the domains are included in [0, size - 1).
+  for (const int ref : ct->inverse().f_direct()) {
+    if (!context_->IntersectDomainWith(ref, Domain(0, size - 1), &changed)) {
+      VLOG(1) << "Empty domain for a variable in ExpandInverse()";
+      return false;
+    }
+  }
+  for (const int ref : ct->inverse().f_inverse()) {
+    if (!context_->IntersectDomainWith(ref, Domain(0, size - 1), &changed)) {
+      VLOG(1) << "Empty domain for a variable in ExpandInverse()";
+      return false;
+    }
+  }
+
+  // Propagate from one vector to its counterpart.
+  // Note this reaches the fixpoint as there is a one to one mapping between
+  // (variable-value) pairs in each vector.
+  const auto filter_inverse_domain =
+      [this, size, &changed](const auto& direct, const auto& inverse) {
+        // Build the set of values in the inverse vector.
+        std::vector<absl::flat_hash_set<int64_t>> inverse_values(size);
+        for (int i = 0; i < size; ++i) {
+          const Domain domain = context_->DomainOf(inverse[i]);
+          for (const ClosedInterval& interval : domain) {
+            for (int64_t j = interval.start; j <= interval.end; ++j) {
+              inverse_values[i].insert(j);
+            }
+          }
+        }
+
+        // Propagate from the inverse vector to the direct vector. Reduce the
+        // domains of each variable in the direct vector by checking that the
+        // inverse value exists.
+        std::vector<int64_t> possible_values;
+        for (int i = 0; i < size; ++i) {
+          possible_values.clear();
+          const Domain domain = context_->DomainOf(direct[i]);
+          bool removed_value = false;
+          for (const ClosedInterval& interval : domain) {
+            for (int64_t j = interval.start; j <= interval.end; ++j) {
+              if (inverse_values[j].contains(i)) {
+                possible_values.push_back(j);
+              } else {
+                removed_value = true;
+              }
+            }
+          }
+          if (removed_value) {
+            changed = true;
+            if (!context_->IntersectDomainWith(
+                    direct[i], Domain::FromValues(possible_values))) {
+              VLOG(1) << "Empty domain for a variable in ExpandInverse()";
+              return false;
+            }
+          }
+        }
+        return true;
+      };
+
+  if (!filter_inverse_domain(ct->inverse().f_direct(),
+                             ct->inverse().f_inverse())) {
+    return false;
+  }
+
+  if (!filter_inverse_domain(ct->inverse().f_inverse(),
+                             ct->inverse().f_direct())) {
+    return false;
+  }
+
+  if (changed) {
+    context_->UpdateRuleStats("inverse: reduce domains");
+  }
+
+  return false;
+}
+
 bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
 
@@ -2891,34 +2987,46 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
     }
   }
 
-  const bool unique_index = context_->VariableIsUniqueAndRemovable(index_ref) ||
-                            context_->IsFixed(index_ref);
-  if (all_constants && unique_index) {
-    // This constraint is just here to reduce the domain of the target! We can
-    // add it to the mapping_model to reconstruct the index value during
-    // postsolve and get rid of it now.
-    context_->UpdateRuleStats("element: trivial target domain reduction");
-    context_->MarkVariableAsRemoved(index_ref);
-    *(context_->mapping_model->add_constraints()) = *ct;
-    return RemoveConstraint(ct);
+  // Should have been taken care of ealier.
+  DCHECK(!context_->IsFixed(index_ref));
+
+  // If a variable (target or index) appears only in this constraint, it does
+  // not necessarily mean that we can remove the constraint, as the variable
+  // can be used multiple times in the element. So let's count the local uses of
+  // each variable.
+  absl::flat_hash_map<int, int> local_var_occurrence_counter;
+  local_var_occurrence_counter[PositiveRef(index_ref)]++;
+  local_var_occurrence_counter[PositiveRef(target_ref)]++;
+  for (const int ref : ct->element().vars()) {
+    local_var_occurrence_counter[PositiveRef(ref)]++;
   }
 
-  const bool unique_target =
-      context_->VariableIsUniqueAndRemovable(target_ref) ||
-      context_->IsFixed(target_ref);
-  if (all_included_in_target_domain && unique_target &&
-      target_ref != index_ref) {
-    context_->UpdateRuleStats("element: trivial index domain reduction");
-    context_->MarkVariableAsRemoved(target_ref);
-    *(context_->mapping_model->add_constraints()) = *ct;
-    return RemoveConstraint(ct);
+  if (context_->VariableIsUniqueAndRemovable(index_ref) &&
+      local_var_occurrence_counter.at(PositiveRef(index_ref)) == 1) {
+    if (all_constants) {
+      // This constraint is just here to reduce the domain of the target! We can
+      // add it to the mapping_model to reconstruct the index value during
+      // postsolve and get rid of it now.
+      context_->UpdateRuleStats("element: trivial target domain reduction");
+      context_->MarkVariableAsRemoved(index_ref);
+      *(context_->mapping_model->add_constraints()) = *ct;
+      return RemoveConstraint(ct);
+    } else {
+      context_->UpdateRuleStats("TODO element: index not used elsewhere");
+    }
   }
 
-  if (unique_target && !context_->IsFixed(target_ref)) {
-    context_->UpdateRuleStats("TODO element: target not used elsewhere");
-  }
-  if (unique_index && !context_->IsFixed(index_ref)) {
-    context_->UpdateRuleStats("TODO element: index not used elsewhere");
+  if (!context_->IsFixed(target_ref) &&
+      context_->VariableIsUniqueAndRemovable(target_ref) &&
+      local_var_occurrence_counter.at(PositiveRef(target_ref)) == 1) {
+    if (all_included_in_target_domain) {
+      context_->UpdateRuleStats("element: trivial index domain reduction");
+      context_->MarkVariableAsRemoved(target_ref);
+      *(context_->mapping_model->add_constraints()) = *ct;
+      return RemoveConstraint(ct);
+    } else {
+      context_->UpdateRuleStats("TODO element: target not used elsewhere");
+    }
   }
 
   return false;
@@ -5015,6 +5123,7 @@ void CpModelPresolver::ExpandObjective() {
         // Remove the constraint if the implied domain is included in the
         // domain of the objective_var term.
         if (implied_domain.IsIncludedIn(context_->DomainOf(objective_var))) {
+          context_->MarkVariableAsRemoved(objective_var);
           context_->UpdateRuleStats("objective: removed objective constraint.");
           *(context_->mapping_model->add_constraints()) = ct;
           context_->working_model->mutable_constraints(expanded_linear_index)
@@ -5325,6 +5434,8 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
     }
     case ConstraintProto::ConstraintCase::kInterval:
       return PresolveInterval(c, ct);
+    case ConstraintProto::ConstraintCase::kInverse:
+      return PresolveInverse(ct);
     case ConstraintProto::ConstraintCase::kElement:
       return PresolveElement(ct);
     case ConstraintProto::ConstraintCase::kTable:
@@ -6824,14 +6935,27 @@ bool CpModelPresolver::Presolve() {
   // Remove all the unused variables from the presolved model.
   postsolve_mapping_->clear();
   std::vector<int> mapping(context_->working_model->variables_size(), -1);
+  int num_free_variables = 0;
   for (int i = 0; i < context_->working_model->variables_size(); ++i) {
     if (context_->VariableIsNotUsedAnymore(i) &&
         !context_->keep_all_feasible_solutions) {
+      if (!context_->VariableWasRemoved(i)) {
+        // Tricky. Variables that where not removed by a presolve rule should be
+        // fixed first during postsolve, so that more complex postsolve rules
+        // can use their values. One way to do that is to fix them here.
+        //
+        // We prefer to fix them to zero if possible.
+        ++num_free_variables;
+        FillDomainInProto(Domain(context_->DomainOf(i).SmallestValue()),
+                          context_->mapping_model->mutable_variables(i));
+      }
       continue;
     }
     mapping[i] = postsolve_mapping_->size();
     postsolve_mapping_->push_back(i);
   }
+  context_->UpdateRuleStats(absl::StrCat("presolve: ", num_free_variables,
+                                         " free variables removed."));
 
   if (context_->params().permute_variable_randomly()) {
     std::shuffle(postsolve_mapping_->begin(), postsolve_mapping_->end(),

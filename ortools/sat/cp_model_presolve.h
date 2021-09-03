@@ -95,26 +95,28 @@ class CpModelPresolver {
   // the current code. This way we shouldn't keep doing computation on an
   // inconsistent state.
   // TODO(user,user): Make these public and unit test.
+  bool ConvertIntMax(ConstraintProto* ct);
+  bool PresolveAllDiff(ConstraintProto* ct);
   bool PresolveAutomaton(ConstraintProto* ct);
-  bool PresolveCircuit(ConstraintProto* ct);
-  bool PresolveRoutes(ConstraintProto* ct);
+  bool PresolveElement(ConstraintProto* ct);
+  bool PresolveIntAbs(ConstraintProto* ct);
+  bool PresolveIntDiv(ConstraintProto* ct);
+  bool PresolveIntMax(ConstraintProto* ct);
+  bool PresolveIntMin(ConstraintProto* ct);
+  bool PresolveIntProd(ConstraintProto* ct);
+  bool PresolveInterval(int c, ConstraintProto* ct);
+  bool PresolveInverse(ConstraintProto* ct);
+  bool PresolveLinMax(ConstraintProto* ct);
+  bool PresolveLinMin(ConstraintProto* ct);
+  bool PresolveTable(ConstraintProto* ct);
+
   bool PresolveCumulative(ConstraintProto* ct);
   bool PresolveNoOverlap(ConstraintProto* ct);
   bool PresolveNoOverlap2D(int c, ConstraintProto* ct);
   bool PresolveReservoir(ConstraintProto* ct);
-  bool PresolveAllDiff(ConstraintProto* ct);
-  bool PresolveTable(ConstraintProto* ct);
-  bool PresolveElement(ConstraintProto* ct);
-  bool PresolveInterval(int c, ConstraintProto* ct);
-  bool PresolveIntDiv(ConstraintProto* ct);
-  bool PresolveIntProd(ConstraintProto* ct);
-  bool PresolveIntMin(ConstraintProto* ct);
-  bool PresolveIntMax(ConstraintProto* ct);
-  bool ConvertIntMax(ConstraintProto* ct);
-  bool PresolveLinMin(ConstraintProto* ct);
-  bool PresolveLinMax(ConstraintProto* ct);
-  bool PresolveIntAbs(ConstraintProto* ct);
-  bool PresolveBoolXor(ConstraintProto* ct);
+
+  bool PresolveCircuit(ConstraintProto* ct);
+  bool PresolveRoutes(ConstraintProto* ct);
 
   bool PresolveAtMostOrExactlyOne(ConstraintProto* ct);
   bool PresolveAtMostOne(ConstraintProto* ct);
@@ -122,6 +124,7 @@ class CpModelPresolver {
 
   bool PresolveBoolAnd(ConstraintProto* ct);
   bool PresolveBoolOr(ConstraintProto* ct);
+  bool PresolveBoolXor(ConstraintProto* ct);
   bool PresolveEnforcementLiteral(ConstraintProto* ct);
 
   // Regroups terms and substitute affine relations.
