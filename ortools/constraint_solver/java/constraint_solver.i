@@ -1409,6 +1409,10 @@ import java.util.function.LongToIntFunction;
 %rename (restartAtPathStartOnSynchronize) PathOperator::RestartAtPathStartOnSynchronize;
 %rename (setNextBaseToIncrement) PathOperator::SetNextBaseToIncrement;
 
+// PathOperator::IterationParameters
+%ignore PathOperator::IterationParameters;
+//%ignore PathOperator::IterationParameters::start_empty_path_class;
+
 // PathWithPreviousNodesOperator
 %unignore PathWithPreviousNodesOperator;
 %rename (isPathStart) PathWithPreviousNodesOperator::IsPathStart;
@@ -1491,6 +1495,7 @@ CONVERT_VECTOR(operations_research::SymmetryBreaker, SymmetryBreaker);
 %rename (value) *::Value;
 %rename (accept) *::Accept;
 %rename (toString) *::DebugString;
+%rename("%(lowercamelcase)s", %$isvariable) "";
 
 // Add needed import to mainJNI.java
 %pragma(java) jniclassimports=%{
