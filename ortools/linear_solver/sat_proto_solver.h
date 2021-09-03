@@ -31,6 +31,12 @@ namespace operations_research {
 // EncodeSatParametersAsString() function below to set the request's
 // solver_specific_parameters field.
 //
+// The optional interrupt_solve can be used to interrupt the solve early. It
+// must only be set to true, never reset to false. It is also used internally by
+// the solver that will set it to true for its own internal logic. As a
+// consequence the caller should ignore the stored value and should not use the
+// same atomic for different concurrent calls.
+//
 // The optional logging_callback will be called when the SAT parameter
 // log_search_progress is set to true. Passing a callback will disable the
 // default logging to INFO. Note though that by default the SAT parameter
