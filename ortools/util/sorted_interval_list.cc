@@ -215,6 +215,19 @@ int64_t Domain::Max() const {
   return intervals_.back().end;
 }
 
+int64_t Domain::SmallestValue() const {
+  DCHECK(!IsEmpty());
+  int64_t result = Min();
+  for (const ClosedInterval interval : intervals_) {
+    if (interval.start <= 0 && interval.end >= 0) return 0;
+    for (const int64_t b : {interval.start, interval.end}) {
+      if (b > 0 && b <= std::abs(result)) result = b;
+      if (b < 0 && -b < std::abs(result)) result = b;
+    }
+  }
+  return result;
+}
+
 int64_t Domain::FixedValue() const {
   DCHECK(IsFixed());
   return intervals_.front().start;

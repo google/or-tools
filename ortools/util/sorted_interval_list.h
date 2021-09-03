@@ -182,6 +182,11 @@ class Domain {
   int64_t Max() const;
 
   /**
+   * Returns the value closest to zero. If there is a tie, pick positive one.
+   */
+  int64_t SmallestValue() const;
+
+  /**
    * Returns true iff the domain is reduced to a single value.
    * The domain must not be empty.
    */
