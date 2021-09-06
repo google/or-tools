@@ -1,0 +1,46 @@
+@startdot
+digraph DockerDeps {
+  //rankdir=BT;
+  rankdir=TD;
+  node [shape=cylinder, style="rounded,filled", color=black, fillcolor=royalblue];
+  DISTRO_IMG [label="<distro>:latest"];
+  PKG [label="Build packages\ne.g. cmake, g++", shape=box3d];
+  PYPKG [label="Python packages\ne.g. python-dev", shape=box3d, fillcolor=gold];
+  JAVAPKG [label="Java packages\ne.g. openjdk", shape=box3d, fillcolor=crimson];
+  DOTNETPKG [label=".Net packages\ne.g. dotnet-cli", shape=box3d, fillcolor=forestgreen];
+  SRC [label="git repo", shape=folder];
+
+  subgraph clusterDockerfile {
+    ENV_IMG [label="or-tools/docker:<distro>_env\nenv"];
+    DEVEL_IMG [label="or-tools/docker:<distro>_devel\ndevel"];
+    TP_IMG [label="or-tools/docker:<distro>_third_party\nthird_party"];
+    BUILD_IMG [label="or-tools/docker:<distro>_build\nbuild"];
+
+    ENV_IMG -> DEVEL_IMG;
+    DEVEL_IMG -> TP_IMG;
+    TP_IMG -> BUILD_IMG;
+
+    color=royalblue;
+    label = "docker/<distro>/Dockerfile";
+  }
+  DISTRO_IMG -> ENV_IMG;
+  PKG -> ENV_IMG [label="install", style="dashed"];
+  PYPKG -> ENV_IMG [label="install", style="dashed"];
+  JAVAPKG -> ENV_IMG [label="install", style="dashed"];
+  DOTNETPKG -> ENV_IMG [label="install", style="dashed"];
+  SRC -> DEVEL_IMG [label="copy", style="dashed"];
+
+  subgraph clusterCache {
+    node [shape=note, style="rounded,filled", color=black, fillcolor=royalblue];
+    OR_TAR [label="or-tools_<distro>_vX.Y.Z.tar.gz"];
+    FLATZINC_TAR [label="or-tools_flatzinc_<distro>_vX.Y.Z.tar.gz"];
+
+    edge [color=red];
+    BUILD_IMG -> OR_TAR [label="make <distro>_archive"];
+    BUILD_IMG -> FLATZINC_TAR [label="make <distro>_archive"];
+
+    color=royalblue;
+    label = "export/archives/";
+  }
+}
+@enddot
