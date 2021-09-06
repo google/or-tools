@@ -31,6 +31,7 @@ To Create a native dependent package which will contains two parts:
 * A bunch of native libraries for the supported platform targeted.
 * The Python code depending on it.
 
+note: Since [Pypi.org](pypi.org) support multiple packages, we will simply upload one package per supported platform.
 
 ### Local Package
 
