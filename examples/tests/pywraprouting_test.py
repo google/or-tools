@@ -567,7 +567,7 @@ class TestPyWrapRoutingModel(unittest.TestCase):
             routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
         assignment = model.SolveWithParameters(search_parameters)
         self.assertEqual(90, assignment.ObjectiveValue())
-        self.assertLen(callback.costs, 1)
+        self.assertEqual(len(callback.costs), 1)
         self.assertEqual(90, callback.costs[0])
 
     def testReadAssignment(self):
