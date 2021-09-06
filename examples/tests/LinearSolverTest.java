@@ -416,13 +416,13 @@ public final class LinearSolverTest {
   public void testMPSolver_sameConstraintName() {
     MPSolver solver = MPSolver.createSolver("GLOP");
     assertNotNull(solver);
-    boolean success = false;
+    boolean success = true;
     solver.makeConstraint("my_const_name");
     try {
       solver.makeConstraint("my_const_name");
     } catch (Throwable e) {
       System.out.println(e);
-      success = true;
+      success = false;
     }
     assertTrue(success);
   }
