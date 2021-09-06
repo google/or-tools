@@ -41,6 +41,7 @@
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "ortools/port/proto_utils.h"
 #include "scip/cons_linear.h"
+#include "scip/cons_quadratic.h"
 #include "scip/scip.h"
 #include "scip/scip_general.h"
 #include "scip/scip_param.h"

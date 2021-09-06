@@ -42,6 +42,7 @@
 #include "ortools/util/lazy_mutable_copy.h"
 #include "scip/cons_disjunction.h"
 #include "scip/cons_linear.h"
+#include "scip/cons_quadratic.h"
 #include "scip/pub_var.h"
 #include "scip/scip.h"
 #include "scip/scip_param.h"
