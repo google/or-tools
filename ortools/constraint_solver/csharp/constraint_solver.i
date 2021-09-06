@@ -815,6 +815,9 @@ namespace operations_research {
 // Methods:
 %unignore PathOperator::MakeNeighbor;
 
+// PathOperator::IterationParameters
+%ignore PathOperator::IterationParameters;
+
 // LocalSearchFilter
 %feature("director") LocalSearchFilter;
 %unignore LocalSearchFilter;
