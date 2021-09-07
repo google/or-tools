@@ -1535,7 +1535,7 @@ ColIndex RevisedSimplex::ComputeNumberOfEmptyColumns() {
   for (ColIndex col(0); col < num_cols_; ++col) {
     if (compact_matrix_.column(col).IsEmpty()) {
       ++num_empty_cols;
-      VLOG(1) << "Column " << col << " is empty.";
+      VLOG(2) << "Column " << col << " is empty.";
     }
   }
   return num_empty_cols;
