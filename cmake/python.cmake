@@ -2,8 +2,8 @@ if(NOT BUILD_PYTHON)
   return()
 endif()
 
-# Use latest UseSWIG module
-cmake_minimum_required(VERSION 3.14)
+# Use latest UseSWIG module (3.14) and Python3 module (3.18)
+cmake_minimum_required(VERSION 3.18)
 
 if(NOT TARGET ortools::ortools)
   message(FATAL_ERROR "Python: missing ortools TARGET")
@@ -22,18 +22,15 @@ if(UNIX AND NOT APPLE)
   list(APPEND CMAKE_SWIG_FLAGS "-DSWIGWORDSIZE64")
 endif()
 
-# Find Python
-find_package(Python REQUIRED COMPONENTS Interpreter Development)
-
-if(Python_VERSION VERSION_GREATER_EQUAL 3)
-  list(APPEND CMAKE_SWIG_FLAGS "-py3" "-DPY3")
-endif()
+# Find Python 3
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
+list(APPEND CMAKE_SWIG_FLAGS "-py3" "-DPY3")
 
 # Find if python module MODULE_NAME is available,
-# if not install it to the Python user install directory.
+# if not install it to the Python 3 user install directory.
 function(search_python_module MODULE_NAME)
   execute_process(
-    COMMAND ${Python_EXECUTABLE} -c "import ${MODULE_NAME}; print(${MODULE_NAME}.__version__)"
+    COMMAND ${Python3_EXECUTABLE} -c "import ${MODULE_NAME}; print(${MODULE_NAME}.__version__)"
     RESULT_VARIABLE _RESULT
     OUTPUT_VARIABLE MODULE_VERSION
     ERROR_QUIET
@@ -44,7 +41,7 @@ function(search_python_module MODULE_NAME)
   else()
     message(WARNING "Can't find python module \"${MODULE_NAME}\", install it using pip...")
     execute_process(
-      COMMAND ${Python_EXECUTABLE} -m pip install --user ${MODULE_NAME}
+      COMMAND ${Python3_EXECUTABLE} -m pip install --user ${MODULE_NAME}
       OUTPUT_STRIP_TRAILING_WHITESPACE
       )
   endif()
@@ -53,7 +50,7 @@ endfunction()
 # Find if python builtin module MODULE_NAME is available.
 function(search_python_internal_module MODULE_NAME)
   execute_process(
-    COMMAND ${Python_EXECUTABLE} -c "import ${MODULE_NAME}"
+    COMMAND ${Python3_EXECUTABLE} -c "import ${MODULE_NAME}"
     RESULT_VARIABLE _RESULT
     OUTPUT_VARIABLE MODULE_VERSION
     ERROR_QUIET
@@ -92,7 +89,7 @@ foreach(PROTO_FILE IN LISTS proto_py_files)
     "--mypy_out=${PROJECT_BINARY_DIR}/python"
     ${PROTO_FILE}
     DEPENDS ${PROTO_FILE} ${PROTOC_PRG}
-    COMMENT "Generate Python protocol buffer for ${PROTO_FILE}"
+    COMMENT "Generate Python 3 protocol buffer for ${PROTO_FILE}"
     VERBATIM)
   list(APPEND PROTO_PYS ${PROTO_PY})
 endforeach()
@@ -172,8 +169,8 @@ add_custom_target(python_package ALL
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapsat> ${PROJECT_NAME}/sat
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraprcpsp> ${PROJECT_NAME}/data
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sorted_interval_list> ${PROJECT_NAME}/util
-  #COMMAND ${Python_EXECUTABLE} setup.py bdist_egg bdist_wheel
-  COMMAND ${Python_EXECUTABLE} setup.py bdist_wheel
+  #COMMAND ${Python3_EXECUTABLE} setup.py bdist_egg bdist_wheel
+  COMMAND ${Python3_EXECUTABLE} setup.py bdist_wheel
   BYPRODUCTS
     python/${PROJECT_NAME}
     python/build
@@ -196,25 +193,25 @@ if(BUILD_TESTING)
   search_python_module(absl-py)
   search_python_internal_module(venv)
   # Testing using a vitual environment
-  set(VENV_EXECUTABLE ${Python_EXECUTABLE} -m venv)
+  set(VENV_EXECUTABLE ${Python3_EXECUTABLE} -m venv)
   set(VENV_DIR ${PROJECT_BINARY_DIR}/python/venv)
   if(WIN32)
-    set(VENV_Python_EXECUTABLE "${VENV_DIR}\\Scripts\\python.exe")
+    set(VENV_Python3_EXECUTABLE "${VENV_DIR}\\Scripts\\python.exe")
   else()
-    set(VENV_Python_EXECUTABLE ${VENV_DIR}/bin/python)
+    set(VENV_Python3_EXECUTABLE ${VENV_DIR}/bin/python)
   endif()
   # make a virtualenv to install our python package in it
   add_custom_command(TARGET python_package POST_BUILD
     COMMAND ${VENV_EXECUTABLE} ${VENV_DIR}
     # Must not call it in a folder containing the setup.py otherwise pip call it
     # (i.e. "python setup.py bdist") while we want to consume the wheel package
-    COMMAND ${VENV_Python_EXECUTABLE} -m pip install --find-links=${CMAKE_CURRENT_BINARY_DIR}/python/dist ${PROJECT_NAME}
+    COMMAND ${VENV_Python3_EXECUTABLE} -m pip install --find-links=${CMAKE_CURRENT_BINARY_DIR}/python/dist ${PROJECT_NAME}
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/test.py.in ${VENV_DIR}/test.py
     BYPRODUCTS ${VENV_DIR}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} VERBATIM)
   # run the tests within the virtualenv
   add_test(NAME pytest_venv
-    COMMAND ${VENV_Python_EXECUTABLE} ${VENV_DIR}/test.py)
+    COMMAND ${VENV_Python3_EXECUTABLE} ${VENV_DIR}/test.py)
 endif()
 
 # add_python_sample()
@@ -232,7 +229,7 @@ function(add_python_sample FILE_NAME)
   if(BUILD_TESTING)
     add_test(
       NAME python_${COMPONENT_NAME}_${SAMPLE_NAME}
-      COMMAND ${VENV_Python_EXECUTABLE} ${FILE_NAME}
+      COMMAND ${VENV_Python3_EXECUTABLE} ${FILE_NAME}
       WORKING_DIRECTORY ${VENV_DIR})
   endif()
 endfunction()
@@ -251,7 +248,7 @@ function(add_python_example FILE_NAME)
   if(BUILD_TESTING)
     add_test(
       NAME python_${COMPONENT_NAME}_${EXAMPLE_NAME}
-      COMMAND ${VENV_Python_EXECUTABLE} ${FILE_NAME}
+      COMMAND ${VENV_Python3_EXECUTABLE} ${FILE_NAME}
       WORKING_DIRECTORY ${VENV_DIR})
   endif()
 endfunction()
@@ -270,7 +267,7 @@ function(add_python_test FILE_NAME)
   if(BUILD_TESTING)
     add_test(
       NAME python_${COMPONENT_NAME}_${TEST_NAME}
-      COMMAND ${VENV_Python_EXECUTABLE} ${FILE_NAME}
+      COMMAND ${VENV_Python3_EXECUTABLE} ${FILE_NAME}
       WORKING_DIRECTORY ${VENV_DIR})
   endif()
 endfunction()
