@@ -1309,9 +1309,16 @@ bool DisjunctiveEdgeFinding::PropagateSubwindow(IntegerValue window_end_min) {
           non_gray_end_max, &critical_event_with_gray, &gray_event,
           &available_energy);
       const int gray_task = window_[gray_event].task_index;
+      DCHECK(is_gray_[gray_task]);
+
+      // This might happen in the corner case where more than one interval are
+      // controlled by the same Boolean.
+      if (helper_->IsAbsent(gray_task)) {
+        theta_tree_.RemoveEvent(gray_event);
+        continue;
+      }
 
       // Since the gray task is after all the other, we have a new lower bound.
-      DCHECK(is_gray_[gray_task]);
       if (helper_->StartMin(gray_task) < non_gray_end_min) {
         // The API is not ideal here. We just want the start of the critical
         // tasks that explain the non_gray_end_min computed above.

@@ -371,6 +371,34 @@ IntegerValue LinExprUpperBound(const LinearExpression& expr,
   return upper_bound;
 }
 
+// TODO(user): Avoid duplication with PossibleIntegerOverflow() in the checker?
+// At least make sure the code is the same.
+bool ValidateLinearConstraintForOverflow(const LinearConstraint& constraint,
+                                         const IntegerTrail& integer_trail) {
+  int64_t positive_sum(0);
+  int64_t negative_sum(0);
+  for (int i = 0; i < constraint.vars.size(); ++i) {
+    const IntegerVariable var = constraint.vars[i];
+    const IntegerValue coeff = constraint.coeffs[i];
+    const IntegerValue lb = integer_trail.LevelZeroLowerBound(var);
+    const IntegerValue ub = integer_trail.LevelZeroUpperBound(var);
+
+    int64_t min_prod = CapProd(coeff.value(), lb.value());
+    int64_t max_prod = CapProd(coeff.value(), ub.value());
+    if (min_prod > max_prod) std::swap(min_prod, max_prod);
+
+    positive_sum = CapAdd(positive_sum, std::max(int64_t{0}, max_prod));
+    negative_sum = CapAdd(negative_sum, std::min(int64_t{0}, min_prod));
+  }
+
+  const int64_t limit = std::numeric_limits<int64_t>::max();
+  if (positive_sum >= limit) return false;
+  if (negative_sum <= -limit) return false;
+  if (CapSub(positive_sum, negative_sum) >= limit) return false;
+
+  return true;
+}
+
 LinearExpression NegationOf(const LinearExpression& expr) {
   LinearExpression result;
   result.vars = NegationOf(expr.vars);

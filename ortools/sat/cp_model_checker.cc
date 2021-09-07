@@ -360,6 +360,24 @@ std::string ValidateAutomatonConstraint(const CpModelProto& model,
         "The transitions repeated fields must have the same size: ",
         ProtobufShortDebugString(ct));
   }
+  absl::flat_hash_map<std::pair<int64_t, int64_t>, int64_t> tail_label_to_head;
+  for (int i = 0; i < num_transistions; ++i) {
+    const int64_t tail = ct.automaton().transition_tail(i);
+    const int64_t head = ct.automaton().transition_head(i);
+    const int64_t label = ct.automaton().transition_label(i);
+    const auto [it, inserted] =
+        tail_label_to_head.insert({{tail, label}, head});
+    if (!inserted) {
+      if (it->second == head) {
+        return absl::StrCat("automaton: duplicate transition ", tail, " --(",
+                            label, ")--> ", head);
+      } else {
+        return absl::StrCat("automaton: incompatible transitions ", tail,
+                            " --(", label, ")--> ", head, " and ", tail, " --(",
+                            label, ")--> ", it->second);
+      }
+    }
+  }
   return "";
 }
 
@@ -756,6 +774,15 @@ std::string ValidateCpModel(const CpModelProto& model) {
   for (int v = 0; v < model.variables_size(); ++v) {
     RETURN_IF_NOT_EMPTY(ValidateIntegerVariable(model, v));
   }
+
+  // Validate intervals first.
+  for (int c = 0; c < model.constraints_size(); ++c) {
+    const ConstraintProto& ct = model.constraints(c);
+    if (ct.constraint_case() == ConstraintProto::kInterval) {
+      RETURN_IF_NOT_EMPTY(ValidateIntervalConstraint(model, ct));
+    }
+  }
+
   for (int c = 0; c < model.constraints_size(); ++c) {
     RETURN_IF_NOT_EMPTY(ValidateArgumentReferencesInConstraint(model, c));
 
@@ -825,7 +852,6 @@ std::string ValidateCpModel(const CpModelProto& model) {
         break;
       case ConstraintProto::ConstraintCase::kInterval:
         support_enforcement = true;
-        RETURN_IF_NOT_EMPTY(ValidateIntervalConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kCumulative:
         RETURN_IF_NOT_EMPTY(ValidateCumulativeConstraint(model, ct));
@@ -1162,6 +1188,7 @@ class ConstraintChecker {
   bool ElementConstraintIsFeasible(const ConstraintProto& ct) {
     if (ct.element().vars().empty()) return false;
     const int index = Value(ct.element().index());
+    if (index < 0 || index >= ct.element().vars_size()) return false;
     return Value(ct.element().vars(index)) == Value(ct.element().target());
   }
 

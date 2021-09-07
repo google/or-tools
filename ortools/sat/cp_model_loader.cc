@@ -394,6 +394,8 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
     // ct is a linear constraint with one term and one enforcement literal.
     const sat::Literal enforcement_literal =
         mapping->Literal(ct.enforcement_literal(0));
+    if (sat_solver->Assignment().LiteralIsFalse(enforcement_literal)) continue;
+
     const int ref = ct.linear().vars(0);
     const int var = PositiveRef(ref);
 
@@ -402,6 +404,11 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
         ReadDomainFromProto(ct.linear())
             .InverseMultiplicationBy(ct.linear().coeffs(0) *
                                      (RefIsPositive(ref) ? 1 : -1));
+
+    if (domain_if_enforced.IsEmpty()) {
+      if (!sat_solver->AddUnitClause(enforcement_literal.Negated())) return;
+      continue;
+    }
 
     // Detect enforcement_literal => (var >= value or var <= value).
     if (domain_if_enforced.NumIntervals() == 1) {

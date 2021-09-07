@@ -473,6 +473,9 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
 
 namespace {
 
+#if !defined(__PORTABLE_PLATFORM__)
+#endif  // __PORTABLE_PLATFORM__
+
 void FillSolutionInResponse(const CpModelProto& model_proto, const Model& model,
                             CpSolverResponse* response) {
   response->clear_solution();
@@ -2012,6 +2015,7 @@ struct SharedClasses {
   SharedRelaxationSolutionRepository* relaxation_solutions;
   SharedLPSolutionRepository* lp_solutions;
   SharedIncompleteSolutionManager* incomplete_solutions;
+  Model* global_model;
 
   bool SearchIsDone() {
     if (response->ProblemIsSolved()) return true;
@@ -2428,10 +2432,17 @@ class LnsSolver : public SubSolver {
         *lns_fragment.mutable_solution_hint() =
             neighborhood.delta.solution_hint();
       }
+
       CpModelProto debug_copy;
       if (absl::GetFlag(FLAGS_cp_model_dump_problematic_lns)) {
+        // We need to make a copy because the presolve is destructive.
+        // It is why we do not do that by default.
         debug_copy = lns_fragment;
       }
+
+#if !defined(__PORTABLE_PLATFORM__)
+#endif  // __PORTABLE_PLATFORM__
+
       if (absl::GetFlag(FLAGS_cp_model_dump_lns)) {
         // TODO(user): export the delta too if needed.
         const std::string lns_name =
@@ -2651,6 +2662,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   shared.relaxation_solutions = shared_relaxation_solutions.get();
   shared.lp_solutions = shared_lp_solutions.get();
   shared.incomplete_solutions = shared_incomplete_solutions.get();
+  shared.global_model = global_model;
 
   // The list of all the SubSolver that will be used in this parallel search.
   std::vector<std::unique_ptr<SubSolver>> subsolvers;
@@ -2860,6 +2872,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   auto* user_timer = model->GetOrCreate<UserTimer>();
   wall_timer->Start();
   user_timer->Start();
+
+#if !defined(__PORTABLE_PLATFORM__)
+#endif  // __PORTABLE_PLATFORM__
 
 #if !defined(__PORTABLE_PLATFORM__)
   // Dump initial model?

@@ -229,49 +229,42 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
   const int mod_var = int_mod.vars(1);
   const int target_var = int_mod.target();
 
-  const int64_t mod_lb = context->MinOf(mod_var);
-  CHECK_GE(mod_lb, 1);
-  const int64_t mod_ub = context->MaxOf(mod_var);
+  // We reduce the domain of target_var to avoid later overflow.
+  if (!context->IntersectDomainWith(
+          target_var, context->DomainOf(var).PositiveModuloBySuperset(
+                          context->DomainOf(mod_var)))) {
+    return;
+  }
 
-  const int64_t var_lb = context->MinOf(var);
-  const int64_t var_ub = context->MaxOf(var);
-
-  // Compute domains of var / mod_var.
-  // TODO(user): implement Domain.ContinuousDivisionBy(domain).
-  const int div_var =
-      context->NewIntVar(Domain(std::min(var_lb / mod_ub, var_lb / mod_lb),
-                                std::max(var_ub / mod_lb, var_ub / mod_ub)));
-
-  auto add_enforcement_literal_if_needed = [&]() {
-    if (ct->enforcement_literal_size() == 0) return;
-    const int literal = ct->enforcement_literal(0);
-    ConstraintProto* const last = context->working_model->mutable_constraints(
-        context->working_model->constraints_size() - 1);
-    last->add_enforcement_literal(literal);
+  // Create a new constraint with the same enforcement as ct.
+  auto new_enforced_constraint = [&]() {
+    ConstraintProto* new_ct = context->working_model->add_constraints();
+    *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
+    return new_ct;
   };
 
   // div_var = var / mod_var.
+  const int div_var =
+      context->NewIntVar(context->DomainOf(var).PositiveDivisionBySuperset(
+          context->DomainOf(mod_var)));
   IntegerArgumentProto* const div_proto =
-      context->working_model->add_constraints()->mutable_int_div();
+      new_enforced_constraint()->mutable_int_div();
   div_proto->set_target(div_var);
   div_proto->add_vars(var);
   div_proto->add_vars(mod_var);
-  add_enforcement_literal_if_needed();
 
-  // Checks if mod is constant.
-  if (mod_lb == mod_ub) {
+  if (context->IsFixed(mod_var)) {
     // var - div_var * mod = target.
     LinearConstraintProto* const lin =
-        context->working_model->add_constraints()->mutable_linear();
+        new_enforced_constraint()->mutable_linear();
     lin->add_vars(int_mod.vars(0));
     lin->add_coeffs(1);
     lin->add_vars(div_var);
-    lin->add_coeffs(-mod_lb);
+    lin->add_coeffs(-context->MinOf(mod_var));
     lin->add_vars(target_var);
     lin->add_coeffs(-1);
     lin->add_domain(0);
     lin->add_domain(0);
-    add_enforcement_literal_if_needed();
   } else {
     // Create prod_var = div_var * mod.
     const Domain prod_domain =
@@ -281,15 +274,14 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
                 context->DomainOf(target_var).Negation()));
     const int prod_var = context->NewIntVar(prod_domain);
     IntegerArgumentProto* const int_prod =
-        context->working_model->add_constraints()->mutable_int_prod();
+        new_enforced_constraint()->mutable_int_prod();
     int_prod->set_target(prod_var);
     int_prod->add_vars(div_var);
     int_prod->add_vars(mod_var);
-    add_enforcement_literal_if_needed();
 
     // var - prod_var = target.
     LinearConstraintProto* const lin =
-        context->working_model->add_constraints()->mutable_linear();
+        new_enforced_constraint()->mutable_linear();
     lin->add_vars(var);
     lin->add_coeffs(1);
     lin->add_vars(prod_var);
@@ -298,7 +290,6 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
     lin->add_coeffs(-1);
     lin->add_domain(0);
     lin->add_domain(0);
-    add_enforcement_literal_if_needed();
   }
 
   ct->Clear();

@@ -1985,7 +1985,6 @@ IntegerValue EvaluateMaxAffine(
 
 }  // namespace
 
-// TODO(user): Be careful to not create the cut in case of integer overflow.
 LinearConstraint BuildMaxAffineUpConstraint(
     const LinearExpression& target, IntegerVariable var,
     const std::vector<std::pair<IntegerValue, IntegerValue>>& affines,
@@ -1997,6 +1996,8 @@ LinearConstraint BuildMaxAffineUpConstraint(
   const IntegerValue y_at_min = EvaluateMaxAffine(affines, x_min);
   const IntegerValue y_at_max = EvaluateMaxAffine(affines, x_max);
 
+  // TODO(user): Be careful to not have any integer overflow in any of
+  // the formula used here.
   const IntegerValue delta_x = x_max - x_min;
   const IntegerValue delta_y = y_at_max - y_at_min;
 
@@ -2007,8 +2008,17 @@ LinearConstraint BuildMaxAffineUpConstraint(
   LinearConstraintBuilder lc(model, kMinIntegerValue, rhs);
   lc.AddLinearExpression(target, delta_x);
   lc.AddTerm(var, -delta_y);
+  LinearConstraint ct = lc.Build();
 
-  return lc.Build();
+  // Prevent to create constraints that can overflow.
+  if (!ValidateLinearConstraintForOverflow(ct, *integer_trail)) {
+    VLOG(2) << "Linear constraint can cause overflow: " << ct;
+
+    // TODO(user): Change API instead of returning trivial constraint?
+    ct.Clear();
+  }
+
+  return ct;
 }
 
 CutGenerator CreateMaxAffineCutGenerator(

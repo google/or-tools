@@ -260,19 +260,24 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
   // Deal with fixed target (and constant vars).
   const int64_t target_value = (*domains)[target_var].FixedValue();
   int selected_index_value = -1;
-  for (int i = 0; i < ct.element().vars().size(); ++i) {
-    const int ref = ct.element().vars(i);
-    const int var = PositiveRef(ref);
-    const int64_t value = (*domains)[var].FixedValue();
-    if (RefIsPositive(target_ref) == RefIsPositive(ref)) {
-      if (value == target_value) {
-        selected_index_value = i;
-        break;
-      }
-    } else {
-      if (value == -target_value) {
-        selected_index_value = i;
-        break;
+  for (const ClosedInterval interval : (*domains)[index_var]) {
+    for (int64_t v = interval.start; v <= interval.end; ++v) {
+      const int64_t i = index_var == index_ref ? v : -v;
+      if (i < 0 || i >= ct.element().vars_size()) continue;
+
+      const int ref = ct.element().vars(i);
+      const int var = PositiveRef(ref);
+      const int64_t value = (*domains)[var].FixedValue();
+      if (RefIsPositive(target_ref) == RefIsPositive(ref)) {
+        if (value == target_value) {
+          selected_index_value = i;
+          break;
+        }
+      } else {
+        if (value == -target_value) {
+          selected_index_value = i;
+          break;
+        }
       }
     }
   }

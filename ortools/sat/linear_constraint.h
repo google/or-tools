@@ -27,16 +27,9 @@ namespace sat {
 // Important: there should be no duplicate variables.
 //
 // We also assume that we never have integer overflow when evaluating such
-// constraint. This should be enforced by the checker for user given
-// constraints, and we must enforce it ourselves for the newly created
-// constraint. We requires:
-//  -  sum_i max(0, max(c_i * lb_i, c_i * ub_i)) < kMaxIntegerValue.
-//  -  sum_i min(0, min(c_i * lb_i, c_i * ub_i)) > kMinIntegerValue
-// so that in whichever order we compute the sum, we have no overflow. Note
-// that this condition invoves the bounds of the variables.
-//
-// TODO(user): Add DCHECKs for the no-overflow property? but we need access
-// to the variable bounds.
+// constraint at the ROOT node. This should be enforced by the checker for user
+// given constraints, and we must enforce it ourselves for the newly created
+// constraint. See ValidateLinearConstraintForOverflow().
 struct LinearConstraint {
   IntegerValue lb;
   IntegerValue ub;
@@ -49,6 +42,11 @@ struct LinearConstraint {
   void AddTerm(IntegerVariable var, IntegerValue coeff) {
     vars.push_back(var);
     coeffs.push_back(coeff);
+  }
+
+  void Clear() {
+    lb = ub = IntegerValue(0);
+    ClearTerms();
   }
 
   void ClearTerms() {
@@ -80,6 +78,11 @@ struct LinearConstraint {
   }
 };
 
+inline std::ostream& operator<<(std::ostream& os, const LinearConstraint& ct) {
+  os << ct.DebugString();
+  return os;
+}
+
 // Helper struct to model linear expression for lin_min/lin_max constraints. The
 // canonical expression should only contain positive coefficients.
 struct LinearExpression {
@@ -110,6 +113,19 @@ IntegerValue LinExprLowerBound(const LinearExpression& expr,
 // coefficients).
 IntegerValue LinExprUpperBound(const LinearExpression& expr,
                                const IntegerTrail& integer_trail);
+
+// Makes sure that any of our future computation on this constraint will not
+// cause overflow. We use the level zero bounds and use the same definition as
+// in PossibleIntegerOverflow() in the cp_model.proto checker.
+//
+// Namely, the sum of positive terms, the sum of negative terms and their
+// difference shouldn't overflow. Note that we don't validate the rhs, but if
+// the bounds are properly relaxed, then this shouldn't cause any issues.
+//
+// Note(user): We should avoid doing this test too often as it can be slow. At
+// least do not do it more than once on each constraint.
+bool ValidateLinearConstraintForOverflow(const LinearConstraint& constraint,
+                                         const IntegerTrail& integer_trail);
 
 // Preserves canonicality.
 LinearExpression NegationOf(const LinearExpression& expr);

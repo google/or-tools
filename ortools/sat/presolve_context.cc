@@ -442,7 +442,7 @@ bool PresolveContext::ConstraintIsOptional(int ct_ref) const {
 void PresolveContext::UpdateRuleStats(const std::string& name, int num_times) {
   // We only count if we are going to display it.
   if (logger_->LoggingIsEnabled()) {
-    VLOG(1) << num_presolve_operations << " : " << name;
+    VLOG(2) << num_presolve_operations << " : " << name;
     stats_by_rule_name_[name] += num_times;
   }
   num_presolve_operations += num_times;
@@ -1661,6 +1661,9 @@ void PresolveContext::WriteObjectiveToProto() const {
 int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(int time_i, int time_j,
                                                          int active_i,
                                                          int active_j) {
+  CHECK(!LiteralIsFalse(active_i));
+  CHECK(!LiteralIsFalse(active_j));
+
   // Sort the active literals.
   if (active_j < active_i) std::swap(active_i, active_j);
 
@@ -1699,8 +1702,12 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(int time_i, int time_j,
 
   // Manages enforcement literal.
   greater->add_enforcement_literal(NegatedRef(result));
-  greater->add_enforcement_literal(active_i);
-  greater->add_enforcement_literal(active_j);
+  if (!LiteralIsTrue(active_i)) {
+    greater->add_enforcement_literal(active_i);
+  }
+  if (!LiteralIsTrue(active_j)) {
+    greater->add_enforcement_literal(active_j);
+  }
 
   // This is redundant but should improves performance.
   //

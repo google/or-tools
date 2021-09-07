@@ -1240,11 +1240,11 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
 
 bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
-
-  // For now, we only presolve the case where the divisor is constant.
   const int target = ct->int_div().target();
   const int ref_x = ct->int_div().vars(0);
   const int ref_div = ct->int_div().vars(1);
+
+  // For now, we only presolve the case where the divisor is constant.
   if (!RefIsPositive(target) || !RefIsPositive(ref_x) ||
       !RefIsPositive(ref_div) || context_->DomainIsEmpty(ref_div) ||
       !context_->IsFixed(ref_div)) {
@@ -1300,6 +1300,29 @@ bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
 
   // TODO(user): reduce the domain of X by introducing an
   // InverseDivisionOfSortedDisjointIntervals().
+  return false;
+}
+
+bool CpModelPresolver::PresolveIntMod(ConstraintProto* ct) {
+  if (context_->ModelIsUnsat()) return false;
+
+  const int target = ct->int_mod().target();
+  const int ref_mod = ct->int_mod().vars(1);
+  const int ref_x = ct->int_mod().vars(0);
+
+  bool changed = false;
+  if (!context_->IntersectDomainWith(
+          target,
+          context_->DomainOf(ref_x).PositiveModuloBySuperset(
+              context_->DomainOf(ref_mod)),
+          &changed)) {
+    return false;
+  }
+
+  if (changed) {
+    context_->UpdateRuleStats("int_mod: reduce target domain");
+  }
+
   return false;
 }
 
@@ -2997,8 +3020,14 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
   absl::flat_hash_map<int, int> local_var_occurrence_counter;
   local_var_occurrence_counter[PositiveRef(index_ref)]++;
   local_var_occurrence_counter[PositiveRef(target_ref)]++;
-  for (const int ref : ct->element().vars()) {
-    local_var_occurrence_counter[PositiveRef(ref)]++;
+
+  for (const ClosedInterval interval : context_->DomainOf(index_ref)) {
+    for (int64_t value = interval.start; value <= interval.end; ++value) {
+      DCHECK_GE(value, 0);
+      DCHECK_LT(value, ct->element().vars_size());
+      const int ref = ct->element().vars(value);
+      local_var_occurrence_counter[PositiveRef(ref)]++;
+    }
   }
 
   if (context_->VariableIsUniqueAndRemovable(index_ref) &&
@@ -5376,6 +5405,8 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       return PresolveIntProd(ct);
     case ConstraintProto::ConstraintCase::kIntDiv:
       return PresolveIntDiv(ct);
+    case ConstraintProto::ConstraintCase::kIntMod:
+      return PresolveIntMod(ct);
     case ConstraintProto::ConstraintCase::kLinear: {
       // In the presence of affine relation, it is possible that the sign of a
       // variable change during canonicalization, and a variable that could
