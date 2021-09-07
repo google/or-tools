@@ -298,6 +298,23 @@ class Domain {
   Domain InverseMultiplicationBy(const int64_t coeff) const;
 
   /**
+   * Returns a superset of {x ∈ Int64, ∃ e ∈ D, ∃ m ∈ modulo, x = e % m }.
+   *
+   * We check that modulo is strictly positive.
+   * The sign of the modulo depends on the sign of e.
+   * For now we just intersect with the min/max possible value.
+   */
+  Domain PositiveModuloBySuperset(const Domain& modulo) const;
+
+  /**
+   * Returns a superset of {x ∈ Int64, ∃ e ∈ D, ∃ d ∈ divisor, x = e / d }.
+   *
+   * We check that divisor is strictly positive.
+   * For now we just intersect with the min/max possible value.
+   */
+  Domain PositiveDivisionBySuperset(const Domain& divisor) const;
+
+  /**
    * Advanced usage. Given some \e implied information on this domain that is
    * assumed to be always true (i.e. only values in the intersection with
    * implied domain matter), this function will simplify the current domain

@@ -478,6 +478,22 @@ Domain Domain::InverseMultiplicationBy(const int64_t coeff) const {
   return result;
 }
 
+Domain Domain::PositiveModuloBySuperset(const Domain& modulo) const {
+  if (IsEmpty()) return Domain();
+  CHECK_GT(modulo.Min(), 0);
+  const int64_t max_mod = modulo.Max() - 1;
+  const int64_t max = std::min(Max(), max_mod);
+  const int64_t min = Min() < 0 ? std::max(Min(), -max_mod) : 0;
+  return Domain(min, max);
+}
+
+Domain Domain::PositiveDivisionBySuperset(const Domain& divisor) const {
+  if (IsEmpty()) return Domain();
+  CHECK_GT(divisor.Min(), 0);
+  return Domain(std::min(Min() / divisor.Max(), Min() / divisor.Min()),
+                std::max(Max() / divisor.Min(), Max() / divisor.Max()));
+}
+
 // It is a bit difficult to see, but this code is doing the same thing as
 // for all interval in this.UnionWith(implied_domain.Complement())):
 //  - Take the two extreme points (min and max) in interval \inter implied.
