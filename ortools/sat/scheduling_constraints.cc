@@ -68,7 +68,7 @@ bool SelectedMinPropagator::Propagate() {
 
   // Push the given integer literal if lit is true. Note that if lit is still
   // not assigned, we may still be able to deduce something.
-  // TODO(user,user): Move this to integer_trail, and remove from here and
+  // TODO(user): Move this to integer_trail, and remove from here and
   // from scheduling helper.
   const auto push_bound = [&](Literal enforcement_lit, IntegerLiteral i_lit) {
     if (assignment.LiteralIsFalse(enforcement_lit)) return true;

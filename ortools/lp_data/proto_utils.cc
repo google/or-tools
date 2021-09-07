@@ -54,7 +54,7 @@ void MPModelProtoToLinearProgram(const MPModelProto& input,
   output->SetName(input.name());
   output->SetMaximizationProblem(input.maximize());
   output->SetObjectiveOffset(input.objective_offset());
-  // TODO(user,user): clean up loops to use natural range iteration.
+  // TODO(user): clean up loops to use natural range iteration.
   for (int i = 0; i < input.variable_size(); ++i) {
     const MPVariableProto& var = input.variable(i);
     const ColIndex col = output->CreateNewVariable();
@@ -70,7 +70,7 @@ void MPModelProtoToLinearProgram(const MPModelProto& input,
     const RowIndex row = output->CreateNewConstraint();
     output->SetConstraintName(row, cst.name());
     output->SetConstraintBounds(row, cst.lower_bound(), cst.upper_bound());
-    // TODO(user,user,user): implement strong proto validation in the
+    // TODO(user): implement strong proto validation in the
     // linear solver server and re-use it here.
     CHECK_EQ(cst.var_index_size(), cst.coefficient_size());
     for (int k = 0; k < cst.var_index_size(); ++k) {

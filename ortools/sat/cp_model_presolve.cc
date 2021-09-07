@@ -1279,7 +1279,7 @@ bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
   }
 
   // Linearize if everything is positive.
-  // TODO(user,user): Deal with other cases where there is no change of
+  // TODO(user): Deal with other cases where there is no change of
   // sign.We can also deal with target = cte, div variable.
 
   if (context_->MinOf(target) >= 0 && context_->MinOf(ref_x) >= 0 &&
@@ -4792,7 +4792,7 @@ void CpModelPresolver::Probe() {
 // TODO(user): What to do with the at_most_one/exactly_one constraints?
 // currently we do not take them into account here.
 void CpModelPresolver::PresolvePureSatPart() {
-  // TODO(user,user): Reenable some SAT presolve with
+  // TODO(user): Reenable some SAT presolve with
   // keep_all_feasible_solutions set to true.
   if (context_->ModelIsUnsat() || context_->keep_all_feasible_solutions) return;
 
@@ -5615,7 +5615,7 @@ bool CpModelPresolver::ProcessSetPPCSubset(
   return true;
 }
 
-// TODO(user,user): TransformIntoMaxCliques() convert the bool_and to
+// TODO(user): TransformIntoMaxCliques() convert the bool_and to
 // at_most_one, but maybe also duplicating them into bool_or would allow this
 // function to do more presolving.
 bool CpModelPresolver::ProcessSetPPC() {

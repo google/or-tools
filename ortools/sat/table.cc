@@ -184,7 +184,7 @@ void ExploreSubsetOfVariablesAndAddNegatedTables(
   for (int start = 0; start < num_vars; ++start) {
     const int limit = start == 0 ? num_vars : std::min(num_vars, start + 3);
     for (int end = start + 1; end < limit; ++end) {
-      // TODO(user,user): If we add negated table for more than one value of
+      // TODO(user): If we add negated table for more than one value of
       // end, because the set of variables will be included in each other, we
       // could reduce the number of clauses added. I.e if we excluded
       // (x=2, y=3) there is no need to exclude any of the tuples

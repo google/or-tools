@@ -508,7 +508,7 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
       sat_policy, SequentialSearch({PseudoCost(model), sat_policy})};
   // The higher weight for the sat policy is because this policy actually
   // contains a lot of variation as we randomize the sat parameters.
-  // TODO(user,user): Do more experiments to find better distribution.
+  // TODO(user): Do more experiments to find better distribution.
   std::discrete_distribution<int> var_dist{3 /*sat_policy*/, 1 /*Pseudo cost*/};
 
   // Value selection.
@@ -999,7 +999,7 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
 
       // Probing?
       //
-      // TODO(user,user): Be smarter about what variables we probe, we can
+      // TODO(user): Be smarter about what variables we probe, we can
       // also do more than one.
       if (decision != kNoLiteralIndex &&
           sat_solver->CurrentDecisionLevel() == 0 &&
@@ -1163,7 +1163,7 @@ SatSolver::Status ContinuousProbing(
     absl::flat_hash_set<BooleanVariable> probed;
 
     // Probe variable bounds.
-    // TODO(user,user): Probe optional variables.
+    // TODO(user): Probe optional variables.
     for (const IntegerVariable int_var : int_vars) {
       if (integer_trail->IsFixed(int_var) ||
           integer_trail->IsOptional(int_var)) {

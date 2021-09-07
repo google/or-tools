@@ -88,7 +88,6 @@
 // The class also defines a hash functor that allows the IntType to be used
 // as key to hashable containers such as hash_map and hash_set.
 //
-// We suggest using the IntTypeIndexedContainer wrapper around google3's
 // FixedArray and STL vector (see int-type-indexed-container.h) if an IntType is
 // intended to be used as an index into these containers.  These wrappers are
 // indexed in a type-safe manner using IntTypes to ensure type-safety.

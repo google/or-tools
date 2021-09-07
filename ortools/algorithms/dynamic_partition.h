@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO(user,user): refine this toplevel comment when this file settles.
+// TODO(user): refine this toplevel comment when this file settles.
 //
 // Two dynamic partition classes: one that incrementally splits a partition
 // into more and more parts; one that incrementally merges a partition into less

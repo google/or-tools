@@ -11,9 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// See: //depot/google3/java/com/google/wireless/genie/frontend
-//       /mixer/matching/HungarianOptimizer.java
-
 #include "ortools/algorithms/hungarian.h"
 
 #include <algorithm>

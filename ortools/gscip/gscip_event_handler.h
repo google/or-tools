@@ -52,7 +52,7 @@ class GScipEventHandlerContext {
   // defined as a bitwise OR).
   SCIP_EVENTTYPE event_type() const { return event_type_; }
 
-  // TODO(user,user): Support additional properties that might need to be
+  // TODO(user): Support additional properties that might need to be
   // queried within an event handler.
 
  private:
@@ -144,9 +144,9 @@ class GScipEventHandler {
   // See scip/type_event.h for the list of possible events. This function
   // corresponds to SCIPcatchEvent().
   //
-  // TODO(user,user): Support Var and Row events.
+  // TODO(user): Support Var and Row events.
   //
-  // TODO(user,user): Support registering events in the EVENTINITSOL
+  // TODO(user): Support registering events in the EVENTINITSOL
   // callback, which would cause them to be trapped only after presolve.
   SCIP_RETCODE CatchEvent(SCIP_EVENTTYPE event_type);
 

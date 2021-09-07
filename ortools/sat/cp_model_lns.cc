@@ -894,7 +894,7 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
       0, start_interval_pairs.size() - relaxed_size - 1);
   const int random_start_index = random_var(random);
 
-  // TODO(user,user): Consider relaxing more than one time window
+  // TODO(user): Consider relaxing more than one time window
   // intervals. This seems to help with Giza models.
   for (int i = random_start_index; i < relaxed_size; ++i) {
     intervals_to_relax.push_back(start_interval_pairs[i].second);

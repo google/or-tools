@@ -94,7 +94,7 @@ class CpModelPresolver {
   // is through ABSL_MUST_USE_RESULT function that should also abort right away
   // the current code. This way we shouldn't keep doing computation on an
   // inconsistent state.
-  // TODO(user,user): Make these public and unit test.
+  // TODO(user): Make these public and unit test.
   bool ConvertIntMax(ConstraintProto* ct);
   bool PresolveAllDiff(ConstraintProto* ct);
   bool PresolveAutomaton(ConstraintProto* ct);

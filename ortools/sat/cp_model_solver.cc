@@ -2604,7 +2604,7 @@ class LnsSolver : public SubSolver {
     shared_->time_limit->AdvanceDeterministicTime(deterministic_time_ - old);
   }
 
-  // TODO(user,user): Display LNS success rate.
+  // TODO(user): Display LNS success rate.
 
  private:
   std::unique_ptr<NeighborhoodGenerator> generator_;

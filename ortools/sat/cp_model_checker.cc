@@ -1152,7 +1152,7 @@ class ConstraintChecker {
 
   bool CumulativeConstraintIsFeasible(const CpModelProto& model,
                                       const ConstraintProto& ct) {
-    // TODO(user,user): Improve complexity for large durations.
+    // TODO(user): Improve complexity for large durations.
     const int64_t capacity = Value(ct.cumulative().capacity());
     const int num_intervals = ct.cumulative().intervals_size();
     absl::flat_hash_map<int64_t, int64_t> usage;

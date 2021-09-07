@@ -226,7 +226,7 @@ void SatPresolver::AddClauseInternal(std::vector<Literal>* clause) {
   if (drat_proof_handler_ != nullptr) drat_proof_handler_->AddClause(*clause);
 
   DCHECK(std::is_sorted(clause->begin(), clause->end()));
-  DCHECK_GT(clause->size(), 0) << "TODO(fdid): Unsat during presolve?";
+  DCHECK_GT(clause->size(), 0) << "TODO(user): Unsat during presolve?";
   const ClauseIndex ci(clauses_.size());
   clauses_.push_back(std::vector<Literal>());
   clauses_.back().swap(*clause);

@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This .i file is only used in the open-source export of
+// This .i file is only used in the open-source export to OR-Tools.
 //
 // It exposes some of the C++ classes in ../, namely :
 // - SimpleMaxFlow, from ../max_flow.h

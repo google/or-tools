@@ -102,7 +102,7 @@
 // problem and takes advantage of special properties of the resulting
 // minimum-cost flow problem to solve it efficiently using a
 // push-relabel method. For more information about minimum-cost flow
-// see google3/ortools/graph/min_cost_flow.h
+// see ortools/graph/min_cost_flow.h
 //
 // The method used here is the cost-scaling approach for the
 // minimum-cost circulation problem as described in [Goldberg and

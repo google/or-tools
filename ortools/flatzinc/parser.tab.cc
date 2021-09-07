@@ -1458,7 +1458,7 @@ yyreduce:
       std::vector<Annotation>* const annotations = (yyvsp[-2].annotations);
 
       if (!assignment.HasOneValue()) {
-        // TODO(lperron): Check that the assignment is included in the domain.
+        // TODO(user): Check that the assignment is included in the domain.
         context->domain_map[identifier] = assignment;
       } else {
         const int64_t value = assignment.values.front();
@@ -1484,7 +1484,7 @@ yyreduce:
       const std::vector<int64_t>* const assignments = (yyvsp[-1].integers);
       CHECK(assignments != nullptr);
       CHECK_EQ(num_constants, assignments->size());
-      // TODO(lperron): CHECK all values within domain.
+      // TODO(user): CHECK all values within domain.
       context->integer_array_map[identifier] = *assignments;
       delete assignments;
       delete annotations;
@@ -1523,7 +1523,7 @@ yyreduce:
       const std::vector<double>* const assignments = (yyvsp[-1].doubles);
       CHECK(assignments != nullptr);
       CHECK_EQ(num_constants, assignments->size());
-      // TODO(lperron): CHECK all values within domain.
+      // TODO(user): CHECK all values within domain.
       context->float_array_map[identifier] = *assignments;
       delete assignments;
       delete annotations;
@@ -1567,7 +1567,7 @@ yyreduce:
 
       if (!AllDomainsHaveOneValue(*assignments)) {
         context->domain_array_map[identifier] = *assignments;
-        // TODO(lperron): check that all assignments are included in the domain.
+        // TODO(user): check that all assignments are included in the domain.
       } else {
         std::vector<int64_t> values(num_constants);
         for (int i = 0; i < num_constants; ++i) {

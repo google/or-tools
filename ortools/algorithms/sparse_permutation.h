@@ -28,7 +28,7 @@ class SparsePermutation {
  public:
   explicit SparsePermutation(int size) : size_(size) {}  // Identity.
 
-  // TODO(user,user): complete the reader API.
+  // TODO(user): complete the reader API.
   int Size() const { return size_; }
   int NumCycles() const { return cycle_ends_.size(); }
 

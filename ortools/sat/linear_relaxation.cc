@@ -534,9 +534,9 @@ void AddIntMaxUpperRelaxation(IntegerVariable target,
   std::vector<Literal> literals =
       CreateAlternativeLiteralsWithView(vars.size(), model, relaxation);
   for (int i = 0; i < vars.size(); ++i) {
-    // TODO(user,user): Only lower bound is needed, experiment.
+    // TODO(user): Only lower bound is needed, experiment.
     //
-    // TODO(user,user): It makes more sense to use ConditionalLowerOrEqual()
+    // TODO(user): It makes more sense to use ConditionalLowerOrEqual()
     // here since only the lower bounding is needed, but that degrades perf on
     // the road*.fzn problem. Understand why.
     AppendEnforcedUpperBound(literals[i], target, vars[i], model, relaxation);
@@ -928,7 +928,7 @@ void AppendLinMaxRelaxationPart2(
   // For the relaxation, we use different constraints with a stronger linear
   // relaxation as explained in the .h
   //
-  // TODO(user,user): Consider passing the x_vars to this method instead of
+  // TODO(user): Consider passing the x_vars to this method instead of
   // computing it here.
   std::vector<IntegerVariable> x_vars;
   for (int i = 0; i < num_exprs; ++i) {
@@ -1041,7 +1041,7 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
 // Note: IntProd is linearized dynamically using the cut generators.
 //
 // TODO(user): In full generality, we could encode all the constraint as an LP.
-// TODO(user,user): Add unit tests for this method.
+// TODO(user): Add unit tests for this method.
 void TryToLinearizeConstraint(const CpModelProto& model_proto,
                               const ConstraintProto& ct,
                               int linearization_level, Model* model,
@@ -1285,7 +1285,7 @@ void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
   if (!m->GetOrCreate<SatParameters>()->add_lin_max_cuts()) return;
   if (HasEnforcementLiteral(ct)) return;
 
-  // TODO(user,user): Support linearization of general target expression.
+  // TODO(user): Support linearization of general target expression.
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   if (ct.lin_max().target().vars_size() != 1) return;
   if (ct.lin_max().target().coeffs(0) != 1) return;

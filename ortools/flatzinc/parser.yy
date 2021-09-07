@@ -114,7 +114,7 @@ predicates:
 | predicates error ';' { yyerrok; }  // Minimal error recovery.
 | /* empty */
 
-// TODO(lperron): Implement better error recovery.
+// TODO(user): Implement better error recovery.
 
 predicate:
   PREDICATE IDENTIFIER '(' predicate_arguments ')'
@@ -156,7 +156,7 @@ variable_or_constant_declaration:
 
 
   if (!assignment.HasOneValue()) {
-    // TODO(lperron): Check that the assignment is included in the domain.
+    // TODO(user): Check that the assignment is included in the domain.
     context->domain_map[identifier] = assignment;
   } else {
     const int64_t value = assignment.values.front();
@@ -175,7 +175,7 @@ variable_or_constant_declaration:
   const std::vector<int64_t>* const assignments = $14;
   CHECK(assignments != nullptr);
   CHECK_EQ(num_constants, assignments->size());
-  // TODO(lperron): CHECK all values within domain.
+  // TODO(user): CHECK all values within domain.
   context->integer_array_map[identifier] = *assignments;
   delete assignments;
   delete annotations;
@@ -201,7 +201,7 @@ variable_or_constant_declaration:
   const std::vector<double>* const assignments = $14;
   CHECK(assignments != nullptr);
   CHECK_EQ(num_constants, assignments->size());
-  // TODO(lperron): CHECK all values within domain.
+  // TODO(user): CHECK all values within domain.
   context->float_array_map[identifier] = *assignments;
   delete assignments;
   delete annotations;
@@ -231,7 +231,7 @@ variable_or_constant_declaration:
 
   if (!AllDomainsHaveOneValue(*assignments)) {
     context->domain_array_map[identifier] = *assignments;
-    // TODO(lperron): check that all assignments are included in the domain.
+    // TODO(user): check that all assignments are included in the domain.
   } else {
     std::vector<int64_t> values(num_constants);
     for (int i = 0; i < num_constants; ++i) {
@@ -417,12 +417,12 @@ set_domain:
 }
 
 float_domain:
-  TOKEN_FLOAT { $$ = Domain::AllInt64(); }  // TODO(lperron): implement floats.
+  TOKEN_FLOAT { $$ = Domain::AllInt64(); }  // TODO(user): implement floats.
 | DVALUE DOTDOT DVALUE {
   const int64_t lb = ConvertAsIntegerOrDie($1);
   const int64_t ub = ConvertAsIntegerOrDie($3);
   $$ = Domain::Interval(lb, ub);
-}  // TODO(lperron): floats.
+}  // TODO(user): floats.
 
 domain:
   int_domain { $$ = $1; }
@@ -463,7 +463,7 @@ const_literal:
 | DVALUE {
   CHECK_EQ(std::round($1), $1);
   $$ = Domain::IntegerValue(static_cast<int64_t>($1));
-}  // TODO(lperron): floats.
+}  // TODO(user): floats.
 | IDENTIFIER { $$ = Domain::IntegerValue(gtl::FindOrDie(context->integer_map, $1)); }
 | IDENTIFIER '[' IVALUE ']' {
   $$ = Domain::IntegerValue(
