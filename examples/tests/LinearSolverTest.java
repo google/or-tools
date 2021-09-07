@@ -64,8 +64,8 @@ public final class LinearSolverTest {
     solver.delete();
   }
 
-  private void runLinearSolver(MPSolver.OptimizationProblemType problemType,
-                               boolean integerVariables) {
+  private void runLinearSolver(
+      MPSolver.OptimizationProblemType problemType, boolean integerVariables) {
     if (!MPSolver.supportsProblemType(problemType)) {
       return;
     }
@@ -472,12 +472,12 @@ public final class LinearSolverTest {
     }
     final MPModelProto.Builder modelBuilder = MPModelProto.newBuilder().setMaximize(true);
     final MPVariableProto variable = MPVariableProto.newBuilder()
-                                   .setLowerBound(0.0)
-                                   .setUpperBound(10.0)
-                                   .setName("x1")
-                                   .setIsInteger(false)
-                                   .setObjectiveCoefficient(1.0)
-                                   .build();
+                                         .setLowerBound(0.0)
+                                         .setUpperBound(10.0)
+                                         .setName("x1")
+                                         .setIsInteger(false)
+                                         .setObjectiveCoefficient(1.0)
+                                         .build();
     modelBuilder.addVariable(variable);
     final MPModelRequest request = MPModelRequest.newBuilder()
                                  .setModel(modelBuilder.build())
@@ -531,7 +531,7 @@ public final class LinearSolverTest {
     final MPSolver solver = new MPSolver("testWrongModelExport", problemType);
     assertNotNull(solver);
     // Test that forbidden names are renamed.
-    solver.makeBoolVar("<-%$#!&~-+ ⌂");  // Some illegal name.
+    solver.makeBoolVar("<-%$#!&~-+ ⌂"); // Some illegal name.
     String out = solver.exportModelAsLpFormat();
     assertThat(out).isNotEmpty();
     out = solver.exportModelAsMpsFormat();
@@ -548,8 +548,7 @@ public final class LinearSolverTest {
     final MPSolver solver = new MPSolver("testSetHint", problemType);
     assertNotNull(solver);
     final MPVariable[] variables = {
-      solver.makeNumVar(0.0, 10.0, "x1"), solver.makeNumVar(0.0, 10.0, "x2")
-    };
+        solver.makeNumVar(0.0, 10.0, "x1"), solver.makeNumVar(0.0, 10.0, "x2")};
     final double[] values = {5.0, 6.0};
     solver.setHint(variables, values);
 

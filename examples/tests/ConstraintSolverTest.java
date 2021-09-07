@@ -489,8 +489,7 @@ public final class ConstraintSolverTest {
   public void testSearchLogWithCallback() {
     final Solver solver = new Solver("TestSearchLog");
     final AtomicInteger count = new AtomicInteger(0);
-    final SearchMonitor searchlog = solver.makeSearchLog(
-        0, // branch period
+    final SearchMonitor searchlog = solver.makeSearchLog(0, // branch period
         new SearchCount(count));
     System.gc(); // verify SearchCount is kept alive by the searchlog
     runSearchLog(searchlog);
@@ -501,8 +500,7 @@ public final class ConstraintSolverTest {
   public void testSearchLogWithLambdaCallback() {
     final Solver solver = new Solver("TestSearchLog");
     final AtomicInteger count = new AtomicInteger(0);
-    final SearchMonitor searchlog = solver.makeSearchLog(
-        0, // branch period
+    final SearchMonitor searchlog = solver.makeSearchLog(0, // branch period
         () -> {
           count.addAndGet(1);
           return "display callback called...";
@@ -517,8 +515,7 @@ public final class ConstraintSolverTest {
     final Solver solver = new Solver("TestSearchLog");
     final IntVar var = solver.makeIntVar(1, 1, "Variable");
     final AtomicInteger count = new AtomicInteger(0);
-    final SearchMonitor searchlog = solver.makeSearchLog(
-        0, // branch period
+    final SearchMonitor searchlog = solver.makeSearchLog(0, // branch period
         var, // IntVar to monitor
         new SearchCount(count));
     System.gc();
@@ -532,8 +529,7 @@ public final class ConstraintSolverTest {
     final IntVar var = solver.makeIntVar(1, 1, "Variable");
     final OptimizeVar objective = solver.makeMinimize(var, 1);
     final AtomicInteger count = new AtomicInteger(0);
-    final SearchMonitor searchlog = solver.makeSearchLog(
-        0, // branch period
+    final SearchMonitor searchlog = solver.makeSearchLog(0, // branch period
         objective, // objective var to monitor
         new SearchCount(count));
     System.gc();

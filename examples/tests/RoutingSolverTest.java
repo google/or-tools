@@ -23,8 +23,8 @@ import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
+import com.google.ortools.constraintsolver.RoutingModelParameters;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
-import com.google.ortools.constraintsolver.main;
 import com.google.ortools.constraintsolver.IntBoolPair;
 import com.google.protobuf.Duration;
 import java.util.ArrayList;
@@ -69,6 +69,23 @@ public final class RoutingSolverTest {
 
   public LongBinaryOperator createReturnOneCallback() {
     return (long i, long j) -> 1;
+  }
+
+  @Test
+  public void testRoutingModel_checkGlobalRefGuard() {
+    for (int i = 0; i < 500; ++i) {
+      final RoutingIndexManager manager = new RoutingIndexManager(coordinates.size(), 1, 0);
+      assertNotNull(manager);
+      final RoutingModel model = new RoutingModel(manager);
+      assertNotNull(model);
+      LongBinaryOperator transit = (long fromIndex, long toIndex) -> {
+        final int fromNode = manager.indexToNode(fromIndex);
+        final int toNode = manager.indexToNode(toIndex);
+        return (long) Math.abs(toNode - fromNode);
+      };
+      model.registerTransitCallback(transit);
+      System.gc(); // model should keep alive the callback
+    }
   }
 
   @Test
@@ -328,19 +345,17 @@ public final class RoutingSolverTest {
     final RoutingIndexManager manager = new RoutingIndexManager(10, 1, 0);
     final RoutingModel model = new RoutingModel(manager);
     assertEquals(10, model.nodes());
-    final IntBoolPair pair = model.addConstantDimension(
-        1,
+    final IntBoolPair pair = model.addConstantDimension(1,
         /*capacity=*/100,
-        /*fix_start_cumul_to_zero=*/true,
-        "Dimension");
+        /*fix_start_cumul_to_zero=*/true, "Dimension");
     assertEquals(1, pair.getFirst());
     assertTrue(pair.getSecond());
     RoutingDimension dimension = model.getMutableDimension("Dimension");
     dimension.setSpanCostCoefficientForAllVehicles(2);
 
     RoutingSearchParameters searchParameters =
-        main.defaultRoutingSearchParameters()
-            .toBuilder()
+        RoutingSearchParameters.newBuilder()
+            .mergeFrom(main.defaultRoutingSearchParameters())
             .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
             .setTimeLimit(Duration.newBuilder().setSeconds(10))
             .build();
@@ -358,19 +373,17 @@ public final class RoutingSolverTest {
     final RoutingModel model = new RoutingModel(manager);
     assertEquals(10, model.nodes());
     final long[] vector = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-    final IntBoolPair pair = model.addVectorDimension(
-        vector,
+    final IntBoolPair pair = model.addVectorDimension(vector,
         /*capacity=*/100,
-        /*fix_start_cumul_to_zero=*/true,
-        "Dimension");
+        /*fix_start_cumul_to_zero=*/true, "Dimension");
     assertEquals(1, pair.getFirst());
     assertTrue(pair.getSecond());
     System.gc(); // model should keep alive the callback
     model.setArcCostEvaluatorOfAllVehicles(pair.getFirst());
 
     RoutingSearchParameters searchParameters =
-        main.defaultRoutingSearchParameters()
-            .toBuilder()
+        RoutingSearchParameters.newBuilder()
+            .mergeFrom(main.defaultRoutingSearchParameters())
             .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
             .setTimeLimit(Duration.newBuilder().setSeconds(10))
             .build();
@@ -394,19 +407,17 @@ public final class RoutingSolverTest {
         {3, 4, 4, 0, 2},
         {1, 2, 4, 2, 0},
     };
-    final IntBoolPair pair = model.addMatrixDimension(
-        matrix,
+    final IntBoolPair pair = model.addMatrixDimension(matrix,
         /*capacity=*/100,
-        /*fix_start_cumul_to_zero=*/true,
-        "Dimension");
+        /*fix_start_cumul_to_zero=*/true, "Dimension");
     assertEquals(1, pair.getFirst());
     assertTrue(pair.getSecond());
     System.gc(); // model should keep alive the callback
     model.setArcCostEvaluatorOfAllVehicles(pair.getFirst());
 
     final RoutingSearchParameters searchParameters =
-        main.defaultRoutingSearchParameters()
-            .toBuilder()
+        RoutingSearchParameters.newBuilder()
+            .mergeFrom(main.defaultRoutingSearchParameters())
             .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
             .setTimeLimit(Duration.newBuilder().setSeconds(10))
             .build();
@@ -453,8 +464,8 @@ public final class RoutingSolverTest {
     }
 
     RoutingSearchParameters searchParameters =
-        main.defaultRoutingSearchParameters()
-            .toBuilder()
+        RoutingSearchParameters.newBuilder()
+            .mergeFrom(main.defaultRoutingSearchParameters())
             .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
             .setTimeLimit(Duration.newBuilder().setSeconds(10))
             .build();
