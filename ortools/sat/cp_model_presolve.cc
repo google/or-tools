@@ -1917,7 +1917,8 @@ void TakeIntersectionWith(const absl::flat_hash_set<int>& current,
 
 }  // namespace
 
-bool CpModelPresolver::PropagateDomainsInLinear(int c, ConstraintProto* ct) {
+bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
+                                                ConstraintProto* ct) {
   if (ct->constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
       context_->ModelIsUnsat()) {
     return false;
@@ -2006,9 +2007,9 @@ bool CpModelPresolver::PropagateDomainsInLinear(int c, ConstraintProto* ct) {
     if (is_le_constraint || is_ge_constraint) {
       CHECK_NE(is_le_constraint, is_ge_constraint);
       if ((var_coeff > 0) == is_ge_constraint) {
-        context_->var_to_lb_only_constraints[var].insert(c);
+        context_->var_to_lb_only_constraints[var].insert(ct_index);
       } else {
-        context_->var_to_ub_only_constraints[var].insert(c);
+        context_->var_to_ub_only_constraints[var].insert(ct_index);
       }
 
       // Simple dual fixing: If for any feasible solution, any solution with var
@@ -2106,8 +2107,8 @@ bool CpModelPresolver::PropagateDomainsInLinear(int c, ConstraintProto* ct) {
         is_le_constraint = false;
         is_ge_constraint = false;
         for (const int var : ct->linear().vars()) {
-          context_->var_to_lb_only_constraints[var].erase(c);
-          context_->var_to_ub_only_constraints[var].erase(c);
+          context_->var_to_lb_only_constraints[var].erase(ct_index);
+          context_->var_to_ub_only_constraints[var].erase(ct_index);
         }
         continue;
       }
@@ -2171,7 +2172,7 @@ bool CpModelPresolver::PropagateDomainsInLinear(int c, ConstraintProto* ct) {
         abort = true;
         break;
       }
-      if (context_->working_model->mutable_constraints(c) == ct) continue;
+      if (c == ct_index) continue;
       if (context_->working_model->constraints(c).constraint_case() !=
           ConstraintProto::ConstraintCase::kLinear) {
         abort = true;
@@ -2202,8 +2203,10 @@ bool CpModelPresolver::PropagateDomainsInLinear(int c, ConstraintProto* ct) {
     }
 
     // Substitute in objective.
-    if (is_in_objective) {
-      context_->SubstituteVariableInObjective(var, var_coeff, *ct);
+    // This can only fail in corner cases.
+    if (is_in_objective &&
+        !context_->SubstituteVariableInObjective(var, var_coeff, *ct)) {
+      continue;
     }
 
     context_->UpdateRuleStats(
