@@ -476,7 +476,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
         // Add a dummy variable at position zero because flatzinc index start
         // at 1.
         // TODO(user): Make sure that zero is not in the index domain...
-        arg->add_vars(arg->target());
+        arg->add_vars(LookupConstant(0));
       }
       for (const int var : LookupVars(fz_ct.arguments[1])) arg->add_vars(var);
     } else {
