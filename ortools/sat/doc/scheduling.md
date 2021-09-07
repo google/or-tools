@@ -32,6 +32,8 @@ https://developers.google.com/optimization/
          * [C# code](#c-code-7)
       * [Intervals spanning over breaks in the calendar](#intervals-spanning-over-breaks-in-the-calendar)
          * [Python code](#python-code-4)
+      * [Detecting if two intervals overlap.](#detecting-if-two-intervals-overlap)
+         * [Python code](#python-code-5)
       * [Transitions in a disjunctive resource](#transitions-in-a-disjunctive-resource)
       * [Precedences between intervals](#precedences-between-intervals)
       * [Convex hull of a set of intervals](#convex-hull-of-a-set-of-intervals)
@@ -1308,6 +1310,127 @@ def SchedulingWithCalendarSampleSat():
 
 
 SchedulingWithCalendarSampleSat()
+```
+
+## Detecting if two intervals overlap.
+
+We want a Boolean variable to be true iff two intervals overlap. To enforce
+this, we will create 3 Boolean variables, link two of them to the relative
+positions of the two intervals, and define the third one using the other two
+Boolean variables.
+
+There are two ways of linking the three Boolean variables. The first version
+uses one clause and two implications. Propagation will be faster using this
+version. The second version uses a `sum(..) == 1` equation. It is more compact,
+but assumes the length of the two intervals is > 0.
+
+Note that we need to create the intervals to enforce `start + size == end`, but
+we do not actually use them in this code sample.
+
+The following code displays
+
+```
+start_a=0 start_b=0 a_overlaps_b=1
+start_a=0 start_b=1 a_overlaps_b=1
+start_a=0 start_b=2 a_overlaps_b=1
+start_a=0 start_b=3 a_overlaps_b=0
+start_a=0 start_b=4 a_overlaps_b=0
+start_a=0 start_b=5 a_overlaps_b=0
+start_a=1 start_b=0 a_overlaps_b=1
+start_a=1 start_b=1 a_overlaps_b=1
+start_a=1 start_b=2 a_overlaps_b=1
+start_a=1 start_b=3 a_overlaps_b=1
+start_a=1 start_b=4 a_overlaps_b=0
+start_a=1 start_b=5 a_overlaps_b=0
+...
+```
+
+### Python code
+
+```python
+"""Code sample to demonstrates how to detect if two intervals overlap."""
+
+from ortools.sat.python import cp_model
+
+
+class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
+  """Print intermediate solutions."""
+
+  def __init__(self, variables):
+    cp_model.CpSolverSolutionCallback.__init__(self)
+    self.__variables = variables
+    self.__solution_count = 0
+
+  def on_solution_callback(self):
+    self.__solution_count += 1
+    for v in self.__variables:
+      print('%s=%i' % (v, self.Value(v)), end=' ')
+    print()
+
+  def solution_count(self):
+    return self.__solution_count
+
+
+def OverlappingIntervals():
+  """Create the overlapping Boolean variables and enumerate all states."""
+  model = cp_model.CpModel()
+
+  horizon = 7
+
+  # First interval.
+  start_var_a = model.NewIntVar(0, horizon, 'start_a')
+  duration_a = 3
+  end_var_a = model.NewIntVar(0, horizon, 'end_a')
+  unused_interval_var_a = model.NewIntervalVar(start_var_a, duration_a,
+                                               end_var_a, 'interval_a')
+
+  # Second interval.
+  start_var_b = model.NewIntVar(0, horizon, 'start_b')
+  duration_b = 2
+  end_var_b = model.NewIntVar(0, horizon, 'end_b')
+  unused_interval_var_b = model.NewIntervalVar(start_var_b, duration_b,
+                                               end_var_b, 'interval_b')
+
+  # a_after_b Boolean variable.
+  a_after_b = model.NewBoolVar('a_after_b')
+  model.Add(start_var_a >= end_var_b).OnlyEnforceIf(a_after_b)
+  model.Add(start_var_a < end_var_b).OnlyEnforceIf(a_after_b.Not())
+
+  # b_after_a Boolean variable.
+  b_after_a = model.NewBoolVar('b_after_a')
+  model.Add(start_var_b >= end_var_a).OnlyEnforceIf(b_after_a)
+  model.Add(start_var_b < end_var_a).OnlyEnforceIf(b_after_a.Not())
+
+  # Result Boolean variable.
+  a_overlaps_b = model.NewBoolVar('a_overlaps_b')
+
+  # Option a: using only clauses
+  model.AddBoolOr([a_after_b, b_after_a, a_overlaps_b])
+  model.AddImplication(a_after_b, a_overlaps_b.Not())
+  model.AddImplication(b_after_a, a_overlaps_b.Not())
+
+  # Option b: using a sum() == 1.
+  # model.Add(a_after_b + b_after_a + a_overlaps_b == 1)
+
+  # Search for start values in increasing order for the two intervals.
+  model.AddDecisionStrategy([start_var_a, start_var_b], cp_model.CHOOSE_FIRST,
+                            cp_model.SELECT_MIN_VALUE)
+
+  # Create a solver and solve with a fixed search.
+  solver = cp_model.CpSolver()
+
+  # Force the solver to follow the decision strategy exactly.
+  solver.parameters.search_branching = cp_model.FIXED_SEARCH
+  # Enumerate all solutions.
+  solver.parameters.enumerate_all_solutions = True
+
+  # Search and print out all solutions.
+  solution_printer = VarArraySolutionPrinter(
+      [start_var_a, start_var_b, a_overlaps_b])
+  solver.Solve(model, solution_printer)
+
+
+OverlappingIntervals()
 ```
 
 ## Transitions in a disjunctive resource
