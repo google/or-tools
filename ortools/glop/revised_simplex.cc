@@ -237,8 +237,8 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
       // refactorize/recompute the reduced costs if not already done.
       // TODO(user): Not ideal in an incremental setting.
       reduced_costs_.MakeReducedCostsPrecise();
-      bool unused;
-      RefactorizeBasisIfNeeded(&unused);
+      bool refactorize = reduced_costs_.NeedsBasisRefactorization();
+      GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
       reduced_costs_.GetReducedCosts();
 
       const Fractional initial_infeasibility =
@@ -2403,28 +2403,9 @@ Status RevisedSimplex::UpdateAndPivot(ColIndex entering_col,
   return Status::OK();
 }
 
-bool RevisedSimplex::NeedsBasisRefactorization(bool refactorize) {
-  if (basis_factorization_.IsRefactorized()) return false;
-  if (reduced_costs_.NeedsBasisRefactorization()) return true;
-  const GlopParameters::PricingRule pricing_rule =
-      feasibility_phase_ ? parameters_.feasibility_rule()
-                         : parameters_.optimization_rule();
-  if (parameters_.use_dual_simplex()) {
-    // TODO(user): Currently the dual is always using STEEPEST_EDGE.
-    DCHECK_EQ(pricing_rule, GlopParameters::STEEPEST_EDGE);
-    if (dual_edge_norms_.NeedsBasisRefactorization()) return true;
-  } else {
-    if (pricing_rule == GlopParameters::STEEPEST_EDGE &&
-        primal_edge_norms_.NeedsBasisRefactorization()) {
-      return true;
-    }
-  }
-  return refactorize;
-}
-
 Status RevisedSimplex::RefactorizeBasisIfNeeded(bool* refactorize) {
   SCOPED_TIME_STAT(&function_stats_);
-  if (NeedsBasisRefactorization(*refactorize)) {
+  if (*refactorize && !basis_factorization_.IsRefactorized()) {
     GLOP_RETURN_IF_ERROR(basis_factorization_.Refactorize());
     update_row_.Invalidate();
     PermuteBasis();
@@ -2478,8 +2459,11 @@ Status RevisedSimplex::Polish(TimeLimit* time_limit) {
       fake_rc = -1.0;
     }
 
-    // Compute the direction and by how much we can move along it.
+    // Refactorize if needed.
+    if (reduced_costs_.NeedsBasisRefactorization()) refactorize = true;
     GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
+
+    // Compute the direction and by how much we can move along it.
     ComputeDirection(entering_col);
     Fractional step_length;
     RowIndex leaving_row;
@@ -2542,8 +2526,20 @@ Status RevisedSimplex::Polish(TimeLimit* time_limit) {
     // Perform the pivot.
     const ColIndex leaving_col = basis_[leaving_row];
     update_row_.ComputeUpdateRow(leaving_row);
+
+    // Note that this will only do work if the norms are computed.
+    //
+    // TODO(user): We should probably move all the "update" in a function so
+    // that all "iterations" function can just reuse the same code. Everything
+    // that is currently not "cleared" should be updated. If one does not want
+    // that, then it is easy to call Clear() on the quantities that do not needs
+    // to be kept in sync with the current basis.
     primal_edge_norms_.UpdateBeforeBasisPivot(
         entering_col, leaving_col, leaving_row, direction_, &update_row_);
+    dual_edge_norms_.UpdateBeforeBasisPivot(
+        entering_col, leaving_row, direction_,
+        update_row_.GetUnitRowLeftInverse());
+
     reduced_costs_.UpdateBeforeBasisPivot(entering_col, leaving_row, direction_,
                                           &update_row_);
 
@@ -2604,7 +2600,12 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
     // fix.
     IF_STATS_ENABLED(
         ScopedTimeDistributionUpdater timer(&iteration_stats_.total));
+
+    // Trigger a refactorization if one of the class we use request it.
+    if (reduced_costs_.NeedsBasisRefactorization()) refactorize = true;
+    if (primal_edge_norms_.NeedsBasisRefactorization()) refactorize = true;
     GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
+
     if (basis_factorization_.IsRefactorized()) {
       CorrectErrorsOnVariableValues();
       DisplayIterationInfo();
@@ -2876,7 +2877,10 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
     IF_STATS_ENABLED(
         ScopedTimeDistributionUpdater timer(&iteration_stats_.total));
 
+    // Trigger a refactorization if one of the class we use request it.
     const bool old_refactorize_value = refactorize;
+    if (reduced_costs_.NeedsBasisRefactorization()) refactorize = true;
+    if (dual_edge_norms_.NeedsBasisRefactorization()) refactorize = true;
     GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
 
     // If the basis is refactorized, we recompute all the values in order to

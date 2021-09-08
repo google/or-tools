@@ -556,16 +556,13 @@ class RevisedSimplex {
   // Displays all the timing stats related to the calling object.
   void DisplayAllStats();
 
-  // Returns whether or not a basis refactorization is needed at the beginning
-  // of the main loop in Minimize() or DualMinimize(). The idea is that if a
-  // refactorization is going to be needed by one of the components, it is
-  // better to do that as soon as possible so that every component can take
-  // advantage of it.
-  bool NeedsBasisRefactorization(bool refactorize);
-
-  // Calls basis_factorization_.Refactorize() depending on the result of
-  // NeedsBasisRefactorization(). Invalidates any data structure that depends
-  // on the current factorization. Sets refactorize to false.
+  // Calls basis_factorization_.Refactorize() if refactorize is true, and
+  // returns its status. This also sets refactorize to false and invalidates any
+  // data structure that depends on the current factorization.
+  //
+  // The general idea is that if a refactorization is going to be needed during
+  // a simplex iteration, it is better to do it as soon as possible so that
+  // every component can take advantage of it.
   Status RefactorizeBasisIfNeeded(bool* refactorize);
 
   // Minimize the objective function, be it for satisfiability or for

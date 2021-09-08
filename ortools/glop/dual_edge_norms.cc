@@ -22,7 +22,7 @@ DualEdgeNorms::DualEdgeNorms(const BasisFactorization& basis_factorization)
     : basis_factorization_(basis_factorization),
       recompute_edge_squared_norms_(true) {}
 
-bool DualEdgeNorms::NeedsBasisRefactorization() {
+bool DualEdgeNorms::NeedsBasisRefactorization() const {
   return recompute_edge_squared_norms_;
 }
 

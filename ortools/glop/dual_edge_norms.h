@@ -64,7 +64,7 @@ class DualEdgeNorms {
   // recompute the norms from scratch and therefore needs a hightened precision
   // and speed. This also indicates if GetEdgeSquaredNorms() will trigger a
   // recomputation.
-  bool NeedsBasisRefactorization();
+  bool NeedsBasisRefactorization() const;
 
   // Returns the dual edge squared norms. This is only valid if the caller
   // properly called UpdateBeforeBasisPivot() before each basis pivot, or just
