@@ -139,7 +139,7 @@ message(STATUS "Build .Net examples: ${BUILD_DOTNET_EXAMPLES}")
 #message(STATUS "Build doxygen: ${BUILD_DOC}")
 
 if(BUILD_JAVA)
-  option(SKIP_GPG "Disable GPG sign" OFF)
+  option(SKIP_GPG "Disable GPG sign" ON)
   message(STATUS "Java disable gpg:sign: ${SKIP_GPG}")
 
   option(UNIVERSAL_JAVA_PACKAGE "Build a Java multi OS Package" OFF)
