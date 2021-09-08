@@ -131,6 +131,25 @@ def ShortName(model, i):
 
 
 def ShortExprName(model, e):
+    """Pretty-print LinearExpressionProto instances."""
+    if not e.vars:
+        return str(e.offset)
+    if len(e.vars) == 1:
+        var_name = ShortName(model, e.vars[0])
+        coeff = e.coeffs[0]
+        result = ''
+        if coeff == 1:
+            result = var_name
+        elif coeff == -1:
+            result = f'-{var_name}'
+        elif coeff != 0:
+            result = f'{coeff} * {var_name}'
+        if e.offset > 0:
+            result = f'{result} + {e.offset}'
+        elif e.offset < 0:
+            result = f'{result} - {-e.offset}'
+        return result
+    # TODO(user): Support more than affine expressions.
     return str(e)
 
 
