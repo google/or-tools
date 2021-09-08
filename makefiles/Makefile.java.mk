@@ -355,6 +355,7 @@ $(JAVA_ORTOOLS_JAR): \
  $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/JavaDecisionBuilder.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/LongTernaryOperator.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/LongTernaryPredicate.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/Constant.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/sat/Constraint.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/sat/CpModel.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/sat/CpSolver.java \
@@ -366,6 +367,7 @@ $(JAVA_ORTOOLS_JAR): \
  $(SRC_DIR)/ortools/java/com/google/ortools/sat/Literal.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/sat/NotBooleanVariable.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/sat/ScalProd.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/Sum.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/sat/SumOfVariables.java \
  | $(CLASS_DIR)/com/google/ortools
 	"$(JAVAC_BIN)" -encoding UTF-8 -d $(CLASS_DIR) \
