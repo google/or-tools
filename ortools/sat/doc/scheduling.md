@@ -71,16 +71,28 @@ from ortools.sat.python import cp_model
 
 
 def IntervalSampleSat():
+  """Showcases how to build interval variables."""
   model = cp_model.CpModel()
-
   horizon = 100
+
+  # An interval can be created from three affine expressions.
   start_var = model.NewIntVar(0, horizon, 'start')
   duration = 10  # Python cp/sat code accept integer variables or constants.
   end_var = model.NewIntVar(0, horizon, 'end')
-  interval_var = model.NewIntervalVar(start_var, duration, end_var, 'interval')
+  interval_var = model.NewIntervalVar(start_var, duration, end_var + 2,
+                                      'interval')
 
-  print('start = %s, duration = %i, end = %s, interval = %s' %
-        (start_var, duration, end_var, interval_var))
+  print(f'interval = {repr(interval_var)}')
+
+  # If the size is fixed, a simpler version uses the start expression and the
+  # size.
+  fixed_size_interval_var = model.NewFixedSizeIntervalVar(
+      start_var, 10, 'fixed_size_interval_var')
+  print(f'fixed_size_interval_var = {repr(fixed_size_interval_var)}')
+
+  # A fixed interval can be created using the same API.
+  fixed_interval = model.NewFixedSizeIntervalVar(5, 10, 'fixed_interval')
+  print(f'fixed_interval = {repr(fixed_interval)}')
 
 
 IntervalSampleSat()
@@ -97,18 +109,38 @@ namespace sat {
 void IntervalSampleSat() {
   CpModelBuilder cp_model;
   const int kHorizon = 100;
-
   const Domain horizon(0, kHorizon);
-  const IntVar start_var = cp_model.NewIntVar(horizon).WithName("start");
-  const IntVar duration_var = cp_model.NewConstant(10);
-  const IntVar end_var = cp_model.NewIntVar(horizon).WithName("end");
+
+  // An interval can be created from three affine expressions.
+  const IntVar x = cp_model.NewIntVar(horizon).WithName("x");
+  const IntVar y = cp_model.NewIntVar({2, 4}).WithName("y");
+  const IntVar z = cp_model.NewIntVar(horizon).WithName("z");
 
   const IntervalVar interval_var =
-      cp_model.NewIntervalVar(start_var, duration_var, end_var)
+      cp_model.NewIntervalVar(x, y, LinearExpr(z).AddConstant(2))
           .WithName("interval");
-  LOG(INFO) << "start_var = " << start_var
-            << ", duration_var = " << duration_var << ", end_var = " << end_var
+  LOG(INFO) << "start = " << interval_var.StartExpr()
+            << ", size = " << interval_var.SizeExpr()
+            << ", end = " << interval_var.EndExpr()
             << ", interval_var = " << interval_var;
+
+  // If the size is fixed, a simpler version uses the start expression and the
+  // size.
+  const IntervalVar fixed_size_interval_var =
+      cp_model.NewFixedSizeIntervalVar(x, 10).WithName(
+          "fixed_size_interval_var");
+  LOG(INFO) << "start = " << fixed_size_interval_var.StartExpr()
+            << ", size = " << fixed_size_interval_var.SizeExpr()
+            << ", end = " << fixed_size_interval_var.EndExpr()
+            << ", fixed_size_interval_var = " << fixed_size_interval_var;
+
+  // A fixed interval can be created using the same API.
+  const IntervalVar fixed_interval =
+      cp_model.NewFixedSizeIntervalVar(5, 10).WithName("fixed_interval");
+  LOG(INFO) << "start = " << fixed_interval.StartExpr()
+            << ", size = " << fixed_interval.SizeExpr()
+            << ", end = " << fixed_interval.EndExpr()
+            << ", fixed_interval = " << fixed_interval;
 }
 
 }  // namespace sat
@@ -130,6 +162,7 @@ import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
+import com.google.ortools.sat.LinearExpr;
 
 /** Code sample to demonstrates how to build an interval. */
 public class IntervalSampleSat {
@@ -137,13 +170,23 @@ public class IntervalSampleSat {
     Loader.loadNativeLibraries();
     CpModel model = new CpModel();
     int horizon = 100;
+
+    // An interval can be created from three affine expressions.
     IntVar startVar = model.newIntVar(0, horizon, "start");
     IntVar endVar = model.newIntVar(0, horizon, "end");
-    // Java code supports IntVar or integer constants in intervals.
-    int duration = 10;
-    IntervalVar interval = model.newIntervalVar(startVar, duration, endVar, "interval");
+    IntervalVar intervalVar =
+        model.newIntervalVar(
+            startVar, LinearExpr.constant(10), LinearExpr.affine(endVar, 1, 2), "interval");
+    System.out.println(intervalVar);
 
-    System.out.println(interval);
+    // If the size is fixed, a simpler version uses the start expression and the size.
+    IntervalVar fixedSizeIntervalVar =
+        model.newFixedSizeIntervalVar(startVar, 10, "fixed_size_interval_var");
+    System.out.println(fixedSizeIntervalVar);
+
+    // A fixed interval can be created using another method.
+    IntervalVar fixedInterval = model.newFixedInterval(5, 10, "fixed_interval");
+    System.out.println(fixedInterval);
   }
 }
 ```
@@ -160,11 +203,21 @@ public class IntervalSampleSat
     {
         CpModel model = new CpModel();
         int horizon = 100;
+
+        // C# code supports constant of affine expressions.
         IntVar start_var = model.NewIntVar(0, horizon, "start");
-        // C# code supports IntVar or integer constants in intervals.
-        int duration = 10;
         IntVar end_var = model.NewIntVar(0, horizon, "end");
-        IntervalVar interval = model.NewIntervalVar(start_var, duration, end_var, "interval");
+        IntervalVar interval = model.NewIntervalVar(start_var, 10, end_var + 2, "interval");
+        Console.WriteLine(interval);
+
+        // If the size is fixed, a simpler version uses the start expression, the size and the
+        // literal.
+        IntervalVar fixedSizeIntervalVar = model.NewFixedSizeIntervalVar(start_var, 10, "fixed_size_interval_var");
+        Console.WriteLine(fixedSizeIntervalVar);
+
+        // A fixed interval can be created using the same API.
+        IntervalVar fixedInterval = model.NewFixedSizeIntervalVar(5, 10, "fixed_interval");
+        Console.WriteLine(fixedInterval);
     }
 }
 ```
@@ -184,19 +237,30 @@ from ortools.sat.python import cp_model
 
 
 def OptionalIntervalSampleSat():
-  """Build an optional interval."""
+  """Showcases how to build optional interval variables."""
   model = cp_model.CpModel()
-
   horizon = 100
+
+  # An interval can be created from three affine expressions.
   start_var = model.NewIntVar(0, horizon, 'start')
   duration = 10  # Python cp/sat code accept integer variables or constants.
   end_var = model.NewIntVar(0, horizon, 'end')
   presence_var = model.NewBoolVar('presence')
-  interval_var = model.NewOptionalIntervalVar(start_var, duration, end_var,
+  interval_var = model.NewOptionalIntervalVar(start_var, duration, end_var + 2,
                                               presence_var, 'interval')
 
-  print('start = %s, duration = %i, end = %s, presence = %s, interval = %s' %
-        (start_var, duration, end_var, presence_var, interval_var))
+  print(f'interval = {repr(interval_var)}')
+
+  # If the size is fixed, a simpler version uses the start expression and the
+  # size.
+  fixed_size_interval_var = model.NewOptionalFixedSizeIntervalVar(
+      start_var, 10, presence_var, 'fixed_size_interval_var')
+  print(f'fixed_size_interval_var = {repr(fixed_size_interval_var)}')
+
+  # A fixed interval can be created using the same API.
+  fixed_interval = model.NewOptionalFixedSizeIntervalVar(
+      5, 10, presence_var, 'fixed_interval')
+  print(f'fixed_interval = {repr(fixed_interval)}')
 
 
 OptionalIntervalSampleSat()
@@ -213,23 +277,36 @@ namespace sat {
 void OptionalIntervalSampleSat() {
   CpModelBuilder cp_model;
   const int kHorizon = 100;
-
   const Domain horizon(0, kHorizon);
-  const IntVar start_var = cp_model.NewIntVar(horizon).WithName("start");
-  const IntVar duration_var = cp_model.NewConstant(10);
-  const IntVar end_var = cp_model.NewIntVar(horizon).WithName("end");
+
+  // An optional interval can be created from three affine expressions and a
+  // BoolVar.
+  const IntVar x = cp_model.NewIntVar(horizon).WithName("x");
+  const IntVar y = cp_model.NewIntVar({2, 4}).WithName("y");
+  const IntVar z = cp_model.NewIntVar(horizon).WithName("z");
   const BoolVar presence_var = cp_model.NewBoolVar().WithName("presence");
 
   const IntervalVar interval_var =
       cp_model
-          .NewOptionalIntervalVar(start_var, duration_var, end_var,
+          .NewOptionalIntervalVar(x, y, LinearExpr(z).AddConstant(2),
                                   presence_var)
           .WithName("interval");
-
-  LOG(INFO) << "start_var = " << start_var
-            << ", duration_var = " << duration_var << ", end_var = " << end_var
-            << ", presence_var = " << presence_var
+  LOG(INFO) << "start = " << interval_var.StartExpr()
+            << ", size = " << interval_var.SizeExpr()
+            << ", end = " << interval_var.EndExpr()
+            << ", presence = " << interval_var.PresenceBoolVar()
             << ", interval_var = " << interval_var;
+
+  // If the size is fixed, a simpler version uses the start expression and the
+  // size.
+  const IntervalVar fixed_size_interval_var =
+      cp_model.NewOptionalFixedSizeIntervalVar(x, 10, presence_var)
+          .WithName("fixed_size_interval_var");
+  LOG(INFO) << "start = " << fixed_size_interval_var.StartExpr()
+            << ", size = " << fixed_size_interval_var.SizeExpr()
+            << ", end = " << fixed_size_interval_var.EndExpr()
+            << ", presence = " << fixed_size_interval_var.PresenceBoolVar()
+            << ", interval_var = " << fixed_size_interval_var;
 }
 
 }  // namespace sat
@@ -251,6 +328,7 @@ import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
+import com.google.ortools.sat.LinearExpr;
 import com.google.ortools.sat.Literal;
 
 /** Code sample to demonstrates how to build an optional interval. */
@@ -259,15 +337,28 @@ public class OptionalIntervalSampleSat {
     Loader.loadNativeLibraries();
     CpModel model = new CpModel();
     int horizon = 100;
+
+    // An interval can be created from three affine expressions, and a literal.
     IntVar startVar = model.newIntVar(0, horizon, "start");
     IntVar endVar = model.newIntVar(0, horizon, "end");
-    // Java code supports IntVar or integer constants in intervals.
-    int duration = 10;
     Literal presence = model.newBoolVar("presence");
-    IntervalVar interval =
-        model.newOptionalIntervalVar(startVar, duration, endVar, presence, "interval");
+    IntervalVar intervalVar =
+        model.newOptionalIntervalVar(
+            startVar,
+            LinearExpr.constant(10),
+            LinearExpr.affine(endVar, 1, 2),
+            presence,
+            "interval");
+    System.out.println(intervalVar);
 
-    System.out.println(interval);
+    // If the size is fixed, a simpler version uses the start expression, the size and the literal.
+    IntervalVar fixedSizeIntervalVar =
+        model.newOptionalFixedSizeIntervalVar(startVar, 10, presence, "fixed_size_interval_var");
+    System.out.println(fixedSizeIntervalVar);
+
+    // A fixed interval can be created using another method.
+    IntervalVar fixedInterval = model.newOptionalFixedInterval(5, 10, presence, "fixed_interval");
+    System.out.println(fixedInterval);
   }
 }
 ```
@@ -284,13 +375,23 @@ public class OptionalIntervalSampleSat
     {
         CpModel model = new CpModel();
         int horizon = 100;
+
+        // C# code supports constant of affine expressions.
         IntVar start_var = model.NewIntVar(0, horizon, "start");
-        // C# code supports IntVar or integer constants in intervals.
-        int duration = 10;
         IntVar end_var = model.NewIntVar(0, horizon, "end");
         IntVar presence_var = model.NewBoolVar("presence");
-        IntervalVar interval = model.NewOptionalIntervalVar(start_var, duration, end_var, presence_var, "interval");
-    }
+        IntervalVar interval = model.NewOptionalIntervalVar(start_var, 10, end_var + 2, presence_var, "interval");
+        Console.WriteLine(interval);
+
+        // If the size is fixed, a simpler version uses the start expression, the size and the
+        // literal.
+        IntervalVar fixedSizeIntervalVar =
+            model.NewOptionalFixedSizeIntervalVar(start_var, 10, presence_var, "fixed_size_interval_var");
+        Console.WriteLine(fixedSizeIntervalVar);
+
+        // A fixed interval can be created using the same API.
+        IntervalVar fixedInterval = model.NewOptionalFixedSizeIntervalVar(5, 10, presence_var, "fixed_interval");
+        Console.WriteLine(fixedInterval);    }
 }
 ```
 
