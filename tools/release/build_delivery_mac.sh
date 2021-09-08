@@ -44,7 +44,7 @@ function assert_defined(){
 
 function build_cxx() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/cxx_build" -; then
-    echo "build C++ up to date!"
+    echo "build C++ up to date!" | tee -a build.log
     return 0
   fi
 
@@ -78,7 +78,7 @@ function build_cxx() {
 # .Net build
 function build_dotnet() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/dotnet_build" -; then
-    echo "build .Net up to date!"
+    echo "build .Net up to date!" | tee -a build.log
     return 0
   fi
   build_cxx
@@ -113,7 +113,7 @@ function build_dotnet() {
 # Java build
 function build_java() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/java_build" -; then
-    echo "build Java up to date!"
+    echo "build Java up to date!" | tee -a build.log
     return 0
   fi
   build_cxx
@@ -122,7 +122,7 @@ function build_java() {
   command -v swig | xargs echo "swig: " | tee -a build.log
   # maven require JAVA_HOME
   if [[ -z "${JAVA_HOME}" ]]; then
-    echo "JAVA_HOME: not found !" | tee build.log
+    echo "JAVA_HOME: not found !" | tee -a build.log
     exit 1
   else
     echo "JAVA_HOME: ${JAVA_HOME}" | tee -a build.log
@@ -175,7 +175,7 @@ function build_java() {
 
 function build_fz() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/fz_build" -; then
-    echo "build Flatzinc up to date!"
+    echo "build Flatzinc up to date!" | tee -a build.log
     return 0
   fi
   build_cxx
@@ -195,7 +195,7 @@ function build_fz() {
 # Create Archive
 function build_archive() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/archive_build" -; then
-    echo "build archive up to date!"
+    echo "build archive up to date!" | tee -a build.log
     return 0
   fi
   build_fz
@@ -225,7 +225,7 @@ function build_archive() {
 # Build Examples
 function build_examples() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/examples_build" -; then
-    echo "build examples up to date!"
+    echo "build examples up to date!" | tee -a build.log
     return 0
   fi
 
@@ -297,10 +297,10 @@ function main() {
   make print-OR_TOOLS_VERSION | tee -a build.log
 
   local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
-  echo "ROOT_DIR: '${ROOT_DIR}'"
+  echo "ROOT_DIR: '${ROOT_DIR}'" | tee -a build.log
 
   local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
-  echo "RELEASE_DIR: '${RELEASE_DIR}'"
+  echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a build.log
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
@@ -318,7 +318,7 @@ function main() {
       build_examples
       exit ;;
     *)
-      >&2 echo "Target '${1}' unknown"
+      >&2 echo "Target '${1}' unknown" | tee -a build.log
       exit 1
   esac
   exit 0
