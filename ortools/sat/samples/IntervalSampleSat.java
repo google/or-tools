@@ -17,6 +17,7 @@ import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
+import com.google.ortools.sat.LinearExpr;
 
 /** Code sample to demonstrates how to build an interval. */
 public class IntervalSampleSat {
@@ -24,12 +25,21 @@ public class IntervalSampleSat {
     Loader.loadNativeLibraries();
     CpModel model = new CpModel();
     int horizon = 100;
+
+    // An interval can be created from three affine expressions.
     IntVar startVar = model.newIntVar(0, horizon, "start");
     IntVar endVar = model.newIntVar(0, horizon, "end");
-    // Java code supports IntVar or integer constants in intervals.
-    int duration = 10;
-    IntervalVar interval = model.newIntervalVar(startVar, duration, endVar, "interval");
+    IntervalVar intervalVar = model.newIntervalVar(
+        startVar, LinearExpr.constant(10), LinearExpr.affine(endVar, 1, 2), "interval");
+    System.out.println(intervalVar);
 
-    System.out.println(interval);
+    // If the size is fixed, a simpler version uses the start expression and the size.
+    IntervalVar fixedSizeIntervalVar =
+        model.newFixedSizeIntervalVar(startVar, 10, "fixed_size_interval_var");
+    System.out.println(fixedSizeIntervalVar);
+
+    // A fixed interval can be created using another method.
+    IntervalVar fixedInterval = model.newFixedInterval(5, 10, "fixed_interval");
+    System.out.println(fixedInterval);
   }
 }

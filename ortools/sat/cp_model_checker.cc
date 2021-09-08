@@ -470,6 +470,10 @@ std::string ValidateIntervalConstraint(const CpModelProto& model,
   int num_view = 0;
   if (arg.has_start_view()) {
     ++num_view;
+    if (arg.start_view().vars_size() > 1) {
+      return "Interval with a start expression containing more than one "
+             "variable are currently not supported.";
+    }
     RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.start_view()));
     AppendToOverflowValidator(arg.start_view(), &for_overflow_validation);
   } else {
@@ -478,14 +482,34 @@ std::string ValidateIntervalConstraint(const CpModelProto& model,
   }
   if (arg.has_size_view()) {
     ++num_view;
+    if (arg.size_view().vars_size() > 1) {
+      return "Interval with a size expression containing more than one "
+             "variable are currently not supported.";
+    }
     RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.size_view()));
+    if (MinOfExpression(model, arg.size_view()) < 0) {
+      return absl::StrCat(
+          "The size of an interval must be >= 0 in constraint: ",
+          ProtobufDebugString(ct));
+    }
     AppendToOverflowValidator(arg.size_view(), &for_overflow_validation);
   } else {
+    const std::string domain_error =
+        ValidateDomainIsPositive(model, arg.size(), "size");
+    if (!domain_error.empty()) {
+      return absl::StrCat(domain_error,
+                          " in constraint: ", ProtobufDebugString(ct));
+    }
+
     for_overflow_validation.add_vars(arg.size());
     for_overflow_validation.add_coeffs(1);
   }
   if (arg.has_end_view()) {
     ++num_view;
+    if (arg.end_view().vars_size() > 1) {
+      return "Interval with a sendize expression containing more than one "
+             "variable are currently not supported.";
+    }
     RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.end_view()));
     AppendToOverflowValidator(arg.end_view(), &for_overflow_validation);
   } else {
@@ -505,16 +529,6 @@ std::string ValidateIntervalConstraint(const CpModelProto& model,
         "both: ",
         ProtobufShortDebugString(ct));
   }
-  if (num_view > 0) return "";
-
-  // The interval is in the non-converted format (3 variables).
-  const std::string domain_error =
-      ValidateDomainIsPositive(model, arg.size(), "size");
-  if (!domain_error.empty()) {
-    return absl::StrCat(domain_error,
-                        " in constraint: ", ProtobufDebugString(ct));
-  }
-
   return "";
 }
 
@@ -775,8 +789,11 @@ std::string ValidateCpModel(const CpModelProto& model) {
     RETURN_IF_NOT_EMPTY(ValidateIntegerVariable(model, v));
   }
 
-  // Validate intervals first.
+  // Checks all variable references, and validate intervals before scanning the
+  // rest of the constraints.
   for (int c = 0; c < model.constraints_size(); ++c) {
+    RETURN_IF_NOT_EMPTY(ValidateArgumentReferencesInConstraint(model, c));
+
     const ConstraintProto& ct = model.constraints(c);
     if (ct.constraint_case() == ConstraintProto::kInterval) {
       RETURN_IF_NOT_EMPTY(ValidateIntervalConstraint(model, ct));
@@ -784,8 +801,6 @@ std::string ValidateCpModel(const CpModelProto& model) {
   }
 
   for (int c = 0; c < model.constraints_size(); ++c) {
-    RETURN_IF_NOT_EMPTY(ValidateArgumentReferencesInConstraint(model, c));
-
     // By default, a constraint does not support enforcement literals except if
     // explicitly stated by setting this to true below.
     bool support_enforcement = false;

@@ -633,6 +633,7 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
     IntegerValue rhs_remainder, IntegerValue divisor, IntegerValue t,
     IntegerValue max_scaling) {
   DCHECK_GE(max_scaling, 1);
+  DCHECK_GE(t, 1);
 
   // Adjust after the multiplication by t.
   rhs_remainder *= t;
@@ -654,8 +655,9 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
     };
   } else if (size <= max_scaling) {
     return [size, rhs_remainder, t, divisor](IntegerValue coeff) {
-      const IntegerValue ratio = FloorRatio(t * coeff, divisor);
-      const IntegerValue remainder = t * coeff - ratio * divisor;
+      const IntegerValue t_coeff = t * coeff;
+      const IntegerValue ratio = FloorRatio(t_coeff, divisor);
+      const IntegerValue remainder = PositiveRemainder(t_coeff, divisor);
       const IntegerValue diff = remainder - rhs_remainder;
       return size * ratio + std::max(IntegerValue(0), diff);
     };
@@ -670,8 +672,9 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
     // overflows. Maybe we should just always do the computation like this so
     // that we can use larger t even if coeff is close to kint64max.
     return [t, divisor, max_scaling](IntegerValue coeff) {
-      const IntegerValue ratio = FloorRatio(t * coeff, divisor);
-      const IntegerValue remainder = t * coeff - ratio * divisor;
+      const IntegerValue t_coeff = t * coeff;
+      const IntegerValue ratio = FloorRatio(t_coeff, divisor);
+      const IntegerValue remainder = PositiveRemainder(t_coeff, divisor);
       const IntegerValue bucket = FloorRatio(remainder * max_scaling, divisor);
       return max_scaling * ratio + bucket;
     };
@@ -699,8 +702,9 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
     // TODO(user): This function is not always maximal when
     // size % (max_scaling - 1) == 0. Improve?
     return [size, rhs_remainder, t, divisor, max_scaling](IntegerValue coeff) {
-      const IntegerValue ratio = FloorRatio(t * coeff, divisor);
-      const IntegerValue remainder = t * coeff - ratio * divisor;
+      const IntegerValue t_coeff = t * coeff;
+      const IntegerValue ratio = FloorRatio(t_coeff, divisor);
+      const IntegerValue remainder = PositiveRemainder(t_coeff, divisor);
       const IntegerValue diff = remainder - rhs_remainder;
       const IntegerValue bucket =
           diff > 0 ? CeilRatio(diff * (max_scaling - 1), size)

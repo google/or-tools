@@ -85,6 +85,11 @@ namespace Google.OrTools.Sat
             }
         }
 
+        public static LinearExpr Constant(long value)
+        {
+            return new ConstantExpr(value);
+        }
+
         public int Index
         {
             get {
@@ -313,6 +318,11 @@ namespace Google.OrTools.Sat
                         }
                     }
                 }
+                else if (expr is ConstantExpr)
+                {
+                    ConstantExpr cte = (ConstantExpr)expr;
+                    constant += coeff * cte.Value;
+                }
                 else if (expr is IntVar)
                 {
                     IntVar i = (IntVar)expr;
@@ -509,6 +519,23 @@ namespace Google.OrTools.Sat
 
         private List<LinearExpr> expressions_;
         private long constant_;
+    }
+
+    public class ConstantExpr : LinearExpr
+    {
+        public ConstantExpr(long value)
+        {
+            value_ = value;
+        }
+
+        public long Value
+        {
+            get {
+                return value_;
+            }
+        }
+
+        private long value_;
     }
 
     public class IntVar : LinearExpr, ILiteral

@@ -98,8 +98,11 @@ inline IntegerValue FloorRatio(IntegerValue dividend,
 }
 
 // Returns dividend - FloorRatio(dividend, divisor) * divisor;
-// This function should be faster thant the computation above and never causes
-// integer overflow.
+//
+// This function is around the same speed than the computation above, but it
+// never causes integer overflow. Note also that when calling FloorRatio() then
+// PositiveRemainder(), the compiler should optimize the modulo away and just
+// reuse the one from the first integer division.
 inline IntegerValue PositiveRemainder(IntegerValue dividend,
                                       IntegerValue positive_divisor) {
   DCHECK_GT(positive_divisor, 0);

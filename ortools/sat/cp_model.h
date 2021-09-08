@@ -273,6 +273,9 @@ class LinearExpr {
   /// Adds a term (var * coeff) to the linear expression.
   LinearExpr& AddTerm(IntVar var, int64_t coeff);
 
+  /// Adds another linear expression to the linear expression.
+  LinearExpr& AddExpression(const LinearExpr& expr);
+
   /// Constructs the sum of a list of variables.
   static LinearExpr Sum(absl::Span<const IntVar> vars);
 
@@ -298,13 +301,16 @@ class LinearExpr {
   /// Returns the constant term.
   int64_t constant() const { return constant_; }
 
-  // TODO(user): LinearExpr.DebugString() and operator<<.
+  /// Debug string.
+  std::string DebugString() const;
 
  private:
   std::vector<IntVar> variables_;
   std::vector<int64_t> coefficients_;
   int64_t constant_ = 0;
 };
+
+std::ostream& operator<<(std::ostream& os, const LinearExpr& e);
 
 /**
  * Represents a Interval variable.
@@ -336,14 +342,17 @@ class IntervalVar {
   /// Returns the name of the interval (or the empty string if not set).
   std::string Name() const;
 
-  /// Returns the start variable.
-  IntVar StartVar() const;
+  /// Returns the start linear expression. Note that this rebuilds the
+  /// expression each time this method is called.
+  LinearExpr StartExpr() const;
 
-  /// Returns the size variable.
-  IntVar SizeVar() const;
+  /// Returns the size linear expression. Note that this rebuilds the
+  /// expression each time this method is called.
+  LinearExpr SizeExpr() const;
 
-  /// Returns the end variable.
-  IntVar EndVar() const;
+  /// Returns the end linear expression. Note that this rebuilds the
+  /// expression each time this method is called.
+  LinearExpr EndExpr() const;
 
   /**
    * Returns a BoolVar indicating the presence of this interval.
@@ -616,11 +625,20 @@ class CpModelBuilder {
   BoolVar FalseVar();
 
   /// Creates an interval variable.
-  IntervalVar NewIntervalVar(IntVar start, IntVar size, IntVar end);
+  IntervalVar NewIntervalVar(const LinearExpr& start, const LinearExpr& size,
+                             const LinearExpr& end);
+
+  /// Creates an interval variable with a fixed size.
+  IntervalVar NewFixedSizeIntervalVar(const LinearExpr& start, int64_t size);
 
   /// Creates an optional interval variable.
-  IntervalVar NewOptionalIntervalVar(IntVar start, IntVar size, IntVar end,
-                                     BoolVar presence);
+  IntervalVar NewOptionalIntervalVar(const LinearExpr& start,
+                                     const LinearExpr& size,
+                                     const LinearExpr& end, BoolVar presence);
+
+  /// Creates an optional interval variable with a fixed size.
+  IntervalVar NewOptionalFixedSizeIntervalVar(const LinearExpr& start,
+                                              int64_t size, BoolVar presence);
 
   /// Adds the constraint that at least one of the literals must be true.
   Constraint AddBoolOr(absl::Span<const BoolVar> literals);
@@ -896,10 +914,15 @@ class CpModelBuilder {
  private:
   friend class CumulativeConstraint;
   friend class ReservoirConstraint;
+  friend class IntervalVar;
 
   // Fills the 'expr_proto' with the linear expression represented by 'expr'.
   void LinearExprToProto(const LinearExpr& expr,
                          LinearExpressionProto* expr_proto);
+
+  // Rebuilds a LinearExpr from a LinearExpressionProto.
+  static LinearExpr LinearExprFromProto(const LinearExpressionProto& expr_proto,
+                                        CpModelProto* model_proto_);
 
   // Returns a (cached) integer variable index with a constant value.
   int IndexFromConstant(int64_t value);

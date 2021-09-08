@@ -16,22 +16,25 @@ package com.google.ortools.sat;
 import com.google.ortools.sat.ConstraintProto;
 import com.google.ortools.sat.CpModelProto;
 import com.google.ortools.sat.IntervalConstraintProto;
+import com.google.ortools.sat.LinearExpressionProto;
 
 /** An interval variable. This class must be constructed from the CpModel class. */
 public final class IntervalVar {
-  IntervalVar(
-      CpModelProto.Builder builder, int startIndex, int sizeIndex, int endIndex, String name) {
+  IntervalVar(CpModelProto.Builder builder, LinearExpressionProto.Builder startBuilder,
+      LinearExpressionProto.Builder sizeBuilder, LinearExpressionProto.Builder endBuilder,
+      String name) {
     this.modelBuilder = builder;
     this.constraintIndex = modelBuilder.getConstraintsCount();
     ConstraintProto.Builder ct = modelBuilder.addConstraintsBuilder();
     ct.setName(name);
     this.intervalBuilder = ct.getIntervalBuilder();
-    this.intervalBuilder.setStart(startIndex);
-    this.intervalBuilder.setSize(sizeIndex);
-    this.intervalBuilder.setEnd(endIndex);
+    this.intervalBuilder.setStartView(startBuilder);
+    this.intervalBuilder.setSizeView(sizeBuilder);
+    this.intervalBuilder.setEndView(endBuilder);
   }
 
-  IntervalVar(CpModelProto.Builder builder, int startIndex, int sizeIndex, int endIndex,
+  IntervalVar(CpModelProto.Builder builder, LinearExpressionProto.Builder startBuilder,
+      LinearExpressionProto.Builder sizeBuilder, LinearExpressionProto.Builder endBuilder,
       int isPresentIndex, String name) {
     this.modelBuilder = builder;
     this.constraintIndex = modelBuilder.getConstraintsCount();
@@ -39,9 +42,9 @@ public final class IntervalVar {
     ct.setName(name);
     ct.addEnforcementLiteral(isPresentIndex);
     this.intervalBuilder = ct.getIntervalBuilder();
-    this.intervalBuilder.setStart(startIndex);
-    this.intervalBuilder.setSize(sizeIndex);
-    this.intervalBuilder.setEnd(endIndex);
+    this.intervalBuilder.setStartView(startBuilder);
+    this.intervalBuilder.setSizeView(sizeBuilder);
+    this.intervalBuilder.setEndView(endBuilder);
   }
 
   @Override

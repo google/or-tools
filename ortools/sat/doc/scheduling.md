@@ -52,14 +52,14 @@ exclusivity between tasks, and temporal relations between tasks.
 
 ## Interval variables
 
-Intervals are constraints containing three integer variables (start, size, and
-end). Creating an interval constraint will enforce that start + size == end.
+Intervals are constraints containing three constant of affine expressions
+(start, size, and end). Creating an interval constraint will enforce that start
++ size == end.
 
-4:15PM, Jun 20 To define an interval, we need to create three variables: start,
-size, and end.Then we create an interval constraint using these three variables.
+The more general API uses three expressions to define the interval. If the size
+is fixed, a simpler API uses the start expression and the fixed size.
 
-We give two code snippets the demonstrate how to build these objects in Python,
-C++, Java, and C\#.
+Creating these intervals is illustrated in the following code snippets.
 
 ### Python code
 

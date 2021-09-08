@@ -77,6 +77,7 @@
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/linear_relaxation.h"
 #include "ortools/sat/optimization.h"
+#include "ortools/sat/parameters_validation.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/probing.h"
 #include "ortools/sat/rins.h"
@@ -2898,53 +2899,16 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
 #endif  // __PORTABLE_PLATFORM__
 
-  // Initialize the time limit from the parameters.
-  const SatParameters& params = *model->GetOrCreate<SatParameters>();
-  model->GetOrCreate<TimeLimit>()->ResetLimitFromParameters(params);
-  auto* shared_time_limit = model->GetOrCreate<ModelSharedTimeLimit>();
-
-#if !defined(__PORTABLE_PLATFORM__)
-  // Register SIGINT handler if requested by the parameters.
-  if (params.catch_sigint_signal()) {
-    model->GetOrCreate<SigintHandler>()->Register(
-        [&shared_time_limit]() { shared_time_limit->Stop(); });
-  }
-#endif  // __PORTABLE_PLATFORM__
-
   // Enable the logging component.
+  const SatParameters& params = *model->GetOrCreate<SatParameters>();
   SolverLogger* logger = model->GetOrCreate<SolverLogger>();
   logger->EnableLogging(params.log_search_progress() || VLOG_IS_ON(1));
   logger->SetLogToStdOut(params.log_to_stdout());
-
   std::string log_string;
   if (params.log_to_response()) {
-    const auto append_to_string = [&log_string](const std::string& message) {
+    logger->AddInfoLoggingCallback([&log_string](const std::string& message) {
       absl::StrAppend(&log_string, message, "\n");
-    };
-    logger->AddInfoLoggingCallback(append_to_string);
-  }
-
-  SOLVER_LOG(logger, "");
-  SOLVER_LOG(logger, "Starting CP-SAT solver.");
-
-  // Initialize the number of workers if set to 0.
-  if (params.num_search_workers() == 0) {
-#if !defined(__PORTABLE_PLATFORM__)
-    // Sometimes, hardware_concurrency will return 0. So always default to 1.
-    const int num_cores =
-        params.enumerate_all_solutions()
-            ? 1
-            : std::max<int>(std::thread::hardware_concurrency(), 1);
-#else
-    const int num_cores = 1;
-#endif
-    SOLVER_LOG(logger, "Setting number of workers to ", num_cores);
-    model->GetOrCreate<SatParameters>()->set_num_search_workers(num_cores);
-  }
-
-  SOLVER_LOG(logger, "Parameters: ", params.ShortDebugString());
-  if (logger->LoggingIsEnabled() && params.use_absl_random()) {
-    model->GetOrCreate<ModelRandomGenerator>()->LogSalt();
+    });
   }
 
   auto* shared_response_manager = model->GetOrCreate<SharedResponseManager>();
@@ -2981,6 +2945,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Always add the timing information to a response. Note that it is important
   // to add this after the log/dump postprocessor since we execute them in
   // reverse order.
+  auto* shared_time_limit = model->GetOrCreate<ModelSharedTimeLimit>();
   shared_response_manager->AddSolutionPostprocessor(
       [&wall_timer, &user_timer,
        &shared_time_limit](CpSolverResponse* response) {
@@ -2989,6 +2954,58 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         response->set_deterministic_time(
             shared_time_limit->GetElapsedDeterministicTime());
       });
+
+  // Validate parameters.
+  //
+  // Note that the few parameters we use before that are Booleans and thus
+  // "safe". We need to delay the validation to return a proper response.
+  {
+    const std::string error = ValidateParameters(params);
+    if (!error.empty()) {
+      SOLVER_LOG(logger, "Invalid parameters: ", error);
+
+      // TODO(user): We currently reuse the MODEL_INVALID status even though it
+      // is not the best name for this. Maybe we can add a PARAMETERS_INVALID
+      // when it become needed. Or rename to INVALID_INPUT ?
+      shared_response_manager->MutableResponse()->set_status(
+          CpSolverStatus::MODEL_INVALID);
+      return shared_response_manager->GetResponse();
+    }
+  }
+
+  // Initialize the time limit from the parameters.
+  model->GetOrCreate<TimeLimit>()->ResetLimitFromParameters(params);
+
+#if !defined(__PORTABLE_PLATFORM__)
+  // Register SIGINT handler if requested by the parameters.
+  if (params.catch_sigint_signal()) {
+    model->GetOrCreate<SigintHandler>()->Register(
+        [&shared_time_limit]() { shared_time_limit->Stop(); });
+  }
+#endif  // __PORTABLE_PLATFORM__
+
+  SOLVER_LOG(logger, "");
+  SOLVER_LOG(logger, "Starting CP-SAT solver.");
+
+  // Initialize the number of workers if set to 0.
+  if (params.num_search_workers() == 0) {
+#if !defined(__PORTABLE_PLATFORM__)
+    // Sometimes, hardware_concurrency will return 0. So always default to 1.
+    const int num_cores =
+        params.enumerate_all_solutions()
+            ? 1
+            : std::max<int>(std::thread::hardware_concurrency(), 1);
+#else
+    const int num_cores = 1;
+#endif
+    SOLVER_LOG(logger, "Setting number of workers to ", num_cores);
+    model->GetOrCreate<SatParameters>()->set_num_search_workers(num_cores);
+  }
+
+  SOLVER_LOG(logger, "Parameters: ", params.ShortDebugString());
+  if (logger->LoggingIsEnabled() && params.use_absl_random()) {
+    model->GetOrCreate<ModelRandomGenerator>()->LogSalt();
+  }
 
   // Validate model_proto.
   // TODO(user): provide an option to skip this step for speed?

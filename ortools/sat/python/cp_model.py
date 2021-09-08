@@ -130,6 +130,10 @@ def ShortName(model, i):
         return '[%s]' % DisplayBounds(v.domain)
 
 
+def ShortExprName(model, e):
+    return str(e)
+
+
 class LinearExpr(object):
     """Holds an integer linear expression.
 
@@ -724,8 +728,8 @@ class IntervalVar(object):
   intervals into the schedule.
   """
 
-    def __init__(self, model, start_index, size_index, end_index,
-                 is_present_index, name):
+    def __init__(self, model, start_view, size_view, end_view, is_present_index,
+                 name):
         self.__model = model
         # As with the IntVar::__init__ method, we hack the __init__ method to
         # support two use cases:
@@ -735,16 +739,16 @@ class IntervalVar(object):
         #      name is a string
         #   case 2: called when querying an existing interval variable.
         #      start_index is an int, all parameters after are None.
-        if (size_index is None and end_index is None and
+        if (size_view is None and end_view is None and
                 is_present_index is None and name is None):
-            self.__index = start_index
-            self.__ct = model.constraints[start_index]
+            self.__index = start_view
+            self.__ct = model.constraints[start_view]
         else:
             self.__index = len(model.constraints)
             self.__ct = self.__model.constraints.add()
-            self.__ct.interval.start = start_index
-            self.__ct.interval.size = size_index
-            self.__ct.interval.end = end_index
+            self.__ct.interval.start_view.CopyFrom(start_view)
+            self.__ct.interval.size_view.CopyFrom(size_view)
+            self.__ct.interval.end_view.CopyFrom(end_view)
             if is_present_index is not None:
                 self.__ct.enforcement_literal.append(is_present_index)
             if name:
@@ -765,15 +769,17 @@ class IntervalVar(object):
         interval = self.__ct.interval
         if self.__ct.enforcement_literal:
             return '%s(start = %s, size = %s, end = %s, is_present = %s)' % (
-                self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model,
-                          interval.size), ShortName(self.__model, interval.end),
+                self.__ct.name, ShortExprName(self.__model,
+                                              interval.start_view),
+                ShortExprName(self.__model, interval.size_view),
+                ShortExprName(self.__model, interval.end_view),
                 ShortName(self.__model, self.__ct.enforcement_literal[0]))
         else:
             return '%s(start = %s, size = %s, end = %s)' % (
-                self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model,
-                          interval.size), ShortName(self.__model, interval.end))
+                self.__ct.name, ShortExprName(self.__model,
+                                              interval.start_view),
+                ShortExprName(self.__model, interval.size_view),
+                ShortExprName(self.__model, interval.end_view))
 
     def Name(self):
         return self.__ct.name
@@ -1407,23 +1413,59 @@ class CpModel(object):
     Internally, it ensures that `start + size == end`.
 
     Args:
-      start: The start of the interval. It can be an integer value, or an
-        integer variable.
-      size: The size of the interval. It can be an integer value, or an integer
-        variable.
-      end: The end of the interval. It can be an integer value, or an integer
-        variable.
+      start: The start of the interval. It can be an affine or constant
+             expression.
+      size: The size of the interval. It can be an affine or constant
+            expression.
+      end: The end of the interval. It can be an affine or constant
+           expression.
       name: The name of the interval variable.
 
     Returns:
       An `IntervalVar` object.
     """
 
-        start_index = self.GetOrMakeIndex(start)
-        size_index = self.GetOrMakeIndex(size)
-        end_index = self.GetOrMakeIndex(end)
-        return IntervalVar(self.__model, start_index, size_index, end_index,
-                           None, name)
+        self.Add(start + size == end)
+
+        start_view = self.ParseLinearExpression(start)
+        size_view = self.ParseLinearExpression(size)
+        end_view = self.ParseLinearExpression(end)
+        if len(start_view.vars) > 1:
+            raise TypeError(
+                'cp_model.NewIntervalVar: start must be affine or constant.')
+        if len(size_view.vars) > 1:
+            raise TypeError(
+                'cp_model.NewIntervalVar: size must be affine or constant.')
+        if len(end_view.vars) > 1:
+            raise TypeError(
+                'cp_model.NewIntervalVar: end must be affine or constant.')
+        return IntervalVar(self.__model, start_view, size_view, end_view, None,
+                           name)
+
+    def NewFixedSizeIntervalVar(self, start, size, name):
+        """Creates an interval variable from start, and a fixed size.
+
+    An interval variable is a constraint, that is itself used in other
+    constraints like NoOverlap.
+
+    Args:
+      start: The start of the interval. It can be an affine or constant
+             expression.
+      size: The size of the interval. It must be an integer value.
+      name: The name of the interval variable.
+
+    Returns:
+      An `IntervalVar` object.
+    """
+        cp_model_helper.AssertIsInt64(size)
+        start_view = self.ParseLinearExpression(start)
+        size_view = self.ParseLinearExpression(size)
+        end_view = self.ParseLinearExpression(start + size)
+        if len(start_view.vars) > 1:
+            raise TypeError(
+                'cp_model.NewIntervalVar: start must be affine or constant.')
+        return IntervalVar(self.__model, start_view, size_view, end_view, None,
+                           name)
 
     def NewOptionalIntervalVar(self, start, size, end, is_present, name):
         """Creates an optional interval var from start, size, end, and is_present.
@@ -1448,11 +1490,53 @@ class CpModel(object):
     Returns:
       An `IntervalVar` object.
     """
+
+        # Add the linear constraint.
+        self.Add(start + size == end).OnlyEnforceIf(is_present)
+
+        # Creates the IntervalConstraintProto object.
         is_present_index = self.GetOrMakeBooleanIndex(is_present)
-        start_index = self.GetOrMakeIndex(start)
-        size_index = self.GetOrMakeIndex(size)
-        end_index = self.GetOrMakeIndex(end)
-        return IntervalVar(self.__model, start_index, size_index, end_index,
+        start_view = self.ParseLinearExpression(start)
+        size_view = self.ParseLinearExpression(size)
+        end_view = self.ParseLinearExpression(end)
+        if len(start_view.vars) > 1:
+            raise TypeError(
+                'cp_model.NewIntervalVar: start must be affine or constant.')
+        if len(size_view.vars) > 1:
+            raise TypeError(
+                'cp_model.NewIntervalVar: size must be affine or constant.')
+        if len(end_view.vars) > 1:
+            raise TypeError(
+                'cp_model.NewIntervalVar: end must be affine or constant.')
+        return IntervalVar(self.__model, start_view, size_view, end_view,
+                           is_present_index, name)
+
+    def NewOptionalFixedSizeIntervalVar(self, start, size, is_present, name):
+        """Creates an interval variable from start, and a fixed size.
+
+    An interval variable is a constraint, that is itself used in other
+    constraints like NoOverlap.
+
+    Args:
+      start: The start of the interval. It can be an affine or constant
+             expression.
+      size: The size of the interval. It must be an integer value.
+      is_present: A literal that indicates if the interval is active or not. A
+        inactive interval is simply ignored by all constraints.
+      name: The name of the interval variable.
+
+    Returns:
+      An `IntervalVar` object.
+    """
+        cp_model_helper.AssertIsInt64(size)
+        start_view = self.ParseLinearExpression(start)
+        size_view = self.ParseLinearExpression(size)
+        end_view = self.ParseLinearExpression(start + size)
+        if len(start_view.vars) > 1:
+            raise TypeError(
+                'cp_model.NewIntervalVar: start must be affine or constant.')
+        is_present_index = self.GetOrMakeBooleanIndex(is_present)
+        return IntervalVar(self.__model, start_view, size_view, end_view,
                            is_present_index, name)
 
     def AddNoOverlap(self, interval_vars):
@@ -1666,6 +1750,11 @@ class CpModel(object):
         result = cp_model_pb2.LinearExpressionProto()
         if isinstance(linear_expr, numbers.Integral):
             result.offset = linear_expr
+            return result
+
+        if isinstance(linear_expr, IntVar):
+            result.vars.append(self.GetOrMakeIndex(linear_expr))
+            result.coeffs.append(1)
             return result
 
         coeffs_map, constant = linear_expr.GetVarValueMap()

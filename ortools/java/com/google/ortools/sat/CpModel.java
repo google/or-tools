@@ -25,6 +25,7 @@ import com.google.ortools.sat.ElementConstraintProto;
 import com.google.ortools.sat.IntegerArgumentProto;
 import com.google.ortools.sat.InverseConstraintProto;
 import com.google.ortools.sat.LinearConstraintProto;
+import com.google.ortools.sat.LinearExpressionProto;
 import com.google.ortools.sat.NoOverlap2DConstraintProto;
 import com.google.ortools.sat.NoOverlapConstraintProto;
 import com.google.ortools.sat.ReservoirConstraintProto;
@@ -723,61 +724,54 @@ public final class CpModel {
   // Scheduling support.
 
   /**
-   * Creates an interval variable from start, size, and end.
+   * Creates an interval variable from three affine expressions start, size, and end.
    *
    * <p>An interval variable is a constraint, that is itself used in other constraints like
    * NoOverlap.
    *
    * <p>Internally, it ensures that {@code start + size == end}.
    *
-   * @param start the start of the interval
-   * @param size the size of the interval
-   * @param end the end of the interval
+   * @param start the start of the interval. It needs to be an affine or constant expression.
+   * @param size the size of the interval. It needs to be an affine or constant expression.
+   * @param end the end of the interval. It needs to be an affine or constant expression.
    * @param name the name of the interval variable
    * @return An IntervalVar object
    */
-  public IntervalVar newIntervalVar(IntVar start, IntVar size, IntVar end, String name) {
-    return new IntervalVar(modelBuilder, start.getIndex(), size.getIndex(), end.getIndex(), name);
+  public IntervalVar newIntervalVar(
+      LinearExpr start, LinearExpr size, LinearExpr end, String name) {
+    addEquality(new Sum(start, size), end);
+    return new IntervalVar(modelBuilder, getLinearExpressionProtoBuilderFromLinearExpr(start),
+        getLinearExpressionProtoBuilderFromLinearExpr(size),
+        getLinearExpressionProtoBuilderFromLinearExpr(end), name);
   }
 
   /**
-   * Creates an interval variable with a fixed end.
+   * Creates an interval variable from an affine expression start, and a fixed size.
    *
-   * @see #newIntervalVar(IntVar, IntVar, IntVar, String) newIntervalVar
-   */
-  public IntervalVar newIntervalVar(IntVar start, IntVar size, long end, String name) {
-    return new IntervalVar(
-        modelBuilder, start.getIndex(), size.getIndex(), indexFromConstant(end), name);
-  }
-
-  /**
-   * Creates an interval variable with a fixed size.
+   * <p>An interval variable is a constraint, that is itself used in other constraints like
+   * NoOverlap.
    *
-   * @see #newIntervalVar(IntVar, IntVar, IntVar, String) newIntervalVar
+   * @param start the start of the interval. It needs to be an affine or constant expression.
+   * @param size the fixed size of the interval.
+   * @param name the name of the interval variable.
+   * @return An IntervalVar object
    */
-  public IntervalVar newIntervalVar(IntVar start, long size, IntVar end, String name) {
-    return new IntervalVar(
-        modelBuilder, start.getIndex(), indexFromConstant(size), end.getIndex(), name);
-  }
-
-  /**
-   * Creates an interval variable with a fixed start.
-   *
-   * @see #newIntervalVar(IntVar, IntVar, IntVar, String) newIntervalVar
-   */
-  public IntervalVar newIntervalVar(long start, IntVar size, IntVar end, String name) {
-    return new IntervalVar(
-        modelBuilder, indexFromConstant(start), size.getIndex(), end.getIndex(), name);
+  public IntervalVar newFixedSizeIntervalVar(LinearExpr start, long size, String name) {
+    return new IntervalVar(modelBuilder, getLinearExpressionProtoBuilderFromLinearExpr(start),
+        getLinearExpressionProtoBuilderFromLong(size),
+        getLinearExpressionProtoBuilderFromLinearExpr(new Sum(start, size)), name);
   }
 
   /** Creates a fixed interval from its start and its size. */
   public IntervalVar newFixedInterval(long start, long size, String name) {
-    return new IntervalVar(modelBuilder, indexFromConstant(start), indexFromConstant(size),
-        indexFromConstant(start + size), name);
+    return new IntervalVar(modelBuilder, getLinearExpressionProtoBuilderFromLong(start),
+        getLinearExpressionProtoBuilderFromLong(size),
+        getLinearExpressionProtoBuilderFromLong(start + size), name);
   }
 
   /**
-   * Creates an optional interval variable from start, size, end, and isPresent.
+   * Creates an optional interval variable from three affine expressions start, size, end, and
+   * isPresent.
    *
    * <p>An optional interval variable is a constraint, that is itself used in other constraints like
    * NoOverlap. This constraint is protected by an {@code isPresent} literal that indicates if it is
@@ -785,58 +779,49 @@ public final class CpModel {
    *
    * <p>Internally, it ensures that {@code isPresent => start + size == end}.
    *
-   * @param start the start of the interval. It can be an integer value, or an integer variable.
-   * @param size the size of the interval. It can be an integer value, or an integer variable.
-   * @param end the end of the interval. It can be an integer value, or an integer variable.
+   * @param start the start of the interval. It needs to be an affine or constant expression.
+   * @param size the size of the interval. It needs to be an affine or constant expression.
+   * @param end the end of the interval. It needs to be an affine or constant expression.
    * @param isPresent a literal that indicates if the interval is active or not. A inactive interval
    *     is simply ignored by all constraints.
    * @param name The name of the interval variable
    * @return an IntervalVar object
    */
   public IntervalVar newOptionalIntervalVar(
-      IntVar start, IntVar size, IntVar end, Literal isPresent, String name) {
-    return new IntervalVar(modelBuilder, start.getIndex(), size.getIndex(), end.getIndex(),
-        isPresent.getIndex(), name);
+      LinearExpr start, LinearExpr size, LinearExpr end, Literal isPresent, String name) {
+    addEquality(new Sum(start, size), end).onlyEnforceIf(isPresent);
+    return new IntervalVar(modelBuilder, getLinearExpressionProtoBuilderFromLinearExpr(start),
+        getLinearExpressionProtoBuilderFromLinearExpr(size),
+        getLinearExpressionProtoBuilderFromLinearExpr(end), isPresent.getIndex(), name);
   }
 
   /**
-   * Creates an optional interval with a fixed end.
+   * Creates an optional interval variable from an affine expression start, and a fixed size.
    *
-   * @see #newOptionalIntervalVar(IntVar, IntVar, IntVar, Literal, String) newOptionalIntervalVar
+   * <p>An interval variable is a constraint, that is itself used in other constraints like
+   * NoOverlap.
+   *
+   * @param start the start of the interval. It needs to be an affine or constant expression.
+   * @param size the fixed size of the interval.
+   * @param isPresent a literal that indicates if the interval is active or not. A inactive interval
+   *     is simply ignored by all constraints.
+   * @param name the name of the interval variable.
+   * @return An IntervalVar object
    */
-  public IntervalVar newOptionalIntervalVar(
-      IntVar start, IntVar size, long end, Literal isPresent, String name) {
-    return new IntervalVar(modelBuilder, start.getIndex(), size.getIndex(), indexFromConstant(end),
-        isPresent.getIndex(), name);
+  public IntervalVar newOptionalFixedSizeIntervalVar(
+      LinearExpr start, long size, Literal isPresent, String name) {
+    return new IntervalVar(modelBuilder, getLinearExpressionProtoBuilderFromLinearExpr(start),
+        getLinearExpressionProtoBuilderFromLong(size),
+        getLinearExpressionProtoBuilderFromLinearExpr(new Sum(start, size)), isPresent.getIndex(),
+        name);
   }
 
-  /**
-   * Creates an optional interval with a fixed size.
-   *
-   * @see #newOptionalIntervalVar(IntVar, IntVar, IntVar, Literal, String) newOptionalIntervalVar
-   */
-  public IntervalVar newOptionalIntervalVar(
-      IntVar start, long size, IntVar end, Literal isPresent, String name) {
-    return new IntervalVar(modelBuilder, start.getIndex(), indexFromConstant(size), end.getIndex(),
-        isPresent.getIndex(), name);
-  }
-
-  /** Creates an optional interval with a fixed start. */
-  public IntervalVar newOptionalIntervalVar(
-      long start, IntVar size, IntVar end, Literal isPresent, String name) {
-    return new IntervalVar(modelBuilder, indexFromConstant(start), size.getIndex(), end.getIndex(),
-        isPresent.getIndex(), name);
-  }
-
-  /**
-   * Creates an optional fixed interval from start and size.
-   *
-   * @see #newOptionalIntervalVar(IntVar, IntVar, IntVar, Literal, String) newOptionalIntervalVar
-   */
+  /** Creates an optional fixed interval from start and size, and an isPresent literal. */
   public IntervalVar newOptionalFixedInterval(
       long start, long size, Literal isPresent, String name) {
-    return new IntervalVar(modelBuilder, indexFromConstant(start), indexFromConstant(size),
-        indexFromConstant(start + size), isPresent.getIndex(), name);
+    return new IntervalVar(modelBuilder, getLinearExpressionProtoBuilderFromLong(start),
+        getLinearExpressionProtoBuilderFromLong(size),
+        getLinearExpressionProtoBuilderFromLong(start + size), isPresent.getIndex(), name);
   }
 
   /**
@@ -1076,6 +1061,23 @@ public final class CpModel {
   int indexFromConstant(long constant) {
     IntVar constVar = newConstant(constant);
     return constVar.getIndex();
+  }
+
+  LinearExpressionProto.Builder getLinearExpressionProtoBuilderFromLinearExpr(LinearExpr expr) {
+    LinearExpressionProto.Builder builder = LinearExpressionProto.newBuilder();
+    final int numVariables = expr.numElements();
+    for (int i = 0; i < numVariables; ++i) {
+      builder.addVars(expr.getVariable(i).getIndex());
+      builder.addCoeffs(expr.getCoefficient(i));
+    }
+    builder.setOffset(expr.getOffset());
+    return builder;
+  }
+
+  LinearExpressionProto.Builder getLinearExpressionProtoBuilderFromLong(long value) {
+    LinearExpressionProto.Builder builder = LinearExpressionProto.newBuilder();
+    builder.setOffset(value);
+    return builder;
   }
 
   // Getters.

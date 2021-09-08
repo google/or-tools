@@ -98,4 +98,9 @@ public interface LinearExpr {
   static LinearExpr affine(Literal lit, long coefficient, long offset) {
     return new ScalProd(lit, coefficient, offset);
   }
+
+  /** Creates an constant expression. */
+  static LinearExpr constant(long value) {
+    return new Constant(value);
+  }
 }

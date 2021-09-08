@@ -496,15 +496,52 @@ namespace Google.OrTools.Sat
 
         public IntervalVar NewIntervalVar<S, D, E>(S start, D duration, E end, string name)
         {
-            return new IntervalVar(model_, GetOrCreateIndex(start), GetOrCreateIndex(duration), GetOrCreateIndex(end),
-                                   name);
+            LinearExpr startExpr = GetLinearExpr(start);
+            LinearExpr durationExpr = GetLinearExpr(duration);
+            LinearExpr endExpr = GetLinearExpr(end);
+            Add(startExpr + durationExpr == endExpr);
+
+            LinearExpressionProto startProto = GetLinearExpressionProto(startExpr);
+            LinearExpressionProto durationProto = GetLinearExpressionProto(durationExpr);
+            LinearExpressionProto endProto = GetLinearExpressionProto(endExpr);
+            return new IntervalVar(model_, startProto, durationProto, endProto, name);
+        }
+
+        public IntervalVar NewFixedSizeIntervalVar<S>(S start, long duration, string name)
+        {
+            LinearExpr startExpr = GetLinearExpr(start);
+            LinearExpr durationExpr = GetLinearExpr(duration);
+            LinearExpr endExpr = LinearExpr.Sum(new LinearExpr[] {startExpr, durationExpr});
+
+            LinearExpressionProto startProto = GetLinearExpressionProto(startExpr);
+            LinearExpressionProto durationProto = GetLinearExpressionProto(durationExpr);
+            LinearExpressionProto endProto = GetLinearExpressionProto(endExpr);
+            return new IntervalVar(model_, startProto, durationProto, endProto, name);
         }
 
         public IntervalVar NewOptionalIntervalVar<S, D, E>(S start, D duration, E end, ILiteral is_present, string name)
         {
-            int i = is_present.GetIndex();
-            return new IntervalVar(model_, GetOrCreateIndex(start), GetOrCreateIndex(duration), GetOrCreateIndex(end),
-                                   i, name);
+            LinearExpr startExpr = GetLinearExpr(start);
+            LinearExpr durationExpr = GetLinearExpr(duration);
+            LinearExpr endExpr = GetLinearExpr(end);
+            Add(startExpr + durationExpr == endExpr).OnlyEnforceIf(is_present);
+
+            LinearExpressionProto startProto = GetLinearExpressionProto(startExpr);
+            LinearExpressionProto durationProto = GetLinearExpressionProto(durationExpr);
+            LinearExpressionProto endProto = GetLinearExpressionProto(endExpr);
+            return new IntervalVar(model_, startProto, durationProto, endProto, is_present.GetIndex(), name);
+        }
+
+        public IntervalVar NewOptionalFixedSizeIntervalVar<S>(S start, long duration, ILiteral is_present, string name)
+        {
+            LinearExpr startExpr = GetLinearExpr(start);
+            LinearExpr durationExpr = GetLinearExpr(duration);
+            LinearExpr endExpr = LinearExpr.Sum(new LinearExpr[] {startExpr, durationExpr});
+
+            LinearExpressionProto startProto = GetLinearExpressionProto(startExpr);
+            LinearExpressionProto durationProto = GetLinearExpressionProto(durationExpr);
+            LinearExpressionProto endProto = GetLinearExpressionProto(endExpr);
+            return new IntervalVar(model_, startProto, durationProto, endProto, is_present.GetIndex(), name);
         }
 
         public Constraint AddNoOverlap(IEnumerable<IntervalVar> intervals)
@@ -690,7 +727,6 @@ namespace Google.OrTools.Sat
             }
             model_.Objective = objective;
         }
-
         public String ModelStats()
         {
             return CpSatHelper.ModelStats(model_);
@@ -736,6 +772,37 @@ namespace Google.OrTools.Sat
                 return ConvertConstant(Convert.ToInt64(x));
             }
             throw new ArgumentException("Cannot extract index from argument");
+        }
+
+        private LinearExpr GetLinearExpr<X>(X x)
+        {
+            if (typeof(X) == typeof(IntVar))
+            {
+                return (IntVar)(Object)x;
+            }
+            if (typeof(X) == typeof(long) || typeof(X) == typeof(int))
+            {
+                return new ConstantExpr(Convert.ToInt64(x));
+            }
+            if (typeof(X) == typeof(LinearExpr))
+            {
+                return (LinearExpr)(Object)x;
+            }
+            throw new ArgumentException("Cannot convert argument to LinearExpr");
+        }
+
+        private LinearExpressionProto GetLinearExpressionProto(LinearExpr expr)
+        {
+            Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
+            long constant = LinearExpr.GetVarValueMap(expr, 1L, dict);
+            LinearExpressionProto linear = new LinearExpressionProto();
+            foreach (KeyValuePair<IntVar, long> term in dict)
+            {
+                linear.Vars.Add(term.Key.Index);
+                linear.Coeffs.Add(term.Value);
+            }
+            linear.Offset = constant;
+            return linear;
         }
 
         private CpModelProto model_;

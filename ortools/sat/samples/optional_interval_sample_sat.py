@@ -17,19 +17,31 @@ from ortools.sat.python import cp_model
 
 
 def OptionalIntervalSampleSat():
-    """Build an optional interval."""
+    """Showcases how to build optional interval variables."""
     model = cp_model.CpModel()
-
     horizon = 100
+
+    # An interval can be created from three affine expressions.
     start_var = model.NewIntVar(0, horizon, 'start')
     duration = 10  # Python cp/sat code accept integer variables or constants.
     end_var = model.NewIntVar(0, horizon, 'end')
     presence_var = model.NewBoolVar('presence')
-    interval_var = model.NewOptionalIntervalVar(start_var, duration, end_var,
-                                                presence_var, 'interval')
+    interval_var = model.NewOptionalIntervalVar(start_var, duration,
+                                                end_var + 2, presence_var,
+                                                'interval')
 
-    print('start = %s, duration = %i, end = %s, presence = %s, interval = %s' %
-          (start_var, duration, end_var, presence_var, interval_var))
+    print(f'interval = {repr(interval_var)}')
+
+    # If the size is fixed, a simpler version uses the start expression and the
+    # size.
+    fixed_size_interval_var = model.NewOptionalFixedSizeIntervalVar(
+        start_var, 10, presence_var, 'fixed_size_interval_var')
+    print(f'fixed_size_interval_var = {repr(fixed_size_interval_var)}')
+
+    # A fixed interval can be created using the same API.
+    fixed_interval = model.NewOptionalFixedSizeIntervalVar(
+        5, 10, presence_var, 'fixed_interval')
+    print(f'fixed_interval = {repr(fixed_interval)}')
 
 
 OptionalIntervalSampleSat()
