@@ -124,6 +124,17 @@ cc_library(
 )
 
 cc_library(
+    name = "parameters_validation",
+    srcs = ["parameters_validation.cc"],
+    hdrs = ["parameters_validation.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":sat_parameters_cc_proto",
+        "//ortools/base",
+    ],
+)
+
+cc_library(
     name = "cp_model_search",
     srcs = ["cp_model_search.cc"],
     hdrs = ["cp_model_search.h"],
@@ -182,6 +193,7 @@ cc_library(
         ":linear_relaxation",
         ":model",
         ":optimization",
+        ":parameters_validation",
         ":precedences",
         ":probing",
         ":rins",
