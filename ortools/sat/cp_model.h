@@ -316,7 +316,8 @@ std::ostream& operator<<(std::ostream& os, const LinearExpr& e);
  * Represents a Interval variable.
  *
  * An interval variable is both a constraint and a variable. It is defined by
- * three integer variables: start, size, and end.
+ * three objects: start, size, and end. All three can be an integer variable, a
+ * constant, or an affine expression.
  *
  * It is a constraint because, internally, it enforces that start + size == end.
  *
@@ -624,14 +625,15 @@ class CpModelBuilder {
   /// Creates an always false Boolean variable.
   BoolVar FalseVar();
 
-  /// Creates an interval variable.
+  /// Creates an interval variable from three constant of affine expressions.
   IntervalVar NewIntervalVar(const LinearExpr& start, const LinearExpr& size,
                              const LinearExpr& end);
 
   /// Creates an interval variable with a fixed size.
   IntervalVar NewFixedSizeIntervalVar(const LinearExpr& start, int64_t size);
 
-  /// Creates an optional interval variable.
+  /// Creates an optional interval variable from three constant of affine
+  /// expressions and a Boolean variable.
   IntervalVar NewOptionalIntervalVar(const LinearExpr& start,
                                      const LinearExpr& size,
                                      const LinearExpr& end, BoolVar presence);

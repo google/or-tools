@@ -113,12 +113,13 @@ public class RankingSampleSat {
       int duration = t + 1;
       ends[t] = model.newIntVar(0, horizon, "end_" + t);
       if (t < numTasks / 2) {
-        intervals[t] = model.newIntervalVar(starts[t], duration, ends[t], "interval_" + t);
+        intervals[t] = model.newIntervalVar(
+            starts[t], LinearExpr.constant(duration), ends[t], "interval_" + t);
         presences[t] = trueVar;
       } else {
         presences[t] = model.newBoolVar("presence_" + t);
         intervals[t] = model.newOptionalIntervalVar(
-            starts[t], duration, ends[t], presences[t], "o_interval_" + t);
+            starts[t], LinearExpr.constant(duration), ends[t], presences[t], "o_interval_" + t);
       }
 
       // The rank will be -1 iff the task is not performed.

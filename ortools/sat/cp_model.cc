@@ -958,8 +958,10 @@ IntervalVar CpModelBuilder::GetIntervalVarFromProtoIndex(int index) {
 int64_t SolutionIntegerValue(const CpSolverResponse& r,
                              const LinearExpr& expr) {
   int64_t result = expr.constant();
-  for (int i = 0; i < expr.variables().size(); ++i) {
-    result += r.solution(expr.variables()[i].index_) * expr.coefficients()[i];
+  const std::vector<IntVar>& variables = expr.variables();
+  const std::vector<int64_t>& coefficients = expr.coefficients();
+  for (int i = 0; i < variables.size(); ++i) {
+    result += r.solution(variables[i].index_) * coefficients[i];
   }
   return result;
 }

@@ -212,7 +212,8 @@ public class IntervalSampleSat
 
         // If the size is fixed, a simpler version uses the start expression, the size and the
         // literal.
-        IntervalVar fixedSizeIntervalVar = model.NewFixedSizeIntervalVar(start_var, 10, "fixed_size_interval_var");
+        IntervalVar fixedSizeIntervalVar =
+            model.NewFixedSizeIntervalVar(start_var, 10, "fixed_size_interval_var");
         Console.WriteLine(fixedSizeIntervalVar);
 
         // A fixed interval can be created using the same API.
@@ -380,18 +381,21 @@ public class OptionalIntervalSampleSat
         IntVar start_var = model.NewIntVar(0, horizon, "start");
         IntVar end_var = model.NewIntVar(0, horizon, "end");
         IntVar presence_var = model.NewBoolVar("presence");
-        IntervalVar interval = model.NewOptionalIntervalVar(start_var, 10, end_var + 2, presence_var, "interval");
+        IntervalVar interval =
+            model.NewOptionalIntervalVar(start_var, 10, end_var + 2, presence_var, "interval");
         Console.WriteLine(interval);
 
         // If the size is fixed, a simpler version uses the start expression, the size and the
         // literal.
-        IntervalVar fixedSizeIntervalVar =
-            model.NewOptionalFixedSizeIntervalVar(start_var, 10, presence_var, "fixed_size_interval_var");
+        IntervalVar fixedSizeIntervalVar = model.NewOptionalFixedSizeIntervalVar(
+            start_var, 10, presence_var, "fixed_size_interval_var");
         Console.WriteLine(fixedSizeIntervalVar);
 
         // A fixed interval can be created using the same API.
-        IntervalVar fixedInterval = model.NewOptionalFixedSizeIntervalVar(5, 10, presence_var, "fixed_interval");
-        Console.WriteLine(fixedInterval);    }
+        IntervalVar fixedInterval =
+            model.NewOptionalFixedSizeIntervalVar(5, 10, presence_var, "fixed_interval");
+        Console.WriteLine(fixedInterval);
+    }
 }
 ```
 
@@ -557,6 +561,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
+import com.google.ortools.sat.LinearExpr;
 
 /**
  * We want to schedule 3 tasks on 3 weeks excluding weekends, making the final day as early as
@@ -573,19 +578,19 @@ public class NoOverlapSampleSat {
     IntVar start0 = model.newIntVar(0, horizon, "start0");
     int duration0 = 2;
     IntVar end0 = model.newIntVar(0, horizon, "end0");
-    IntervalVar task0 = model.newIntervalVar(start0, duration0, end0, "task0");
+    IntervalVar task0 = model.newIntervalVar(start0, LinearExpr.constant(duration0), end0, "task0");
 
     //  Task 1, duration 4.
     IntVar start1 = model.newIntVar(0, horizon, "start1");
     int duration1 = 4;
     IntVar end1 = model.newIntVar(0, horizon, "end1");
-    IntervalVar task1 = model.newIntervalVar(start1, duration1, end1, "task1");
+    IntervalVar task1 = model.newIntervalVar(start1, LinearExpr.constant(duration1), end1, "task1");
 
     // Task 2, duration 3.
     IntVar start2 = model.newIntVar(0, horizon, "start2");
     int duration2 = 3;
     IntVar end2 = model.newIntVar(0, horizon, "end2");
-    IntervalVar task2 = model.newIntervalVar(start2, duration2, end2, "task2");
+    IntervalVar task2 = model.newIntervalVar(start2, LinearExpr.constant(duration2), end2, "task2");
 
     // Weekends.
     IntervalVar weekend0 = model.newFixedInterval(5, 2, "weekend0");
@@ -1090,13 +1095,15 @@ public class RankingSampleSat {
       int duration = t + 1;
       ends[t] = model.newIntVar(0, horizon, "end_" + t);
       if (t < numTasks / 2) {
-        intervals[t] = model.newIntervalVar(starts[t], duration, ends[t], "interval_" + t);
+        intervals[t] =
+            model.newIntervalVar(
+                starts[t], LinearExpr.constant(duration), ends[t], "interval_" + t);
         presences[t] = trueVar;
       } else {
         presences[t] = model.newBoolVar("presence_" + t);
         intervals[t] =
             model.newOptionalIntervalVar(
-                starts[t], duration, ends[t], presences[t], "o_interval_" + t);
+                starts[t], LinearExpr.constant(duration), ends[t], presences[t], "o_interval_" + t);
       }
 
       // The rank will be -1 iff the task is not performed.

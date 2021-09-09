@@ -507,7 +507,7 @@ std::string ValidateIntervalConstraint(const CpModelProto& model,
   if (arg.has_end_view()) {
     ++num_view;
     if (arg.end_view().vars_size() > 1) {
-      return "Interval with a sendize expression containing more than one "
+      return "Interval with a end expression containing more than one "
              "variable are currently not supported.";
     }
     RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.end_view()));

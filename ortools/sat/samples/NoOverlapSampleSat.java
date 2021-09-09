@@ -19,6 +19,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
+import com.google.ortools.sat.LinearExpr;
 
 /**
  * We want to schedule 3 tasks on 3 weeks excluding weekends, making the final day as early as
@@ -35,19 +36,19 @@ public class NoOverlapSampleSat {
     IntVar start0 = model.newIntVar(0, horizon, "start0");
     int duration0 = 2;
     IntVar end0 = model.newIntVar(0, horizon, "end0");
-    IntervalVar task0 = model.newIntervalVar(start0, duration0, end0, "task0");
+    IntervalVar task0 = model.newIntervalVar(start0, LinearExpr.constant(duration0), end0, "task0");
 
     //  Task 1, duration 4.
     IntVar start1 = model.newIntVar(0, horizon, "start1");
     int duration1 = 4;
     IntVar end1 = model.newIntVar(0, horizon, "end1");
-    IntervalVar task1 = model.newIntervalVar(start1, duration1, end1, "task1");
+    IntervalVar task1 = model.newIntervalVar(start1, LinearExpr.constant(duration1), end1, "task1");
 
     // Task 2, duration 3.
     IntVar start2 = model.newIntVar(0, horizon, "start2");
     int duration2 = 3;
     IntVar end2 = model.newIntVar(0, horizon, "end2");
-    IntervalVar task2 = model.newIntervalVar(start2, duration2, end2, "task2");
+    IntervalVar task2 = model.newIntervalVar(start2, LinearExpr.constant(duration2), end2, "task2");
 
     // Weekends.
     IntervalVar weekend0 = model.newFixedInterval(5, 2, "weekend0");
