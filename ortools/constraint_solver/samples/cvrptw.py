@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# [START program]
 """Capacitated Vehicle Routing Problem with Time Windows (CVRPTW).
 
    This is a sample using the routing library python wrapper to solve a CVRPTW
@@ -23,18 +24,16 @@
    Distances are in meters and time in minutes.
 """
 
-
+# [START import]
 from functools import partial
-
-from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
+from ortools.constraint_solver import pywrapcp
+# [END import]
 
 
-###########################
-# Problem Data Definition #
-###########################
+# [START data_model]
 def create_data_model():
-    """Stores the data for the problem"""
+    """Stores the data for the problem."""
     data = {}
     # Locations in block unit
     _locations = \
@@ -79,6 +78,7 @@ def create_data_model():
     data['vehicle_speed'] = 83  # Travel speed: 5km/h converted in m/min
     data['depot'] = 0
     return data
+    # [END data_model]
 
 
 #######################
@@ -199,18 +199,16 @@ def add_time_window_constraints(routing, manager, data, time_evaluator_index):
         #routing.AddToAssignment(time_dimension.SlackVar(self.routing.End(vehicle_id)))
 
 
-###########
-# Printer #
-###########
-def print_solution(data, manager, routing, assignment):  # pylint:disable=too-many-locals
+# [START solution_printer]
+def print_solution(manager, routing, assignment):  # pylint:disable=too-many-locals
     """Prints assignment on console"""
-    print('Objective: {}'.format(assignment.ObjectiveValue()))
+    print(f'Objective: {assignment.ObjectiveValue()}')
+    time_dimension = routing.GetDimensionOrDie('Time')
+    capacity_dimension = routing.GetDimensionOrDie('Capacity')
     total_distance = 0
     total_load = 0
     total_time = 0
-    capacity_dimension = routing.GetDimensionOrDie('Capacity')
-    time_dimension = routing.GetDimensionOrDie('Time')
-    for vehicle_id in range(data['num_vehicles']):
+    for vehicle_id in range(manager.GetNumberOfVehicles()):
         index = routing.Start(vehicle_id)
         plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
         distance = 0
@@ -247,46 +245,77 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
     print('Total Distance of all routes: {0}m'.format(total_distance))
     print('Total Load of all routes: {}'.format(total_load))
     print('Total Time of all routes: {0}min'.format(total_time))
+    # [END solution_printer]
 
 
-########
-# Main #
-########
 def main():
-    """Entry point of the program"""
+    """Solve the Capacitated VRP with time windows."""
     # Instantiate the data problem.
+    # [START data]
     data = create_data_model()
+    # [END data]
 
-    # Create the routing index manager
+    # Create the routing index manager.
+    # [START index_manager]
     manager = pywrapcp.RoutingIndexManager(data['num_locations'],
                                            data['num_vehicles'], data['depot'])
+    # [END index_manager]
 
-    # Create Routing Model
+    # Create Routing Model.
+    # [START routing_model]
     routing = pywrapcp.RoutingModel(manager)
+    # [END routing_model]
 
-    # Define weight of each edge
+    # Define weight of each edge.
+    # [START transit_callback]
     distance_evaluator_index = routing.RegisterTransitCallback(
         partial(create_distance_evaluator(data), manager))
-    routing.SetArcCostEvaluatorOfAllVehicles(distance_evaluator_index)
+    # [END transit_callback]
 
-    # Add Capacity constraint
+    # Define cost of each arc.
+    # [START arc_cost]
+    routing.SetArcCostEvaluatorOfAllVehicles(distance_evaluator_index)
+    # [END arc_cost]
+
+    # Add Capacity constraint.
+    # [START capacity_constraint]
     demand_evaluator_index = routing.RegisterUnaryTransitCallback(
         partial(create_demand_evaluator(data), manager))
     add_capacity_constraints(routing, data, demand_evaluator_index)
+    # [END capacity_constraint]
 
-    # Add Time Window constraint
+    # Add Time Window constraint.
+    # [START time_constraint]
     time_evaluator_index = routing.RegisterTransitCallback(
         partial(create_time_evaluator(data), manager))
     add_time_window_constraints(routing, manager, data, time_evaluator_index)
+    # [END time_constraint]
 
     # Setting first solution heuristic (cheapest addition).
+    # [START parameters]
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)  # pylint: disable=no-member
+        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+    search_parameters.local_search_metaheuristic = (
+        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
+    search_parameters.time_limit.FromSeconds(2)
+    search_parameters.log_search = True
+    # [END parameters]
+
     # Solve the problem.
-    assignment = routing.SolveWithParameters(search_parameters)
-    print_solution(data, manager, routing, assignment)
+    # [START solve]
+    solution = routing.SolveWithParameters(search_parameters)
+    # [END solve]
+
+    # Print solution on console.
+    # [START print_solution]
+    if solution:
+        print_solution(manager, routing, solution)
+    else:
+        print('No solution found!')
+    # [END print_solution]
 
 
 if __name__ == '__main__':
     main()
+# [END program]
