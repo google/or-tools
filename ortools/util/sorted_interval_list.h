@@ -159,6 +159,63 @@ class Domain {
    */
   std::vector<int64_t> FlattenedIntervals() const;
 
+#if !defined(SWIG)
+  /**
+   * Allows to iterate over all values of a domain in order with
+   * for (const int64_t v : domain.Values()) { ... }
+   *
+   * Note that this shouldn't be used in another context !!
+   * We don't implement full fledged iterator APIs.
+   */
+  class DomainIterator {
+   public:
+    explicit DomainIterator(
+        const absl::InlinedVector<ClosedInterval, 1>& intervals)
+        : value_(intervals.empty() ? int64_t{0} : intervals.front().start),
+          it_(intervals.begin()),
+          end_(intervals.end()) {}
+
+    int64_t operator*() const { return value_; }
+
+    void operator++() {
+      if (value_ == it_->end) {
+        ++it_;
+        if (it_ != end_) value_ = it_->start;
+      } else {
+        ++value_;
+      }
+    }
+
+    bool operator!=(
+        absl::InlinedVector<ClosedInterval, 1>::const_iterator end) const {
+      return it_ != end;
+    }
+
+   private:
+    int64_t value_;
+    absl::InlinedVector<ClosedInterval, 1>::const_iterator it_;
+    absl::InlinedVector<ClosedInterval, 1>::const_iterator end_;
+  };
+  struct DomainIteratorBeginEnd {
+    DomainIterator begin() const { return DomainIterator(intervals); }
+    absl::InlinedVector<ClosedInterval, 1>::const_iterator end() const {
+      return intervals.end();
+    }
+    const absl::InlinedVector<ClosedInterval, 1>& intervals;
+  };
+  struct DomainIteratorBeginEndWithOwnership {
+    DomainIterator begin() const { return DomainIterator(intervals); }
+    absl::InlinedVector<ClosedInterval, 1>::const_iterator end() const {
+      return intervals.end();
+    }
+    absl::InlinedVector<ClosedInterval, 1> intervals;
+  };
+  DomainIteratorBeginEnd Values() const& { return {this->intervals_}; }
+  DomainIteratorBeginEndWithOwnership Values() const&& {
+    return {std::move(this->intervals_)};
+  }
+#endif  // !defined(SWIG)
+
   /**
    * Returns true if this is the empty set.
    */
@@ -194,7 +251,7 @@ class Domain {
 
   /**
    * Returns the value of a fixed domain. IsFixed() must be true.
-   * This is the same as Min() or Max() but allows for amore readable code and
+   * This is the same as Min() or Max() but allows for a more readable code and
    * also crash in debug mode if called on a non fixed domain.
    */
   int64_t FixedValue() const;
