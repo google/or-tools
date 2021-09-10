@@ -792,6 +792,10 @@ bool DisjunctiveDetectablePrecedences::PropagateSubwindow() {
         task_set_end_min = task_set_.ComputeEndMin();
       }
 
+      // Corner case if a previous push from to_propagate_ caused a subsequent
+      // task to be absent.
+      if (helper_->IsAbsent(t)) continue;
+
       // task_set_ contains all the tasks that must be executed before t. They
       // are in "detectable precedence" because their start_max is smaller than
       // the end-min of t like so:

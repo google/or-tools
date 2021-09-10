@@ -2777,10 +2777,8 @@ bool CpModelPresolver::PresolveInverse(ConstraintProto* ct) {
         std::vector<absl::flat_hash_set<int64_t>> inverse_values(size);
         for (int i = 0; i < size; ++i) {
           const Domain domain = context_->DomainOf(inverse[i]);
-          for (const ClosedInterval& interval : domain) {
-            for (int64_t j = interval.start; j <= interval.end; ++j) {
-              inverse_values[i].insert(j);
-            }
+          for (const int64_t j : domain.Values()) {
+            inverse_values[i].insert(j);
           }
         }
 
@@ -2792,13 +2790,11 @@ bool CpModelPresolver::PresolveInverse(ConstraintProto* ct) {
           possible_values.clear();
           const Domain domain = context_->DomainOf(direct[i]);
           bool removed_value = false;
-          for (const ClosedInterval& interval : domain) {
-            for (int64_t j = interval.start; j <= interval.end; ++j) {
-              if (inverse_values[j].contains(i)) {
-                possible_values.push_back(j);
-              } else {
-                removed_value = true;
-              }
+          for (const int64_t j : domain.Values()) {
+            if (inverse_values[j].contains(i)) {
+              possible_values.push_back(j);
+            } else {
+              removed_value = true;
             }
           }
           if (removed_value) {
@@ -2862,15 +2858,12 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
     if (PositiveRef(target_ref) == PositiveRef(index_ref)) {
       std::vector<int64_t> possible_indices;
       const Domain& index_domain = context_->DomainOf(index_ref);
-      for (const ClosedInterval& interval : index_domain) {
-        for (int64_t index_value = interval.start; index_value <= interval.end;
-             ++index_value) {
-          const int ref = ct->element().vars(index_value);
-          const int64_t target_value =
-              target_ref == index_ref ? index_value : -index_value;
-          if (context_->DomainContains(ref, target_value)) {
-            possible_indices.push_back(target_value);
-          }
+      for (const int64_t index_value : index_domain.Values()) {
+        const int ref = ct->element().vars(index_value);
+        const int64_t target_value =
+            target_ref == index_ref ? index_value : -index_value;
+        if (context_->DomainContains(ref, target_value)) {
+          possible_indices.push_back(target_value);
         }
       }
       if (possible_indices.size() < index_domain.Size()) {
@@ -2889,24 +2882,22 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
     const Domain& initial_index_domain = context_->DomainOf(index_ref);
     const Domain& target_domain = context_->DomainOf(target_ref);
     std::vector<int64_t> possible_indices;
-    for (const ClosedInterval interval : initial_index_domain) {
-      for (int value = interval.start; value <= interval.end; ++value) {
-        CHECK_GE(value, 0);
-        CHECK_LT(value, ct->element().vars_size());
-        const int ref = ct->element().vars(value);
-        const Domain& domain = context_->DomainOf(ref);
-        if (domain.IntersectionWith(target_domain).IsEmpty()) continue;
-        possible_indices.push_back(value);
-        if (domain.IsFixed()) {
-          constant_set.insert(domain.Min());
-        } else {
-          all_constants = false;
-        }
-        if (!domain.IsIncludedIn(target_domain)) {
-          all_included_in_target_domain = false;
-        }
-        infered_domain = infered_domain.UnionWith(domain);
+    for (const int64_t value : initial_index_domain.Values()) {
+      CHECK_GE(value, 0);
+      CHECK_LT(value, ct->element().vars_size());
+      const int ref = ct->element().vars(value);
+      const Domain& domain = context_->DomainOf(ref);
+      if (domain.IntersectionWith(target_domain).IsEmpty()) continue;
+      possible_indices.push_back(value);
+      if (domain.IsFixed()) {
+        constant_set.insert(domain.Min());
+      } else {
+        all_constants = false;
       }
+      if (!domain.IsIncludedIn(target_domain)) {
+        all_included_in_target_domain = false;
+      }
+      infered_domain = infered_domain.UnionWith(domain);
     }
     if (possible_indices.size() < initial_index_domain.Size()) {
       if (!context_->IntersectDomainWith(
@@ -3340,10 +3331,8 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
     if (all_diff.vars_size() == domain.Size()) {
       absl::flat_hash_map<int64_t, std::vector<int>> value_to_refs;
       for (const int ref : all_diff.vars()) {
-        for (const ClosedInterval& interval : context_->DomainOf(ref)) {
-          for (int64_t v = interval.start; v <= interval.end; ++v) {
-            value_to_refs[v].push_back(ref);
-          }
+        for (const int64_t v : context_->DomainOf(ref).Values()) {
+          value_to_refs[v].push_back(ref);
         }
       }
       bool propagated = false;
@@ -5026,6 +5015,7 @@ void CpModelPresolver::ExpandObjective() {
 
   // We currently never expand a variable more than once.
   int num_expansions = 0;
+  int last_expanded_objective_var;
   absl::flat_hash_set<int> processed_vars;
   std::vector<int> new_vars_in_objective;
   while (!relevant_constraints.empty()) {
@@ -5167,6 +5157,7 @@ void CpModelPresolver::ExpandObjective() {
       }
 
       ++num_expansions;
+      last_expanded_objective_var = objective_var;
     }
   }
 
@@ -5180,6 +5171,7 @@ void CpModelPresolver::ExpandObjective() {
         unique_expanded_constraint);
     *(context_->mapping_model->add_constraints()) = *mutable_ct;
     mutable_ct->Clear();
+    context_->MarkVariableAsRemoved(last_expanded_objective_var);
     context_->UpdateConstraintVariableUsage(unique_expanded_constraint);
   }
 
@@ -5801,8 +5793,8 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
     std::vector<int> literals;
     std::vector<int> equality_constraints;
     std::vector<int> other_constraints;
-    absl::flat_hash_map<int, int> value_to_equal_literal;
-    absl::flat_hash_map<int, int> value_to_not_equal_literal;
+    absl::flat_hash_map<int64_t, int> value_to_equal_literal;
+    absl::flat_hash_map<int64_t, int> value_to_not_equal_literal;
     bool abort = false;
     for (const int c : context_->VarToConstraints(var)) {
       if (c < 0) continue;
@@ -5854,18 +5846,16 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
     if (value_to_equal_literal.size() != context_->DomainOf(var).Size()) {
       abort = true;
     } else {
-      for (const ClosedInterval interval : context_->DomainOf(var)) {
-        for (int64_t value = interval.start; value <= interval.end; ++value) {
-          if (!value_to_equal_literal.contains(value)) {
-            abort = true;
-            break;
-          }
-          if (value_to_not_equal_literal.contains(value) &&
-              value_to_equal_literal[value] !=
-                  NegatedRef(value_to_not_equal_literal[value])) {
-            abort = true;
-            break;
-          }
+      for (const int64_t value : context_->DomainOf(var).Values()) {
+        if (!value_to_equal_literal.contains(value)) {
+          abort = true;
+          break;
+        }
+        if (value_to_not_equal_literal.contains(value) &&
+            value_to_equal_literal[value] !=
+                NegatedRef(value_to_not_equal_literal[value])) {
+          abort = true;
+          break;
         }
         if (abort) break;
       }
@@ -6035,9 +6025,9 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
   int64_t gcd = domain[1].start - var_min;
   for (int index = 2; index < domain.NumIntervals(); ++index) {
     const ClosedInterval& i = domain[index];
-    CHECK_EQ(i.start, i.end);
+    DCHECK_EQ(i.start, i.end);
     const int64_t shifted_value = i.start - var_min;
-    CHECK_GE(shifted_value, 0);
+    DCHECK_GT(shifted_value, 0);
 
     gcd = MathUtil::GCD64(gcd, shifted_value);
     if (gcd == 1) break;
@@ -6047,9 +6037,9 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
   int new_var_index;
   {
     std::vector<int64_t> scaled_values;
-    for (int index = 0; index < domain.NumIntervals(); ++index) {
-      const ClosedInterval& i = domain[index];
-      CHECK_EQ(i.start, i.end);
+    scaled_values.reserve(domain.NumIntervals());
+    for (const ClosedInterval i : domain) {
+      DCHECK_EQ(i.start, i.end);
       const int64_t shifted_value = i.start - var_min;
       scaled_values.push_back(shifted_value / gcd);
     }

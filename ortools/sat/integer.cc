@@ -38,10 +38,11 @@ std::vector<IntegerVariable> NegationOf(
 IntegerValue AffineExpression::Min(IntegerTrail* integer_trail) const {
   IntegerValue result = constant;
   if (var != kNoIntegerVariable) {
-    if (coeff > 0)
+    if (coeff > 0) {
       result += coeff * integer_trail->LowerBound(var);
-    else
+    } else {
       result += coeff * integer_trail->UpperBound(var);
+    }
   }
   return result;
 }
@@ -49,10 +50,11 @@ IntegerValue AffineExpression::Min(IntegerTrail* integer_trail) const {
 IntegerValue AffineExpression::Max(IntegerTrail* integer_trail) const {
   IntegerValue result = constant;
   if (var != kNoIntegerVariable) {
-    if (coeff > 0)
+    if (coeff > 0) {
       result += coeff * integer_trail->UpperBound(var);
-    else
+    } else {
       result += coeff * integer_trail->LowerBound(var);
+    }
   }
   return result;
 }
@@ -79,10 +81,8 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
   // garbage. Note that it is okay to call the function on values no longer
   // reachable, as this will just do nothing.
   tmp_values_.clear();
-  for (const ClosedInterval interval : (*domains_)[var]) {
-    for (IntegerValue v(interval.start); v <= interval.end; ++v) {
-      tmp_values_.push_back(v);
-    }
+  for (const int64_t v : (*domains_)[var].Values()) {
+    tmp_values_.push_back(IntegerValue(v));
   }
   for (const IntegerValue v : tmp_values_) {
     GetOrCreateLiteralAssociatedToEquality(var, v);
@@ -118,11 +118,9 @@ bool IntegerEncoder::VariableIsFullyEncoded(IntegerVariable var) const {
   // not properly synced because the propagation is not finished.
   const auto& ref = equality_by_var_[index];
   int i = 0;
-  for (const ClosedInterval interval : (*domains_)[var]) {
-    for (int64_t v = interval.start; v <= interval.end; ++v) {
-      if (i < ref.size() && v == ref[i].value) {
-        i++;
-      }
+  for (const int64_t v : (*domains_)[var].Values()) {
+    if (i < ref.size() && v == ref[i].value) {
+      i++;
     }
   }
   if (i == ref.size()) {

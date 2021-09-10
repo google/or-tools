@@ -1469,7 +1469,7 @@ class CpModel(object):
 
     Args:
       start: The start of the interval. It can be an affine or constant
-             expression.
+        expression.
       size: The size of the interval. It must be an integer value.
       name: The name of the interval variable.
 
@@ -1538,7 +1538,7 @@ class CpModel(object):
 
     Args:
       start: The start of the interval. It can be an affine or constant
-             expression.
+        expression.
       size: The size of the interval. It must be an integer value.
       is_present: A literal that indicates if the interval is active or not. A
         inactive interval is simply ignored by all constraints.

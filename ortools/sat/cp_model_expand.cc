@@ -565,13 +565,11 @@ void ExpandInverse(ConstraintProto* ct, PresolveContext* context) {
       possible_values.clear();
       const Domain domain = context->DomainOf(direct[i]);
       bool removed_value = false;
-      for (const ClosedInterval& interval : domain) {
-        for (int64_t j = interval.start; j <= interval.end; ++j) {
-          if (context->DomainOf(inverse[j]).Contains(i)) {
-            possible_values.push_back(j);
-          } else {
-            removed_value = true;
-          }
+      for (const int64_t j : domain.Values()) {
+        if (context->DomainOf(inverse[j]).Contains(i)) {
+          possible_values.push_back(j);
+        } else {
+          removed_value = true;
         }
       }
       if (removed_value) {
@@ -599,18 +597,15 @@ void ExpandInverse(ConstraintProto* ct, PresolveContext* context) {
   // and sharing them between the direct and inverse variables.
   for (int i = 0; i < size; ++i) {
     const int f_i = ct->inverse().f_direct(i);
-    const Domain domain = context->DomainOf(f_i);
-    for (const ClosedInterval& interval : domain) {
-      for (int64_t j = interval.start; j <= interval.end; ++j) {
-        // We have f[i] == j <=> r[j] == i;
-        const int r_j = ct->inverse().f_inverse(j);
-        int r_j_i;
-        if (context->HasVarValueEncoding(r_j, i, &r_j_i)) {
-          context->InsertVarValueEncoding(r_j_i, f_i, j);
-        } else {
-          const int f_i_j = context->GetOrCreateVarValueEncoding(f_i, j);
-          context->InsertVarValueEncoding(f_i_j, r_j, i);
-        }
+    for (const int64_t j : context->DomainOf(f_i).Values()) {
+      // We have f[i] == j <=> r[j] == i;
+      const int r_j = ct->inverse().f_inverse(j);
+      int r_j_i;
+      if (context->HasVarValueEncoding(r_j, i, &r_j_i)) {
+        context->InsertVarValueEncoding(r_j_i, f_i, j);
+      } else {
+        const int f_i_j = context->GetOrCreateVarValueEncoding(f_i, j);
+        context->InsertVarValueEncoding(f_i_j, r_j, i);
       }
     }
   }
@@ -627,11 +622,9 @@ void ExpandElementWithTargetEqualIndex(ConstraintProto* ct,
 
   const int index_ref = element.index();
   std::vector<int64_t> valid_indices;
-  for (const ClosedInterval& interval : context->DomainOf(index_ref)) {
-    for (int64_t v = interval.start; v <= interval.end; ++v) {
-      if (!context->DomainContains(element.vars(v), v)) continue;
-      valid_indices.push_back(v);
-    }
+  for (const int64_t v : context->DomainOf(index_ref).Values()) {
+    if (!context->DomainContains(element.vars(v), v)) continue;
+    valid_indices.push_back(v);
   }
   if (valid_indices.size() < context->DomainOf(index_ref).Size()) {
     if (!context->IntersectDomainWith(index_ref,
@@ -643,13 +636,11 @@ void ExpandElementWithTargetEqualIndex(ConstraintProto* ct,
     context->UpdateRuleStats("element: reduced index domain");
   }
 
-  for (const ClosedInterval& interval : context->DomainOf(index_ref)) {
-    for (int64_t v = interval.start; v <= interval.end; ++v) {
-      const int var = element.vars(v);
-      if (context->MinOf(var) == v && context->MaxOf(var) == v) continue;
-      context->AddImplyInDomain(
-          context->GetOrCreateVarValueEncoding(index_ref, v), var, Domain(v));
-    }
+  for (const int64_t v : context->DomainOf(index_ref).Values()) {
+    const int var = element.vars(v);
+    if (context->MinOf(var) == v && context->MaxOf(var) == v) continue;
+    context->AddImplyInDomain(
+        context->GetOrCreateVarValueEncoding(index_ref, v), var, Domain(v));
   }
   context->UpdateRuleStats(
       "element: expanded with special case target = index");
@@ -674,19 +665,17 @@ void ExpandConstantArrayElement(ConstraintProto* ct, PresolveContext* context) {
   absl::flat_hash_map<int64_t, BoolArgumentProto*> supports;
   {
     absl::flat_hash_map<int64_t, int> constant_var_values_usage;
-    for (const ClosedInterval& interval : index_domain) {
-      for (int64_t v = interval.start; v <= interval.end; ++v) {
-        DCHECK(context->IsFixed(element.vars(v)));
-        const int64_t value = context->MinOf(element.vars(v));
-        if (++constant_var_values_usage[value] == 2) {
-          // First time we cross > 1.
-          BoolArgumentProto* const support =
-              context->working_model->add_constraints()->mutable_bool_or();
-          const int target_literal =
-              context->GetOrCreateVarValueEncoding(target_ref, value);
-          support->add_literals(NegatedRef(target_literal));
-          supports[value] = support;
-        }
+    for (const int64_t v : index_domain.Values()) {
+      DCHECK(context->IsFixed(element.vars(v)));
+      const int64_t value = context->MinOf(element.vars(v));
+      if (++constant_var_values_usage[value] == 2) {
+        // First time we cross > 1.
+        BoolArgumentProto* const support =
+            context->working_model->add_constraints()->mutable_bool_or();
+        const int target_literal =
+            context->GetOrCreateVarValueEncoding(target_ref, value);
+        support->add_literals(NegatedRef(target_literal));
+        supports[value] = support;
       }
     }
   }
@@ -696,25 +685,23 @@ void ExpandConstantArrayElement(ConstraintProto* ct, PresolveContext* context) {
     // covered, it allows to easily detect this fact in the presolve.
     auto* exactly_one =
         context->working_model->add_constraints()->mutable_exactly_one();
-    for (const ClosedInterval& interval : index_domain) {
-      for (int64_t v = interval.start; v <= interval.end; ++v) {
-        const int index_literal =
-            context->GetOrCreateVarValueEncoding(index_ref, v);
-        exactly_one->add_literals(index_literal);
+    for (const int64_t v : index_domain.Values()) {
+      const int index_literal =
+          context->GetOrCreateVarValueEncoding(index_ref, v);
+      exactly_one->add_literals(index_literal);
 
-        const int64_t value = context->MinOf(element.vars(v));
-        const auto& it = supports.find(value);
-        if (it != supports.end()) {
-          // The encoding literal for 'value' of the target_ref has been
-          // created before.
-          const int target_literal =
-              context->GetOrCreateVarValueEncoding(target_ref, value);
-          context->AddImplication(index_literal, target_literal);
-          it->second->add_literals(index_literal);
-        } else {
-          // Try to reuse the literal of the index.
-          context->InsertVarValueEncoding(index_literal, target_ref, value);
-        }
+      const int64_t value = context->MinOf(element.vars(v));
+      const auto& it = supports.find(value);
+      if (it != supports.end()) {
+        // The encoding literal for 'value' of the target_ref has been
+        // created before.
+        const int target_literal =
+            context->GetOrCreateVarValueEncoding(target_ref, value);
+        context->AddImplication(index_literal, target_literal);
+        it->second->add_literals(index_literal);
+      } else {
+        // Try to reuse the literal of the index.
+        context->InsertVarValueEncoding(index_literal, target_ref, value);
       }
     }
   }
@@ -733,25 +720,23 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context) {
   BoolArgumentProto* bool_or =
       context->working_model->add_constraints()->mutable_bool_or();
 
-  for (const ClosedInterval& interval : index_domain) {
-    for (int64_t v = interval.start; v <= interval.end; ++v) {
-      const int var = element.vars(v);
-      const Domain var_domain = context->DomainOf(var);
-      const int index_lit = context->GetOrCreateVarValueEncoding(index_ref, v);
-      bool_or->add_literals(index_lit);
+  for (const int64_t v : index_domain.Values()) {
+    const int var = element.vars(v);
+    const Domain var_domain = context->DomainOf(var);
+    const int index_lit = context->GetOrCreateVarValueEncoding(index_ref, v);
+    bool_or->add_literals(index_lit);
 
-      if (var_domain.IsFixed()) {
-        context->AddImplyInDomain(index_lit, target_ref, var_domain);
-      } else {
-        ConstraintProto* const ct = context->working_model->add_constraints();
-        ct->add_enforcement_literal(index_lit);
-        ct->mutable_linear()->add_vars(var);
-        ct->mutable_linear()->add_coeffs(1);
-        ct->mutable_linear()->add_vars(target_ref);
-        ct->mutable_linear()->add_coeffs(-1);
-        ct->mutable_linear()->add_domain(0);
-        ct->mutable_linear()->add_domain(0);
-      }
+    if (var_domain.IsFixed()) {
+      context->AddImplyInDomain(index_lit, target_ref, var_domain);
+    } else {
+      ConstraintProto* const ct = context->working_model->add_constraints();
+      ct->add_enforcement_literal(index_lit);
+      ct->mutable_linear()->add_vars(var);
+      ct->mutable_linear()->add_coeffs(1);
+      ct->mutable_linear()->add_vars(target_ref);
+      ct->mutable_linear()->add_coeffs(-1);
+      ct->mutable_linear()->add_domain(0);
+      ct->mutable_linear()->add_domain(0);
     }
   }
 
@@ -785,16 +770,14 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
   const Domain index_domain = context->DomainOf(index_ref);
   const Domain target_domain = context->DomainOf(target_ref);
   Domain reached_domain;
-  for (const ClosedInterval& interval : index_domain) {
-    for (int64_t v = interval.start; v <= interval.end; ++v) {
-      const Domain var_domain = context->DomainOf(element.vars(v));
-      if (var_domain.IntersectionWith(target_domain).IsEmpty()) continue;
+  for (const int64_t v : index_domain.Values()) {
+    const Domain var_domain = context->DomainOf(element.vars(v));
+    if (var_domain.IntersectionWith(target_domain).IsEmpty()) continue;
 
-      valid_indices.push_back(v);
-      reached_domain = reached_domain.UnionWith(var_domain);
-      if (var_domain.Min() != var_domain.Max()) {
-        all_constants = false;
-      }
+    valid_indices.push_back(v);
+    reached_domain = reached_domain.UnionWith(var_domain);
+    if (var_domain.Min() != var_domain.Max()) {
+      all_constants = false;
     }
   }
 
@@ -1016,10 +999,8 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
       }
 
       // Fully encode the variable.
-      for (const ClosedInterval& interval : context->DomainOf(vars[time])) {
-        for (int64_t v = interval.start; v <= interval.end; ++v) {
-          encoding[v] = context->GetOrCreateVarValueEncoding(vars[time], v);
-        }
+      for (const int64_t v : context->DomainOf(vars[time]).Values()) {
+        encoding[v] = context->GetOrCreateVarValueEncoding(vars[time], v);
       }
     }
 
@@ -1480,54 +1461,52 @@ void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
   // Collect all possible variables that can take each value, and add one linear
   // equation per value stating that this value can be assigned at most once, or
   // exactly once in case of permutation.
-  for (const ClosedInterval& interval : union_of_domains) {
-    for (int64_t v = interval.start; v <= interval.end; ++v) {
-      // Collect references which domain contains v.
-      std::vector<int> possible_refs;
-      int fixed_variable_count = 0;
-      for (const int ref : proto.vars()) {
-        if (!context->DomainContains(ref, v)) continue;
-        possible_refs.push_back(ref);
-        if (context->DomainOf(ref).IsFixed()) {
-          fixed_variable_count++;
-        }
+  for (const int64_t v : union_of_domains.Values()) {
+    // Collect references which domain contains v.
+    std::vector<int> possible_refs;
+    int fixed_variable_count = 0;
+    for (const int ref : proto.vars()) {
+      if (!context->DomainContains(ref, v)) continue;
+      possible_refs.push_back(ref);
+      if (context->DomainOf(ref).IsFixed()) {
+        fixed_variable_count++;
       }
-
-      if (fixed_variable_count > 1) {
-        // Violates the definition of AllDifferent.
-        return (void)context->NotifyThatModelIsUnsat();
-      } else if (fixed_variable_count == 1) {
-        // Remove values from other domains.
-        for (const int ref : possible_refs) {
-          if (context->DomainOf(ref).IsFixed()) continue;
-          if (!context->IntersectDomainWith(ref, Domain(v).Complement())) {
-            VLOG(1) << "Empty domain for a variable in ExpandAllDiff()";
-            return;
-          }
-        }
-      }
-
-      LinearConstraintProto* at_most_or_equal_one =
-          context->working_model->add_constraints()->mutable_linear();
-      int lb = is_a_permutation ? 1 : 0;
-      int ub = 1;
-      for (const int ref : possible_refs) {
-        DCHECK(context->DomainContains(ref, v));
-        DCHECK_GT(context->DomainOf(ref).Size(), 1);
-        const int encoding = context->GetOrCreateVarValueEncoding(ref, v);
-        if (RefIsPositive(encoding)) {
-          at_most_or_equal_one->add_vars(encoding);
-          at_most_or_equal_one->add_coeffs(1);
-        } else {
-          at_most_or_equal_one->add_vars(PositiveRef(encoding));
-          at_most_or_equal_one->add_coeffs(-1);
-          lb--;
-          ub--;
-        }
-      }
-      at_most_or_equal_one->add_domain(lb);
-      at_most_or_equal_one->add_domain(ub);
     }
+
+    if (fixed_variable_count > 1) {
+      // Violates the definition of AllDifferent.
+      return (void)context->NotifyThatModelIsUnsat();
+    } else if (fixed_variable_count == 1) {
+      // Remove values from other domains.
+      for (const int ref : possible_refs) {
+        if (context->DomainOf(ref).IsFixed()) continue;
+        if (!context->IntersectDomainWith(ref, Domain(v).Complement())) {
+          VLOG(1) << "Empty domain for a variable in ExpandAllDiff()";
+          return;
+        }
+      }
+    }
+
+    LinearConstraintProto* at_most_or_equal_one =
+        context->working_model->add_constraints()->mutable_linear();
+    int lb = is_a_permutation ? 1 : 0;
+    int ub = 1;
+    for (const int ref : possible_refs) {
+      DCHECK(context->DomainContains(ref, v));
+      DCHECK_GT(context->DomainOf(ref).Size(), 1);
+      const int encoding = context->GetOrCreateVarValueEncoding(ref, v);
+      if (RefIsPositive(encoding)) {
+        at_most_or_equal_one->add_vars(encoding);
+        at_most_or_equal_one->add_coeffs(1);
+      } else {
+        at_most_or_equal_one->add_vars(PositiveRef(encoding));
+        at_most_or_equal_one->add_coeffs(-1);
+        lb--;
+        ub--;
+      }
+    }
+    at_most_or_equal_one->add_domain(lb);
+    at_most_or_equal_one->add_domain(ub);
   }
   if (is_a_permutation) {
     context->UpdateRuleStats("alldiff: permutation expanded");

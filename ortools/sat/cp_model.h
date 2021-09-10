@@ -301,6 +301,12 @@ class LinearExpr {
   /// Returns the constant term.
   int64_t constant() const { return constant_; }
 
+  /// Checks that the expression is 1 * var + 0, and returns var.
+  IntVar Var() const;
+
+  /// Checks that the expression is constant and returns its value.
+  int64_t Value() const;
+
   /// Debug string.
   std::string DebugString() const;
 
@@ -620,20 +626,24 @@ class CpModelBuilder {
   IntVar NewConstant(int64_t value);
 
   /// Creates an always true Boolean variable.
+  /// If this is called multiple time, always the same variable will be
+  /// returned.
   BoolVar TrueVar();
 
   /// Creates an always false Boolean variable.
+  /// If this is called multiple time, always the same variable will be
+  /// returned.
   BoolVar FalseVar();
 
-  /// Creates an interval variable from three constant of affine expressions.
+  /// Creates an interval variable from 3 affine expressions.
   IntervalVar NewIntervalVar(const LinearExpr& start, const LinearExpr& size,
                              const LinearExpr& end);
 
   /// Creates an interval variable with a fixed size.
   IntervalVar NewFixedSizeIntervalVar(const LinearExpr& start, int64_t size);
 
-  /// Creates an optional interval variable from three constant of affine
-  /// expressions and a Boolean variable.
+  /// Creates an optional interval variable from 3 affine expressions and a
+  /// Boolean variable.
   IntervalVar NewOptionalIntervalVar(const LinearExpr& start,
                                      const LinearExpr& size,
                                      const LinearExpr& end, BoolVar presence);
@@ -923,6 +933,8 @@ class CpModelBuilder {
                          LinearExpressionProto* expr_proto);
 
   // Rebuilds a LinearExpr from a LinearExpressionProto.
+  // This method is a member of CpModelBuilder because it needs to be friend
+  // with IntVar.
   static LinearExpr LinearExprFromProto(const LinearExpressionProto& expr_proto,
                                         CpModelProto* model_proto_);
 

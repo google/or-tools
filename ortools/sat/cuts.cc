@@ -767,7 +767,6 @@ void IntegerRoundingCutHelper::ComputeCut(
     const IntegerValue ub = upper_bounds[i];
     const IntegerValue bound_diff =
         IntegerValue(CapSub(ub.value(), lb.value()));
-
     // Note that since we use ToDouble() this code works fine with lb/ub at
     // min/max integer value.
     //
@@ -1342,15 +1341,21 @@ bool CoverCutHelper::TrySimpleKnapsack(
 CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
                                                       IntegerVariable x,
                                                       IntegerVariable y,
+                                                      int linearization_level,
                                                       Model* model) {
   CutGenerator result;
   result.vars = {z, x, y};
 
   IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
+  Trail* trail = model->GetOrCreate<Trail>();
+
   result.generate_cuts =
-      [z, x, y, model, integer_trail](
+      [z, x, y, linearization_level, model, trail, integer_trail](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
+        if (trail->CurrentDecisionLevel() > 0 && linearization_level == 1) {
+          return true;
+        }
         const int64_t x_lb = integer_trail->LevelZeroLowerBound(x).value();
         const int64_t x_ub = integer_trail->LevelZeroUpperBound(x).value();
         const int64_t y_lb = integer_trail->LevelZeroLowerBound(y).value();
@@ -1421,15 +1426,19 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
 }
 
 CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
-                                      Model* model) {
+                                      int linearization_level, Model* model) {
   CutGenerator result;
   result.vars = {y, x};
 
+  Trail* trail = model->GetOrCreate<Trail>();
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   result.generate_cuts =
-      [y, x, integer_trail](
+      [y, x, linearization_level, trail, integer_trail](
           const absl::StrongVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
+        if (trail->CurrentDecisionLevel() > 0 && linearization_level == 1) {
+          return true;
+        }
         const int64_t x_ub = integer_trail->LevelZeroUpperBound(x).value();
         const int64_t x_lb = integer_trail->LevelZeroLowerBound(x).value();
 

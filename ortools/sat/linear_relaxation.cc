@@ -87,14 +87,11 @@ std::pair<IntegerValue, IntegerValue> GetMinAndMaxNotEncoded(
   // The domain can be large, but the list of values shouldn't, so this
   // runs in O(encoded_values.size());
   IntegerValue min = kMaxIntegerValue;
-  for (const ClosedInterval interval : (*domains)[var]) {
-    for (IntegerValue v(interval.start); v <= interval.end; ++v) {
-      if (!gtl::ContainsKey(encoded_values, v)) {
-        min = v;
-        break;
-      }
+  for (const int64_t v : (*domains)[var].Values()) {
+    if (!encoded_values.contains(IntegerValue(v))) {
+      min = IntegerValue(v);
+      break;
     }
-    if (min != kMaxIntegerValue) break;
   }
 
   IntegerValue max = kMinIntegerValue;
@@ -102,7 +99,7 @@ std::pair<IntegerValue, IntegerValue> GetMinAndMaxNotEncoded(
   for (int i = domain.NumIntervals() - 1; i >= 0; --i) {
     const ClosedInterval interval = domain[i];
     for (IntegerValue v(interval.end); v >= interval.start; --v) {
-      if (!gtl::ContainsKey(encoded_values, v)) {
+      if (!encoded_values.contains(v)) {
         max = v;
         break;
       }
@@ -1160,8 +1157,8 @@ void AddRoutesCutGenerator(const ConstraintProto& ct, Model* m,
   }
 }
 
-void AddIntProdCutGenerator(const ConstraintProto& ct, Model* m,
-                            LinearRelaxation* relaxation) {
+void AddIntProdCutGenerator(const ConstraintProto& ct, int linearization_level,
+                            Model* m, LinearRelaxation* relaxation) {
   if (HasEnforcementLiteral(ct)) return;
   if (ct.int_prod().vars_size() != 2) return;
   auto* mapping = m->GetOrCreate<CpModelMapping>();
@@ -1187,7 +1184,8 @@ void AddIntProdCutGenerator(const ConstraintProto& ct, Model* m,
       x = NegationOf(x);
     }
 
-    relaxation->cut_generators.push_back(CreateSquareCutGenerator(z, x, m));
+    relaxation->cut_generators.push_back(
+        CreateSquareCutGenerator(z, x, linearization_level, m));
   } else {
     // We currently only support variables with non-negative domains.
     if (x_lb < 0 && x_ub > 0) return;
@@ -1205,7 +1203,8 @@ void AddIntProdCutGenerator(const ConstraintProto& ct, Model* m,
     }
 
     relaxation->cut_generators.push_back(
-        CreatePositiveMultiplicationCutGenerator(z, x, y, m));
+        CreatePositiveMultiplicationCutGenerator(z, x, y, linearization_level,
+                                                 m));
   }
 }
 
@@ -1339,7 +1338,7 @@ void TryToAddCutGenerators(const ConstraintProto& ct, int linearization_level,
       break;
     }
     case ConstraintProto::ConstraintCase::kIntProd: {
-      AddIntProdCutGenerator(ct, m, relaxation);
+      AddIntProdCutGenerator(ct, linearization_level, m, relaxation);
       break;
     }
     case ConstraintProto::ConstraintCase::kAllDiff: {

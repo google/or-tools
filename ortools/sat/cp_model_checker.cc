@@ -487,18 +487,21 @@ std::string ValidateIntervalConstraint(const CpModelProto& model,
              "variable are currently not supported.";
     }
     RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, arg.size_view()));
-    if (MinOfExpression(model, arg.size_view()) < 0) {
+    if (ct.enforcement_literal().empty() &&
+        MinOfExpression(model, arg.size_view()) < 0) {
       return absl::StrCat(
-          "The size of an interval must be >= 0 in constraint: ",
+          "The size of an performed interval must be >= 0 in constraint: ",
           ProtobufDebugString(ct));
     }
     AppendToOverflowValidator(arg.size_view(), &for_overflow_validation);
   } else {
-    const std::string domain_error =
-        ValidateDomainIsPositive(model, arg.size(), "size");
-    if (!domain_error.empty()) {
-      return absl::StrCat(domain_error,
-                          " in constraint: ", ProtobufDebugString(ct));
+    if (ct.enforcement_literal().empty()) {
+      const std::string domain_error =
+          ValidateDomainIsPositive(model, arg.size(), "size");
+      if (!domain_error.empty()) {
+        return absl::StrCat(domain_error,
+                            " in constraint: ", ProtobufDebugString(ct));
+      }
     }
 
     for_overflow_validation.add_vars(arg.size());

@@ -418,12 +418,13 @@ CutGenerator CreateKnapsackCoverCutGenerator(
 CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
                                                       IntegerVariable x,
                                                       IntegerVariable y,
+                                                      int linearization_level,
                                                       Model* model);
 
 // A cut generator for y = x ^ 2 (x >= 0).
 // It will dynamically add a linear inequality to push y closer to the parabola.
 CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
-                                      Model* model);
+                                      int linearization_level, Model* model);
 
 // A cut generator for all_diff(xi). Let the united domain of all xi be D. Sum
 // of any k-sized subset of xi need to be greater or equal to the sum of

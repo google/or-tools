@@ -217,6 +217,18 @@ LinearExpr& LinearExpr::AddExpression(const LinearExpr& expr) {
   return *this;
 }
 
+IntVar LinearExpr::Var() const {
+  CHECK_EQ(constant_, 0);
+  CHECK_EQ(1, variables_.size());
+  CHECK_EQ(1, coefficients_[0]);
+  return variables_.front();
+}
+
+int64_t LinearExpr::Value() const {
+  CHECK(variables_.empty());
+  return constant_;
+}
+
 std::string LinearExpr::DebugString() const {
   std::string result;
   for (int i = 0; i < variables_.size(); ++i) {
@@ -469,9 +481,8 @@ IntervalVar CpModelBuilder::NewOptionalIntervalVar(const LinearExpr& start,
                                                    const LinearExpr& size,
                                                    const LinearExpr& end,
                                                    BoolVar presence) {
-  LinearExpr copy = start;
-  copy.AddExpression(size);
-  AddEquality(copy, end).OnlyEnforceIf(presence);
+  AddEquality(LinearExpr(start).AddExpression(size), end)
+      .OnlyEnforceIf(presence);
 
   const int index = cp_model_.constraints_size();
   ConstraintProto* const ct = cp_model_.add_constraints();

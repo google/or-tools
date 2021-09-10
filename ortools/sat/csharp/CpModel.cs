@@ -511,7 +511,7 @@ namespace Google.OrTools.Sat
         {
             LinearExpr startExpr = GetLinearExpr(start);
             LinearExpr durationExpr = GetLinearExpr(duration);
-            LinearExpr endExpr = LinearExpr.Sum(new LinearExpr[] {startExpr, durationExpr});
+            LinearExpr endExpr = LinearExpr.Sum(new LinearExpr[] { startExpr, durationExpr });
 
             LinearExpressionProto startProto = GetLinearExpressionProto(startExpr);
             LinearExpressionProto durationProto = GetLinearExpressionProto(durationExpr);
@@ -536,7 +536,7 @@ namespace Google.OrTools.Sat
         {
             LinearExpr startExpr = GetLinearExpr(start);
             LinearExpr durationExpr = GetLinearExpr(duration);
-            LinearExpr endExpr = LinearExpr.Sum(new LinearExpr[] {startExpr, durationExpr});
+            LinearExpr endExpr = LinearExpr.Sum(new LinearExpr[] { startExpr, durationExpr });
 
             LinearExpressionProto startProto = GetLinearExpressionProto(startExpr);
             LinearExpressionProto durationProto = GetLinearExpressionProto(durationExpr);
@@ -780,7 +780,7 @@ namespace Google.OrTools.Sat
             {
                 return (IntVar)(Object)x;
             }
-            if (typeof(X) == typeof(long) || typeof(X) == typeof(int))
+            if (typeof(X) == typeof(long) || typeof(X) == typeof(int) || typeof(X) == = typeof(short))
             {
                 return new ConstantExpr(Convert.ToInt64(x));
             }
