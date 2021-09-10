@@ -141,16 +141,15 @@ public final class CpModelTest {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final int horizon = 100;
+
     final IntVar startVar1 = model.newIntVar(0, horizon, "start1");
-    final IntVar endVar1 = model.newIntVar(0, horizon, "end1");
-    // Java code supports IntVar or integer constants in intervals.
     final int duration1 = 10;
-    final IntervalVar interval1 = model.newIntervalVar(startVar1, duration1, endVar1, "interval1");
+    final IntervalVar interval1 = model.newFixedSizeIntervalVar(startVar1, duration1, "interval1");
+
     final IntVar startVar2 = model.newIntVar(0, horizon, "start2");
-    final IntVar endVar2 = model.newIntVar(0, horizon, "end2");
-    // Java code supports IntVar or integer constants in intervals.
     final int duration2 = 15;
-    final IntervalVar interval2 = model.newIntervalVar(startVar2, duration2, endVar2, "interval2");
+    final IntervalVar interval2 = model.newFixedSizeIntervalVar(startVar2, duration2, "interval2");
+
     model.addNoOverlap(new IntervalVar[] {interval1, interval2});
     assertThat(model.model().getConstraintsCount()).isEqualTo(3);
     assertThat(model.model().getConstraints(0).hasInterval()).isTrue();
@@ -164,16 +163,15 @@ public final class CpModelTest {
     final CpModel model = new CpModel();
     assertNotNull(model);
     final int horizon = 100;
+
     final IntVar startVar1 = model.newIntVar(0, horizon, "start1");
-    final IntVar endVar1 = model.newIntVar(0, horizon, "end1");
-    // Java code supports IntVar or integer constants in intervals.
     final int duration1 = 10;
-    final IntervalVar interval1 = model.newIntervalVar(startVar1, duration1, endVar1, "interval1");
+    final IntervalVar interval1 = model.newFixedSizeIntervalVar(startVar1, duration1, "interval1");
+
     final IntVar startVar2 = model.newIntVar(0, horizon, "start2");
-    final IntVar endVar2 = model.newIntVar(0, horizon, "end2");
-    // Java code supports IntVar or integer constants in intervals.
     final int duration2 = 15;
-    final IntervalVar interval2 = model.newIntervalVar(startVar2, duration2, endVar2, "interval2");
+    final IntervalVar interval2 = model.newFixedSizeIntervalVar(startVar2, duration2, "interval2");
+
     model.addNoOverlap2D(
         new IntervalVar[] {interval1, interval2}, new IntervalVar[] {interval1, interval2});
     assertThat(model.model().getConstraintsCount()).isEqualTo(3);
