@@ -273,6 +273,8 @@ class RevisedSimplex {
     IntegerDistribution num_perfect_ties;
   };
 
+  enum class Phase { FEASIBILITY, OPTIMIZATION, PUSH };
+
   // Propagates parameters_ to all the other classes that need it.
   //
   // TODO(user): Maybe a better design is for them to have a reference to a
@@ -299,10 +301,10 @@ class RevisedSimplex {
   std::string SimpleVariableInfo(ColIndex col) const;
 
   // Displays a short string with the current iteration and objective value.
-  void DisplayIterationInfo() const;
+  void DisplayIterationInfo();
 
   // Displays the error bounds of the current solution.
-  void DisplayErrors() const;
+  void DisplayErrors();
 
   // Displays the status of the variables.
   void DisplayInfoOnVariables() const;
@@ -415,6 +417,11 @@ class RevisedSimplex {
   // Returns the number of empty columns in the matrix, i.e. columns where all
   // the coefficients are zero.
   ColIndex ComputeNumberOfEmptyColumns();
+
+  // Returns the number of super-basic variables. These are non-basic variables
+  // that are not at their bounds (if they have bounds), or non-basic free
+  // variables that are not at zero.
+  int ComputeNumberOfSuperBasicVariables() const;
 
   // This method transforms a basis for the first phase, with the optimal
   // value at zero, into a feasible basis for the initial problem, thus
@@ -565,14 +572,19 @@ class RevisedSimplex {
   // every component can take advantage of it.
   Status RefactorizeBasisIfNeeded(bool* refactorize);
 
-  // Minimize the objective function, be it for satisfiability or for
-  // optimization. Used by Solve().
-  ABSL_MUST_USE_RESULT Status Minimize(TimeLimit* time_limit);
+  // Main iteration loop of the primal simplex.
+  ABSL_MUST_USE_RESULT Status PrimalMinimize(TimeLimit* time_limit);
 
-  // Same as Minimize() for the dual simplex algorithm.
-  // TODO(user): remove duplicate code between the two functions.
+  // Main iteration loop of the dual simplex.
   ABSL_MUST_USE_RESULT Status DualMinimize(bool feasibility_phase,
                                            TimeLimit* time_limit);
+
+  // Pushes all super-basic variables to bounds (if applicable) or to zero (if
+  // unconstrained). This is part of a "crossover" procedure to find a vertex
+  // solution given a (near) optimal solution. Assumes that Minimize() or
+  // DualMinimize() has already run, i.e., that we are at an optimal solution
+  // within numerical tolerances.
+  ABSL_MUST_USE_RESULT Status PrimalPush(TimeLimit* time_limit);
 
   // Experimental. This is useful in a MIP context. It performs a few degenerate
   // pivot to try to mimize the fractionality of the optimal basis.
@@ -600,15 +612,15 @@ class RevisedSimplex {
   ProblemStatus problem_status_;
 
   // Current number of rows in the problem.
-  RowIndex num_rows_;
+  RowIndex num_rows_ = RowIndex(0);
 
   // Current number of columns in the problem.
-  ColIndex num_cols_;
+  ColIndex num_cols_ = ColIndex(0);
 
   // Index of the first slack variable in the input problem. We assume that all
   // variables with index greater or equal to first_slack_col_ are slack
   // variables.
-  ColIndex first_slack_col_;
+  ColIndex first_slack_col_ = ColIndex(0);
 
   // We're using vectors after profiling and looking at the generated assembly
   // it's as fast as std::unique_ptr as long as the size is properly reserved
@@ -714,31 +726,37 @@ class RevisedSimplex {
   std::vector<ColIndex> bound_flip_candidates_;
 
   // Total number of iterations performed.
-  uint64_t num_iterations_;
+  uint64_t num_iterations_ = 0;
 
   // Number of iterations performed during the first (feasibility) phase.
-  uint64_t num_feasibility_iterations_;
+  uint64_t num_feasibility_iterations_ = 0;
 
   // Number of iterations performed during the second (optimization) phase.
-  uint64_t num_optimization_iterations_;
+  uint64_t num_optimization_iterations_ = 0;
+
+  // Number of iterations performed during the push/crossover phase.
+  uint64_t num_push_iterations_ = 0;
 
   // Deterministic time for DualPhaseIUpdatePriceOnReducedCostChange().
   int64_t num_update_price_operations_ = 0;
 
   // Total time spent in Solve().
-  double total_time_;
+  double total_time_ = 0.0;
 
   // Time spent in the first (feasibility) phase.
-  double feasibility_time_;
+  double feasibility_time_ = 0.0;
 
   // Time spent in the second (optimization) phase.
-  double optimization_time_;
+  double optimization_time_ = 0.0;
+
+  // Time spent in the push/crossover phase.
+  double push_time_ = 0.0;
 
   // The internal deterministic time during the most recent call to
   // RevisedSimplex::AdvanceDeterministicTime.
-  double last_deterministic_time_update_;
+  double last_deterministic_time_update_ = 0.0;
 
-  // Statistics about the iterations done by Minimize().
+  // Statistics about the iterations done by PrimalMinimize().
   IterationStats iteration_stats_;
 
   mutable RatioTestStats ratio_test_stats_;
@@ -763,8 +781,8 @@ class RevisedSimplex {
   // Number of degenerate iterations made just before the current iteration.
   int num_consecutive_degenerate_iterations_;
 
-  // Indicate if we are in the feasibility_phase (1st phase) or not.
-  bool feasibility_phase_;
+  // Indicate the current phase of the solve.
+  Phase phase_ = Phase::FEASIBILITY;
 
   // Indicates whether simplex ended due to the objective limit being reached.
   // Note that it's not enough to compare the final objective value with the

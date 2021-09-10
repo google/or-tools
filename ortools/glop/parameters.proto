@@ -22,7 +22,7 @@ syntax = "proto2";
 
 package operations_research.glop;
 
-// next id = 65
+// next id = 66
 message GlopParameters {
 
   // Supported algorithms for scaling:
@@ -453,10 +453,17 @@ message GlopParameters {
   // Note that by default a FREE variable is assumed to be zero unless a
   // starting value was specified via SetStartingVariableValuesForNextSolve().
   //
-  // TODO(user): Note that currently, at the end of the solve, some of these
-  // FREE variable with bounds and an interior point value might still be left
-  // in the final solution. We will need an extra step and parameter to clean
-  // that up if requested.
+  // Note that, at the end of the solve, some of these FREE variable with bounds
+  // and an interior point value might still be left in the final solution.
+  // Enable push_to_vertex to clean these up.
   optional double crossover_bound_snapping_distance = 64 [default = inf];
+
+  // If the optimization phases finishes with super-basic variables (i.e.,
+  // variables that either 1) have bounds but are FREE in the basis, or 2) have
+  // no bounds and are FREE in the basis at a nonzero value), then run a "push"
+  // phase to push these variables to bounds, obtaining a vertex solution. Note
+  // this situation can happen only if a starting value was specified via
+  // SetStartingVariableValuesForNextSolve().
+  optional bool push_to_vertex = 65 [default = true];
 
 }

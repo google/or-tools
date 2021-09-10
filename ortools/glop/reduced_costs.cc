@@ -53,9 +53,8 @@ bool ReducedCosts::NeedsBasisRefactorization() const {
   return must_refactorize_basis_;
 }
 
-bool ReducedCosts::TestEnteringReducedCostPrecision(
-    ColIndex entering_col, const ScatteredColumn& direction,
-    Fractional* reduced_cost) {
+Fractional ReducedCosts::TestEnteringReducedCostPrecision(
+    ColIndex entering_col, const ScatteredColumn& direction) {
   SCOPED_TIME_STAT(&stats_);
   if (recompute_basic_objective_) {
     ComputeBasicObjective();
@@ -67,20 +66,6 @@ bool ReducedCosts::TestEnteringReducedCostPrecision(
 
   // Update the reduced cost of the entering variable with the precise version.
   reduced_costs_[entering_col] = precise_reduced_cost;
-  *reduced_cost = precise_reduced_cost;
-
-  if (!IsValidPrimalEnteringCandidate(entering_col)) {
-    VLOG(1) << "Entering candidate is not valid under precise reduced costs.";
-
-    // If we don't have the reduced cost with maximum precision, we
-    // return false and the next ChooseEnteringColumn() will recompute them.
-    // If they are already precise, we will skip this one (since it is no
-    // longer a candidate).
-    if (!are_reduced_costs_precise_) {
-      MakeReducedCostsPrecise();
-    }
-    return false;
-  }
 
   // At this point, we have an entering variable that will move the objective in
   // the good direction. We check the precision of the reduced cost and edges
@@ -102,27 +87,15 @@ bool ReducedCosts::TestEnteringReducedCostPrecision(
       MakeReducedCostsPrecise();
     }
   }
-  return true;
+
+  return precise_reduced_cost;
 }
 
-Fractional ReducedCosts::ComputeMaximumDualResidual() const {
+Fractional ReducedCosts::ComputeMaximumDualResidual() {
   SCOPED_TIME_STAT(&stats_);
-  DCHECK(!recompute_reduced_costs_);
-  if (recompute_reduced_costs_) return 0.0;
-
-  // The current reduced costs of the slack columns are the opposite of the dual
-  // values. Note that they are updated by UpdateBeforeBasisPivot().
-  const RowIndex num_rows = matrix_.num_rows();
-  const ColIndex first_slack_col = matrix_.num_cols() - RowToColIndex(num_rows);
-  DenseRow dual_values(RowToColIndex(num_rows), 0.0);
-  for (RowIndex row(0); row < num_rows; ++row) {
-    const ColIndex row_as_col = RowToColIndex(row);
-    const ColIndex slack_col = first_slack_col + row_as_col;
-    dual_values[row_as_col] = objective_[slack_col] +
-                              cost_perturbations_[slack_col] -
-                              reduced_costs_[slack_col];
-  }
   Fractional dual_residual_error(0.0);
+  const RowIndex num_rows = matrix_.num_rows();
+  const DenseRow& dual_values = Transpose(GetDualValues());
   for (RowIndex row(0); row < num_rows; ++row) {
     const ColIndex basic_col = basis_[row];
     const Fractional residual =
@@ -133,10 +106,12 @@ Fractional ReducedCosts::ComputeMaximumDualResidual() const {
   return dual_residual_error;
 }
 
-Fractional ReducedCosts::ComputeMaximumDualInfeasibility() const {
+Fractional ReducedCosts::ComputeMaximumDualInfeasibility() {
   SCOPED_TIME_STAT(&stats_);
-  DCHECK(!recompute_reduced_costs_);
-  if (recompute_reduced_costs_) return 0.0;
+
+  // Trigger a recomputation if needed so that reduced_costs_ is valid.
+  GetReducedCosts();
+
   Fractional maximum_dual_infeasibility = 0.0;
   const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
   const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
@@ -151,9 +126,12 @@ Fractional ReducedCosts::ComputeMaximumDualInfeasibility() const {
   return maximum_dual_infeasibility;
 }
 
-Fractional ReducedCosts::ComputeMaximumDualInfeasibilityOnNonBoxedVariables()
-    const {
+Fractional ReducedCosts::ComputeMaximumDualInfeasibilityOnNonBoxedVariables() {
   SCOPED_TIME_STAT(&stats_);
+
+  // Trigger a recomputation if needed so that reduced_costs_ is valid.
+  GetReducedCosts();
+
   Fractional maximum_dual_infeasibility = 0.0;
   const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
   const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
@@ -170,10 +148,12 @@ Fractional ReducedCosts::ComputeMaximumDualInfeasibilityOnNonBoxedVariables()
   return maximum_dual_infeasibility;
 }
 
-Fractional ReducedCosts::ComputeSumOfDualInfeasibilities() const {
+Fractional ReducedCosts::ComputeSumOfDualInfeasibilities() {
   SCOPED_TIME_STAT(&stats_);
-  DCHECK(!recompute_reduced_costs_);
-  if (recompute_reduced_costs_) return 0.0;
+
+  // Trigger a recomputation if needed so that reduced_costs_ is valid.
+  GetReducedCosts();
+
   Fractional dual_infeasibility_sum = 0.0;
   const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
   const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
@@ -484,11 +464,9 @@ void ReducedCosts::UpdateReducedCosts(ColIndex entering_col,
   }
 
   are_reduced_costs_recomputed_ = false;
+  are_reduced_costs_precise_ = false;
   update_row->ComputeUpdateRow(leaving_row);
   SCOPED_TIME_STAT(&stats_);
-
-  const ColIndex first_slack_col =
-      matrix_.num_cols() - RowToColIndex(matrix_.num_rows());
 
   // Update the leaving variable reduced cost.
   // '-pivot' is the value of the entering_edge at 'leaving_row'.
@@ -496,30 +474,8 @@ void ReducedCosts::UpdateReducedCosts(ColIndex entering_col,
   // 'entering_edge / -pivot'.
   const Fractional new_leaving_reduced_cost = entering_reduced_cost / -pivot;
   for (const ColIndex col : update_row->GetNonZeroPositions()) {
-    // Because the columns are in order, it is safe to break here.
-    if (col >= first_slack_col) break;
     const Fractional coeff = update_row->GetCoefficient(col);
     reduced_costs_[col] += new_leaving_reduced_cost * coeff;
-  }
-  are_reduced_costs_precise_ = false;
-
-  // Always update the slack variable position so we have the dual values and
-  // we can use them in ComputeCurrentDualResidualError().
-  const ScatteredRow& unit_row_left_inverse =
-      update_row->GetUnitRowLeftInverse();
-  if (unit_row_left_inverse.non_zeros.empty()) {
-    const ColIndex num_cols = unit_row_left_inverse.values.size();
-    for (ColIndex col(0); col < num_cols; ++col) {
-      const ColIndex slack_col = first_slack_col + col;
-      const Fractional coeff = unit_row_left_inverse[col];
-      reduced_costs_[slack_col] += new_leaving_reduced_cost * coeff;
-    }
-  } else {
-    for (const ColIndex col : unit_row_left_inverse.non_zeros) {
-      const ColIndex slack_col = first_slack_col + col;
-      const Fractional coeff = unit_row_left_inverse[col];
-      reduced_costs_[slack_col] += new_leaving_reduced_cost * coeff;
-    }
   }
   reduced_costs_[leaving_col] = new_leaving_reduced_cost;
 

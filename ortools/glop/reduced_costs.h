@@ -60,26 +60,27 @@ class ReducedCosts {
   bool NeedsBasisRefactorization() const;
 
   // Checks the precision of the entering variable choice now that the direction
-  // is computed, and return true if we can continue with this entering column,
-  // or false if this column is actually not good and ChooseEnteringColumn()
-  // need to be called again.
-  bool TestEnteringReducedCostPrecision(ColIndex entering_col,
-                                        const ScatteredColumn& direction,
-                                        Fractional* reduced_cost);
+  // is computed. Returns its precise version. This will also trigger a
+  // reduced cost recomputation if it was deemed too imprecise.
+  Fractional TestEnteringReducedCostPrecision(ColIndex entering_col,
+                                              const ScatteredColumn& direction);
 
   // Computes the current dual residual and infeasibility. Note that these
   // functions are not really fast (many scalar products will be computed) and
-  // shouldn't be called at each iteration. They will return 0.0 if the reduced
-  // costs need to be recomputed first and fail in debug mode.
-  Fractional ComputeMaximumDualResidual() const;
-  Fractional ComputeMaximumDualInfeasibility() const;
-  Fractional ComputeSumOfDualInfeasibilities() const;
+  // shouldn't be called at each iteration.
+  //
+  // These function will compute the reduced costs if needed.
+  // ComputeMaximumDualResidual() also needs ComputeBasicObjectiveLeftInverse()
+  // and do not depends on reduced costs.
+  Fractional ComputeMaximumDualResidual();
+  Fractional ComputeMaximumDualInfeasibility();
+  Fractional ComputeSumOfDualInfeasibilities();
 
   // Same as ComputeMaximumDualInfeasibility() but ignore boxed variables.
   // Because we can always switch bounds of boxed variables, if this is under
   // the dual tolerance, then we can easily have a dual feasible solution and do
   // not need to run a dual phase I algorithm.
-  Fractional ComputeMaximumDualInfeasibilityOnNonBoxedVariables() const;
+  Fractional ComputeMaximumDualInfeasibilityOnNonBoxedVariables();
 
   // Updates any internal data BEFORE the given simplex pivot is applied to B.
   // Note that no updates are needed in case of a bound flip.
