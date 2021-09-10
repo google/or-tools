@@ -27,14 +27,23 @@
 
 /* Global JNI reference deleter. Instantiate it via std::make_shared<> */
 class GlobalRefGuard {
-  JNIEnv *jenv_;
+  JavaVM *jvm_;
   jobject jref_;
   // non-copyable
   GlobalRefGuard(const GlobalRefGuard &) = delete;
   GlobalRefGuard &operator=(const GlobalRefGuard &) = delete;
  public:
-  GlobalRefGuard(JNIEnv *jenv, jobject jref): jenv_(jenv), jref_(jref) {}
-  ~GlobalRefGuard() { jenv_->DeleteGlobalRef(jref_); }
+  GlobalRefGuard(JavaVM *jvm, jobject jref): jvm_(jvm), jref_(jref) {}
+  ~GlobalRefGuard() {
+    JNIEnv *jenv = NULL;
+    JavaVMAttachArgs args;
+    args.version = JNI_VERSION_1_2;
+    args.name = NULL;
+    args.group = NULL;
+    jvm_->AttachCurrentThread((void**)&jenv, &args);
+    jenv->DeleteGlobalRef(jref_);
+    jvm_->DetachCurrentThread();
+  }
 };
 %}
 
@@ -73,15 +82,15 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %}
 
 %typemap(in) std::function<void(const std::string&)> %{
-  JavaVM* jvm;
-  jenv->GetJavaVM(&jvm);
 
   // $input will be deleted once this function return.
   // So we create a JNI global reference to keep it alive.
   jobject $input_object = jenv->NewGlobalRef($input);
   // and we wrap it in a GlobalRefGuard object which will call the
   // JNI global reference deleter to avoid leak at destruction.
-  auto $input_guard = std::make_shared<GlobalRefGuard>(jenv, $input_object);
+  JavaVM* jvm;
+  jenv->GetJavaVM(&jvm);
+  auto $input_guard = std::make_shared<GlobalRefGuard>(jvm, $input_object);
 
   jclass $input_object_class = jenv->GetObjectClass($input);
   if (nullptr == $input_object_class) return $null;

@@ -51,14 +51,23 @@ struct FailureProtect {
 
 /* Global JNI reference deleter */
 class GlobalRefGuard {
-  JNIEnv *jenv_;
+  JavaVM *jvm_;
   jobject jref_;
   // non-copyable
   GlobalRefGuard(const GlobalRefGuard &) = delete;
   GlobalRefGuard &operator=(const GlobalRefGuard &) = delete;
   public:
-  GlobalRefGuard(JNIEnv *jenv, jobject jref): jenv_(jenv), jref_(jref) {}
-  ~GlobalRefGuard() { jenv_->DeleteGlobalRef(jref_); }
+  GlobalRefGuard(JavaVM *jvm, jobject jref): jvm_(jvm), jref_(jref) {}
+  ~GlobalRefGuard() {
+    JNIEnv *jenv = NULL;
+    JavaVMAttachArgs args;
+    args.version = JNI_VERSION_1_2;
+    args.name = NULL;
+    args.group = NULL;
+    jvm_->AttachCurrentThread((void**)&jenv, &args);
+    jenv->DeleteGlobalRef(jref_);
+    jvm_->DetachCurrentThread();
+  }
 };
 %}
 
@@ -149,7 +158,12 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
     jobject $input_object = jenv->NewGlobalRef($input);
 
     // Global JNI reference deleter
-    auto $input_guard = std::make_shared<GlobalRefGuard>(jenv, $input_object);
+    std::shared_ptr<GlobalRefGuard> $input_guard;
+    {
+      JavaVM* jvm;
+      jenv->GetJavaVM(&jvm);
+      $input_guard = std::make_shared<GlobalRefGuard>(jvm, $input_object);
+    }
     $1 = [jenv, $input_object, $input_method_id, $input_guard](LAMBDA_PARAM) -> LAMBDA_RETURN {
       return jenv->JNI_METHOD($input_object, $input_method_id, LAMBDA_CALL);
     };
@@ -176,7 +190,12 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
     jobject $input_object = jenv->NewGlobalRef($input);
 
     // Global JNI reference deleter
-    auto $input_guard = std::make_shared<GlobalRefGuard>(jenv, $input_object);
+    std::shared_ptr<GlobalRefGuard> $input_guard;
+    {
+      JavaVM* jvm;
+      jenv->GetJavaVM(&jvm);
+      $input_guard = std::make_shared<GlobalRefGuard>(jvm, $input_object);
+    }
     $1 = [jenv, $input_object, $input_method_id, $input_guard]() -> LAMBDA_RETURN {
       return jenv->JNI_METHOD($input_object, $input_method_id);
     };
@@ -202,7 +221,12 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
     jobject $input_object = jenv->NewGlobalRef($input);
 
     // Global JNI reference deleter
-    auto $input_guard = std::make_shared<GlobalRefGuard>(jenv, $input_object);
+    std::shared_ptr<GlobalRefGuard> $input_guard;
+    {
+      JavaVM* jvm;
+      jenv->GetJavaVM(&jvm);
+      $input_guard = std::make_shared<GlobalRefGuard>(jvm, $input_object);
+    }
     $1 = [jenv, $input_object, $input_method_id, $input_guard]() -> std::string {
       jstring js = (jstring) jenv->CallObjectMethod($input_object, $input_method_id);
       // convert the Java String to const char* C string.
@@ -235,7 +259,12 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
     jobject $input_object = jenv->NewGlobalRef($input);
 
     // Global JNI reference deleter
-    auto $input_guard = std::make_shared<GlobalRefGuard>(jenv, $input_object);
+    std::shared_ptr<GlobalRefGuard> $input_guard;
+    {
+      JavaVM* jvm;
+      jenv->GetJavaVM(&jvm);
+      $input_guard = std::make_shared<GlobalRefGuard>(jvm, $input_object);
+    }
     $1 = [jenv, $input_object, $input_method_id,
     $input_guard](operations_research::Solver* solver) -> void {
       jclass solver_class = jenv->FindClass(
