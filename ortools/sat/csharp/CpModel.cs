@@ -780,7 +780,7 @@ namespace Google.OrTools.Sat
             {
                 return (IntVar)(Object)x;
             }
-            if (typeof(X) == typeof(long) || typeof(X) == typeof(int) || typeof(X) == = typeof(short))
+            if (typeof(X) == typeof(long) || typeof(X) == typeof(int) || typeof(X) == typeof(short))
             {
                 return new ConstantExpr(Convert.ToInt64(x));
             }
