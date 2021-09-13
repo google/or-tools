@@ -204,6 +204,9 @@ void ExpandIntDiv(ConstraintProto* ct, PresolveContext* context) {
   if (!context->IntersectDomainWith(divisor, Domain(0).Complement())) {
     return (void)context->NotifyThatModelIsUnsat();
   }
+
+  // The checker ensures that the domain of the divisor cannot span across 0,
+  // nor take the value 0.
   DCHECK(context->MinOf(divisor) > 0 || context->MaxOf(divisor) < 0);
   if (context->MinOf(numerator) < 0 && context->MaxOf(numerator) > 0) {
     if (context->MinOf(divisor) > 0) {
@@ -215,11 +218,23 @@ void ExpandIntDiv(ConstraintProto* ct, PresolveContext* context) {
     ct->Clear();
     context->UpdateRuleStats(
         "int_div: expanded division with numerator spanning across zero");
-  } else if (context->MaxOf(divisor) < 0) {
+    return;
+  }
+
+  // Change the sign of the divisor if negative (by simply negating the target).
+  if (context->MinOf(divisor) < 0) {
     ct->mutable_int_div()->set_target(NegatedRef(target));
     ct->mutable_int_div()->set_vars(1, NegatedRef(divisor));
-    context->UpdateRuleStats(
-        "int_div: inverse the sign of the target and the divisor");
+    context->UpdateRuleStats("int_div: inverse the sign of the divisor");
+  }
+
+  // Change the sign of the numerator if negative (by simply negating the
+  // target). It is okay to negate the target twice.
+  // At this stage, the domain of the numerator cannot span across 0.
+  if (context->MinOf(numerator) < 0) {
+    ct->mutable_int_div()->set_target(NegatedRef(target));
+    ct->mutable_int_div()->set_vars(0, NegatedRef(numerator));
+    context->UpdateRuleStats("int_div: inverse the sign of the numerator");
   }
 }
 

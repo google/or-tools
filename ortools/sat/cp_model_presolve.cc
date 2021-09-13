@@ -4354,24 +4354,24 @@ bool CpModelPresolver::PresolveAutomaton(ConstraintProto* ct) {
     return false;
   }
 
-  bool all_affine = true;
+  bool all_have_same_affine_relation = true;
   std::vector<AffineRelation::Relation> affine_relations;
   for (int v = 0; v < proto.vars_size(); ++v) {
     const int var = ct->automaton().vars(v);
-    AffineRelation::Relation r = context_->GetAffineRelation(PositiveRef(var));
+    const AffineRelation::Relation r = context_->GetAffineRelation(var);
     affine_relations.push_back(r);
     if (r.representative == var) {
-      all_affine = false;
+      all_have_same_affine_relation = false;
       break;
     }
     if (v > 0 && (r.coeff != affine_relations[v - 1].coeff ||
                   r.offset != affine_relations[v - 1].offset)) {
-      all_affine = false;
+      all_have_same_affine_relation = false;
       break;
     }
   }
 
-  if (all_affine) {  // Unscale labels.
+  if (all_have_same_affine_relation) {  // Unscale labels.
     for (int v = 0; v < proto.vars_size(); ++v) {
       proto.set_vars(v, affine_relations[v].representative);
     }
