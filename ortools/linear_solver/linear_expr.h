@@ -217,7 +217,7 @@ LinearRange operator<=(const LinearExpr& lhs, const LinearExpr& rhs);
 LinearRange operator==(const LinearExpr& lhs, const LinearExpr& rhs);
 LinearRange operator>=(const LinearExpr& lhs, const LinearExpr& rhs);
 
-// TODO(user,user): explore defining more overloads to support:
+// TODO(user): explore defining more overloads to support:
 // solver.AddRowConstraint(0.0 <= x + y + z <= 1.0);
 
 }  // namespace operations_research

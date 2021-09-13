@@ -21,7 +21,7 @@ using Google.OrTools.ConstraintSolver;
 /// <summary>
 ///   Minimal TSP.
 ///   A description of the problem can be found here:
-///   http://en.wikipedia.org/wiki/Travelling_salesman_problem.
+///   http://en.wikipedia.org/wiki/Travelling_salesperson_problem.
 /// </summary>
 public class TspCircuitBoard
 {

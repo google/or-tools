@@ -1,3 +1,19 @@
+// Copyright 2010-2021 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef OR_TOOLS_OPEN_SOURCE_INIT_INIT_H_
+#define OR_TOOLS_OPEN_SOURCE_INIT_INIT_H_
+
 #include <string>
 #include <vector>
 
@@ -11,10 +27,9 @@ ABSL_DECLARE_FLAG(bool, cp_model_dump_models);
 ABSL_DECLARE_FLAG(bool, cp_model_dump_lns);
 ABSL_DECLARE_FLAG(bool, cp_model_dump_response);
 
-
 namespace operations_research {
 
-/** 
+/**
  * Simple structure that holds useful C++ flags to setup from non-C++ languages.
  */
 struct CppFlags {
@@ -65,29 +80,27 @@ struct CppFlags {
  */
 class CppBridge {
  public:
-   /**
-    * Initialize the C++ logging layer.
-    * 
-    * This must be called once before any other library from OR-Tools are used.
-    */
+  /**
+   * Initialize the C++ logging layer.
+   *
+   * This must be called once before any other library from OR-Tools are used.
+   */
   static void InitLogging(const std::string& program_name) {
     google::InitGoogleLogging(program_name.c_str());
   }
 
   /**
    * Shutdown the C++ logging layer.
-   * 
+   *
    * This can be called to shutdown the C++ logging layer from OR-Tools.
    * It should only be called once.
    */
-  static void ShutdownLogging() {
-    google::ShutdownGoogleLogging();
-  }
-  
+  static void ShutdownLogging() { google::ShutdownGoogleLogging(); }
+
   /**
    * Sets all the C++ flags contained in the CppFlags structure.
    */
-  static void SetFlags(const CppFlags& flags)  {
+  static void SetFlags(const CppFlags& flags) {
     absl::SetFlag(&FLAGS_logtostderr, flags.logtostderr);
     absl::SetFlag(&FLAGS_log_prefix, flags.log_prefix);
     if (!flags.cp_model_dump_prefix.empty()) {
@@ -106,9 +119,11 @@ class CppBridge {
    * You need to pass the full path, including the shared library file.
    * It returns true if the library was found and correctly loaded.
    */
-   static bool LoadGurobiSharedLibrary(const std::string& full_library_path) {
-     return LoadGurobiDynamicLibrary({full_library_path}).ok();
-   }
+  static bool LoadGurobiSharedLibrary(const std::string& full_library_path) {
+    return LoadGurobiDynamicLibrary({full_library_path}).ok();
+  }
 };
 
 }  // namespace operations_research
+
+#endif  // OR_TOOLS_OPEN_SOURCE_INIT_INIT_H_
