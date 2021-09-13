@@ -147,10 +147,6 @@ export:
 export/python: | export
 	-mkdir $@
 
-export/python/%/build-manylinux1.sh: python/build-manylinux1.sh | export/python
-	-mkdir -p export/python/$*
-	cp $< $@
-
 export/python/%/build-manylinux.sh: python/build-manylinux.sh | export/python
 	-mkdir -p export/python/$*
 	cp $< $@
@@ -213,7 +209,7 @@ $(python_targets_export): python_amd64_%_export: python_amd64_%_build | export
 	${DOCKER_RUN_CMD} \
  -v `pwd`/export:/export \
  -it ${IMAGE}:python_amd64_$*_build \
- /bin/sh -c "cp *.whl /export/python"
+ "cp *.whl /export/python"
 
 ## ARM64v8
 PYTHON_ARM_DISTROS = $(addprefix arm64v8_, $(PYTHON_DISTROS))
@@ -269,7 +265,7 @@ $(python_arm_targets_export): python_arm64v8_%_export: python_arm64v8_%_build | 
 	${DOCKER_RUN_CMD} \
  -v `pwd`/export:/export \
  -it ${IMAGE}:python_arm64v8_$*_build \
- /bin/sh -c "cp *.whl /export/python"
+ "cp *.whl /export/python"
 
 ## MERGE ##
 .PHONY: python

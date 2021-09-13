@@ -52,8 +52,8 @@ function build_wheel() {
     exit 2
   fi
 
-  cmake -S. -B"${BUILD_DIR}" -DBUILD_DEPS=ON -DBUILD_PYTHON=ON -DPython3_ROOT_DIR="$1" -DBUILD_TESTING=OFF #--debug-find
-  cmake --build "${BUILD_DIR}"
+  cmake -S. -B"${BUILD_DIR}" -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON -DBUILD_PYTHON=ON -DPython3_ROOT_DIR="$1" -DBUILD_TESTING=OFF #--debug-find
+  cmake --build "${BUILD_DIR}" -v -j4
 }
 
 function check_wheel() {

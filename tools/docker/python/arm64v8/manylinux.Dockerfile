@@ -56,10 +56,19 @@ ARG SRC_GIT_BRANCH
 ENV SRC_GIT_BRANCH ${SRC_GIT_BRANCH:-master}
 ARG SRC_GIT_SHA1
 ENV SRC_GIT_SHA1 ${SRC_GIT_SHA1:-unknown}
-RUN git clone -b "$SRC_GIT_BRANCH" --single-branch "$SRC_GIT_URL" /project
+
+# Download sources
+# use SRC_GIT_SHA1 to modify the command
+# i.e. avoid docker reusing the cache when new commit is pushed
+RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch "$SRC_GIT_URL" /project \
+&& echo "sha1: $(cd /project && git rev-parse --verify HEAD)" \
+&& echo "expected sha1: ${SRC_GIT_SHA1}"
 
 FROM devel AS build
 WORKDIR /project
 COPY build-manylinux.sh .
 RUN chmod a+x "build-manylinux.sh"
-RUN ./build-manylinux.sh
+RUN ./build-manylinux.sh build
+
+FROM build as test
+RUN ./build-manylinux.sh test

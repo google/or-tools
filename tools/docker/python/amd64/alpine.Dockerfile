@@ -19,6 +19,7 @@ RUN python3 -m pip install absl-py mypy-protobuf
 ##  OR-TOOLS  ##
 ################
 FROM env AS devel
+ENV SRC_GIT_URL https://github.com/google/or-tools
 
 ARG SRC_GIT_BRANCH
 ENV SRC_GIT_BRANCH ${SRC_GIT_BRANCH:-master}
@@ -29,20 +30,18 @@ ENV SRC_GIT_SHA1 ${SRC_GIT_SHA1:-unknown}
 # use SRC_GIT_SHA1 to modify the command
 # i.e. avoid docker reusing the cache when new commit is pushed
 WORKDIR /root
-RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch https://github.com/google/or-tools \
+RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch "$SRC_GIT_URL" \
 && echo "sha1: $(cd or-tools && git rev-parse --verify HEAD)" \
 && echo "expected sha1: ${SRC_GIT_SHA1}"
 
-# Build third parties
-FROM devel AS third_party
-WORKDIR /root/or-tools
-RUN make detect && make third_party
-
 # Build project
-FROM third_party AS build
-RUN make detect_cc && make cc
-RUN make detect_python && make package_python
+FROM devel AS build
+WORKDIR /root/or-tools
+RUN cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON -DBUILD_PYTHON=ON
+RUN cmake --build build -v -j8
 # Rename wheel package ortools-version+musl-....
-RUN cp temp_python*/ortools/dist/*.whl .
-RUN NAME=$(ls *.whl | sed -e "s/\(ortools-[0-9\.]\+\)/\1+musl/") \
- && mv *.whl "${NAME}"
+RUN cp build/python/dist//ortools-*.whl .
+RUN NAME=$(ls *.whl | sed -e "s/\(ortools-[0-9\.]\+\)/\1+musl/") && mv *.whl "${NAME}"
+
+FROM build AS test
+RUN cmake --build build --target test

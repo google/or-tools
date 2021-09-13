@@ -58,18 +58,25 @@ RUN chmod a+x "${BUILD_ROOT}/build-manylinux1.sh"
 ################
 FROM env AS devel
 ENV SRC_GIT_URL https://github.com/google/or-tools
-ENV SRC_ROOT /root/src
-WORKDIR "$BUILD_ROOT"
 
 ARG SRC_GIT_BRANCH
 ENV SRC_GIT_BRANCH ${SRC_GIT_BRANCH:-master}
 ARG SRC_GIT_SHA1
 ENV SRC_GIT_SHA1 ${SRC_GIT_SHA1:-unknown}
-RUN git clone -b "$SRC_GIT_BRANCH" --single-branch "$SRC_GIT_URL" "$SRC_ROOT"
+
+# Download sources
+# use SRC_GIT_SHA1 to modify the command
+# i.e. avoid docker reusing the cache when new commit is pushed
+WORKDIR /root
+RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch "$SRC_GIT_URL" \
+&& echo "sha1: $(cd or-tools && git rev-parse --verify HEAD)" \
+&& echo "expected sha1: ${SRC_GIT_SHA1}"
 
 FROM devel AS third_party
-WORKDIR "$SRC_ROOT"
-RUN make third_party
+WORKDIR /root/or-tools
+COPY build-manylinux.sh .
+RUN chmod a+x "build-manylinux.sh"
+RUN ./build-manylinux.sh build
 
-FROM third_party as build
-RUN make cc
+FROM build as test
+RUN ./build-manylinux.sh test

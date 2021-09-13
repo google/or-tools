@@ -30,17 +30,17 @@ ENV SRC_GIT_SHA1 ${SRC_GIT_SHA1:-unknown}
 # use SRC_GIT_SHA1 to modify the command
 # i.e. avoid docker reusing the cache when new commit is pushed
 WORKDIR /root
-RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch "$SRC_GIT_URL" /project \
+RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch "$SRC_GIT_URL" \
 && echo "sha1: $(cd or-tools && git rev-parse --verify HEAD)" \
 && echo "expected sha1: ${SRC_GIT_SHA1}"
 
-# Build third parties
-FROM devel AS third_party
-WORKDIR /root/or-tools
-RUN make detect && make third_party
-
 FROM devel AS build
-WORKDIR /project
-COPY build-manylinux.sh .
-RUN chmod a+x "build-manylinux.sh"
-RUN ./build-manylinux.sh
+WORKDIR /root/or-tools
+RUN cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON -DBUILD_PYTHON=ON
+RUN cmake --build build -v -j8
+# Rename wheel package ortools-version+musl-....
+RUN cp build/python/dist//ortools-*.whl .
+RUN NAME=$(ls *.whl | sed -e "s/\(ortools-[0-9\.]\+\)/\1+musl/") && mv *.whl "${NAME}"
+
+FROM build AS test
+RUN cmake --build build --target test
