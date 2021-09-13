@@ -578,6 +578,7 @@ bool IntegerTrail::Propagate(Trail* trail) {
 
 void IntegerTrail::Untrail(const Trail& trail, int literal_trail_index) {
   ++num_untrails_;
+  conditional_lbs_.clear();
   const int level = trail.CurrentDecisionLevel();
   var_to_current_lb_interval_index_.SetLevel(level);
   propagation_trail_index_ =
@@ -1057,6 +1058,21 @@ bool IntegerTrail::ConditionalEnqueue(
   }
 
   // We can't push anything in this case.
+  //
+  // We record it for this propagation phase (until the next untrail) as this
+  // is relatively fast and heuristics can exploit this.
+  //
+  // Note that currently we only use ConditionalEnqueue() in scheduling
+  // propagator, and these propagator are quite slow so this is not visible.
+  //
+  // TODO(user): We could even keep the reason and maybe do some reasoning using
+  // at_least_one constraint on a set of the Boolean used here.
+  const auto [it, inserted] =
+      conditional_lbs_.insert({{lit.Index(), i_lit.var}, i_lit.bound});
+  if (!inserted) {
+    it->second = std::max(it->second, i_lit.bound);
+  }
+
   return true;
 }
 

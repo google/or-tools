@@ -705,6 +705,11 @@ class IntegerTrail : public SatPropagator {
   // Returns true if the variable is fixed at level 0.
   bool IsFixedAtLevelZero(IntegerVariable var) const;
 
+  // Advanced usage.
+  // Returns the current lower bound assuming the literal is true.
+  IntegerValue ConditionalLowerBound(Literal l, IntegerVariable i) const;
+  IntegerValue ConditionalLowerBound(Literal l, AffineExpression expr) const;
+
   // Advanced usage. Given the reason for
   // (Sum_i coeffs[i] * reason[i].var >= current_lb) initially in reason,
   // this function relaxes the reason given that we only need the explanation of
@@ -1087,6 +1092,12 @@ class IntegerTrail : public SatPropagator {
   Trail* trail_;
   const SatParameters& parameters_;
 
+  // Temporary "hash" to keep track of all the conditional enqueue that were
+  // done. Note that we currently do not keep any reason for them, and as such,
+  // we can only use this in heuristics. See ConditionalLowerBound().
+  absl::flat_hash_map<std::pair<LiteralIndex, IntegerVariable>, IntegerValue>
+      conditional_lbs_;
+
   DISALLOW_COPY_AND_ASSIGN(IntegerTrail);
 };
 
@@ -1343,14 +1354,26 @@ inline bool IntegerTrail::IsFixed(IntegerVariable i) const {
   return vars_[i].current_bound == -vars_[NegationOf(i)].current_bound;
 }
 
-// TODO(user): Use capped arithmetic? It might be slow though and we better just
-// make sure there is no overflow at model creation.
 inline IntegerValue IntegerTrail::LowerBound(AffineExpression expr) const {
   if (expr.var == kNoIntegerVariable) return expr.constant;
   return LowerBound(expr.var) * expr.coeff + expr.constant;
 }
 
-// TODO(user): Use capped arithmetic? same remark as for LowerBound().
+inline IntegerValue IntegerTrail::ConditionalLowerBound(
+    Literal l, IntegerVariable i) const {
+  const auto it = conditional_lbs_.find({l.Index(), i});
+  if (it != conditional_lbs_.end()) {
+    return std::max(vars_[i].current_bound, it->second);
+  }
+  return vars_[i].current_bound;
+}
+
+inline IntegerValue IntegerTrail::ConditionalLowerBound(
+    Literal l, AffineExpression expr) const {
+  if (expr.var == kNoIntegerVariable) return expr.constant;
+  return ConditionalLowerBound(l, expr.var) * expr.coeff + expr.constant;
+}
+
 inline IntegerValue IntegerTrail::UpperBound(AffineExpression expr) const {
   if (expr.var == kNoIntegerVariable) return expr.constant;
   return UpperBound(expr.var) * expr.coeff + expr.constant;

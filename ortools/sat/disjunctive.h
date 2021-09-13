@@ -30,12 +30,6 @@
 namespace operations_research {
 namespace sat {
 
-// Regroup all the set of intervals that are in no-overlap relation.
-// This is used by the simple scheduling search strategy.
-struct ModelNoOverlapHelperRepository {
-  std::vector<SchedulingConstraintHelper*> no_overlaps;
-};
-
 // Enforces a disjunctive (or no overlap) constraint on the given interval
 // variables. The intervals are interpreted as [start, end) and the constraint
 // enforces that no time point belongs to two intervals.

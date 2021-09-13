@@ -25,7 +25,6 @@
 
 #include <vector>
 
-#include "ortools/sat/disjunctive.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/pseudo_costs.h"

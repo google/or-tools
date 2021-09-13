@@ -62,8 +62,6 @@ std::function<void(Model*)> Disjunctive(
     SchedulingConstraintHelper* helper =
         new SchedulingConstraintHelper(vars, model);
     model->TakeOwnership(helper);
-    model->GetOrCreate<ModelNoOverlapHelperRepository>()->no_overlaps.push_back(
-        helper);
 
     // Experiments to use the timetable only to propagate the disjunctive.
     if (/*DISABLES_CODE*/ (false)) {

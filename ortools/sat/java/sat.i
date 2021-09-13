@@ -82,7 +82,6 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %}
 
 %typemap(in) std::function<void(const std::string&)> %{
-
   // $input will be deleted once this function return.
   // So we create a JNI global reference to keep it alive.
   jobject $input_object = jenv->NewGlobalRef($input);

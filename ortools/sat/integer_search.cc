@@ -346,16 +346,10 @@ std::function<BooleanOrIntegerLiteral()> PseudoCost(Model* model) {
   };
 }
 
-// A simple heuristic for scheduling with no overlaps.
-//
-// TODO(user): Extend to cumulative constraint. A better design is probably
-// just to collect for each interval, the start_min that was pushed during the
-// last propagation if that interval was present. In case of optional interval,
-// we cannot "commit" the push, but we still do it, so if we record in the
-// interval repository that value, that should be enough for a good heuristic.
+// A simple heuristic for scheduling models.
 std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
     Model* model) {
-  auto* repo = model->GetOrCreate<ModelNoOverlapHelperRepository>();
+  auto* repo = model->GetOrCreate<IntervalsRepository>();
   auto* heuristic = model->GetOrCreate<SearchHeuristics>();
   auto* trail = model->GetOrCreate<Trail>();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
@@ -367,84 +361,47 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
       AffineExpression end;
 
       // Information to select best.
-      int index = 0;
-      int task;
       IntegerValue size_min = kMaxIntegerValue;
       IntegerValue time = kMaxIntegerValue;
     };
     ToSchedule best;
 
-    int index = 0;
-    for (SchedulingConstraintHelper* helper : repo->no_overlaps) {
-      if (!helper->SynchronizeAndSetTimeDirection(true)) {
-        return BooleanOrIntegerLiteral();
-      }
+    // TODO(user): we should also precompute fixed precedences and only fix
+    // interval that have all their predecessors fixed.
+    const int num_intervals = repo->NumIntervals();
+    for (IntervalVariable i(0); i < num_intervals; ++i) {
+      if (repo->IsAbsent(i)) continue;
+      if (!repo->IsPresent(i) || !integer_trail->IsFixed(repo->Start(i)) ||
+          !integer_trail->IsFixed(repo->End(i))) {
+        IntegerValue time = integer_trail->LowerBound(repo->Start(i));
+        if (repo->IsOptional(i)) {
+          // For task whose presence is still unknown, our propagators should
+          // have propagated the minimium time as if it was present. So this
+          // should reflect the earliest time at which this interval can be
+          // scheduled.
+          time = std::max(time, integer_trail->ConditionalLowerBound(
+                                    repo->PresenceLiteral(i), repo->Start(i)));
+        }
 
-      // The heuristic idea is to find the interval that can be scheduled first,
-      // and fully schedule it. Note however than for optional interval,
-      // depending on the model, one cannot use the current start min to decide
-      // this since it might not be propagated.
-      //
-      // For now, we assume that this heuristic was used before, so the max
-      // of the fixed interval is used as the earliest start time.
-      //
-      // TODO(user): we should also precompute fixed precedences and only fix
-      // interval that have all their predecessors fixed.
-      //
-      // TODO(user): We could actually compute the earliest possible start of
-      // each task. This is best in the presence of fixed interval from the
-      // start or during a non-fixed search to be smarter about the next integer
-      // variable to instantiate.
-      IntegerValue first_free_spot = kMinIntegerValue;
-      for (int t = 0; t < helper->NumTasks(); ++t) {
-        if (!helper->IsPresent(t)) continue;
-        if (!integer_trail->IsFixed(helper->Starts()[t])) continue;
-        if (!integer_trail->IsFixed(helper->Ends()[t])) continue;
-        first_free_spot = std::max(first_free_spot, helper->EndMin(t));
-      }
-      for (int t = 0; t < helper->NumTasks(); ++t) {
-        if (helper->IsAbsent(t)) continue;
-        if (!helper->IsPresent(t) ||
-            !integer_trail->IsFixed(helper->Starts()[t]) ||
-            !integer_trail->IsFixed(helper->Ends()[t])) {
-          IntegerValue time;
-          if (helper->IsPresent(t)) {
-            // If t is present, we asssume its start min was propagated
-            // correctly.
-            time = helper->StartMin(t);
-          } else {
-            // Otherwise we use "first_free_spot" even though it is not perfect
-            // in case not everything was fixed by this heuristic there.
-            time = std::max(helper->StartMin(t), first_free_spot);
-          }
-
-          // For variable size, we compute the min size once the start is fixed
-          // to time. This is needed to never pick the "artificial" makespan
-          // interval at the end in priority compared to intervals that still
-          // need to be scheduled.
-          const IntegerValue size_min =
-              std::max(helper->SizeMin(t), helper->EndMin(t) - time);
-          if (time < best.time ||
-              (time == best.time && size_min < best.size_min)) {
-            best.presence = helper->IsOptional(t)
-                                ? helper->PresenceLiteral(t).Index()
-                                : kNoLiteralIndex;
-            best.start = helper->Starts()[t];
-            best.end = helper->Ends()[t];
-            best.size_min = size_min;
-            best.task = t;
-            best.index = index;
-            best.time = time;
-          }
+        // For variable size, we compute the min size once the start is fixed
+        // to time. This is needed to never pick the "artificial" makespan
+        // interval at the end in priority compared to intervals that still
+        // need to be scheduled.
+        const IntegerValue size_min =
+            std::max(integer_trail->LowerBound(repo->Size(i)),
+                     integer_trail->LowerBound(repo->End(i)) - time);
+        if (time < best.time ||
+            (time == best.time && size_min < best.size_min)) {
+          best.presence = repo->IsOptional(i) ? repo->PresenceLiteral(i).Index()
+                                              : kNoLiteralIndex;
+          best.start = repo->Start(i);
+          best.end = repo->End(i);
+          best.time = time;
+          best.size_min = size_min;
         }
       }
-      ++index;
     }
     if (best.time == kMaxIntegerValue) return BooleanOrIntegerLiteral();
-
-    VLOG(1) << "========= Schedule on " << best.index << " @" << best.time
-            << " (" << repo->no_overlaps[best.index]->TaskDebugString(best.task)
-            << ")";
 
     // Use the next_decision_override to fix in turn all the variables from
     // the selected interval.
@@ -486,8 +443,7 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
       }
 
       // Everything is fixed, dettach the override.
-      VLOG(1) << "Fixed on " << best.index << " @["
-              << integer_trail->LowerBound(best.start) << ", "
+      VLOG(1) << "Fixed @[" << integer_trail->LowerBound(best.start) << ", "
               << integer_trail->LowerBound(best.end) << "]";
       return BooleanOrIntegerLiteral();
     };

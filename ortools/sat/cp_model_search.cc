@@ -135,9 +135,11 @@ struct VarValue {
 
 namespace {
 
-bool ModelContainsNoOverlaps(const CpModelProto& cp_model_proto) {
+// TODO(user): Save this somewhere instead of recomputing it.
+bool ModelHasSchedulingConstraints(const CpModelProto& cp_model_proto) {
   for (const ConstraintProto& ct : cp_model_proto.constraints()) {
     if (ct.constraint_case() == ConstraintProto::kNoOverlap) return true;
+    if (ct.constraint_case() == ConstraintProto::kCumulative) return true;
   }
   return false;
 }
@@ -305,9 +307,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
 
   // If there are some scheduling constraint, we complete with a custom
   // "scheduling" strategy.
-  //
-  // TODO(user): also deal with cumulative.
-  if (ModelContainsNoOverlaps(cp_model_proto)) {
+  if (ModelHasSchedulingConstraints(cp_model_proto)) {
     heuristics.push_back(SchedulingSearchHeuristic(model));
   }
 
@@ -492,6 +492,15 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     strategies["less_encoding"] = new_params;
   }
 
+  // We only use a "fixed search" worker if some strategy is specified or
+  // if we have a scheduling model.
+  //
+  // TODO(user): For scheduling, this is important to find good first solution
+  // but afterwards it is not really great and should probably be replaced by a
+  // LNS worker.
+  const bool use_fixed_strategy = !cp_model.search_strategy().empty() ||
+                                  ModelHasSchedulingConstraints(cp_model);
+
   // Our current set of strategies
   //
   // TODO(user, fdid): Avoid launching two strategies if they are the same,
@@ -502,26 +511,30 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     // Low memory mode for interleaved search in single thread.
     if (cp_model.has_objective()) {
       names.push_back("default_lp");
-      names.push_back(!cp_model.search_strategy().empty() ? "fixed"
-                                                          : "pseudo_costs");
+      names.push_back(use_fixed_strategy ? "fixed" : "pseudo_costs");
       names.push_back(cp_model.objective().vars_size() > 1 ? "core" : "no_lp");
       names.push_back("max_lp");
     } else {
       names.push_back("default_lp");
-      names.push_back(cp_model.search_strategy_size() > 0 ? "fixed" : "no_lp");
+      names.push_back(use_fixed_strategy ? "fixed" : "no_lp");
       names.push_back("less_encoding");
       names.push_back("max_lp");
       names.push_back("quick_restart");
     }
   } else if (cp_model.has_objective()) {
     names.push_back("default_lp");
-    names.push_back(!cp_model.search_strategy().empty() ? "fixed"
-                                                        : "reduced_costs");
+    if (use_fixed_strategy) {
+      names.push_back("fixed");
+      if (num_workers > 8) names.push_back("reduced_costs");
+    } else {
+      names.push_back("reduced_costs");
+    }
     names.push_back("pseudo_costs");
     names.push_back("no_lp");
     names.push_back("max_lp");
-    if (cp_model.objective().vars_size() > 1) names.push_back("core");
+
     // TODO(user): Experiment with core and LP.
+    if (cp_model.objective().vars_size() > 1) names.push_back("core");
 
     // Only add this strategy if we have enough worker left for LNS.
     if (num_workers > 8 || base_params.interleave_search()) {
@@ -532,7 +545,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     }
   } else {
     names.push_back("default_lp");
-    if (cp_model.search_strategy_size() > 0) names.push_back("fixed");
+    if (use_fixed_strategy) names.push_back("fixed");
     names.push_back("less_encoding");
     names.push_back("no_lp");
     names.push_back("max_lp");
