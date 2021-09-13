@@ -105,7 +105,7 @@ function build_dotnet() {
   #make test_dotnet -l 4 UNIX_PYTHON_VER=3
   #echo "make test_dotnet: DONE" | tee -a build.log
 
-  cp packages/*nupkg export/
+  cp temp_dotnet/packages/*nupkg export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/dotnet_build"
 }
 
