@@ -238,7 +238,7 @@ std::string LinearExpr::DebugString() const {
         absl::StrAppend(&result, variables_[i].DebugString());
       } else if (coeff == -1) {
         absl::StrAppend(&result, "-", variables_[i].DebugString());
-      } else {
+      } else if (coeff != 0) {
         absl::StrAppend(&result, coeff, " * ", variables_[i].DebugString());
       }
     } else if (coeff == 1) {
@@ -248,7 +248,7 @@ std::string LinearExpr::DebugString() const {
                       variables_[i].DebugString());
     } else if (coeff == -1) {
       absl::StrAppend(&result, " - ", variables_[i].DebugString());
-    } else {
+    } else if (coeff < 0) {
       absl::StrAppend(&result, " - ", -coeff, " * ",
                       variables_[i].DebugString());
     }

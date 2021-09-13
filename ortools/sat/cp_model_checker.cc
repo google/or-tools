@@ -1481,7 +1481,20 @@ bool SolutionIsFeasible(const CpModelProto& model,
         is_feasible = checker.AllDiffConstraintIsFeasible(ct);
         break;
       case ConstraintProto::ConstraintCase::kInterval:
-        is_feasible = checker.IntervalConstraintIsFeasible(ct);
+        if (!checker.IntervalConstraintIsFeasible(ct)) {
+          if (ct.interval().has_start_view()) {
+            // Tricky: For simplified presolve, we require that a separate
+            // constraint is added to the model to enforce the "interval".
+            // This indicates that such a constraint was not added to the model.
+            // It should probably be a validation error, but it is hard to
+            // detect beforehand.
+            LOG(ERROR) << "Warning, an interval constraint was likely used "
+                          "without a corresponding linear constraint linking "
+                          "its start, size and end.";
+          } else {
+            is_feasible = false;
+          }
+        }
         break;
       case ConstraintProto::ConstraintCase::kNoOverlap:
         is_feasible = checker.NoOverlapConstraintIsFeasible(model, ct);
