@@ -46,11 +46,13 @@ help:
 	@echo -e "\t\t${BOLD}export${RESET}"
 	@echo
 	@echo
-	@echo -e "\t${BOLD}<stage>_amd64${RESET}: build <stage> docker images for ALL DISTROS."
-	@echo -e "\t${BOLD}amd64_<distro>_<stage>${RESET}: build the <stage> docker image for a specific distro."
+	@echo -e "\t${BOLD}amd64_<stage>${RESET}: Build <stage> docker images for ALL DISTROS."
+	@echo -e "\t${BOLD}amd64_<distro>_<stage>${RESET}: Build the <stage> docker image for a specific distro."
 	@echo -e "\t${BOLD}save_amd64_<stage>${RESET}: Save <stage> docker images for ALL DISTROS."
 	@echo -e "\t${BOLD}save_amd64_<distro>_<stage>${RESET}: Save the <stage> docker image for a specific distro."
-	@echo -e "\t${BOLD}sh_amd64_<distro>_<stage>${RESET}: run a container using the <stage> docker image specified (debug purpose)."
+	@echo -e "\t${BOLD}sh_amd64_<distro>_<stage>${RESET}: Run a container using the <stage> docker image specified (debug purpose)."
+	@echo -e "\t${BOLD}clean_amd64_<stage>${RESET}: Clean <stage> docker images for ALL DISTROS."
+	@echo -e "\t${BOLD}clean_amd64_<distro>_<stage>${RESET}: Clean the <stage> docker image for a specific distro."
 	@echo
 	@echo -e "\t${BOLD}amd64_<distro>_test${RESET}: Test OR-Tools archive for ALL LANGUAGES for the specified ${BOLD}<distro>${RESET}."
 	@echo -e "\t${BOLD}amd64_<distro>_test_<lang>${RESET}: Test OR-Tools archive for the specified ${BOLD}<distro>${RESET} and ${BOLD}<lang>${RESET}."
@@ -192,6 +194,8 @@ $$(sh_python_targets_$1): sh_python_amd64_%_$1: python_amd64_%_$1 | export
  ${IMAGE}:python_amd64_$$*_$1
 
 clean_python_targets_$1 = $(addprefix clean_python_, $(addsuffix _$1, $(PYTHON_AMD_DISTROS)))
+.PHONY: clean_python_amd64_$1
+clean_python_amd64_$1: $(clean_python_targets_$1)
 .PHONY: $(clean_python_targets_$1)
 $$(clean_python_targets_$1): clean_python_amd64_%_$1:
 	docker image rm -f ${IMAGE}:python_amd64_$$*_$1 2>/dev/null
@@ -246,6 +250,8 @@ $$(sh_python_targets_$1): sh_python_arm64v8_%_$1: python_arm64v8_%_$1 | export
  ${IMAGE}:python_arm64v8_$$*_$1
 
 clean_python_targets_$1 = $(addprefix clean_python_, $(addsuffix _$1, $(PYTHON_ARM_DISTROS)))
+.PHONY: clean_python_arm64v8_$1
+clean_python_arm64v8_$1: $(clean_python_targets_$1)
 .PHONY: $(clean_python_targets_$1)
 $$(clean_python_targets_$1): clean_python_arm64v8_%_$1:
 	docker image rm -f ${IMAGE}:python_arm64v8_$$*_$1 2>/dev/null
@@ -421,7 +427,13 @@ targets = $(addprefix amd64_, $(addsuffix _test, $(DISTROS)))
 .PHONY: amd64_test
 amd64_test: $(targets)
 .PHONY: $(targets)
-$(targets): amd64_%_test: amd64_%_test_cc amd64_%_test_java amd64_%_test_dotnet
+$(targets): amd64_%_test: $(addprefix amd64_%_test_, $(LANGS))
+
+targets = $(addprefix clean_amd64_, $(addsuffix _test, $(DISTROS)))
+.PHONY: clean_amd64_test
+clean_amd64_test: $(targets)
+.PHONY: $(targets)
+$(targets): clean_amd64_%_test: $(addprefix clean_amd64_%_test_, $(LANGS))
 
 ## MERGE ##
 .PHONY: test
@@ -430,45 +442,35 @@ test: amd64_test #arm64v8_test
 #############
 ##  CLEAN  ##
 #############
-targets = $(addprefix clean_, $(DISTROS))
+clean_targets = $(addprefix clean_, $(DISTROS))
 
-.PHONY: $(targets)
-$(targets): clean_%: $(addprefix clean_amd64_%_, $(STAGES))
-	docker image rm -f ${IMAGE}:amd64_$*_cc 2>/dev/null
-	docker image rm -f ${IMAGE}:amd64_$*_java 2>/dev/null
-	docker image rm -f ${IMAGE}:amd64_$*_dotnet 2>/dev/null
-	docker image rm -f ${IMAGE}:arm64v8_$*_cc 2>/dev/null
-	docker image rm -f ${IMAGE}:arm64v8_$*_java 2>/dev/null
-	docker image rm -f ${IMAGE}:arm64v8_$*_dotnet 2>/dev/null
+.PHONY: $(clean_targets)
+$(clean_targets): clean_%: $(addprefix clean_amd64_%_, $(STAGES)) clean_amd64_%_test
 	-rmdir cache/$*
-	-rm -f export/archives/or-tools_amd64_flatzinc_$*_v*.tar.gz
-	-rm -f export/archives/or-tools_amd64_$*_v*.tar.gz
+	-rm -f export/archives/*.tar.gz
 	-rm -f export/$*/or-tools.snk
 	-rmdir export/$*
 
 .PHONY: clean_python
-clean_python:
-	-docker image rm -f ${IMAGE}:python_amd64_alpine 2>/dev/null
-	-docker image rm -f ${IMAGE}:python_amd64_manylinux 2>/dev/null
-	-docker image rm -f ${IMAGE}:python_arm64v8_alpine 2>/dev/null
-	-docker image rm -f ${IMAGE}:python_arm64v8_manylinux 2>/dev/null
+clean_python: $(addprefix clean_python_amd64_, $(PYTHON_STAGES)) $(addprefix clean_python_arm64v8_, $(PYTHON_STAGES))
+	-rm -rf cache/python/*
 	-rm -f export/python/*.whl
 	-rm -f export/python/*.tar
 	-rm -f export/python/*.sh
 	-rmdir export/python
 
 .PHONY: clean
-clean: $(targets) clean_cc clean_java clean_dotnet clean_python
+clean: $(clean_targets) clean_python
 	docker container prune -f
 	docker image prune -f
-	-rmdir cache
+	-rm -rf cache
 
 .PHONY: distclean
 distclean: clean | export/archives
 	-docker container rm -f $$(docker container ls -f status=exited -q)
 	-docker image rm -f $$(docker image ls --all -q)
-	rmdir export/archives
-	rmdir export
+	-rm -rf export/archives
+	-rm -rf export
 
 ##########################
 ##  MINIZINC CHALLENGE  ##
