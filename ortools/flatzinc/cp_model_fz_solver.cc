@@ -80,22 +80,21 @@ struct CpModelProtoWithMapping {
   std::vector<VarOrValue> LookupVarsOrValues(const fz::Argument& argument);
 
   // Create and return the indices of the IntervalConstraint corresponding
-  // to the flatzinc "interval" specified by a start var and a duration var.
-  // This method will cache intervals with the key <start, duration>.
-  std::vector<int> CreateIntervals(const std::vector<int>& starts,
-                                   const std::vector<VarOrValue>& durations);
-
-  // Create and return the index of the IntervalConstraint corresponding
   // to the flatzinc "interval" specified by a start var and a size var.
-  // This method will cache intervals with the key <start_var, size_var>.
-  int GetOrCreateInterval(int start_var, VarOrValue duration);
+  // This method will cache intervals with the key <start, size>.
+  std::vector<int> CreateIntervals(const std::vector<int>& starts,
+                                   const std::vector<VarOrValue>& sizes);
 
   // Create and return the index of the optional IntervalConstraint
   // corresponding to the flatzinc "interval" specified by a start var, the
   // size_var, and the Boolean opt_var. This method will cache intervals with
-  // the key <start, duration, opt_var>.
-  int GetOrCreateOptionalInterval(int start_var, VarOrValue duration,
-                                  int opt_var);
+  // the key <start, size, opt_var>. If opt_var == kNoVar, the interval will not
+  // be optional.
+  int GetOrCreateOptionalInterval(int start_var, VarOrValue size, int opt_var);
+
+  // Adds a constraint to the model, add the enforcement literal if it is
+  // different from kNoVar, and returns a ptr to the ConstraintProto.
+  ConstraintProto* AddEnforcedConstraint(int literal);
 
   // Helpers to fill a ConstraintProto.
   void FillAMinusBInDomain(const std::vector<int64_t>& domain,
@@ -190,17 +189,20 @@ std::vector<VarOrValue> CpModelProtoWithMapping::LookupVarsOrValues(
   return result;
 }
 
-int CpModelProtoWithMapping::GetOrCreateInterval(int start_var,
-                                                 VarOrValue duration) {
-  return GetOrCreateOptionalInterval(start_var, duration, kNoVar);
+ConstraintProto* CpModelProtoWithMapping::AddEnforcedConstraint(int literal) {
+  ConstraintProto* result = proto.add_constraints();
+  if (literal != kNoVar) {
+    result->add_enforcement_literal(literal);
+  }
+  return result;
 }
 
 int CpModelProtoWithMapping::GetOrCreateOptionalInterval(int start_var,
-                                                         VarOrValue duration,
+                                                         VarOrValue size,
                                                          int opt_var) {
-  if (duration.var == kNoVar) {
+  if (size.var == kNoVar) {  // Size is fixed.
     const std::tuple<int, int64_t, int> key =
-        std::make_tuple(start_var, duration.value, opt_var);
+        std::make_tuple(start_var, size.value, opt_var);
     if (gtl::ContainsKey(start_fixed_size_opt_tuple_to_interval, key)) {
       return start_fixed_size_opt_tuple_to_interval[key];
     }
@@ -208,22 +210,18 @@ int CpModelProtoWithMapping::GetOrCreateOptionalInterval(int start_var,
     const int interval_index = proto.constraints_size();
     start_fixed_size_opt_tuple_to_interval[key] = interval_index;
 
-    auto* ct = proto.add_constraints();
-    if (opt_var != kNoVar) {
-      ct->add_enforcement_literal(opt_var);
-    }
-
-    auto* interval = ct->mutable_interval();
+    auto* interval = AddEnforcedConstraint(opt_var)->mutable_interval();
     interval->mutable_start_view()->add_vars(start_var);
     interval->mutable_start_view()->add_coeffs(1);
-    interval->mutable_size_view()->set_offset(duration.value);
+    interval->mutable_size_view()->set_offset(size.value);
     interval->mutable_end_view()->add_vars(start_var);
     interval->mutable_end_view()->add_coeffs(1);
-    interval->mutable_end_view()->set_offset(duration.value);
+    interval->mutable_end_view()->set_offset(size.value);
+
     return interval_index;
-  } else {
+  } else {  // Size is variable.
     const std::tuple<int, int, int> key =
-        std::make_tuple(start_var, duration.var, opt_var);
+        std::make_tuple(start_var, size.var, opt_var);
     if (gtl::ContainsKey(start_size_opt_tuple_to_interval, key)) {
       return start_size_opt_tuple_to_interval[key];
     }
@@ -231,31 +229,43 @@ int CpModelProtoWithMapping::GetOrCreateOptionalInterval(int start_var,
     const int interval_index = proto.constraints_size();
     start_size_opt_tuple_to_interval[key] = interval_index;
 
-    auto* ct = proto.add_constraints();
-    if (opt_var != kNoVar) {
-      ct->add_enforcement_literal(opt_var);
-    }
+    const int end_var = proto.variables_size();
+    FillDomainInProto(
+        ReadDomainFromProto(proto.variables(start_var))
+            .AdditionWith(ReadDomainFromProto(proto.variables(size.var))),
+        proto.add_variables());
 
-    auto* interval = ct->mutable_interval();
-    interval->set_start(start_var);
-    interval->set_size(duration.var);
+    // Create the interval.
+    auto* interval = AddEnforcedConstraint(opt_var)->mutable_interval();
+    interval->mutable_start_view()->add_vars(start_var);
+    interval->mutable_start_view()->add_coeffs(1);
+    interval->mutable_size_view()->add_vars(size.var);
+    interval->mutable_size_view()->add_coeffs(1);
+    interval->mutable_end_view()->add_vars(end_var);
+    interval->mutable_end_view()->add_coeffs(1);
 
-    interval->set_end(proto.variables_size());
-    auto* end_var = proto.add_variables();
-    const auto start_proto = proto.variables(start_var);
-    const auto size_proto = proto.variables(duration.var);
-    end_var->add_domain(start_proto.domain(0) + size_proto.domain(0));
-    end_var->add_domain(start_proto.domain(start_proto.domain_size() - 1) +
-                        size_proto.domain(size_proto.domain_size() - 1));
+    // Add the linear constraint (after the interval constraint as we have
+    // stored its index).
+    auto* lin = AddEnforcedConstraint(opt_var)->mutable_linear();
+    lin->add_vars(start_var);
+    lin->add_coeffs(1);
+    lin->add_vars(size.var);
+    lin->add_coeffs(1);
+    lin->add_vars(end_var);
+    lin->add_coeffs(-1);
+    lin->add_domain(0);
+    lin->add_domain(0);
+
     return interval_index;
   }
 }
 
 std::vector<int> CpModelProtoWithMapping::CreateIntervals(
-    const std::vector<int>& starts, const std::vector<VarOrValue>& durations) {
+    const std::vector<int>& starts, const std::vector<VarOrValue>& sizes) {
   std::vector<int> intervals;
   for (int i = 0; i < starts.size(); ++i) {
-    intervals.push_back(GetOrCreateInterval(starts[i], durations[i]));
+    intervals.push_back(
+        GetOrCreateOptionalInterval(starts[i], sizes[i], kNoVar));
   }
   return intervals;
 }
@@ -343,9 +353,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     refute->add_domain(0);
 
     // x => a + b == 1
-    auto* ct2 = proto.add_constraints();
-    ct2->add_enforcement_literal(x);
-    auto* const enforce = ct2->mutable_linear();
+    auto* enforce = AddEnforcedConstraint(x)->mutable_linear();
     enforce->add_vars(a);
     enforce->add_coeffs(1);
     enforce->add_vars(b);
@@ -663,26 +671,23 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
 
           // literal => var == value.
           {
-            auto* ct = proto.add_constraints();
-            ct->add_enforcement_literal(literal);
-            ct->mutable_linear()->add_coeffs(1);
-            ct->mutable_linear()->add_vars(var);
-            ct->mutable_linear()->add_domain(value);
-            ct->mutable_linear()->add_domain(value);
+            auto* lin = AddEnforcedConstraint(literal)->mutable_linear();
+            lin->add_coeffs(1);
+            lin->add_vars(var);
+            lin->add_domain(value);
+            lin->add_domain(value);
           }
 
           // not(literal) => var != value
           {
-            auto* ct = proto.add_constraints();
-            ct->add_enforcement_literal(NegatedRef(literal));
-            ct->mutable_linear()->add_coeffs(1);
-            ct->mutable_linear()->add_vars(var);
-            ct->mutable_linear()->add_domain(
-                std::numeric_limits<int64_t>::min());
-            ct->mutable_linear()->add_domain(value - 1);
-            ct->mutable_linear()->add_domain(value + 1);
-            ct->mutable_linear()->add_domain(
-                std::numeric_limits<int64_t>::max());
+            auto* lin =
+                AddEnforcedConstraint(NegatedRef(literal))->mutable_linear();
+            lin->add_coeffs(1);
+            lin->add_vars(var);
+            lin->add_domain(std::numeric_limits<int64_t>::min());
+            lin->add_domain(value - 1);
+            lin->add_domain(value + 1);
+            lin->add_domain(std::numeric_limits<int64_t>::max());
           }
         }
       }
@@ -735,7 +740,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     }
   } else if (fz_ct.type == "fzn_cumulative") {
     const std::vector<int> starts = LookupVars(fz_ct.arguments[0]);
-    const std::vector<VarOrValue> durations =
+    const std::vector<VarOrValue> sizes =
         LookupVarsOrValues(fz_ct.arguments[1]);
     const std::vector<int> demands = LookupVars(fz_ct.arguments[2]);
     const int capacity = LookupVar(fz_ct.arguments[3]);
@@ -750,10 +755,11 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
           proto.variables(demands[i]).domain(1) == 1 &&
           proto.variables(capacity).domain(1) == 1) {
         arg->add_intervals(
-            GetOrCreateOptionalInterval(starts[i], durations[i], demands[i]));
+            GetOrCreateOptionalInterval(starts[i], sizes[i], demands[i]));
         arg->add_demands(LookupConstant(1));
       } else {
-        arg->add_intervals(GetOrCreateInterval(starts[i], durations[i]));
+        arg->add_intervals(
+            GetOrCreateOptionalInterval(starts[i], sizes[i], kNoVar));
         arg->add_demands(demands[i]);
       }
     }
