@@ -117,7 +117,6 @@ struct JobTaskData {
 struct AlternativeTaskData {
   IntervalVar interval;
   IntVar start;
-  IntVar end;
   BoolVar presence;
 };
 
@@ -209,8 +208,7 @@ void CreateAlternativeTasks(
       }
 
       if (num_alternatives == 1) {
-        alt_data.push_back(
-            {tasks[t].interval, tasks[t].start, tasks[t].end, true_var});
+        alt_data.push_back({tasks[t].interval, tasks[t].start, true_var});
       } else {
         for (int a = 0; a < num_alternatives; ++a) {
           const BoolVar local_presence = cp_model.NewBoolVar();
@@ -218,28 +216,19 @@ void CreateAlternativeTasks(
               absl::GetFlag(FLAGS_use_optional_variables)
                   ? cp_model.NewIntVar(Domain(hard_start, hard_end))
                   : tasks[t].start;
-          const IntVar local_duration = cp_model.NewConstant(task.duration(a));
-          const IntVar local_end =
-              absl::GetFlag(FLAGS_use_optional_variables)
-                  ? cp_model.NewIntVar(Domain(hard_start, hard_end))
-                  : tasks[t].end;
-          const IntervalVar local_interval = cp_model.NewOptionalIntervalVar(
-              local_start, local_duration, local_end, local_presence);
+          const IntervalVar local_interval =
+              cp_model.NewOptionalFixedSizeIntervalVar(
+                  local_start, task.duration(a), local_presence);
 
           // Link local and global variables.
           if (absl::GetFlag(FLAGS_use_optional_variables)) {
             cp_model.AddEquality(tasks[t].start, local_start)
                 .OnlyEnforceIf(local_presence);
-            cp_model.AddEquality(tasks[t].end, local_end)
-                .OnlyEnforceIf(local_presence);
-
-            // TODO(user): Experiment with the following implication.
             cp_model.AddEquality(tasks[t].duration, task.duration(a))
                 .OnlyEnforceIf(local_presence);
           }
 
-          alt_data.push_back(
-              {local_interval, local_start, local_end, local_presence});
+          alt_data.push_back({local_interval, local_start, local_presence});
         }
         // Exactly one alternative interval is present.
         std::vector<BoolVar> interval_presences;
@@ -303,7 +292,6 @@ struct MachineTaskData {
   int job;
   IntVar start;
   int64_t duration;
-  IntVar end;
   BoolVar presence;
 };
 
@@ -332,7 +320,7 @@ void CreateMachines(
         // Record relevant variables for later use.
         machine_to_tasks[task.machine(a)].push_back(
             {alt_data[a].interval, j, alt_data[a].start, task.duration(a),
-             alt_data[a].end, alt_data[a].presence});
+             alt_data[a].presence});
       }
     }
   }
@@ -362,12 +350,14 @@ void CreateMachines(
           problem.machines(m).transition_time_matrix();
 
       // Create circuit constraint on a machine. Node 0 is both the source and
-      // sink, i.e, the first and last job.
+      // sink, i.e. the first and last job.
       CircuitConstraint circuit = cp_model.AddCircuitConstraint();
       for (int i = 0; i < num_intervals; ++i) {
         const int job_i = machine_to_tasks[m][i].job;
+        const IntVar p_start = machine_to_tasks[m][i].start;
+        const int64_t p_duration = machine_to_tasks[m][i].duration;
 
-        // TODO(user): simplify the code!
+        // TODO(user, lperron): simplify the code!
         CHECK_EQ(i, job_i);
 
         // Source to nodes.
@@ -381,19 +371,20 @@ void CreateMachines(
           } else {
             const int job_j = machine_to_tasks[m][j].job;
 
-            // TODO(user): simplify the code!
+            // TODO(user, lperron): simplify the code!
             CHECK_EQ(j, job_j);
             const int64_t transition =
                 transitions.transition_time(job_i * num_jobs + job_j);
             const BoolVar lit = cp_model.NewBoolVar();
             const IntVar start = machine_to_tasks[m][j].start;
-            const IntVar end = machine_to_tasks[m][i].end;
+
             circuit.AddArc(i + 1, j + 1, lit);
 
             // Push the new start with an extra transition.
             if (transition != 0) ++num_non_zero_transitions;
             cp_model
-                .AddLessOrEqual(LinearExpr(end).AddConstant(transition), start)
+                .AddLessOrEqual(p_start.AddConstant(transition + p_duration),
+                                start)
                 .OnlyEnforceIf(lit);
           }
         }
@@ -446,8 +437,7 @@ void CreateObjective(
       } else {
         const IntVar lateness_var = cp_model.NewIntVar(Domain(0, horizon));
         cp_model.AddLinMaxEquality(
-            lateness_var,
-            {LinearExpr(0), LinearExpr(job_end).AddConstant(-due_date)});
+            lateness_var, {LinearExpr(0), job_end.AddConstant(-due_date)});
         objective_vars.push_back(lateness_var);
         objective_coeffs.push_back(lateness_penalty);
       }
@@ -663,8 +653,7 @@ void Solve(const JsspInputProblem& problem) {
     const IntVar start =
         job_to_tasks[precedence.second_job_index()].front().start;
     const IntVar end = job_to_tasks[precedence.first_job_index()].back().end;
-    cp_model.AddLessOrEqual(LinearExpr(end).AddConstant(precedence.min_delay()),
-                            start);
+    cp_model.AddLessOrEqual(end.AddConstant(precedence.min_delay()), start);
   }
 
   // Objective.
@@ -707,9 +696,17 @@ void Solve(const JsspInputProblem& problem) {
     LOG(INFO) << cp_model.Proto().DebugString();
   }
 
-  Model model;
-  model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
-  const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
+  SatParameters parameters;
+  parameters.set_log_search_progress(true);
+  // Parse the --params flag.
+  if (!absl::GetFlag(FLAGS_params).empty()) {
+    CHECK(google::protobuf::TextFormat::MergeFromString(
+        absl::GetFlag(FLAGS_params), &parameters))
+        << absl::GetFlag(FLAGS_params);
+  }
+
+  const CpSolverResponse response =
+      SolveWithParameters(cp_model.Build(), parameters);
 
   // Abort if we don't have any solution.
   if (response.status() != CpSolverStatus::OPTIMAL &&
