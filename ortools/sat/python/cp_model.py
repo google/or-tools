@@ -636,6 +636,10 @@ class BoundedLinearExpression(object):
                 return str(self.__expr) + ' <= ' + str(ub)
             else:
                 return 'True (unbounded expr ' + str(self.__expr) + ')'
+        elif (len(self.__bounds) == 4 and self.__bounds[0] == INT_MIN and
+            self.__bounds[1] + 2 == self.__bounds[2] and
+            self.__bounds[3] == INT_MAX):
+            return str(self.__expr) + ' != ' + str(self.__bounds[1] + 1)
         else:
             return str(self.__expr) + ' in [' + DisplayBounds(
                 self.__bounds) + ']'
@@ -664,8 +668,8 @@ class BoundedLinearExpression(object):
             return self.__bounds == ne_bounds
 
         raise NotImplementedError(
-            f'Evaluating a BoundedLinearExpr \'{self}\' as a Boolean value is' +
-            ' not supported.')
+            f'Evaluating a BoundedLinearExpression \'{self}\' as a Boolean value' +
+            ' is not supported.')
 
 
 class Constraint(object):
