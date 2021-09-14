@@ -554,6 +554,14 @@ ConstraintProto* ConstraintScaler::AddConstraint(
 
   double scaling_factor = GetBestScalingOfDoublesToInt64(
       coefficients, lower_bounds, upper_bounds, scaling_target);
+  if (scaling_factor == 0.0) {
+    // TODO(user): Report error properly instead of ignoring constraint. Note
+    // however that this likely indicate a coefficient of inf in the constraint,
+    // so we should probably abort before reaching here.
+    LOG(DFATAL) << "Scaling factor of zero while scaling constraint: "
+                << mp_constraint.ShortDebugString();
+    return nullptr;
+  }
 
   // Returns the smallest factor of the form 2^i that gives us a relative sum
   // error of wanted_precision and still make sure we will have no integer
@@ -860,6 +868,11 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
   if (!coefficients.empty() || mp_model.objective_offset() != 0.0) {
     double scaling_factor = GetBestScalingOfDoublesToInt64(
         coefficients, lower_bounds, upper_bounds, kScalingTarget);
+    if (scaling_factor == 0.0) {
+      LOG(ERROR) << "Scaling factor of zero while scaling objective! This "
+                    "likely indicate an infinite coefficient in the objective.";
+      return false;
+    }
 
     // Returns the smallest factor of the form 2^i that gives us an absolute
     // error of kWantedPrecision and still make sure we will have no integer

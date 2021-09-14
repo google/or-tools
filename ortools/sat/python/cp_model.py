@@ -637,8 +637,8 @@ class BoundedLinearExpression(object):
             else:
                 return 'True (unbounded expr ' + str(self.__expr) + ')'
         elif (len(self.__bounds) == 4 and self.__bounds[0] == INT_MIN and
-            self.__bounds[1] + 2 == self.__bounds[2] and
-            self.__bounds[3] == INT_MAX):
+              self.__bounds[1] + 2 == self.__bounds[2] and
+              self.__bounds[3] == INT_MAX):
             return str(self.__expr) + ' != ' + str(self.__bounds[1] + 1)
         else:
             return str(self.__expr) + ' in [' + DisplayBounds(
@@ -653,23 +653,22 @@ class BoundedLinearExpression(object):
     def __bool__(self):
         coeffs_map, constant = self.__expr.GetVarValueMap()
         all_coeffs = set(coeffs_map.values())
-        eq_bounds = [0, 0]
-        ne_bounds = [INT_MIN, -1, 1, INT_MAX]
-
         same_var = set([0])
-        if (len(coeffs_map) == 1 and all_coeffs == same_var and constant == 0 and
+        eq_bounds = [0, 0]
+        different_vars = set([-1, 1])
+        ne_bounds = [INT_MIN, -1, 1, INT_MAX]
+        if (len(coeffs_map) == 1 and all_coeffs == same_var and
+                constant == 0 and
             (self.__bounds == eq_bounds or self.__bounds == ne_bounds)):
             return self.__bounds == eq_bounds
-
-        different_vars = set([-1, 1])
         if (len(coeffs_map) == 2 and all_coeffs == different_vars and
-            constant == 0 and
+                constant == 0 and
             (self.__bounds == eq_bounds or self.__bounds == ne_bounds)):
             return self.__bounds == ne_bounds
 
         raise NotImplementedError(
-            f'Evaluating a BoundedLinearExpression \'{self}\' as a Boolean value' +
-            ' is not supported.')
+            f'Evaluating a BoundedLinearExpression \'{self}\' as a Boolean value'
+            + ' is not supported.')
 
 
 class Constraint(object):

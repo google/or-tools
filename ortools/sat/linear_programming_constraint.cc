@@ -1257,7 +1257,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
       // TODO(user): do that in the possible_rows selection? only problem is
       // that we do not have the integer coefficient there...
       for (std::pair<RowIndex, IntegerValue>& entry : integer_multipliers) {
-        max_magnitude = std::max(max_magnitude, entry.second);
+        max_magnitude = std::max(max_magnitude, IntTypeAbs(entry.second));
       }
       if (CapAdd(CapProd(max_magnitude.value(), std::abs(mult1.value())),
                  CapProd(infinity_norms_[row_to_combine].value(),

@@ -102,13 +102,12 @@ void SharedIncompleteSolutionManager::AddNewSolution(
   solutions_.push_back(lp_solution);
 }
 
-// TODO(user): Experiments and play with the num_solutions_to_keep parameter.
 SharedResponseManager::SharedResponseManager(Model* model)
     : enumerate_all_solutions_(
           model->GetOrCreate<SatParameters>()->enumerate_all_solutions()),
       wall_timer_(*model->GetOrCreate<WallTimer>()),
       shared_time_limit_(model->GetOrCreate<ModelSharedTimeLimit>()),
-      solutions_(/*num_solutions_to_keep=*/3),
+      solutions_(model->GetOrCreate<SatParameters>()->solution_pool_size()),
       logger_(model->GetOrCreate<SolverLogger>()) {}
 
 namespace {

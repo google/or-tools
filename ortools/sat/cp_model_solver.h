@@ -74,6 +74,17 @@ CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
  * The given function will be called on each improving feasible solution found
  * during the search. For a non-optimization problem, if the option to find all
  * solution was set, then this will be called on each new solution.
+ *
+ * WARNING: Except when enumerate_all_solution() is true, one shouldn't rely on
+ * this to get a set of "diverse" solutions since any future change to the
+ * solver might completely kill any diversity in the set of solutions observed.
+ *
+ * Valid usage of this includes implementing features like:
+ *  - Enumerating all solution via enumerate_all_solution(). If only n solutions
+ *    are needed, this can also be used to abort when this number is reached.
+ *  - Aborting early if a good enough solution is found.
+ *  - Displaying log progress.
+ *  - etc...
  */
 std::function<void(Model*)> NewFeasibleSolutionObserver(
     const std::function<void(const CpSolverResponse& response)>& observer);

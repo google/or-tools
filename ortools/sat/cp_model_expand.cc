@@ -390,18 +390,22 @@ void ExpandPositiveIntProdWithTwoAcrossZero(int a_ref, int b_ref,
                                             PresolveContext* context) {
   const int terms_are_positive = context->NewBoolVar();
 
+  const Domain product_domain = context->DomainOf(product_ref);
+
   const int64_t max_of_a = context->MaxOf(a_ref);
   const int64_t max_of_b = context->MaxOf(b_ref);
-  const Domain positive_vars_domain({0, max_of_a * max_of_b});
+  const Domain positive_vars_domain =
+      Domain(0, CapProd(max_of_a, max_of_b)).IntersectionWith(product_domain);
   int both_positive_product_ref = std::numeric_limits<int>::min();
-  if (!positive_vars_domain.IntersectionWith(context->DomainOf(product_ref))
-           .IsEmpty()) {
+  if (!positive_vars_domain.IsEmpty()) {
     const int pos_a_ref = context->NewIntVar({0, max_of_a});
     AddXEqualYOrXEqualZero(terms_are_positive, pos_a_ref, a_ref, context);
     const int pos_b_ref = context->NewIntVar({0, max_of_b});
     AddXEqualYOrXEqualZero(terms_are_positive, pos_b_ref, b_ref, context);
 
-    both_positive_product_ref = context->NewIntVar(positive_vars_domain);
+    // We add 0 to the domain in case this product is not selected.
+    both_positive_product_ref =
+        context->NewIntVar(positive_vars_domain.UnionWith(Domain(0)));
     IntegerArgumentProto* pos_product =
         context->working_model->add_constraints()->mutable_int_prod();
     pos_product->set_target(both_positive_product_ref);
@@ -411,17 +415,19 @@ void ExpandPositiveIntProdWithTwoAcrossZero(int a_ref, int b_ref,
 
   const int64_t min_of_a = context->MinOf(a_ref);
   const int64_t min_of_b = context->MinOf(b_ref);
-  const Domain negative_vars_domain({0, min_of_a * min_of_b});
+  const Domain negative_vars_domain =
+      Domain(0, CapProd(min_of_a, min_of_b)).IntersectionWith(product_domain);
   int both_negative_product_ref = std::numeric_limits<int>::min();
-  if (!negative_vars_domain.IntersectionWith(context->DomainOf(product_ref))
-           .IsEmpty()) {
+  if (!negative_vars_domain.IsEmpty()) {
     const int neg_a_ref = context->NewIntVar({min_of_a, 0});
     AddXEqualYOrXEqualZero(NegatedRef(terms_are_positive), neg_a_ref, a_ref,
                            context);
     const int neg_b_ref = context->NewIntVar({min_of_b, 0});
     AddXEqualYOrXEqualZero(NegatedRef(terms_are_positive), neg_b_ref, b_ref,
                            context);
-    both_negative_product_ref = context->NewIntVar(negative_vars_domain);
+    // We add 0 to the domain in case this product is not selected.
+    both_negative_product_ref =
+        context->NewIntVar(negative_vars_domain.UnionWith(Domain(0)));
     IntegerArgumentProto* neg_product =
         context->working_model->add_constraints()->mutable_int_prod();
     neg_product->set_target(both_negative_product_ref);

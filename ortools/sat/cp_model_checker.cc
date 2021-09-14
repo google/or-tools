@@ -319,17 +319,6 @@ std::string ValidateIntProdConstraint(const CpModelProto& model,
     return absl::StrCat("An int_prod constraint should have exactly 2 terms: ",
                         ProtobufShortDebugString(ct));
   }
-  const Domain left_domain =
-      ReadDomainFromProto(model.variables(PositiveRef(ct.int_prod().vars(0))));
-  const Domain right_domain =
-      ReadDomainFromProto(model.variables(PositiveRef(ct.int_prod().vars(1))));
-  const Domain prod_domain =
-      left_domain.ContinuousMultiplicationBy(right_domain);
-  if (prod_domain.Min() == std::numeric_limits<int64_t>::min() ||
-      prod_domain.Max() == std::numeric_limits<int64_t>::max()) {
-    return absl::StrCat("Possible overflow in constraint: ",
-                        ProtobufShortDebugString(ct));
-  }
   return "";
 }
 
