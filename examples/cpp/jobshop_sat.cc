@@ -43,9 +43,6 @@ ABSL_FLAG(bool, use_interval_makespan, true,
 ABSL_FLAG(
     bool, use_cumulative_relaxation, true,
     "Whether we regroup multiple machines to create a cumulative relaxation.");
-ABSL_FLAG(
-    int, job_suffix_relaxation_length, 5,
-    "The maximum length of the suffix of a job used in the linear relaxation.");
 ABSL_FLAG(bool, display_model, false, "Display jobshop proto before solving.");
 ABSL_FLAG(bool, display_sat_model, false, "Display sat proto before solving.");
 ABSL_FLAG(int, horizon, -1, "Override horizon computation.");
@@ -111,15 +108,6 @@ struct JobTaskData {
   IntVar end;
 };
 
-// Each task in a job can have multiple alternative ways of being performed.
-// This structure stores the start, end, and presence variables attached to one
-// alternative for a given task.
-struct AlternativeTaskData {
-  IntervalVar interval;
-  IntVar start;
-  BoolVar presence;
-};
-
 // Create the job structure as a chain of tasks. Fills in the job_to_tasks
 // vector.
 void CreateJobs(const JsspInputProblem& problem, int64_t horizon,
@@ -172,6 +160,16 @@ void CreateJobs(const JsspInputProblem& problem, int64_t horizon,
   }
 }
 
+// Each task in a job can have multiple alternative ways of being performed.
+// This structure stores the start, end, and presence variables attached to one
+// alternative for a given task.
+struct AlternativeTaskData {
+  int machine;
+  IntervalVar interval;
+  IntVar start;
+  BoolVar presence;
+};
+
 // For each task of each jobs, create the alternative tasks and link them to the
 // main task of the job.
 void CreateAlternativeTasks(
@@ -201,34 +199,34 @@ void CreateAlternativeTasks(
       std::vector<AlternativeTaskData>& alt_data =
           job_task_to_alternatives[j][t];
 
-      absl::flat_hash_map<int64_t, std::vector<int>> duration_supports;
-      duration_supports[task.duration(0)].push_back(0);
-      for (int a = 1; a < num_alternatives; ++a) {
-        duration_supports[task.duration(a)].push_back(a);
-      }
-
       if (num_alternatives == 1) {
-        alt_data.push_back({tasks[t].interval, tasks[t].start, true_var});
+        alt_data.push_back(
+            {task.machine(0), tasks[t].interval, tasks[t].start, true_var});
       } else {
         for (int a = 0; a < num_alternatives; ++a) {
-          const BoolVar local_presence = cp_model.NewBoolVar();
-          const IntVar local_start =
+          const BoolVar alt_presence = cp_model.NewBoolVar();
+          const int64_t alt_duration = task.duration(a);
+          const int alt_machine = task.machine(a);
+          DCHECK_GE(hard_end - hard_start, alt_duration);
+          const IntVar alt_start =
               absl::GetFlag(FLAGS_use_optional_variables)
-                  ? cp_model.NewIntVar(Domain(hard_start, hard_end))
+                  ? cp_model.NewIntVar(
+                        Domain(hard_start, hard_end - alt_duration))
                   : tasks[t].start;
-          const IntervalVar local_interval =
-              cp_model.NewOptionalFixedSizeIntervalVar(
-                  local_start, task.duration(a), local_presence);
+          const IntervalVar alt_interval =
+              cp_model.NewOptionalFixedSizeIntervalVar(alt_start, alt_duration,
+                                                       alt_presence);
 
           // Link local and global variables.
           if (absl::GetFlag(FLAGS_use_optional_variables)) {
-            cp_model.AddEquality(tasks[t].start, local_start)
-                .OnlyEnforceIf(local_presence);
-            cp_model.AddEquality(tasks[t].duration, task.duration(a))
-                .OnlyEnforceIf(local_presence);
+            cp_model.AddEquality(tasks[t].start, alt_start)
+                .OnlyEnforceIf(alt_presence);
+            cp_model.AddEquality(tasks[t].duration, alt_duration)
+                .OnlyEnforceIf(alt_presence);
           }
 
-          alt_data.push_back({local_interval, local_start, local_presence});
+          alt_data.push_back(
+              {alt_machine, alt_interval, alt_start, alt_presence});
         }
         // Exactly one alternative interval is present.
         std::vector<BoolVar> interval_presences;
@@ -241,6 +239,8 @@ void CreateAlternativeTasks(
   }
 }
 
+// Add a redundant linear equation that links the duration of a task with all
+// the alternative durations and presence literals.
 void AddAlternativeTaskDurationRelaxation(
     const JsspInputProblem& problem,
     const std::vector<std::vector<JobTaskData>>& job_to_tasks,
@@ -259,17 +259,23 @@ void AddAlternativeTaskDurationRelaxation(
 
       int64_t min_duration = std::numeric_limits<int64_t>::max();
       int64_t max_duration = std::numeric_limits<int64_t>::min();
-      for (const int64_t duration : task.duration()) {
-        min_duration = std::min(min_duration, duration);
-        max_duration = std::max(max_duration, duration);
+      for (const int64_t alt_duration : task.duration()) {
+        min_duration = std::min(min_duration, alt_duration);
+        max_duration = std::max(max_duration, alt_duration);
       }
 
+      // If all all_duration are equals, then the equation is redundant with the
+      // interval constraint of the main task.
+      if (min_duration == max_duration) return;
+
+      // Shifting all durations by their min value, improves the propagation
+      // of the linear equation.
       std::vector<BoolVar> presence_literals;
       std::vector<int64_t> shifted_durations;
       for (int a = 0; a < num_alternatives; ++a) {
-        const int64_t duration = task.duration(a);
-        if (duration != min_duration) {
-          shifted_durations.push_back(duration - min_duration);
+        const int64_t alt_duration = task.duration(a);
+        if (alt_duration != min_duration) {
+          shifted_durations.push_back(alt_duration - min_duration);
           presence_literals.push_back(
               job_task_to_alternatives[j][t][a].presence);
         }
@@ -288,8 +294,8 @@ void AddAlternativeTaskDurationRelaxation(
 // This structure records the characteristics of each task added on a machine.
 // This information is indexed on each vector by the order of addition.
 struct MachineTaskData {
-  IntervalVar interval;
   int job;
+  IntervalVar interval;
   IntVar start;
   int64_t duration;
   BoolVar presence;
@@ -319,7 +325,7 @@ void CreateMachines(
       for (int a = 0; a < num_alternatives; ++a) {
         // Record relevant variables for later use.
         machine_to_tasks[task.machine(a)].push_back(
-            {alt_data[a].interval, j, alt_data[a].start, task.duration(a),
+            {j, alt_data[a].interval, alt_data[a].start, task.duration(a),
              alt_data[a].presence});
       }
     }
@@ -342,9 +348,13 @@ void CreateMachines(
   //
   // TODO(user): If there is just a few non-zero transition, there is probably
   // a better way than this quadratic blowup.
-  int64_t num_non_zero_transitions = 0;
+  // TODO(user): Check for triangular inequalities.
+  // TODO(user, fdid): If the min transition from one task to all others is
+  // > 0, one could artificially expand the duration of the task by this min
+  // transition, and scale back the transitions by that value.
   for (int m = 0; m < num_machines; ++m) {
     if (problem.machines(m).has_transition_time_matrix()) {
+      int64_t num_non_zero_transitions = 0;
       const int num_intervals = machine_to_tasks[m].size();
       const TransitionTimeMatrix& transitions =
           problem.machines(m).transition_time_matrix();
@@ -354,8 +364,7 @@ void CreateMachines(
       CircuitConstraint circuit = cp_model.AddCircuitConstraint();
       for (int i = 0; i < num_intervals; ++i) {
         const int job_i = machine_to_tasks[m][i].job;
-        const IntVar p_start = machine_to_tasks[m][i].start;
-        const int64_t p_duration = machine_to_tasks[m][i].duration;
+        const LinearExpr tail_end = machine_to_tasks[m][i].interval.EndExpr();
 
         // TODO(user, lperron): simplify the code!
         CHECK_EQ(i, job_i);
@@ -376,23 +385,26 @@ void CreateMachines(
             const int64_t transition =
                 transitions.transition_time(job_i * num_jobs + job_j);
             const BoolVar lit = cp_model.NewBoolVar();
-            const IntVar start = machine_to_tasks[m][j].start;
+            const IntVar head_start = machine_to_tasks[m][j].start;
 
             circuit.AddArc(i + 1, j + 1, lit);
 
-            // Push the new start with an extra transition.
+            // Push head_start with the extra transition.
             if (transition != 0) ++num_non_zero_transitions;
+            // AddConstant() is an in-place modification. We need to copy
+            // tail_end before adding the transition.
             cp_model
-                .AddLessOrEqual(p_start.AddConstant(transition + p_duration),
-                                start)
+                .AddLessOrEqual(LinearExpr(tail_end).AddConstant(transition),
+                                head_start)
                 .OnlyEnforceIf(lit);
           }
         }
       }
+      LOG(INFO) << "Machine " << m
+                << ": #non_zero_transitions: " << num_non_zero_transitions
+                << "/" << num_intervals * (num_intervals - 1)
+                << ", #intervals: " << num_intervals;
     }
-  }
-  if (num_non_zero_transitions > 0) {
-    LOG(INFO) << "Num non-zeros transition delay: " << num_non_zero_transitions;
   }
 }
 
@@ -696,7 +708,9 @@ void Solve(const JsspInputProblem& problem) {
     LOG(INFO) << cp_model.Proto().DebugString();
   }
 
+  // Setup parameters.
   SatParameters parameters;
+  // Display the search log by default.
   parameters.set_log_search_progress(true);
   // Parse the --params flag.
   if (!absl::GetFlag(FLAGS_params).empty()) {
