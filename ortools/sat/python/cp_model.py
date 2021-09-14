@@ -647,28 +647,25 @@ class BoundedLinearExpression(object):
         return self.__bounds
 
     def __bool__(self):
-        # Check for x == y
-        if self.__bounds == [0, 0]:
-            coeffs_map, constant = self.__expr.GetVarValueMap()
-            if constant != 0:
-                return False
-            for coeff in coeffs_map.values():
-                if coeff != 0:
-                    return False
-            return True
-        elif self.__bounds == [INT_MIN, -1, 1, INT_MAX]:
-            # Check for x != y
-            coeffs_map, constant = self.__expr.GetVarValueMap()
-            if constant != 0:
-                return True
-            for coeff in coeffs_map.values():
-                if coeff != 0:
-                    return True
-            return False
+        coeffs_map, constant = self.__expr.GetVarValueMap()
+        all_coeffs = set(coeffs_map.values())
+        eq_bounds = [0, 0]
+        ne_bounds = [INT_MIN, -1, 1, INT_MAX]
+
+        same_var = set([0])
+        if (len(coeffs_map) == 1 and all_coeffs == same_var and constant == 0 and
+            (self.__bounds == eq_bounds or self.__bounds == ne_bounds)):
+            return self.__bounds == eq_bounds
+
+        different_vars = set([-1, 1])
+        if (len(coeffs_map) == 2 and all_coeffs == different_vars and
+            constant == 0 and
+            (self.__bounds == eq_bounds or self.__bounds == ne_bounds)):
+            return self.__bounds == ne_bounds
 
         raise NotImplementedError(
-            'Evaluating a BoundedLinearExpr as a Boolean value is not supported.'
-        )
+            f'Evaluating a BoundedLinearExpr \'{self}\' as a Boolean value is' +
+            ' not supported.')
 
 
 class Constraint(object):
