@@ -818,18 +818,21 @@ bool CheckInverse(const Constraint& ct,
                   const std::function<int64_t(IntegerVariable*)>& evaluator) {
   CHECK_EQ(Size(ct.arguments[0]), Size(ct.arguments[1]));
   const int size = Size(ct.arguments[0]);
+  const int f_base = ct.arguments[2].Value();
+  const int invf_base = ct.arguments[3].Value();
   // Check all bounds.
   for (int i = 0; i < size; ++i) {
-    const int64_t x = EvalAt(ct.arguments[0], i, evaluator) - 1;
-    const int64_t y = EvalAt(ct.arguments[1], i, evaluator) - 1;
+    const int64_t x = EvalAt(ct.arguments[0], i, evaluator) - invf_base;
+    const int64_t y = EvalAt(ct.arguments[1], i, evaluator) - f_base;
     if (x < 0 || x >= size || y < 0 || y >= size) {
       return false;
     }
   }
+
   // Check f-1(f(i)) = i.
   for (int i = 0; i < size; ++i) {
-    const int64_t fi = EvalAt(ct.arguments[0], i, evaluator) - 1;
-    const int64_t invf_fi = EvalAt(ct.arguments[1], fi, evaluator) - 1;
+    const int64_t fi = EvalAt(ct.arguments[0], i, evaluator) - invf_base;
+    const int64_t invf_fi = EvalAt(ct.arguments[1], fi, evaluator) - f_base;
     if (invf_fi != i) {
       return false;
     }
@@ -1240,7 +1243,7 @@ CallMap CreateCallMap() {
   m["int_negate"] = CheckIntNegate;
   m["int_plus"] = CheckIntPlus;
   m["int_times"] = CheckIntTimes;
-  m["fzn_inverse"] = CheckInverse;
+  m["ortools_inverse"] = CheckInverse;
   m["lex_less_bool"] = CheckLexLessInt;
   m["lex_less_int"] = CheckLexLessInt;
   m["lex_lesseq_bool"] = CheckLexLesseqInt;

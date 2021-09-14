@@ -200,15 +200,15 @@ ConstraintProto* CpModelProtoWithMapping::AddEnforcedConstraint(int literal) {
 int CpModelProtoWithMapping::GetOrCreateOptionalInterval(int start_var,
                                                          VarOrValue size,
                                                          int opt_var) {
+  const int interval_index = proto.constraints_size();
   if (size.var == kNoVar) {  // Size is fixed.
     const std::tuple<int, int64_t, int> key =
         std::make_tuple(start_var, size.value, opt_var);
-    if (gtl::ContainsKey(start_fixed_size_opt_tuple_to_interval, key)) {
-      return start_fixed_size_opt_tuple_to_interval[key];
+    const auto [it, inserted] =
+        start_fixed_size_opt_tuple_to_interval.insert({key, interval_index});
+    if (!inserted) {
+      return it->second;
     }
-
-    const int interval_index = proto.constraints_size();
-    start_fixed_size_opt_tuple_to_interval[key] = interval_index;
 
     auto* interval = AddEnforcedConstraint(opt_var)->mutable_interval();
     interval->mutable_start_view()->add_vars(start_var);
@@ -222,12 +222,11 @@ int CpModelProtoWithMapping::GetOrCreateOptionalInterval(int start_var,
   } else {  // Size is variable.
     const std::tuple<int, int, int> key =
         std::make_tuple(start_var, size.var, opt_var);
-    if (gtl::ContainsKey(start_size_opt_tuple_to_interval, key)) {
-      return start_size_opt_tuple_to_interval[key];
+    const auto [it, inserted] =
+        start_size_opt_tuple_to_interval.insert({key, interval_index});
+    if (!inserted) {
+      return it->second;
     }
-
-    const int interval_index = proto.constraints_size();
-    start_size_opt_tuple_to_interval[key] = interval_index;
 
     const int end_var = proto.variables_size();
     FillDomainInProto(
@@ -694,49 +693,66 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
 
       ++index;
     }
-  } else if (fz_ct.type == "fzn_inverse") {
+  } else if (fz_ct.type == "ortools_inverse") {
     auto* arg = ct->mutable_inverse();
 
     const auto direct_variables = LookupVars(fz_ct.arguments[0]);
     const auto inverse_variables = LookupVars(fz_ct.arguments[1]);
+    const int base_direct = fz_ct.arguments[2].Value();
+    const int base_inverse = fz_ct.arguments[3].Value();
 
-    const int num_variables =
-        std::min(direct_variables.size(), inverse_variables.size());
+    CHECK_EQ(direct_variables.size(), inverse_variables.size());
+    const int num_variables = direct_variables.size();
+    const int end_direct = base_direct + num_variables;
+    const int end_inverse = base_inverse + num_variables;
 
-    // Try to auto-detect if it is zero or one based.
-    bool found_zero = false;
-    bool found_size = false;
-    for (fz::IntegerVariable* const var : fz_ct.arguments[0].variables) {
-      if (var->domain.Min() == 0) found_zero = true;
-      if (var->domain.Max() == num_variables) found_size = true;
-    }
-    for (fz::IntegerVariable* const var : fz_ct.arguments[1].variables) {
-      if (var->domain.Min() == 0) found_zero = true;
-      if (var->domain.Max() == num_variables) found_size = true;
-    }
+    // Any convention that maps the "fixed values" to the one of the inverse and
+    // back works. We decided to follow this one:
+    // There are 3 cases:
+    // (A) base_direct == base_inverse, we fill the arrays
+    //     direct  = [0, .., base_direct - 1] U [direct_vars]
+    //     inverse = [0, .., base_direct - 1] U [inverse_vars]
+    // (B) base_direct == base_inverse + offset (> 0), we fill the arrays
+    //     direct  = [0, .., base_inverse - 1] U
+    //               [end_inverse, .., end_inverse + offset - 1] U
+    //               [direct_vars]
+    //     inverse = [0, .., base_inverse - 1] U
+    //               [inverse_vars] U
+    //               [base_inverse, .., base_base_inverse + offset - 1]
+    // (C): base_inverse == base_direct + offset (> 0), we fill the arrays
+    //     direct =  [0, .., base_direct - 1] U
+    //               [direct_vars] U
+    //               [base_direct, .., base_direct + offset - 1]
+    //     inverse   [0, .., base_direct - 1] U
+    //               [end_direct, .., end_direct + offset - 1] U
+    //               [inverse_vars]
+    const int arity = std::max(base_inverse, base_direct) + num_variables;
+    for (int i = 0; i < arity; ++i) {
+      // Fill the direct array.
+      if (i < base_direct) {
+        if (i < base_inverse) {
+          arg->add_f_direct(LookupConstant(i));
+        } else if (i >= base_inverse) {
+          arg->add_f_direct(LookupConstant(i + num_variables));
+        }
+      } else if (i >= base_direct && i < end_direct) {
+        arg->add_f_direct(direct_variables[i - base_direct]);
+      } else {
+        arg->add_f_direct(LookupConstant(i - num_variables));
+      }
 
-    // Add a dummy constant variable at zero if the indexing is one based.
-    const bool is_one_based = !found_zero || found_size;
-    const int offset = is_one_based ? 1 : 0;
-
-    if (is_one_based) arg->add_f_direct(LookupConstant(0));
-    for (const int var : direct_variables) {
-      arg->add_f_direct(var);
-      // Intersect domains with offset + [0, num_variables).
-      FillDomainInProto(
-          ReadDomainFromProto(proto.variables(var))
-              .IntersectionWith(Domain(offset, num_variables - 1 + offset)),
-          proto.mutable_variables(var));
-    }
-
-    if (is_one_based) arg->add_f_inverse(LookupConstant(0));
-    for (const int var : inverse_variables) {
-      arg->add_f_inverse(var);
-      // Intersect domains with offset + [0, num_variables).
-      FillDomainInProto(
-          ReadDomainFromProto(proto.variables(var))
-              .IntersectionWith(Domain(offset, num_variables - 1 + offset)),
-          proto.mutable_variables(var));
+      // Fill the inverse array.
+      if (i < base_inverse) {
+        if (i < base_direct) {
+          arg->add_f_inverse(LookupConstant(i));
+        } else if (i >= base_direct) {
+          arg->add_f_inverse(LookupConstant(i + num_variables));
+        }
+      } else if (i >= base_inverse && i < end_inverse) {
+        arg->add_f_inverse(inverse_variables[i - base_inverse]);
+      } else {
+        arg->add_f_inverse(LookupConstant(i - num_variables));
+      }
     }
   } else if (fz_ct.type == "fzn_cumulative") {
     const std::vector<int> starts = LookupVars(fz_ct.arguments[0]);
