@@ -32,48 +32,36 @@ namespace fz {
 
 Domain Domain::IntegerList(std::vector<int64_t> values) {
   Domain result;
-  result.is_interval = false;
   result.values = std::move(values);
   gtl::STLSortAndRemoveDuplicates(&result.values);
-  result.display_as_boolean = false;
-  result.is_a_set = false;
   return result;
 }
 
 Domain Domain::AllInt64() {
   Domain result;
   result.is_interval = true;
-  result.display_as_boolean = false;
-  result.is_a_set = false;
   return result;
 }
 
 Domain Domain::IntegerValue(int64_t value) {
   Domain result;
-  result.is_interval = false;
   result.values.push_back(value);
-  result.display_as_boolean = false;
-  result.is_a_set = false;
   return result;
 }
 
 Domain Domain::Interval(int64_t included_min, int64_t included_max) {
   Domain result;
   result.is_interval = true;
-  result.display_as_boolean = false;
   result.values.push_back(included_min);
   result.values.push_back(included_max);
-  result.is_a_set = false;
   return result;
 }
 
 Domain Domain::Boolean() {
   Domain result;
-  result.is_interval = false;
   result.display_as_boolean = true;
   result.values.push_back(0);
   result.values.push_back(1);
-  result.is_a_set = false;
   return result;
 }
 
@@ -107,15 +95,34 @@ Domain Domain::SetOfBoolean() {
   return result;
 }
 
-Domain Domain::EmptyDomain() {
+Domain Domain::EmptyDomain() { return Domain(); }
+
+Domain Domain::AllFloats() {
   Domain result;
-  result.is_interval = false;
-  result.display_as_boolean = false;
-  result.is_a_set = false;
+  result.is_interval = true;
+  result.is_float = true;
+  return result;
+}
+
+Domain Domain::FloatInterval(double lb, double ub) {
+  Domain result;
+  result.is_interval = true;
+  result.is_float = true;
+  result.float_values = {lb, ub};
+  return result;
+}
+
+Domain Domain::FloatValue(double value) {
+  Domain result;
+  result.is_float = true;
+  result.float_values.push_back(value);
   return result;
 }
 
 bool Domain::IntersectWithDomain(const Domain& domain) {
+  if (is_float) {
+    return IntersectWithFloatDomain(domain);
+  }
   if (domain.is_interval) {
     if (!domain.values.empty()) {
       return IntersectWithInterval(domain.values[0], domain.values[1]);
@@ -235,6 +242,83 @@ bool Domain::IntersectWithListOfIntegers(const std::vector<int64_t>& integers) {
     values.swap(new_values);
     return changed;
   }
+}
+
+bool Domain::IntersectWithFloatDomain(const Domain& domain) {
+  CHECK(domain.is_float);
+  if (!is_interval && float_values.empty()) {
+    // Empty domain. Nothing to do.
+    return false;
+  }
+  if (!domain.is_interval && domain.float_values.empty()) {
+    return SetEmptyFloatDomain();
+  }
+  if (domain.is_interval && domain.float_values.empty()) {
+    // domain is all floats. Nothing to do.
+    return false;
+  }
+
+  if (is_interval && float_values.empty()) {  // Currently all floats.
+    // Copy the domain.
+    is_interval = domain.is_interval;
+    float_values = domain.float_values;
+    return true;
+  }
+
+  if (is_interval) {
+    // this is a double interval.
+    CHECK_EQ(2, float_values.size());
+    if (domain.is_interval) {
+      bool changed = false;
+      if (float_values[0] < domain.float_values[0]) {
+        float_values[0] = domain.float_values[0];
+        changed = true;
+      }
+      if (float_values[1] > domain.float_values[1]) {
+        float_values[1] = domain.float_values[1];
+        changed = true;
+      }
+      if (float_values[0] > float_values[1]) {
+        return SetEmptyFloatDomain();
+      }
+      return changed;
+    } else {
+      CHECK_EQ(1, domain.float_values.size());
+      const double value = domain.float_values[0];
+      if (value >= float_values[0] && value <= float_values[1]) {
+        is_interval = false;
+        float_values = {value};
+        return true;
+      }
+      return SetEmptyFloatDomain();
+    }
+  } else {
+    // this is a single double.
+    CHECK_EQ(1, float_values.size());
+    const double value = float_values[0];
+    if (domain.is_interval) {
+      CHECK_EQ(2, domain.float_values.size());
+      if (value >= domain.float_values[0] && value <= domain.float_values[1]) {
+        // value is compatible with domain.
+        return true;
+      }
+      return SetEmptyFloatDomain();
+    } else {
+      CHECK_EQ(1, domain.float_values.size());
+      if (value == domain.float_values[0]) {
+        // Same value;
+        return true;
+      }
+      return SetEmptyFloatDomain();
+    }
+  }
+}
+
+bool Domain::SetEmptyFloatDomain() {
+  CHECK(is_float);
+  is_interval = false;
+  float_values.clear();
+  return true;
 }
 
 bool Domain::HasOneValue() const {
@@ -375,6 +459,19 @@ bool Domain::RemoveValue(int64_t value) {
 }
 
 std::string Domain::DebugString() const {
+  if (is_float) {
+    switch (float_values.size()) {
+      case 0:
+        return "float";
+      case 1:
+        return absl::StrCat(float_values[0]);
+      case 2:
+        return absl::StrCat("[", float_values[0], "..", float_values[1], "]");
+      default:
+        LOG(DFATAL) << "Error with float domain";
+        return "error_float";
+    }
+  }
   if (is_interval) {
     if (values.empty()) {
       return "int";
@@ -419,16 +516,16 @@ Argument Argument::DomainList(std::vector<Domain> domains) {
   return result;
 }
 
-Argument Argument::IntVarRef(IntegerVariable* const var) {
+Argument Argument::VarRef(Variable* const var) {
   Argument result;
-  result.type = INT_VAR_REF;
+  result.type = VAR_REF;
   result.variables.push_back(var);
   return result;
 }
 
-Argument Argument::IntVarRefArray(std::vector<IntegerVariable*> vars) {
+Argument Argument::VarRefArray(std::vector<Variable*> vars) {
   Argument result;
-  result.type = INT_VAR_REF_ARRAY;
+  result.type = VAR_REF_ARRAY;
   result.variables = std::move(vars);
   return result;
 }
@@ -452,19 +549,41 @@ Argument Argument::FromDomain(const Domain& domain) {
   }
 }
 
+Argument Argument::FloatValue(double value) {
+  Argument result;
+  result.type = FLOAT_VALUE;
+  result.floats.push_back(value);
+  return result;
+}
+
+Argument Argument::FloatInterval(double lb, double ub) {
+  Argument result;
+  result.type = FLOAT_INTERVAL;
+  result.floats.push_back(lb);
+  result.floats.push_back(ub);
+  return result;
+}
+
+Argument Argument::FloatList(std::vector<double> floats) {
+  Argument result;
+  result.type = FLOAT_LIST;
+  result.floats = std::move(floats);
+  return result;
+}
+
 std::string Argument::DebugString() const {
   switch (type) {
     case INT_VALUE:
-      return absl::StrFormat("% d", values[0]);
+      return absl::StrFormat("%d", values[0]);
     case INT_INTERVAL:
       return absl::StrFormat("[%d..%d]", values[0], values[1]);
     case INT_LIST:
       return absl::StrFormat("[%s]", absl::StrJoin(values, ", "));
     case DOMAIN_LIST:
       return absl::StrFormat("[%s]", JoinDebugString(domains, ", "));
-    case INT_VAR_REF:
+    case VAR_REF:
       return variables[0]->name;
-    case INT_VAR_REF_ARRAY: {
+    case VAR_REF_ARRAY: {
       std::string result = "[";
       for (int i = 0; i < variables.size(); ++i) {
         result.append(variables[i]->name);
@@ -474,17 +593,23 @@ std::string Argument::DebugString() const {
     }
     case VOID_ARGUMENT:
       return "VoidArgument";
+    case FLOAT_VALUE:
+      return absl::StrCat(floats[0]);
+    case FLOAT_INTERVAL:
+      return absl::StrCat("[", floats[0], "..", floats[1], "]");
+    case FLOAT_LIST:
+      return absl::StrFormat("[%s]", absl::StrJoin(floats, ", "));
   }
   LOG(FATAL) << "Unhandled case in DebugString " << static_cast<int>(type);
   return "";
 }
 
-bool Argument::IsVariable() const { return type == INT_VAR_REF; }
+bool Argument::IsVariable() const { return type == VAR_REF; }
 
 bool Argument::HasOneValue() const {
   return (type == INT_VALUE || (type == INT_LIST && values.size() == 1) ||
           (type == INT_INTERVAL && values[0] == values[1]) ||
-          (type == INT_VAR_REF && variables[0]->domain.HasOneValue()));
+          (type == VAR_REF && variables[0]->domain.HasOneValue()));
 }
 
 int64_t Argument::Value() const {
@@ -495,7 +620,7 @@ int64_t Argument::Value() const {
     case INT_INTERVAL:
     case INT_LIST:
       return values[0];
-    case INT_VAR_REF: {
+    case VAR_REF: {
       return variables[0]->domain.values[0];
     }
     default: {
@@ -521,10 +646,10 @@ bool Argument::IsArrayOfValues() const {
       }
       return true;
     }
-    case INT_VAR_REF:
+    case VAR_REF:
       return false;
-    case INT_VAR_REF_ARRAY: {
-      for (IntegerVariable* var : variables) {
+    case VAR_REF_ARRAY: {
+      for (Variable* var : variables) {
         if (!var->domain.HasOneValue()) {
           return false;
         }
@@ -532,6 +657,12 @@ bool Argument::IsArrayOfValues() const {
       return true;
     }
     case VOID_ARGUMENT:
+      return false;
+    case FLOAT_VALUE:
+      return false;
+    case FLOAT_INTERVAL:
+      return false;
+    case FLOAT_LIST:
       return false;
   }
 }
@@ -566,7 +697,7 @@ int64_t Argument::ValueAt(int pos) const {
       CHECK(domains[pos].HasOneValue());
       return domains[pos].Value();
     }
-    case INT_VAR_REF_ARRAY: {
+    case VAR_REF_ARRAY: {
       CHECK_GE(pos, 0);
       CHECK_LT(pos, variables.size());
       CHECK(variables[pos]->domain.HasOneValue());
@@ -579,26 +710,26 @@ int64_t Argument::ValueAt(int pos) const {
   }
 }
 
-IntegerVariable* Argument::Var() const {
-  return type == INT_VAR_REF ? variables[0] : nullptr;
+Variable* Argument::Var() const {
+  return type == VAR_REF ? variables[0] : nullptr;
 }
 
-IntegerVariable* Argument::VarAt(int pos) const {
-  return type == INT_VAR_REF_ARRAY ? variables[pos] : nullptr;
+Variable* Argument::VarAt(int pos) const {
+  return type == VAR_REF_ARRAY ? variables[pos] : nullptr;
 }
 
-// ----- IntegerVariable -----
+// ----- Variable -----
 
-IntegerVariable::IntegerVariable(const std::string& name_,
-                                 const Domain& domain_, bool temporary_)
+Variable::Variable(const std::string& name_, const Domain& domain_,
+                   bool temporary_)
     : name(name_), domain(domain_), temporary(temporary_), active(true) {
   if (!domain.is_interval) {
     gtl::STLSortAndRemoveDuplicates(&domain.values);
   }
 }
 
-bool IntegerVariable::Merge(const std::string& other_name,
-                            const Domain& other_domain, bool other_temporary) {
+bool Variable::Merge(const std::string& other_name, const Domain& other_domain,
+                     bool other_temporary) {
   if (temporary && !other_temporary) {
     temporary = false;
     name = other_name;
@@ -607,7 +738,7 @@ bool IntegerVariable::Merge(const std::string& other_name,
   return true;
 }
 
-std::string IntegerVariable::DebugString() const {
+std::string Variable::DebugString() const {
   if (!domain.is_interval && domain.values.size() == 1) {
     return absl::StrFormat("% d", domain.values.back());
   } else {
@@ -706,18 +837,18 @@ Annotation Annotation::IntegerValue(int64_t value) {
   return result;
 }
 
-Annotation Annotation::Variable(IntegerVariable* const var) {
+Annotation Annotation::VarRef(Variable* const var) {
   Annotation result;
-  result.type = INT_VAR_REF;
+  result.type = VAR_REF;
   result.interval_min = 0;
   result.interval_max = 0;
   result.variables.push_back(var);
   return result;
 }
 
-Annotation Annotation::VariableList(std::vector<IntegerVariable*> variables) {
+Annotation Annotation::VarRefArray(std::vector<Variable*> variables) {
   Annotation result;
-  result.type = INT_VAR_REF_ARRAY;
+  result.type = VAR_REF_ARRAY;
   result.interval_min = 0;
   result.interval_max = 0;
   result.variables = std::move(variables);
@@ -733,10 +864,9 @@ Annotation Annotation::String(const std::string& str) {
   return result;
 }
 
-void Annotation::AppendAllIntegerVariables(
-    std::vector<IntegerVariable*>* const vars) const {
+void Annotation::AppendAllVariables(std::vector<Variable*>* const vars) const {
   for (const Annotation& ann : annotations) {
-    ann.AppendAllIntegerVariables(vars);
+    ann.AppendAllVariables(vars);
   }
   if (!variables.empty()) {
     vars->insert(vars->end(), variables.begin(), variables.end());
@@ -760,10 +890,10 @@ std::string Annotation::DebugString() const {
     case INT_VALUE: {
       return absl::StrCat(interval_min);
     }
-    case INT_VAR_REF: {
+    case VAR_REF: {
       return variables.front()->name;
     }
-    case INT_VAR_REF_ARRAY: {
+    case VAR_REF_ARRAY: {
       std::string result = "[";
       for (int i = 0; i < variables.size(); ++i) {
         result.append(variables[i]->DebugString());
@@ -786,8 +916,7 @@ std::string SolutionOutputSpecs::Bounds::DebugString() const {
 }
 
 SolutionOutputSpecs SolutionOutputSpecs::SingleVariable(
-    const std::string& name, IntegerVariable* variable,
-    bool display_as_boolean) {
+    const std::string& name, Variable* variable, bool display_as_boolean) {
   SolutionOutputSpecs result;
   result.name = name;
   result.variable = variable;
@@ -797,7 +926,7 @@ SolutionOutputSpecs SolutionOutputSpecs::SingleVariable(
 
 SolutionOutputSpecs SolutionOutputSpecs::MultiDimensionalArray(
     const std::string& name, std::vector<Bounds> bounds,
-    std::vector<IntegerVariable*> flat_variables, bool display_as_boolean) {
+    std::vector<Variable*> flat_variables, bool display_as_boolean) {
   SolutionOutputSpecs result;
   result.variable = nullptr;
   result.name = name;
@@ -831,17 +960,24 @@ Model::~Model() {
   gtl::STLDeleteElements(&constraints_);
 }
 
-IntegerVariable* Model::AddVariable(const std::string& name,
-                                    const Domain& domain, bool defined) {
-  IntegerVariable* const var = new IntegerVariable(name, domain, defined);
+Variable* Model::AddVariable(const std::string& name, const Domain& domain,
+                             bool defined) {
+  Variable* const var = new Variable(name, domain, defined);
   variables_.push_back(var);
   return var;
 }
 
 // TODO(user): Create only once constant per value.
-IntegerVariable* Model::AddConstant(int64_t value) {
-  IntegerVariable* const var = new IntegerVariable(
-      absl::StrCat(value), Domain::IntegerValue(value), true);
+Variable* Model::AddConstant(int64_t value) {
+  Variable* const var =
+      new Variable(absl::StrCat(value), Domain::IntegerValue(value), true);
+  variables_.push_back(var);
+  return var;
+}
+
+Variable* Model::AddFloatConstant(double value) {
+  Variable* const var =
+      new Variable(absl::StrCat(value), Domain::FloatValue(value), true);
   variables_.push_back(var);
   return var;
 }
@@ -867,14 +1003,14 @@ void Model::Satisfy(std::vector<Annotation> search_annotations) {
   search_annotations_ = std::move(search_annotations);
 }
 
-void Model::Minimize(IntegerVariable* obj,
+void Model::Minimize(Variable* obj,
                      std::vector<Annotation> search_annotations) {
   objective_ = obj;
   maximize_ = false;
   search_annotations_ = std::move(search_annotations);
 }
 
-void Model::Maximize(IntegerVariable* obj,
+void Model::Maximize(Variable* obj,
                      std::vector<Annotation> search_annotations) {
   objective_ = obj;
   maximize_ = true;
@@ -909,7 +1045,7 @@ std::string Model::DebugString() const {
 }
 
 bool Model::IsInconsistent() const {
-  for (IntegerVariable* var : variables_) {
+  for (Variable* var : variables_) {
     if (var->domain.empty()) {
       return true;
     }
@@ -946,13 +1082,13 @@ void ModelStatistics::BuildStatistics() {
   for (Constraint* const ct : model_.constraints()) {
     if (ct != nullptr && ct->active) {
       constraints_per_type_[ct->type].push_back(ct);
-      absl::flat_hash_set<const IntegerVariable*> marked;
+      absl::flat_hash_set<const Variable*> marked;
       for (const Argument& arg : ct->arguments) {
-        for (IntegerVariable* const var : arg.variables) {
+        for (Variable* const var : arg.variables) {
           marked.insert(var);
         }
       }
-      for (const IntegerVariable* const var : marked) {
+      for (const Variable* const var : marked) {
         constraints_per_variables_[var].push_back(ct);
       }
     }

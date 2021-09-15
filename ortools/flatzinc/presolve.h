@@ -49,14 +49,14 @@ class Presolver {
   // it represents new_var = var * coefficient + offset. It also stores the
   // constraint that defines this mapping.
   struct AffineMapping {
-    IntegerVariable* variable;
+    Variable* variable;
     int64_t coefficient;
     int64_t offset;
     Constraint* constraint;
 
     AffineMapping()
         : variable(nullptr), coefficient(0), offset(0), constraint(nullptr) {}
-    AffineMapping(IntegerVariable* v, int64_t c, int64_t o, Constraint* ct)
+    AffineMapping(Variable* v, int64_t c, int64_t o, Constraint* ct)
         : variable(v), coefficient(c), offset(o), constraint(ct) {}
   };
 
@@ -66,9 +66,9 @@ class Presolver {
   // offset.
   // Eg. new_index_var = index_var1 * int_coeff + index_var2 + int_offset
   struct Array2DIndexMapping {
-    IntegerVariable* variable1;
+    Variable* variable1;
     int64_t coefficient;
-    IntegerVariable* variable2;
+    Variable* variable2;
     int64_t offset;
     Constraint* constraint;
 
@@ -78,8 +78,8 @@ class Presolver {
           variable2(nullptr),
           offset(0),
           constraint(nullptr) {}
-    Array2DIndexMapping(IntegerVariable* v1, int64_t c, IntegerVariable* v2,
-                        int64_t o, Constraint* ct)
+    Array2DIndexMapping(Variable* v1, int64_t c, Variable* v2, int64_t o,
+                        Constraint* ct)
         : variable1(v1),
           coefficient(c),
           variable2(v2),
@@ -109,18 +109,16 @@ class Presolver {
   // See http://en.wikipedia.org/wiki/Disjoint-set_data_structure.
   // Note that the equivalence is directed. We prefer to replace all instances
   // of 'from' with 'to', rather than the opposite.
-  void AddVariableSubstitution(IntegerVariable* from, IntegerVariable* to);
-  IntegerVariable* FindRepresentativeOfVar(IntegerVariable* var);
-  absl::flat_hash_map<const IntegerVariable*, IntegerVariable*>
-      var_representative_map_;
-  std::vector<IntegerVariable*> var_representative_vector_;
+  void AddVariableSubstitution(Variable* from, Variable* to);
+  Variable* FindRepresentativeOfVar(Variable* var);
+  absl::flat_hash_map<const Variable*, Variable*> var_representative_map_;
+  std::vector<Variable*> var_representative_vector_;
 
   // Stores affine_map_[x] = a * y + b.
-  absl::flat_hash_map<const IntegerVariable*, AffineMapping> affine_map_;
+  absl::flat_hash_map<const Variable*, AffineMapping> affine_map_;
 
   // Stores array2d_index_map_[z] = a * x + y + b.
-  absl::flat_hash_map<const IntegerVariable*, Array2DIndexMapping>
-      array2d_index_map_;
+  absl::flat_hash_map<const Variable*, Array2DIndexMapping> array2d_index_map_;
 
   // Count applications of presolve rules. Use a sorted map for reporting
   // purposes.

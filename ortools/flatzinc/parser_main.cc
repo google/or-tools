@@ -27,7 +27,7 @@
 #include "ortools/flatzinc/presolve.h"
 #include "ortools/util/logging.h"
 
-ABSL_FLAG(std::string, file, "", "Input file in the flatzinc format.");
+ABSL_FLAG(std::string, input, "", "Input file in the flatzinc format.");
 ABSL_FLAG(bool, print, false, "Print model.");
 ABSL_FLAG(bool, presolve, false, "Presolve loaded file.");
 ABSL_FLAG(bool, statistics, false, "Print model statistics");
@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
   absl::SetProgramUsageMessage(kUsage);
   absl::ParseCommandLine(argc, argv);
   google::InitGoogleLogging(argv[0]);
-  operations_research::fz::ParseFile(absl::GetFlag(FLAGS_file),
+  operations_research::fz::ParseFile(absl::GetFlag(FLAGS_input),
                                      absl::GetFlag(FLAGS_presolve));
   return 0;
 }

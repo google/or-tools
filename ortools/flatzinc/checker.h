@@ -27,7 +27,7 @@ namespace fz {
 // feasible solution of the given model. Returns true iff this is the
 // case.
 bool CheckSolution(const Model& model,
-                   const std::function<int64_t(IntegerVariable*)>& evaluator,
+                   const std::function<int64_t(Variable*)>& evaluator,
                    SolverLogger* logger);
 
 }  // namespace fz

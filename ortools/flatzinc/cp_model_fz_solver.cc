@@ -116,7 +116,7 @@ struct CpModelProtoWithMapping {
   SatParameters parameters;
 
   // Mapping from flatzinc variables to CpModelProto variables.
-  absl::flat_hash_map<fz::IntegerVariable*, int> fz_var_to_index;
+  absl::flat_hash_map<fz::Variable*, int> fz_var_to_index;
   absl::flat_hash_map<int64_t, int> constant_value_to_index;
   absl::flat_hash_map<std::tuple<int, int, int>, int>
       start_size_opt_tuple_to_interval;
@@ -140,7 +140,7 @@ int CpModelProtoWithMapping::LookupConstant(int64_t value) {
 
 int CpModelProtoWithMapping::LookupVar(const fz::Argument& argument) {
   if (argument.HasOneValue()) return LookupConstant(argument.Value());
-  CHECK_EQ(argument.type, fz::Argument::INT_VAR_REF);
+  CHECK_EQ(argument.type, fz::Argument::VAR_REF);
   return fz_var_to_index[argument.Var()];
 }
 
@@ -155,8 +155,8 @@ std::vector<int> CpModelProtoWithMapping::LookupVars(
   } else if (argument.type == fz::Argument::INT_VALUE) {
     result.push_back(LookupConstant(argument.Value()));
   } else {
-    CHECK_EQ(argument.type, fz::Argument::INT_VAR_REF_ARRAY);
-    for (fz::IntegerVariable* var : argument.variables) {
+    CHECK_EQ(argument.type, fz::Argument::VAR_REF_ARRAY);
+    for (fz::Variable* var : argument.variables) {
       CHECK(var != nullptr);
       result.push_back(fz_var_to_index[var]);
     }
@@ -176,8 +176,8 @@ std::vector<VarOrValue> CpModelProtoWithMapping::LookupVarsOrValues(
   } else if (argument.type == fz::Argument::INT_VALUE) {
     result.push_back({no_var, argument.Value()});
   } else {
-    CHECK_EQ(argument.type, fz::Argument::INT_VAR_REF_ARRAY);
-    for (fz::IntegerVariable* var : argument.variables) {
+    CHECK_EQ(argument.type, fz::Argument::VAR_REF_ARRAY);
+    for (fz::Variable* var : argument.variables) {
       CHECK(var != nullptr);
       if (var->domain.HasOneValue()) {
         result.push_back({no_var, var->domain.Value()});
@@ -536,7 +536,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
              fz_ct.type == "array_var_int_element" ||
              fz_ct.type == "array_var_bool_element" ||
              fz_ct.type == "array_int_element_nonshifted") {
-    if (fz_ct.arguments[0].type == fz::Argument::INT_VAR_REF ||
+    if (fz_ct.arguments[0].type == fz::Argument::VAR_REF ||
         fz_ct.arguments[0].type == fz::Argument::INT_VALUE) {
       auto* arg = ct->mutable_element();
       arg->set_index(LookupVar(fz_ct.arguments[0]));
@@ -943,11 +943,11 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
     if (annotation.IsFunctionCallWithIdentifier("int_search") ||
         annotation.IsFunctionCallWithIdentifier("bool_search")) {
       const std::vector<fz::Annotation>& args = annotation.annotations;
-      std::vector<fz::IntegerVariable*> vars;
-      args[0].AppendAllIntegerVariables(&vars);
+      std::vector<fz::Variable*> vars;
+      args[0].AppendAllVariables(&vars);
 
       DecisionStrategyProto* strategy = proto.add_search_strategy();
-      for (fz::IntegerVariable* v : vars) {
+      for (fz::Variable* v : vars) {
         strategy->add_variables(gtl::FindOrDie(fz_var_to_index, v));
       }
 
@@ -997,7 +997,7 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
 // The format is fixed in the flatzinc specification.
 std::string SolutionString(
     const fz::SolutionOutputSpecs& output,
-    const std::function<int64_t(fz::IntegerVariable*)>& value_func) {
+    const std::function<int64_t(fz::Variable*)>& value_func) {
   if (output.variable != nullptr) {
     const int64_t value = value_func(output.variable);
     if (output.display_as_boolean) {
@@ -1038,7 +1038,7 @@ std::string SolutionString(
 
 std::string SolutionString(
     const fz::Model& model,
-    const std::function<int64_t(fz::IntegerVariable*)>& value_func) {
+    const std::function<int64_t(fz::Variable*)>& value_func) {
   std::string solution_string;
   for (const auto& output_spec : model.output()) {
     solution_string.append(SolutionString(output_spec, value_func));
@@ -1077,8 +1077,11 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   // plus eventually a bunch of constant variables that will be created
   // lazily.
   int num_variables = 0;
-  for (fz::IntegerVariable* fz_var : fz_model.variables()) {
+  for (fz::Variable* fz_var : fz_model.variables()) {
     if (!fz_var->active) continue;
+    CHECK(!fz_var->domain.is_float)
+        << "CP-SAT does not support float variables";
+
     m.fz_var_to_index[fz_var] = num_variables++;
     IntegerVariableProto* var = m.proto.add_variables();
     var->set_name(fz_var->name);
@@ -1199,7 +1202,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     solution_observer = [&fz_model, &m, &p,
                          solution_logger](const CpSolverResponse& r) {
       const std::string solution_string =
-          SolutionString(fz_model, [&m, &r](fz::IntegerVariable* v) {
+          SolutionString(fz_model, [&m, &r](fz::Variable* v) {
             return r.solution(gtl::FindOrDie(m.fz_var_to_index, v));
           });
       SOLVER_LOG(solution_logger, solution_string);
@@ -1226,7 +1229,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
       response.status() == CpSolverStatus::OPTIMAL) {
     CHECK(CheckSolution(
         fz_model,
-        [&response, &m](fz::IntegerVariable* v) {
+        [&response, &m](fz::Variable* v) {
           return response.solution(gtl::FindOrDie(m.fz_var_to_index, v));
         },
         logger));
@@ -1238,7 +1241,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
         response.status() == CpSolverStatus::OPTIMAL) {
       if (!p.display_all_solutions) {  // Already printed otherwise.
         const std::string solution_string =
-            SolutionString(fz_model, [&response, &m](fz::IntegerVariable* v) {
+            SolutionString(fz_model, [&response, &m](fz::Variable* v) {
               return response.solution(gtl::FindOrDie(m.fz_var_to_index, v));
             });
         SOLVER_LOG(solution_logger, solution_string);
