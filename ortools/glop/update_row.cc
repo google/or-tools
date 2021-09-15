@@ -43,7 +43,6 @@ void UpdateRow::Invalidate() {
 }
 
 const ScatteredRow& UpdateRow::GetUnitRowLeftInverse() const {
-  DCHECK(!compute_update_row_);
   return unit_row_left_inverse_;
 }
 

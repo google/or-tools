@@ -57,9 +57,11 @@ class UpdateRow {
   void ComputeUpdateRow(RowIndex leaving_row);
 
   // Returns the left inverse of the unit row as computed by the last call to
-  // ComputeUpdateRow(). In debug mode, we check that ComputeUpdateRow() was
-  // called since the last Invalidate().
+  // ComputeUpdateRow().
   const ScatteredRow& GetUnitRowLeftInverse() const;
+
+  // Returns true if ComputeUpdateRow() was called since the last Invalidate().
+  const bool IsComputed() const { return !compute_update_row_; }
 
   // Returns the update coefficients and non-zero positions corresponding to the
   // last call to ComputeUpdateRow().
@@ -96,11 +98,13 @@ class UpdateRow {
   // the class state by calling Invalidate().
   const ScatteredRow& ComputeAndGetUnitRowLeftInverse(RowIndex leaving_row);
 
- private:
+  // Advanced usage. This has side effects and should be used with care.
+  //
   // Computes the left inverse of the given unit row, and stores it in
   // unit_row_left_inverse_.
   void ComputeUnitRowLeftInverse(RowIndex leaving_row);
 
+ private:
   // ComputeUpdateRow() does the common work and calls one of these functions
   // depending on the situation.
   void ComputeUpdatesRowWise();

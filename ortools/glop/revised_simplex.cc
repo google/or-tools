@@ -2372,6 +2372,29 @@ Status RevisedSimplex::UpdateAndPivot(ColIndex entering_col,
                                       RowIndex leaving_row,
                                       Fractional target_bound) {
   SCOPED_TIME_STAT(&function_stats_);
+
+  // Tricky and a bit hacky.
+  //
+  // The basis update code assumes that we already computed the left inverse of
+  // the leaving row, otherwise it will just refactorize the basis. This left
+  // inverse is needed by update_row_.ComputeUpdateRow(), so in most case it
+  // will already be computed. However, in some situation we don't need the
+  // full update row, so just the left inverse can be computed.
+  //
+  // TODO(user): Ideally this shouldn't be needed if we are going to refactorize
+  // the basis anyway. So we should know that before hand which is currently
+  // hard to do.
+  Fractional pivot_from_update_row;
+  if (update_row_.IsComputed()) {
+    pivot_from_update_row = update_row_.GetCoefficient(entering_col);
+  } else {
+    // We only need the left inverse and the update row position at the
+    // entering_col to check precision.
+    update_row_.ComputeUnitRowLeftInverse(leaving_row);
+    pivot_from_update_row = compact_matrix_.ColumnScalarProduct(
+        entering_col, update_row_.GetUnitRowLeftInverse().values);
+  }
+
   const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
   const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
   const ColIndex leaving_col = basis_[leaving_row];
@@ -2387,9 +2410,8 @@ Status RevisedSimplex::UpdateAndPivot(ColIndex entering_col,
   }
   UpdateBasis(entering_col, leaving_row, leaving_variable_status);
 
+  // Test precision by comparing two ways to get the "pivot".
   const Fractional pivot_from_direction = direction_[leaving_row];
-  const Fractional pivot_from_update_row =
-      update_row_.GetCoefficient(entering_col);
   const Fractional diff =
       std::abs(pivot_from_update_row - pivot_from_direction);
   if (diff > parameters_.refactorization_threshold() *
@@ -2544,6 +2566,9 @@ Status RevisedSimplex::Polish(TimeLimit* time_limit) {
         entering_col, leaving_row, direction_,
         update_row_.GetUnitRowLeftInverse());
 
+    // TODO(user): Rather than maintaining this, it is probably better to
+    // recompute it in one go after Polish() is done. We don't use the reduced
+    // costs here as we just assume that the set of candidates does not change.
     reduced_costs_.UpdateBeforeBasisPivot(entering_col, leaving_row, direction_,
                                           &update_row_);
 
@@ -3164,6 +3189,7 @@ Status RevisedSimplex::PrimalPush(TimeLimit* time_limit) {
   // later if needed.
   primal_edge_norms_.Clear();
   dual_edge_norms_.Clear();
+  update_row_.Invalidate();
   reduced_costs_.ClearAndRemoveCostShifts();
 
   std::vector<ColIndex> super_basic_cols;
@@ -3280,7 +3306,6 @@ Status RevisedSimplex::PrimalPush(TimeLimit* time_limit) {
 
     variable_values_.UpdateOnPivoting(direction_, entering_col, step);
     if (leaving_row != kInvalidRow) {
-      update_row_.ComputeUpdateRow(leaving_row);
       if (!is_degenerate) {
         // On a non-degenerate iteration, the leaving variable should be at its
         // exact bound. This corrects an eventual small numerical error since
@@ -3392,52 +3417,52 @@ void RevisedSimplex::PropagateParameters() {
 }
 
 void RevisedSimplex::DisplayIterationInfo() {
-  if (parameters_.log_search_progress() || VLOG_IS_ON(1)) {
-    Fractional objective;
-    std::string name;
-    int iter = 0;
-    std::string phase_name;
+  const bool log = parameters_.log_search_progress() || VLOG_IS_ON(1);
+  if (!log) return;
 
-    switch (phase_) {
-      case Phase::FEASIBILITY:
-        phase_name = "Feasibility";
-        iter = num_iterations_;
-        if (parameters_.use_dual_simplex()) {
-          if (parameters_.use_dedicated_dual_feasibility_algorithm()) {
-            objective = reduced_costs_.ComputeSumOfDualInfeasibilities();
-          } else {
-            // The internal objective of the transformed problem is the negation
-            // of the sum of the dual infeasibility of the original problem.
-            objective = -PreciseScalarProduct(
-                objective_, Transpose(variable_values_.GetDenseRow()));
-          }
-          name = "sum_dual_infeasibilities";
+  switch (phase_) {
+    case Phase::FEASIBILITY: {
+      const int64_t iter = num_iterations_;
+      std::string name;
+      Fractional objective;
+      if (parameters_.use_dual_simplex()) {
+        if (parameters_.use_dedicated_dual_feasibility_algorithm()) {
+          objective = reduced_costs_.ComputeSumOfDualInfeasibilities();
         } else {
-          objective = variable_values_.ComputeSumOfPrimalInfeasibilities();
-          name = "sum_primal_infeasibilities";
+          // The internal objective of the transformed problem is the negation
+          // of the sum of the dual infeasibility of the original problem.
+          objective = -PreciseScalarProduct(
+              objective_, Transpose(variable_values_.GetDenseRow()));
         }
-        break;
-      case Phase::OPTIMIZATION:
-        phase_name = "Optimization";
-        iter = num_iterations_ - num_feasibility_iterations_;
-        // Note that in the dual phase II, ComputeObjectiveValue() is also
-        // computing the dual objective even if it uses the variable values.
-        // This is because if we modify the bounds to make the problem
-        // primal-feasible, we are at the optimal and hence the two objectives
-        // are the same.
-        objective = ComputeInitialProblemObjectiveValue();
-        name = "objective";
-        break;
-      case Phase::PUSH:
-        phase_name = "Push";
-        iter = num_iterations_ - num_feasibility_iterations_ -
-               num_optimization_iterations_;
-        name = "remaining_variables_to_push";
-        objective = ComputeNumberOfSuperBasicVariables();
-    }
+        name = "sum_dual_infeasibilities";
+      } else {
+        objective = variable_values_.ComputeSumOfPrimalInfeasibilities();
+        name = "sum_primal_infeasibilities";
+      }
 
-    LOG(INFO) << phase_name << " phase, iteration # " << iter << ", " << name
-              << " = " << absl::StrFormat("%.15E", objective);
+      LOG(INFO) << "Feasibility phase, iteration # " << iter << ", " << name
+                << " = " << absl::StrFormat("%.15E", objective);
+      break;
+    }
+    case Phase::OPTIMIZATION: {
+      const int64_t iter = num_iterations_ - num_feasibility_iterations_;
+      // Note that in the dual phase II, ComputeObjectiveValue() is also
+      // computing the dual objective even if it uses the variable values.
+      // This is because if we modify the bounds to make the problem
+      // primal-feasible, we are at the optimal and hence the two objectives
+      // are the same.
+      const Fractional objective = ComputeInitialProblemObjectiveValue();
+      LOG(INFO) << "Optimization phase, iteration # " << iter
+                << ", objective = " << absl::StrFormat("%.15E", objective);
+      break;
+    }
+    case Phase::PUSH: {
+      const int64_t iter = num_iterations_ - num_feasibility_iterations_ -
+                           num_optimization_iterations_;
+      LOG(INFO) << "Push phase, iteration # " << iter
+                << ", remaining_variables_to_push = "
+                << ComputeNumberOfSuperBasicVariables();
+    }
   }
 }
 
