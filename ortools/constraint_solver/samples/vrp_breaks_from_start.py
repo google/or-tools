@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # [START program]
-"""Vehicle Routing Problem (VRP) with breaks.
+"""Vehicles Routing Problem (VRP) with breaks relative to the vehicle start time.
+   Each vehicles start at T:15min, T:30min, T:45min and T:60min respectively.
 
-   This is a sample using the routing library python wrapper to solve a VRP
-   problem.
-   A description of the problem can be found here:
-   http://en.wikipedia.org/wiki/Vehicle_routing_problem.
+   Each vehicle must perform a break lasting 5 minutes,
+   starting between 25 and 45 minutes after route start.
+   e.g. vehicle 2 starting a T:45min must start a 5min breaks
+   between [45+25,45+45] i.e. in the range [70, 90].
 
    Durations are in minutes.
 """
@@ -70,7 +71,7 @@ def print_solution(manager, routing, solution):
     intervals = solution.IntervalVarContainer()
     for i in range(intervals.Size()):
         brk = intervals.Element(i)
-        if brk.PerformedValue():
+        if brk.PerformedValue() == 1:
             print(f'{brk.Var().Name()}: ' +
                   f'Start({brk.StartValue()}) Duration({brk.DurationValue()})')
         else:
@@ -83,15 +84,18 @@ def print_solution(manager, routing, solution):
         plan_output = f'Route for vehicle {vehicle_id}:\n'
         while not routing.IsEnd(index):
             time_var = time_dimension.CumulVar(index)
+            if routing.IsStart(index):
+                start_time = solution.Value(time_var)
             plan_output += f'{manager.IndexToNode(index)} '
             plan_output += f'Time({solution.Value(time_var)}) -> '
             index = solution.Value(routing.NextVar(index))
         time_var = time_dimension.CumulVar(index)
         plan_output += f'{manager.IndexToNode(index)} '
-        plan_output += f'Time({solution.Value(time_var)})\n'
-        plan_output += f'Time of the route: {solution.Value(time_var)}min\n'
+        plan_output += f'Time({solution.Value(time_var)})'
         print(plan_output)
-        total_time += solution.Value(time_var)
+        route_time = solution.Value(time_var) - start_time
+        print(f'Time of the route: {route_time}min\n')
+        total_time += route_time
     print(f'Total time of all routes: {total_time}min')
     # [END solution_printer]
 
@@ -116,15 +120,15 @@ def main():
     routing = pywrapcp.RoutingModel(manager)
     # [END routing_model]
 
+
     # Create and register a transit callback.
     # [START transit_callback]
     def time_callback(from_index, to_index):
-        """Returns the travel time + service time between the two nodes."""
+        """Returns the travel time between the two nodes."""
         # Convert from routing variable Index to time matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
-        return data['time_matrix'][from_node][to_node] + data['service_time'][
-            from_node]
+        return data['time_matrix'][from_node][to_node]
 
     transit_callback_index = routing.RegisterTransitCallback(time_callback)
     # [END transit_callback]
@@ -138,14 +142,19 @@ def main():
     time = 'Time'
     routing.AddDimension(
         transit_callback_index,
-        10,  # needed optional waiting time to place break
+        10,  # need optional waiting time to place break
         180,  # maximum time per vehicle
-        True,  # Force start cumul to zero.
+        False,  # Don't force start cumul to zero.
         time)
     time_dimension = routing.GetDimensionOrDie(time)
     time_dimension.SetGlobalSpanCostCoefficient(10)
 
-    # Breaks
+    # Each vehicle start with a 15min delay
+    for vehicle_id in range(manager.GetNumberOfVehicles()):
+        index = routing.Start(vehicle_id)
+        time_dimension.CumulVar(index).SetValue((vehicle_id + 1) * 15)
+
+    # Add breaks
     # [START break_constraint]
     # warning: Need a pre-travel array using the solver's index order.
     node_visit_transit = [0] * routing.Size()
@@ -153,20 +162,16 @@ def main():
         node = manager.IndexToNode(index)
         node_visit_transit[index] = data['service_time'][node]
 
-    break_intervals = {}
+    # Add a break lasting 5 minutes, start between 25 and 45 minutes after route start
     for v in range(manager.GetNumberOfVehicles()):
-        break_intervals[v] = [
+        start_var = time_dimension.CumulVar(routing.Start(v))
+        break_start = routing.solver().Sum([routing.solver().IntVar(25, 45), start_var])
+
+        break_intervals = [
             routing.solver().FixedDurationIntervalVar(
-                50,  # start min
-                60,  # start max
-                10,  # duration: 10 min
-                False,  # optional: no
-                f'Break for vehicle {v}')
+                break_start, 5, 'Break for vehicle {}'.format(v))
         ]
-        time_dimension.SetBreakIntervalsOfVehicle(
-            break_intervals[v],  # breaks
-            v,  # vehicle index
-            node_visit_transit)
+        time_dimension.SetBreakIntervalsOfVehicle(break_intervals, v, node_visit_transit)
     # [END break_constraint]
 
     # Setting first solution heuristic.
