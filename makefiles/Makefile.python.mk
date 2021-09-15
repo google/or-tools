@@ -600,6 +600,7 @@ test_python_constraint_solver_samples: \
  rpy_tsp_distance_matrix \
  rpy_vrp \
  rpy_vrp_breaks \
+ rpy_vrp_breaks_from_start \
  rpy_vrp_capacity \
  rpy_vrp_drop_nodes \
  rpy_vrp_global_span \
