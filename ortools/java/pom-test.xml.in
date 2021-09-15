@@ -90,6 +90,12 @@
     <artifactId>guava</artifactId>
     <version>30.1.1-jre</version>
   </dependency>
+  <dependency>
+    <groupId>com.google.auto.value</groupId>
+    <artifactId>auto-value</artifactId>
+    <version>1.8.2</version>
+    <scope>provided</scope>
+  </dependency>
 </dependencies>
 
 <build>

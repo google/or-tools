@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.auto.value.AutoValue;
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
@@ -25,7 +26,6 @@ import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingModelParameters;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
-import com.google.ortools.constraintsolver.IntBoolPair;
 import com.google.protobuf.Duration;
 import java.util.ArrayList;
 import java.util.function.LongBinaryOperator;
@@ -35,35 +35,43 @@ import org.junit.jupiter.api.Test;
 
 /** Tests the Routing java interface. */
 public final class RoutingSolverTest {
-  private ArrayList<Integer[]> coordinates;
+  @AutoValue
+  abstract static class Location {
+    static Location create(Integer latitude, Integer longitude) {
+      return new AutoValue_RoutingSolverTest_Location(latitude, longitude);
+    }
+    abstract Integer latitude();
+    abstract Integer longitude();
+  }
+  private ArrayList<Location> coordinates;
 
   @BeforeEach
   public void setUp() {
     Loader.loadNativeLibraries();
     coordinates = new ArrayList<>();
-    coordinates.add(new Integer[] {0, 0});
-    coordinates.add(new Integer[] {-1, 0});
-    coordinates.add(new Integer[] {-1, 2});
-    coordinates.add(new Integer[] {2, 1});
-    coordinates.add(new Integer[] {1, 0});
+    coordinates.add(Location.create(0, 0));
+    coordinates.add(Location.create(-1, 0));
+    coordinates.add(Location.create(-1, 2));
+    coordinates.add(Location.create(2, 1));
+    coordinates.add(Location.create(1, 0));
   }
 
   public LongBinaryOperator createManhattanCostCallback(RoutingIndexManager manager) {
     return (long i, long j) -> {
         final int firstIndex = manager.indexToNode(i);
         final int secondIndex = manager.indexToNode(j);
-        final Integer[] firstCoordinate = coordinates.get(firstIndex);
-        final Integer[] secondCoordinate = coordinates.get(secondIndex);
-        return (long) Math.abs(firstCoordinate[0] - secondCoordinate[0])
-            + Math.abs(firstCoordinate[1] - secondCoordinate[1]);
+        final Location firstCoordinate = coordinates.get(firstIndex);
+        final Location secondCoordinate = coordinates.get(secondIndex);
+        return (long) Math.abs(firstCoordinate.latitude() - secondCoordinate.latitude())
+          + Math.abs(firstCoordinate.longitude() - secondCoordinate.longitude());
     };
   }
 
   public LongUnaryOperator createUnaryCostCallback(RoutingIndexManager manager) {
     return (long fromIndex) -> {
         final int fromNode = manager.indexToNode(fromIndex);
-        final Integer[] firstCoordinate = coordinates.get(fromNode);
-        return (long) Math.abs(firstCoordinate[0]) + Math.abs(firstCoordinate[1]);
+        final Location firstCoordinate = coordinates.get(fromNode);
+        return (long) Math.abs(firstCoordinate.latitude()) + Math.abs(firstCoordinate.longitude());
     };
   }
 
