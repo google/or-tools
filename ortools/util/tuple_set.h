@@ -199,7 +199,7 @@ bool IntTupleSet::Data::Contains(const std::vector<T>& candidate) const {
     return false;
   }
   const int64_t fingerprint = Fingerprint(candidate);
-  if (gtl::ContainsKey(tuple_fprint_to_index_, fingerprint)) {
+  if (tuple_fprint_to_index_.contains(fingerprint)) {
     const std::vector<int>& indices =
         gtl::FindOrDie(tuple_fprint_to_index_, fingerprint);
     for (int i = 0; i < indices.size(); ++i) {
