@@ -2393,6 +2393,7 @@ class LnsSolver : public SubSolver {
       local_params.set_log_search_progress(false);
       local_params.set_cp_model_probing_level(0);
       local_params.set_symmetry_level(0);
+      local_params.set_solution_pool_size(1);
 
       Model local_model(solution_info);
       *(local_model.GetOrCreate<SatParameters>()) = local_params;

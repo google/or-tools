@@ -906,11 +906,15 @@ void DetectDominanceRelations(
     if (cp_model.has_objective()) {
       // WARNING: The proto objective might not be up to date, so we need to
       // write it first.
-      if (phase == 0) context.WriteObjectiveToProto();
+      if (phase == 0) {
+        context.WriteObjectiveToProto();
+      }
       FillMinMaxActivity(context, cp_model.objective(), &min_activity,
                          &max_activity);
-      dual_bound_strengthening->ProcessLinearConstraint(
-          true, context, cp_model.objective(), min_activity, max_activity);
+      if (phase == 0) {
+        dual_bound_strengthening->ProcessLinearConstraint(
+            true, context, cp_model.objective(), min_activity, max_activity);
+      }
       const auto& domain = cp_model.objective().domain();
       if (domain.empty() || (domain.size() == 2 && domain[0] <= min_activity)) {
         var_domination->ActivityShouldNotIncrease(
@@ -1134,7 +1138,16 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
 
         const IntegerValue diff = FloorRatio(IntegerValue(slack - delta),
                                              IntegerValue(coeff_magnitude));
-        const int64_t new_ub = lb + diff.value();
+        int64_t new_ub = lb + diff.value();
+        if (new_ub < context->MaxOf(current_ref)) {
+          // Tricky: If there are holes, we can't just reduce the domain to
+          // new_ub if it is not a valid value, so we need to compute the Min()
+          // of the intersection.
+          new_ub = context->DomainOf(current_ref)
+                       .IntersectionWith(
+                           Domain(new_ub, std::numeric_limits<int64_t>::max()))
+                       .Min();
+        }
         if (new_ub < context->MaxOf(current_ref)) {
           context->UpdateRuleStats("domination: reduced ub.");
           if (!context->IntersectDomainWith(current_ref, Domain(lb, new_ub))) {

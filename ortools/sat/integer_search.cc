@@ -278,7 +278,7 @@ std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
   if (parameters.exploit_best_solution()) {
     auto* response_manager = model->Get<SharedResponseManager>();
     if (response_manager != nullptr) {
-      VLOG(2) << "Using best solution value selection heuristic.";
+      VLOG(3) << "Using best solution value selection heuristic.";
       value_selection_heuristics.push_back(
           [model, response_manager](IntegerVariable var) {
             return SplitUsingBestSolutionValueInRepository(
@@ -294,7 +294,7 @@ std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
     if (relaxation_solutions != nullptr) {
       value_selection_heuristics.push_back(
           [model, relaxation_solutions](IntegerVariable var) {
-            VLOG(2) << "Using relaxation solution value selection heuristic.";
+            VLOG(3) << "Using relaxation solution value selection heuristic.";
             return SplitUsingBestSolutionValueInRepository(
                 var, *relaxation_solutions, model);
           });
@@ -412,18 +412,18 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
         // We have been trying to fix this interval for a while. Do we miss
         // some propagation? In any case, try to see if the heuristic above
         // would select something else.
-        VLOG(1) << "Skipping ... ";
+        VLOG(3) << "Skipping ... ";
         return BooleanOrIntegerLiteral();
       }
 
       // First make sure the interval is present.
       if (best.presence != kNoLiteralIndex) {
         if (!trail->Assignment().LiteralIsAssigned(Literal(best.presence))) {
-          VLOG(1) << "assign " << best.presence;
+          VLOG(3) << "assign " << best.presence;
           return BooleanOrIntegerLiteral(best.presence);
         }
         if (trail->Assignment().LiteralIsFalse(Literal(best.presence))) {
-          VLOG(1) << "unperformed.";
+          VLOG(2) << "unperformed.";
           return BooleanOrIntegerLiteral();
         }
       }
@@ -431,20 +431,28 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
       // We assume that start_min is propagated by now.
       if (!integer_trail->IsFixed(best.start)) {
         const IntegerValue start_min = integer_trail->LowerBound(best.start);
-        VLOG(1) << "start == " << start_min;
+        VLOG(3) << "start == " << start_min;
         return BooleanOrIntegerLiteral(best.start.LowerOrEqual(start_min));
       }
 
       // We assume that end_min is propagated by now.
       if (!integer_trail->IsFixed(best.end)) {
         const IntegerValue end_min = integer_trail->LowerBound(best.end);
-        VLOG(1) << "end == " << end_min;
+        VLOG(3) << "end == " << end_min;
         return BooleanOrIntegerLiteral(best.end.LowerOrEqual(end_min));
       }
 
       // Everything is fixed, dettach the override.
-      VLOG(1) << "Fixed @[" << integer_trail->LowerBound(best.start) << ", "
-              << integer_trail->LowerBound(best.end) << "]";
+      const IntegerValue start = integer_trail->LowerBound(best.start);
+      VLOG(2) << "Fixed @[" << start << ","
+              << integer_trail->LowerBound(best.end) << "]"
+              << (best.presence != kNoLiteralIndex
+                      ? absl::StrCat(" presence=",
+                                     Literal(best.presence).DebugString())
+                      : "")
+              << (best.time < start
+                      ? absl::StrCat(" start_at_selection=", best.time.value())
+                      : "");
       return BooleanOrIntegerLiteral();
     };
 
@@ -780,7 +788,10 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
   }
 
   if (sat_solver_->CurrentDecisionLevel() == 0) {
-    if (!implied_bounds_->EnqueueNewDeductions()) return false;
+    if (!implied_bounds_->EnqueueNewDeductions()) {
+      sat_solver_->NotifyThatModelIsUnsat();
+      return false;
+    }
 
     auto* level_zero_callbacks = model_->GetOrCreate<LevelZeroCallbackHelper>();
     for (const auto& cb : level_zero_callbacks->callbacks) {
@@ -1072,7 +1083,7 @@ SatSolver::Status ContinuousProbing(
     const std::vector<BooleanVariable>& bool_vars,
     const std::vector<IntegerVariable>& int_vars,
     const std::function<void()>& feasible_solution_observer, Model* model) {
-  VLOG(1) << "Start continuous probing with " << bool_vars.size()
+  VLOG(2) << "Start continuous probing with " << bool_vars.size()
           << " Boolean variables, and " << int_vars.size()
           << " integer variables";
 
@@ -1090,7 +1101,7 @@ SatSolver::Status ContinuousProbing(
 
   int loop = 0;
   while (!time_limit->LimitReached()) {
-    VLOG(1) << "Probing loop " << loop++;
+    VLOG(2) << "Probing loop " << loop++;
 
     // Sync the bounds first.
     auto SyncBounds = [solver, &level_zero_callbacks]() {

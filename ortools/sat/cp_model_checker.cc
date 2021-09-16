@@ -1557,6 +1557,34 @@ bool SolutionIsFeasible(const CpModelProto& model,
       return false;
     }
   }
+
+  // Check that the objective is within its domain.
+  //
+  // TODO(user): This is not really a "feasibility" question, but we should
+  // probably check that the response objective matches with the one we can
+  // compute here. This might better be done in another function though.
+  if (model.has_objective()) {
+    int64_t inner_objective = 0;
+    const int num_variables = model.objective().coeffs_size();
+    for (int i = 0; i < num_variables; ++i) {
+      inner_objective += checker.Value(model.objective().vars(i)) *
+                         model.objective().coeffs(i);
+    }
+    if (!model.objective().domain().empty()) {
+      if (!DomainInProtoContains(model.objective(), inner_objective)) {
+        VLOG(1) << "Objective value not in domain!";
+        return false;
+      }
+    }
+    double factor = model.objective().scaling_factor();
+    if (factor == 0.0) factor = 1.0;
+    const double scaled_objective =
+        factor *
+        (static_cast<double>(inner_objective) + model.objective().offset());
+    VLOG(2) << "Checker inner objective = " << inner_objective;
+    VLOG(2) << "Checker scaled objective = " << scaled_objective;
+  }
+
   return true;
 }
 
