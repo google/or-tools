@@ -1,9 +1,12 @@
 if(NOT BUILD_EXAMPLES)
-	return()
+  return()
 endif()
 
 if(BUILD_CXX_EXAMPLES)
-
+  file(GLOB CXX_SRCS "*.cc")
+  foreach(FILE_NAME IN LISTS CXX_SRCS)
+    add_cxx_example(${FILE_NAME})
+  endforeach()
 endif()
 
 if(BUILD_PYTHON_EXAMPLES)
