@@ -503,6 +503,7 @@ class CpModelTest(unittest.TestCase):
         self.assertEqual(3, model_var.domain[1])
 
     def testStr(self):
+        print('testStr')
         model = cp_model.CpModel()
         x = model.NewIntVar(0, 4, 'x')
         self.assertEqual(str(x == 2), 'x == 2')
@@ -510,9 +511,7 @@ class CpModelTest(unittest.TestCase):
         self.assertEqual(str(x <= 2), 'x <= 2')
         self.assertEqual(str(x > 2), 'x >= 3')
         self.assertEqual(str(x < 2), 'x <= 1')
-        self.assertEqual(
-            str(x != 2),
-            'x in [-9223372036854775808..1, 3..9223372036854775807]')
+        self.assertEqual(str(x != 2), 'x != 2')
         self.assertEqual(str(x * 3), '(3 * x)')
         self.assertEqual(str(-x), '-x')
         self.assertEqual(str(x + 3), '(x + 3)')
@@ -522,9 +521,7 @@ class CpModelTest(unittest.TestCase):
         self.assertEqual(
             str(x != -9223372036854775808), 'x >= -9223372036854775807')
         y = model.NewIntVar(0, 4, 'y')
-        self.assertEqual(
-            str(x != y),
-            '(x + -y) in [-9223372036854775808..-1, 1..9223372036854775807]')
+        self.assertEqual(str(x != y), '(x + -y) != 0')
         self.assertEqual('0 <= x <= 10',
                          str(cp_model.BoundedLinearExpression(x, [0, 10])))
         print(str(model))
