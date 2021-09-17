@@ -1,0 +1,19 @@
+name: Make MacOS C++
+
+on: [push, pull_request]
+
+jobs:
+  make:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check make
+      run: make --version
+    - name: Build third party
+      run: make third_party -j4
+    - name: Build C++
+      run: make cc -j4
+    - name: Test
+      run: make test_cc
+    - name: Install
+      run: make install_cc DESTDIR=install
