@@ -62,6 +62,7 @@ CMakeLists.txt.user
 .idea/*
 .idea/
 cache/
+.cache/
 **/.vscode/*
 .DS_Store
 **/.vs/*
