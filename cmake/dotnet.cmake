@@ -271,7 +271,6 @@ function(add_dotnet_test FILE_NAME)
       COMMAND ${DOTNET_EXECUTABLE} test --no-build -c Release
       WORKING_DIRECTORY ${DOTNET_TEST_PATH})
   endif()
-
   message(STATUS "Configuring test ${FILE_NAME} done")
 endfunction()
 
@@ -319,7 +318,6 @@ function(add_dotnet_sample FILE_NAME)
       COMMAND ${DOTNET_EXECUTABLE} run --no-build -c Release
       WORKING_DIRECTORY ${DOTNET_SAMPLE_PATH})
   endif()
-
   message(STATUS "Configuring sample ${FILE_NAME} done")
 endfunction()
 
@@ -333,7 +331,7 @@ endfunction()
 # e.g.:
 # add_dotnet_example(Foo.cs)
 function(add_dotnet_example FILE_NAME)
-  message(STATUS "Configuring sample ${FILE_NAME} ...")
+  message(STATUS "Configuring example ${FILE_NAME} ...")
   get_filename_component(EXAMPLE_NAME ${FILE_NAME} NAME_WE)
   get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
   get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
@@ -367,7 +365,6 @@ function(add_dotnet_example FILE_NAME)
       COMMAND ${DOTNET_EXECUTABLE} run --no-build -c Release
       WORKING_DIRECTORY ${DOTNET_EXAMPLE_PATH})
   endif()
-
-  message(STATUS "Configuring sample ${FILE_NAME} done")
+  message(STATUS "Configuring example ${FILE_NAME} done")
 endfunction()
 
