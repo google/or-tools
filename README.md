@@ -3,8 +3,8 @@
 [![Build Status][github_status]][github_link]
 [![Build Status][appveyor_status]][appveyor_link]
 
-[github_status]: https://github.com/google/or-tools/workflows/C++%20CI/badge.svg?branch=master
-[github_link]: https://github.com/google/or-tools/actions
+[github_status]: https://github.com/google/or-tools/actions/workflows/cmake_linux_cpp.yml/badge.svg?branch=master
+[github_link]: https://github.com/google/or-tools/actions/workflows/cmake_linux_cpp.yml
 [appveyor_status]: https://ci.appveyor.com/api/projects/status/9hyykkcm8sh3ua6x/branch/master?svg=true
 [appveyor_link]: https://ci.appveyor.com/project/lperron/or-tools-98u1n
 
