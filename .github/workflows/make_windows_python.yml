@@ -10,13 +10,8 @@ jobs:
     - uses: actions/checkout@v2
     - name: Check make
       run: make --version
-    - name: Install SWIG 4.0.2
-      run: |
-        (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.0.2.zip","swigwin-4.0.2.zip");
-        Expand-Archive .\swigwin-4.0.2.zip .;
-        echo "$((Get-Item .).FullName)/swigwin-4.0.2" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-    - name: Check swig
-      run: swig -version
+    - name: Check system
+      run: make detect_port
     - name: Add Python binaries to path
       run: echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/Python39/Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Build third party
