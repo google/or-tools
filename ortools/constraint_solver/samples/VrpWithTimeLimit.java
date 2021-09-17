@@ -108,7 +108,7 @@ public final class VrpWithTimeLimit {
             .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
             .setLocalSearchMetaheuristic(LocalSearchMetaheuristic.Value.GUIDED_LOCAL_SEARCH)
             .setLogSearch(true)
-            .setTimeLimit(Duration.newBuilder().setSeconds(10).build())
+            .setTimeLimit(Duration.newBuilder().setSeconds(5).build())
             .build();
     // [END parameters]
 

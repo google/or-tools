@@ -106,7 +106,7 @@ public class Vrp
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
         searchParameters.LocalSearchMetaheuristic = LocalSearchMetaheuristic.Types.Value.GuidedLocalSearch;
         searchParameters.LogSearch = true;
-        searchParameters.TimeLimit = new Duration { Seconds = 10 };
+        searchParameters.TimeLimit = new Duration { Seconds = 5 };
         // [END parameters]
 
         // Solve the problem.

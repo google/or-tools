@@ -103,7 +103,7 @@ void VrpGlobalSpan() {
   search_parameters.set_local_search_metaheuristic(
       LocalSearchMetaheuristic::GUIDED_LOCAL_SEARCH);
   search_parameters.set_log_search(true);
-  search_parameters.mutable_time_limit()->set_seconds(10);
+  search_parameters.mutable_time_limit()->set_seconds(5);
   // [END parameters]
 
   // Solve the problem.

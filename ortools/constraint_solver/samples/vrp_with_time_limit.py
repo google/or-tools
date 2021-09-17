@@ -99,7 +99,7 @@ def main():
     search_parameters.local_search_metaheuristic = (
         routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
     search_parameters.log_search = True
-    search_parameters.time_limit.FromSeconds(10)
+    search_parameters.time_limit.FromSeconds(5)
     # [END parameters]
 
     # Solve the problem.
