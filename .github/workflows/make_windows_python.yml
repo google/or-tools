@@ -8,19 +8,26 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Check make
-      run: make --version
-    - name: Check system
-      run: make detect_port
+    - uses: ilammy/msvc-dev-cmd@v1
     - name: Add Python binaries to path
       run: echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/Python39/Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Clean sh.exe
+      run: |
+        where sh
+        rm 'C:\Program Files\Git\usr\bin\sh.exe'
+        rm 'C:\Program Files\Git\bin\sh.exe'
+      shell: bash
+    - name: Check make
+      run: tools\make --version
+    - name: Check system
+      run: tools\make detect_port
     - name: Build third party
-      run: make third_party -j4
+      run: tools\make third_party -j4
     - name: Build C++
-      run: make cc -j4
+      run: tools\make cc -j4
     - name: Build Python
-      run: make python -j4
-    - name: Test
-      run: make test_python -j4
+      run: tools\make python -j4
+    - name: Test Python
+      run: tools\make test_python -j4
     - name: Create wheel package
-      run: make package_python
+      run: tools\make package_python

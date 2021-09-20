@@ -8,19 +8,26 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
+    - uses: ilammy/msvc-dev-cmd@v1
+    - name: Clean sh.exe
+      run: |
+        where sh
+        rm 'C:\Program Files\Git\usr\bin\sh.exe'
+        rm 'C:\Program Files\Git\bin\sh.exe'
+      shell: bash
     - name: Check make
-      run: make --version
+      run: tools\make --version
     - name: Check system
-      run: make detect_port
+      run: tools\make detect_port
     - name: Check java
       run: java -version
     - name: Build third party
-      run: make third_party -j4
+      run: tools\make third_party -j4
     - name: Build C++
-      run: make cc -j4
+      run: tools\make cc -j4
     - name: Build Java
-      run: make java -j4
-    - name: Test
-      run: make test_java -j4
+      run: tools\make java -j4
+    - name: Test Java
+      run: tools\make test_java -j4
     - name: Create maven package
-      run: make package_java
+      run: tools\make package_java

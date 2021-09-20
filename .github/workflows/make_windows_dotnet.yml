@@ -8,19 +8,26 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Check make
-      run: make --version
-    - name: Check system
-      run: make detect_port
+    - uses: ilammy/msvc-dev-cmd@v1
+    - name: Clean sh.exe
+      run: |
+        where sh
+        rm 'C:\Program Files\Git\usr\bin\sh.exe'
+        rm 'C:\Program Files\Git\bin\sh.exe'
+      shell: bash
     - name: Check dotnet
       run: dotnet --info
+    - name: Check make
+      run: tools\make --version
+    - name: Check system
+      run: tools\make detect_port
     - name: Build third party
-      run: make third_party -j4
+      run: tools\make third_party -j4
     - name: Build C++
-      run: make cc -j4
+      run: tools\make cc -j4
     - name: Build .Net
-      run: make dotnet -j4
-    - name: Test
-      run: make test_dotnet -j4
+      run: tools\make dotnet -j4
+    - name: Test .Net
+      run: tools\make test_dotnet -j4
     - name: Create nuget packages
-      run: make package_dotnet
+      run: tools\make package_dotnet
