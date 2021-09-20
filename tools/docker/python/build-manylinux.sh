@@ -50,9 +50,9 @@ function build_wheel() {
   # this is needed so protoc can call the correct python executable
   local -r PYBIN="$1/bin"
   "${PYBIN}/pip" install virtualenv
-  "${PYBIN}/virtualenv" -p "${PYBIN}/python" "${ENV_DIR}"
+  "${PYBIN}/virtualenv" -p "${PYBIN}/python" "${VENV_DIR}"
   # shellcheck source=/dev/null
-  source "${ENV_DIR}/bin/activate"
+  source "${VENV_DIR}/bin/activate"
   pip install -U pip setuptools wheel absl-py  # absl-py is needed by make test_python
   pip install -U mypy-protobuf  # need to generate protobuf mypy files
 
@@ -143,7 +143,7 @@ function build() {
     fi
 
     BUILD_DIR="build_${PYTAG}"
-    ENV_DIR="env_${PYTAG}"
+    VENV_DIR="env_${PYTAG}"
     build_wheel "$PYROOT"
     check_wheel "$PYROOT"
   done
