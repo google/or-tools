@@ -2751,6 +2751,8 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
               helper, absl::StrCat("graph_cst_lns_", local_params.name())),
           local_params, helper, &shared));
 
+      // TODO(user): If we have a model with scheduling + routing. We create
+      // a lot of LNS generators. Investigate if we can reduce this number.
       if (!helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty() ||
           !helper->TypeToConstraints(ConstraintProto::kNoOverlap2D).empty() ||
           !helper->TypeToConstraints(ConstraintProto::kCumulative).empty()) {
@@ -2765,6 +2767,29 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
                 absl::StrCat("scheduling_random_lns_", local_params.name())),
             local_params, helper, &shared));
       }
+    }
+
+    const int num_circuit =
+        helper->TypeToConstraints(ConstraintProto::kCircuit).size();
+    const int num_routes =
+        helper->TypeToConstraints(ConstraintProto::kRoutes).size();
+    if (num_circuit + num_routes > 0) {
+      subsolvers.push_back(absl::make_unique<LnsSolver>(
+          absl::make_unique<RoutingRandomNeighborhoodGenerator>(
+              helper, absl::StrCat("routing_random_lns_", local_params.name())),
+          local_params, helper, &shared));
+
+      subsolvers.push_back(absl::make_unique<LnsSolver>(
+          absl::make_unique<RoutingPathNeighborhoodGenerator>(
+              helper, absl::StrCat("routing_path_lns_", local_params.name())),
+          local_params, helper, &shared));
+    }
+    if (num_routes > 0 || num_circuit > 1) {
+      subsolvers.push_back(absl::make_unique<LnsSolver>(
+          absl::make_unique<RoutingFullPathNeighborhoodGenerator>(
+              helper,
+              absl::StrCat("routing_full_path_lns_", local_params.name())),
+          local_params, helper, &shared));
     }
 
     // TODO(user): for now this is not deterministic so we disable it on

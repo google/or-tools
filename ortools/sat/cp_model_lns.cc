@@ -13,6 +13,7 @@
 
 #include "ortools/sat/cp_model_lns.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <numeric>
@@ -295,20 +296,102 @@ std::vector<int> NeighborhoodGeneratorHelper::GetActiveIntervals(
   return active_intervals;
 }
 
+std::vector<std::vector<int>> NeighborhoodGeneratorHelper::GetRoutingPaths(
+    const CpSolverResponse& initial_solution) const {
+  struct HeadAndArcLiteral {
+    int head;
+    int literal;
+  };
+
+  std::vector<std::vector<int>> result;
+  absl::flat_hash_map<int, HeadAndArcLiteral> tail_to_head_and_arc_literal;
+
+  for (const int i : TypeToConstraints(ConstraintProto::kCircuit)) {
+    const CircuitConstraintProto& ct = ModelProto().constraints(i).circuit();
+
+    // Collect arcs.
+    int min_node = std::numeric_limits<int>::max();
+    tail_to_head_and_arc_literal.clear();
+    for (int i = 0; i < ct.literals_size(); ++i) {
+      const int literal = ct.literals(i);
+      const int head = ct.heads(i);
+      const int tail = ct.tails(i);
+      const int bool_var = PositiveRef(literal);
+      const int64_t value = initial_solution.solution(bool_var);
+      // Skip unselected arcs.
+      if (RefIsPositive(literal) == (value == 0)) continue;
+      // Ignore self loops.
+      if (head == tail) continue;
+      tail_to_head_and_arc_literal[tail] = {head, bool_var};
+      min_node = std::min(tail, min_node);
+    }
+    if (tail_to_head_and_arc_literal.empty()) continue;
+
+    // Unroll the path.
+    int current_node = min_node;
+    std::vector<int> path;
+    do {
+      auto it = tail_to_head_and_arc_literal.find(current_node);
+      CHECK(it != tail_to_head_and_arc_literal.end());
+      current_node = it->second.head;
+      path.push_back(it->second.literal);
+    } while (current_node != min_node);
+    result.push_back(std::move(path));
+  }
+
+  std::vector<HeadAndArcLiteral> route_starts;
+  for (const int i : TypeToConstraints(ConstraintProto::kRoutes)) {
+    const RoutesConstraintProto& ct = ModelProto().constraints(i).routes();
+    tail_to_head_and_arc_literal.clear();
+    route_starts.clear();
+
+    // Collect route starts and arcs.
+    for (int i = 0; i < ct.literals_size(); ++i) {
+      const int literal = ct.literals(i);
+      const int head = ct.heads(i);
+      const int tail = ct.tails(i);
+      const int bool_var = PositiveRef(literal);
+      const int64_t value = initial_solution.solution(bool_var);
+      // Skip unselected arcs.
+      if (RefIsPositive(literal) == (value == 0)) continue;
+      // Ignore self loops.
+      if (head == tail) continue;
+      if (tail == 0) {
+        route_starts.push_back({head, bool_var});
+      } else {
+        tail_to_head_and_arc_literal[tail] = {head, bool_var};
+      }
+    }
+
+    // Unroll all routes.
+    for (const HeadAndArcLiteral& head_var : route_starts) {
+      std::vector<int> path;
+      int current_node = head_var.head;
+      path.push_back(head_var.literal);
+      do {
+        auto it = tail_to_head_and_arc_literal.find(current_node);
+        CHECK(it != tail_to_head_and_arc_literal.end());
+        current_node = it->second.head;
+        path.push_back(it->second.literal);
+      } while (current_node != 0);
+      result.push_back(std::move(path));
+    }
+  }
+
+  return result;
+}
+
 Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
     const CpSolverResponse& initial_solution,
-    const std::vector<int>& variables_to_fix) const {
+    const absl::flat_hash_set<int>& variables_to_fix) const {
   Neighborhood neighborhood;
-
-  const absl::flat_hash_set<int> fixed_variables_set(variables_to_fix.begin(),
-                                                     variables_to_fix.end());
 
   bool copy_is_successful = true;
   {
     absl::ReaderMutexLock domain_lock(&domain_mutex_);
-    copy_is_successful = CopyAndFixVariables(
-        model_proto_with_only_variables_, fixed_variables_set, initial_solution,
-        &neighborhood.delta);
+    copy_is_successful =
+        CopyAndFixVariables(model_proto_with_only_variables_, variables_to_fix,
+                            initial_solution, &neighborhood.delta);
   }
 
   if (!copy_is_successful) {
@@ -361,12 +444,12 @@ Neighborhood NeighborhoodGeneratorHelper::RelaxGivenVariables(
     const std::vector<int>& relaxed_variables) const {
   std::vector<bool> relaxed_variables_set(model_proto_.variables_size(), false);
   for (const int var : relaxed_variables) relaxed_variables_set[var] = true;
-  std::vector<int> fixed_variables;
+  absl::flat_hash_set<int> fixed_variables;
   {
     absl::ReaderMutexLock graph_lock(&graph_mutex_);
     for (const int i : active_variables_) {
       if (!relaxed_variables_set[i]) {
-        fixed_variables.push_back(i);
+        fixed_variables.insert(i);
       }
     }
   }
@@ -375,7 +458,9 @@ Neighborhood NeighborhoodGeneratorHelper::RelaxGivenVariables(
 
 Neighborhood NeighborhoodGeneratorHelper::FixAllVariables(
     const CpSolverResponse& initial_solution) const {
-  const std::vector<int> fixed_variables = ActiveVariables();
+  const std::vector<int>& all_variables = ActiveVariables();
+  const absl::flat_hash_set<int> fixed_variables(all_variables.begin(),
+                                                 all_variables.end());
   return FixGivenVariables(initial_solution, fixed_variables);
 }
 
@@ -490,7 +575,8 @@ Neighborhood RelaxRandomVariablesGenerator::Generate(
     absl::BitGenRef random) {
   std::vector<int> fixed_variables = helper_.ActiveVariables();
   GetRandomSubset(1.0 - difficulty, &fixed_variables, random);
-  return helper_.FixGivenVariables(initial_solution, fixed_variables);
+  return helper_.FixGivenVariables(
+      initial_solution, {fixed_variables.begin(), fixed_variables.end()});
 }
 
 Neighborhood RelaxRandomConstraintsGenerator::Generate(
@@ -902,6 +988,133 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
 
   return GenerateSchedulingNeighborhoodForRelaxation(intervals_to_relax,
                                                      initial_solution, helper_);
+}
+
+Neighborhood RoutingRandomNeighborhoodGenerator::Generate(
+    const CpSolverResponse& initial_solution, double difficulty,
+    absl::BitGenRef random) {
+  const std::vector<std::vector<int>> all_paths =
+      helper_.GetRoutingPaths(initial_solution);
+
+  // Collect all unique variables.
+  absl::flat_hash_set<int> all_path_variables;
+  for (auto& path : all_paths) {
+    all_path_variables.insert(path.begin(), path.end());
+  }
+  std::vector<int> fixed_variables(all_path_variables.begin(),
+                                   all_path_variables.end());
+  std::sort(fixed_variables.begin(), fixed_variables.end());
+  GetRandomSubset(1.0 - difficulty, &fixed_variables, random);
+  return helper_.FixGivenVariables(
+      initial_solution, {fixed_variables.begin(), fixed_variables.end()});
+}
+
+Neighborhood RoutingPathNeighborhoodGenerator::Generate(
+    const CpSolverResponse& initial_solution, double difficulty,
+    absl::BitGenRef random) {
+  std::vector<std::vector<int>> all_paths =
+      helper_.GetRoutingPaths(initial_solution);
+
+  // Collect all unique variables.
+  absl::flat_hash_set<int> all_path_variables;
+  for (const auto& path : all_paths) {
+    all_path_variables.insert(path.begin(), path.end());
+  }
+
+  // Select variables to relax.
+  const int num_variables_to_relax =
+      static_cast<int>(all_path_variables.size() * difficulty);
+  absl::flat_hash_set<int> relaxed_variables;
+  while (relaxed_variables.size() < num_variables_to_relax) {
+    DCHECK(!all_paths.empty());
+    const int path_index = absl::Uniform<int>(random, 0, all_paths.size());
+    std::vector<int>& path = all_paths[path_index];
+    const int path_size = path.size();
+    const int segment_length =
+        std::min(path_size, absl::Uniform<int>(random, 4, 8));
+    const int segment_start =
+        absl::Uniform<int>(random, 0, path_size - segment_length);
+    for (int i = segment_start; i < segment_start + segment_length; ++i) {
+      relaxed_variables.insert(path[i]);
+    }
+
+    // Remove segment and clean up empty paths.
+    path.erase(path.begin() + segment_start,
+               path.begin() + segment_start + segment_length);
+    if (path.empty()) {
+      std::swap(all_paths[path_index], all_paths.back());
+      all_paths.pop_back();
+    }
+  }
+
+  // Compute the set of variables to fix.
+  absl::flat_hash_set<int> fixed_variables;
+  for (const int var : all_path_variables) {
+    if (!relaxed_variables.contains(var)) fixed_variables.insert(var);
+  }
+  return helper_.FixGivenVariables(initial_solution, fixed_variables);
+}
+
+Neighborhood RoutingFullPathNeighborhoodGenerator::Generate(
+    const CpSolverResponse& initial_solution, double difficulty,
+    absl::BitGenRef random) {
+  std::vector<std::vector<int>> all_paths =
+      helper_.GetRoutingPaths(initial_solution);
+
+  // Collect all unique variables.
+  absl::flat_hash_set<int> all_path_variables;
+  for (const auto& path : all_paths) {
+    all_path_variables.insert(path.begin(), path.end());
+  }
+
+  // Select variables to relax.
+  const int num_variables_to_relax =
+      static_cast<int>(all_path_variables.size() * difficulty);
+  absl::flat_hash_set<int> relaxed_variables;
+
+  // Relax the start and end of each path to ease relocation.
+  for (const auto& path : all_paths) {
+    relaxed_variables.insert(path.front());
+    relaxed_variables.insert(path.back());
+  }
+
+  // Randomize paths.
+  for (auto& path : all_paths) {
+    std::shuffle(path.begin(), path.end(), random);
+  }
+
+  // Relax all variables (if possible) in one random path.
+  const int path_to_clean = absl::Uniform<int>(random, 0, all_paths.size());
+  while (relaxed_variables.size() < num_variables_to_relax) {
+    DCHECK(!all_paths[path_to_clean].empty());
+    relaxed_variables.insert(all_paths[path_to_clean].back());
+    all_paths[path_to_clean].pop_back();
+  }
+  if (all_paths[path_to_clean].empty()) {
+    std::swap(all_paths[path_to_clean], all_paths.back());
+    all_paths.pop_back();
+  }
+
+  // Relax more variables until the target is reached.
+  while (relaxed_variables.size() < num_variables_to_relax) {
+    DCHECK(!all_paths.empty());
+    const int path_index = absl::Uniform<int>(random, 0, all_paths.size());
+    relaxed_variables.insert(all_paths[path_index].back());
+
+    // Remove variable and clean up empty paths.
+    all_paths[path_index].pop_back();
+    if (all_paths[path_index].empty()) {
+      std::swap(all_paths[path_index], all_paths.back());
+      all_paths.pop_back();
+    }
+  }
+
+  // Compute the set of variables to fix.
+  absl::flat_hash_set<int> fixed_variables;
+  for (const int var : all_path_variables) {
+    if (!relaxed_variables.contains(var)) fixed_variables.insert(var);
+  }
+  return helper_.FixGivenVariables(initial_solution, fixed_variables);
 }
 
 bool RelaxationInducedNeighborhoodGenerator::ReadyToGenerate() const {

@@ -81,7 +81,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // they take in the given solution.
   Neighborhood FixGivenVariables(
       const CpSolverResponse& initial_solution,
-      const std::vector<int>& variables_to_fix) const;
+      const absl::flat_hash_set<int>& variables_to_fix) const;
 
   // Returns the neighborhood where the given constraints are removed.
   Neighborhood RemoveMarkedConstraints(
@@ -173,6 +173,14 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // If true, this method returns the list of performed intervals in the
   // solution. If false, it returns all intervals of the model.
   std::vector<int> GetActiveIntervals(
+      const CpSolverResponse& initial_solution) const;
+
+  // Returns one sub-vector per circuit or per single vehicle ciruit in a routes
+  // constraints. Each circuit is non empty, and does not contain any
+  // self-looping arcs. Path are sorted, starting from the arc with the lowest
+  // tail index, and going in sequence up to the last arc before the circuit is
+  // closed. Each entry correspond to the arc literal on the circuit.
+  std::vector<std::vector<int>> GetRoutingPaths(
       const CpSolverResponse& initial_solution) const;
 
   // The initial problem.
@@ -477,6 +485,47 @@ class SchedulingNeighborhoodGenerator : public NeighborhoodGenerator {
 class SchedulingTimeWindowNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit SchedulingTimeWindowNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      : NeighborhoodGenerator(name, helper) {}
+
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, absl::BitGenRef random) final;
+};
+
+// This routing based LNS generator will relax random arcs in all the paths of
+// the circuit or routes constraints.
+class RoutingRandomNeighborhoodGenerator : public NeighborhoodGenerator {
+ public:
+  RoutingRandomNeighborhoodGenerator(NeighborhoodGeneratorHelper const* helper,
+                                     const std::string& name)
+      : NeighborhoodGenerator(name, helper) {}
+
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, absl::BitGenRef random) final;
+};
+
+// This routing based LNS generator will relax small sequences of arcs randomly
+// chosen in all the paths of the circuit or routes constraints.
+class RoutingPathNeighborhoodGenerator : public NeighborhoodGenerator {
+ public:
+  RoutingPathNeighborhoodGenerator(NeighborhoodGeneratorHelper const* helper,
+                                   const std::string& name)
+      : NeighborhoodGenerator(name, helper) {}
+
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, absl::BitGenRef random) final;
+};
+
+// This routing based LNS generator aims are relaxing one full path, and make
+// some room on the other paths to absorb the nodes of the relaxed path.
+//
+// In order to do so, it will relax the first and the last arc of each path in
+// the circuit or routes constraints. Then it will relax all arc literals in one
+// random path. Then it will relax random arcs in the remaining paths until it
+// reaches the given difficulty.
+class RoutingFullPathNeighborhoodGenerator : public NeighborhoodGenerator {
+ public:
+  RoutingFullPathNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
 
