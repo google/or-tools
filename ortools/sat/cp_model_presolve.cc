@@ -30,9 +30,9 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/hash/hash.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_join.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -6867,22 +6867,33 @@ bool CpModelPresolver::Presolve() {
   //
   // TODO(user): We might want to do that earlier so that our count of variable
   // usage is not biased by duplicate constraints.
-  const std::vector<int> duplicates =
+  const std::vector<std::pair<int, int>> duplicates =
       FindDuplicateConstraints(*context_->working_model);
-  if (!duplicates.empty()) {
-    for (const int c : duplicates) {
-      const int type =
-          context_->working_model->constraints(c).constraint_case();
-      if (type == ConstraintProto::ConstraintCase::kInterval) {
-        // TODO(user): we could delete duplicate identical interval, but we need
-        // to make sure reference to them are updated.
-        continue;
-      }
-
-      context_->working_model->mutable_constraints(c)->Clear();
-      context_->UpdateConstraintVariableUsage(c);
-      context_->UpdateRuleStats("removed duplicate constraints");
+  for (const auto [dup, rep] : duplicates) {
+    const int type =
+        context_->working_model->constraints(dup).constraint_case();
+    if (type == ConstraintProto::ConstraintCase::kInterval) {
+      // TODO(user): we could delete duplicate identical interval, but we need
+      // to make sure reference to them are updated.
+      continue;
     }
+
+    if (type == ConstraintProto::kLinear) {
+      const Domain d1 = ReadDomainFromProto(
+          context_->working_model->constraints(rep).linear());
+      const Domain d2 = ReadDomainFromProto(
+          context_->working_model->constraints(dup).linear());
+      if (d1 != d2) {
+        context_->UpdateRuleStats("duplicate: merged rhs of linear constraint");
+        FillDomainInProto(d1.IntersectionWith(d2),
+                          context_->working_model->mutable_constraints(rep)
+                              ->mutable_linear());
+      }
+    }
+
+    context_->working_model->mutable_constraints(dup)->Clear();
+    context_->UpdateConstraintVariableUsage(dup);
+    context_->UpdateRuleStats("duplicate: removed constraint");
   }
 
   if (context_->ModelIsUnsat()) {
@@ -7133,8 +7144,20 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
   }
 }
 
-std::vector<int> FindDuplicateConstraints(const CpModelProto& model_proto) {
-  std::vector<int> result;
+namespace {
+ConstraintProto CopyConstraintForDuplicateDetection(const ConstraintProto& ct) {
+  ConstraintProto copy = ct;
+  copy.clear_name();
+  if (ct.constraint_case() == ConstraintProto::kLinear) {
+    copy.mutable_linear()->clear_domain();
+  }
+  return copy;
+}
+}  // namespace
+
+std::vector<std::pair<int, int>> FindDuplicateConstraints(
+    const CpModelProto& model_proto) {
+  std::vector<std::pair<int, int>> result;
 
   // We use a map hash: serialized_constraint_proto hash -> constraint index.
   ConstraintProto copy;
@@ -7144,26 +7167,25 @@ std::vector<int> FindDuplicateConstraints(const CpModelProto& model_proto) {
   const int num_constraints = model_proto.constraints().size();
   for (int c = 0; c < num_constraints; ++c) {
     if (model_proto.constraints(c).constraint_case() ==
-        ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) {
+        ConstraintProto::CONSTRAINT_NOT_SET) {
       continue;
     }
 
     // We ignore names when comparing constraints.
     //
     // TODO(user): This is not particularly efficient.
-    copy = model_proto.constraints(c);
-    copy.clear_name();
+    copy = CopyConstraintForDuplicateDetection(model_proto.constraints(c));
     s = copy.SerializeAsString();
 
-    const int64_t hash = std::hash<std::string>()(s);
-    const auto insert = equiv_constraints.insert({hash, c});
-    if (!insert.second) {
+    const int64_t hash = absl::Hash<std::string>()(s);
+    const auto [it, inserted] = equiv_constraints.insert({hash, c});
+    if (!inserted) {
       // Already present!
-      const int other_c_with_same_hash = insert.first->second;
-      copy = model_proto.constraints(other_c_with_same_hash);
-      copy.clear_name();
+      const int other_c_with_same_hash = it->second;
+      copy = CopyConstraintForDuplicateDetection(
+          model_proto.constraints(other_c_with_same_hash));
       if (s == copy.SerializeAsString()) {
-        result.push_back(c);
+        result.push_back({c, other_c_with_same_hash});
       }
     }
   }

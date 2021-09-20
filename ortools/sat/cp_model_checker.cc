@@ -319,6 +319,19 @@ std::string ValidateIntProdConstraint(const CpModelProto& model,
     return absl::StrCat("An int_prod constraint should have exactly 2 terms: ",
                         ProtobufShortDebugString(ct));
   }
+
+  // Detect potential overflow if some of the variables span across 0.
+  const Domain product_domain =
+      ReadDomainFromProto(model.variables(PositiveRef(ct.int_prod().vars(0))))
+          .ContinuousMultiplicationBy(ReadDomainFromProto(
+              model.variables(PositiveRef(ct.int_prod().vars(1)))));
+  if ((product_domain.Max() == std::numeric_limits<int64_t>::max() &&
+       product_domain.Min() < 0) ||
+      (product_domain.Min() == std::numeric_limits<int64_t>::min() &&
+       product_domain.Max() > 0)) {
+    return absl::StrCat("Potential integer overflow in constraint: ",
+                        ProtobufShortDebugString(ct));
+  }
   return "";
 }
 
@@ -382,7 +395,7 @@ std::string ValidateAutomatonConstraint(const CpModelProto& model,
 }
 
 template <typename GraphProto>
-std::string ValidateGraphInput(const CpModelProto& model,
+std::string ValidateGraphInput(bool is_route, const CpModelProto& model,
                                const GraphProto& graph) {
   const int size = graph.tails().size();
   if (graph.heads().size() != size || graph.literals().size() != size) {
@@ -400,6 +413,10 @@ std::string ValidateGraphInput(const CpModelProto& model,
           "node ",
           graph.heads(i));
     }
+    if (is_route && graph.tails(i) == 0) {
+      return absl::StrCat(
+          "A route constraint cannot have a self-loop on the depot (node 0)");
+    }
   }
 
   return "";
@@ -410,10 +427,16 @@ std::string ValidateRoutesConstraint(const CpModelProto& model,
   int max_node = 0;
   absl::flat_hash_set<int> nodes;
   for (const int node : ct.routes().tails()) {
+    if (node < 0) {
+      return "All node in a route constraint must be in [0, num_nodes)";
+    }
     nodes.insert(node);
     max_node = std::max(max_node, node);
   }
   for (const int node : ct.routes().heads()) {
+    if (node < 0) {
+      return "All node in a route constraint must be in [0, num_nodes)";
+    }
     nodes.insert(node);
     max_node = std::max(max_node, node);
   }
@@ -422,7 +445,7 @@ std::string ValidateRoutesConstraint(const CpModelProto& model,
         "All nodes in a route constraint must have incident arcs");
   }
 
-  return ValidateGraphInput(model, ct.routes());
+  return ValidateGraphInput(/*is_route=*/true, model, ct.routes());
 }
 
 std::string ValidateDomainIsPositive(const CpModelProto& model, int ref,
@@ -863,7 +886,8 @@ std::string ValidateCpModel(const CpModelProto& model) {
         RETURN_IF_NOT_EMPTY(ValidateAutomatonConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kCircuit:
-        RETURN_IF_NOT_EMPTY(ValidateGraphInput(model, ct.circuit()));
+        RETURN_IF_NOT_EMPTY(
+            ValidateGraphInput(/*is_route=*/false, model, ct.circuit()));
         break;
       case ConstraintProto::ConstraintCase::kRoutes:
         RETURN_IF_NOT_EMPTY(ValidateRoutesConstraint(model, ct));

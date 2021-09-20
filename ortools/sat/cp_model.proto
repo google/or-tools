@@ -401,6 +401,10 @@ message ConstraintProto {
     // variables. By convention, because we can just remove term equal to one,
     // the empty product forces the target to be one.
     //
+    // Note that the solver checks for potential integer overflow. So it is
+    // recommended to limit the domain of the variables such that the product
+    // fits in [INT_MIN + 1..INT_MAX - 1].
+    //
     // TODO(user): Support more than two terms in the product.
     IntegerArgumentProto int_prod = 11;
 

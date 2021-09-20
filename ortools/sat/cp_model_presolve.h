@@ -263,16 +263,19 @@ void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
 bool PresolveCpModel(PresolveContext* context,
                      std::vector<int>* postsolve_mapping);
 
-// Returns the index of exact duplicate constraints in the given proto. That
-// is, all returned constraints will have an identical constraint before it in
-// the model_proto.constraints() list. Empty constraints are ignored.
+// Returns the index of duplicate constraints in the given proto in the first
+// element of each pair. The second element of each pair is the "representative"
+// that is the first constraint in the proto in a set of duplicate constraints.
+//
+// Empty constraints are ignored. We also do a bit more:
+// - We ignore names when comparing constraint.
+// - For linear constraints, we ignore the domain. This is because we can
+//   just merge them if the constraints are the same.
 //
 // Visible here for testing. This is meant to be called at the end of the
 // presolve where constraints have been canonicalized.
-//
-// TODO(user): Ignore names? canonicalize constraint further by sorting
-// enforcement literal list for instance...
-std::vector<int> FindDuplicateConstraints(const CpModelProto& model_proto);
+std::vector<std::pair<int, int>> FindDuplicateConstraints(
+    const CpModelProto& model_proto);
 
 }  // namespace sat
 }  // namespace operations_research
