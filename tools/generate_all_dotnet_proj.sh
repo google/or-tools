@@ -10,6 +10,7 @@ fi
 # shellcheck disable=SC1090
 . "${DIR}/../Version.txt"
 
+mkdir -p "${DIR}/../temp_dotnet/packages"
 ###############
 ##  Cleanup  ##
 ###############
