@@ -1085,8 +1085,8 @@ Neighborhood RoutingFullPathNeighborhoodGenerator::Generate(
 
   // Relax all variables (if possible) in one random path.
   const int path_to_clean = absl::Uniform<int>(random, 0, all_paths.size());
-  while (relaxed_variables.size() < num_variables_to_relax) {
-    DCHECK(!all_paths[path_to_clean].empty());
+  while (relaxed_variables.size() < num_variables_to_relax &&
+         !all_paths[path_to_clean].empty()) {
     relaxed_variables.insert(all_paths[path_to_clean].back());
     all_paths[path_to_clean].pop_back();
   }
