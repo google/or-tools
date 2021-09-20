@@ -63,22 +63,6 @@ from ortools.linear_solver.linear_solver_natural_api import SumArray
 from ortools.linear_solver.linear_solver_natural_api import SumCst
 from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
 from ortools.linear_solver.linear_solver_natural_api import VariableExpr
-
-# Remove the documentation of some functions.
-# See https://pdoc3.github.io/pdoc/doc/pdoc/#overriding-docstrings-with-
-__pdoc__ = {}
-__pdoc__['Solver_infinity'] = False
-__pdoc__['Solver_Infinity'] = False
-__pdoc__['Solver_SolveWithProto'] = False
-__pdoc__['Solver_SupportsProblemType'] = False
-__pdoc__['setup_variable_operator'] = False
-__pdoc__['Constraint.thisown'] = False
-__pdoc__['Constraint.thisown'] = False
-__pdoc__['MPSolverParameters.thisown'] = False
-__pdoc__['ModelExportOptions.thisown'] = False
-__pdoc__['Objective.thisown'] = False
-__pdoc__['Solver.thisown'] = False
-__pdoc__['Variable.thisown'] = False
 %}  // %pythoncode
 
 %extend operations_research::MPVariable {

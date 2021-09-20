@@ -58,15 +58,6 @@ from ortools.util import sorted_interval_list
 
 Domain = sorted_interval_list.Domain
 
-# Documentation cleaning.
-# Remove the documentation of some functions.
-# See https://pdoc3.github.io/pdoc/doc/pdoc/#overriding-docstrings-with-
-__pdoc__ = {}
-__pdoc__['DisplayBounds'] = False
-__pdoc__['EvaluateLinearExpr'] = False
-__pdoc__['EvaluateBooleanExpression'] = False
-__pdoc__['ShortName'] = False
-
 # The classes below allow linear expressions to be expressed naturally with the
 # usual arithmetic operators +-*/ and with constant numbers, which makes the
 # python API very intuitive. See ../samples/*.py for examples.
@@ -1207,8 +1198,8 @@ class CpModel(object):
          sum(demands[i] if times[i] <= t) in [min_level, max_level]
 
     Args:
-      times: A list of integer variables which specify the time of the
-        filling or emptying the reservoir.
+      times: A list of integer variables which specify the time of the filling
+        or emptying the reservoir.
       demands: A list of integer values that specifies the amount of the
         emptying or filling.
       min_level: At any time, the level of the reservoir must be greater or
@@ -1267,8 +1258,8 @@ class CpModel(object):
     actions are actually performed.
 
     Args:
-      times: A list of integer variables which specify the time of the
-        filling or emptying the reservoir.
+      times: A list of integer variables which specify the time of the filling
+        or emptying the reservoir.
       demands: A list of integer values that specifies the amount of the
         emptying or filling.
       actives: a list of boolean variables. They indicates if the
@@ -1420,7 +1411,9 @@ class CpModel(object):
 
     def AddProdEquality(self, target, variables):
         """Deprecated, use AddMultiplicationEquality."""
-        warnings.warn("AddProdEquality is deprecated; use AddMultiplicationEquality.", DeprecationWarning)
+        warnings.warn(
+            'AddProdEquality is deprecated; use' + 'AddMultiplicationEquality.',
+            DeprecationWarning)
         return self.AddMultiplicationEquality(target, variables)
 
     # Scheduling support
@@ -1435,11 +1428,10 @@ class CpModel(object):
 
     Args:
       start: The start of the interval. It can be an affine or constant
-             expression.
+        expression.
       size: The size of the interval. It can be an affine or constant
-            expression.
-      end: The end of the interval. It can be an affine or constant
-           expression.
+        expression.
+      end: The end of the interval. It can be an affine or constant expression.
       name: The name of the interval variable.
 
     Returns:
