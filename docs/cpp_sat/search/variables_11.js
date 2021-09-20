@@ -1,9 +1,9 @@
 var searchData=
 [
-  ['variableorder_5farraysize_4275',['VariableOrder_ARRAYSIZE',['../classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#af8dffa99e4e08496e9c20b14533cd26e',1,'operations_research::sat::PROTOBUF_FINAL']]],
-  ['variableorder_5fmax_4276',['VariableOrder_MAX',['../classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a7356a010b3cd91c49ff9bca9f1ee926e',1,'operations_research::sat::PROTOBUF_FINAL']]],
-  ['variableorder_5fmin_4277',['VariableOrder_MIN',['../classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a7dffc92c628abaebd0ddcc819e94a517',1,'operations_research::sat::PROTOBUF_FINAL']]],
-  ['variableselectionstrategy_5farraysize_4278',['VariableSelectionStrategy_ARRAYSIZE',['../classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a1763fdf689a62e2dcf681d37148cbaaf',1,'operations_research::sat::PROTOBUF_FINAL']]],
-  ['variableselectionstrategy_5fmax_4279',['VariableSelectionStrategy_MAX',['../classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#a4046ecd0f13ace5a1f0fb2533b6de142',1,'operations_research::sat::PROTOBUF_FINAL']]],
-  ['variableselectionstrategy_5fmin_4280',['VariableSelectionStrategy_MIN',['../classoperations__research_1_1sat_1_1_p_r_o_t_o_b_u_f___f_i_n_a_l.html#ab2332b9ff6ffe5993bccfe3ace0d921d',1,'operations_research::sat::PROTOBUF_FINAL']]]
+  ['variableorder_5farraysize',['VariableOrder_ARRAYSIZE',['../classoperations__research_1_1sat_1_1_sat_parameters.html#af8dffa99e4e08496e9c20b14533cd26e',1,'operations_research::sat::SatParameters']]],
+  ['variableorder_5fmax',['VariableOrder_MAX',['../classoperations__research_1_1sat_1_1_sat_parameters.html#a7356a010b3cd91c49ff9bca9f1ee926e',1,'operations_research::sat::SatParameters']]],
+  ['variableorder_5fmin',['VariableOrder_MIN',['../classoperations__research_1_1sat_1_1_sat_parameters.html#a7dffc92c628abaebd0ddcc819e94a517',1,'operations_research::sat::SatParameters']]],
+  ['variableselectionstrategy_5farraysize',['VariableSelectionStrategy_ARRAYSIZE',['../classoperations__research_1_1sat_1_1_decision_strategy_proto.html#a1763fdf689a62e2dcf681d37148cbaaf',1,'operations_research::sat::DecisionStrategyProto']]],
+  ['variableselectionstrategy_5fmax',['VariableSelectionStrategy_MAX',['../classoperations__research_1_1sat_1_1_decision_strategy_proto.html#a4046ecd0f13ace5a1f0fb2533b6de142',1,'operations_research::sat::DecisionStrategyProto']]],
+  ['variableselectionstrategy_5fmin',['VariableSelectionStrategy_MIN',['../classoperations__research_1_1sat_1_1_decision_strategy_proto.html#ab2332b9ff6ffe5993bccfe3ace0d921d',1,'operations_research::sat::DecisionStrategyProto']]]
 ];

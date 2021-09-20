@@ -96,7 +96,7 @@
     </ul>
 
 
-                    <footer>OR-Tools 9.0</footer>
+                    <footer>OR-Tools 9.1</footer>
 
                     <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev">
                         built with <span class="visually-hidden">pdoc</span><img
@@ -118,18 +118,6 @@ sorted_interval_list    </h1>
 <span class="c1">#</span>
 <span class="c1"># Do not make changes to this file unless you know what you are doing--modify</span>
 <span class="c1"># the SWIG interface file instead.</span>
-
-
-<span class="c1"># Remove the documentation of some functions.</span>
-<span class="c1"># See https://pdoc3.github.io/pdoc/doc/pdoc/#overriding-docstrings-with-</span>
-<span class="n">__pdoc__</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="n">__pdoc__</span><span class="p">[</span><span class="s1">&#39;Domain_AllValues&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-<span class="n">__pdoc__</span><span class="p">[</span><span class="s1">&#39;Domain_FromFlatIntervals&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-<span class="n">__pdoc__</span><span class="p">[</span><span class="s1">&#39;Domain_FromIntervals&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-<span class="n">__pdoc__</span><span class="p">[</span><span class="s1">&#39;Domain_FromValues&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-<span class="n">__pdoc__</span><span class="p">[</span><span class="s1">&#39;Domain.thisown&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-
-
 
 <span class="kn">from</span> <span class="nn">sys</span> <span class="kn">import</span> <span class="n">version_info</span> <span class="k">as</span> <span class="n">_swig_python_version_info</span>
 <span class="k">if</span> <span class="n">_swig_python_version_info</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
@@ -189,143 +177,97 @@ sorted_interval_list    </h1>
 
 
 <span class="k">class</span> <span class="nc">Domain</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    We call *domain* any subset of Int64 = [kint64min, kint64max].</span>
-
-<span class="sd">    This class can be used to represent such set efficiently as a sorted and</span>
-<span class="sd">    non-adjacent list of intervals. This is efficient as long as the size of such</span>
-<span class="sd">    list stays reasonable.</span>
-
-<span class="sd">    In the comments below, the domain of *this will always be written &#39;D&#39;.</span>
-<span class="sd">    Note that all the functions are safe with respect to integer overflow.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Proxy of C++ operations_research::Domain class.&quot;&quot;&quot;</span>
 
     <span class="n">thisown</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">this</span><span class="o">.</span><span class="n">own</span><span class="p">(),</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">this</span><span class="o">.</span><span class="n">own</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;The membership flag&quot;</span><span class="p">)</span>
     <span class="fm">__repr__</span> <span class="o">=</span> <span class="n">_swig_repr</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        *Overload 1:*</span>
-<span class="sd">         By default, Domain will be empty.</span>
-
-<span class="sd">        |</span>
-
-<span class="sd">        *Overload 2:*</span>
-<span class="sd">         Constructor for the common case of a singleton domain.</span>
-
-<span class="sd">        |</span>
-
-<span class="sd">        *Overload 3:*</span>
-
-<span class="sd">        Constructor for the common case of a single interval [left, right].</span>
-<span class="sd">        If left &gt; right, this will result in the empty domain.</span>
+<span class="sd">        __init__(Domain self) -&gt; Domain</span>
+<span class="sd">        __init__(Domain self, int64_t value) -&gt; Domain</span>
+<span class="sd">        __init__(Domain self, int64_t left, int64_t right) -&gt; Domain</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_swiginit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">new_Domain</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">))</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">AllValues</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the full domain Int64.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;AllValues() -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_AllValues</span><span class="p">()</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">FromValues</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="s2">&quot;std::vector&lt; int64_t &gt;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Creates a domain from the union of an unsorted list of integer values.</span>
-<span class="sd">        Input values may be repeated, with no consequence on the output</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;FromValues(std::vector&lt; int64_t &gt; values) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_FromValues</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">FromIntervals</span><span class="p">(</span><span class="n">intervals</span><span class="p">:</span> <span class="s2">&quot;std::vector&lt; std::vector&lt; int64_t &gt; &gt; const &amp;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This method is available in Python, Java and .NET. It allows</span>
-<span class="sd">        building a Domain object from a list of intervals (long[][] in Java and</span>
-<span class="sd">        .NET, [[0, 2], [5, 5], [8, 10]] in python).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;FromIntervals(std::vector&lt; std::vector&lt; int64_t &gt; &gt; const &amp; intervals) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_FromIntervals</span><span class="p">(</span><span class="n">intervals</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">FromFlatIntervals</span><span class="p">(</span><span class="n">flat_intervals</span><span class="p">:</span> <span class="s2">&quot;std::vector&lt; int64_t &gt; const &amp;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This method is available in Python, Java and .NET. It allows</span>
-<span class="sd">        building a Domain object from a flattened list of intervals</span>
-<span class="sd">        (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;FromFlatIntervals(std::vector&lt; int64_t &gt; const &amp; flat_intervals) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_FromFlatIntervals</span><span class="p">(</span><span class="n">flat_intervals</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">FlattenedIntervals</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;std::vector&lt; int64_t &gt;&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This method returns the flattened list of interval bounds of the domain.</span>
-
-<span class="sd">        Thus the domain {0, 1, 2, 5, 8, 9, 10} will return [0, 2, 5, 5,</span>
-<span class="sd">        8, 10] (as a C++ std::vector&lt;int64_t&gt;, as a java or C# long[], as</span>
-<span class="sd">        a python list of integers).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;FlattenedIntervals(Domain self) -&gt; std::vector&lt; int64_t &gt;&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_FlattenedIntervals</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">IsEmpty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;bool&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns true if this is the empty set.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;IsEmpty(Domain self) -&gt; bool&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_IsEmpty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">Size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;int64_t&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the number of elements in the domain. It is capped at kint64max&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Size(Domain self) -&gt; int64_t&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_Size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">Min</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;int64_t&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns the min value of the domain.</span>
-<span class="sd">        The domain must not be empty.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Min(Domain self) -&gt; int64_t&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_Min</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">Max</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;int64_t&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns the max value of the domain.</span>
-<span class="sd">        The domain must not be empty.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Max(Domain self) -&gt; int64_t&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_Max</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">Contains</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="s2">&quot;int64_t&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;bool&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns true iff value is in Domain.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Contains(Domain self, int64_t value) -&gt; bool&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_Contains</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">Complement</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the set Int64 ∖ D.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Complement(Domain self) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_Complement</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">Negation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns {x ∈ Int64, ∃ e ∈ D, x = -e}.</span>
-
-<span class="sd">        Note in particular that if the negation of Int64 is not Int64 but</span>
-<span class="sd">        Int64 \ {kint64min} !!</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Negation(Domain self) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_Negation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">IntersectionWith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="s2">&quot;Domain&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the intersection of D and domain.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;IntersectionWith(Domain self, Domain domain) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_IntersectionWith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">UnionWith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="s2">&quot;Domain&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the union of D and domain.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;UnionWith(Domain self, Domain domain) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_UnionWith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">AdditionWith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="s2">&quot;Domain&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns {x ∈ Int64, ∃ a ∈ D, ∃ b ∈ domain, x = a + b}.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;AdditionWith(Domain self, Domain domain) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_AdditionWith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;std::string&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns a compact string of a vector of intervals like &quot;[1,4][6][10,20]&quot;.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;__str__(Domain self) -&gt; std::string&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain___str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;Domain&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;bool&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Lexicographic order on the intervals() representation.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;__lt__(Domain self, Domain other) -&gt; bool&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain___lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;Domain&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;bool&quot;</span><span class="p">:</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;__eq__(Domain self, Domain other) -&gt; bool&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain___eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;Domain&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;bool&quot;</span><span class="p">:</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;__ne__(Domain self, Domain other) -&gt; bool&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain___ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
     <span class="n">__swig_destroy__</span> <span class="o">=</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">delete_Domain</span>
 
@@ -333,34 +275,28 @@ sorted_interval_list    </h1>
 <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_swigregister</span><span class="p">(</span><span class="n">Domain</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">Domain_AllValues</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the full domain Int64.&quot;&quot;&quot;</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Domain_AllValues() -&gt; Domain&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_AllValues</span><span class="p">()</span>
 
 <span class="k">def</span> <span class="nf">Domain_FromValues</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="s2">&quot;std::vector&lt; int64_t &gt;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Creates a domain from the union of an unsorted list of integer values.</span>
-<span class="sd">    Input values may be repeated, with no consequence on the output</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Domain_FromValues(std::vector&lt; int64_t &gt; values) -&gt; Domain&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_FromValues</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">Domain_FromIntervals</span><span class="p">(</span><span class="n">intervals</span><span class="p">:</span> <span class="s2">&quot;std::vector&lt; std::vector&lt; int64_t &gt; &gt; const &amp;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This method is available in Python, Java and .NET. It allows</span>
-<span class="sd">    building a Domain object from a list of intervals (long[][] in Java and</span>
-<span class="sd">    .NET, [[0, 2], [5, 5], [8, 10]] in python).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Domain_FromIntervals(std::vector&lt; std::vector&lt; int64_t &gt; &gt; const &amp; intervals) -&gt; Domain&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_FromIntervals</span><span class="p">(</span><span class="n">intervals</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">Domain_FromFlatIntervals</span><span class="p">(</span><span class="n">flat_intervals</span><span class="p">:</span> <span class="s2">&quot;std::vector&lt; int64_t &gt; const &amp;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This method is available in Python, Java and .NET. It allows</span>
-<span class="sd">    building a Domain object from a flattened list of intervals</span>
-<span class="sd">    (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Domain_FromFlatIntervals(std::vector&lt; int64_t &gt; const &amp; flat_intervals) -&gt; Domain&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_FromFlatIntervals</span><span class="p">(</span><span class="n">flat_intervals</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="fm">__lshift__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;std::ostream &amp;&quot;</span><span class="p">:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    __lshift__(std::ostream &amp; out, operations_research::ClosedInterval const &amp; interval) -&gt; std::ostream</span>
+<span class="sd">    __lshift__(std::ostream &amp; out, std::vector&lt; operations_research::ClosedInterval &gt; const &amp; intervals) -&gt; std::ostream</span>
+<span class="sd">    __lshift__(std::ostream &amp; out, Domain domain) -&gt; std::ostream &amp;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="fm">__lshift__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
 </pre></div>
 
@@ -379,157 +315,104 @@ sorted_interval_list    </h1>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Domain</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    We call *domain* any subset of Int64 = [kint64min, kint64max].</span>
-
-<span class="sd">    This class can be used to represent such set efficiently as a sorted and</span>
-<span class="sd">    non-adjacent list of intervals. This is efficient as long as the size of such</span>
-<span class="sd">    list stays reasonable.</span>
-
-<span class="sd">    In the comments below, the domain of *this will always be written &#39;D&#39;.</span>
-<span class="sd">    Note that all the functions are safe with respect to integer overflow.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Proxy of C++ operations_research::Domain class.&quot;&quot;&quot;</span>
 
     <span class="n">thisown</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">this</span><span class="o">.</span><span class="n">own</span><span class="p">(),</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">this</span><span class="o">.</span><span class="n">own</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;The membership flag&quot;</span><span class="p">)</span>
     <span class="fm">__repr__</span> <span class="o">=</span> <span class="n">_swig_repr</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        *Overload 1:*</span>
-<span class="sd">         By default, Domain will be empty.</span>
-
-<span class="sd">        |</span>
-
-<span class="sd">        *Overload 2:*</span>
-<span class="sd">         Constructor for the common case of a singleton domain.</span>
-
-<span class="sd">        |</span>
-
-<span class="sd">        *Overload 3:*</span>
-
-<span class="sd">        Constructor for the common case of a single interval [left, right].</span>
-<span class="sd">        If left &gt; right, this will result in the empty domain.</span>
+<span class="sd">        __init__(Domain self) -&gt; Domain</span>
+<span class="sd">        __init__(Domain self, int64_t value) -&gt; Domain</span>
+<span class="sd">        __init__(Domain self, int64_t left, int64_t right) -&gt; Domain</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_swiginit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">new_Domain</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">))</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">AllValues</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the full domain Int64.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;AllValues() -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_AllValues</span><span class="p">()</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">FromValues</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="s2">&quot;std::vector&lt; int64_t &gt;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Creates a domain from the union of an unsorted list of integer values.</span>
-<span class="sd">        Input values may be repeated, with no consequence on the output</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;FromValues(std::vector&lt; int64_t &gt; values) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_FromValues</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">FromIntervals</span><span class="p">(</span><span class="n">intervals</span><span class="p">:</span> <span class="s2">&quot;std::vector&lt; std::vector&lt; int64_t &gt; &gt; const &amp;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This method is available in Python, Java and .NET. It allows</span>
-<span class="sd">        building a Domain object from a list of intervals (long[][] in Java and</span>
-<span class="sd">        .NET, [[0, 2], [5, 5], [8, 10]] in python).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;FromIntervals(std::vector&lt; std::vector&lt; int64_t &gt; &gt; const &amp; intervals) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_FromIntervals</span><span class="p">(</span><span class="n">intervals</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">FromFlatIntervals</span><span class="p">(</span><span class="n">flat_intervals</span><span class="p">:</span> <span class="s2">&quot;std::vector&lt; int64_t &gt; const &amp;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This method is available in Python, Java and .NET. It allows</span>
-<span class="sd">        building a Domain object from a flattened list of intervals</span>
-<span class="sd">        (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;FromFlatIntervals(std::vector&lt; int64_t &gt; const &amp; flat_intervals) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_FromFlatIntervals</span><span class="p">(</span><span class="n">flat_intervals</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">FlattenedIntervals</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;std::vector&lt; int64_t &gt;&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This method returns the flattened list of interval bounds of the domain.</span>
-
-<span class="sd">        Thus the domain {0, 1, 2, 5, 8, 9, 10} will return [0, 2, 5, 5,</span>
-<span class="sd">        8, 10] (as a C++ std::vector&lt;int64_t&gt;, as a java or C# long[], as</span>
-<span class="sd">        a python list of integers).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;FlattenedIntervals(Domain self) -&gt; std::vector&lt; int64_t &gt;&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_FlattenedIntervals</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">IsEmpty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;bool&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns true if this is the empty set.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;IsEmpty(Domain self) -&gt; bool&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_IsEmpty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">Size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;int64_t&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the number of elements in the domain. It is capped at kint64max&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Size(Domain self) -&gt; int64_t&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_Size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">Min</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;int64_t&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns the min value of the domain.</span>
-<span class="sd">        The domain must not be empty.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Min(Domain self) -&gt; int64_t&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_Min</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">Max</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;int64_t&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns the max value of the domain.</span>
-<span class="sd">        The domain must not be empty.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Max(Domain self) -&gt; int64_t&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_Max</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">Contains</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="s2">&quot;int64_t&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;bool&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns true iff value is in Domain.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Contains(Domain self, int64_t value) -&gt; bool&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_Contains</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">Complement</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the set Int64 ∖ D.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Complement(Domain self) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_Complement</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">Negation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns {x ∈ Int64, ∃ e ∈ D, x = -e}.</span>
-
-<span class="sd">        Note in particular that if the negation of Int64 is not Int64 but</span>
-<span class="sd">        Int64 \ {kint64min} !!</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Negation(Domain self) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_Negation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">IntersectionWith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="s2">&quot;Domain&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the intersection of D and domain.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;IntersectionWith(Domain self, Domain domain) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_IntersectionWith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">UnionWith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="s2">&quot;Domain&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the union of D and domain.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;UnionWith(Domain self, Domain domain) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_UnionWith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">AdditionWith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="s2">&quot;Domain&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns {x ∈ Int64, ∃ a ∈ D, ∃ b ∈ domain, x = a + b}.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;AdditionWith(Domain self, Domain domain) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_AdditionWith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;std::string&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns a compact string of a vector of intervals like &quot;[1,4][6][10,20]&quot;.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;__str__(Domain self) -&gt; std::string&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain___str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;Domain&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;bool&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Lexicographic order on the intervals() representation.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;__lt__(Domain self, Domain other) -&gt; bool&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain___lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;Domain&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;bool&quot;</span><span class="p">:</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;__eq__(Domain self, Domain other) -&gt; bool&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain___eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;Domain&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;bool&quot;</span><span class="p">:</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;__ne__(Domain self, Domain other) -&gt; bool&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain___ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
     <span class="n">__swig_destroy__</span> <span class="o">=</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">delete_Domain</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>We call <em>domain</em> any subset of Int64 = [kint64min, kint64max].</p>
-
-<p>This class can be used to represent such set efficiently as a sorted and
-non-adjacent list of intervals. This is efficient as long as the size of such
-list stays reasonable.</p>
-
-<p>In the comments below, the domain of *this will always be written 'D'.
-Note that all the functions are safe with respect to integer overflow.</p>
+            <div class="docstring"><p>Proxy of C++ operations_research::Domain class.</p>
 </div>
 
 
@@ -544,40 +427,18 @@ Note that all the functions are safe with respect to integer overflow.</p>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        *Overload 1:*</span>
-<span class="sd">         By default, Domain will be empty.</span>
-
-<span class="sd">        |</span>
-
-<span class="sd">        *Overload 2:*</span>
-<span class="sd">         Constructor for the common case of a singleton domain.</span>
-
-<span class="sd">        |</span>
-
-<span class="sd">        *Overload 3:*</span>
-
-<span class="sd">        Constructor for the common case of a single interval [left, right].</span>
-<span class="sd">        If left &gt; right, this will result in the empty domain.</span>
+<span class="sd">        __init__(Domain self) -&gt; Domain</span>
+<span class="sd">        __init__(Domain self, int64_t value) -&gt; Domain</span>
+<span class="sd">        __init__(Domain self, int64_t left, int64_t right) -&gt; Domain</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_swiginit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">new_Domain</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">))</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p><em>Overload 1:</em>
- By default, Domain will be empty.</p>
-
-<p>|</p>
-
-<p><em>Overload 2:</em>
- Constructor for the common case of a singleton domain.</p>
-
-<p>|</p>
-
-<p><em>Overload 3:</em></p>
-
-<p>Constructor for the common case of a single interval [left, right].
-If left &gt; right, this will result in the empty domain.</p>
+            <div class="docstring"><p>__init__(Domain self) -> Domain
+__init__(Domain self, int64_t value) -> Domain
+__init__(Domain self, int64_t left, int64_t right) -> Domain</p>
 </div>
 
 
@@ -606,13 +467,13 @@ If left &gt; right, this will result in the empty domain.</p>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">AllValues</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the full domain Int64.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;AllValues() -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_AllValues</span><span class="p">()</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Returns the full domain Int64.</p>
+            <div class="docstring"><p>AllValues() -> Domain</p>
 </div>
 
 
@@ -630,17 +491,13 @@ If left &gt; right, this will result in the empty domain.</p>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">FromValues</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="s2">&quot;std::vector&lt; int64_t &gt;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Creates a domain from the union of an unsorted list of integer values.</span>
-<span class="sd">        Input values may be repeated, with no consequence on the output</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;FromValues(std::vector&lt; int64_t &gt; values) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_FromValues</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Creates a domain from the union of an unsorted list of integer values.
-Input values may be repeated, with no consequence on the output</p>
+            <div class="docstring"><p>FromValues(std::vector&lt; int64_t &gt; values) -> Domain</p>
 </div>
 
 
@@ -660,19 +517,13 @@ Input values may be repeated, with no consequence on the output</p>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">FromIntervals</span><span class="p">(</span><span class="n">intervals</span><span class="p">:</span> <span class="s2">&quot;std::vector&lt; std::vector&lt; int64_t &gt; &gt; const &amp;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This method is available in Python, Java and .NET. It allows</span>
-<span class="sd">        building a Domain object from a list of intervals (long[][] in Java and</span>
-<span class="sd">        .NET, [[0, 2], [5, 5], [8, 10]] in python).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;FromIntervals(std::vector&lt; std::vector&lt; int64_t &gt; &gt; const &amp; intervals) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_FromIntervals</span><span class="p">(</span><span class="n">intervals</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>This method is available in Python, Java and .NET. It allows
-building a Domain object from a list of intervals (long[][] in Java and
-.NET, [[0, 2], [5, 5], [8, 10]] in python).</p>
+            <div class="docstring"><p>FromIntervals(std::vector&lt; std::vector&lt; int64_t &gt; &gt; const &amp; intervals) -> Domain</p>
 </div>
 
 
@@ -692,19 +543,13 @@ building a Domain object from a list of intervals (long[][] in Java and
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">FromFlatIntervals</span><span class="p">(</span><span class="n">flat_intervals</span><span class="p">:</span> <span class="s2">&quot;std::vector&lt; int64_t &gt; const &amp;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This method is available in Python, Java and .NET. It allows</span>
-<span class="sd">        building a Domain object from a flattened list of intervals</span>
-<span class="sd">        (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;FromFlatIntervals(std::vector&lt; int64_t &gt; const &amp; flat_intervals) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_FromFlatIntervals</span><span class="p">(</span><span class="n">flat_intervals</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>This method is available in Python, Java and .NET. It allows
-building a Domain object from a flattened list of intervals
-(long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).</p>
+            <div class="docstring"><p>FromFlatIntervals(std::vector&lt; int64_t &gt; const &amp; flat_intervals) -> Domain</p>
 </div>
 
 
@@ -720,23 +565,13 @@ building a Domain object from a flattened list of intervals
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">FlattenedIntervals</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;std::vector&lt; int64_t &gt;&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This method returns the flattened list of interval bounds of the domain.</span>
-
-<span class="sd">        Thus the domain {0, 1, 2, 5, 8, 9, 10} will return [0, 2, 5, 5,</span>
-<span class="sd">        8, 10] (as a C++ std::vector&lt;int64_t&gt;, as a java or C# long[], as</span>
-<span class="sd">        a python list of integers).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;FlattenedIntervals(Domain self) -&gt; std::vector&lt; int64_t &gt;&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_FlattenedIntervals</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>This method returns the flattened list of interval bounds of the domain.</p>
-
-<p>Thus the domain {0, 1, 2, 5, 8, 9, 10} will return [0, 2, 5, 5,
-8, 10] (as a C++ std::vector<int64_t>, as a java or C# long[], as
-a python list of integers).</p>
+            <div class="docstring"><p>FlattenedIntervals(Domain self) -> std::vector&lt; int64_t &gt;</p>
 </div>
 
 
@@ -752,13 +587,13 @@ a python list of integers).</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">IsEmpty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;bool&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns true if this is the empty set.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;IsEmpty(Domain self) -&gt; bool&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_IsEmpty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Returns true if this is the empty set.</p>
+            <div class="docstring"><p>IsEmpty(Domain self) -> bool</p>
 </div>
 
 
@@ -774,13 +609,13 @@ a python list of integers).</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">Size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;int64_t&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the number of elements in the domain. It is capped at kint64max&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Size(Domain self) -&gt; int64_t&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_Size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Returns the number of elements in the domain. It is capped at kint64max</p>
+            <div class="docstring"><p>Size(Domain self) -> int64_t</p>
 </div>
 
 
@@ -796,17 +631,13 @@ a python list of integers).</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">Min</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;int64_t&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns the min value of the domain.</span>
-<span class="sd">        The domain must not be empty.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Min(Domain self) -&gt; int64_t&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_Min</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Returns the min value of the domain.
-The domain must not be empty.</p>
+            <div class="docstring"><p>Min(Domain self) -> int64_t</p>
 </div>
 
 
@@ -822,17 +653,13 @@ The domain must not be empty.</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">Max</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;int64_t&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns the max value of the domain.</span>
-<span class="sd">        The domain must not be empty.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Max(Domain self) -&gt; int64_t&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_Max</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Returns the max value of the domain.
-The domain must not be empty.</p>
+            <div class="docstring"><p>Max(Domain self) -> int64_t</p>
 </div>
 
 
@@ -848,13 +675,13 @@ The domain must not be empty.</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">Contains</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="s2">&quot;int64_t&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;bool&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns true iff value is in Domain.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Contains(Domain self, int64_t value) -&gt; bool&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_Contains</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Returns true iff value is in Domain.</p>
+            <div class="docstring"><p>Contains(Domain self, int64_t value) -> bool</p>
 </div>
 
 
@@ -870,13 +697,13 @@ The domain must not be empty.</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">Complement</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the set Int64 ∖ D.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Complement(Domain self) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_Complement</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Returns the set Int64 ∖ D.</p>
+            <div class="docstring"><p>Complement(Domain self) -> Domain</p>
 </div>
 
 
@@ -892,21 +719,13 @@ The domain must not be empty.</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">Negation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns {x ∈ Int64, ∃ e ∈ D, x = -e}.</span>
-
-<span class="sd">        Note in particular that if the negation of Int64 is not Int64 but</span>
-<span class="sd">        Int64 \ {kint64min} !!</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Negation(Domain self) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_Negation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Returns {x ∈ Int64, ∃ e ∈ D, x = -e}.</p>
-
-<p>Note in particular that if the negation of Int64 is not Int64 but
-Int64 \ {kint64min} !!</p>
+            <div class="docstring"><p>Negation(Domain self) -> Domain</p>
 </div>
 
 
@@ -925,13 +744,13 @@ Int64 \ {kint64min} !!</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">IntersectionWith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="s2">&quot;Domain&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the intersection of D and domain.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;IntersectionWith(Domain self, Domain domain) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_IntersectionWith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Returns the intersection of D and domain.</p>
+            <div class="docstring"><p>IntersectionWith(Domain self, Domain domain) -> Domain</p>
 </div>
 
 
@@ -950,13 +769,13 @@ Int64 \ {kint64min} !!</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">UnionWith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="s2">&quot;Domain&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the union of D and domain.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;UnionWith(Domain self, Domain domain) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_UnionWith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Returns the union of D and domain.</p>
+            <div class="docstring"><p>UnionWith(Domain self, Domain domain) -> Domain</p>
 </div>
 
 
@@ -975,13 +794,13 @@ Int64 \ {kint64min} !!</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">AdditionWith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="s2">&quot;Domain&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns {x ∈ Int64, ∃ a ∈ D, ∃ b ∈ domain, x = a + b}.&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;AdditionWith(Domain self, Domain domain) -&gt; Domain&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_AdditionWith</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Returns {x ∈ Int64, ∃ a ∈ D, ∃ b ∈ domain, x = a + b}.</p>
+            <div class="docstring"><p>AdditionWith(Domain self, Domain domain) -> Domain</p>
 </div>
 
 
@@ -998,13 +817,13 @@ Int64 \ {kint64min} !!</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">Domain_AllValues</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the full domain Int64.&quot;&quot;&quot;</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Domain_AllValues() -&gt; Domain&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_AllValues</span><span class="p">()</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Returns the full domain Int64.</p>
+            <div class="docstring"><p>Domain_AllValues() -> Domain</p>
 </div>
 
 
@@ -1020,17 +839,13 @@ Int64 \ {kint64min} !!</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">Domain_FromValues</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="s2">&quot;std::vector&lt; int64_t &gt;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Creates a domain from the union of an unsorted list of integer values.</span>
-<span class="sd">    Input values may be repeated, with no consequence on the output</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Domain_FromValues(std::vector&lt; int64_t &gt; values) -&gt; Domain&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_FromValues</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Creates a domain from the union of an unsorted list of integer values.
-Input values may be repeated, with no consequence on the output</p>
+            <div class="docstring"><p>Domain_FromValues(std::vector&lt; int64_t &gt; values) -> Domain</p>
 </div>
 
 
@@ -1048,19 +863,13 @@ Input values may be repeated, with no consequence on the output</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">Domain_FromIntervals</span><span class="p">(</span><span class="n">intervals</span><span class="p">:</span> <span class="s2">&quot;std::vector&lt; std::vector&lt; int64_t &gt; &gt; const &amp;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This method is available in Python, Java and .NET. It allows</span>
-<span class="sd">    building a Domain object from a list of intervals (long[][] in Java and</span>
-<span class="sd">    .NET, [[0, 2], [5, 5], [8, 10]] in python).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Domain_FromIntervals(std::vector&lt; std::vector&lt; int64_t &gt; &gt; const &amp; intervals) -&gt; Domain&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_FromIntervals</span><span class="p">(</span><span class="n">intervals</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>This method is available in Python, Java and .NET. It allows
-building a Domain object from a list of intervals (long[][] in Java and
-.NET, [[0, 2], [5, 5], [8, 10]] in python).</p>
+            <div class="docstring"><p>Domain_FromIntervals(std::vector&lt; std::vector&lt; int64_t &gt; &gt; const &amp; intervals) -> Domain</p>
 </div>
 
 
@@ -1078,19 +887,13 @@ building a Domain object from a list of intervals (long[][] in Java and
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">Domain_FromFlatIntervals</span><span class="p">(</span><span class="n">flat_intervals</span><span class="p">:</span> <span class="s2">&quot;std::vector&lt; int64_t &gt; const &amp;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::Domain&quot;</span><span class="p">:</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This method is available in Python, Java and .NET. It allows</span>
-<span class="sd">    building a Domain object from a flattened list of intervals</span>
-<span class="sd">    (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Domain_FromFlatIntervals(std::vector&lt; int64_t &gt; const &amp; flat_intervals) -&gt; Domain&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">_sorted_interval_list</span><span class="o">.</span><span class="n">Domain_FromFlatIntervals</span><span class="p">(</span><span class="n">flat_intervals</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>This method is available in Python, Java and .NET. It allows
-building a Domain object from a flattened list of intervals
-(long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).</p>
+            <div class="docstring"><p>Domain_FromFlatIntervals(std::vector&lt; int64_t &gt; const &amp; flat_intervals) -> Domain</p>
 </div>
 
 

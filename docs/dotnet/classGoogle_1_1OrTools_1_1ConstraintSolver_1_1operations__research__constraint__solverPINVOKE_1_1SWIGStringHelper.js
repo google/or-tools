@@ -1,5 +1,0 @@
-var classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGStringHelper =
-[
-    [ "SWIGRegisterStringCallback_operations_research_constraint_solver", "classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGStringHelper.html#ac9adff8a435815a9ef0bd8865c012bcf", null ],
-    [ "SWIGStringDelegate", "classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE_1_1SWIGStringHelper.html#a09806292f70eb61f70057ee6fd528c34", null ]
-];

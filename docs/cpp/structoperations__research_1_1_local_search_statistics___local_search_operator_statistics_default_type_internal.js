@@ -1,6 +1,0 @@
-var structoperations__research_1_1_local_search_statistics___local_search_operator_statistics_default_type_internal =
-[
-    [ "LocalSearchStatistics_LocalSearchOperatorStatisticsDefaultTypeInternal", "structoperations__research_1_1_local_search_statistics___local_search_operator_statistics_default_type_internal.html#ae61c2fcee3d3306998e1abbce091f254", null ],
-    [ "~LocalSearchStatistics_LocalSearchOperatorStatisticsDefaultTypeInternal", "structoperations__research_1_1_local_search_statistics___local_search_operator_statistics_default_type_internal.html#af1c1e83f0f3d63b926cb48ce063d5acc", null ],
-    [ "_instance", "structoperations__research_1_1_local_search_statistics___local_search_operator_statistics_default_type_internal.html#af10fbe057756bf93debc0c4c7f63ab3c", null ]
-];

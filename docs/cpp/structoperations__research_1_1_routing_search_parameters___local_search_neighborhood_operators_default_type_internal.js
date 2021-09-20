@@ -1,6 +1,0 @@
-var structoperations__research_1_1_routing_search_parameters___local_search_neighborhood_operators_default_type_internal =
-[
-    [ "RoutingSearchParameters_LocalSearchNeighborhoodOperatorsDefaultTypeInternal", "structoperations__research_1_1_routing_search_parameters___local_search_neighborhood_operators_default_type_internal.html#a943524ce811d41f7ff846773f29b04fc", null ],
-    [ "~RoutingSearchParameters_LocalSearchNeighborhoodOperatorsDefaultTypeInternal", "structoperations__research_1_1_routing_search_parameters___local_search_neighborhood_operators_default_type_internal.html#a8079bb94b6615838ed07172622bcabeb", null ],
-    [ "_instance", "structoperations__research_1_1_routing_search_parameters___local_search_neighborhood_operators_default_type_internal.html#a11839908b6aa49ff3eeba1f211da3051", null ]
-];

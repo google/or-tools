@@ -1,9 +1,0 @@
-var structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters =
-[
-    [ "add_unperformed_entries", "structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#ad962358b9cb4da242cdc3c98ee2ce6ce", null ],
-    [ "farthest_seeds_ratio", "structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#a5ad481f9ba9161a2aef5920b41303120", null ],
-    [ "is_sequential", "structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#a28b4894c7c18183ac19b81d1b6d97e2f", null ],
-    [ "min_neighbors", "structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#a264a3f98da0f7c3a55447f0e77e7ec8c", null ],
-    [ "neighbors_ratio", "structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#a0aa77787d0df1b489476bfc6714ef819", null ],
-    [ "use_neighbors_ratio_for_initialization", "structoperations__research_1_1_global_cheapest_insertion_filtered_heuristic_1_1_global_cheapest_insertion_parameters.html#a7d91387b5081be8f22d053d93eb9edf4", null ]
-];

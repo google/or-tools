@@ -1,6 +1,0 @@
-var structoperations__research_1_1sat_1_1_decision_strategy_proto___affine_transformation_default_type_internal =
-[
-    [ "DecisionStrategyProto_AffineTransformationDefaultTypeInternal", "structoperations__research_1_1sat_1_1_decision_strategy_proto___affine_transformation_default_type_internal.html#af9daac63e093d819419991800595282c", null ],
-    [ "~DecisionStrategyProto_AffineTransformationDefaultTypeInternal", "structoperations__research_1_1sat_1_1_decision_strategy_proto___affine_transformation_default_type_internal.html#a4ab048787ac3332846f8dbd597a52d16", null ],
-    [ "_instance", "structoperations__research_1_1sat_1_1_decision_strategy_proto___affine_transformation_default_type_internal.html#a545b7652c2635373420eceb34996fec6", null ]
-];

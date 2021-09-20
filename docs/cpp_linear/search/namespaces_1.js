@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['operations_5fresearch_934',['operations_research',['../namespaceoperations__research.html',1,'']]]
+  ['operations_5fresearch',['operations_research',['../namespaceoperations__research.html',1,'']]]
 ];

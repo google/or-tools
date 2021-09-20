@@ -1,5 +1,0 @@
-var classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGStringHelper =
-[
-    [ "SWIGRegisterStringCallback_operations_research_graph", "classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGStringHelper.html#a6cd5f5702d713b53ce34ef5079c50682", null ],
-    [ "SWIGStringDelegate", "classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGStringHelper.html#a09806292f70eb61f70057ee6fd528c34", null ]
-];

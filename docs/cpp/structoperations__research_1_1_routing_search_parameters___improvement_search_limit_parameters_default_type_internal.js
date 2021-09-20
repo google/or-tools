@@ -1,6 +1,0 @@
-var structoperations__research_1_1_routing_search_parameters___improvement_search_limit_parameters_default_type_internal =
-[
-    [ "RoutingSearchParameters_ImprovementSearchLimitParametersDefaultTypeInternal", "structoperations__research_1_1_routing_search_parameters___improvement_search_limit_parameters_default_type_internal.html#a5f0d79263a3253c47c065ef41efed3f9", null ],
-    [ "~RoutingSearchParameters_ImprovementSearchLimitParametersDefaultTypeInternal", "structoperations__research_1_1_routing_search_parameters___improvement_search_limit_parameters_default_type_internal.html#ab682dd932c77274294f4e921f5abc634", null ],
-    [ "_instance", "structoperations__research_1_1_routing_search_parameters___improvement_search_limit_parameters_default_type_internal.html#a7994a9ce8a9dbdc440d576b8389ba5d3", null ]
-];
