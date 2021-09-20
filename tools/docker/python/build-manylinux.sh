@@ -46,14 +46,27 @@ function build_wheel() {
     exit 1
   fi
 
-  #pwd
+  # Create and activate virtualenv
+  # this is needed so protoc can call the correct python executable
+  local -r PYBIN="$1/bin"
+  "${PYBIN}/pip" install virtualenv
+  "${PYBIN}/virtualenv" -p "${PYBIN}/python" "${ENV_DIR}"
+  # shellcheck source=/dev/null
+  source "${ENV_DIR}/bin/activate"
+  pip install -U pip setuptools wheel absl-py  # absl-py is needed by make test_python
+  pip install -U mypy-protobuf  # need to generate protobuf mypy files
+
+  echo "current dir: $(pwd)"
+
   if [[ ! -e "CMakeLists.txt" ]] || [[ ! -d "cmake" ]]; then
     >&2 echo "Can't find project's CMakeLists.txt or cmake"
     exit 2
   fi
-
   cmake -S. -B"${BUILD_DIR}" -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON -DBUILD_PYTHON=ON -DPython3_ROOT_DIR="$1" -DBUILD_TESTING=OFF #--debug-find
   cmake --build "${BUILD_DIR}" -v -j4
+
+  # Restore environment
+  deactivate
 }
 
 function check_wheel() {
@@ -65,7 +78,7 @@ function check_wheel() {
     exit 1
   fi
 
-  # Build python bindings
+  # Check all generated wheel packages
   pushd "${BUILD_DIR}/python/dist"
   for FILE in *.whl; do
     # if no files found do nothing
@@ -86,9 +99,6 @@ function test_wheel() {
     exit 1
   fi
 
-  local -r BUILD_DIR="build_${PYTAG}"
-  local -r TEST_DIR="test_${PYTAG}"
-
   # Create and activate virtualenv
   local -r PYBIN="$1/bin"
   "${PYBIN}/pip" install virtualenv
@@ -105,14 +115,6 @@ function test_wheel() {
   pip install --no-cache-dir "$WHEEL_FILE"
   pip show pythonnative
 
-  # Run tests
-  run_tests
-
-  # Restore environment
-  deactivate
-}
-
-function run_tests() {
   # Run all the specified test scripts using the current environment.
   pushd "$(mktemp -d)" # ensure we are not importing something from $PWD
   python --version
@@ -121,6 +123,9 @@ function run_tests() {
     python "$TEST"
   done
   popd
+
+  # Restore environment
+  deactivate
 }
 
 function build() {
@@ -137,7 +142,7 @@ function build() {
     fi
 
     BUILD_DIR="build_${PYTAG}"
-    TEST_DIR="test_${PYTAG}"
+    ENV_DIR="env_${PYTAG}"
     build_wheel "$PYROOT"
     check_wheel "$PYROOT"
   done
@@ -155,9 +160,9 @@ function tests() {
       >&2 echo "skipping deprecated platform $PYTAG"
       continue
     fi
+
     BUILD_DIR="build_${PYTAG}"
     TEST_DIR="test_${PYTAG}"
-
     test_wheel "$PYROOT"
   done
 }

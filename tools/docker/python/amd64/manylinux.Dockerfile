@@ -44,15 +44,6 @@ RUN curl --location-trusted \
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-ENV BUILD_ROOT /root/build
-ENV EXPORT_ROOT /export
-# The build of Python 2.6.x bindings is known to be broken.
-# Python3.4 include conflict with abseil-cpp dynamic_annotation.h
-ENV SKIP_PLATFORMS "cp27-cp27m cp27-cp27mu cp34-cp34m cp35-cp35m"
-
-COPY build-manylinux1.sh "$BUILD_ROOT/"
-RUN chmod a+x "${BUILD_ROOT}/build-manylinux1.sh"
-
 ################
 ##  OR-TOOLS  ##
 ################
@@ -67,15 +58,14 @@ ENV SRC_GIT_SHA1 ${SRC_GIT_SHA1:-unknown}
 # Download sources
 # use SRC_GIT_SHA1 to modify the command
 # i.e. avoid docker reusing the cache when new commit is pushed
-WORKDIR /root
-RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch "$SRC_GIT_URL" \
+RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch "$SRC_GIT_URL" /project \
 && echo "sha1: $(cd or-tools && git rev-parse --verify HEAD)" \
 && echo "expected sha1: ${SRC_GIT_SHA1}"
-
-FROM devel AS third_party
-WORKDIR /root/or-tools
+WORKDIR /project
 COPY build-manylinux.sh .
 RUN chmod a+x "build-manylinux.sh"
+
+FROM devel AS build
 RUN ./build-manylinux.sh build
 
 FROM build as test
