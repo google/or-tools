@@ -113,14 +113,15 @@ function test_wheel() {
   local -r WHEEL_FILE=$(find "${BUILD_DIR}"/python/dist/*.whl | head -1)
   echo "WHEEL file: ${WHEEL_FILE}"
   pip install --no-cache-dir "$WHEEL_FILE"
-  pip show pythonnative
+  pip show ortools
 
   # Run all the specified test scripts using the current environment.
+  ROOT_DIR=$(pwd)
   pushd "$(mktemp -d)" # ensure we are not importing something from $PWD
   python --version
   for TEST in "${TESTS[@]}"
   do
-    python "$TEST"
+    python "${ROOT_DIR}/${TEST}"
   done
   popd
 
