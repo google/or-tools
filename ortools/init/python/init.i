@@ -10,9 +10,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
-// TODO(user): test all the APIs that are currently marked as 'untested'.
-//swiglint: disable full-signature
 
 %include "ortools/base/base.i"
 
