@@ -1,10 +1,12 @@
 # Introduction
+
 This is the documentation page for the .NET Standard 2.0 wrapper of OR-Tools.
 
 This project aim to explain how you build a .Net native (for win-x64, linux-x64
 and osx-x64) nuget package using `dotnet` and few `.csproj`.
 
 ## Table of Content
+
 * [Requirement](#requirement)
 * [Directory Layout](#directory-layout)
 * [Build](#build)
@@ -25,9 +27,10 @@ and osx-x64) nuget package using `dotnet` and few `.csproj`.
 
 The library is compiled against `netstandard2.0`, so you'll only need:
 
-* .Net Core SDK >= 2.1.302
+* .Net Core SDK >= 3.1 LTS
 
 ## Directory Layout
+
 * [`Google.OrTools.runtime.linux-x64`](Google.OrTools.runtime.linux-x64)
 Contains the .Net Standard 2.0 native project for the rid linux-x64.
 * [`Google.OrTools.runtime.osx-x64`](Google.OrTools.runtime.osx-x64)
@@ -44,11 +47,11 @@ naming, it is very difficult to get ownership on it, so you should prefer to use
 `Company.*` prefix more easily.
 
 ## Build
-Either use the Makefile based build or you can build in Visual Studio.
-The workflow is typically  `make dotnet` which will build both C# and F#
-libraries package in debug mode.
-The output will be placed in `<OR_ROOT>/packages` folder. All tests will be run
-based on this folder.
+
+Either use the CMake base build or the Makefile based build.
+The workflow is typically `make dotnet` which will build both C# and F# libraries package.
+The output will be placed in `<OR_ROOT>/temp_dotnet/packages` folder.
+All tests will be run based on this folder.
 
 ### Build Process
 
@@ -249,26 +252,45 @@ The F# example folder shows how to compile against the typical .NET Framework
 installed on machine.
 
 ## Appendices
+
 Few links on the subject...
 
+.Net runtime can deduce library extension so don’t use a platform-specific
+library name in the `DllImport` statement.
+Instead, just use the library name itself, without any prefixes or suffixes,
+and rely on the runtime to find the appropriate library at runtime.\
+ref: [Mono `pinvoke#libraryname`](https://www.mono-project.com/docs/advanced/pinvoke/#library-names)
+
 ## Resources
+
 Some issue related to this process
+* [`PackageReference` only support `TargetFramework` condition](https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#adding-a-packagereference-condition)
 * [Nuget needs to support dependencies specific to target runtime #1660](https://github.com/NuGet/Home/issues/1660)
 * [Improve documentation on creating native packages #238](https://github.com/NuGet/docs.microsoft.com-nuget/issues/238)
 
 ### Runtime IDentifier (RID)
+
 * [.NET Core RID Catalog](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog)
 * [Creating native packages](https://docs.microsoft.com/en-us/nuget/create-packages/native-packages)
 * [Blog on Nuget Rid Graph](https://natemcmaster.com/blog/2016/05/19/nuget3-rid-graph/)
 
+### Target Framework Moniker (TFM)
+
+* [.NET TFM list](https://docs.microsoft.com/en-us/dotnet/standard/frameworks)
+* [.NET Standard implementation support](https://docs.microsoft.com/en-us/dotnet/standard/net-standard)
+
+
 ### Reference on .csproj format
+
 * [Common MSBuild project properties](https://docs.microsoft.com/en-us/visualstudio/msbuild/common-msbuild-project-properties?view=vs-2017)
 * [MSBuild well-known item metadata](https://docs.microsoft.com/en-us/visualstudio/msbuild/msbuild-well-known-item-metadata?view=vs-2017)
 * [Additions to the csproj format for .NET Core](https://docs.microsoft.com/en-us/dotnet/core/tools/csproj)
 
 ## Misc
+
 Image has been generated using [plantuml](http://plantuml.com/):
 ```bash
 plantuml -Tpng doc/{file}.dot
 ```
+
 So you can find the dot source files in [doc](doc).
