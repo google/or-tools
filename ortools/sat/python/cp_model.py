@@ -149,24 +149,32 @@ class LinearExpr(object):
     """Holds an integer linear expression.
 
   A linear expression is built from integer constants and variables.
-  For example, x + 2 * (y - z + 1).
+  For example, `x + 2 * (y - z + 1)`.
 
-  Linear expressions are used in CP-SAT models in two ways:
+  Linear expressions are used in CP-SAT models in constraints and in the
+  objective:
 
-  * To define constraints. For example
+  * You can define linear constraints as in:
 
-      model.Add(x + 2 * y <= 5)
-      model.Add(sum(array_of_vars) == 5)
+  ```
+  model.Add(x + 2 * y <= 5)
+  model.Add(sum(array_of_vars) == 5)
+  ```
 
-  * To define the objective function. For example
+  * In CP-SAT, the objective is a linear expression:
 
-      model.Minimize(x + 2 * y + z)
+  ```
+  model.Minimize(x + 2 * y + z)
+  ```
 
-  For large arrays, you can create constraints and the objective
-  from lists of linear expressions or coefficients as follows:
+  * For large arrays, using the LinearExpr class is faster that using the python
+  `sum()` function. You can create constraints and the objective from lists of
+  linear expressions or coefficients as follows:
 
-      model.Minimize(cp_model.LinearExpr.Sum(expressions))
-      model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) >= 0)
+  ```
+  model.Minimize(cp_model.LinearExpr.Sum(expressions))
+  model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) >= 0)
+  ```
   """
 
     @classmethod

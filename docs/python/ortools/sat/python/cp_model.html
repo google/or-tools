@@ -669,24 +669,32 @@ rather than for solving specific optimization problems.</p>
     <span class="sd">&quot;&quot;&quot;Holds an integer linear expression.</span>
 
 <span class="sd">  A linear expression is built from integer constants and variables.</span>
-<span class="sd">  For example, x + 2 * (y - z + 1).</span>
+<span class="sd">  For example, `x + 2 * (y - z + 1)`.</span>
 
-<span class="sd">  Linear expressions are used in CP-SAT models in two ways:</span>
+<span class="sd">  Linear expressions are used in CP-SAT models in constraints and in the</span>
+<span class="sd">  objective:</span>
 
-<span class="sd">  * To define constraints. For example</span>
+<span class="sd">  * You can define linear constraints as in:</span>
 
-<span class="sd">      model.Add(x + 2 * y &lt;= 5)</span>
-<span class="sd">      model.Add(sum(array_of_vars) == 5)</span>
+<span class="sd">  ```</span>
+<span class="sd">  model.Add(x + 2 * y &lt;= 5)</span>
+<span class="sd">  model.Add(sum(array_of_vars) == 5)</span>
+<span class="sd">  ```</span>
 
-<span class="sd">  * To define the objective function. For example</span>
+<span class="sd">  * In CP-SAT, the objective is a linear expression:</span>
 
-<span class="sd">      model.Minimize(x + 2 * y + z)</span>
+<span class="sd">  ```</span>
+<span class="sd">  model.Minimize(x + 2 * y + z)</span>
+<span class="sd">  ```</span>
 
-<span class="sd">  For large arrays, you can create constraints and the objective</span>
-<span class="sd">  from lists of linear expressions or coefficients as follows:</span>
+<span class="sd">  * For large arrays, using the LinearExpr class is faster that using the python</span>
+<span class="sd">  `sum()` function. You can create constraints and the objective from lists of</span>
+<span class="sd">  linear expressions or coefficients as follows:</span>
 
-<span class="sd">      model.Minimize(cp_model.LinearExpr.Sum(expressions))</span>
-<span class="sd">      model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)</span>
+<span class="sd">  ```</span>
+<span class="sd">  model.Minimize(cp_model.LinearExpr.Sum(expressions))</span>
+<span class="sd">  model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)</span>
+<span class="sd">  ```</span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
@@ -2898,24 +2906,32 @@ rather than for solving specific optimization problems.</p>
     <span class="sd">&quot;&quot;&quot;Holds an integer linear expression.</span>
 
 <span class="sd">  A linear expression is built from integer constants and variables.</span>
-<span class="sd">  For example, x + 2 * (y - z + 1).</span>
+<span class="sd">  For example, `x + 2 * (y - z + 1)`.</span>
 
-<span class="sd">  Linear expressions are used in CP-SAT models in two ways:</span>
+<span class="sd">  Linear expressions are used in CP-SAT models in constraints and in the</span>
+<span class="sd">  objective:</span>
 
-<span class="sd">  * To define constraints. For example</span>
+<span class="sd">  * You can define linear constraints as in:</span>
 
-<span class="sd">      model.Add(x + 2 * y &lt;= 5)</span>
-<span class="sd">      model.Add(sum(array_of_vars) == 5)</span>
+<span class="sd">  ```</span>
+<span class="sd">  model.Add(x + 2 * y &lt;= 5)</span>
+<span class="sd">  model.Add(sum(array_of_vars) == 5)</span>
+<span class="sd">  ```</span>
 
-<span class="sd">  * To define the objective function. For example</span>
+<span class="sd">  * In CP-SAT, the objective is a linear expression:</span>
 
-<span class="sd">      model.Minimize(x + 2 * y + z)</span>
+<span class="sd">  ```</span>
+<span class="sd">  model.Minimize(x + 2 * y + z)</span>
+<span class="sd">  ```</span>
 
-<span class="sd">  For large arrays, you can create constraints and the objective</span>
-<span class="sd">  from lists of linear expressions or coefficients as follows:</span>
+<span class="sd">  * For large arrays, using the LinearExpr class is faster that using the python</span>
+<span class="sd">  `sum()` function. You can create constraints and the objective from lists of</span>
+<span class="sd">  linear expressions or coefficients as follows:</span>
 
-<span class="sd">      model.Minimize(cp_model.LinearExpr.Sum(expressions))</span>
-<span class="sd">      model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)</span>
+<span class="sd">  ```</span>
+<span class="sd">  model.Minimize(cp_model.LinearExpr.Sum(expressions))</span>
+<span class="sd">  model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)</span>
+<span class="sd">  ```</span>
 <span class="sd">  &quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
@@ -3124,22 +3140,31 @@ rather than for solving specific optimization problems.</p>
             <div class="docstring"><p>Holds an integer linear expression.</p>
 
 <p>A linear expression is built from integer constants and variables.
-For example, x + 2 * (y - z + 1).</p>
+For example, <code>x + 2 * (y - z + 1)</code>.</p>
 
-<p>Linear expressions are used in CP-SAT models in two ways:</p>
+<p>Linear expressions are used in CP-SAT models in constraints and in the
+objective:</p>
 
 <ul>
-<li><p>To define constraints. For example</p>
-
-<p>model.Add(x + 2 * y &lt;= 5)
-model.Add(sum(array_of_vars) == 5)</p></li>
-<li><p>To define the objective function. For example</p>
-
-<p>model.Minimize(x + 2 * y + z)</p></li>
+<li>You can define linear constraints as in:</li>
 </ul>
 
-<p>For large arrays, you can create constraints and the objective
-from lists of linear expressions or coefficients as follows:</p>
+<pre><code>model.Add(x + 2 * y &lt;= 5)
+model.Add(sum(array_of_vars) == 5)
+</code></pre>
+
+<ul>
+<li>In CP-SAT, the objective is a linear expression:</li>
+</ul>
+
+<pre><code>model.Minimize(x + 2 * y + z)
+</code></pre>
+
+<ul>
+<li>For large arrays, using the LinearExpr class is faster that using the python
+<code>sum()</code> function. You can create constraints and the objective from lists of
+linear expressions or coefficients as follows:</li>
+</ul>
 
 <pre><code>model.Minimize(cp_model.LinearExpr.Sum(expressions))
 model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)
