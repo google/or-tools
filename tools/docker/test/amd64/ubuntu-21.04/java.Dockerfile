@@ -1,4 +1,4 @@
-FROM ubuntu:20.10
+FROM ubuntu:21.04
 
 RUN apt-get update -qq \
 && DEBIAN_FRONTEND=noninteractive apt-get install -yq \
@@ -15,6 +15,6 @@ RUN apt-get update -qq \
 ENV JAVA_HOME=/usr/lib/jvm/default-java
 
 WORKDIR /root
-ADD or-tools_ubuntu-20.10_v*.tar.gz .
+ADD or-tools_ubuntu-21.04_v*.tar.gz .
 
 RUN cd or-tools_*_v* && make test_java

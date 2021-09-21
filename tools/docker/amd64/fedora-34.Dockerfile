@@ -26,7 +26,7 @@ ENV JAVA_HOME=/usr/lib/jvm/java-openjdk
 # .Net Install
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-fedora
 RUN dnf -y update \
-&& dnf -y install dotnet-sdk-3.1 \
+&& dnf -y install dotnet-sdk-3.1 dotnet-sdk-5.0 \
 && dnf clean all
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info

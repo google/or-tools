@@ -84,7 +84,7 @@ help:
 	@echo -e "\t${BOLD}<lang>${RESET}: Language to build"
 	@echo -e "\t\t${BOLD}cc${RESET} C++"
 	@echo -e "\t\t${BOLD}java${RESET} Java (JDK 8.0) SWIG wrappers"
-	@echo -e "\t\t${BOLD}dotnet${RESET} .Net Standard 2.0 SWIG wrappers"
+	@echo -e "\t\t${BOLD}dotnet${RESET} .Net Core 3.1 and .Net 5.0 SWIG wrappers"
 	@echo
 	@echo -e "\te.g. 'make ubuntu-18.04_archive'"
 	@echo -e "\te.g. 'make sh_ubuntu-18.04_build'"
