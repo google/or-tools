@@ -22,7 +22,7 @@ jobs:
     - name: Check swig
       run: swig -version
     - name: Setup dotnet ${{ matrix.dotnet-version }}
-      uses: ./
+      uses: actions/setup-dotnet@v1
       with:
         dotnet-version: ${{ matrix.dotnet-version }}
     - name: Check dotnet

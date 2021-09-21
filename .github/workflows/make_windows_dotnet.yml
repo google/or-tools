@@ -20,7 +20,7 @@ jobs:
         rm 'C:\Program Files\Git\bin\sh.exe'
       shell: bash
     - name: Setup dotnet ${{ matrix.dotnet-version }}
-      uses: ./
+      uses: actions/setup-dotnet@v1
       with:
         dotnet-version: ${{ matrix.dotnet-version }}
     - name: Check dotnet
