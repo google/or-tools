@@ -6,10 +6,6 @@ jobs:
   # Building using the github runner environement directly.
   make:
     runs-on: windows-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        dotnet-version: ['3.1.x', '5.0.x']
     steps:
     - uses: actions/checkout@v2
     - uses: ilammy/msvc-dev-cmd@v1
@@ -19,10 +15,6 @@ jobs:
         rm 'C:\Program Files\Git\usr\bin\sh.exe'
         rm 'C:\Program Files\Git\bin\sh.exe'
       shell: bash
-    - name: Setup dotnet ${{ matrix.dotnet-version }}
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: ${{ matrix.dotnet-version }}
     - name: Check dotnet
       run: dotnet --info
     - name: Check make
