@@ -246,7 +246,7 @@ dotnet pack src/Google.OrTools
 
 ## Examples
 
-The Test projects show examples of building applications with `netcoreapp2.1`.
+The Test projects show examples of building applications with `netcoreapp3.1`.
 
 The F# example folder shows how to compile against the typical .NET Framework
 installed on machine.
