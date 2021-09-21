@@ -52,7 +52,7 @@ cat >"$FILE_PROJ" <<EOL
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     ${LANG_VERSION}
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <EnableDefaultItems>false</EnableDefaultItems>
     <!-- see https://github.com/dotnet/docs/issues/12237 -->
     <RollForward>LatestMajor</RollForward>
