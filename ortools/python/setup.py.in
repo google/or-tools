@@ -43,7 +43,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'protobuf >= 3.18.0',
-        'absl-py >= 0.11',
+        'absl-py >= 0.13',
     ],
     package_data={
         '@PROJECT_NAME@':[$<$<NOT:$<PLATFORM_ID:Windows>>:'.libs/*', '../$<TARGET_SONAME_FILE_NAME:ortools>'>],
