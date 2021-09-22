@@ -2643,14 +2643,12 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
   return RemoveConstraint(ct);
 }
 
-namespace {
-
-void AddLinearConstraintFromInterval(const ConstraintProto& ct,
-                                     PresolveContext* context) {
+void CpModelPresolver::AddLinearConstraintFromInterval(
+    const ConstraintProto& ct) {
   const int start = ct.interval().start();
   const int end = ct.interval().end();
   const int size = ct.interval().size();
-  ConstraintProto* new_ct = context->working_model->add_constraints();
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
   *(new_ct->mutable_enforcement_literal()) = ct.enforcement_literal();
   new_ct->mutable_linear()->add_domain(0);
   new_ct->mutable_linear()->add_domain(0);
@@ -2660,10 +2658,9 @@ void AddLinearConstraintFromInterval(const ConstraintProto& ct,
   new_ct->mutable_linear()->add_coeffs(1);
   new_ct->mutable_linear()->add_vars(end);
   new_ct->mutable_linear()->add_coeffs(-1);
-  context->UpdateNewConstraintsVariableUsage();
+  CanonicalizeLinear(new_ct);
+  context_->UpdateNewConstraintsVariableUsage();
 }
-
-}  // namespace
 
 bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
@@ -2700,7 +2697,7 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
 
   if (context_->IntervalUsage(c) == 0) {
     if (!ct->interval().has_start_view()) {
-      AddLinearConstraintFromInterval(*ct, context_);
+      AddLinearConstraintFromInterval(*ct);
     }
     context_->UpdateRuleStats("interval: unused, converted to linear");
     return RemoveConstraint(ct);
@@ -2719,7 +2716,7 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
 
       // Add a linear constraint. Our new format require a separate linear
       // constraint which allow us to reuse all the propagation code.
-      AddLinearConstraintFromInterval(*ct, context_);
+      AddLinearConstraintFromInterval(*ct);
 
       // Fill the view fields.
       interval->mutable_start_view()->add_vars(interval->start());
@@ -6867,33 +6864,55 @@ bool CpModelPresolver::Presolve() {
   //
   // TODO(user): We might want to do that earlier so that our count of variable
   // usage is not biased by duplicate constraints.
-  const std::vector<std::pair<int, int>> duplicates =
-      FindDuplicateConstraints(*context_->working_model);
-  for (const auto [dup, rep] : duplicates) {
-    const int type =
-        context_->working_model->constraints(dup).constraint_case();
-    if (type == ConstraintProto::ConstraintCase::kInterval) {
+  if (!context_->ModelIsUnsat()) {
+    const std::vector<std::pair<int, int>> duplicates =
+        FindDuplicateConstraints(*context_->working_model);
+    for (const auto [dup, rep] : duplicates) {
+      // Note that it is important to look at the type of the representative in
+      // case the constraint became empty.
+      const int type =
+          context_->working_model->constraints(rep).constraint_case();
+
       // TODO(user): we could delete duplicate identical interval, but we need
       // to make sure reference to them are updated.
-      continue;
-    }
-
-    if (type == ConstraintProto::kLinear) {
-      const Domain d1 = ReadDomainFromProto(
-          context_->working_model->constraints(rep).linear());
-      const Domain d2 = ReadDomainFromProto(
-          context_->working_model->constraints(dup).linear());
-      if (d1 != d2) {
-        context_->UpdateRuleStats("duplicate: merged rhs of linear constraint");
-        FillDomainInProto(d1.IntersectionWith(d2),
-                          context_->working_model->mutable_constraints(rep)
-                              ->mutable_linear());
+      if (type == ConstraintProto::ConstraintCase::kInterval) {
+        continue;
       }
-    }
 
-    context_->working_model->mutable_constraints(dup)->Clear();
-    context_->UpdateConstraintVariableUsage(dup);
-    context_->UpdateRuleStats("duplicate: removed constraint");
+      // For linear constraint, we merge their rhs since it was ignored in the
+      // FindDuplicateConstraints() call.
+      if (type == ConstraintProto::kLinear) {
+        const Domain d1 = ReadDomainFromProto(
+            context_->working_model->constraints(rep).linear());
+        const Domain d2 = ReadDomainFromProto(
+            context_->working_model->constraints(dup).linear());
+        if (d1 != d2) {
+          context_->UpdateRuleStats(
+              "duplicate: merged rhs of linear constraint");
+          const Domain rhs = d1.IntersectionWith(d2);
+          if (rhs.IsEmpty()) {
+            if (!MarkConstraintAsFalse(
+                    context_->working_model->mutable_constraints(rep))) {
+              SOLVER_LOG(logger_, "Unsat after merging two linear constraints");
+              break;
+            }
+
+            // The representative constraint is no longer a linear constraint,
+            // so we will not enter this type case again and will just remove
+            // all subsequent duplicate linear constraints.
+            context_->UpdateConstraintVariableUsage(rep);
+            continue;
+          }
+          FillDomainInProto(rhs,
+                            context_->working_model->mutable_constraints(rep)
+                                ->mutable_linear());
+        }
+      }
+
+      context_->working_model->mutable_constraints(dup)->Clear();
+      context_->UpdateConstraintVariableUsage(dup);
+      context_->UpdateRuleStats("duplicate: removed constraint");
+    }
   }
 
   if (context_->ModelIsUnsat()) {

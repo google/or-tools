@@ -1864,9 +1864,8 @@ class CpModel(object):
 
     Args:
       file: file to write the model to. If the filename ends with 'txt', the
-            model will be written as a text file, otherwise, the binary format
-            will be used.
-
+        model will be written as a text file, otherwise, the binary format will
+        be used.
 
     Returns:
       True if the model was correctly written.
@@ -1992,11 +1991,11 @@ class CpSolver(object):
 
         return self.__solution.status
 
-    # DEPRECATED, just use Solve() with the callback argument.
     def SolveWithSolutionCallback(self, model, callback):
         """DEPRECATED Use Solve() with the callback argument."""
-        warnings.warn("SolveWithSolutionCallback is deprecated; use Solve() with the callback argument.",
-                      DeprecationWarning)
+        warnings.warn(
+            'SolveWithSolutionCallback is deprecated; use Solve() with' +
+            'the callback argument.', DeprecationWarning)
         return self.Solve(model, callback)
 
     def SearchForAllSolutions(self, model, callback):
@@ -2020,8 +2019,9 @@ class CpSolver(object):
       * *INFEASIBLE* if the solver has proved there are no solution
       * *OPTIMAL* if all solutions have been found
     """
-        warnings.warn("SearchForAllSolutions is deprecated; use Solve() with enumerate_all_solutions = True.",
-                      DeprecationWarning)
+        warnings.warn(
+            'SearchForAllSolutions is deprecated; use Solve() with' +
+            'enumerate_all_solutions = True.', DeprecationWarning)
         if model.HasObjective():
             raise TypeError('Search for all solutions is only defined on '
                             'satisfiability problems')

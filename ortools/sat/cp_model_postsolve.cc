@@ -230,12 +230,12 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
   // whatever the value of the index and selected variable, we can choose a
   // valid target, so we just fix the index to its min value in this case.
   if (!(*domains)[target_var].IsFixed() && !(*domains)[index_var].IsFixed()) {
-    const int64_t index_value = (*domains)[index_var].Min();
-    (*domains)[index_var] = Domain(index_value);
+    const int64_t index_var_value = (*domains)[index_var].Min();
+    (*domains)[index_var] = Domain(index_var_value);
 
     // If the selected variable is not fixed, we also need to fix it.
     const int selected_ref = ct.element().vars(
-        RefIsPositive(index_ref) ? index_value : -index_value);
+        RefIsPositive(index_ref) ? index_var_value : -index_var_value);
     const int selected_var = PositiveRef(selected_ref);
     if (!(*domains)[selected_var].IsFixed()) {
       (*domains)[selected_var] = Domain((*domains)[selected_var].Min());
@@ -244,9 +244,9 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
 
   // Deal with fixed index (and constant vars).
   if ((*domains)[index_var].IsFixed()) {
-    const int64_t index_value = (*domains)[index_var].FixedValue();
+    const int64_t index_var_value = (*domains)[index_var].FixedValue();
     const int selected_ref = ct.element().vars(
-        RefIsPositive(index_ref) ? index_value : -index_value);
+        RefIsPositive(index_ref) ? index_var_value : -index_var_value);
     const int selected_var = PositiveRef(selected_ref);
     const int64_t selected_value = (*domains)[selected_var].FixedValue();
     (*domains)[target_var] = (*domains)[target_var].IntersectionWith(
@@ -282,7 +282,7 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
 
   CHECK_NE(selected_index_value, -1);
   (*domains)[index_var] = (*domains)[index_var].IntersectionWith(Domain(
-      RefIsPositive(index_var) ? selected_index_value : -selected_index_value));
+      RefIsPositive(index_ref) ? selected_index_value : -selected_index_value));
   DCHECK(!(*domains)[index_var].IsEmpty());
 }
 
