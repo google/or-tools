@@ -1,7 +1,5 @@
 FROM ortools/make:archlinux_swig AS env
-# Currently dotnet-sdk (.Net 5) is broken
-# see: https://github.com/google/or-tools/issues/2465
-RUN pacman -Syu --noconfirm dotnet-sdk-3.1
+RUN pacman -Syu --noconfirm dotnet-sdk-3.1 dotnet-sdk-5.0
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
