@@ -100,6 +100,9 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Return a neighborhood that correspond to the full problem.
   Neighborhood FullNeighborhood() const;
 
+  // Indicate that the generator failed to generated a neighborhood.
+  Neighborhood NoNeighborhood() const;
+
   // Copies all variables from the in_model to the delta model of the
   // neighborhood. For all variables in fixed_variable_set, the domain will be
   // overwritten with the value stored in the initial solution.

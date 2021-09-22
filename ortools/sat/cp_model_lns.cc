@@ -240,6 +240,12 @@ Neighborhood NeighborhoodGeneratorHelper::FullNeighborhood() const {
   return neighborhood;
 }
 
+Neighborhood NeighborhoodGeneratorHelper::NoNeighborhood() const {
+  Neighborhood neighborhood;
+  neighborhood.is_generated = false;
+  return neighborhood;
+}
+
 std::vector<int> NeighborhoodGeneratorHelper::GetActiveIntervals(
     const CpSolverResponse& initial_solution) const {
   std::vector<int> active_intervals;
@@ -395,9 +401,7 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
   }
 
   if (!copy_is_successful) {
-    neighborhood.is_reduced = true;
-    neighborhood.is_generated = false;
-    return neighborhood;
+    return NoNeighborhood();
   }
 
   AddSolutionHinting(initial_solution, &neighborhood.delta);
@@ -1061,7 +1065,9 @@ Neighborhood RoutingFullPathNeighborhoodGenerator::Generate(
   std::vector<std::vector<int>> all_paths =
       helper_.GetRoutingPaths(initial_solution);
   // Remove a corner case where all paths are empty.
-  if (all_paths.empty()) return helper_.FullNeighborhood();
+  if (all_paths.empty()) {
+    return helper_.NoNeighborhood();
+  }
 
   // Collect all unique variables.
   absl::flat_hash_set<int> all_path_variables;
