@@ -4122,8 +4122,11 @@ bool CpModelPresolver::PresolveRoutes(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
   RoutesConstraintProto& proto = *ct->mutable_routes();
+  absl::flat_hash_map<int, int> incoming_arcs;
+  absl::flat_hash_map<int, int> outgoing_arcs;
 
   int new_size = 0;
+  int max_node = -1;
   const int num_arcs = proto.literals_size();
   for (int i = 0; i < num_arcs; ++i) {
     const int ref = proto.literals(i);
@@ -4137,6 +4140,10 @@ bool CpModelPresolver::PresolveRoutes(ConstraintProto* ct) {
     proto.set_tails(new_size, tail);
     proto.set_heads(new_size, head);
     ++new_size;
+    max_node = std::max(max_node, tail);
+    max_node = std::max(max_node, head);
+    incoming_arcs[head]++;
+    outgoing_arcs[tail]++;
   }
   if (new_size < num_arcs) {
     proto.mutable_literals()->Truncate(new_size);
@@ -4144,6 +4151,16 @@ bool CpModelPresolver::PresolveRoutes(ConstraintProto* ct) {
     proto.mutable_heads()->Truncate(new_size);
     return true;
   }
+
+  // if a node misses an incomping or outgoing arc, the model is trivially
+  // infeasible.
+  for (int n = 0; n <= max_node; ++n) {
+    if (!incoming_arcs.contains(n) || !outgoing_arcs.contains(n)) {
+      return context_->NotifyThatModelIsUnsat(
+          "routes: some nodes miss incoming or outgoing arcs");
+    }
+  }
+
   return false;
 }
 

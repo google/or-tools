@@ -1060,6 +1060,8 @@ Neighborhood RoutingFullPathNeighborhoodGenerator::Generate(
     absl::BitGenRef random) {
   std::vector<std::vector<int>> all_paths =
       helper_.GetRoutingPaths(initial_solution);
+  // Remove a corner case where all paths are empty.
+  if (all_paths.empty()) return helper_.FullNeighborhood();
 
   // Collect all unique variables.
   absl::flat_hash_set<int> all_path_variables;
