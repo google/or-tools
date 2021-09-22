@@ -85,6 +85,7 @@ if(BUILD_SCIP)
   set(PAPILO OFF)
   set(ZIMPL OFF)
   set(IPOPT OFF)
+  set(AMPL OFF)
 
   set(TPI "tny" CACHE STRING "Scip param")
   set(EXPRINT "none" CACHE STRING "Scip param")

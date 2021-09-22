@@ -478,6 +478,7 @@ dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)
     -DPAPILO=OFF \
     -DZIMPL=OFF \
     -DIPOPT=OFF \
+    -DAMPL=OFF \
     -DTPI="tny" \
     -DEXPRINT="none" \
     -DLPS="none" \

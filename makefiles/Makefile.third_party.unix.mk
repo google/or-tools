@@ -639,6 +639,7 @@ dependencies/install/lib/libscip.a: $(SCIP_SRCDIR) | dependencies/install
     -DPAPILO=OFF \
     -DZIMPL=OFF \
     -DIPOPT=OFF \
+    -DAMPL=OFF \
     -DTPI="tny" \
     -DEXPRINT="none" \
     -DLPS="none" \
