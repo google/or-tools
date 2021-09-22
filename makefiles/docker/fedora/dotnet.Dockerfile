@@ -1,7 +1,7 @@
 FROM ortools/make:fedora_swig AS env
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-fedora#fedora-32-
 RUN dnf -y update \
-&& dnf -y install dotnet-sdk-3.1 \
+&& dnf -y install dotnet-sdk-3.1 dotnet-sdk-5.0 \
 && dnf clean all
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
