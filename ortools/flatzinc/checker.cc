@@ -72,7 +72,7 @@ bool CheckAllDifferentInt(const Constraint& ct,
   absl::flat_hash_set<int64_t> visited;
   for (int i = 0; i < Size(ct.arguments[0]); ++i) {
     const int64_t value = EvalAt(ct.arguments[0], i, evaluator);
-    if (gtl::ContainsKey(visited, value)) {
+    if (visited.contains(value)) {
       return false;
     }
     visited.insert(value);
@@ -86,7 +86,7 @@ bool CheckAlldifferentExcept0(
   absl::flat_hash_set<int64_t> visited;
   for (int i = 0; i < Size(ct.arguments[0]); ++i) {
     const int64_t value = EvalAt(ct.arguments[0], i, evaluator);
-    if (value != 0 && gtl::ContainsKey(visited, value)) {
+    if (value != 0 && visited.contains(value)) {
       return false;
     }
     visited.insert(value);
@@ -376,12 +376,12 @@ std::vector<int64_t> ComputeGlobalCardinalityCards(
   absl::flat_hash_map<int64_t, int> positions;
   for (int i = 0; i < ct.arguments[1].values.size(); ++i) {
     const int64_t value = ct.arguments[1].values[i];
-    CHECK(!gtl::ContainsKey(positions, value));
+    CHECK(!positions.contains(value));
     positions[value] = i;
   }
   for (int i = 0; i < Size(ct.arguments[0]); ++i) {
     const int value = EvalAt(ct.arguments[0], i, evaluator);
-    if (gtl::ContainsKey(positions, value)) {
+    if (positions.contains(value)) {
       cards[positions[value]]++;
     }
   }

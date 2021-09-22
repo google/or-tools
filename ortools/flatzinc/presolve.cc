@@ -120,10 +120,10 @@ void Presolver::PresolveStoreAffineMapping(Constraint* ct) {
   const int64_t coeff0 = ct->arguments[0].values[0];
   const int64_t coeff1 = ct->arguments[0].values[1];
   const int64_t rhs = ct->arguments[2].Value();
-  if (coeff0 == -1 && !gtl::ContainsKey(affine_map_, var0)) {
+  if (coeff0 == -1 && !affine_map_.contains(var0)) {
     affine_map_[var0] = AffineMapping(var1, coeff0, -rhs, ct);
     UpdateRuleStats("int_lin_eq: store affine mapping");
-  } else if (coeff1 == -1 && !gtl::ContainsKey(affine_map_, var1)) {
+  } else if (coeff1 == -1 && !affine_map_.contains(var1)) {
     affine_map_[var1] = AffineMapping(var0, coeff0, -rhs, ct);
     UpdateRuleStats("int_lin_eq: store affine mapping");
   }
@@ -138,23 +138,22 @@ void Presolver::PresolveStoreFlatteningMapping(Constraint* ct) {
   const int64_t coeff1 = ct->arguments[0].values[1];
   const int64_t coeff2 = ct->arguments[0].values[2];
   const int64_t rhs = ct->arguments[2].Value();
-  if (coeff0 == -1 && coeff2 == 1 &&
-      !gtl::ContainsKey(array2d_index_map_, var0)) {
+  if (coeff0 == -1 && coeff2 == 1 && !array2d_index_map_.contains(var0)) {
     array2d_index_map_[var0] =
         Array2DIndexMapping(var1, coeff1, var2, -rhs, ct);
     UpdateRuleStats("int_lin_eq: store 2d flattening mapping");
   } else if (coeff0 == -1 && coeff1 == 1 &&
-             !gtl::ContainsKey(array2d_index_map_, var0)) {
+             !array2d_index_map_.contains(var0)) {
     array2d_index_map_[var0] =
         Array2DIndexMapping(var2, coeff2, var1, -rhs, ct);
     UpdateRuleStats("int_lin_eq: store 2d flattening mapping");
   } else if (coeff2 == -1 && coeff1 == 1 &&
-             !gtl::ContainsKey(array2d_index_map_, var2)) {
+             !array2d_index_map_.contains(var2)) {
     array2d_index_map_[var2] =
         Array2DIndexMapping(var0, coeff0, var1, -rhs, ct);
     UpdateRuleStats("int_lin_eq: store 2d flattening mapping");
   } else if (coeff2 == -1 && coeff0 == 1 &&
-             !gtl::ContainsKey(array2d_index_map_, var2)) {
+             !array2d_index_map_.contains(var2)) {
     array2d_index_map_[var2] =
         Array2DIndexMapping(var1, coeff1, var0, -rhs, ct);
     UpdateRuleStats("int_lin_eq: store 2d flattening mapping");
@@ -218,7 +217,7 @@ void Presolver::PresolveSimplifyElement(Constraint* ct) {
   Variable* const index_var = ct->arguments[0].Var();
 
   // Rule 1.
-  if (gtl::ContainsKey(affine_map_, index_var)) {
+  if (affine_map_.contains(index_var)) {
     const AffineMapping& mapping = affine_map_[index_var];
     const Domain& domain = mapping.variable->domain;
     if (domain.is_interval && domain.values.empty()) {
@@ -274,7 +273,7 @@ void Presolver::PresolveSimplifyElement(Constraint* ct) {
   }
 
   // Rule 2.
-  if (gtl::ContainsKey(array2d_index_map_, index_var)) {
+  if (array2d_index_map_.contains(index_var)) {
     UpdateRuleStats("array_int_element: rewrite as a 2d element");
     const Array2DIndexMapping& mapping = array2d_index_map_[index_var];
     // Rewrite constraint.
@@ -328,7 +327,7 @@ void Presolver::PresolveSimplifyExprElement(Constraint* ct) {
   if (ct->arguments[0].variables.size() != 1) return;
 
   Variable* const index_var = ct->arguments[0].Var();
-  if (gtl::ContainsKey(affine_map_, index_var)) {
+  if (affine_map_.contains(index_var)) {
     const AffineMapping& mapping = affine_map_[index_var];
     const Domain& domain = mapping.variable->domain;
     if ((domain.is_interval && domain.values.empty()) ||

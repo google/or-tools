@@ -231,7 +231,7 @@ bool Domain::IntersectWithListOfIntegers(const std::vector<int64_t>& integers) {
     new_values.reserve(std::min(values.size(), integers.size()));
     bool changed = false;
     for (const int64_t val : values) {
-      if (gtl::ContainsKey(other_values, val)) {
+      if (other_values.contains(val)) {
         if (new_values.empty() || val != new_values.back()) {
           new_values.push_back(val);
         }
@@ -393,7 +393,7 @@ bool Domain::OverlapsIntList(const std::vector<int64_t>& vec) const {
             ? absl::flat_hash_set<int64_t>(vec.begin(), vec.end())
             : absl::flat_hash_set<int64_t>(values.begin(), values.end());
     for (int64_t value : to_scan) {
-      if (gtl::ContainsKey(container, value)) {
+      if (container.contains(value)) {
         return true;
       }
     }

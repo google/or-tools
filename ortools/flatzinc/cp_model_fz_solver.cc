@@ -125,7 +125,7 @@ struct CpModelProtoWithMapping {
 };
 
 int CpModelProtoWithMapping::LookupConstant(int64_t value) {
-  if (gtl::ContainsKey(constant_value_to_index, value)) {
+  if (constant_value_to_index.contains(value)) {
     return constant_value_to_index[value];
   }
 
