@@ -8,7 +8,7 @@ RUN mkdir -p /usr/share/dotnet \
 
 # see: https://dotnet.microsoft.com/download/dotnet-core/3.1
 RUN dotnet_sdk_version=3.1.413 \
-&& wget -O dotnet.tar.gz https://dotnetcli.azureedge.net/dotnet/Sdk/$dotnet_sdk_version/dotnet-sdk-$dotnet_sdk_version-linux-x64.tar.gz \
+&& wget -qO dotnet.tar.gz https://dotnetcli.azureedge.net/dotnet/Sdk/$dotnet_sdk_version/dotnet-sdk-$dotnet_sdk_version-linux-x64.tar.gz \
 && dotnet_sha512='2a0824f11aba0b79d3f9a36af0395649bc9b4137e61b240a48dccb671df0a5b8c2086054f8e495430b7ed6c344bb3f27ac3dfda5967d863718a6dadeca951a83' \
 && echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
 && tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
@@ -18,7 +18,7 @@ RUN dotnet --info
 
 # see: https://dotnet.microsoft.com/download/dotnet-core/5.0
 RUN dotnet_sdk_version=5.0.401 \
-&& wget -O dotnet.tar.gz https://download.visualstudio.microsoft.com/download/pr/5972698f-ba44-4664-9c50-bdc69ca70fb7/1cf7d94425d8dd4d5789dfa978d61475/dotnet-sdk-$dotnet_sdk_version-linux-x64.tar.gz \
+&& wget -qO dotnet.tar.gz https://download.visualstudio.microsoft.com/download/pr/5972698f-ba44-4664-9c50-bdc69ca70fb7/1cf7d94425d8dd4d5789dfa978d61475/dotnet-sdk-$dotnet_sdk_version-linux-x64.tar.gz \
 && dotnet_sha512='a444d44007709ceb68d8f72dec0531e17f85f800efc0007ace4fa66ba27f095066930e6c6defcd2f85cdedea2fec25e163f5da461c1c2b8563e5cd7cb47091e0' \
 && echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
 && tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
