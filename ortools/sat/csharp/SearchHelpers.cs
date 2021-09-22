@@ -48,7 +48,7 @@ namespace Google.OrTools.Sat
                 else if (expr is SumArray)
                 {
                     SumArray a = (SumArray)expr;
-                    constant += coeff * a.Constant;
+                    constant += coeff * a.Offset;
                     foreach (LinearExpr sub in a.Expressions)
                     {
                         exprs.Add(sub);
