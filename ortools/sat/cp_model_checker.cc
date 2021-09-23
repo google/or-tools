@@ -793,7 +793,7 @@ std::string ValidateSolutionHint(const CpModelProto& model) {
     }
   }
 
-  // Reject hint with duplicate variables has this is likely a user error.
+  // Reject hints with duplicate variables as this is likely a user error.
   absl::flat_hash_set<int> indices;
   for (const int var : hint.vars()) {
     const auto insert = indices.insert(PositiveRef(var));
@@ -802,6 +802,14 @@ std::string ValidateSolutionHint(const CpModelProto& model) {
           "The solution hint contains duplicate variables like the variable "
           "with index #",
           PositiveRef(var));
+    }
+  }
+
+  // Reject hints equals to INT_MIN or INT_MAX.
+  for (const int64_t value : hint.values()) {
+    if (value == std::numeric_limits<int64_t>::min() ||
+        value == std::numeric_limits<int64_t>::max()) {
+      return "The solution hint cannot contains the INT_MIN or INT_MAX values.";
     }
   }
 

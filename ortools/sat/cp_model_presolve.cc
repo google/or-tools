@@ -7130,23 +7130,23 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
   }
 
   // Remap the solution hint. Note that after remapping, we may have duplicate
-  // variable, so we only keep the first occurence.
+  // variable, so we only keep the first occurrence.
   if (proto->has_solution_hint()) {
     absl::flat_hash_set<int> used_vars;
     auto* mutable_hint = proto->mutable_solution_hint();
     int new_size = 0;
     for (int i = 0; i < mutable_hint->vars_size(); ++i) {
       const int old_ref = mutable_hint->vars(i);
-      const int64_t old_value = mutable_hint->values(i);
-
+      int64_t old_value = mutable_hint->values(i);
+      // We always move a hint within bounds.
+      // This also make sure a hint of INT_MIN or INT_MAX does not overflow.
+      if (old_value < context.MinOf(i)) old_value = context.MinOf(i);
+      if (old_value > context.MaxOf(i)) old_value = context.MaxOf(i);
       // Note that if (old_value - r.offset) is not divisible by r.coeff, then
       // the hint is clearly infeasible, but we still set it to a "close" value.
       const AffineRelation::Relation r = context.GetAffineRelation(old_ref);
       const int var = r.representative;
-      // Make sure a hint of INT_MIN or INT_MAX does not overflow.
-      const int64_t value =
-          r.coeff > 0 ? CapAdd(old_value, r.offset) / r.coeff
-                      : CapOpp(CapAdd(old_value, r.offset)) / CapOpp(r.coeff);
+      const int64_t value = (old_value - r.offset) / r.coeff;
 
       const int image = mapping[var];
       if (image >= 0) {
