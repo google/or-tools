@@ -22,8 +22,6 @@
 #include "ortools/util/sorted_interval_list.h"
 %}
 
-%feature("autodoc", "1");
-
 %ignoreall
 
 %unignore operations_research;
