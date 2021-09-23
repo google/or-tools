@@ -21,6 +21,9 @@ endif()
 
 # Find Java
 find_package(Java 1.8 COMPONENTS Development REQUIRED)
+set(JAVA_INCLUDE_PATH "$ENV{JAVA_HOME}/include")
+set(JAVA_INCLUDE_PATH2 "$ENV{JAVA_HOME}/include/linux")
+set(JAVA_AWT_INCLUDE_PATH "$ENV{JAVA_HOME}/include")
 find_package(JNI REQUIRED)
 
 # Find maven
