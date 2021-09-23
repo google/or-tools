@@ -142,7 +142,7 @@ $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/dotnet: | $(TEMP_ARCHIVE_DIR)/$(INST
 .PHONY: archive_dotnet # Add .Net OR-Tools to archive.
 archive_dotnet: dotnet | $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/dotnet
 	-$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Spackages
-	$(COPY) $(TEMP_DOTNET_DIR)/packages$S*.nupkg $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Spackages
+	$(COPY) $(TEMP_DOTNET_DIR)$Spackages$S*.nupkg $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Spackages
 	-$(COPY) $(DOTNET_EX_PATH)$S*.cs* $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
 	-$(COPY) $(DOTNET_EX_PATH)$S*.fs* $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
 	-$(COPY) $(DOTNET_EX_PATH)$SREADME.md $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
