@@ -3014,7 +3014,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   SOLVER_LOG(logger, "Starting CP-SAT solver.");
 
   // Initialize the number of workers if set to 0.
-  if (params.num_search_workers() == 0) {
+  if (params.num_search_workers() == 0 ||
+      (params.num_search_workers() != 1 && params.enumerate_all_solutions())) {
 #if !defined(__PORTABLE_PLATFORM__)
     // Sometimes, hardware_concurrency will return 0. So always default to 1.
     const int num_cores =

@@ -154,7 +154,7 @@ namespace Google.OrTools.Sat
                 else if (expr is SumArray)
                 {
                     SumArray a = (SumArray)expr;
-                    constant += coeff * a.Constant;
+                    constant += coeff * a.Offset;
                     foreach (LinearExpr sub in a.Expressions)
                     {
                         exprs.Add(sub);
@@ -219,7 +219,6 @@ namespace Google.OrTools.Sat
             return response_.SufficientAssumptionsForInfeasibility;
         }
 
-        private CpModelProto model_;
         private CpSolverResponse response_;
         private LogCallback log_callback_;
         private string string_parameters_;
