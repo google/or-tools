@@ -21,6 +21,8 @@ jobs:
       run: tools\make --version
     - name: Check system
       run: tools\make detect_port
+    - name: Check Python
+      run: tools\make detect_python
     - name: Build third party
       run: tools\make third_party -j4
     - name: Build C++
