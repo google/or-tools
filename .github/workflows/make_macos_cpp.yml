@@ -8,6 +8,10 @@ jobs:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Install brew Make
+      run: |
+        brew install make
+        echo "/usr/local/opt/make/libexec/gnubin" >> $GITHUB_PATH
     - name: Check make
       run: make --version
     - name: Check system
