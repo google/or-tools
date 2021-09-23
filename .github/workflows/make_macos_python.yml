@@ -8,8 +8,8 @@ jobs:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Update Path
-      run: echo "$HOME/Library/Python/3.9/bin" >> $GITHUB_PATH
+    - name: Install python3 packages
+      run: python3 -m pip install --user mypy-protobuf absl-py
     - name: Swig install
       run: brew install swig
     - name: Check swig

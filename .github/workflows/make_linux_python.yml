@@ -10,8 +10,10 @@ jobs:
     - uses: actions/checkout@v2
     - name: Update Path
       run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-    - name: Install python3 venv
-      run: sudo apt-get install python3-venv
+    - name: Install python3
+      run: |
+        sudo apt-get install python3-venv python3-pip
+        python3 -m pip install --user mypy-protobuf absl-py
     - name: Swig install
       run: sudo apt install -y swig
     - name: Check swig
