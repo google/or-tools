@@ -11,7 +11,7 @@
 
 # Introduction
 
-# Instillation Notes for Mac Users
+# Note for Mac Users
 If you installed `java` through `brew` you will need to export the `JAVA_HOME` variable. 
 
 # Build the Binary Package
