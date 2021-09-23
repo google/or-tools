@@ -915,8 +915,10 @@ class MPSolver {
   std::string solver_specific_parameter_string_;
 
   static absl::Mutex global_count_mutex_;
+#ifndef SWIG
   static int64_t global_num_variables_ ABSL_GUARDED_BY(global_count_mutex_);
   static int64_t global_num_constraints_ ABSL_GUARDED_BY(global_count_mutex_);
+#endif
 
   MPSolverResponseStatus LoadModelFromProtoInternal(
       const MPModelProto& input_model, bool clear_names,
