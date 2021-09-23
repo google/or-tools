@@ -67,11 +67,9 @@ MPSolverResponseStatus ToMPSolverResponseStatus(sat::CpSolverStatus status,
 
 absl::StatusOr<MPSolutionResponse> SatSolveProto(
     MPModelRequest request, std::atomic<bool>* interrupt_solve,
-    std::function<void(const std::string&)> logging_callback) {
-  // By default, we use 8 threads as it allows to try a good set of orthogonal
-  // parameters. This can be overridden by the user.
+    std::function<void(const std::string&)> logging_callback,
+    std::function<void(const MPSolution&)> solution_callback) {
   sat::SatParameters params;
-  params.set_num_search_workers(8);
   params.set_log_search_progress(request.enable_internal_solver_output());
   if (request.has_solver_specific_parameters()) {
     // See EncodeSatParametersAsString() documentation.
@@ -91,9 +89,9 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
     }
   }
   if (request.has_solver_time_limit_seconds()) {
-    params.set_max_time_in_seconds(
-        static_cast<double>(request.solver_time_limit_seconds()) / 1000.0);
+    params.set_max_time_in_seconds(request.solver_time_limit_seconds());
   }
+  params.set_linearization_level(2);
 
   // TODO(user): We do not support all the parameters here. In particular the
   // logs before the solver is called will not be appended to the response. Fix
@@ -125,18 +123,20 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   const glop::GlopParameters glop_params;
   MPModelProto* const mp_model = request.mutable_model();
   std::vector<std::unique_ptr<glop::Preprocessor>> for_postsolve;
-  const auto status =
-      ApplyMipPresolveSteps(glop_params, mp_model, &for_postsolve, &logger);
-  if (status == MPSolverResponseStatus::MPSOLVER_INFEASIBLE) {
-    if (params.log_search_progress()) {
-      // This is needed for our benchmark scripts.
-      sat::CpSolverResponse cp_response;
-      cp_response.set_status(sat::CpSolverStatus::INFEASIBLE);
-      LOG(INFO) << CpSolverResponseStats(cp_response);
+  if (!params.enumerate_all_solutions()) {
+    const auto status =
+        ApplyMipPresolveSteps(glop_params, mp_model, &for_postsolve, &logger);
+    if (status == MPSolverResponseStatus::MPSOLVER_INFEASIBLE) {
+      if (params.log_search_progress()) {
+        // This is needed for our benchmark scripts.
+        sat::CpSolverResponse cp_response;
+        cp_response.set_status(sat::CpSolverStatus::INFEASIBLE);
+        LOG(INFO) << CpSolverResponseStats(cp_response);
+      }
+      response.set_status(MPSolverResponseStatus::MPSOLVER_INFEASIBLE);
+      response.set_status_str("Problem proven infeasible during MIP presolve");
+      return response;
     }
-    response.set_status(MPSolverResponseStatus::MPSOLVER_INFEASIBLE);
-    response.set_status_str("Problem proven infeasible during MIP presolve");
-    return response;
   }
 
   // We need to do that before the automatic detection of integers.
@@ -210,6 +210,33 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
         interrupt_solve);
   }
 
+  auto post_solve = [&](const sat::CpSolverResponse& cp_response) {
+    MPSolution mp_solution;
+    mp_solution.set_objective_value(cp_response.objective_value());
+    // Postsolve the bound shift and scaling.
+    glop::ProblemSolution glop_solution((glop::RowIndex(old_num_constraints)),
+                                        (glop::ColIndex(old_num_variables)));
+    for (int v = 0; v < glop_solution.primal_values.size(); ++v) {
+      glop_solution.primal_values[glop::ColIndex(v)] =
+          static_cast<double>(cp_response.solution(v)) / var_scaling[v];
+    }
+    for (int i = for_postsolve.size(); --i >= 0;) {
+      for_postsolve[i]->RecoverSolution(&glop_solution);
+    }
+    for (int v = 0; v < glop_solution.primal_values.size(); ++v) {
+      mp_solution.add_variable_value(
+          glop_solution.primal_values[glop::ColIndex(v)]);
+    }
+    return mp_solution;
+  };
+
+  if (solution_callback != nullptr) {
+    sat_model.Add(sat::NewFeasibleSolutionObserver(
+        [&](const sat::CpSolverResponse& cp_response) {
+          solution_callback(post_solve(cp_response));
+        }));
+  }
+
   // Solve.
   const sat::CpSolverResponse cp_response =
       sat::SolveCpModel(cp_model, &sat_model);
@@ -223,20 +250,9 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
       response.status() == MPSOLVER_OPTIMAL) {
     response.set_objective_value(cp_response.objective_value());
     response.set_best_objective_bound(cp_response.best_objective_bound());
-
-    // Postsolve the bound shift and scaling.
-    glop::ProblemSolution solution((glop::RowIndex(old_num_constraints)),
-                                   (glop::ColIndex(old_num_variables)));
-    for (int v = 0; v < solution.primal_values.size(); ++v) {
-      solution.primal_values[glop::ColIndex(v)] =
-          static_cast<double>(cp_response.solution(v)) / var_scaling[v];
-    }
-    for (int i = for_postsolve.size(); --i >= 0;) {
-      for_postsolve[i]->RecoverSolution(&solution);
-    }
-    for (int v = 0; v < solution.primal_values.size(); ++v) {
-      response.add_variable_value(solution.primal_values[glop::ColIndex(v)]);
-    }
+    MPSolution post_solved_solution = post_solve(cp_response);
+    *response.mutable_variable_value() =
+        std::move(*post_solved_solution.mutable_variable_value());
   }
 
   return response;

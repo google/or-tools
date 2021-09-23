@@ -859,7 +859,7 @@ void AppendStatusStr(const std::string& msg, MPSolutionResponse* response) {
 // static
 void MPSolver::SolveWithProto(const MPModelRequest& model_request,
                               MPSolutionResponse* response,
-                              const std::atomic<bool>* interrupt) {
+                              std::atomic<bool>* interrupt) {
   CHECK(response != nullptr);
 
   if (interrupt != nullptr &&
@@ -880,13 +880,11 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
 
   // If interruption support is not required, we don't need access to the
   // underlying solver and can solve it directly if the interface supports it.
-  if (interrupt == nullptr) {
-    auto optional_response =
-        solver.interface_->DirectlySolveProto(model_request);
-    if (optional_response) {
-      *response = std::move(optional_response).value();
-      return;
-    }
+  auto optional_response =
+      solver.interface_->DirectlySolveProto(model_request, interrupt);
+  if (optional_response) {
+    *response = std::move(optional_response).value();
+    return;
   }
 
   const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
@@ -950,7 +948,7 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
         constexpr absl::Duration kPollDelay = absl::Microseconds(100);
         constexpr absl::Duration kMaxInterruptionDelay = absl::Seconds(10);
 
-        while (!interrupt) {
+        while (!interrupt->load()) {
           if (solve_finished.HasBeenNotified()) return;
           absl::SleepFor(kPollDelay);
         }
@@ -1004,12 +1002,12 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
       thread_pool.StartWorkers();
       thread_pool.Schedule(polling_func);
 
-      // Make sure the interruption notification didn't arrived while waiting to
+      // Make sure the interruption notification didn't arrive while waiting to
       // be scheduled.
-      if (!interrupt) {
+      if (!interrupt->load()) {
         solver.Solve();
         solver.FillSolutionResponseProto(response);
-      } else {
+      } else {  // *interrupt == true
         response->set_status(MPSOLVER_CANCELLED_BY_USER);
         response->set_status_str(
             "Solve not started, because the user set the atomic<bool> in "
@@ -1220,15 +1218,18 @@ absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
 }
 
 void MPSolver::Clear() {
+  {
+    absl::MutexLock lock(&global_count_mutex_);
+    global_num_variables_ += variables_.size();
+    global_num_constraints_ += constraints_.size();
+  }
   MutableObjective()->Clear();
   gtl::STLDeleteElements(&variables_);
   gtl::STLDeleteElements(&constraints_);
-  variables_.clear();
   if (variable_name_to_index_) {
     variable_name_to_index_->clear();
   }
   variable_is_extracted_.clear();
-  constraints_.clear();
   if (constraint_name_to_index_) {
     constraint_name_to_index_->clear();
   }
@@ -1740,6 +1741,25 @@ void MPSolver::SetCallback(MPCallback* mp_callback) {
 
 bool MPSolver::SupportsCallbacks() const {
   return interface_->SupportsCallbacks();
+}
+
+// Global counters.
+absl::Mutex MPSolver::global_count_mutex_(absl::kConstInit);
+int64_t MPSolver::global_num_variables_ = 0;
+int64_t MPSolver::global_num_constraints_ = 0;
+
+// static
+int64_t MPSolver::global_num_variables() {
+  // Why not ReaderMutexLock? See go/totw/197#when-are-shared-locks-useful.
+  absl::MutexLock lock(&global_count_mutex_);
+  return global_num_variables_;
+}
+
+// static
+int64_t MPSolver::global_num_constraints() {
+  // Why not ReaderMutexLock? See go/totw/197#when-are-shared-locks-useful.
+  absl::MutexLock lock(&global_count_mutex_);
+  return global_num_constraints_;
 }
 
 bool MPSolverResponseStatusIsRpcError(MPSolverResponseStatus status) {

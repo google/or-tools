@@ -43,9 +43,15 @@ namespace operations_research {
 // log_to_stdout is true so even with a callback, the logs will appear on stdout
 // too unless log_to_stdout is set to false. The enable_internal_solver_output
 // in the request will act as the SAT parameter log_search_progress.
+//
+// The optional solution_callback will be called on each intermediate solution
+// found by the solver. The solver may call solution_callback from multiple
+// threads, but it will ensure that at most one thread executes
+// solution_callback at a time.
 absl::StatusOr<MPSolutionResponse> SatSolveProto(
     MPModelRequest request, std::atomic<bool>* interrupt_solve = nullptr,
-    std::function<void(const std::string&)> logging_callback = nullptr);
+    std::function<void(const std::string&)> logging_callback = nullptr,
+    std::function<void(const MPSolution&)> solution_callback = nullptr);
 
 // Returns a string that should be used in MPModelRequest's
 // solver_specific_parameters field to encode the SAT parameters.

@@ -88,6 +88,13 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
     return error_message;
   }
 
+  // Ditto for LoadModelFromProtoWithUniqueNamesOrDie()
+  std::string LoadModelFromProtoWithUniqueNamesOrDie(const operations_research::MPModelProto& input_model) {
+    std::string error_message;
+    $self->LoadModelFromProtoWithUniqueNamesOrDie(input_model, &error_message);
+    return error_message;
+  }
+
   // Change the API of LoadSolutionFromProto() to simply return a boolean.
   bool LoadSolutionFromProto(
       const operations_research::MPSolutionResponse& response,

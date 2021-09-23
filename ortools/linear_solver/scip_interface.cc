@@ -66,7 +66,7 @@ class SCIPInterface : public MPSolverInterface {
   void SetOptimizationDirection(bool maximize) override;
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
   absl::optional<MPSolutionResponse> DirectlySolveProto(
-      const MPModelRequest& request) override;
+      const MPModelRequest& request, std::atomic<bool>* interrupt) override;
   void Reset() override;
 
   void SetVariableBounds(int var_index, double lb, double ub) override;
@@ -860,9 +860,12 @@ void SCIPInterface::SetSolution(SCIP_SOL* solution) {
 }
 
 absl::optional<MPSolutionResponse> SCIPInterface::DirectlySolveProto(
-    const MPModelRequest& request) {
+    const MPModelRequest& request, std::atomic<bool>* interrupt) {
   // ScipSolveProto doesn't solve concurrently.
   if (solver_->GetNumThreads() > 1) return absl::nullopt;
+
+  // Interruption via atomic<bool> is not directly supported by SCIP.
+  if (interrupt != nullptr) return absl::nullopt;
 
   const auto status_or = ScipSolveProto(request);
   if (status_or.ok()) return status_or.value();

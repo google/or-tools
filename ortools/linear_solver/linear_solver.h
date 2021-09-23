@@ -552,13 +552,16 @@ class MPSolver {
    */
   static void SolveWithProto(const MPModelRequest& model_request,
                              MPSolutionResponse* response,
-                             const std::atomic<bool>* interrupt = nullptr);
+                             // `interrupt` is non-const because the internal
+                             // solver may set it to true itself, in some cases.
+                             std::atomic<bool>* interrupt = nullptr);
 
   static bool SolverTypeSupportsInterruption(
       const MPModelRequest::SolverType solver) {
     // Interruption requires that MPSolver::InterruptSolve is supported for the
     // underlying solver. Interrupting requests using SCIP is also not supported
-    // as of 2021/08/23, since InterruptSolve is not thread-safe for SCIP.
+    // as of 2021/08/23, since InterruptSolve is not go/thread-safe
+    // for SCIP (see e.g. cl/350545631 for details).
     return solver == MPModelRequest::GLOP_LINEAR_PROGRAMMING ||
            solver == MPModelRequest::GUROBI_LINEAR_PROGRAMMING ||
            solver == MPModelRequest::GUROBI_MIXED_INTEGER_PROGRAMMING ||
@@ -800,6 +803,12 @@ class MPSolver {
   void SetCallback(MPCallback* mp_callback);
   bool SupportsCallbacks() const;
 
+  // Global counters of variables and constraints ever created across all
+  // MPSolver instances. Those are only updated after the destruction
+  // (or Clear()) of each MPSolver instance.
+  static int64_t global_num_variables();
+  static int64_t global_num_constraints();
+
   // DEPRECATED: Use TimeLimit() and SetTimeLimit(absl::Duration) instead.
   // NOTE: These deprecated functions used the convention time_limit = 0 to mean
   // "no limit", which now corresponds to time_limit_ = InfiniteDuration().
@@ -904,6 +913,10 @@ class MPSolver {
 
   // Permanent storage for SetSolverSpecificParametersAsString().
   std::string solver_specific_parameter_string_;
+
+  static absl::Mutex global_count_mutex_;
+  static int64_t global_num_variables_ ABSL_GUARDED_BY(global_count_mutex_);
+  static int64_t global_num_constraints_ ABSL_GUARDED_BY(global_count_mutex_);
 
   MPSolverResponseStatus LoadModelFromProtoInternal(
       const MPModelProto& input_model, bool clear_names,
@@ -1564,11 +1577,17 @@ class MPSolverInterface {
   // solution is optimal.
   virtual MPSolver::ResultStatus Solve(const MPSolverParameters& param) = 0;
 
-  // Directly solves a MPModelRequest, bypassing the MPSolver data structures
-  // entirely. Returns {} (eg. absl::nullopt) if the feature is not supported by
-  // the underlying solver.
+  // Attempts to directly solve a MPModelRequest, bypassing the MPSolver data
+  // structures entirely. Like MPSolver::SolveWithProto(), optionally takes in
+  // an 'interrupt' boolean.
+  // Returns {} (eg. absl::nullopt) if direct-solve is not supported by the
+  // underlying solver (possibly because interrupt != nullptr), in which case
+  // the user should fall back to using MPSolver.
   virtual absl::optional<MPSolutionResponse> DirectlySolveProto(
-      const MPModelRequest& request) {
+      const MPModelRequest& request,
+      // `interrupt` is non-const because the internal
+      // solver may set it to true itself, in some cases.
+      std::atomic<bool>* interrupt) {
     return absl::nullopt;
   }
 

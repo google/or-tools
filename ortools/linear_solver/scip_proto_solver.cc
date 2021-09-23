@@ -882,7 +882,6 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
 
     // NOTE(user): As of SCIP 7.0.1, getting the pointer to all
     // solutions is as fast as getting the pointer to the best solution.
-    // See google3/scip/scip_sol.c?l=2264&rcl=322332899.
     SCIP_SOL** const scip_solutions = SCIPgetSols(scip);
     response.set_objective_value(SCIPgetSolOrigObj(scip, scip_solutions[0]));
     response.set_best_objective_bound(SCIPgetDualbound(scip));

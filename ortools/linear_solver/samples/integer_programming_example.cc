@@ -71,7 +71,6 @@ void IntegerProgrammingExample() {
   // [END objective]
 
   // [START solve]
-  solver->SetNumThreads(1);
   const MPSolver::ResultStatus result_status = solver->Solve();
   // Check that the problem has an optimal solution.
   if (result_status != MPSolver::OPTIMAL) {
