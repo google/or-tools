@@ -7143,7 +7143,10 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
       // the hint is clearly infeasible, but we still set it to a "close" value.
       const AffineRelation::Relation r = context.GetAffineRelation(old_ref);
       const int var = r.representative;
-      const int64_t value = (old_value - r.offset) / r.coeff;
+      // Make sure a hint of INT_MIN or INT_MAX does not overflow.
+      const int64_t value =
+          r.coeff > 0 ? CapAdd(old_value, r.offset) / r.coeff
+                      : CapOpp(CapAdd(old_value, r.offset)) / CapOpp(r.coeff);
 
       const int image = mapping[var];
       if (image >= 0) {

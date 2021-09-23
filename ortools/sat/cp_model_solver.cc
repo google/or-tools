@@ -3143,7 +3143,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
         const int ref = model_proto.solution_hint().vars(i);
         const int64_t value = model_proto.solution_hint().values(i);
-        solution[PositiveRef(ref)] = RefIsPositive(ref) ? value : -value;
+        solution[PositiveRef(ref)] = RefIsPositive(ref) ? value : CapOpp(value);
       }
       if (SolutionIsFeasible(model_proto, solution)) {
         SOLVER_LOG(context->logger(),
