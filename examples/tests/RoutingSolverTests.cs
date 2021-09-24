@@ -59,8 +59,11 @@ namespace Google.OrTools.Tests
             RoutingModel routing = new RoutingModel(manager);
             // Create a distance callback.
             long[][] matrix = new long[][] {
-                new long[] { 1, 1, 1, 1, 1 }, new long[] { 1, 1, 1, 1, 1 }, new long[] { 1, 1, 1, 1, 1 },
-                new long[] { 1, 1, 1, 1, 1 }, new long[] { 1, 1, 1, 1, 1 },
+              new long[] {1, 1, 1, 1, 1},
+              new long[] {1, 1, 1, 1, 1},
+              new long[] {1, 1, 1, 1, 1},
+              new long[] {1, 1, 1, 1, 1},
+              new long[] {1, 1, 1, 1, 1},
             };
             int transitCallbackIndex = routing.RegisterTransitMatrix(matrix);
             // Define cost of each arc.
@@ -82,7 +85,8 @@ namespace Google.OrTools.Tests
             // Create Routing Model.
             RoutingModel routing = new RoutingModel(manager);
             // Create a distance callback.
-            int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) => {
+            int transitCallbackIndex = routing.RegisterTransitCallback(
+                (long fromIndex, long toIndex) => {
                 // Convert from routing variable Index to distance matrix NodeIndex.
                 var fromNode = manager.IndexToNode(fromIndex);
                 var toNode = manager.IndexToNode(toIndex);
@@ -107,12 +111,17 @@ namespace Google.OrTools.Tests
             RoutingModel routing = new RoutingModel(manager);
             // Create a distance callback.
             long[][] matrix = new long[][] {
-                new long[] { 1, 1, 1, 1, 1 }, new long[] { 1, 1, 1, 1, 1 }, new long[] { 1, 1, 1, 1, 1 },
-                new long[] { 1, 1, 1, 1, 1 }, new long[] { 1, 1, 1, 1, 1 },
+              new long[] {1, 1, 1, 1, 1},
+              new long[] {1, 1, 1, 1, 1},
+              new long[] {1, 1, 1, 1, 1},
+              new long[] {1, 1, 1, 1, 1},
+              new long[] {1, 1, 1, 1, 1},
             };
-            IntBoolPair result = routing.AddMatrixDimension(matrix,
-                                                            /*capacity=*/10,
-                                                            /*fix_start_cumul_to_zero=*/true, "Dimension");
+            IntBoolPair result = routing.AddMatrixDimension(
+                matrix,
+                /*capacity=*/10,
+                /*fix_start_cumul_to_zero=*/true,
+                "Dimension");
             // Define cost of each arc.
             routing.SetArcCostEvaluatorOfAllVehicles(result.first);
             // Setting first solution heuristic.
@@ -132,7 +141,7 @@ namespace Google.OrTools.Tests
             // Create Routing Model.
             RoutingModel routing = new RoutingModel(manager);
             // Create a distance callback.
-            long[] vector = { 1, 1, 1, 1, 1 };
+            long[] vector = {1, 1, 1, 1, 1};
             int transitCallbackIndex = routing.RegisterUnaryTransitVector(vector);
             // Define cost of each arc.
             routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
@@ -153,7 +162,8 @@ namespace Google.OrTools.Tests
             // Create Routing Model.
             RoutingModel routing = new RoutingModel(manager);
             // Create a distance callback.
-            int transitCallbackIndex = routing.RegisterUnaryTransitCallback((long fromIndex) => {
+            int transitCallbackIndex = routing.RegisterUnaryTransitCallback(
+                (long fromIndex) => {
                 // Convert from routing variable Index to distance matrix NodeIndex.
                 var fromNode = manager.IndexToNode(fromIndex);
                 return fromNode + 1;
@@ -177,10 +187,12 @@ namespace Google.OrTools.Tests
             // Create Routing Model.
             RoutingModel routing = new RoutingModel(manager);
             // Create a distance callback.
-            long[] vector = new long[] { 1, 1, 1, 1, 1 };
-            IntBoolPair result = routing.AddVectorDimension(vector,
-                                                            /*capacity=*/10,
-                                                            /*fix_start_cumul_to_zero=*/true, "Dimension");
+            long[] vector = new long[] {1, 1, 1, 1, 1};
+            IntBoolPair result = routing.AddVectorDimension(
+                vector,
+                /*capacity=*/10,
+                /*fix_start_cumul_to_zero=*/true,
+                "Dimension");
             // Define cost of each arc.
             routing.SetArcCostEvaluatorOfAllVehicles(result.first);
             // Setting first solution heuristic.

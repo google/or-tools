@@ -58,20 +58,20 @@ public final class RoutingSolverTest {
 
   public LongBinaryOperator createManhattanCostCallback(RoutingIndexManager manager) {
     return (long i, long j) -> {
-        final int firstIndex = manager.indexToNode(i);
-        final int secondIndex = manager.indexToNode(j);
-        final Location firstCoordinate = coordinates.get(firstIndex);
-        final Location secondCoordinate = coordinates.get(secondIndex);
-        return (long) Math.abs(firstCoordinate.latitude() - secondCoordinate.latitude())
+      final int firstIndex = manager.indexToNode(i);
+      final int secondIndex = manager.indexToNode(j);
+      final Location firstCoordinate = coordinates.get(firstIndex);
+      final Location secondCoordinate = coordinates.get(secondIndex);
+      return (long) Math.abs(firstCoordinate.latitude() - secondCoordinate.latitude())
           + Math.abs(firstCoordinate.longitude() - secondCoordinate.longitude());
     };
   }
 
   public LongUnaryOperator createUnaryCostCallback(RoutingIndexManager manager) {
     return (long fromIndex) -> {
-        final int fromNode = manager.indexToNode(fromIndex);
-        final Location firstCoordinate = coordinates.get(fromNode);
-        return (long) Math.abs(firstCoordinate.latitude()) + Math.abs(firstCoordinate.longitude());
+      final int fromNode = manager.indexToNode(fromIndex);
+      final Location firstCoordinate = coordinates.get(fromNode);
+      return (long) Math.abs(firstCoordinate.latitude()) + Math.abs(firstCoordinate.longitude());
     };
   }
 
@@ -237,11 +237,11 @@ public final class RoutingSolverTest {
     final RoutingModel model = new RoutingModel(manager);
     assertEquals(5, model.nodes());
     final int cost = model.registerTransitCallback(
-        (long fromIndex, long toIndex) -> {
-          final int fromNode = manager.indexToNode(fromIndex);
-          final int toNode = manager.indexToNode(toIndex);
-          return (long) Math.abs(toNode - fromNode);
-        });
+      (long fromIndex, long toIndex) -> {
+        final int fromNode = manager.indexToNode(fromIndex);
+        final int toNode = manager.indexToNode(toIndex);
+        return (long) Math.abs(toNode - fromNode);
+      });
     System.gc(); // model should keep alive the callback
     model.setArcCostEvaluatorOfAllVehicles(cost);
 
@@ -291,10 +291,10 @@ public final class RoutingSolverTest {
     final RoutingModel model = new RoutingModel(manager);
     assertEquals(5, model.nodes());
     final int cost = model.registerUnaryTransitCallback(
-        (long fromIndex) -> {
-          final int fromNode = manager.indexToNode(fromIndex);
-          return (long) Math.abs(fromNode);
-        });
+      (long fromIndex) -> {
+        final int fromNode = manager.indexToNode(fromIndex);
+        return (long) Math.abs(fromNode);
+      });
     System.gc(); // model should keep alive the callback
     model.setArcCostEvaluatorOfAllVehicles(cost);
 
