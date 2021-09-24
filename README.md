@@ -1,13 +1,5 @@
 # OR-Tools - Google Optimization Tools
 
-[![Build Status][github_status]][github_link]
-[![Build Status][appveyor_status]][appveyor_link]
-
-[github_status]: https://github.com/google/or-tools/actions/workflows/cmake_linux_cpp.yml/badge.svg?branch=master
-[github_link]: https://github.com/google/or-tools/actions/workflows/cmake_linux_cpp.yml
-[appveyor_status]: https://ci.appveyor.com/api/projects/status/9hyykkcm8sh3ua6x/branch/master?svg=true
-[appveyor_link]: https://ci.appveyor.com/project/lperron/or-tools-98u1n
-
 [![PyPI version](https://img.shields.io/pypi/v/ortools.svg)](https://pypi.org/project/ortools/)
 [![PyPI download](https://img.shields.io/pypi/dm/ortools.svg)](https://pypi.org/project/ortools/#files)
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/google/or-tools/master)
