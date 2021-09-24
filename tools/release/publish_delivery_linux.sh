@@ -60,7 +60,7 @@ function publish_java() {
   fi
   # Maven central need gpg sign and we store the release key encoded using openssl
   local OPENSSL_PRG=openssl
-  if [ -x "$(command -v openssl11)" ]; then
+  if [[ -x "$(command -v openssl11)" ]]; then
     OPENSSL_PRG=openssl11
   fi
   command -v $OPENSSL_PRG | xargs echo "openssl: " | tee -a build.log
