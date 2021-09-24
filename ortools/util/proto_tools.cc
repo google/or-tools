@@ -19,13 +19,12 @@
 #include "google/protobuf/text_format.h"
 
 namespace operations_research {
-
+namespace {
 using ::google::protobuf::Descriptor;
 using ::google::protobuf::FieldDescriptor;
 using ::google::protobuf::Reflection;
 using ::google::protobuf::TextFormat;
 
-namespace {
 void WriteFullProtocolMessage(const google::protobuf::Message& message,
                               int indent_level, std::string* out) {
   std::string temp_string;

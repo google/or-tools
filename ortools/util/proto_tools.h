@@ -22,7 +22,6 @@
 #include "google/protobuf/message.h"
 
 namespace operations_research {
-
 // Casts a generic google::protobuf::Message* to a specific proto type, or
 // returns an InvalidArgumentError if it doesn't seem to be of the right type.
 // Comes in non-const and const versions.
