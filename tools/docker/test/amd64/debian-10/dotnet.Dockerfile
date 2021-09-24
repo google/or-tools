@@ -6,16 +6,15 @@ RUN apt-get update \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Install dotnet
-# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-debian10
+# Dotnet Install
+# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-debian#debian-10-
 RUN apt-get update -qq \
-&& apt-get install -qq wget gpg apt-transport-https \
-&& wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.asc.gpg \
-&& mv microsoft.asc.gpg /etc/apt/trusted.gpg.d/ \
-&& wget -q https://packages.microsoft.com/config/debian/10/prod.list \
-&& mv prod.list /etc/apt/sources.list.d/microsoft-prod.list \
-&& apt-get update \
-&& apt-get install -y -q dotnet-sdk-3.1 dotnet-sdk-5.0 \
+&& apt-get install -qq gpg apt-transport-https \
+&& wget -q "https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb" -O packages-microsoft-prod.deb \
+&& dpkg -i packages-microsoft-prod.deb \
+&& rm packages-microsoft-prod.deb \
+&& apt-get update -qq \
+&& apt-get install -qq dotnet-sdk-3.1 dotnet-sdk-5.0 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Trigger first run experience by running arbitrary cmd
