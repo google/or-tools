@@ -71,7 +71,7 @@ help:
 	@echo -e "\t\t${BOLD}ubuntu-21.04${RESET} (rolling)"
 	@echo -e "\t\t${BOLD}ubuntu-20.04${RESET} (Ubuntu 20.04 LTS, latest)"
 	@echo -e "\t\t${BOLD}ubuntu-18.04${RESET} (Ubuntu 18.04 LTS)"
-	@echo -e "\t\t${BOLD}ubuntu-16.04${RESET} (Ubuntu 18.04 LTS)"
+	@echo -e "\t\t${BOLD}ubuntu-16.04${RESET} (Ubuntu 16.04 LTS)"
 	@echo
 	@echo -e "\t${BOLD}<stage>${RESET}:"
 	@echo -e "\t\t${BOLD}env${RESET}"
