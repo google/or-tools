@@ -9,8 +9,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: ilammy/msvc-dev-cmd@v1
-    - name: Add Python binaries to path
-      run: echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/Python39/Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+    - name: Install python3
+      run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel
     - name: Clean sh.exe
       run: |
         where sh
@@ -21,6 +24,8 @@ jobs:
       run: tools\make --version
     - name: Check system
       run: tools\make detect_port
+    - name: Check Python
+      run: tools\make detect_python
     - name: Build third party
       run: tools\make third_party -j4
     - name: Build C++

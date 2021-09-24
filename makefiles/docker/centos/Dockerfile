@@ -12,7 +12,7 @@ RUN dnf -y update \
 && rm -rf /var/cache/dnf
 
 # Install CMake 3.21.1
-RUN wget "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
+RUN wget -q "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.sh" \
 && chmod a+x cmake-3.21.1-linux-x86_64.sh \
 && ./cmake-3.21.1-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
 && rm cmake-3.21.1-linux-x86_64.sh
@@ -24,7 +24,7 @@ RUN dnf -y update \
 && dnf -y install pcre-devel \
 && dnf clean all \
 && rm -rf /var/cache/dnf \
-&& wget "https://downloads.sourceforge.net/project/swig/swig/swig-4.0.2/swig-4.0.2.tar.gz" \
+&& wget -q "https://downloads.sourceforge.net/project/swig/swig/swig-4.0.2/swig-4.0.2.tar.gz" \
 && tar xvf swig-4.0.2.tar.gz \
 && rm swig-4.0.2.tar.gz \
 && cd swig-4.0.2 \
