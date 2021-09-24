@@ -48,10 +48,10 @@ naming, it is very difficult to get ownership on it, so you should prefer to use
 
 ## Build
 
-Either use the CMake base build or the Makefile based build.
-The workflow is typically `make dotnet` which will build both C# and F# libraries package.
-The output will be placed in `<OR_ROOT>/temp_dotnet/packages` folder.
-All tests will be run based on this folder.
+Either use the CMake base build or the Makefile based build. The workflow is
+typically `make dotnet` which will build both C# and F# libraries package. The
+output will be placed in `<OR_ROOT>/temp_dotnet/packages` folder. All tests will
+be run based on this folder.
 
 ### Build Process
 
