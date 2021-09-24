@@ -262,7 +262,7 @@ void KnapsackCapacityPropagator::InitPropagator() {
   }
   ++profit_max_;
   CompareKnapsackItemsInDecreasingEfficiencyOrder compare_object(profit_max_);
-  std::sort(sorted_items_.begin(), sorted_items_.end(), compare_object);
+  std::stable_sort(sorted_items_.begin(), sorted_items_.end(), compare_object);
 }
 
 // Returns false when the propagator fails.
