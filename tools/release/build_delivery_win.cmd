@@ -311,6 +311,7 @@ for %%v in (6 7 8 9) do (
   which.exe C:\python3%%v-64\python.exe || exit 1
   echo C:\python3%%v-64\python.exe: FOUND | tee.exe -a build.log
   C:\python3%%v-64\python.exe -m pip install --user absl-py mypy-protobuf
+  set PATH=%PATH%;%userprofile%\appdata\roaming\python\python3%%v\Scripts
   set PATH=%PATH%;C:\python3%%v-64\Scripts
 
   echo Cleaning Python... | tee.exe -a build.log
