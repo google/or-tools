@@ -455,7 +455,7 @@ ifeq ($(USE_SCIP),OFF)
 build_scip: $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
 $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc: | $(GEN_DIR)/ortools/linear_solver
-	$(TOUCH) $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
+	$(TOUCH) $(GEN_PATH)$Sortools$Slinear_solver$Slpi_glop.cc
 else
 build_scip: dependencies/install/lib/libscip.lib $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
@@ -495,6 +495,7 @@ $(SCIP_SRCDIR): | dependencies/sources
 
 $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc: $(SCIP_SRCDIR) | $(GEN_DIR)/ortools/linear_solver
 	copy $(SCIP_SRCPATH)\src\lpi\lpi_glop.cpp $(GEN_PATH)\ortools\linear_solver\lpi_glop.cc
+	$(TOUCH) $(GEN_PATH)$Sortools$Slinear_solver$Slpi_glop.cc
 
 SCIP_INC = /I"$(WINDOWS_SCIP_PATH)\\include" /DUSE_SCIP /DNO_CONFIG_HEADER
 SCIP_SWIG = -I"$(WINDOWS_SCIP_DIR)/include" -DUSE_SCIP -DNO_CONFIG_HEADER
