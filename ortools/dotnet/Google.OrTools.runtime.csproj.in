@@ -23,13 +23,8 @@
 
   <ItemGroup>
     <!-- Native library must be in native directory... -->
-    <!-- On windows libortools is built as static -->
-    <Content Include="$<$<NOT:$<PLATFORM_ID:Windows>>:$<TARGET_SONAME_FILE:@PROJECT_NAME@>>">
-      <PackagePath>runtimes/@RUNTIME_IDENTIFIER@/native/%(Filename)%(Extension)</PackagePath>
-      <Pack>true</Pack>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$<TARGET_FILE:google-ortools-native>">
+    <!-- If ortools is built as a STATIC_LIBRARY (e.g. Windows) then we don't have to include it -->
+    <Content Include="$<TARGET_FILE:google-ortools-native>$<$<STREQUAL:$<TARGET_PROPERTY:@PROJECT_NAME@,TYPE>,SHARED_LIBRARY>:;$<TARGET_SONAME_FILE:@PROJECT_NAME@>>">
       <PackagePath>runtimes/@RUNTIME_IDENTIFIER@/native/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
