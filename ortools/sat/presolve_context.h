@@ -70,8 +70,7 @@ class SavedVariable {
 // in-memory domain of each variables and the constraint variable graph.
 class PresolveContext {
  public:
-  explicit PresolveContext(Model* model, CpModelProto* cp_model,
-                           CpModelProto* mapping)
+  PresolveContext(Model* model, CpModelProto* cp_model, CpModelProto* mapping)
       : working_model(cp_model),
         mapping_model(mapping),
         logger_(model->GetOrCreate<SolverLogger>()),
@@ -80,6 +79,9 @@ class PresolveContext {
         random_(model->GetOrCreate<ModelRandomGenerator>()) {}
 
   // Helpers to adds new variables to the presolved model.
+  //
+  // TODO(user): We should control more how this is called so we can update
+  // a solution hint accordingly.
   int NewIntVar(const Domain& domain);
   int NewBoolVar();
   int GetOrCreateConstantVar(int64_t cst);
@@ -269,7 +271,13 @@ class PresolveContext {
   // Important: This does not update the constraint<->variable graph, so
   // ConstraintVariableGraphIsUpToDate() will be false until
   // UpdateNewConstraintsVariableUsage() is called.
-  void InsertVarValueEncoding(int literal, int ref, int64_t value);
+  //
+  // Returns false if the model become UNSAT.
+  //
+  // TODO(user): This function is not always correct if
+  // !context->DomainOf(ref).contains(value), we could make it correct but it
+  // might be a bit expansive to do so. For now we just have a DCHECK().
+  bool InsertVarValueEncoding(int literal, int ref, int64_t value);
 
   // Gets the associated literal if it is already created. Otherwise
   // create it, add the corresponding constraints and returns it.
@@ -337,7 +345,7 @@ class PresolveContext {
   // satisfy our overflow preconditions. Note that this can only happen if the
   // substitued variable is not implied free (i.e. if its domain is smaller than
   // the implied domain from the equality).
-  bool SubstituteVariableInObjective(
+  ABSL_MUST_USE_RESULT bool SubstituteVariableInObjective(
       int var_in_equality, int64_t coeff_in_equality,
       const ConstraintProto& equality,
       std::vector<int>* new_vars_in_objective = nullptr);
@@ -476,7 +484,7 @@ class PresolveContext {
   // Makes sure we only insert encoding about the current representative.
   //
   // Returns false if ref cannot take the given value (it might not have been
-  // propagated yed).
+  // propagated yet).
   bool CanonicalizeEncoding(int* ref, int64_t* value);
 
   // Inserts an half reified var value encoding (literal => var ==/!= value).

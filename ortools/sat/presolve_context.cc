@@ -1127,9 +1127,13 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
 void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
                                                      int64_t value,
                                                      bool add_constraints) {
+  CHECK(RefIsPositive(var));
   CHECK(!VariableWasRemoved(literal));
   CHECK(!VariableWasRemoved(var));
   absl::flat_hash_map<int64_t, SavedLiteral>& var_map = encoding_[var];
+
+  // The code below is not 100% correct if this is not the case.
+  DCHECK(DomainOf(var).Contains(value));
 
   // Ticky and rare: I have only observed this on the LNS of
   // radiation_m18_12_05_sat.fzn. The value was encoded, but maybe we never
@@ -1159,6 +1163,8 @@ void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
   }
 
   if (DomainOf(var).Size() == 2) {
+    // TODO(user): There is a bug here if the var == value was not in the
+    // domain, it will just be ignored.
     CanonicalizeDomainOfSizeTwo(var);
   } else {
     VLOG(2) << "Insert lit(" << literal << ") <=> var(" << var
@@ -1213,12 +1219,15 @@ bool PresolveContext::CanonicalizeEncoding(int* ref, int64_t* value) {
   return true;
 }
 
-void PresolveContext::InsertVarValueEncoding(int literal, int ref,
+bool PresolveContext::InsertVarValueEncoding(int literal, int ref,
                                              int64_t value) {
-  if (!RemapEncodingMaps()) return;
-  if (!CanonicalizeEncoding(&ref, &value)) return;
+  if (!RemapEncodingMaps()) return false;
+  if (!CanonicalizeEncoding(&ref, &value)) {
+    return SetLiteralToFalse(literal);
+  }
   literal = GetLiteralRepresentative(literal);
   InsertVarValueEncodingInternal(literal, ref, value, /*add_constraints=*/true);
+  return true;
 }
 
 bool PresolveContext::StoreLiteralImpliesVarEqValue(int literal, int var,

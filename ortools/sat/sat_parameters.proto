@@ -842,12 +842,12 @@ message SatParameters {
   optional bool optimize_with_max_hs = 85 [default = false];
 
   // Whether we enumerate all solutions of a problem without objective. Note
-  // that setting this to true automatically disable the presolve. This is
-  // because the presolve rules only guarantee the existence of one feasible
-  // solution to the presolved problem.
+  // that setting this to true automatically disable some presolve reduction
+  // that can remove feasible solution. That is it has the same effect as
+  // setting keep_all_feasible_solutions_in_presolve.
   //
-  // TODO(user): Do not disable the presolve and let the user choose what
-  // behavior is best by setting keep_all_feasible_solutions_in_presolve.
+  // TODO(user): Do not do that and let the user choose what behavior is best by
+  // setting keep_all_feasible_solutions_in_presolve ?
   optional bool enumerate_all_solutions = 87 [default = false];
 
   // If true, we disable the presolve reductions that remove feasible solutions
@@ -868,7 +868,9 @@ message SatParameters {
   optional bool fill_tightened_domains_in_response = 132 [default = false];
 
   // If true, the solver will add a default integer branching strategy to the
-  // already defined search strategy.
+  // already defined search strategy. If not, some variable might still not be
+  // fixed at the end of the search. For now we assume these variable can just
+  // be set to their lower bound.
   optional bool instantiate_all_variables = 106 [default = true];
 
   // If true, then the precedences propagator try to detect for each variable if

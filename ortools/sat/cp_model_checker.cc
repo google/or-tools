@@ -1445,7 +1445,9 @@ bool SolutionIsFeasible(const CpModelProto& model,
                         const CpModelProto* mapping_proto,
                         const std::vector<int>* postsolve_mapping) {
   if (variable_values.size() != model.variables_size()) {
-    VLOG(1) << "Wrong number of variables in the solution vector";
+    VLOG(1) << "Wrong number of variables (" << variable_values.size()
+            << ") in the solution vector. It should be "
+            << model.variables_size() << ".";
     return false;
   }
 

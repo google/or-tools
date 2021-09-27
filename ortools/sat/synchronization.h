@@ -59,7 +59,7 @@ class SharedSolutionRepository {
     // this rank is actually the unscaled internal minimization objective.
     // Remove this assumptions by simply recomputing this value since it is not
     // too costly to do so.
-    int64_t rank;
+    int64_t rank = 0;
 
     std::vector<ValueType> variable_values;
 
@@ -536,7 +536,7 @@ void SharedSolutionRepository<ValueType>::Synchronize() {
   // We use a stable sort to keep the num_selected count for the already
   // existing solutions.
   //
-  // TODO(user): Intoduce a notion of orthogonality to diversify the pool?
+  // TODO(user): Introduce a notion of orthogonality to diversify the pool?
   gtl::STLStableSortAndRemoveDuplicates(&solutions_);
   if (solutions_.size() > num_solutions_to_keep_) {
     solutions_.resize(num_solutions_to_keep_);

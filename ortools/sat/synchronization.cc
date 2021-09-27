@@ -534,7 +534,7 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
   // another solution manager, and we do not want to dump those.
   if (absl::GetFlag(FLAGS_cp_model_dump_solutions)) {
     const std::string file =
-        absl::StrCat(dump_prefix_, "solution_", num_solutions_, ".pbtxt");
+        absl::StrCat(dump_prefix_, "solution_", num_solutions_, ".pb.txt");
     LOG(INFO) << "Dumping solution to '" << file << "'.";
     CHECK_OK(file::SetTextProto(file, best_response_, file::Defaults()));
   }

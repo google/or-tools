@@ -103,12 +103,12 @@ ABSL_FLAG(bool, cp_model_dump_models, false,
           "DEBUG ONLY. When set to true, SolveCpModel() will dump its model "
           "protos (original model, presolved model, mapping model) in text "
           "format to 'FLAGS_cp_model_dump_prefix'{model|presolved_model|"
-          "mapping_model}.pbtxt.");
+          "mapping_model}.pb.txt.");
 
 ABSL_FLAG(bool, cp_model_dump_lns, false,
           "DEBUG ONLY. When set to true, solve will dump all "
           "lns models proto in text format to "
-          "'FLAGS_cp_model_dump_prefix'lns_xxx.pbtxt.");
+          "'FLAGS_cp_model_dump_prefix'lns_xxx.pb.txt.");
 
 ABSL_FLAG(
     bool, cp_model_dump_problematic_lns, false,
@@ -118,7 +118,7 @@ ABSL_FLAG(
 
 ABSL_FLAG(bool, cp_model_dump_response, false,
           "DEBUG ONLY. If true, the final response of each solve will be "
-          "dumped to 'FLAGS_cp_model_dump_prefix'response.pbtxt");
+          "dumped to 'FLAGS_cp_model_dump_prefix'response.pb.txt");
 
 ABSL_FLAG(std::string, cp_model_params, "",
           "This is interpreted as a text SatParameters proto. The "
@@ -2449,7 +2449,7 @@ class LnsSolver : public SubSolver {
         // TODO(user): export the delta too if needed.
         const std::string lns_name =
             absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
-                         lns_fragment.name(), ".pbtxt");
+                         lns_fragment.name(), ".pb.txt");
         LOG(INFO) << "Dumping LNS model to '" << lns_name << "'.";
         CHECK_OK(file::SetTextProto(lns_name, lns_fragment, file::Defaults()));
       }
@@ -2551,7 +2551,7 @@ class LnsSolver : public SubSolver {
             if (absl::GetFlag(FLAGS_cp_model_dump_problematic_lns)) {
               const std::string name =
                   absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
-                               debug_copy.name(), ".pbtxt");
+                               debug_copy.name(), ".pb.txt");
               LOG(INFO) << "Dumping problematic LNS model to '" << name << "'.";
               CHECK_OK(file::SetTextProto(name, debug_copy, file::Defaults()));
             }
@@ -2907,7 +2907,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Dump initial model?
   if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
     const std::string file =
-        absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix), "model.pbtxt");
+        absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix), "model.pb.txt");
     LOG(INFO) << "Dumping cp model proto to '" << file << "'.";
     CHECK_OK(file::SetTextProto(file, model_proto, file::Defaults()));
   }
@@ -3143,7 +3143,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
         const int ref = model_proto.solution_hint().vars(i);
         const int64_t value = model_proto.solution_hint().values(i);
-        solution[PositiveRef(ref)] = RefIsPositive(ref) ? value : CapOpp(value);
+        solution[PositiveRef(ref)] = RefIsPositive(ref) ? value : -value;
       }
       if (SolutionIsFeasible(model_proto, solution)) {
         SOLVER_LOG(context->logger(),
@@ -3293,14 +3293,14 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 #if !defined(__PORTABLE_PLATFORM__)
   if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
     const std::string presolved_file = absl::StrCat(
-        absl::GetFlag(FLAGS_cp_model_dump_prefix), "presolved_model.pbtxt");
+        absl::GetFlag(FLAGS_cp_model_dump_prefix), "presolved_model.pb.txt");
     LOG(INFO) << "Dumping presolved cp model proto to '" << presolved_file
               << "'.";
     CHECK_OK(file::SetTextProto(presolved_file, new_cp_model_proto,
                                 file::Defaults()));
 
     const std::string mapping_file = absl::StrCat(
-        absl::GetFlag(FLAGS_cp_model_dump_prefix), "mapping_model.pbtxt");
+        absl::GetFlag(FLAGS_cp_model_dump_prefix), "mapping_model.pb.txt");
     LOG(INFO) << "Dumping mapping cp model proto to '" << mapping_file << "'.";
     CHECK_OK(file::SetTextProto(mapping_file, mapping_proto, file::Defaults()));
   }
