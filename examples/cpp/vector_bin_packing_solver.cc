@@ -33,7 +33,7 @@
 ABSL_FLAG(std::string, input, "", "Vector Bin Packing (.vpb) data file name.");
 ABSL_FLAG(std::string, params, "",
           "Parameters in solver specific text format.");
-ABSL_FLAG(std::string, solver, "sat", "Solver to use: sat, scip, glip");
+ABSL_FLAG(std::string, solver, "sat", "Solver to use: sat, scip");
 ABSL_FLAG(double, time_limit, 900.0, "Time limit in seconds");
 ABSL_FLAG(int, threads, 1, "Number of threads");
 
