@@ -51,8 +51,9 @@ setup(
         'ortools.graph' : ['_pywrapgraph.dll'],
         'ortools.constraint_solver' : ['_pywrapcp.dll', '*.pyi'],
         'ortools.linear_solver' : ['_pywraplp.dll', '*.pyi'],
+        'ortools.packing':['*.pyi'],
         'ortools.sat' : ['_pywrapsat.dll', '*.pyi', '*.md'],
-        'ortools.data' : ['_pywraprcpsp.dll', '*.pyi'],
+        'ortools.scheduling' : ['_pywraprcpsp.dll', '*.pyi'],
         'ortools.util' : ['_sorted_interval_list.dll', '*.pyi'],
         DELETEWIN 'ortools' : ['.libs/*']
     },

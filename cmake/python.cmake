@@ -114,26 +114,31 @@ endforeach()
 #######################
 ## Python Packaging  ##
 #######################
+set(PYTHON_PROJECT ${PROJECT_NAME})
+message(STATUS "Python project: ${PYTHON_PROJECT}")
+set(PYTHON_PATH ${PROJECT_BINARY_DIR}/python/${PYTHON_PROJECT})
+message(STATUS "Python project build path: ${PYTHON_PATH}")
+
 #file(MAKE_DIRECTORY python/${PROJECT_NAME})
-file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME})
-file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/init)
-file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/algorithms)
-file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/graph)
-file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/linear_solver)
-file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/constraint_solver)
-file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/sat)
-file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/sat/python)
-file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/scheduling)
-file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/util)
+file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH})
+file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/init)
+file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/algorithms)
+file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/graph)
+file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/linear_solver)
+file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/constraint_solver)
+file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/sat)
+file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/sat/python)
+file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/scheduling)
+file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/util)
 
 file(COPY
     ortools/linear_solver/linear_solver_natural_api.py
-  DESTINATION python/ortools/linear_solver)
+    DESTINATION ${PYTHON_PATH}/linear_solver)
 file(COPY
     ortools/sat/python/cp_model.py
     ortools/sat/python/cp_model_helper.py
     ortools/sat/python/visualization.py
-  DESTINATION python/ortools/sat/python)
+  DESTINATION ${PYTHON_PATH}/sat/python)
 
 # setup.py.in contains cmake variable e.g. @PROJECT_NAME@ and
 # generator expression e.g. $<TARGET_FILE_NAME:pyFoo>
@@ -156,12 +161,13 @@ search_python_module(wheel)
 
 # Main Target
 add_custom_target(python_package ALL
-  COMMAND ${CMAKE_COMMAND} -E copy $<CONFIG>/setup.py setup.py
+  COMMAND ${CMAKE_COMMAND} -E copy ./$<CONFIG>/setup.py setup.py
   COMMAND ${CMAKE_COMMAND} -E remove_directory dist
   COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_NAME}/.libs
   # Don't need to copy static lib on windows.
-  COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:${UNIX}>,copy,true>
-  $<$<BOOL:${UNIX}>:$<TARGET_SONAME_FILE:ortools>> ${PROJECT_NAME}/.libs
+  COMMAND ${CMAKE_COMMAND} -E
+  $<IF:$<STREQUAL:$<TARGET_PROPERTY:${PYTHON_PROJECT},TYPE>,SHARED_LIBRARY>,copy $<TARGET_SONAME_FILE:${PYTHON_PROJECT}>,true>
+    ${PROJECT_NAME}/.libs
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapinit> ${PROJECT_NAME}/init
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapknapsack_solver> ${PROJECT_NAME}/algorithms
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapgraph> ${PROJECT_NAME}/graph
@@ -177,7 +183,7 @@ add_custom_target(python_package ALL
     python/build
     python/dist
     python/${PROJECT_NAME}.egg-info
-  WORKING_DIRECTORY python
+  WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/python
   )
 add_dependencies(python_package ortools::ortools Py${PROJECT_NAME}_proto)
 
