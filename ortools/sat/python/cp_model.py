@@ -1318,7 +1318,11 @@ class CpModel(object):
         return ct
 
     def AddBoolXOr(self, literals):
-        """Adds `XOr(literals) == true`."""
+        """Adds `XOr(literals) == true`.
+        
+    In contrast to AddBoolOr and AddBoolAnd, it does not support .OnlyEnforceIf()
+    Enforcement is supported on the equivalent Add(sum(literals) == 1) constraint.
+        """
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.bool_xor.literals.extend(
