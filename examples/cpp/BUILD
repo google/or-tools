@@ -513,6 +513,24 @@ cc_binary(
 )
 
 cc_binary(
+    name = "vector_bin_packing_solver",
+    srcs = [
+        "vector_bin_packing_solver.cc",
+    ],
+    deps = [
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "//ortools/base:file",
+        "//ortools/base",
+        "//ortools/packing:arc_flow_builder",
+        "//ortools/packing:arc_flow_solver",
+        "//ortools/packing:vector_bin_packing_cc_proto",
+        "//ortools/packing:vector_bin_packing_parser",
+    ],
+)
+
+cc_binary(
     name = "weighted_tardiness_sat",
     srcs = [
         "weighted_tardiness_sat.cc",
