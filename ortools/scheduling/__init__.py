@@ -11,5 +11,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os as _os
-__path__.append(_os.path.join(__path__[0],  '..', 'gen', 'ortools', 'data'))
+__path__.append(_os.path.join(__path__[0],  '..', 'gen', 'ortools', 'scheduling'))
 __path__.append(_os.path.join(__path__[0],  '..', '..', 'lib'))

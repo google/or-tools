@@ -240,8 +240,6 @@ cc_binary(
         "//ortools/base:file",
         "@com_google_absl//absl/strings",
         "//ortools/base:timer",
-        "//ortools/data:jobshop_scheduling_cc_proto",
-        "//ortools/data:jobshop_scheduling_parser",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:disjunctive",
@@ -251,6 +249,8 @@ cc_binary(
         "//ortools/sat:optimization",
         "//ortools/sat:precedences",
         "//ortools/sat:sat_solver",
+        "//ortools/scheduling:jobshop_scheduling_cc_proto",
+        "//ortools/scheduling:jobshop_scheduling_parser",
     ],
 )
 

@@ -139,13 +139,14 @@ set(PROTO_SRCS)
 file(GLOB_RECURSE proto_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/bop/*.proto"
   "ortools/constraint_solver/*.proto"
-  "ortools/data/*.proto"
   "ortools/glop/*.proto"
   "ortools/graph/*.proto"
   "ortools/linear_solver/*.proto"
-  "ortools/sat/*.proto"
-  "ortools/util/*.proto"
   "ortools/linear_solver/*.proto"
+  "ortools/packing/*.proto"
+  "ortools/sat/*.proto"
+  "ortools/scheduling/*.proto"
+  "ortools/util/*.proto"
   )
 if(USE_SCIP)
   file(GLOB_RECURSE gscip_proto_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/gscip/*.proto")
@@ -209,7 +210,6 @@ foreach(SUBPROJECT IN ITEMS
  base
  bop
  constraint_solver
- data
  ${GSCIP_DIR}
  glop
  graph
@@ -217,8 +217,10 @@ foreach(SUBPROJECT IN ITEMS
  init
  linear_solver
  lp_data
+ packing
  port
  sat
+ scheduling
  util)
   add_subdirectory(ortools/${SUBPROJECT})
   #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_${SUBPROJECT})

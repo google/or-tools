@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/data/jobshop_scheduling_parser.h"
+#include "ortools/scheduling/jobshop_scheduling_parser.h"
 
 #include <cmath>
 #include <cstdint>
@@ -24,13 +24,13 @@
 #include "ortools/base/filelineiter.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/data/jobshop_scheduling.pb.h"
+#include "ortools/scheduling/jobshop_scheduling.pb.h"
 
 ABSL_FLAG(int64_t, jssp_scaling_up_factor, 100000L,
           "Scaling factor for floating point penalties.");
 
 namespace operations_research {
-namespace data {
+namespace scheduling {
 namespace jssp {
 
 void JsspParser::SetJobs(int job_count) {
@@ -541,5 +541,5 @@ int64_t JsspParser::strtoint64(const std::string& word) {
 }
 
 }  // namespace jssp
-}  // namespace data
+}  // namespace scheduling
 }  // namespace operations_research

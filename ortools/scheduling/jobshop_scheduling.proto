@@ -39,11 +39,11 @@
 
 syntax = "proto3";
 
-option java_package = "com.google.ortools.data.jssp";
+option java_package = "com.google.ortools.scheduling.jssp";
 option java_multiple_files = true;
-option csharp_namespace = "Google.OrTools.Data.Jssp";
+option csharp_namespace = "Google.OrTools.scheduling.Jssp";
 
-package operations_research.data.jssp;
+package operations_research.scheduling.jssp;
 
 import "google/protobuf/wrappers.proto";
 

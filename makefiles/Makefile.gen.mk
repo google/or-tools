@@ -360,108 +360,91 @@ INIT_LIB_OBJS = \
 
 
 DATA_DEPS = \
- $(SRC_DIR)/ortools/data/jobshop_scheduling_parser.h \
- $(SRC_DIR)/ortools/data/rcpsp_parser.h \
- $(SRC_DIR)/ortools/data/set_covering_data.h \
- $(SRC_DIR)/ortools/data/set_covering_parser.h \
- $(SRC_DIR)/ortools/data/vector_bin_packing_parser.h \
- $(GEN_DIR)/ortools/data/jobshop_scheduling.pb.h \
- $(GEN_DIR)/ortools/data/rcpsp.pb.h \
- $(GEN_DIR)/ortools/data/vector_bin_packing.pb.h
+ $(SRC_DIR)/ortools/scheduling/jobshop_scheduling_parser.h \
+ $(SRC_DIR)/ortools/scheduling/rcpsp_parser.h \
+ $(SRC_DIR)/ortools/packing/vector_bin_packing_parser.h \
+ $(GEN_DIR)/ortools/scheduling/jobshop_scheduling.pb.h \
+ $(GEN_DIR)/ortools/scheduling/rcpsp.pb.h \
+ $(GEN_DIR)/ortools/packing/vector_bin_packing.pb.h
 
 DATA_LIB_OBJS = \
- $(OBJ_DIR)/data/jobshop_scheduling_parser.$O \
- $(OBJ_DIR)/data/rcpsp_parser.$O \
- $(OBJ_DIR)/data/set_covering_data.$O \
- $(OBJ_DIR)/data/set_covering_parser.$O \
- $(OBJ_DIR)/data/vector_bin_packing_parser.$O \
- $(OBJ_DIR)/data/jobshop_scheduling.pb.$O \
- $(OBJ_DIR)/data/rcpsp.pb.$O \
- $(OBJ_DIR)/data/vector_bin_packing.pb.$O
+ $(OBJ_DIR)/scheduling/jobshop_scheduling_parser.$O \
+ $(OBJ_DIR)/scheduling/rcpsp_parser.$O \
+ $(OBJ_DIR)/packing/vector_bin_packing_parser.$O \
+ $(OBJ_DIR)/scheduling/jobshop_scheduling.pb.$O \
+ $(OBJ_DIR)/scheduling/rcpsp.pb.$O \
+ $(OBJ_DIR)/packing/vector_bin_packing.pb.$O
 
-objs/data/jobshop_scheduling_parser.$O: \
- ortools/data/jobshop_scheduling_parser.cc \
- ortools/data/jobshop_scheduling_parser.h ortools/base/integral_types.h \
- ortools/gen/ortools/data/jobshop_scheduling.pb.h \
+objs/scheduling/jobshop_scheduling_parser.$O: \
+ ortools/scheduling/jobshop_scheduling_parser.cc \
+ ortools/scheduling/jobshop_scheduling_parser.h ortools/base/integral_types.h \
+ ortools/gen/ortools/scheduling/jobshop_scheduling.pb.h \
  ortools/base/commandlineflags.h ortools/base/filelineiter.h \
  ortools/base/file.h ortools/base/logging.h ortools/base/log_severity.h \
  ortools/base/logging_export.h ortools/base/macros.h \
- ortools/base/vlog_is_on.h | $(OBJ_DIR)/data
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sdata$Sjobshop_scheduling_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Sjobshop_scheduling_parser.$O
+ ortools/base/vlog_is_on.h | $(OBJ_DIR)/scheduling
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sscheduling$Sjobshop_scheduling_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sscheduling$Sjobshop_scheduling_parser.$O
 
-objs/data/rcpsp_parser.$O: ortools/data/rcpsp_parser.cc \
- ortools/data/rcpsp_parser.h ortools/base/integral_types.h \
- ortools/gen/ortools/data/rcpsp.pb.h ortools/base/filelineiter.h \
+objs/scheduling/rcpsp_parser.$O: ortools/scheduling/rcpsp_parser.cc \
+ ortools/scheduling/rcpsp_parser.h ortools/base/integral_types.h \
+ ortools/gen/ortools/scheduling/rcpsp.pb.h ortools/base/filelineiter.h \
  ortools/base/file.h ortools/base/logging.h \
  ortools/base/commandlineflags.h ortools/base/log_severity.h \
  ortools/base/logging_export.h ortools/base/macros.h \
- ortools/base/vlog_is_on.h | $(OBJ_DIR)/data
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sdata$Srcpsp_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Srcpsp_parser.$O
+ ortools/base/vlog_is_on.h | $(OBJ_DIR)/scheduling
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sscheduling$Srcpsp_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sscheduling$Srcpsp_parser.$O
 
-objs/data/set_covering_data.$O: ortools/data/set_covering_data.cc \
- ortools/data/set_covering_data.h ortools/base/integral_types.h | $(OBJ_DIR)/data
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sdata$Sset_covering_data.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Sset_covering_data.$O
-
-objs/data/set_covering_parser.$O: ortools/data/set_covering_parser.cc \
- ortools/data/set_covering_parser.h ortools/base/integral_types.h \
- ortools/data/set_covering_data.h ortools/base/filelineiter.h \
- ortools/base/file.h ortools/base/logging.h \
- ortools/base/commandlineflags.h ortools/base/log_severity.h \
- ortools/base/logging_export.h ortools/base/macros.h \
- ortools/base/vlog_is_on.h | $(OBJ_DIR)/data
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sdata$Sset_covering_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Sset_covering_parser.$O
-
-objs/data/vector_bin_packing_parser.$O: \
- ortools/data/vector_bin_packing_parser.cc \
- ortools/data/vector_bin_packing_parser.h ortools/base/integral_types.h \
- ortools/gen/ortools/data/vector_bin_packing.pb.h \
+objs/packing/vector_bin_packing_parser.$O: \
+ ortools/packing/vector_bin_packing_parser.cc \
+ ortools/packing/vector_bin_packing_parser.h ortools/base/integral_types.h \
+ ortools/gen/ortools/packing/vector_bin_packing.pb.h \
  ortools/base/filelineiter.h ortools/base/file.h ortools/base/logging.h \
  ortools/base/commandlineflags.h ortools/base/log_severity.h \
  ortools/base/logging_export.h ortools/base/macros.h \
- ortools/base/vlog_is_on.h | $(OBJ_DIR)/data
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sdata$Svector_bin_packing_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Svector_bin_packing_parser.$O
+ ortools/base/vlog_is_on.h | $(OBJ_DIR)/packing
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Spacking$Svector_bin_packing_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Spacking$Svector_bin_packing_parser.$O
 
-ortools/data/jobshop_scheduling.proto: ;
+ortools/scheduling/jobshop_scheduling.proto: ;
 
-$(GEN_DIR)/ortools/data/jobshop_scheduling.pb.cc: \
- $(SRC_DIR)/ortools/data/jobshop_scheduling.proto | $(GEN_DIR)/ortools/data
-	$(PROTOC) --experimental_allow_proto3_optional --proto_path=$(INC_DIR) $(PROTOBUF_PROTOC_INC) --cpp_out=$(GEN_PATH) $(SRC_DIR)/ortools/data/jobshop_scheduling.proto
+$(GEN_DIR)/ortools/scheduling/jobshop_scheduling.pb.cc: \
+ $(SRC_DIR)/ortools/scheduling/jobshop_scheduling.proto | $(GEN_DIR)/ortools/scheduling
+	$(PROTOC) --experimental_allow_proto3_optional --proto_path=$(INC_DIR) $(PROTOBUF_PROTOC_INC) --cpp_out=$(GEN_PATH) $(SRC_DIR)/ortools/scheduling/jobshop_scheduling.proto
 
-$(GEN_DIR)/ortools/data/jobshop_scheduling.pb.h: \
- $(GEN_DIR)/ortools/data/jobshop_scheduling.pb.cc
-	$(TOUCH) $(GEN_PATH)$Sortools$Sdata$Sjobshop_scheduling.pb.h
+$(GEN_DIR)/ortools/scheduling/jobshop_scheduling.pb.h: \
+ $(GEN_DIR)/ortools/scheduling/jobshop_scheduling.pb.cc
+	$(TOUCH) $(GEN_PATH)$Sortools$Sscheduling$Sjobshop_scheduling.pb.h
 
-$(OBJ_DIR)/data/jobshop_scheduling.pb.$O: \
- $(GEN_DIR)/ortools/data/jobshop_scheduling.pb.cc | $(OBJ_DIR)/data
-	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sdata$Sjobshop_scheduling.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Sjobshop_scheduling.pb.$O
+$(OBJ_DIR)/scheduling/jobshop_scheduling.pb.$O: \
+ $(GEN_DIR)/ortools/scheduling/jobshop_scheduling.pb.cc | $(OBJ_DIR)/scheduling
+	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sscheduling$Sjobshop_scheduling.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sscheduling$Sjobshop_scheduling.pb.$O
 
-ortools/data/rcpsp.proto: ;
+ortools/scheduling/rcpsp.proto: ;
 
-$(GEN_DIR)/ortools/data/rcpsp.pb.cc: \
- $(SRC_DIR)/ortools/data/rcpsp.proto | $(GEN_DIR)/ortools/data
-	$(PROTOC) --experimental_allow_proto3_optional --proto_path=$(INC_DIR) $(PROTOBUF_PROTOC_INC) --cpp_out=$(GEN_PATH) $(SRC_DIR)/ortools/data/rcpsp.proto
+$(GEN_DIR)/ortools/scheduling/rcpsp.pb.cc: \
+ $(SRC_DIR)/ortools/scheduling/rcpsp.proto | $(GEN_DIR)/ortools/scheduling
+	$(PROTOC) --experimental_allow_proto3_optional --proto_path=$(INC_DIR) $(PROTOBUF_PROTOC_INC) --cpp_out=$(GEN_PATH) $(SRC_DIR)/ortools/scheduling/rcpsp.proto
 
-$(GEN_DIR)/ortools/data/rcpsp.pb.h: \
- $(GEN_DIR)/ortools/data/rcpsp.pb.cc
-	$(TOUCH) $(GEN_PATH)$Sortools$Sdata$Srcpsp.pb.h
+$(GEN_DIR)/ortools/scheduling/rcpsp.pb.h: \
+ $(GEN_DIR)/ortools/scheduling/rcpsp.pb.cc
+	$(TOUCH) $(GEN_PATH)$Sortools$Sscheduling$Srcpsp.pb.h
 
-$(OBJ_DIR)/data/rcpsp.pb.$O: \
- $(GEN_DIR)/ortools/data/rcpsp.pb.cc | $(OBJ_DIR)/data
-	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sdata$Srcpsp.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Srcpsp.pb.$O
+$(OBJ_DIR)/scheduling/rcpsp.pb.$O: \
+ $(GEN_DIR)/ortools/scheduling/rcpsp.pb.cc | $(OBJ_DIR)/scheduling
+	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sscheduling$Srcpsp.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sscheduling$Srcpsp.pb.$O
 
-ortools/data/vector_bin_packing.proto: ;
+ortools/packing/vector_bin_packing.proto: ;
 
-$(GEN_DIR)/ortools/data/vector_bin_packing.pb.cc: \
- $(SRC_DIR)/ortools/data/vector_bin_packing.proto | $(GEN_DIR)/ortools/data
-	$(PROTOC) --experimental_allow_proto3_optional --proto_path=$(INC_DIR) $(PROTOBUF_PROTOC_INC) --cpp_out=$(GEN_PATH) $(SRC_DIR)/ortools/data/vector_bin_packing.proto
+$(GEN_DIR)/ortools/packing/vector_bin_packing.pb.cc: \
+ $(SRC_DIR)/ortools/packing/vector_bin_packing.proto | $(GEN_DIR)/ortools/packing
+	$(PROTOC) --experimental_allow_proto3_optional --proto_path=$(INC_DIR) $(PROTOBUF_PROTOC_INC) --cpp_out=$(GEN_PATH) $(SRC_DIR)/ortools/packing/vector_bin_packing.proto
 
-$(GEN_DIR)/ortools/data/vector_bin_packing.pb.h: \
- $(GEN_DIR)/ortools/data/vector_bin_packing.pb.cc
-	$(TOUCH) $(GEN_PATH)$Sortools$Sdata$Svector_bin_packing.pb.h
+$(GEN_DIR)/ortools/packing/vector_bin_packing.pb.h: \
+ $(GEN_DIR)/ortools/packing/vector_bin_packing.pb.cc
+	$(TOUCH) $(GEN_PATH)$Sortools$Spacking$Svector_bin_packing.pb.h
 
-$(OBJ_DIR)/data/vector_bin_packing.pb.$O: \
- $(GEN_DIR)/ortools/data/vector_bin_packing.pb.cc | $(OBJ_DIR)/data
-	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sdata$Svector_bin_packing.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Svector_bin_packing.pb.$O
+$(OBJ_DIR)/packing/vector_bin_packing.pb.$O: \
+ $(GEN_DIR)/ortools/packing/vector_bin_packing.pb.cc | $(OBJ_DIR)/packing
+	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Spacking$Svector_bin_packing.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Spacking$Svector_bin_packing.pb.$O
 
 LP_DATA_DEPS = \
  $(SRC_DIR)/ortools/lp_data/lp_data.h \
@@ -5206,4 +5189,3 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: \
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssolver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
-

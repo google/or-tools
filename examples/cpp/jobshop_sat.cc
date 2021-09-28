@@ -26,12 +26,12 @@
 #include "google/protobuf/wrappers.pb.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
-#include "ortools/data/jobshop_scheduling.pb.h"
-#include "ortools/data/jobshop_scheduling_parser.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/model.h"
+#include "ortools/scheduling/jobshop_scheduling.pb.h"
+#include "ortools/scheduling/jobshop_scheduling_parser.h"
 
 ABSL_FLAG(std::string, input, "", "Jobshop data file name.");
 ABSL_FLAG(std::string, params, "", "Sat parameters in text proto format.");
@@ -49,12 +49,12 @@ ABSL_FLAG(bool, display_model, false, "Display jobshop proto before solving.");
 ABSL_FLAG(bool, display_sat_model, false, "Display sat proto before solving.");
 ABSL_FLAG(int, horizon, -1, "Override horizon computation.");
 
-using operations_research::data::jssp::Job;
-using operations_research::data::jssp::JobPrecedence;
-using operations_research::data::jssp::JsspInputProblem;
-using operations_research::data::jssp::Machine;
-using operations_research::data::jssp::Task;
-using operations_research::data::jssp::TransitionTimeMatrix;
+using operations_research::scheduling::jssp::Job;
+using operations_research::scheduling::jssp::JobPrecedence;
+using operations_research::scheduling::jssp::JsspInputProblem;
+using operations_research::scheduling::jssp::Machine;
+using operations_research::scheduling::jssp::Task;
+using operations_research::scheduling::jssp::TransitionTimeMatrix;
 
 namespace operations_research {
 namespace sat {
@@ -871,7 +871,7 @@ int main(int argc, char** argv) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }
 
-  operations_research::data::jssp::JsspParser parser;
+  operations_research::scheduling::jssp::JsspParser parser;
   CHECK(parser.ParseFile(absl::GetFlag(FLAGS_input)));
   operations_research::sat::Solve(parser.problem());
   return EXIT_SUCCESS;

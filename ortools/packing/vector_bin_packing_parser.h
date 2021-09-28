@@ -17,18 +17,18 @@
 //   - vector packing solver: (.vbp files)
 //         http://www.dcc.fc.up.pt/~fdabrandao/Vector_Packing_Solver
 
-#ifndef OR_TOOLS_DATA_VECTOR_BIN_PACKING_PARSER_H_
-#define OR_TOOLS_DATA_VECTOR_BIN_PACKING_PARSER_H_
+#ifndef OR_TOOLS_PACKING_VECTOR_BIN_PACKING_PARSER_H_
+#define OR_TOOLS_PACKING_VECTOR_BIN_PACKING_PARSER_H_
 
 #include <cstdint>
 #include <string>
 #include <vector>
 
 #include "ortools/base/integral_types.h"
-#include "ortools/data/vector_bin_packing.pb.h"
+#include "ortools/packing/vector_bin_packing.pb.h"
 
 namespace operations_research {
-namespace data {
+namespace packing {
 namespace vbp {
 
 class VbpParser {
@@ -38,7 +38,7 @@ class VbpParser {
   bool ParseFile(const std::string& data_filename);
 
   // We keep the fully qualified name for SWIG.
-  ::operations_research::data::vbp::VectorBinPackingProblem problem() const {
+  ::operations_research::packing::vbp::VectorBinPackingProblem problem() const {
     return vbp_;
   }
 
@@ -65,7 +65,7 @@ class VbpParser {
 };
 
 }  // namespace vbp
-}  // namespace data
+}  // namespace packing
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_DATA_VECTOR_BIN_PACKING_PARSER_H_
+#endif  // OR_TOOLS_PACKING_VECTOR_BIN_PACKING_PARSER_H_

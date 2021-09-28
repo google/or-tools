@@ -64,9 +64,6 @@ $(GEN_DIR)/ortools/bop: | $(GEN_DIR)/ortools
 $(GEN_DIR)/ortools/constraint_solver: | $(GEN_DIR)/ortools
 	-$(MKDIR) $(GEN_PATH)$Sortools$Sconstraint_solver
 
-$(GEN_DIR)/ortools/data: | $(GEN_DIR)/ortools
-	-$(MKDIR) $(GEN_PATH)$Sortools$Sdata
-
 $(GEN_DIR)/ortools/flatzinc: | $(GEN_DIR)/ortools
 	-$(MKDIR) $(GEN_PATH)$Sortools$Sflatzinc
 
@@ -79,17 +76,23 @@ $(GEN_DIR)/ortools/graph: | $(GEN_DIR)/ortools
 $(GEN_DIR)/ortools/gscip: | $(GEN_DIR)/ortools
 	-$(MKDIR) $(GEN_PATH)$Sortools$Sgscip
 
+$(GEN_DIR)/ortools/init: | $(GEN_DIR)/ortools
+	-$(MKDIR) $(GEN_PATH)$Sortools$Sinit
+
 $(GEN_DIR)/ortools/linear_solver: | $(GEN_DIR)/ortools
 	-$(MKDIR) $(GEN_PATH)$Sortools$Slinear_solver
+
+$(GEN_DIR)/ortools/packing: | $(GEN_DIR)/ortools
+	-$(MKDIR) $(GEN_PATH)$Sortools$Spacking
 
 $(GEN_DIR)/ortools/sat: | $(GEN_DIR)/ortools
 	-$(MKDIR) $(GEN_PATH)$Sortools$Ssat
 
+$(GEN_DIR)/ortools/scheduling: | $(GEN_DIR)/ortools
+	-$(MKDIR) $(GEN_PATH)$Sortools$Sscheduling
+
 $(GEN_DIR)/ortools/util: | $(GEN_DIR)/ortools
 	-$(MKDIR) $(GEN_PATH)$Sortools$Sutil
-
-$(GEN_DIR)/ortools/init: | $(GEN_DIR)/ortools
-	-$(MKDIR) $(GEN_PATH)$Sortools$Sinit
 
 $(GEN_DIR)/examples: | $(GEN_DIR)
 	-$(MKDIR) $(GEN_PATH)$Sexamples
@@ -118,9 +121,6 @@ $(OBJ_DIR)/bop: | $(OBJ_DIR)
 $(OBJ_DIR)/constraint_solver: | $(OBJ_DIR)
 	-$(MKDIR_P) $(OBJ_DIR)$Sconstraint_solver
 
-$(OBJ_DIR)/data: | $(OBJ_DIR)
-	-$(MKDIR_P) $(OBJ_DIR)$Sdata
-
 $(OBJ_DIR)/flatzinc: | $(OBJ_DIR)
 	-$(MKDIR_P) $(OBJ_DIR)$Sflatzinc
 
@@ -142,11 +142,17 @@ $(OBJ_DIR)/linear_solver: | $(OBJ_DIR)
 $(OBJ_DIR)/lp_data: | $(OBJ_DIR)
 	-$(MKDIR_P) $(OBJ_DIR)$Slp_data
 
+$(OBJ_DIR)/packing: | $(OBJ_DIR)
+	-$(MKDIR_P) $(OBJ_DIR)$Spacking
+
 $(OBJ_DIR)/port: | $(OBJ_DIR)
 	-$(MKDIR_P) $(OBJ_DIR)$Sport
 
 $(OBJ_DIR)/sat: | $(OBJ_DIR)
 	-$(MKDIR_P) $(OBJ_DIR)$Ssat
+
+$(OBJ_DIR)/scheduling: | $(OBJ_DIR)
+	-$(MKDIR_P) $(OBJ_DIR)$Sscheduling
 
 $(OBJ_DIR)/util: | $(OBJ_DIR)
 	-$(MKDIR_P) $(OBJ_DIR)$Sutil
@@ -159,24 +165,24 @@ $(OBJ_DIR)/swig: | $(OBJ_DIR)
 ###############
 # build from: $> grep "pb\.h:" makefiles/Makefile.gen.mk
 PROTO_DEPS = \
-$(GEN_DIR)/ortools/util/optional_boolean.pb.h \
-$(GEN_DIR)/ortools/data/jobshop_scheduling.pb.h \
-$(GEN_DIR)/ortools/data/rcpsp.pb.h \
-$(GEN_DIR)/ortools/data/vector_bin_packing.pb.h \
-$(GEN_DIR)/ortools/glop/parameters.pb.h \
-$(GEN_DIR)/ortools/graph/flow_problem.pb.h \
-$(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
-$(GEN_DIR)/ortools/sat/cp_model.pb.h \
-$(GEN_DIR)/ortools/sat/sat_parameters.pb.h \
 $(GEN_DIR)/ortools/bop/bop_parameters.pb.h \
-$(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/assignment.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/demon_profiler.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/routing_enums.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/routing_parameters.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/search_limit.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/search_stats.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h
+$(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h \
+$(GEN_DIR)/ortools/glop/parameters.pb.h \
+$(GEN_DIR)/ortools/graph/flow_problem.pb.h \
+$(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
+$(GEN_DIR)/ortools/packing/vector_bin_packing.pb.h \
+$(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
+$(GEN_DIR)/ortools/sat/cp_model.pb.h \
+$(GEN_DIR)/ortools/sat/sat_parameters.pb.h \
+$(GEN_DIR)/ortools/scheduling/jobshop_scheduling.pb.h \
+$(GEN_DIR)/ortools/scheduling/rcpsp.pb.h \
+$(GEN_DIR)/ortools/util/optional_boolean.pb.h
 
 include $(OR_ROOT)makefiles/Makefile.gen.mk
 
@@ -607,7 +613,8 @@ install_ortools_dirs: install_dirs
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sport"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Ssat"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sutil"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sdata"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sscheduling"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Spacking"
 
 .PHONY: install_cc # Install C++ OR-Tools to $(DESTDIR)$(prefix)
 install_cc: install_libortools install_third_party install_doc
@@ -633,8 +640,10 @@ install_libortools: $(OR_TOOLS_LIBS) install_ortools_dirs
 	$(COPY) $(GEN_PATH)$Sortools$Ssat$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Ssat"
 	$(COPY) ortools$Sutil$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sutil"
 	$(COPY) $(GEN_PATH)$Sortools$Sutil$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sutil"
-	$(COPY) ortools$Sdata$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sdata"
-	$(COPY) $(GEN_PATH)$Sortools$Sdata$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sdata"
+	$(COPY) ortools$Spacking$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Spacking"
+	$(COPY) $(GEN_PATH)$Sortools$Spacking$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Spacking"
+	$(COPY) ortools$Sscheduling$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sscheduling"
+	$(COPY) $(GEN_PATH)$Sortools$Sscheduling$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sscheduling"
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L "$(DESTDIR)$(prefix)$Slib"
 
 .PHONY: install_third_party
@@ -782,7 +791,8 @@ clean_cc:
 	-$(DEL) $(OBJ_DIR)$Sbase$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sbop$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sconstraint_solver$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sdata$S*.$O
+	-$(DEL) $(OBJ_DIR)$Spacking$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sscheduling$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sflatzinc$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sglop$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sgraph$S*.$O
@@ -800,7 +810,8 @@ clean_cc:
 	-$(DEL) $(CC_TESTS)
 	-$(DEL) $(GEN_PATH)$Sortools$Sbop$S*.pb.*
 	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.pb.*
+	-$(DEL) $(GEN_PATH)$Sortools$Spacking$S*.pb.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sscheduling$S*.pb.*
 	-$(DEL) $(GEN_PATH)$Sortools$Sflatzinc$S*.tab.*
 	-$(DEL) $(GEN_PATH)$Sortools$Sflatzinc$S*.yy.*
 	-$(DEL) $(GEN_PATH)$Sortools$Sflatzinc$Sparser.*

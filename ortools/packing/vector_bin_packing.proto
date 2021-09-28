@@ -36,11 +36,11 @@
 
 syntax = "proto3";
 
-option java_package = "com.google.ortools.data.vbp";
+option java_package = "com.google.ortools.packing.vbp";
 option java_multiple_files = true;
-option csharp_namespace = "Google.OrTools.Data.Vbp";
+option csharp_namespace = "Google.OrTools.Packing.Vbp";
 
-package operations_research.data.vbp;
+package operations_research.packing.vbp;
 
 message Item {
   // Optional name. This is only used for display/debugging purposes.

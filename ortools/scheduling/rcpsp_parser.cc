@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/data/rcpsp_parser.h"
+#include "ortools/scheduling/rcpsp_parser.h"
 
 #include <cstdint>
 
@@ -19,10 +19,10 @@
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "ortools/base/filelineiter.h"
-#include "ortools/data/rcpsp.pb.h"
+#include "ortools/scheduling/rcpsp.pb.h"
 
 namespace operations_research {
-namespace data {
+namespace scheduling {
 namespace rcpsp {
 
 RcpspParser::RcpspParser()
@@ -605,5 +605,5 @@ int64_t RcpspParser::strtoint64(const std::string& word) {
 }
 
 }  // namespace rcpsp
-}  // namespace data
+}  // namespace scheduling
 }  // namespace operations_research

@@ -18,7 +18,7 @@ import collections
 from absl import app
 from absl import flags
 from google.protobuf import text_format
-from ortools.data import pywraprcpsp
+from ortools.scheduling import pywraprcpsp
 from ortools.sat.python import cp_model
 
 FLAGS = flags.FLAGS

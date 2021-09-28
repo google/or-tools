@@ -11,17 +11,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/data/vector_bin_packing_parser.h"
+#include "ortools/packing/vector_bin_packing_parser.h"
 
 #include <cstdint>
 
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "ortools/base/filelineiter.h"
-#include "ortools/data/vector_bin_packing.pb.h"
+#include "ortools/packing/vector_bin_packing.pb.h"
 
 namespace operations_research {
-namespace data {
+namespace packing {
 namespace vbp {
 
 bool VbpParser::ParseFile(const std::string& data_filename) {
@@ -117,5 +117,5 @@ int64_t VbpParser::strtoint64(const std::string& word) {
 }
 
 }  // namespace vbp
-}  // namespace data
+}  // namespace packing
 }  // namespace operations_research

@@ -11,27 +11,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/data/set_covering_data.h"
+#ifndef OR_TOOLS_PACKING_ARC_FLOW_SOLVER_H_
+#define OR_TOOLS_PACKING_ARC_FLOW_SOLVER_H_
+
+#include "ortools/linear_solver/linear_solver.h"
+#include "ortools/packing/vector_bin_packing.pb.h"
 
 namespace operations_research {
-namespace scp {
+namespace packing {
 
-void ScpData::SetProblemSize(int num_rows, int num_columns) {
-  columns_per_row_.clear();
-  columns_per_row_.resize(num_rows);
-  rows_per_column_.clear();
-  rows_per_column_.resize(num_columns);
-  column_costs_.resize(num_columns, 0);
-}
+vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
+    const vbp::VectorBinPackingProblem& problem,
+    MPSolver::OptimizationProblemType solver_type,
+    const std::string& mip_params, double time_limit, int num_threads,
+    bool log_statistics);
 
-void ScpData::SetColumnCost(int column_id, int cost) {
-  column_costs_[column_id] = cost;
-}
-
-void ScpData::AddRowInColumn(int row_id, int column_id) {
-  rows_per_column_[column_id].push_back(row_id);
-  columns_per_row_[row_id].push_back(column_id);
-}
-
-}  // namespace scp
+}  // namespace packing
 }  // namespace operations_research
+
+#endif  // OR_TOOLS_PACKING_ARC_FLOW_SOLVER_H_

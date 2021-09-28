@@ -68,10 +68,11 @@ search_python_module(mypy-protobuf)
 set(PROTO_PYS)
 file(GLOB_RECURSE proto_py_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/constraint_solver/*.proto"
-  "ortools/data/*.proto"
   "ortools/linear_solver/*.proto"
+  "ortools/packing/*.proto"
   "ortools/sat/*.proto"
   "ortools/util/*.proto"
+  "ortools/scheduling/*.proto"
   )
 list(REMOVE_ITEM proto_py_files "ortools/constraint_solver/demon_profiler.proto")
 foreach(PROTO_FILE IN LISTS proto_py_files)
@@ -106,7 +107,7 @@ if(USE_COINOR)
 endif()
 list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
 
-foreach(SUBPROJECT IN ITEMS init algorithms graph linear_solver constraint_solver sat data util)
+foreach(SUBPROJECT IN ITEMS init algorithms graph linear_solver constraint_solver sat scheduling util)
   add_subdirectory(ortools/${SUBPROJECT}/python)
 endforeach()
 
@@ -122,7 +123,7 @@ file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/linear_solver)
 file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/constraint_solver)
 file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/sat)
 file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/sat/python)
-file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/data)
+file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/scheduling)
 file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/util)
 
 file(COPY
@@ -167,7 +168,7 @@ add_custom_target(python_package ALL
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapcp> ${PROJECT_NAME}/constraint_solver
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraplp> ${PROJECT_NAME}/linear_solver
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapsat> ${PROJECT_NAME}/sat
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraprcpsp> ${PROJECT_NAME}/data
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraprcpsp> ${PROJECT_NAME}/scheduling
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sorted_interval_list> ${PROJECT_NAME}/util
   #COMMAND ${Python3_EXECUTABLE} setup.py bdist_egg bdist_wheel
   COMMAND ${Python3_EXECUTABLE} setup.py bdist_wheel

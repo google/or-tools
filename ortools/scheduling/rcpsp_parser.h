@@ -14,17 +14,17 @@
 // A Project Scheduling Library parser.
 // See: http://www.om-db.wi.tum.de/psplib/  # PSP-Lib homepage.
 
-#ifndef OR_TOOLS_DATA_RCPSP_PARSER_H_
-#define OR_TOOLS_DATA_RCPSP_PARSER_H_
+#ifndef OR_TOOLS_SCHEDULING_RCPSP_PARSER_H_
+#define OR_TOOLS_SCHEDULING_RCPSP_PARSER_H_
 
 #include <string>
 #include <vector>
 
 #include "ortools/base/integral_types.h"
-#include "ortools/data/rcpsp.pb.h"
+#include "ortools/scheduling/rcpsp.pb.h"
 
 namespace operations_research {
-namespace data {
+namespace scheduling {
 namespace rcpsp {
 
 // RCPSP parser.
@@ -35,7 +35,7 @@ class RcpspParser {
   RcpspParser();
 
   // We keep the fully qualified name for swig.
-  ::operations_research::data::rcpsp::RcpspProblem problem() const {
+  ::operations_research::scheduling::rcpsp::RcpspProblem problem() const {
     return rcpsp_;
   }
 
@@ -78,7 +78,7 @@ class RcpspParser {
 };
 
 }  // namespace rcpsp
-}  // namespace data
+}  // namespace scheduling
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_DATA_RCPSP_PARSER_H_
+#endif  // OR_TOOLS_SCHEDULING_RCPSP_PARSER_H_

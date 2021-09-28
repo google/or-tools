@@ -1,5 +1,5 @@
 file(GLOB _SRCS "*.h" "*.cc")
-set(NAME ${PROJECT_NAME}_data)
+set(NAME ${PROJECT_NAME}_packing)
 
 # Will be merge in libortools.so
 #add_library(${NAME} STATIC ${_SRCS})
@@ -14,7 +14,8 @@ target_include_directories(${NAME} PRIVATE
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR})
 target_link_libraries(${NAME} PRIVATE
+  absl::flags
   absl::strings
   protobuf::libprotobuf
   ${PROJECT_NAME}::proto)
-#add_library(${PROJECT_NAME}::data ALIAS ${NAME})
+#add_library(${PROJECT_NAME}::packing ALIAS ${NAME})

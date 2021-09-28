@@ -15,24 +15,24 @@
 %include "ortools/util/python/proto.i"
 
 %{
-#include "ortools/data/rcpsp_parser.h"
-#include "ortools/data/rcpsp.pb.h"
+#include "ortools/scheduling/rcpsp_parser.h"
+#include "ortools/scheduling/rcpsp.pb.h"
 %}
 
-PY_PROTO_TYPEMAP(ortools.data.rcpsp_pb2,
+PY_PROTO_TYPEMAP(ortools.scheduling.rcpsp_pb2,
                  RcpspProblem,
-                 ::operations_research::data::rcpsp::RcpspProblem);
+                 ::operations_research::scheduling::rcpsp::RcpspProblem);
 
 %ignoreall
 
 %unignore operations_research;
-%unignore operations_research::data;
-%unignore operations_research::data::rcpsp;
-%unignore operations_research::data::rcpsp::RcpspParser;
-%unignore operations_research::data::rcpsp::RcpspParser::RcpspParser;
-%rename (Problem) operations_research::data::rcpsp::RcpspParser::problem;
-%unignore operations_research::data::rcpsp::RcpspParser::ParseFile;
+%unignore operations_research::scheduling;
+%unignore operations_research::scheduling::rcpsp;
+%unignore operations_research::scheduling::rcpsp::RcpspParser;
+%unignore operations_research::scheduling::rcpsp::RcpspParser::RcpspParser();
+%rename (Problem) operations_research::scheduling::rcpsp::RcpspParser::problem;
+%unignore operations_research::scheduling::rcpsp::RcpspParser::ParseFile(const std::string& file_name);
 
-%include "ortools/data/rcpsp_parser.h"
+%include "ortools/scheduling/rcpsp_parser.h"
 
 %unignoreall

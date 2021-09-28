@@ -11,17 +11,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_DATA_JOBSHOP_SCHEDULING_PARSER_H_
-#define OR_TOOLS_DATA_JOBSHOP_SCHEDULING_PARSER_H_
+#ifndef OR_TOOLS_SCHEDULING_JOBSHOP_SCHEDULING_PARSER_H_
+#define OR_TOOLS_SCHEDULING_JOBSHOP_SCHEDULING_PARSER_H_
 
 #include <cstdint>
 
 #include "absl/strings/match.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/data/jobshop_scheduling.pb.h"
+#include "ortools/scheduling/jobshop_scheduling.pb.h"
 
 namespace operations_research {
-namespace data {
+namespace scheduling {
 namespace jssp {
 
 class JsspParser {
@@ -87,7 +87,7 @@ class JsspParser {
 };
 
 }  // namespace jssp
-}  // namespace data
+}  // namespace scheduling
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_DATA_JOBSHOP_SCHEDULING_PARSER_H_
+#endif  // OR_TOOLS_SCHEDULING_JOBSHOP_SCHEDULING_PARSER_H_

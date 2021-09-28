@@ -67,11 +67,11 @@
 
 syntax = "proto3";
 
-option java_package = "com.google.ortools.data.rcpsp";
+option java_package = "com.google.ortools.scheduling.rcpsp";
 option java_multiple_files = true;
-option csharp_namespace = "Google.OrTools.Data.Rcpsp";
+option csharp_namespace = "Google.OrTools.Scheduling.Rcpsp";
 
-package operations_research.data.rcpsp;
+package operations_research.scheduling.rcpsp;
 
 message Resource {
   // The max capacity of the cumulative.
