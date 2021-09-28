@@ -47,6 +47,7 @@ PYGRAPH_LIBS = $(LIB_DIR)/_pywrapgraph.$(SWIG_PYTHON_LIB_SUFFIX)
 PYCP_LIBS = $(LIB_DIR)/_pywrapcp.$(SWIG_PYTHON_LIB_SUFFIX)
 PYLP_LIBS = $(LIB_DIR)/_pywraplp.$(SWIG_PYTHON_LIB_SUFFIX)
 PYSAT_LIBS = $(LIB_DIR)/_pywrapsat.$(SWIG_PYTHON_LIB_SUFFIX)
+PYPACKING_LIBS = $(GEN_DIR)/ortools/packing/vector_bin_packing_pb2.py
 PYSCHEDULING_LIBS = $(LIB_DIR)/_pywraprcpsp.$(SWIG_PYTHON_LIB_SUFFIX)
 PYSORTED_INTERVAL_LIST_LIBS = $(LIB_DIR)/_sorted_interval_list.$(SWIG_PYTHON_LIB_SUFFIX)
 PYTHON_OR_TOOLS_LIBS = \
@@ -57,6 +58,7 @@ PYTHON_OR_TOOLS_LIBS = \
  $(PYCP_LIBS) \
  $(PYLP_LIBS) \
  $(PYSAT_LIBS) \
+ $(PYPACKING_LIBS) \
  $(PYSCHEDULING_LIBS) \
  $(PYSORTED_INTERVAL_LIST_LIBS)
 
@@ -449,6 +451,14 @@ ifeq ($(SYSTEM),win)
 else
 	cp $(PYSAT_LIBS) $(GEN_PATH)/ortools/sat
 endif
+
+# packing
+$(GEN_DIR)/ortools/packing/vector_bin_packing_pb2.py: \
+ $(SRC_DIR)/ortools/packing/vector_bin_packing.proto \
+ $(PROTOBUF_PYTHON_DESC) \
+ | $(GEN_DIR)/ortools/packing
+	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
+ $(SRC_DIR)/ortools/packing/vector_bin_packing.proto
 
 # pywraprcpsp
 ifeq ($(PLATFORM),MACOSX)
@@ -889,6 +899,7 @@ MISSING_PYPI_FILES = \
  $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/graph \
  $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/constraint_solver \
  $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/linear_solver \
+ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/packing \
  $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/sat \
  $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/scheduling \
  $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/util \
@@ -990,6 +1001,12 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/sat: $(PYSAT_LIBS) | $(PYPI_ARCHIVE_TEM
 	$(COPY) $(GEN_PATH)$Sortools$Ssat$S_pywrapsat.* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat
 	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat$Spython
 	$(COPY) ortools$Ssat$Spython$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat$Spython
+
+$(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/packing: $(PYPACKING_LIBS) | $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools
+	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Spacking
+	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Spacking
+	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Spacking$S__init__.py
+	$(COPY) $(GEN_PATH)$Sortools$Spacking$S*.py* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Spacking
 
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/scheduling: $(PYSCHEDULING_LIBS) | $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sscheduling
@@ -1193,6 +1210,8 @@ clean_python:
 	-$(DEL) $(GEN_PATH)$Sortools$Sscheduling$S*.py
 	-$(DEL) $(GEN_PATH)$Sortools$Sscheduling$S*.pyc
 	-$(DELREC) $(GEN_PATH)$Sortools$Sscheduling$S__pycache__
+	-$(DEL) ortools$Spacking$S*.pyc
+	-$(DELREC) ortools$Spacking$S__pycache__
 	-$(DEL) ortools$Sscheduling$S*.pyc
 	-$(DELREC) ortools$Sscheduling$S__pycache__
 	-$(DEL) $(GEN_PATH)$Sortools$Sscheduling$S*_python_wrap.*
