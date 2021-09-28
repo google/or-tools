@@ -18,7 +18,7 @@
 // http://en.wikipedia.org/wiki/Vehicle_routing_problem.
 // The variant which is tackled by this model includes a capacity dimension,
 // disjoint time windows and optional orders, with a penalty cost if orders are
-// not performed. For the sake of simplicty, orders are randomly located and
+// not performed. For the sake of simplicity, orders are randomly located and
 // distances are computed using the Manhattan distance. Distances are assumed
 // to be in meters and times in seconds.
 
