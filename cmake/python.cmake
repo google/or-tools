@@ -126,6 +126,7 @@ file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/algorithms)
 file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/graph)
 file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/linear_solver)
 file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/constraint_solver)
+file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/packing)
 file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/sat)
 file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/sat/python)
 file(COPY ortools/__init__.py DESTINATION ${PYTHON_PATH}/scheduling)
@@ -163,27 +164,28 @@ search_python_module(wheel)
 add_custom_target(python_package ALL
   COMMAND ${CMAKE_COMMAND} -E copy ./$<CONFIG>/setup.py setup.py
   COMMAND ${CMAKE_COMMAND} -E remove_directory dist
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_NAME}/.libs
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${PYTHON_PROJECT}/.libs
   # Don't need to copy static lib on windows.
-  COMMAND ${CMAKE_COMMAND} -E
-  $<IF:$<STREQUAL:$<TARGET_PROPERTY:${PYTHON_PROJECT},TYPE>,SHARED_LIBRARY>,copy $<TARGET_SONAME_FILE:${PYTHON_PROJECT}>,true>
-    ${PROJECT_NAME}/.libs
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapinit> ${PROJECT_NAME}/init
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapknapsack_solver> ${PROJECT_NAME}/algorithms
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapgraph> ${PROJECT_NAME}/graph
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapcp> ${PROJECT_NAME}/constraint_solver
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraplp> ${PROJECT_NAME}/linear_solver
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapsat> ${PROJECT_NAME}/sat
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraprcpsp> ${PROJECT_NAME}/scheduling
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sorted_interval_list> ${PROJECT_NAME}/util
+  COMMAND ${CMAKE_COMMAND} -E $<IF:$<STREQUAL:$<TARGET_PROPERTY:${PYTHON_PROJECT},TYPE>,SHARED_LIBRARY>,copy,true>
+  $<$<STREQUAL:$<TARGET_PROPERTY:${PYTHON_PROJECT},TYPE>,SHARED_LIBRARY>:$<TARGET_SONAME_FILE:${PYTHON_PROJECT}>>
+  ${PYTHON_PROJECT}/.libs
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapinit> ${PYTHON_PROJECT}/init
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapknapsack_solver> ${PYTHON_PROJECT}/algorithms
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapgraph> ${PYTHON_PROJECT}/graph
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapcp> ${PYTHON_PROJECT}/constraint_solver
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraplp> ${PYTHON_PROJECT}/linear_solver
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapsat> ${PYTHON_PROJECT}/sat
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraprcpsp> ${PYTHON_PROJECT}/scheduling
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sorted_interval_list> ${PYTHON_PROJECT}/util
   #COMMAND ${Python3_EXECUTABLE} setup.py bdist_egg bdist_wheel
   COMMAND ${Python3_EXECUTABLE} setup.py bdist_wheel
   BYPRODUCTS
-    python/${PROJECT_NAME}
+    python/${PYTHON_PROJECT}
     python/build
     python/dist
-    python/${PROJECT_NAME}.egg-info
+    python/${PYTHON_PROJECT}.egg-info
   WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/python
+  COMMAND_EXPAND_LISTS
   )
 add_dependencies(python_package ortools::ortools Py${PROJECT_NAME}_proto)
 
