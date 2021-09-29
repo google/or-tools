@@ -766,51 +766,110 @@ void SquarePropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
-DivisionPropagator::DivisionPropagator(IntegerVariable a, IntegerVariable b,
-                                       IntegerVariable c,
-                                       IntegerTrail* integer_trail)
-    : a_(a), b_(b), c_(c), integer_trail_(integer_trail) {
+PositiveDivisionPropagator::PositiveDivisionPropagator(
+    IntegerVariable num, IntegerVariable denom, IntegerVariable div,
+    IntegerTrail* integer_trail)
+    : num_(num), denom_(denom), div_(div), integer_trail_(integer_trail) {
   // TODO(user): support these cases.
-  CHECK_GE(integer_trail->LevelZeroLowerBound(a), 0);
-  CHECK_GT(integer_trail->LevelZeroLowerBound(b), 0);  // b can never be zero.
+  CHECK_GE(integer_trail->LevelZeroLowerBound(num), 0);
+  // The denominator can never be zero.
+  CHECK_GT(integer_trail->LevelZeroLowerBound(denom), 0);
 }
 
-bool DivisionPropagator::Propagate() {
-  const IntegerValue min_a = integer_trail_->LowerBound(a_);
-  const IntegerValue max_a = integer_trail_->UpperBound(a_);
-  const IntegerValue min_b = integer_trail_->LowerBound(b_);
-  const IntegerValue max_b = integer_trail_->UpperBound(b_);
-  IntegerValue min_c = integer_trail_->LowerBound(c_);
-  IntegerValue max_c = integer_trail_->UpperBound(c_);
+bool PositiveDivisionPropagator::Propagate() {
+  const IntegerValue min_num = integer_trail_->LowerBound(num_);
+  const IntegerValue max_num = integer_trail_->UpperBound(num_);
+  const IntegerValue min_denom = integer_trail_->LowerBound(denom_);
+  const IntegerValue max_denom = integer_trail_->UpperBound(denom_);
+  const IntegerValue min_div = integer_trail_->LowerBound(div_);
+  const IntegerValue max_div = integer_trail_->UpperBound(div_);
 
-  if (max_a / min_b < max_c) {
-    max_c = max_a / min_b;
-    if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(c_, max_c), {},
-                                 {integer_trail_->UpperBoundAsLiteral(a_),
-                                  integer_trail_->LowerBoundAsLiteral(b_)})) {
-      return false;
-    }
-  }
-  if (min_a / max_b > min_c) {
-    min_c = min_a / max_b;
-    if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(c_, min_c), {},
-                                 {integer_trail_->LowerBoundAsLiteral(a_),
-                                  integer_trail_->UpperBoundAsLiteral(b_)})) {
+  const IntegerValue new_max_div = max_num / min_denom;
+  if (max_div > new_max_div) {
+    if (!integer_trail_->Enqueue(
+            IntegerLiteral::LowerOrEqual(div_, new_max_div), {},
+            {integer_trail_->UpperBoundAsLiteral(num_),
+             integer_trail_->LowerBoundAsLiteral(denom_)})) {
       return false;
     }
   }
 
-  // TODO(user): propagate the bounds on a and b from the ones of c.
-  // Note however that what we did is enough to enforce the constraint when
-  // all the values are fixed.
+  const IntegerValue new_min_div = min_num / max_denom;
+  if (min_div < new_min_div) {
+    if (!integer_trail_->Enqueue(
+            IntegerLiteral::GreaterOrEqual(div_, new_min_div), {},
+            {integer_trail_->LowerBoundAsLiteral(num_),
+             integer_trail_->UpperBoundAsLiteral(denom_)})) {
+      return false;
+    }
+  }
+
+  // We start from num / denom <= max_div.
+  // num < (max_div + 1) * denom
+  // num + 1 <= (max_div + 1) * max_denom.
+  const IntegerValue new_max_num = (max_div + 1) * max_denom - 1;
+  if (max_num > new_max_num) {
+    if (!integer_trail_->Enqueue(
+            IntegerLiteral::LowerOrEqual(num_, new_max_num), {},
+            {integer_trail_->UpperBoundAsLiteral(denom_),
+             integer_trail_->UpperBoundAsLiteral(div_)})) {
+      return false;
+    }
+  }
+
+  // We start from num / denom >= min_div.
+  // num >= min_div * denom.
+  // num >= min_div * min_denom.
+  const IntegerValue new_min_num = min_denom * min_div;
+  if (min_num < new_min_num) {
+    if (!integer_trail_->Enqueue(
+            IntegerLiteral::GreaterOrEqual(num_, new_min_num), {},
+            {integer_trail_->LowerBoundAsLiteral(denom_),
+             integer_trail_->LowerBoundAsLiteral(div_)})) {
+      return false;
+    }
+  }
+
+  // We start with num / denom >= min_div.
+  // So num >= min_div * denom
+  // If min_div == 0 we can't deduce anything.
+  // Otherwise, denom <= num / min_div and denom <= max_num / min_div.
+  if (min_div > 0) {
+    // const IntegerValue new_max_denom = (max_num - 1) / (min_div - 1);
+    const IntegerValue new_max_denom = max_num / min_div;
+    if (max_denom > new_max_denom) {
+      if (!integer_trail_->Enqueue(
+              IntegerLiteral::LowerOrEqual(denom_, new_max_denom), {},
+              {integer_trail_->UpperBoundAsLiteral(num_),
+               integer_trail_->LowerBoundAsLiteral(div_)})) {
+        return false;
+      }
+    }
+  }
+
+  // We start from num / denom <= max_div.
+  // num < (max_div + 1) * denom.
+  // num + 1 <= (max_div + 1) * denom.
+  // denom >= CeilRatio(num + 1, max_div+1) >= CeilRatio(min_num + 1, max_div +
+  // 1).
+  const IntegerValue new_min_denom = CeilRatio(min_num + 1, max_div + 1);
+  if (min_denom < new_min_denom) {
+    if (!integer_trail_->Enqueue(
+            IntegerLiteral::GreaterOrEqual(denom_, new_min_denom), {},
+            {integer_trail_->LowerBoundAsLiteral(num_),
+             integer_trail_->UpperBoundAsLiteral(div_)})) {
+      return false;
+    }
+  }
+
   return true;
 }
 
-void DivisionPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+void PositiveDivisionPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  watcher->WatchIntegerVariable(a_, id);
-  watcher->WatchIntegerVariable(b_, id);
-  watcher->WatchIntegerVariable(c_, id);
+  watcher->WatchIntegerVariable(num_, id);
+  watcher->WatchIntegerVariable(denom_, id);
+  watcher->WatchIntegerVariable(div_, id);
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 

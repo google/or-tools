@@ -136,7 +136,7 @@ class LevelZeroEquality : PropagatorInterface {
   IntegerTrail* integer_trail_;
 };
 
-// A min (resp max) contraint of the form min == MIN(vars) can be decomposed
+// A min (resp max) constraint of the form min == MIN(vars) can be decomposed
 // into two inequalities:
 //   1/ min <= MIN(vars), which is the same as for all v in vars, "min <= v".
 //      This can be taken care of by the LowerOrEqual(min, v) constraint.
@@ -232,26 +232,24 @@ class PositiveProductPropagator : public PropagatorInterface {
 
 // Propagates a / b = c. Basic version, we don't extract any special cases, and
 // we only propagates the bounds.
+// It expects a, and c to be >= 0, b to be > 0.
 //
-// TODO(user): For now this only works on variables that are non-negative.
-// TODO(user): This only propagate the direction => c, do the reverse.
 // TODO(user): Deal with overflow.
-// TODO(user): Unit-test this like the ProductPropagator.
-class DivisionPropagator : public PropagatorInterface {
+class PositiveDivisionPropagator : public PropagatorInterface {
  public:
-  DivisionPropagator(IntegerVariable a, IntegerVariable b, IntegerVariable c,
-                     IntegerTrail* integer_trail);
+  PositiveDivisionPropagator(IntegerVariable num, IntegerVariable denom,
+                             IntegerVariable div, IntegerTrail* integer_trail);
 
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  const IntegerVariable a_;
-  const IntegerVariable b_;
-  const IntegerVariable c_;
+  const IntegerVariable num_;
+  const IntegerVariable denom_;
+  const IntegerVariable div_;
   IntegerTrail* integer_trail_;
 
-  DISALLOW_COPY_AND_ASSIGN(DivisionPropagator);
+  DISALLOW_COPY_AND_ASSIGN(PositiveDivisionPropagator);
 };
 
 // Propagates var_a / cst_b = var_c. Basic version, we don't extract any special
@@ -809,14 +807,14 @@ inline std::function<void(Model*)> ProductConstraint(IntegerVariable a,
   };
 }
 
-// Adds the constraint: a / b = c.
-inline std::function<void(Model*)> DivisionConstraint(IntegerVariable a,
-                                                      IntegerVariable b,
-                                                      IntegerVariable c) {
+// Adds the constraint: num / b = c.
+inline std::function<void(Model*)> DivisionConstraint(IntegerVariable num,
+                                                      IntegerVariable denom,
+                                                      IntegerVariable div) {
   return [=](Model* model) {
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    DivisionPropagator* constraint =
-        new DivisionPropagator(a, b, c, integer_trail);
+    PositiveDivisionPropagator* constraint =
+        new PositiveDivisionPropagator(num, denom, div, integer_trail);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
