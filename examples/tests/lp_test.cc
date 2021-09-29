@@ -19,7 +19,8 @@
 
 namespace operations_research {
 void SolveAndPrint(MPSolver& solver, std::vector<MPVariable*> variables,
-                   std::vector<MPConstraint*> constraints) {
+                   std::vector<MPConstraint*> constraints,
+                   bool is_continuous) {
   LOG(INFO) << "Number of variables = " << solver.NumVariables();
   LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
 
@@ -36,15 +37,18 @@ void SolveAndPrint(MPSolver& solver, std::vector<MPVariable*> variables,
   LOG(INFO) << "";
   LOG(INFO) << "Advanced usage:";
   LOG(INFO) << "Problem solved in " << solver.wall_time() << " milliseconds";
-  LOG(INFO) << "Problem solved in " << solver.iterations() << " iterations";
-  for (const auto& i : variables) {
-    LOG(INFO) << i->name() << ": reduced cost " << i->reduced_cost();
-  }
+  if (solver.ProblemType() != MPSolver::BOP_INTEGER_PROGRAMMING)
+    LOG(INFO) << "Problem solved in " << solver.iterations() << " iterations";
+  if (is_continuous) {
+    for (const auto& i : variables) {
+      LOG(INFO) << i->name() << ": reduced cost " << i->reduced_cost();
+    }
 
-  const std::vector<double> activities = solver.ComputeConstraintActivities();
-  for (const auto& i : constraints) {
-    LOG(INFO) << i->name() << ": dual value = " << i->dual_value()
-              << " activity = " << activities[i->index()];
+    const std::vector<double> activities = solver.ComputeConstraintActivities();
+    for (const auto& i : constraints) {
+      LOG(INFO) << i->name() << ": dual value = " << i->dual_value()
+        << " activity = " << activities[i->index()];
+    }
   }
 }
 
@@ -77,7 +81,7 @@ void RunLinearProgrammingExample(
   c2->SetCoefficient(x, 1);
   c2->SetCoefficient(y, -1);
 
-  SolveAndPrint(solver, {x, y}, {c0, c1, c2});
+  SolveAndPrint(solver, {x, y}, {c0, c1, c2}, true);
 }
 
 void RunMixedIntegerProgrammingExample(
@@ -104,12 +108,12 @@ void RunMixedIntegerProgrammingExample(
   c1->SetCoefficient(x, 1);
   c1->SetCoefficient(y, 0);
 
-  SolveAndPrint(solver, {x, y}, {c0, c1});
+  SolveAndPrint(solver, {x, y}, {c0, c1}, false);
 }
 
 void RunBooleanProgrammingExample(
     MPSolver::OptimizationProblemType optimization_problem_type) {
-  MPSolver solver("MixedIntegerProgrammingExample", optimization_problem_type);
+  MPSolver solver("BooleanProgrammingExample", optimization_problem_type);
   const double infinity = solver.infinity();
   // x and y are boolean variables.
   MPVariable* const x = solver.MakeBoolVar("x");
@@ -126,7 +130,7 @@ void RunBooleanProgrammingExample(
   c0->SetCoefficient(x, 1);
   c0->SetCoefficient(y, 2);
 
-  SolveAndPrint(solver, {x, y}, {c0});
+  SolveAndPrint(solver, {x, y}, {c0}, false);
 }
 
 void MutableObjectiveCrash() {
