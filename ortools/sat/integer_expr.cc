@@ -835,7 +835,6 @@ bool PositiveDivisionPropagator::Propagate() {
   // If min_div == 0 we can't deduce anything.
   // Otherwise, denom <= num / min_div and denom <= max_num / min_div.
   if (min_div > 0) {
-    // const IntegerValue new_max_denom = (max_num - 1) / (min_div - 1);
     const IntegerValue new_max_denom = max_num / min_div;
     if (max_denom > new_max_denom) {
       if (!integer_trail_->Enqueue(
@@ -847,11 +846,8 @@ bool PositiveDivisionPropagator::Propagate() {
     }
   }
 
-  // We start from num / denom <= max_div.
-  // num < (max_div + 1) * denom.
-  // num + 1 <= (max_div + 1) * denom.
-  // denom >= CeilRatio(num + 1, max_div+1) >= CeilRatio(min_num + 1, max_div +
-  // 1).
+  // denom >= CeilRatio(num + 1, max_div+1)
+  //               >= CeilRatio(min_num + 1, max_div +).
   const IntegerValue new_min_denom = CeilRatio(min_num + 1, max_div + 1);
   if (min_denom < new_min_denom) {
     if (!integer_trail_->Enqueue(

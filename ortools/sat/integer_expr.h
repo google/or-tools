@@ -230,9 +230,9 @@ class PositiveProductPropagator : public PropagatorInterface {
   DISALLOW_COPY_AND_ASSIGN(PositiveProductPropagator);
 };
 
-// Propagates a / b = c. Basic version, we don't extract any special cases, and
-// we only propagates the bounds.
-// It expects a, and c to be >= 0, b to be > 0.
+// Propagates num / denom = div. Basic version, we don't extract any special
+// cases, and we only propagates the bounds. It expects num, div to be >= 0,
+// and denom to be > 0.
 //
 // TODO(user): Deal with overflow.
 class PositiveDivisionPropagator : public PropagatorInterface {
@@ -807,7 +807,7 @@ inline std::function<void(Model*)> ProductConstraint(IntegerVariable a,
   };
 }
 
-// Adds the constraint: num / b = c.
+// Adds the constraint: num / denom = div.
 inline std::function<void(Model*)> DivisionConstraint(IntegerVariable num,
                                                       IntegerVariable denom,
                                                       IntegerVariable div) {
