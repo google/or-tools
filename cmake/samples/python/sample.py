@@ -2,9 +2,10 @@ from ortools.linear_solver import pywraplp
 from ortools.linear_solver import linear_solver_pb2
 from ortools.constraint_solver import pywrapcp
 from ortools.sat import pywrapsat
+from ortools.sat.python import cp_model
 from ortools.graph import pywrapgraph
 from ortools.algorithms import pywrapknapsack_solver
-from ortools.data import pywraprcpsp
+from ortools.scheduling import pywraprcpsp
 
 def lpsolver():
     print('Test lpsolver...')
