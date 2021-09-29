@@ -7221,8 +7221,8 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
       int64_t old_value = mutable_hint->values(i);
       // We always move a hint within bounds.
       // This also make sure a hint of INT_MIN or INT_MAX does not overflow.
-      if (old_value < context.MinOf(i)) old_value = context.MinOf(i);
-      if (old_value > context.MaxOf(i)) old_value = context.MaxOf(i);
+      if (old_value < context.MinOf(old_ref)) old_value = context.MinOf(old_ref);
+      if (old_value > context.MaxOf(old_ref)) old_value = context.MaxOf(old_ref);
       // Note that if (old_value - r.offset) is not divisible by r.coeff, then
       // the hint is clearly infeasible, but we still set it to a "close" value.
       const AffineRelation::Relation r = context.GetAffineRelation(old_ref);
