@@ -214,6 +214,9 @@
                                 <a class="function" href="#Solver.LoadModelFromProto">LoadModelFromProto</a>
                         </li>
                         <li>
+                                <a class="function" href="#Solver.LoadModelFromProtoWithUniqueNamesOrDie">LoadModelFromProtoWithUniqueNamesOrDie</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#Solver.LoadSolutionFromProto">LoadSolutionFromProto</a>
                         </li>
                         <li>
@@ -911,7 +914,7 @@ pywraplp    </h1>
         <span class="k">return</span> <span class="n">_pywraplp</span><span class="o">.</span><span class="n">Solver_FillSolutionResponseProto</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">SolveWithProto</span><span class="p">(</span><span class="n">model_request</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPModelRequest const &amp;&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">,</span> <span class="n">interrupt</span><span class="p">:</span> <span class="s2">&quot;std::atomic&lt; bool &gt; const *&quot;</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">SolveWithProto</span><span class="p">(</span><span class="n">model_request</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPModelRequest const &amp;&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">,</span> <span class="n">interrupt</span><span class="p">:</span> <span class="s2">&quot;std::atomic&lt; bool &gt; *&quot;</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">:</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Solves the model encoded by a MPModelRequest protocol buffer and fills the</span>
 <span class="sd">        solution encoded as a MPSolutionResponse. The solve is stopped prematurely</span>
@@ -1028,6 +1031,9 @@ pywraplp    </h1>
 
     <span class="k">def</span> <span class="nf">LoadModelFromProto</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_model</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPModelProto const &amp;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;std::string&quot;</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_pywraplp</span><span class="o">.</span><span class="n">Solver_LoadModelFromProto</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_model</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">LoadModelFromProtoWithUniqueNamesOrDie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_model</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPModelProto const &amp;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;std::string&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_pywraplp</span><span class="o">.</span><span class="n">Solver_LoadModelFromProtoWithUniqueNamesOrDie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_model</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">LoadSolutionFromProto</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;bool&quot;</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_pywraplp</span><span class="o">.</span><span class="n">Solver_LoadSolutionFromProto</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
@@ -1153,7 +1159,7 @@ pywraplp    </h1>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">_pywraplp</span><span class="o">.</span><span class="n">Solver_SupportsProblemType</span><span class="p">(</span><span class="n">problem_type</span><span class="p">)</span>
 
-<span class="k">def</span> <span class="nf">Solver_SolveWithProto</span><span class="p">(</span><span class="n">model_request</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPModelRequest const &amp;&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">,</span> <span class="n">interrupt</span><span class="p">:</span> <span class="s2">&quot;std::atomic&lt; bool &gt; const *&quot;</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">Solver_SolveWithProto</span><span class="p">(</span><span class="n">model_request</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPModelRequest const &amp;&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">,</span> <span class="n">interrupt</span><span class="p">:</span> <span class="s2">&quot;std::atomic&lt; bool &gt; *&quot;</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">:</span>
     <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Solves the model encoded by a MPModelRequest protocol buffer and fills the</span>
 <span class="sd">    solution encoded as a MPSolutionResponse. The solve is stopped prematurely</span>
@@ -1896,7 +1902,7 @@ pywraplp    </h1>
         <span class="k">return</span> <span class="n">_pywraplp</span><span class="o">.</span><span class="n">Solver_FillSolutionResponseProto</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">SolveWithProto</span><span class="p">(</span><span class="n">model_request</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPModelRequest const &amp;&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">,</span> <span class="n">interrupt</span><span class="p">:</span> <span class="s2">&quot;std::atomic&lt; bool &gt; const *&quot;</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">SolveWithProto</span><span class="p">(</span><span class="n">model_request</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPModelRequest const &amp;&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">,</span> <span class="n">interrupt</span><span class="p">:</span> <span class="s2">&quot;std::atomic&lt; bool &gt; *&quot;</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">:</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Solves the model encoded by a MPModelRequest protocol buffer and fills the</span>
 <span class="sd">        solution encoded as a MPSolutionResponse. The solve is stopped prematurely</span>
@@ -2013,6 +2019,9 @@ pywraplp    </h1>
 
     <span class="k">def</span> <span class="nf">LoadModelFromProto</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_model</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPModelProto const &amp;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;std::string&quot;</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_pywraplp</span><span class="o">.</span><span class="n">Solver_LoadModelFromProto</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_model</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">LoadModelFromProtoWithUniqueNamesOrDie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_model</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPModelProto const &amp;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;std::string&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_pywraplp</span><span class="o">.</span><span class="n">Solver_LoadModelFromProtoWithUniqueNamesOrDie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_model</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">LoadSolutionFromProto</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;bool&quot;</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_pywraplp</span><span class="o">.</span><span class="n">Solver_LoadSolutionFromProto</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
@@ -3083,14 +3092,14 @@ interruption is supported for a given solver type.</p>
             <span class="name">SolveWithProto</span><span class="signature">(
     model_request: &#39;operations_research::MPModelRequest const &amp;&#39;,
     response: &#39;operations_research::MPSolutionResponse *&#39;,
-    interrupt: &#39;std::atomic&lt; bool &gt; const *&#39; = None
+    interrupt: &#39;std::atomic&lt; bool &gt; *&#39; = None
 ) -&gt; &#39;operations_research::MPSolutionResponse *&#39;</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">SolveWithProto</span><span class="p">(</span><span class="n">model_request</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPModelRequest const &amp;&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">,</span> <span class="n">interrupt</span><span class="p">:</span> <span class="s2">&quot;std::atomic&lt; bool &gt; const *&quot;</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">SolveWithProto</span><span class="p">(</span><span class="n">model_request</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPModelRequest const &amp;&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">,</span> <span class="n">interrupt</span><span class="p">:</span> <span class="s2">&quot;std::atomic&lt; bool &gt; *&quot;</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">:</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Solves the model encoded by a MPModelRequest protocol buffer and fills the</span>
 <span class="sd">        solution encoded as a MPSolutionResponse. The solve is stopped prematurely</span>
@@ -3519,6 +3528,28 @@ solvers for multiple solutions. Other solvers return false unconditionally.</p>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">LoadModelFromProto</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_model</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPModelProto const &amp;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;std::string&quot;</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_pywraplp</span><span class="o">.</span><span class="n">Solver_LoadModelFromProto</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_model</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+    
+
+                            </div>
+                            <div id="Solver.LoadModelFromProtoWithUniqueNamesOrDie" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Solver.LoadModelFromProtoWithUniqueNamesOrDie">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">LoadModelFromProtoWithUniqueNamesOrDie</span><span class="signature">(
+    self,
+    input_model: &#39;operations_research::MPModelProto const &amp;&#39;
+) -&gt; &#39;std::string&#39;</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">LoadModelFromProtoWithUniqueNamesOrDie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_model</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPModelProto const &amp;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;std::string&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_pywraplp</span><span class="o">.</span><span class="n">Solver_LoadModelFromProtoWithUniqueNamesOrDie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_model</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -3967,13 +3998,13 @@ targets that you linked).</p>
             <span class="name">Solver_SolveWithProto</span><span class="signature">(
     model_request: &#39;operations_research::MPModelRequest const &amp;&#39;,
     response: &#39;operations_research::MPSolutionResponse *&#39;,
-    interrupt: &#39;std::atomic&lt; bool &gt; const *&#39; = None
+    interrupt: &#39;std::atomic&lt; bool &gt; *&#39; = None
 ) -&gt; &#39;operations_research::MPSolutionResponse *&#39;</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">Solver_SolveWithProto</span><span class="p">(</span><span class="n">model_request</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPModelRequest const &amp;&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">,</span> <span class="n">interrupt</span><span class="p">:</span> <span class="s2">&quot;std::atomic&lt; bool &gt; const *&quot;</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">:</span>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">Solver_SolveWithProto</span><span class="p">(</span><span class="n">model_request</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPModelRequest const &amp;&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">,</span> <span class="n">interrupt</span><span class="p">:</span> <span class="s2">&quot;std::atomic&lt; bool &gt; *&quot;</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;operations_research::MPSolutionResponse *&quot;</span><span class="p">:</span>
     <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Solves the model encoded by a MPModelRequest protocol buffer and fills the</span>
 <span class="sd">    solution encoded as a MPSolutionResponse. The solve is stopped prematurely</span>

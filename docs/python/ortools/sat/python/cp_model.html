@@ -2384,9 +2384,8 @@ rather than for solving specific optimization problems.</p>
 
 <span class="sd">    Args:</span>
 <span class="sd">      file: file to write the model to. If the filename ends with &#39;txt&#39;, the</span>
-<span class="sd">            model will be written as a text file, otherwise, the binary format</span>
-<span class="sd">            will be used.</span>
-
+<span class="sd">        model will be written as a text file, otherwise, the binary format will</span>
+<span class="sd">        be used.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">      True if the model was correctly written.</span>
@@ -2512,11 +2511,11 @@ rather than for solving specific optimization problems.</p>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__solution</span><span class="o">.</span><span class="n">status</span>
 
-    <span class="c1"># DEPRECATED, just use Solve() with the callback argument.</span>
     <span class="k">def</span> <span class="nf">SolveWithSolutionCallback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">callback</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;DEPRECATED Use Solve() with the callback argument.&quot;&quot;&quot;</span>
-        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;SolveWithSolutionCallback is deprecated; use Solve() with the callback argument.&quot;</span><span class="p">,</span>
-                      <span class="ne">DeprecationWarning</span><span class="p">)</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s1">&#39;SolveWithSolutionCallback is deprecated; use Solve() with&#39;</span> <span class="o">+</span>
+            <span class="s1">&#39;the callback argument.&#39;</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Solve</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">callback</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">SearchForAllSolutions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">callback</span><span class="p">):</span>
@@ -2540,8 +2539,9 @@ rather than for solving specific optimization problems.</p>
 <span class="sd">      * *INFEASIBLE* if the solver has proved there are no solution</span>
 <span class="sd">      * *OPTIMAL* if all solutions have been found</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;SearchForAllSolutions is deprecated; use Solve() with enumerate_all_solutions = True.&quot;</span><span class="p">,</span>
-                      <span class="ne">DeprecationWarning</span><span class="p">)</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s1">&#39;SearchForAllSolutions is deprecated; use Solve() with&#39;</span> <span class="o">+</span>
+            <span class="s1">&#39;enumerate_all_solutions = True.&#39;</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">HasObjective</span><span class="p">():</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Search for all solutions is only defined on &#39;</span>
                             <span class="s1">&#39;satisfiability problems&#39;</span><span class="p">)</span>
@@ -5302,9 +5302,8 @@ intervals into the schedule.</p>
 
 <span class="sd">    Args:</span>
 <span class="sd">      file: file to write the model to. If the filename ends with &#39;txt&#39;, the</span>
-<span class="sd">            model will be written as a text file, otherwise, the binary format</span>
-<span class="sd">            will be used.</span>
-
+<span class="sd">        model will be written as a text file, otherwise, the binary format will</span>
+<span class="sd">        be used.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">      True if the model was correctly written.</span>
@@ -7807,9 +7806,8 @@ Currently, this is advanced code: the union of all strategies added to
 
 <span class="sd">    Args:</span>
 <span class="sd">      file: file to write the model to. If the filename ends with &#39;txt&#39;, the</span>
-<span class="sd">            model will be written as a text file, otherwise, the binary format</span>
-<span class="sd">            will be used.</span>
-
+<span class="sd">        model will be written as a text file, otherwise, the binary format will</span>
+<span class="sd">        be used.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">      True if the model was correctly written.</span>
@@ -7825,8 +7823,8 @@ Currently, this is advanced code: the union of all strategies added to
 
 <ul>
 <li><strong>file:</strong>  file to write the model to. If the filename ends with 'txt', the
-model will be written as a text file, otherwise, the binary format
-will be used.</li>
+model will be written as a text file, otherwise, the binary format will
+be used.</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
@@ -8108,11 +8106,11 @@ will be used.</li>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__solution</span><span class="o">.</span><span class="n">status</span>
 
-    <span class="c1"># DEPRECATED, just use Solve() with the callback argument.</span>
     <span class="k">def</span> <span class="nf">SolveWithSolutionCallback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">callback</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;DEPRECATED Use Solve() with the callback argument.&quot;&quot;&quot;</span>
-        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;SolveWithSolutionCallback is deprecated; use Solve() with the callback argument.&quot;</span><span class="p">,</span>
-                      <span class="ne">DeprecationWarning</span><span class="p">)</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s1">&#39;SolveWithSolutionCallback is deprecated; use Solve() with&#39;</span> <span class="o">+</span>
+            <span class="s1">&#39;the callback argument.&#39;</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Solve</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">callback</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">SearchForAllSolutions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">callback</span><span class="p">):</span>
@@ -8136,8 +8134,9 @@ will be used.</li>
 <span class="sd">      * *INFEASIBLE* if the solver has proved there are no solution</span>
 <span class="sd">      * *OPTIMAL* if all solutions have been found</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;SearchForAllSolutions is deprecated; use Solve() with enumerate_all_solutions = True.&quot;</span><span class="p">,</span>
-                      <span class="ne">DeprecationWarning</span><span class="p">)</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s1">&#39;SearchForAllSolutions is deprecated; use Solve() with&#39;</span> <span class="o">+</span>
+            <span class="s1">&#39;enumerate_all_solutions = True.&#39;</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">HasObjective</span><span class="p">():</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Search for all solutions is only defined on &#39;</span>
                             <span class="s1">&#39;satisfiability problems&#39;</span><span class="p">)</span>
@@ -8304,8 +8303,9 @@ about the solve procedure.</p>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">SolveWithSolutionCallback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">callback</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;DEPRECATED Use Solve() with the callback argument.&quot;&quot;&quot;</span>
-        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;SolveWithSolutionCallback is deprecated; use Solve() with the callback argument.&quot;</span><span class="p">,</span>
-                      <span class="ne">DeprecationWarning</span><span class="p">)</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s1">&#39;SolveWithSolutionCallback is deprecated; use Solve() with&#39;</span> <span class="o">+</span>
+            <span class="s1">&#39;the callback argument.&#39;</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Solve</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">callback</span><span class="p">)</span>
 </pre></div>
 
@@ -8347,8 +8347,9 @@ about the solve procedure.</p>
 <span class="sd">      * *INFEASIBLE* if the solver has proved there are no solution</span>
 <span class="sd">      * *OPTIMAL* if all solutions have been found</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;SearchForAllSolutions is deprecated; use Solve() with enumerate_all_solutions = True.&quot;</span><span class="p">,</span>
-                      <span class="ne">DeprecationWarning</span><span class="p">)</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s1">&#39;SearchForAllSolutions is deprecated; use Solve() with&#39;</span> <span class="o">+</span>
+            <span class="s1">&#39;enumerate_all_solutions = True.&#39;</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">HasObjective</span><span class="p">():</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Search for all solutions is only defined on &#39;</span>
                             <span class="s1">&#39;satisfiability problems&#39;</span><span class="p">)</span>
@@ -8865,9 +8866,7 @@ and Value() methods.</p>
 
         </details>
 
-            <div class="docstring"><p>__init__(SolutionCallback self) -> SolutionCallback</p>
-</div>
-
+    
 
                             </div>
                             <div id="CpSolverSolutionCallback.OnSolutionCallback" class="classattr">
@@ -9110,9 +9109,7 @@ and Value() methods.</p>
 
         </details>
 
-            <div class="docstring"><p>__init__(SolutionCallback self) -> SolutionCallback</p>
-</div>
-
+    
 
                             </div>
                             <div id="ObjectiveSolutionPrinter.on_solution_callback" class="classattr">
@@ -9253,9 +9250,7 @@ and Value() methods.</p>
 
         </details>
 
-            <div class="docstring"><p>__init__(SolutionCallback self) -> SolutionCallback</p>
-</div>
-
+    
 
                             </div>
                             <div id="VarArrayAndObjectiveSolutionPrinter.on_solution_callback" class="classattr">
@@ -9398,9 +9393,7 @@ and Value() methods.</p>
 
         </details>
 
-            <div class="docstring"><p>__init__(SolutionCallback self) -> SolutionCallback</p>
-</div>
-
+    
 
                             </div>
                             <div id="VarArraySolutionPrinter.on_solution_callback" class="classattr">
