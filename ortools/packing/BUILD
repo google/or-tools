@@ -9,12 +9,12 @@ cc_library(
     srcs = ["arc_flow_builder.cc"],
     hdrs = ["arc_flow_builder.h"],
     deps = [
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/strings",
+        "//ortools/base",
         "//ortools/base:map_util",
         "//ortools/base:stl_util",
-        "//ortools/base",
         "//ortools/graph:topologicalsorter",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -28,9 +28,9 @@ cc_library(
         ":arc_flow_builder",
         "//ortools/base",
         "//ortools/base:file",
-        "@com_google_absl//absl/flags:flag",
+        "//ortools/linear_solver",
         "//ortools/packing:vector_bin_packing_cc_proto",
-        "//ortools/linear_solver:linear_solver",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 
@@ -55,8 +55,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":vector_bin_packing_cc_proto",
-        "@com_google_absl//absl/strings",
         "//ortools/base",
         "//ortools/base:filelineiter",
+        "@com_google_absl//absl/strings",
     ],
 )
