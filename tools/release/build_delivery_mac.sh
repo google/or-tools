@@ -188,7 +188,6 @@ function build_fz() {
   make fz -l 4 UNIX_PYTHON_VER=3.9
   echo "DONE" | tee -a build.log
 
-  mv or-tools_*.tar.gz export/
   echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export/fz_build"
 }
 
