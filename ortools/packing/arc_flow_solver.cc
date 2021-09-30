@@ -18,6 +18,7 @@
 #include "ortools/base/file.h"
 #include "ortools/base/timer.h"
 #include "ortools/packing/arc_flow_builder.h"
+#include "ortools/packing/vector_bin_packing.pb.h"
 
 ABSL_FLAG(std::string, arc_flow_dump_model, "",
           "File to store the solver specific optimization proto.");
@@ -98,6 +99,7 @@ vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
     if (arc.item_index != -1) {
       item_to_vars[arc.item_index].push_back(var);
     }
+    arc_to_var[v] = var;
   }
 
   // Per item demand constraint.
@@ -167,11 +169,9 @@ vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
     solution.set_status(vbp::INFEASIBLE);
   }
 
-  // TODO(user): Fill bins in the solution proto.
-
+  const bool has_solution =
+      result_status == MPSolver::OPTIMAL || result_status == MPSolver::FEASIBLE;
   if (log_statistics) {
-    const bool has_solution = result_status == MPSolver::OPTIMAL ||
-                              result_status == MPSolver::FEASIBLE;
     absl::PrintF("%-12s: %s\n", "Status",
                  MPSolverResponseStatus_Name(
                      static_cast<MPSolverResponseStatus>(result_status))
@@ -183,6 +183,64 @@ vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
     absl::PrintF("%-12s: %d\n", "Iterations", solver.iterations());
     absl::PrintF("%-12s: %d\n", "Nodes", solver.nodes());
     absl::PrintF("%-12s: %-6.4g\n", "Time", solution.solve_time_in_seconds());
+  }
+
+  if (has_solution) {
+    // Create the arc flow graph with the flow quantity in each arc.
+    struct NextCountItem {
+      int next = -1;
+      int count = 0;
+      int item = -1;
+    };
+    std::vector<std::vector<NextCountItem>> node_to_next_count_item(
+        graph.nodes.size());
+    for (int v = 0; v < graph.arcs.size(); ++v) {
+      const int count =
+          static_cast<int>(std::round(arc_to_var[v]->solution_value()));
+      if (count == 0) continue;
+      const ArcFlowGraph::Arc& arc = graph.arcs[v];
+      node_to_next_count_item[arc.source].push_back(
+          {arc.destination, count, arc.item_index});
+    }
+
+    // Unroll each possible path and rebuild bins.
+    struct NextItem {
+      int next = -1;
+      int item = -1;
+    };
+    const auto pop_next_item = [&node_to_next_count_item](int node) {
+      CHECK(!node_to_next_count_item[node].empty());
+      NextCountItem& arc = node_to_next_count_item[node].back();
+      const int next = arc.next;
+      CHECK_NE(next, -1);
+      const int item = arc.item;
+      CHECK_GT(arc.count, 0);
+      if (--arc.count == 0) {
+        node_to_next_count_item[node].pop_back();
+      }
+      return NextItem({next, item});
+    };
+
+    const int start_node = 0;
+    const int end_node = graph.nodes.size() - 1;
+    while (!node_to_next_count_item[start_node].empty()) {
+      std::map<int, int> item_count;
+      int current = start_node;
+      while (current != end_node) {
+        const NextItem n = pop_next_item(current);
+        if (n.item != -1) {
+          item_count[n.item]++;
+        } else {
+          CHECK_EQ(n.next, end_node);
+        }
+        current = n.next;
+      }
+      vbp::VectorBinPackingOneBinInSolution* bin = solution.add_bins();
+      for (const auto& it : item_count) {
+        bin->add_item_indices(it.first);
+        bin->add_item_copies(it.second);
+      }
+    }
   }
 
   return solution;

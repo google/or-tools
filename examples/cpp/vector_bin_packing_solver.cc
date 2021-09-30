@@ -32,9 +32,10 @@
 ABSL_FLAG(std::string, input, "", "Vector Bin Packing (.vpb) data file name.");
 ABSL_FLAG(std::string, params, "",
           "Parameters in solver specific text format.");
-ABSL_FLAG(std::string, solver, "sat", "Solver to use: sat, scip");
+ABSL_FLAG(std::string, solver, "sat", "Solver to use: sat, scip, glip");
 ABSL_FLAG(double, time_limit, 900.0, "Time limit in seconds");
 ABSL_FLAG(int, threads, 1, "Number of threads");
+ABSL_FLAG(bool, display_proto, false, "Print the input protobuf");
 
 namespace operations_research {
 void ParseAndSolve(const std::string& filename, const std::string& solver,
@@ -65,6 +66,11 @@ void ParseAndSolve(const std::string& filename, const std::string& solver,
   LOG(INFO) << "Solving vector packing problem '" << data.name() << "' with "
             << data.item_size() << " item types, and "
             << data.resource_capacity_size() << " dimensions.";
+  if (absl::GetFlag(FLAGS_display_proto)) {
+    LOG(INFO) << data.DebugString();
+  }
+
+  // Build optimization model.
   MPSolver::OptimizationProblemType solver_type;
   MPSolver::ParseSolverType(solver, &solver_type);
   packing::vbp::VectorBinPackingSolution solution =
@@ -72,6 +78,17 @@ void ParseAndSolve(const std::string& filename, const std::string& solver,
                                                 absl::GetFlag(FLAGS_time_limit),
                                                 absl::GetFlag(FLAGS_threads),
                                                 /*log_statistics=*/true);
+  if (!solution.bins().empty()) {
+    for (int b = 0; b < solution.bins_size(); ++b) {
+      LOG(INFO) << "Bin " << b;
+      const packing::vbp::VectorBinPackingOneBinInSolution& bin =
+          solution.bins(b);
+      for (int i = 0; i < bin.item_indices_size(); ++i) {
+        LOG(INFO) << "  - item: " << bin.item_indices(i)
+                  << ", copies: " << bin.item_copies(i);
+      }
+    }
+  }
 }
 
 }  // namespace operations_research
