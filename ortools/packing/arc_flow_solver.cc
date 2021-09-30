@@ -72,8 +72,7 @@ double ConvertVectorBinPackingProblem(const vbp::VectorBinPackingProblem& input,
 vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
     const vbp::VectorBinPackingProblem& problem,
     MPSolver::OptimizationProblemType solver_type,
-    const std::string& mip_params, double time_limit, int num_threads,
-    bool log_statistics) {
+    const std::string& mip_params, double time_limit, int num_threads) {
   ArcFlowGraph graph;
   const double arc_flow_time = ConvertVectorBinPackingProblem(problem, &graph);
 
@@ -169,23 +168,8 @@ vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
     solution.set_status(vbp::INFEASIBLE);
   }
 
-  const bool has_solution =
-      result_status == MPSolver::OPTIMAL || result_status == MPSolver::FEASIBLE;
-  if (log_statistics) {
-    absl::PrintF("%-12s: %s\n", "Status",
-                 MPSolverResponseStatus_Name(
-                     static_cast<MPSolverResponseStatus>(result_status))
-                     .c_str());
-    absl::PrintF("%-12s: %15.15e\n", "Objective",
-                 has_solution ? solver.Objective().Value() : 0.0);
-    absl::PrintF("%-12s: %15.15e\n", "BestBound",
-                 has_solution ? solver.Objective().BestBound() : 0.0);
-    absl::PrintF("%-12s: %d\n", "Iterations", solver.iterations());
-    absl::PrintF("%-12s: %d\n", "Nodes", solver.nodes());
-    absl::PrintF("%-12s: %-6.4g\n", "Time", solution.solve_time_in_seconds());
-  }
-
-  if (has_solution) {
+  if (result_status == MPSolver::OPTIMAL ||
+      result_status == MPSolver::FEASIBLE) {
     // Create the arc flow graph with the flow quantity in each arc.
     struct NextCountItem {
       int next = -1;

@@ -77,8 +77,7 @@ void ParseAndSolve(const std::string& filename, const std::string& solver,
   packing::vbp::VectorBinPackingSolution solution =
       packing::SolveVectorBinPackingWithArcFlow(data, solver_type, params,
                                                 absl::GetFlag(FLAGS_time_limit),
-                                                absl::GetFlag(FLAGS_threads),
-                                                /*log_statistics=*/true);
+                                                absl::GetFlag(FLAGS_threads));
   if (!solution.bins().empty()) {
     for (int b = 0; b < solution.bins_size(); ++b) {
       LOG(INFO) << "Bin " << b;
