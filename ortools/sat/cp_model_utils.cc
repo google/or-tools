@@ -565,15 +565,12 @@ std::vector<int> UsedIntervals(const ConstraintProto& ct) {
 int64_t ComputeInnerObjective(const CpObjectiveProto& objective,
                               const CpSolverResponse& response) {
   int64_t objective_value = 0;
-  auto& repeated_field_values = response.solution().empty()
-                                    ? response.solution_lower_bounds()
-                                    : response.solution();
   for (int i = 0; i < objective.vars_size(); ++i) {
     int64_t coeff = objective.coeffs(i);
     const int ref = objective.vars(i);
     const int var = PositiveRef(ref);
     if (!RefIsPositive(ref)) coeff = -coeff;
-    objective_value += coeff * repeated_field_values[var];
+    objective_value += coeff * response.solution()[var];
   }
   return objective_value;
 }

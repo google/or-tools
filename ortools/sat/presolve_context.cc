@@ -801,6 +801,8 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
     return true;
   }
 
+  // TODO(user): We can always create a new variable and make it a
+  // representative of both.
   UpdateRuleStats("affine: incompatible relation");
   if (VLOG_IS_ON(1)) {
     LOG(INFO) << "Cannot add relation " << DomainOf(ref_x) << " = " << coeff

@@ -80,7 +80,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Returns the LNS fragment where the given variables are fixed to the value
   // they take in the given solution.
   Neighborhood FixGivenVariables(
-      const CpSolverResponse& initial_solution,
+      const CpSolverResponse& base_solution,
       const absl::flat_hash_set<int>& variables_to_fix) const;
 
   // Returns the neighborhood where the given constraints are removed.
@@ -102,20 +102,6 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 
   // Indicate that the generator failed to generated a neighborhood.
   Neighborhood NoNeighborhood() const;
-
-  // Copies all variables from the in_model to the delta model of the
-  // neighborhood. For all variables in fixed_variable_set, the domain will be
-  // overwritten with the value stored in the initial solution.
-  //
-  // It returns true iff all fixed values are compatible with the domain of the
-  // corresponding variables in the in_model.
-  // TODO(user): We should probably make sure that this can never happen, or
-  // relax the bounds so that we can try to improve the initial solution rather
-  // than just aborting early.
-  bool CopyAndFixVariables(const CpModelProto& source_model,
-                           const absl::flat_hash_set<int>& fixed_variables_set,
-                           const CpSolverResponse& initial_solution,
-                           CpModelProto* output_model) const;
 
   // Adds solution hinting to the neighborhood from the value of the initial
   // solution.

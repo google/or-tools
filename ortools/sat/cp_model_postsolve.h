@@ -44,7 +44,7 @@ namespace sat {
 void PostsolveResponse(const int64_t num_variables_in_original_model,
                        const CpModelProto& mapping_proto,
                        const std::vector<int>& postsolve_mapping,
-                       CpSolverResponse* response);
+                       std::vector<int64_t>* solution);
 
 }  // namespace sat
 }  // namespace operations_research

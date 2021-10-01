@@ -200,34 +200,6 @@ bool NeighborhoodGeneratorHelper::IsConstant(int var) const {
              model_proto_with_only_variables_.variables(var).domain(1);
 }
 
-bool NeighborhoodGeneratorHelper::CopyAndFixVariables(
-    const CpModelProto& source_model,
-    const absl::flat_hash_set<int>& fixed_variables_set,
-    const CpSolverResponse& initial_solution,
-    CpModelProto* output_model) const {
-  output_model->mutable_variables()->Clear();
-  output_model->mutable_variables()->Reserve(source_model.variables_size());
-  for (int i = 0; i < source_model.variables_size(); ++i) {
-    IntegerVariableProto* var_proto = output_model->add_variables();
-    const IntegerVariableProto& source_var_proto = source_model.variables(i);
-    // We only copy the variable names in debug mode.
-    if (DEBUG_MODE && !source_var_proto.name().empty()) {
-      var_proto->set_name(source_var_proto.name());
-    }
-    if (fixed_variables_set.contains(i)) {
-      const int64_t value = initial_solution.solution(i);
-      if (!DomainInProtoContains(source_model.variables(i), value)) {
-        return false;
-      }
-      var_proto->add_domain(value);
-      var_proto->add_domain(value);
-    } else {
-      *var_proto->mutable_domain() = source_var_proto.domain();
-    }
-  }
-  return true;
-}
-
 Neighborhood NeighborhoodGeneratorHelper::FullNeighborhood() const {
   Neighborhood neighborhood;
   neighborhood.is_reduced = false;
@@ -388,26 +360,51 @@ std::vector<std::vector<int>> NeighborhoodGeneratorHelper::GetRoutingPaths(
 }
 
 Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
-    const CpSolverResponse& initial_solution,
+    const CpSolverResponse& base_solution,
     const absl::flat_hash_set<int>& variables_to_fix) const {
   Neighborhood neighborhood;
 
-  bool copy_is_successful = true;
+  // Fill in neighborhood.delta all variable domains.
   {
     absl::ReaderMutexLock domain_lock(&domain_mutex_);
-    copy_is_successful =
-        CopyAndFixVariables(model_proto_with_only_variables_, variables_to_fix,
-                            initial_solution, &neighborhood.delta);
+
+    const int num_variables =
+        model_proto_with_only_variables_.variables().size();
+    neighborhood.delta.mutable_variables()->Reserve(num_variables);
+    for (int i = 0; i < num_variables; ++i) {
+      const IntegerVariableProto& current_var =
+          model_proto_with_only_variables_.variables(i);
+      IntegerVariableProto* new_var = neighborhood.delta.add_variables();
+
+      // We only copy the name in debug mode.
+      if (DEBUG_MODE) new_var->set_name(current_var.name());
+
+      const Domain domain = ReadDomainFromProto(current_var);
+      const int64_t base_value = base_solution.solution(i);
+
+      // It seems better to always start from a feasible point, so if the base
+      // solution is no longer valid under the new up to date bound, we make
+      // sure to relax the domain so that it is.
+      if (!domain.Contains(base_value)) {
+        // TODO(user): this can happen when variables_to_fix.contains(i). But we
+        // should probably never consider as "active" such variable in the first
+        // place.
+        FillDomainInProto(domain.UnionWith(Domain(base_solution.solution(i))),
+                          new_var);
+      } else if (variables_to_fix.contains(i)) {
+        new_var->add_domain(base_value);
+        new_var->add_domain(base_value);
+      } else {
+        FillDomainInProto(domain, new_var);
+      }
+    }
   }
 
-  if (!copy_is_successful) {
-    return NoNeighborhood();
-  }
-
-  AddSolutionHinting(initial_solution, &neighborhood.delta);
+  AddSolutionHinting(base_solution, &neighborhood.delta);
 
   neighborhood.is_generated = true;
   neighborhood.is_reduced = !variables_to_fix.empty();
+
   // TODO(user): force better objective? Note that this is already done when the
   // hint above is successfully loaded (i.e. if it passes the presolve
   // correctly) since the solver will try to find better solution than the

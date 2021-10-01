@@ -621,9 +621,8 @@ message CpModelProto {
   // Advanced Usage: if not all variables appears and the parameter
   // "instantiate_all_variables" is set to false, then the solver will not try
   // to instantiate the variables that do not appear. Thus, at the end of the
-  // search, not all variables may be fixed and this is why we have the
-  // solution_lower_bounds and solution_upper_bounds fields in the
-  // CpSolverResponse.
+  // search, not all variables may be fixed. Currently, we will set them to
+  // their lower bound in the solution.
   repeated DecisionStrategyProto search_strategy = 5;
 
   // Solution hint.
@@ -691,11 +690,17 @@ enum CpSolverStatus {
   OPTIMAL = 4;
 }
 
+// Just a message used to store dense solution.
+// This is used by the additional_solutions field.
+message CpSolverSolution {
+  repeated int64 values = 1;
+}
+
 // The response returned by a solver trying to solve a CpModelProto.
 //
 // TODO(user): support returning multiple solutions. Look at the Stubby
 // streaming API as we probably wants to get them as they are found.
-// Next id: 27
+// Next id: 28
 message CpSolverResponse {
   // The status of the solve.
   CpSolverStatus status = 1;
@@ -717,15 +722,13 @@ message CpSolverResponse {
   // maximization problem.
   double best_objective_bound = 4;
 
-  // Advanced usage.
+  // If the parameter fill_additional_solutions_in_response is set, then we
+  // copy all the solutions from our internal solution pool here.
   //
-  // If the problem has some variables that are not fixed at the end of the
-  // search (because of a particular search strategy in the CpModelProto) then
-  // this will be used instead of filling the solution above. The two fields
-  // will then contains the lower and upper bounds of each variable as they were
-  // when the best "solution" was found.
-  repeated int64 solution_lower_bounds = 18;
-  repeated int64 solution_upper_bounds = 19;
+  // Note that the one returned in the solution field will likely appear here
+  // too. Do not rely on the solutions order as it depends on our internal
+  // representation (after postsolve).
+  repeated CpSolverSolution additional_solutions = 27;
 
   // Advanced usage.
   //
@@ -761,13 +764,6 @@ message CpSolverResponse {
   //
   // TODO(user): Allows for returning multiple core at once.
   repeated int32 sufficient_assumptions_for_infeasibility = 23;
-
-  // This will be true iff the solver was asked to find all solutions to a
-  // satisfiability problem (or all optimal solutions to an optimization
-  // problem), and it was successful in doing so.
-  //
-  // TODO(user): Remove as we also use the OPTIMAL vs FEASIBLE status for that.
-  bool all_solutions_were_found = 5;
 
   // Some statistics about the solve.
   int64 num_booleans = 10;

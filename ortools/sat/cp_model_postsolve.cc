@@ -289,27 +289,15 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
 void PostsolveResponse(const int64_t num_variables_in_original_model,
                        const CpModelProto& mapping_proto,
                        const std::vector<int>& postsolve_mapping,
-                       CpSolverResponse* response) {
-  // Map back the sufficient assumptions for infeasibility.
-  for (int& ref :
-       *(response->mutable_sufficient_assumptions_for_infeasibility())) {
-    ref = RefIsPositive(ref) ? postsolve_mapping[ref]
-                             : NegatedRef(postsolve_mapping[PositiveRef(ref)]);
-  }
-
-  // Abort if no solution or something is wrong.
-  if (response->status() != CpSolverStatus::FEASIBLE &&
-      response->status() != CpSolverStatus::OPTIMAL) {
-    return;
-  }
-  if (response->solution_size() != postsolve_mapping.size()) return;
+                       std::vector<int64_t>* solution) {
+  CHECK_EQ(solution->size(), postsolve_mapping.size());
 
   // Read the initial variable domains, either from the fixed solution of the
   // presolved problems or from the mapping model.
   std::vector<Domain> domains(mapping_proto.variables_size());
   for (int i = 0; i < postsolve_mapping.size(); ++i) {
     CHECK_LE(postsolve_mapping[i], domains.size());
-    domains[postsolve_mapping[i]] = Domain(response->solution(i));
+    domains[postsolve_mapping[i]] = Domain((*solution)[i]);
   }
   for (int i = 0; i < domains.size(); ++i) {
     if (domains[i].IsEmpty()) {
@@ -381,13 +369,13 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
   }
 
   // Fill the response. Maybe fix some still unfixed variable.
-  response->mutable_solution()->Clear();
+  solution->clear();
   CHECK_LE(num_variables_in_original_model, domains.size());
   for (int i = 0; i < num_variables_in_original_model; ++i) {
     if (prefer_lower_value[i]) {
-      response->add_solution(domains[i].Min());
+      solution->push_back(domains[i].Min());
     } else {
-      response->add_solution(domains[i].Max());
+      solution->push_back(domains[i].Max());
     }
   }
 }

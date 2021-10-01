@@ -18,6 +18,7 @@
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 #if !defined(__PORTABLE_PLATFORM__)
+#include "ortools/base/file.h"
 #endif  // !__PORTABLE_PLATFORM__
 #include "absl/status/status.h"
 

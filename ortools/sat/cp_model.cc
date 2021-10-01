@@ -978,19 +978,11 @@ int64_t SolutionIntegerValue(const CpSolverResponse& r,
 }
 
 int64_t SolutionIntegerMin(const CpSolverResponse& r, IntVar x) {
-  if (r.solution_size() > 0) {
-    return r.solution(x.index_);
-  } else {
-    return r.solution_lower_bounds(x.index_);
-  }
+  return r.solution(x.index_);
 }
 
 int64_t SolutionIntegerMax(const CpSolverResponse& r, IntVar x) {
-  if (r.solution_size() > 0) {
-    return r.solution(x.index_);
-  } else {
-    return r.solution_upper_bounds(x.index_);
-  }
+  return r.solution(x.index_);
 }
 
 bool SolutionBooleanValue(const CpSolverResponse& r, BoolVar x) {

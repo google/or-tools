@@ -144,6 +144,7 @@ class CpModelPresolver {
   bool PresolveSmallLinear(ConstraintProto* ct);
   bool PresolveLinearOnBooleans(ConstraintProto* ct);
   void PresolveLinearEqualityModuloTwo(ConstraintProto* ct);
+  bool DetectAndProcessOneSidedLinearConstraint(int c, ConstraintProto* ct);
 
   // Scheduling helpers.
   void AddLinearConstraintFromInterval(const ConstraintProto& ct);
@@ -151,6 +152,16 @@ class CpModelPresolver {
   // SetPPC is short for set packing, partitioning and covering constraints.
   // These are sum of booleans <=, = and >= 1 respectively.
   bool ProcessSetPPC();
+
+  // This detects and converts constraints of the form:
+  // "X = sum Boolean * value", with "sum Boolean <= 1".
+  //
+  // Note that it is not super fast, so it shouldn't be called too often.
+  void ExtractEncodingFromLinear();
+  bool ProcessEncodingFromLinear(int linear_encoding_ct_index,
+                                 const ConstraintProto& at_most_or_exactly_one,
+                                 int64_t* num_unique_terms,
+                                 int64_t* num_multiple_terms);
 
   // Removes dominated constraints or fixes some variables for given pair of
   // setppc constraints. This assumes that literals in constraint c1 is subset
