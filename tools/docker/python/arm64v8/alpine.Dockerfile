@@ -39,8 +39,10 @@ WORKDIR /root/or-tools
 RUN cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON -DBUILD_PYTHON=ON
 RUN cmake --build build -v -j8
 # Rename wheel package ortools-version+musl-....
-RUN cp build/python/dist//ortools-*.whl .
+RUN cp build/python/dist/ortools-*.whl .
 RUN NAME=$(ls *.whl | sed -e "s/\(ortools-[0-9\.]\+\)/\1+musl/") && mv *.whl "${NAME}"
+RUN rm build/python/dist/ortools-*.whl
+RUN mv *.whl build/python/dist/
 
 FROM build AS test
 RUN cmake --build build --target test
