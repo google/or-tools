@@ -71,6 +71,7 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
     std::function<void(const MPSolution&)> solution_callback) {
   sat::SatParameters params;
   params.set_log_search_progress(request.enable_internal_solver_output());
+  params.set_linearization_level(2);  // Can be overwritten.
   if (request.has_solver_specific_parameters()) {
     // See EncodeSatParametersAsString() documentation.
     if (kProtoLiteSatParameters) {
@@ -91,7 +92,6 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   if (request.has_solver_time_limit_seconds()) {
     params.set_max_time_in_seconds(request.solver_time_limit_seconds());
   }
-  params.set_linearization_level(2);
 
   // TODO(user): We do not support all the parameters here. In particular the
   // logs before the solver is called will not be appended to the response. Fix
