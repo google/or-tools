@@ -53,6 +53,7 @@ using System.Collections;
 %unignore operations_research::Domain::Min;
 %unignore operations_research::Domain::Negation;
 %unignore operations_research::Domain::Size;
+%csmethodmodifiers operations_research::Domain::ToString "public override";
 %unignore operations_research::Domain::ToString;
 %unignore operations_research::Domain::UnionWith;
 
