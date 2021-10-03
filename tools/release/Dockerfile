@@ -80,8 +80,8 @@ ENV ORTOOLS_GIT_BRANCH ${ORTOOLS_GIT_BRANCH:-master}
 ARG ORTOOLS_GIT_SHA1
 ENV ORTOOLS_GIT_SHA1 ${ORTOOLS_GIT_SHA1:-unknown}
 RUN git clone -b "${ORTOOLS_GIT_BRANCH}" --single-branch https://github.com/google/or-tools \
-&& echo "sha1: $(cd or-tools && git rev-parse --verify HEAD)" \
-&& echo "expected sha1: ${ORTOOLS_GIT_SHA1}"
+&& cd or-tools \
+&& git reset --hard "${ORTOOLS_GIT_SHA1}"
 
 # Build delivery
 FROM devel AS delivery
