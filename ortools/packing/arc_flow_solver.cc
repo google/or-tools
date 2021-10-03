@@ -194,12 +194,10 @@ vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
     };
     const auto pop_next_item = [&node_to_next_count_item](int node) {
       CHECK(!node_to_next_count_item[node].empty());
-      NextCountItem& arc = node_to_next_count_item[node].back();
-      const int next = arc.next;
+      auto& [next, count, item] = node_to_next_count_item[node].back();
       CHECK_NE(next, -1);
-      const int item = arc.item;
-      CHECK_GT(arc.count, 0);
-      if (--arc.count == 0) {
+      CHECK_GT(count, 0);
+      if (--count == 0) {
         node_to_next_count_item[node].pop_back();
       }
       return NextItem({next, item});
@@ -211,18 +209,18 @@ vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
       std::map<int, int> item_count;
       int current = start_node;
       while (current != end_node) {
-        const NextItem n = pop_next_item(current);
-        if (n.item != -1) {
-          item_count[n.item]++;
+        const auto& [next, item] = pop_next_item(current);
+        if (item != -1) {
+          item_count[item]++;
         } else {
-          CHECK_EQ(n.next, end_node);
+          CHECK_EQ(next, end_node);
         }
-        current = n.next;
+        current = next;
       }
       vbp::VectorBinPackingOneBinInSolution* bin = solution.add_bins();
-      for (const auto& it : item_count) {
-        bin->add_item_indices(it.first);
-        bin->add_item_copies(it.second);
+      for (const auto& [item, count] : item_count) {
+        bin->add_item_indices(item);
+        bin->add_item_copies(count);
       }
     }
   }
