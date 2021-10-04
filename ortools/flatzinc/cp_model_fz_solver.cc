@@ -76,6 +76,9 @@ struct CpModelProtoWithMapping {
   // Convert a flatzinc argument to a variable or a list of variable.
   // Note that we always encode a constant argument with a constant variable.
   int LookupVar(const fz::Argument& argument);
+  LinearExpressionProto LookupExpr(const fz::Argument& argument, bool negate);
+  LinearExpressionProto LookupExprAt(const fz::Argument& argument, int pos,
+                                     bool negate);
   std::vector<int> LookupVars(const fz::Argument& argument);
   std::vector<VarOrValue> LookupVarsOrValues(const fz::Argument& argument);
 
@@ -142,6 +145,32 @@ int CpModelProtoWithMapping::LookupVar(const fz::Argument& argument) {
   if (argument.HasOneValue()) return LookupConstant(argument.Value());
   CHECK_EQ(argument.type, fz::Argument::VAR_REF);
   return fz_var_to_index[argument.Var()];
+}
+
+LinearExpressionProto CpModelProtoWithMapping::LookupExpr(
+    const fz::Argument& argument, bool negate) {
+  LinearExpressionProto expr;
+  if (argument.HasOneValue()) {
+    const int64_t value = argument.Value();
+    expr.set_offset(negate ? -value : value);
+  } else {
+    expr.add_vars(LookupVar(argument));
+    expr.add_coeffs(negate ? -1 : 1);
+  }
+  return expr;
+}
+
+LinearExpressionProto CpModelProtoWithMapping::LookupExprAt(
+    const fz::Argument& argument, int pos, bool negate) {
+  LinearExpressionProto expr;
+  if (argument.HasOneValueAt(pos)) {
+    const int64_t value = argument.ValueAt(pos);
+    expr.set_offset(negate ? -value : value);
+  } else {
+    expr.add_vars(fz_var_to_index[argument.VarAt(pos)]);
+    expr.add_coeffs(negate ? -1 : 1);
+  }
+  return expr;
 }
 
 std::vector<int> CpModelProtoWithMapping::LookupVars(
@@ -485,33 +514,37 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       LOG(FATAL) << "Wrong format";
     }
   } else if (fz_ct.type == "int_min") {
-    auto* arg = ct->mutable_int_min();
-    arg->set_target(LookupVar(fz_ct.arguments[2]));
-    arg->add_vars(LookupVar(fz_ct.arguments[0]));
-    arg->add_vars(LookupVar(fz_ct.arguments[1]));
+    auto* arg = ct->mutable_lin_max();
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[0], /*negate=*/true);
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[1], /*negate=*/true);
+    *arg->mutable_target() = LookupExpr(fz_ct.arguments[2], /*negate=*/true);
   } else if (fz_ct.type == "array_int_minimum" || fz_ct.type == "minimum_int") {
-    auto* arg = ct->mutable_int_min();
-    arg->set_target(LookupVar(fz_ct.arguments[0]));
-    for (const int var : LookupVars(fz_ct.arguments[1])) arg->add_vars(var);
+    auto* arg = ct->mutable_lin_max();
+    *arg->mutable_target() = LookupExpr(fz_ct.arguments[0], /*negate=*/true);
+    for (int i = 0; i < fz_ct.arguments[1].Size(); ++i) {
+      *arg->add_exprs() = LookupExprAt(fz_ct.arguments[1], i, /*negate=*/true);
+    }
   } else if (fz_ct.type == "int_max") {
-    auto* arg = ct->mutable_int_max();
-    arg->set_target(LookupVar(fz_ct.arguments[2]));
-    arg->add_vars(LookupVar(fz_ct.arguments[0]));
-    arg->add_vars(LookupVar(fz_ct.arguments[1]));
+    auto* arg = ct->mutable_lin_max();
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[0], /*negate=*/false);
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[1], /*negate=*/false);
+    *arg->mutable_target() = LookupExpr(fz_ct.arguments[2], /*negate=*/false);
   } else if (fz_ct.type == "array_int_maximum" || fz_ct.type == "maximum_int") {
-    auto* arg = ct->mutable_int_max();
-    arg->set_target(LookupVar(fz_ct.arguments[0]));
-    for (const int var : LookupVars(fz_ct.arguments[1])) arg->add_vars(var);
+    auto* arg = ct->mutable_lin_max();
+    *arg->mutable_target() = LookupExpr(fz_ct.arguments[0], /*negate=*/false);
+    for (int i = 0; i < fz_ct.arguments[1].Size(); ++i) {
+      *arg->add_exprs() = LookupExprAt(fz_ct.arguments[1], i, /*negate=*/false);
+    }
   } else if (fz_ct.type == "int_times") {
     auto* arg = ct->mutable_int_prod();
     arg->set_target(LookupVar(fz_ct.arguments[2]));
     arg->add_vars(LookupVar(fz_ct.arguments[0]));
     arg->add_vars(LookupVar(fz_ct.arguments[1]));
   } else if (fz_ct.type == "int_abs") {
-    auto* arg = ct->mutable_int_max();
-    arg->set_target(LookupVar(fz_ct.arguments[1]));
-    arg->add_vars(LookupVar(fz_ct.arguments[0]));
-    arg->add_vars(-LookupVar(fz_ct.arguments[0]) - 1);
+    auto* arg = ct->mutable_lin_max();
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[0], /*negate=*/false);
+    *arg->add_exprs() = LookupExpr(fz_ct.arguments[0], /*negate=*/true);
+    *arg->mutable_target() = LookupExpr(fz_ct.arguments[1], /*negate=*/false);
   } else if (fz_ct.type == "int_plus") {
     auto* arg = ct->mutable_linear();
     FillDomainInProto(Domain(0, 0), arg);
