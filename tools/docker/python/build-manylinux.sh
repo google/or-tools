@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
 # Build all the wheel artifacts for the platforms supported by manylinux2014 and
 # export them to the specified location.
-set -euxo pipefail
+set -exo pipefail
+
+function assert_defined(){
+  if [[ -z "${!1}" ]]; then
+    >&2 echo "Variable '${1}' must be defined"
+    exit 1
+  fi
+}
 
 function usage() {
   local -r NAME=$(basename "$0")
@@ -11,7 +18,12 @@ SYNOPSIS
 \t$NAME [-h|--help] [build|test|all]
 
 DESCRIPTION
-\tBuild all wheel artifacts.
+\tBuild wheel artifacts.
+
+\tYou MUST define the following variables before running this script:
+\t* PLATFORM: x86_64 aarch64
+\t* PYTHON_VERSION: 3 36 37 38 39 310
+note: PYTHON_VERSION=3 will generate for all pythons which could take time...
 
 OPTIONS
 \t-h --help: show this help text
@@ -20,7 +32,13 @@ OPTIONS
 \tall: build + test (default)
 
 EXAMPLES
-$0 build"
+* Using export
+export PLATFORM=x86_64
+export PYTHON_VERSION=39
+$0 build
+
+* One-liner:
+PLATFORM=x86_64 PYTHON_VERSION=39 $0 build"
 }
 
 function contains_element() {
@@ -38,6 +56,8 @@ function contains_element() {
 }
 
 function build_wheel() {
+  assert_defined BUILD_DIR
+  assert_defined VENV_DIR
   # Build the wheel artifact
   # Arguments:
   #   $1 the python root directory
@@ -70,6 +90,7 @@ function build_wheel() {
 }
 
 function check_wheel() {
+  assert_defined BUILD_DIR
   # Check the wheel artifact
   # Arguments:
   #   $1 the python root directory
@@ -84,6 +105,7 @@ function check_wheel() {
     # if no files found do nothing
     [[ -e "$FILE" ]] || continue
     auditwheel show "$FILE" || true
+    auditwheel -v repair --plat "manylinux2014_$PLATFORM" "$FILE" -w "$export_root"
     #auditwheel -v repair --plat manylinux2014_x86_64 "$FILE" -w "$export_root"
     #auditwheel -v repair --plat manylinux2014_aarch64 "$FILE" -w "$export_root"
   done
@@ -91,6 +113,8 @@ function check_wheel() {
 }
 
 function test_wheel() {
+  assert_defined BUILD_DIR
+  assert_defined TEST_DIR
   # Test the wheel artifacts
   # Arguments:
   #   $1 the python root directory
@@ -116,11 +140,10 @@ function test_wheel() {
   pip show ortools
 
   # Run all the specified test scripts using the current environment.
-  ROOT_DIR=$(pwd)
+  local -r ROOT_DIR=$(pwd)
   pushd "$(mktemp -d)" # ensure we are not importing something from $PWD
   python --version
-  for TEST in "${TESTS[@]}"
-  do
+  for TEST in "${TESTS[@]}"; do
     python "${ROOT_DIR}/${TEST}"
   done
   popd
@@ -131,7 +154,7 @@ function test_wheel() {
 
 function build() {
   # For each python platform provided by manylinux, build and test artifacts.
-  for PYROOT in /opt/python/*; do
+  for PYROOT in /opt/python/cp"${PYTHON_VERSION}"*-cp"${PYTHON_VERSION}"*; do
     # shellcheck disable=SC2155
     PYTAG=$(basename "$PYROOT")
     echo "Python: $PYTAG"
@@ -151,7 +174,7 @@ function build() {
 
 function tests() {
   # For each python platform provided by manylinux, build and test artifacts.
-  for PYROOT in /opt/python/*; do
+  for PYROOT in /opt/python/cp"${PYTHON_VERSION}"*-cp"${PYTHON_VERSION}"*; do
     # shellcheck disable=SC2155
     PYTAG=$(basename "$PYROOT")
     echo "Python: $PYTAG"
@@ -174,6 +197,9 @@ function main() {
     -h | --help)
       usage; exit ;;
   esac
+
+  assert_defined PLATFORM
+  assert_defined PYTHON_VERSION
 
   # Setup
   # Python scripts to be used as tests for the installed wheel. This list of files
