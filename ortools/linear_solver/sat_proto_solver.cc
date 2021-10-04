@@ -71,7 +71,6 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
     std::function<void(const MPSolution&)> solution_callback) {
   sat::SatParameters params;
   params.set_log_search_progress(request.enable_internal_solver_output());
-  params.set_linearization_level(2);  // Can be overwritten.
   if (request.has_solver_specific_parameters()) {
     // See EncodeSatParametersAsString() documentation.
     if (kProtoLiteSatParameters) {
