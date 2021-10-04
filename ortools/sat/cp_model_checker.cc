@@ -154,6 +154,7 @@ template <class LinearExpressionProto>
 bool PossibleIntegerOverflow(const CpModelProto& model,
                              const LinearExpressionProto& proto,
                              int64_t offset = 0) {
+  if (offset == std::numeric_limits<int64_t>::min()) return true;
   int64_t sum_min = -std::abs(offset);
   int64_t sum_max = +std::abs(offset);
   for (int i = 0; i < proto.vars_size(); ++i) {
@@ -555,6 +556,14 @@ std::string ValidateIntervalConstraint(const CpModelProto& model,
         "both: ",
         ProtobufShortDebugString(ct));
   }
+
+  if (num_view > 0 && (arg.start() != 0 || arg.end() != 0 || arg.size() != 0)) {
+    return absl::StrCat(
+        "Interval must use either the var or the view representation, but not "
+        "both: ",
+        ProtobufShortDebugString(ct));
+  }
+
   return "";
 }
 
