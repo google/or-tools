@@ -377,25 +377,21 @@ message ConstraintProto {
     // is the same as the sign of vars[0].
     IntegerArgumentProto int_mod = 8;
 
-    // The int_max constraint forces the target to equal the maximum of all
-    // variables.
+    // The deprecated int_max constraint forces the target to equal the maximum
+    // of all variables.
     //
     // The lin_max constraint forces the target to equal the maximum of all
     // linear expressions.
-    //
-    // TODO(user): Remove int_max in favor of lin_max.
-    IntegerArgumentProto int_max = 9;
+    IntegerArgumentProto int_max = 9 [deprecated = true];
     LinearArgumentProto lin_max = 27;
 
-    // The int_min constraint forces the target to equal the minimum of all
-    // variables.
+    // The deprecated int_min constraint forces the target to equal the minimum
+    // of all variables.
     //
-    // The lin_min constraint forces the target to equal the minimum of all
-    // linear expressions.
-    //
-    // TODO(user): Remove int_min in favor of lin_min.
-    IntegerArgumentProto int_min = 10;
-    LinearArgumentProto lin_min = 28;
+    // The deprecated lin_min constraint forces the target to equal the minimum
+    // of all linear expressions.
+    IntegerArgumentProto int_min = 10 [deprecated = true];
+    LinearArgumentProto lin_min = 28 [deprecated = true];
 
     // The int_prod constraint forces the target to equal the product of all
     // variables. By convention, because we can just remove term equal to one,

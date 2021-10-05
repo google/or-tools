@@ -179,7 +179,8 @@ class CpModelPresolver {
   // Extracts AtMostOne constraint from Linear constraint.
   void ExtractAtMostOneFromLinear(ConstraintProto* ct);
 
-  void DivideLinearByGcd(ConstraintProto* ct);
+  // Returns true if the constraint changed.
+  bool DivideLinearByGcd(ConstraintProto* ct);
 
   void ExtractEnforcementLiteralFromLinearConstraint(int ct_index,
                                                      ConstraintProto* ct);

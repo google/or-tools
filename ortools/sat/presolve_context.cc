@@ -793,8 +793,6 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
     // These maps should only contains representative, so only need to remap
     // either x or y.
     const int rep = GetAffineRelation(x).representative;
-    if (x != rep) encoding_remap_queue_.push_back(x);
-    if (y != rep) encoding_remap_queue_.push_back(y);
 
     // The domain didn't change, but this notification allows to re-process any
     // constraint containing these variables. Note that we do not need to
@@ -962,89 +960,6 @@ void PresolveContext::InitializeNewDomains() {
   var_to_num_linear1_.resize(domains.size());
   var_to_ub_only_constraints.resize(domains.size());
   var_to_lb_only_constraints.resize(domains.size());
-}
-
-bool PresolveContext::RemapEncodingMaps() {
-  // TODO(user): for now, while the code works most of the time, it triggers
-  // weird side effect that causes some issues in some LNS presolve...
-  // We should continue the investigation before activating it.
-  //
-  // Note also that because all our encoding constraints are present in the
-  // model, they will be remapped, and the new mapping re-added again. So while
-  // the current code might not be efficient, it should eventually reach the
-  // same effect.
-  encoding_remap_queue_.clear();
-
-  // Note that InsertVarValueEncodingInternal() will potentially add new entry
-  // to the encoding_ map, but for a different variables. So this code relies on
-  // the fact that the var_map shouldn't change content nor address of the
-  // "var_map" below while we iterate on them.
-  for (const int var : encoding_remap_queue_) {
-    CHECK(RefIsPositive(var));
-    const AffineRelation::Relation r = GetAffineRelation(var);
-    if (r.representative == var) return true;
-    int num_remapping = 0;
-
-    // Encoding.
-    {
-      const absl::flat_hash_map<int64_t, SavedLiteral>& var_map =
-          encoding_[var];
-      for (const auto& entry : var_map) {
-        const int lit = entry.second.Get(this);
-        if (removed_variables_.contains(PositiveRef(lit))) continue;
-        if ((entry.first - r.offset) % r.coeff != 0) continue;
-        const int64_t rep_value = (entry.first - r.offset) / r.coeff;
-        ++num_remapping;
-        InsertVarValueEncodingInternal(lit, r.representative, rep_value,
-                                       /*add_constraints=*/false);
-        if (is_unsat_) return false;
-      }
-      encoding_.erase(var);
-    }
-
-    // Eq half encoding.
-    {
-      const absl::flat_hash_map<int64_t, absl::flat_hash_set<int>>& var_map =
-          eq_half_encoding_[var];
-      for (const auto& entry : var_map) {
-        if ((entry.first - r.offset) % r.coeff != 0) continue;
-        const int64_t rep_value = (entry.first - r.offset) / r.coeff;
-        for (int literal : entry.second) {
-          ++num_remapping;
-          InsertHalfVarValueEncoding(GetLiteralRepresentative(literal),
-                                     r.representative, rep_value,
-                                     /*imply_eq=*/true);
-          if (is_unsat_) return false;
-        }
-      }
-      eq_half_encoding_.erase(var);
-    }
-
-    // Neq half encoding.
-    {
-      const absl::flat_hash_map<int64_t, absl::flat_hash_set<int>>& var_map =
-          neq_half_encoding_[var];
-      for (const auto& entry : var_map) {
-        if ((entry.first - r.offset) % r.coeff != 0) continue;
-        const int64_t rep_value = (entry.first - r.offset) / r.coeff;
-        for (int literal : entry.second) {
-          ++num_remapping;
-          InsertHalfVarValueEncoding(GetLiteralRepresentative(literal),
-                                     r.representative, rep_value,
-                                     /*imply_eq=*/false);
-          if (is_unsat_) return false;
-        }
-      }
-      neq_half_encoding_.erase(var);
-    }
-
-    if (num_remapping > 0) {
-      VLOG(1) << "Remapped " << num_remapping << " encodings due to " << var
-              << " -> " << r.representative << ".";
-    }
-  }
-  encoding_remap_queue_.clear();
-  return !is_unsat_;
 }
 
 void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
@@ -1230,7 +1145,6 @@ bool PresolveContext::CanonicalizeEncoding(int* ref, int64_t* value) {
 
 bool PresolveContext::InsertVarValueEncoding(int literal, int ref,
                                              int64_t value) {
-  if (!RemapEncodingMaps()) return false;
   if (!CanonicalizeEncoding(&ref, &value)) {
     return SetLiteralToFalse(literal);
   }
@@ -1241,7 +1155,6 @@ bool PresolveContext::InsertVarValueEncoding(int literal, int ref,
 
 bool PresolveContext::StoreLiteralImpliesVarEqValue(int literal, int var,
                                                     int64_t value) {
-  if (!RemapEncodingMaps()) return false;
   if (!CanonicalizeEncoding(&var, &value)) return false;
   literal = GetLiteralRepresentative(literal);
   return InsertHalfVarValueEncoding(literal, var, value, /*imply_eq=*/true);
@@ -1249,7 +1162,6 @@ bool PresolveContext::StoreLiteralImpliesVarEqValue(int literal, int var,
 
 bool PresolveContext::StoreLiteralImpliesVarNEqValue(int literal, int var,
                                                      int64_t value) {
-  if (!RemapEncodingMaps()) return false;
   if (!CanonicalizeEncoding(&var, &value)) return false;
   literal = GetLiteralRepresentative(literal);
   return InsertHalfVarValueEncoding(literal, var, value, /*imply_eq=*/false);
@@ -1258,7 +1170,6 @@ bool PresolveContext::StoreLiteralImpliesVarNEqValue(int literal, int var,
 bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
                                           int* literal) {
   CHECK(!VariableWasRemoved(ref));
-  if (!RemapEncodingMaps()) return false;
   if (!CanonicalizeEncoding(&ref, &value)) return false;
   const absl::flat_hash_map<int64_t, SavedLiteral>& var_map = encoding_[ref];
   const auto it = var_map.find(value);
@@ -1272,13 +1183,7 @@ bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
 }
 
 int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
-  // TODO(user): Remove this precondition. For now it is needed because
-  // we might remove encoding literal without updating the encoding map.
-  // This is related to RemapEncodingMaps() which is currently disabled.
-  CHECK(!ModelIsExpanded());
-
   CHECK(!VariableWasRemoved(ref));
-  if (!RemapEncodingMaps()) return GetOrCreateConstantVar(0);
   if (!CanonicalizeEncoding(&ref, &value)) return GetOrCreateConstantVar(0);
 
   // Positive after CanonicalizeEncoding().
@@ -1293,7 +1198,14 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
   absl::flat_hash_map<int64_t, SavedLiteral>& var_map = encoding_[var];
   auto it = var_map.find(value);
   if (it != var_map.end()) {
-    return it->second.Get(this);
+    const int lit = it->second.Get(this);
+    if (VariableWasRemoved(lit)) {
+      // If the variable was already removed, for now we create a new one.
+      // This should be rare hopefully.
+      var_map.erase(value);
+    } else {
+      return lit;
+    }
   }
 
   // Special case for fixed domains.
@@ -1311,11 +1223,17 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
     const int64_t other_value = value == var_min ? var_max : var_min;
     auto other_it = var_map.find(other_value);
     if (other_it != var_map.end()) {
-      // Update the encoding map. The domain could have been reduced to size
-      // two after the creation of the first literal.
       const int literal = NegatedRef(other_it->second.Get(this));
-      var_map[value] = SavedLiteral(literal);
-      return literal;
+      if (VariableWasRemoved(literal)) {
+        // If the variable was already removed, for now we create a new one.
+        // This should be rare hopefully.
+        var_map.erase(other_value);
+      } else {
+        // Update the encoding map. The domain could have been reduced to size
+        // two after the creation of the first literal.
+        var_map[value] = SavedLiteral(literal);
+        return literal;
+      }
     }
 
     if (var_min == 0 && var_max == 1) {

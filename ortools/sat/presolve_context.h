@@ -478,10 +478,6 @@ class PresolveContext {
   // class of size at least 2.
   bool VariableIsNotRepresentativeOfEquivalenceClass(int var) const;
 
-  // Process encoding_remap_queue_ and updates the encoding maps. This could
-  // lead to UNSAT being detected, in which case it will return false.
-  bool RemapEncodingMaps();
-
   // Makes sure we only insert encoding about the current representative.
   //
   // Returns false if ref cannot take the given value (it might not have been
@@ -546,10 +542,6 @@ class PresolveContext {
   // same fixed value, then we can detect it using this and add a new
   // equivalence relation. See ExploitFixedDomain().
   absl::flat_hash_map<int64_t, SavedVariable> constant_to_ref_;
-
-  // When a "representative" gets a new representative, it should be enqueued
-  // here so that we can lazily update the *encoding_ maps below.
-  std::deque<int> encoding_remap_queue_;
 
   // Contains variables with some encoded value: encoding_[i][v] points
   // to the literal attached to the value v of the variable i.

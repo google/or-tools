@@ -1644,12 +1644,15 @@ void MinimizeL1DistanceWithHint(const CpModelProto& model_proto, Model* model) {
         std::max(std::abs(min_domain), std::abs(max_domain));
     abs_var_proto->add_domain(abs_min_domain);
     abs_var_proto->add_domain(abs_max_domain);
-    ConstraintProto* const abs_constraint_proto =
-        updated_model_proto.add_constraints();
-    abs_constraint_proto->mutable_int_max()->set_target(abs_var_index);
-    abs_constraint_proto->mutable_int_max()->add_vars(new_var_index);
-    abs_constraint_proto->mutable_int_max()->add_vars(
-        NegatedRef(new_var_index));
+    auto* abs_ct = updated_model_proto.add_constraints()->mutable_lin_max();
+    abs_ct->mutable_target()->add_vars(abs_var_index);
+    abs_ct->mutable_target()->add_coeffs(1);
+    LinearExpressionProto* left = abs_ct->add_exprs();
+    left->add_vars(new_var_index);
+    left->add_coeffs(1);
+    LinearExpressionProto* right = abs_ct->add_exprs();
+    right->add_vars(new_var_index);
+    right->add_coeffs(-1);
 
     updated_model_proto.mutable_objective()->add_vars(abs_var_index);
     updated_model_proto.mutable_objective()->add_coeffs(1);

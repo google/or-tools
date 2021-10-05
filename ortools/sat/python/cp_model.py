@@ -1361,22 +1361,24 @@ class CpModel(object):
             [self.GetOrMakeBooleanIndex(x) for x in literals])
         return ct
 
-    def AddMinEquality(self, target, variables):
+    def AddMinEquality(self, target, exprs):
         """Adds `target == Min(variables)`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.int_min.vars.extend(
-            [self.GetOrMakeIndex(x) for x in variables])
-        model_ct.int_min.target = self.GetOrMakeIndex(target)
+        model_ct.lin_max.exprs.extend(
+            [self.ParseLinearExpression(x, True) for x in exprs])
+        model_ct.lin_max.target.CopyFrom(
+            self.ParseLinearExpression(target, True))
         return ct
 
-    def AddMaxEquality(self, target, variables):
+    def AddMaxEquality(self, target, exprs):
         """Adds `target == Max(variables)`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.int_max.vars.extend(
-            [self.GetOrMakeIndex(x) for x in variables])
-        model_ct.int_max.target = self.GetOrMakeIndex(target)
+        model_ct.lin_max.exprs.extend(
+            [self.ParseLinearExpression(x, False) for x in exprs])
+        model_ct.lin_max.target.CopyFrom(
+            self.ParseLinearExpression(target, False))
         return ct
 
     def AddDivisionEquality(self, target, num, denom):
@@ -1389,13 +1391,14 @@ class CpModel(object):
         model_ct.int_div.target = self.GetOrMakeIndex(target)
         return ct
 
-    def AddAbsEquality(self, target, var):
+    def AddAbsEquality(self, target, expr):
         """Adds `target == Abs(var)`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        index = self.GetOrMakeIndex(var)
-        model_ct.int_max.vars.extend([index, -index - 1])
-        model_ct.int_max.target = self.GetOrMakeIndex(target)
+        model_ct.lin_max.exprs.append(self.ParseLinearExpression(expr, False))
+        model_ct.lin_max.exprs.append(self.ParseLinearExpression(expr, True))
+        model_ct.lin_max.target.CopyFrom(
+            self.ParseLinearExpression(target, False))
         return ct
 
     def AddModuloEquality(self, target, var, mod):
@@ -1448,9 +1451,9 @@ class CpModel(object):
 
         self.Add(start + size == end)
 
-        start_view = self.ParseLinearExpression(start)
-        size_view = self.ParseLinearExpression(size)
-        end_view = self.ParseLinearExpression(end)
+        start_view = self.ParseLinearExpression(start, False)
+        size_view = self.ParseLinearExpression(size, False)
+        end_view = self.ParseLinearExpression(end, False)
         if len(start_view.vars) > 1:
             raise TypeError(
                 'cp_model.NewIntervalVar: start must be affine or constant.')
@@ -1479,9 +1482,9 @@ class CpModel(object):
       An `IntervalVar` object.
     """
         cp_model_helper.AssertIsInt64(size)
-        start_view = self.ParseLinearExpression(start)
-        size_view = self.ParseLinearExpression(size)
-        end_view = self.ParseLinearExpression(start + size)
+        start_view = self.ParseLinearExpression(start, False)
+        size_view = self.ParseLinearExpression(size, False)
+        end_view = self.ParseLinearExpression(start + size, False)
         if len(start_view.vars) > 1:
             raise TypeError(
                 'cp_model.NewIntervalVar: start must be affine or constant.')
@@ -1517,9 +1520,9 @@ class CpModel(object):
 
         # Creates the IntervalConstraintProto object.
         is_present_index = self.GetOrMakeBooleanIndex(is_present)
-        start_view = self.ParseLinearExpression(start)
-        size_view = self.ParseLinearExpression(size)
-        end_view = self.ParseLinearExpression(end)
+        start_view = self.ParseLinearExpression(start, False)
+        size_view = self.ParseLinearExpression(size, False)
+        end_view = self.ParseLinearExpression(end, False)
         if len(start_view.vars) > 1:
             raise TypeError(
                 'cp_model.NewIntervalVar: start must be affine or constant.')
@@ -1550,9 +1553,9 @@ class CpModel(object):
       An `IntervalVar` object.
     """
         cp_model_helper.AssertIsInt64(size)
-        start_view = self.ParseLinearExpression(start)
-        size_view = self.ParseLinearExpression(size)
-        end_view = self.ParseLinearExpression(start + size)
+        start_view = self.ParseLinearExpression(start, False)
+        size_view = self.ParseLinearExpression(size, False)
+        end_view = self.ParseLinearExpression(start + size, False)
         if len(start_view.vars) > 1:
             raise TypeError(
                 'cp_model.NewIntervalVar: start must be affine or constant.')
@@ -1657,7 +1660,8 @@ class CpModel(object):
         model_ct.cumulative.demands.extend(
             [self.GetOrMakeIndex(x) for x in demands])
         for e in energies:
-            model_ct.cumulative.energies.append(self.ParseLinearExpression(e))
+            model_ct.cumulative.energies.append(
+                self.ParseLinearExpression(e, False))
         model_ct.cumulative.capacity = self.GetOrMakeIndex(capacity)
         return ct
 
@@ -1766,26 +1770,27 @@ class CpModel(object):
         else:
             return self.__model.variables[-var_index - 1]
 
-    def ParseLinearExpression(self, linear_expr):
+    def ParseLinearExpression(self, linear_expr, negate):
         """Returns a LinearExpressionProto built from a LinearExpr instance."""
         result = cp_model_pb2.LinearExpressionProto()
+        mult = -1 if negate else 1
         if isinstance(linear_expr, numbers.Integral):
-            result.offset = linear_expr
+            result.offset = linear_expr * mult
             return result
 
         if isinstance(linear_expr, IntVar):
             result.vars.append(self.GetOrMakeIndex(linear_expr))
-            result.coeffs.append(1)
+            result.coeffs.append(mult)
             return result
 
         coeffs_map, constant = linear_expr.GetVarValueMap()
-        result.offset = constant
+        result.offset = constant * mult
         for t in coeffs_map.items():
             if not isinstance(t[0], IntVar):
                 raise TypeError('Wrong argument' + str(t))
             cp_model_helper.AssertIsInt64(t[1])
             result.vars.append(t[0].Index())
-            result.coeffs.append(t[1])
+            result.coeffs.append(t[1] * mult)
         return result
 
     def _SetObjective(self, obj, minimize):
